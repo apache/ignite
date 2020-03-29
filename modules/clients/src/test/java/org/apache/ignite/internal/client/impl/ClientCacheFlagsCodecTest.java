@@ -18,45 +18,44 @@
 package org.apache.ignite.internal.client.impl;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
-import junit.framework.TestCase;
-import org.apache.ignite.internal.client.GridClientCacheFlag;
-import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
-import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Set;
 
-import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
+import org.apache.ignite.internal.client.GridClientCacheFlag;
+import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests conversions between GridClientCacheFlag.
  */
-public class ClientCacheFlagsCodecTest extends TestCase {
+public class ClientCacheFlagsCodecTest {
     /**
      * Tests that each client flag will be correctly converted to server flag.
      */
+    @Test
     public void testEncodingDecodingFullness() {
         for (GridClientCacheFlag f : GridClientCacheFlag.values()) {
-            if (f == KEEP_BINARIES)
-                continue;
-
-            int bits = GridClientConnection.encodeCacheFlags(Collections.singleton(f));
+            int bits = GridClientCacheFlag.encodeCacheFlags(EnumSet.of(f));
 
             assertTrue(bits != 0);
 
-            boolean out = GridCacheCommandHandler.parseCacheFlags(bits);
+            Set<GridClientCacheFlag> out = GridClientCacheFlag.parseCacheFlags(bits);
 
-            assertEquals(out, true);
+            assertTrue(out.contains(f));
         }
     }
 
     /**
      * Tests that groups of client flags can be correctly converted to corresponding server flag groups.
      */
+    @Test
     public void testGroupEncodingDecoding() {
-        // all
+        // All.
         doTestGroup(GridClientCacheFlag.values());
-        // none
+
+        // None.
         doTestGroup();
     }
 
@@ -64,15 +63,14 @@ public class ClientCacheFlagsCodecTest extends TestCase {
      * @param flags Client flags to be encoded, decoded and checked.
      */
     private void doTestGroup(GridClientCacheFlag... flags) {
-        EnumSet<GridClientCacheFlag> flagSet = F.isEmpty(flags) ? EnumSet.noneOf(GridClientCacheFlag.class) :
-            EnumSet.copyOf(Arrays.asList(flags));
+        EnumSet<GridClientCacheFlag> flagSet = F.isEmpty(flags)
+            ? EnumSet.noneOf(GridClientCacheFlag.class)
+            : EnumSet.copyOf(Arrays.asList(flags));
 
-        int bits = GridClientConnection.encodeCacheFlags(flagSet);
+        int bits = GridClientCacheFlag.encodeCacheFlags(flagSet);
 
-        boolean out = GridCacheCommandHandler.parseCacheFlags(bits);
+        Set<GridClientCacheFlag> out = GridClientCacheFlag.parseCacheFlags(bits);
 
-        int length = flagSet.contains(KEEP_BINARIES) ? flagSet.size() - 1 : flagSet.size();
-
-        assertEquals(length > 0, out);
+        assertTrue(out.containsAll(flagSet));
     }
 }

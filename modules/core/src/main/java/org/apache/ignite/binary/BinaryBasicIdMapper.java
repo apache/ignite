@@ -66,7 +66,7 @@ public class BinaryBasicIdMapper implements BinaryIdMapper {
      * @param typeName Type name.
      * @return Type ID.
      */
-    public int typeId(String typeName) {
+    @Override public int typeId(String typeName) {
         A.notNull(typeName, "typeName");
 
         int id = isLowerCase ? lowerCaseHashCode(typeName) : typeName.hashCode();
@@ -87,7 +87,7 @@ public class BinaryBasicIdMapper implements BinaryIdMapper {
      * @param fieldName Field name.
      * @return Field ID.
      */
-    public int fieldId(int typeId, String fieldName) {
+    @Override public int fieldId(int typeId, String fieldName) {
         A.notNull(fieldName, "fieldName");
 
         int id = isLowerCase ? lowerCaseHashCode(fieldName) : fieldName.hashCode();
@@ -114,9 +114,12 @@ public class BinaryBasicIdMapper implements BinaryIdMapper {
      * Sets whether to use strings in lower case or not.
      *
      * @param isLowerCase Whether to use strings in lower case or not.
+     * @return {@code this} for chaining.
      */
-    public void setLowerCase(boolean isLowerCase) {
+    public BinaryBasicIdMapper setLowerCase(boolean isLowerCase) {
         this.isLowerCase = isLowerCase;
+
+        return this;
     }
 
     /**

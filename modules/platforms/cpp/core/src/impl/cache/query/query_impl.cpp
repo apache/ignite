@@ -178,7 +178,7 @@ namespace ignite
 
                     env.Get()->Context()->TargetOutStream(javaRef, OP_GET_ALL, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                     {
@@ -186,10 +186,47 @@ namespace ignite
 
                         InteropInputStream in(inMem.Get());
 
-                        binary::BinaryReaderImpl reader(&in);
+                        BinaryReaderImpl reader(&in);
 
                         op.ProcessOutput(reader);
                     }
+                }
+
+                void QueryCursorImpl::GetAll(OutputOperation& op)
+                {
+                    // Check whether any of iterator methods were called.
+                    if (iterCalled)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Cannot use GetAll() method because an iteration method was called.");
+                    }
+
+                    // Check whether GetAll was called before.
+                    if (getAllCalled)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Cannot use GetNext() method because GetAll() was called.");
+                    }
+
+                    // Get data.
+                    JniErrorInfo jniErr;
+
+                    SharedPointer<InteropMemory> inMem = env.Get()->AllocateMemory();
+
+                    env.Get()->Context()->TargetOutStream(javaRef, OP_GET_ALL, inMem.Get()->PointerLong(), &jniErr);
+
+                    IgniteError err;
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+                    IgniteError::ThrowIfNeeded(err);
+
+                    getAllCalled = true;
+
+                    InteropInputStream in(inMem.Get());
+
+                    BinaryReaderImpl reader(&in);
+
+                    op.ProcessOutput(reader);
                 }
 
                 bool QueryCursorImpl::CreateIteratorIfNeeded(IgniteError& err)
@@ -201,7 +238,7 @@ namespace ignite
 
                     env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR, 0, &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         iterCalled = true;
@@ -228,7 +265,7 @@ namespace ignite
                     env.Get()->Context()->TargetOutStream(
                         javaRef, OP_GET_BATCH, inMem.Get()->PointerLong(), &jniErr);
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                         return false;
@@ -251,7 +288,7 @@ namespace ignite
 
                     bool res = env.Get()->Context()->TargetInLongOutLong(javaRef, OP_ITERATOR_HAS_NEXT, 0, &jniErr) == 1;
 
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
                     if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
                         return res;

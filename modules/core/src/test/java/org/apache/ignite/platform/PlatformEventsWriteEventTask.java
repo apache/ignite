@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.events.*;
 
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -43,10 +44,9 @@ import java.util.UUID;
 /**
  * Test task writing all events to a stream.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         Long ptr) {
         return Collections.singletonMap(new Job(ptr, F.first(subgrid)), F.first(subgrid));
     }
@@ -59,7 +59,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
     /**
      * Job.
      */
-    @SuppressWarnings("deprecation")
     private static class Job extends ComputeJobAdapter {
         /** Grid. */
         @IgniteInstanceResource
@@ -75,7 +74,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
          *
          * @param ptr Stream ptr.
          */
-        public Job(long ptr, ClusterNode node) {
+        private Job(long ptr, ClusterNode node) {
             this.ptr = ptr;
             this.node = node;
         }
@@ -88,13 +87,13 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 PlatformOutputStream out = mem.output();
                 BinaryRawWriterEx writer = ctx.writer(out);
 
-                int evtType = EventType.EVT_SWAP_SPACE_CLEARED;
+                int evtType = EventType.EVT_NODE_FAILED;
                 String msg = "msg";
                 UUID uuid = new UUID(1, 2);
                 IgniteUuid igniteUuid = new IgniteUuid(uuid, 3);
 
                 ctx.writeEvent(writer, new CacheEvent("cacheName", node, node, "msg", evtType, 1, true, 2,
-                    igniteUuid, 3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
+                    igniteUuid, "txLabel",3, 4, true, 5, true, uuid, "cloClsName", "taskName"));
 
                 //noinspection unchecked
                 ctx.writeEvent(writer, new CacheQueryExecutedEvent(node, msg, evtType, "qryType", "cacheName",
@@ -120,8 +119,6 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 jobEvent.taskSessionId(igniteUuid);
                 jobEvent.taskSubjectId(uuid);
                 ctx.writeEvent(writer, jobEvent);
-
-                ctx.writeEvent(writer, new SwapSpaceEvent(node, msg, evtType, "space"));
 
                 ctx.writeEvent(writer, new TaskEvent(node, msg, evtType, igniteUuid, "taskName", "taskClsName",
                     true, uuid));

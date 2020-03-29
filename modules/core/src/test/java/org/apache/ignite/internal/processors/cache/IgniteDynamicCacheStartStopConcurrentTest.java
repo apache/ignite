@@ -19,35 +19,20 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 4;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -56,16 +41,10 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
         startGridsMultiThreaded(NODES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartStop() throws Exception {
         awaitPartitionMapExchange();
 
@@ -80,7 +59,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 @Override public void apply(Integer idx) {
                     Ignite ignite = ignite(idx);
 
-                    ignite.getOrCreateCache(new CacheConfiguration<>());
+                    ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
                 }
             }, NODES, "cache-thread");
 
@@ -88,7 +67,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
 
             checkTopologyVersion(new AffinityTopologyVersion(NODES, minorVer));
 
-            ignite(0).compute().affinityRun((String)null, 1, new IgniteRunnable() {
+            ignite(0).compute().affinityRun(DEFAULT_CACHE_NAME, 1, new IgniteRunnable() {
                 @Override public void run() {
                     // No-op.
                 }
@@ -98,7 +77,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 @Override public void apply(Integer idx) {
                     Ignite ignite = ignite(idx);
 
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
                 }
             }, NODES, "cache-thread");
 

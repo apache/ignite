@@ -42,6 +42,10 @@ public class CacheInvokeDirectResult implements Message {
 
     /** */
     @GridToStringInclude
+    private transient Object unprepareRes;
+
+    /** */
+    @GridToStringInclude
     private CacheObject res;
 
     /** */
@@ -66,6 +70,22 @@ public class CacheInvokeDirectResult implements Message {
     public CacheInvokeDirectResult(KeyCacheObject key, CacheObject res) {
         this.key = key;
         this.res = res;
+    }
+
+    /**
+     * Constructs CacheInvokeDirectResult with unprepared res, to avoid object marshaling while holding topology locks.
+     *
+     * @param key Key.
+     * @param res Result.
+     * @return a new instance of CacheInvokeDirectResult.
+     */
+    static CacheInvokeDirectResult lazyResult(KeyCacheObject key, Object res) {
+        CacheInvokeDirectResult res0 = new CacheInvokeDirectResult();
+
+        res0.key = key;
+        res0.unprepareRes = res;
+
+        return res0;
     }
 
     /**
@@ -105,11 +125,40 @@ public class CacheInvokeDirectResult implements Message {
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx.cacheObjectContext());
 
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx.marshaller(), err);
+        if (err != null && errBytes == null) {
+            try {
+                errBytes = U.marshal(ctx.marshaller(), err);
+            }
+            catch (IgniteCheckedException e) {
+                // Try send exception even if it's unable to marshal.
+                IgniteCheckedException exc = new IgniteCheckedException(err.getMessage());
+
+                exc.setStackTrace(err.getStackTrace());
+                exc.addSuppressed(e);
+
+                errBytes = U.marshal(ctx.marshaller(), exc);
+            }
+        }
+
+        assert unprepareRes == null : "marshalResult() was not called for the result: " + this;
 
         if (res != null)
             res.prepareMarshal(ctx.cacheObjectContext());
+    }
+
+    /**
+     * Converts the entry processor unprepared result to a cache object instance.
+     *
+     * @param ctx Cache context.
+     */
+    public void marshalResult(GridCacheContext ctx) {
+        try {
+            if (unprepareRes != null)
+                res = ctx.toCacheObject(unprepareRes);
+        }
+        finally {
+            unprepareRes = null;
+        }
     }
 
     /**
@@ -133,7 +182,7 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 93;
     }
 

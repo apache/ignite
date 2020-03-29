@@ -26,6 +26,21 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public interface GridCacheFuture<R> extends IgniteInternalFuture<R> {
     /**
+     * Gets start time for this future.
+     *
+     * @return Start time for this future.
+     */
+    public long startTime();
+
+    /**
+     * Gets duration in milliseconds between start of the future and current time if future
+     * is not finished, or between start and finish of this future.
+     *
+     * @return Time in milliseconds this future has taken to execute.
+     */
+    public long duration();
+
+    /**
      * @return Unique identifier for this future.
      */
     public IgniteUuid futureId();

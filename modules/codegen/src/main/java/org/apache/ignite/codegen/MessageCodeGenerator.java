@@ -26,7 +26,6 @@ import java.io.FileWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -44,6 +43,10 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
+import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -66,10 +69,10 @@ public class MessageCodeGenerator {
     };
 
     /** */
-    private static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
+    public static final String DFLT_SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
-    private static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
+    public static final String INDEXING_SRC_DIR = U.getIgniteHome() + "/modules/indexing/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = Message.class;
@@ -78,7 +81,7 @@ public class MessageCodeGenerator {
     private static final String EMPTY = "";
 
     /** */
-    private static final String TAB = "    ";
+    public static final String TAB = "    ";
 
     /** */
     private static final String BUF_VAR = "buf";
@@ -115,6 +118,7 @@ public class MessageCodeGenerator {
         TYPES.put(BitSet.class, MessageCollectionItemType.BIT_SET);
         TYPES.put(UUID.class, MessageCollectionItemType.UUID);
         TYPES.put(IgniteUuid.class, MessageCollectionItemType.IGNITE_UUID);
+        TYPES.put(AffinityTopologyVersion.class, MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION);
     }
 
     /**
@@ -166,9 +170,12 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
+        gen.generateAndWrite(ProbedTx.class);
+        gen.generateAndWrite(DeadlockProbe.class);
+
 //        gen.generateAll(true);
 
-//        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
+//        gen.generateAndWrite(GridCacheMessage.class);
 
 //        gen.generateAndWrite(GridMessageCollection.class);
 //        gen.generateAndWrite(DataStreamerEntry.class);
@@ -229,6 +236,14 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridH2RowRangeBounds.class);
 //        gen.generateAndWrite(GridH2QueryRequest.class);
 //        gen.generateAndWrite(GridH2RowMessage.class);
+//        gen.generateAndWrite(GridCacheVersion.class);
+//        gen.generateAndWrite(GridCacheVersionEx.class);
+//        gen.generateAndWrite(GridH2DmlRequest.class);
+//        gen.generateAndWrite(GridH2DmlResponse.class);
+//        gen.generateAndWrite(GridNearTxEnlistRequest.class);
+//        gen.generateAndWrite(GridNearTxEnlistResponse.class);
+//        gen.generateAndWrite(GenerateEncryptionKeyRequest.class);
+//        gen.generateAndWrite(GenerateEncryptionKeyResponse.class);
     }
 
     /**
@@ -652,6 +667,8 @@ public class MessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeUuid", field, getExpr);
         else if (type == IgniteUuid.class)
             returnFalseIfFailed(write, "writer.writeIgniteUuid", field, getExpr);
+        else if (type == AffinityTopologyVersion.class)
+            returnFalseIfFailed(write, "writer.writeAffinityTopologyVersion", field, getExpr);
         else if (type.isEnum()) {
             String arg = getExpr + " != null ? (byte)" + getExpr + ".ordinal() : -1";
 
@@ -734,6 +751,8 @@ public class MessageCodeGenerator {
             returnFalseIfReadFailed(name, "reader.readUuid", setExpr, field);
         else if (type == IgniteUuid.class)
             returnFalseIfReadFailed(name, "reader.readIgniteUuid", setExpr, field);
+        else if (type == AffinityTopologyVersion.class)
+            returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion", setExpr, field);
         else if (type.isEnum()) {
             String loc = name + "Ord";
 
@@ -871,9 +890,9 @@ public class MessageCodeGenerator {
                 }
             });
 
-        URLClassLoader ldr = (URLClassLoader)getClass().getClassLoader();
+        ClassLoader ldr = getClass().getClassLoader();
 
-        for (URL url : ldr.getURLs()) {
+        for (URL url :  IgniteUtils.classLoaderUrls(ldr)) {
             File file = new File(url.toURI());
 
             int prefixLen = file.getPath().length() + 1;

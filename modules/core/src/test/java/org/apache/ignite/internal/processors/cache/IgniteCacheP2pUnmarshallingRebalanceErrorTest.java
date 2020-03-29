@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -35,6 +36,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         //GridDhtPartitionSupplyMessage unmarshalling failed test.
         readCnt.set(Integer.MAX_VALUE);
@@ -60,9 +62,9 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
 
         startGrid(10); // Custom rebalanceDelay set at cfg.
 
-        Affinity<Object> aff = affinity(grid(10).cache(null));
+        Affinity<Object> aff = affinity(grid(10).cache(DEFAULT_CACHE_NAME));
 
-        GridCacheContext cctx = grid(10).context().cache().cache(null).context();
+        GridCacheContext cctx = grid(10).context().cache().cache(DEFAULT_CACHE_NAME).context();
 
         List<List<ClusterNode>> affAssign =
             cctx.affinity().assignment(cctx.affinity().affinityTopologyVersion()).idealAssignment();

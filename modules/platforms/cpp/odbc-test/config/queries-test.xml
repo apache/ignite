@@ -24,15 +24,7 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <!-- Imports no-ODBC Ignite configuration -->
     <import resource="queries-default.xml"/>
 
-    <bean parent="ignite.cfg">
-        <!-- Enabling ODBC. -->
-        <property name="odbcConfiguration">
-            <bean class="org.apache.ignite.configuration.OdbcConfiguration">
-                <property name="endpointAddress" value="127.0.0.1:11110"/>
-            </bean>
-        </property>
-    </bean>
+    <bean parent="queries.cfg"/>
 </beans>

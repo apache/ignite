@@ -23,19 +23,13 @@
 #include <map>
 #include <memory>
 
-#include <ignite/impl/interop/interop_output_stream.h>
-#include <ignite/impl/interop/interop_input_stream.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
-
 #include "ignite/odbc/meta/column_meta.h"
-#include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/common_types.h"
-#include "ignite/odbc/cursor.h"
-#include "ignite/odbc/utility.h"
+#include "sql/sql_set_streaming_command.h"
 
 namespace ignite
 {
@@ -124,11 +118,11 @@ namespace ignite
             void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
 
             /**
-             * Get number of binded parameters.
+             * Get number parameters required by the prepared statement.
              *
-             * @return Number of binded parameters.
+             * @param paramNum Number of parameters.
              */
-            uint16_t GetParametersNumber();
+            void GetParametersNumber(uint16_t& paramNum);
 
             /**
              * Set parameter binding offset pointer.
@@ -136,13 +130,6 @@ namespace ignite
              * @param ptr Parameter binding offset pointer.
              */
             void SetParamBindOffsetPtr(int* ptr);
-
-            /**
-             * Get parameter binding offset pointer.
-             *
-             * @return Parameter binding offset pointer.
-             */
-            int* GetParamBindOffsetPtr();
 
             /**
              * Get value of the column in the result set.
@@ -278,11 +265,11 @@ namespace ignite
             bool DataAvailable() const;
 
             /**
-             * Next results.
+             * More results.
              *
              * Move to next result set or affected rows number.
              */
-            void NextResults();
+            void MoreResults();
 
             /**
              * Get column attribute.
@@ -393,28 +380,8 @@ namespace ignite
              * @param strLengthOrIndicator Pointer to the length/indicator buffer.
              * @return Operation result.
              */
-            SqlResult InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
-
-            /**
-             * Bind parameter.
-             *
-             * @param paramIdx Parameter index.
-             * @param param Parameter.
-             */
-            void SafeBindParameter(uint16_t paramIdx, const app::Parameter& param);
-
-            /**
-             * Unbind specified parameter.
-             *
-             * @param paramIdx Parameter index.
-             */
-            void SafeUnbindParameter(uint16_t paramIdx);
-
-            /**
-             * Unbind all parameters.
-             */
-            void SafeUnbindAllParameters();
-
+            SqlResult::Type InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator);
+            
             /**
              * Bind parameter.
              *
@@ -429,7 +396,7 @@ namespace ignite
              * @param resLen A pointer to a buffer for the parameter's length.
              * @return Operation result.
              */
-            SqlResult InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+            SqlResult::Type InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
                                             SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
@@ -441,7 +408,7 @@ namespace ignite
              * @param valueLen Value length.
              * @return Operation result.
              */
-            SqlResult InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
+            SqlResult::Type InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
 
             /**
              * Get statement attribute.
@@ -453,7 +420,14 @@ namespace ignite
              * @param valueLen Resulting value length.
              * @return Operation result.
              */
-            SqlResult InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
+            SqlResult::Type InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
+
+            /**
+             * Get number parameters required by the prepared statement.
+             *
+             * @param paramNum Number of parameters.
+             */
+            SqlResult::Type InternalGetParametersNumber(uint16_t& paramNum);
 
             /**
              * Get value of the column in the result set.
@@ -462,7 +436,7 @@ namespace ignite
              * @param buffer Buffer to put column data to.
              * @return Operation result.
              */
-            SqlResult InternalGetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
+            SqlResult::Type InternalGetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
 
 
             /**
@@ -470,7 +444,7 @@ namespace ignite
              * @param option indicates what needs to be freed
              * @return Operation result.
              */
-            SqlResult InternalFreeResources(int16_t option);
+            SqlResult::Type InternalFreeResources(int16_t option);
 
             /**
              * Close statement.
@@ -478,7 +452,29 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalClose();
+            SqlResult::Type InternalClose();
+
+            /**
+             * Stop streaming.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type StopStreaming();
+
+            /**
+             * Process internal SQL command.
+             *
+             * @param query SQL query.
+             * @return Operation result.
+             */
+            SqlResult::Type ProcessInternalCommand(const std::string& query);
+
+            /**
+             * Check if the streaming is active currently.
+             *
+             * @return @c true, if the streaming is active.
+             */
+            bool IsStreamingActive() const;
 
             /**
              * Prepare SQL query.
@@ -486,7 +482,7 @@ namespace ignite
              * @param query SQL query.
              * @return Operation result.
              */
-            SqlResult InternalPrepareSqlQuery(const std::string& query);
+            SqlResult::Type InternalPrepareSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
@@ -494,14 +490,21 @@ namespace ignite
              * @param query SQL query.
              * @return Operation result.
              */
-            SqlResult InternalExecuteSqlQuery(const std::string& query);
+            SqlResult::Type InternalExecuteSqlQuery(const std::string& query);
 
             /**
              * Execute SQL query.
              *
              * @return Operation result.
              */
-            SqlResult InternalExecuteSqlQuery();
+            SqlResult::Type InternalExecuteSqlQuery();
+
+            /**
+             * Process internal query.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type ProcessInternalQuery();
 
             /**
              * Fetch query result row with offset
@@ -509,14 +512,14 @@ namespace ignite
              * @param offset Fetch offset
              * @return Operation result.
              */
-            SqlResult InternalFetchScroll(int16_t orientation, int64_t offset);
+            SqlResult::Type InternalFetchScroll(int16_t orientation, int64_t offset);
 
             /**
              * Fetch query result row.
              *
              * @return Operation result.
              */
-            SqlResult InternalFetchRow();
+            SqlResult::Type InternalFetchRow();
 
             /**
              * Get number of columns in the result set.
@@ -524,7 +527,7 @@ namespace ignite
              * @param res Columns number.
              * @return Operation result.
              */
-            SqlResult InternalGetColumnNumber(int32_t &res);
+            SqlResult::Type InternalGetColumnNumber(int32_t &res);
 
             /**
              * Get columns metadata.
@@ -534,7 +537,7 @@ namespace ignite
              * @param column Column search pattern.
              * @return Operation result.
              */
-            SqlResult InternalExecuteGetColumnsMetaQuery(const std::string& schema,
+            SqlResult::Type InternalExecuteGetColumnsMetaQuery(const std::string& schema,
                 const std::string& table, const std::string& column);
 
             /**
@@ -546,7 +549,7 @@ namespace ignite
              * @param tableType Table type search pattern.
              * @return Operation result.
              */
-            SqlResult InternalExecuteGetTablesMetaQuery(const std::string& catalog,
+            SqlResult::Type InternalExecuteGetTablesMetaQuery(const std::string& catalog,
                 const std::string& schema, const std::string& table,
                 const std::string& tableType);
 
@@ -561,7 +564,7 @@ namespace ignite
              * @param foreignTable Foreign key table name.
              * @return Operation result.
              */
-            SqlResult InternalExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+            SqlResult::Type InternalExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
                 const std::string& primarySchema, const std::string& primaryTable,
                 const std::string& foreignCatalog, const std::string& foreignSchema,
                 const std::string& foreignTable);
@@ -574,7 +577,7 @@ namespace ignite
              * @param table Table name.
              * @return Operation result.
              */
-            SqlResult InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
+            SqlResult::Type InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
                 const std::string& schema, const std::string& table);
 
             /**
@@ -589,7 +592,7 @@ namespace ignite
              *                 that can have a NULL value.
              * @return Operation result.
              */
-            SqlResult InternalExecuteSpecialColumnsQuery(int16_t type,
+            SqlResult::Type InternalExecuteSpecialColumnsQuery(int16_t type,
                 const std::string& catalog, const std::string& schema,
                 const std::string& table, int16_t scope, int16_t nullable);
 
@@ -599,7 +602,7 @@ namespace ignite
              * @param sqlType SQL type for which to return info or SQL_ALL_TYPES.
              * @return Operation result.
              */
-            SqlResult InternalExecuteGetTypeInfoQuery(int16_t sqlType);
+            SqlResult::Type InternalExecuteGetTypeInfoQuery(int16_t sqlType);
 
             /**
              * Next results.
@@ -608,7 +611,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalNextResults();
+            SqlResult::Type InternalMoreResults();
 
             /**
              * Get column attribute.
@@ -621,7 +624,7 @@ namespace ignite
              * @param numbuf Numeric value buffer.
              * @return Operation result.
              */
-            SqlResult InternalGetColumnAttribute(uint16_t colIdx, uint16_t attrId,
+            SqlResult::Type InternalGetColumnAttribute(uint16_t colIdx, uint16_t attrId,
                 char* strbuf, int16_t buflen, int16_t* reslen, SqlLen* numbuf);
 
             /**
@@ -630,7 +633,7 @@ namespace ignite
              * @param rowCnt Number of rows affected by the statement.
              * @return Operation result.
              */
-            SqlResult InternalAffectedRows(int64_t& rowCnt);
+            SqlResult::Type InternalAffectedRows(int64_t& rowCnt);
 
             /**
              * Select next parameter data for which is required.
@@ -638,7 +641,7 @@ namespace ignite
              * @param paramPtr Pointer to param id stored here.
              * @return Operation result.
              */
-            SqlResult InternalSelectParam(void** paramPtr);
+            SqlResult::Type InternalSelectParam(void** paramPtr);
 
             /**
              * Puts data for previously selected parameter or column.
@@ -647,7 +650,7 @@ namespace ignite
              * @param len Data length.
              * @return Operation result.
              */
-            SqlResult InternalPutData(void* data, SqlLen len);
+            SqlResult::Type InternalPutData(void* data, SqlLen len);
 
             /**
              * Get type info of the parameter of the prepared statement.
@@ -659,13 +662,13 @@ namespace ignite
              * @param nullable - Nullability flag.
              * @return Operation result.
              */
-            SqlResult InternalDescribeParam(int16_t paramNum, int16_t* dataType,
+            SqlResult::Type InternalDescribeParam(int16_t paramNum, int16_t* dataType,
                 SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable);
 
             /**
              * Make request to data source to update parameters metadata.
              */
-            SqlResult UpdateParamsMeta();
+            SqlResult::Type UpdateParamsMeta();
 
             /**
              * Constructor.
@@ -681,14 +684,11 @@ namespace ignite
             /** Column bindings. */
             app::ColumnBindingMap columnBindings;
 
-            /** Parameter bindings. */
-            app::ParameterBindingMap paramBindings;
-
-            /** Parameter meta. */
-            std::vector<int8_t> paramTypes;
-
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
+
+            /** Row bind type. */
+            SqlUlen rowBindType;
 
             /** Buffer to store number of rows fetched by the last fetch. */
             size_t* rowsFetched;
@@ -696,14 +696,14 @@ namespace ignite
             /** Array to store statuses of rows fetched by the last fetch. */
             uint16_t* rowStatuses;
 
-            /** Offset added to pointers to change binding of parameters. */
-            int* paramBindOffset;
-
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
-            /** Index of the parameter, which is currently being set. */
-            uint16_t currentParamIdx;
+            /** Parameters. */
+            app::ParameterSet parameters;
+
+            /** Query timeout in seconds. */
+            int32_t timeout;
         };
     }
 }

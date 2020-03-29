@@ -22,17 +22,18 @@
 
 #define IGNITE_ODBC_API_CALL(...)                   \
         diagnosticRecords.Reset();                  \
-        SqlResult result = (__VA_ARGS__);           \
+        SqlResult::Type result = (__VA_ARGS__);     \
         diagnosticRecords.SetHeaderRecord(result)
 
 #define IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS                     \
         diagnosticRecords.Reset();                              \
-        diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS)
+        diagnosticRecords.SetHeaderRecord(SqlResult::AI_SUCCESS)
 
 namespace ignite
 {
     namespace odbc
     {
+        class OdbcError;
         class Connection;
 
         namespace diagnostic
@@ -43,6 +44,18 @@ namespace ignite
             class DiagnosableAdapter : public Diagnosable
             {
             public:
+                /**
+                 * Constructor.
+                 *
+                 * @param connection Pointer to connection. Used to create
+                 *     diagnostic records with connection info.
+                 */
+                DiagnosableAdapter(const Connection* connection = 0) :
+                    connection(connection)
+                {
+                    // No-op.
+                }
+
                 /**
                  * Destructor.
                  */
@@ -56,7 +69,7 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const
+                virtual const DiagnosticRecordStorage& GetDiagnosticRecords() const
                 {
                     return diagnosticRecords;
                 }
@@ -66,7 +79,7 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords()
+                virtual DiagnosticRecordStorage& GetDiagnosticRecords()
                 {
                     return diagnosticRecords;
                 }
@@ -79,7 +92,7 @@ namespace ignite
                  * @param rowNum Associated row number.
                  * @param columnNum Associated column number.
                  */
-                virtual void AddStatusRecord(SqlState sqlState, const std::string& message,
+                virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message,
                     int32_t rowNum, int32_t columnNum);
 
                 /**
@@ -88,23 +101,25 @@ namespace ignite
                  * @param sqlState SQL state.
                  * @param message Message.
                  */
-                virtual void AddStatusRecord(SqlState sqlState, const std::string& message);
+                virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message);
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param err Error.
+                 */
+                virtual void AddStatusRecord(const OdbcError& err);
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param rec Record.
+                 */
+                virtual void AddStatusRecord(const DiagnosticRecord& rec);
 
             protected:
-                /**
-                 * Constructor.
-                 *
-                 * @param connection Pointer to connection. Used to create
-                 *                   diagnostic records with connection info.
-                 */
-                DiagnosableAdapter(const Connection* connection = 0) :
-                    connection(connection)
-                {
-                    // No-op.
-                }
-
                 /** Diagnostic records. */
-                diagnostic::DiagnosticRecordStorage diagnosticRecords;
+                DiagnosticRecordStorage diagnosticRecords;
 
             private:
                 /** Connection. */

@@ -17,10 +17,15 @@
 
 package org.apache.ignite.mxbean;
 
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+
 /**
  * MBean that provides access to information about executor service.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
 @MXBeanDescription("MBean that provides access to information about executor service.")
+@Deprecated
 public interface ThreadPoolMXBean {
     /**
      * Returns the approximate number of threads that are actively executing tasks.

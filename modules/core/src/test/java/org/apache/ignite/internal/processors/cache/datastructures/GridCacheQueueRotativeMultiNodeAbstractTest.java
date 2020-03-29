@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Queue multi node tests.
@@ -79,6 +80,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -108,6 +110,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTakeRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -137,6 +140,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testTakeRemoveRotativeNodes() throws Exception {
         lthTake = new CountDownLatch(1);
 

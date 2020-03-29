@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -60,8 +61,8 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(QUERY_CACHE)
             .setCacheMode(PARTITIONED)
@@ -84,6 +85,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryReconnect() throws Exception {
         Ignite cln = grid(serverCount());
 
@@ -128,6 +130,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectQueryInProgress() throws Exception {
         Ignite cln = grid(serverCount());
 
@@ -187,6 +190,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryReconnect() throws Exception {
         Ignite cln = grid(serverCount());
 
@@ -244,6 +248,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryReconnectInProgress1() throws Exception {
         scanQueryReconnectInProgress(false);
     }
@@ -251,6 +256,7 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryReconnectInProgress2() throws Exception {
         scanQueryReconnectInProgress(true);
     }

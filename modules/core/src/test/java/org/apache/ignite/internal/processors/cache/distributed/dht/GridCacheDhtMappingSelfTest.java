@@ -24,10 +24,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,12 +39,14 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
     /** Number of key backups. */
     private static final int BACKUPS = 1;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -55,30 +56,19 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /** @throws Exception If failed. */
+    @Test
     public void testMapping() throws Exception {
         int nodeCnt = 5;
 
         startGridsMultiThreaded(nodeCnt);
 
-        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(DEFAULT_CACHE_NAME);
 
         int kv = 1;
 
@@ -90,7 +80,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
             Ignite g = grid(i);
 
             GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)
-                ((IgniteKernal)g).<Integer, Integer>internalCache()).dht();
+                ((IgniteKernal)g).<Integer, Integer>internalCache(DEFAULT_CACHE_NAME)).dht();
 
             if (localPeek(dht, kv) != null) {
                 info("Key found on node: " + g.cluster().localNode().id());

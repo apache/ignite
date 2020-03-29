@@ -29,12 +29,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -45,17 +45,25 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOAD
  */
 public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final int EVENTS_COUNT = 40;
+
+    /** Default cache name with cache events disabled. */
+    private static final String DEFAULT_CACHE_NAME_EVTS_DISABLED = DEFAULT_CACHE_NAME + "EvtsDisabled";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(disco);
+        CacheConfiguration<?, ?> ccfg = cacheConfiguration();
 
-        cfg.setCacheConfiguration(cacheConfiguration());
+        CacheConfiguration<?, ?> ccfgEvtsDisabled = new CacheConfiguration<>(ccfg);
+
+        ccfgEvtsDisabled.setName(DEFAULT_CACHE_NAME_EVTS_DISABLED);
+        ccfgEvtsDisabled.setEventsDisabled(true);
+
+        cfg.setCacheConfiguration(ccfg, ccfgEvtsDisabled);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -75,29 +83,33 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testUnloadEvents() throws Exception {
         final Ignite g1 = startGrid("g1");
 
-        Collection<Integer> allKeys = new ArrayList<>(100);
+        Collection<Integer> allKeys = new ArrayList<>(EVENTS_COUNT);
 
-        IgniteCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, String> cache2 = g1.cache(DEFAULT_CACHE_NAME_EVTS_DISABLED);
 
-        for (int i = 0; i < 100; i++) {
-            cache.put(i, "val");
+        for (int i = 0; i < EVENTS_COUNT; i++) {
+            cache1.put(i, "val");
+
+            // Events should not be fired by this put.
+            cache2.put(i, "val");
+
             allKeys.add(i);
         }
 
         Ignite g2 = startGrid("g2");
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
-        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(allKeys);
+        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
         assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
-
-        Thread.sleep(5000);
 
         Collection<Event> objEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
@@ -107,7 +119,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Collection <Event> partEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
 
-        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
+        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(DEFAULT_CACHE_NAME)).topology().localPartitions());
     }
 
     /**
@@ -122,7 +134,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             CacheEvent cacheEvt = ((CacheEvent)evt);
 
             assertEquals(EVT_CACHE_REBALANCE_OBJECT_UNLOADED, cacheEvt.type());
-            assertEquals(g.cache(null).getName(), cacheEvt.cacheName());
+            assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
@@ -151,7 +163,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
                     }
                 }));
 
-            assertEquals(g.cache(null).getName(), unloadEvt.cacheName());
+            assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), unloadEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), unloadEvt.node().id());
         }
     }

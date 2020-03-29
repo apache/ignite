@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -33,6 +34,9 @@ public class GridQueryFailResponse implements Message {
 
     /** Cancelled by originator failure type. */
     public static final byte CANCELLED_BY_ORIGINATOR = 1;
+
+    /** Execution error. Query should be retried. */
+    public static final byte RETRY_QUERY = 2;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -59,8 +63,14 @@ public class GridQueryFailResponse implements Message {
      */
     public GridQueryFailResponse(long qryReqId, Throwable err) {
         this.qryReqId = qryReqId;
-        this.errMsg = err.getClass() + ":" + err.getMessage();
-        this.failCode = err instanceof QueryCancelledException ? CANCELLED_BY_ORIGINATOR : GENERAL_ERROR;
+        this.errMsg = err.getMessage();
+
+        if (err instanceof QueryCancelledException)
+            this.failCode = CANCELLED_BY_ORIGINATOR;
+        else if (err instanceof QueryRetryException)
+            this.failCode = RETRY_QUERY;
+        else
+            this.failCode = GENERAL_ERROR;
     }
 
     /**
@@ -113,13 +123,13 @@ public class GridQueryFailResponse implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeByte("failCode", failCode))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("failCode", failCode))
+                if (!writer.writeLong("qryReqId", qryReqId))
                     return false;
 
                 writer.incrementState();
@@ -146,7 +156,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                qryReqId = reader.readLong("qryReqId");
+                failCode = reader.readByte("failCode");
 
                 if (!reader.isLastRead())
                     return false;
@@ -154,7 +164,7 @@ public class GridQueryFailResponse implements Message {
                 reader.incrementState();
 
             case 2:
-                failCode = reader.readByte("failCode");
+                qryReqId = reader.readLong("qryReqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -167,7 +177,7 @@ public class GridQueryFailResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 107;
     }
 

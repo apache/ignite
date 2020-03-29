@@ -66,12 +66,12 @@ namespace ignite
 
         Transaction Transactions::TxStart(IgniteError& err)
         {
-            return TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
-                IGNITE_TX_ISOLATION_READ_COMMITTED, 0, 0, err);
+            return TxStart(TransactionConcurrency::PESSIMISTIC,
+                TransactionIsolation::READ_COMMITTED, 0, 0, err);
         }
 
-        Transaction Transactions::TxStart(TransactionConcurrency concurrency,
-            TransactionIsolation isolation)
+        Transaction Transactions::TxStart(TransactionConcurrency::Type concurrency,
+            TransactionIsolation::Type isolation)
         {
             IgniteError err;
 
@@ -82,14 +82,14 @@ namespace ignite
             return tx;
         }
 
-        Transaction Transactions::TxStart(TransactionConcurrency concurrency,
-            TransactionIsolation isolation, IgniteError& err)
+        Transaction Transactions::TxStart(TransactionConcurrency::Type concurrency,
+            TransactionIsolation::Type isolation, IgniteError& err)
         {
             return TxStart(concurrency, isolation, 0, 0, err);
         }
 
-        Transaction Transactions::TxStart(TransactionConcurrency concurrency,
-            TransactionIsolation isolation, int64_t timeout, int32_t txSize)
+        Transaction Transactions::TxStart(TransactionConcurrency::Type concurrency,
+            TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize)
         {
             IgniteError err;
 
@@ -101,8 +101,8 @@ namespace ignite
             return tx;
         }
 
-        Transaction Transactions::TxStart(TransactionConcurrency concurrency,
-            TransactionIsolation isolation, int64_t timeout, int32_t txSize,
+        Transaction Transactions::TxStart(TransactionConcurrency::Type concurrency,
+            TransactionIsolation::Type isolation, int64_t timeout, int32_t txSize,
             IgniteError& err)
         {
             err = IgniteError();

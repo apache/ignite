@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Collections
     /// Multiple-values-per-key dictionary.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public class MultiValueDictionary<TKey, TValue>
+    internal class MultiValueDictionary<TKey, TValue>
     {
         /** Inner dictionary */
         private readonly Dictionary<TKey, object> _dict = new Dictionary<TKey, object>();

@@ -58,7 +58,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             OffsetTwoBytes  = 0x10,
 
             /** Flag: compact footer, no field IDs. */
-            CompactFooter   = 0x20
+            CompactFooter   = 0x20,
+
+            /** Flag: raw data contains .NET type information. */
+            CustomDotNetType   = 0x40
         }
 
         /** Actual header layout */
@@ -161,6 +164,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool IsCompactFooter
         {
             get { return (Flags & Flag.CompactFooter) == Flag.CompactFooter; }
+        }
+
+        /// <summary>
+        /// Gets the custom .NET type flag.
+        /// </summary>
+        public bool IsCustomDotNetType
+        {
+            get { return (Flags & Flag.CustomDotNetType) == Flag.CustomDotNetType; }
         }
 
         /// <summary>
@@ -335,16 +346,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Equality operator.
+        /// </summary>
         public static bool operator ==(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return left.Equals(right);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Inequality operator.
+        /// </summary>
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("BinaryObjectHeader [Header={0}, Version={1}, Flags={2}, TypeId={3}, " +
+                                 "HashCode={4}, Length={5}, SchemaId={6}, SchemaOffset={7}]", 
+                                 Header, Version, Flags, TypeId, HashCode, Length, SchemaId, SchemaOffset);
         }
     }
 }

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains classes to support integration with Apache Mesos.
  */
+
 package org.apache.ignite.mesos;

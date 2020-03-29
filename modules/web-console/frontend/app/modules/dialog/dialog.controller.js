@@ -18,23 +18,21 @@
 export default ['$rootScope', '$scope', 'IgniteDialog', function($root, $scope, IgniteDialog) {
     const ctrl = this;
 
-    const dialog = new IgniteDialog({
-        scope: $scope
-    });
+    this.$onInit = () => {
+        const dialog = new IgniteDialog({
+            scope: $scope
+        });
 
-    ctrl.show = () => {
-        dialog.$promise.then(dialog.show);
+        ctrl.show = () => {
+            dialog.$promise.then(dialog.show);
+        };
+
+        $scope.$watch(() => ctrl.title, () => {
+            $scope.title = ctrl.title;
+        });
+
+        $scope.$watch(() => ctrl.content, () => {
+            $scope.content = ctrl.content;
+        });
     };
-
-    $scope.$watch(() => ctrl.title, () => {
-        $scope.title = ctrl.title;
-    });
-
-    $scope.$watch(() => ctrl.content, () => {
-        $scope.content = ctrl.content;
-    });
-
-    $root.$on('$stateChangeStart', () => {
-        dialog.hide();
-    });
 }];

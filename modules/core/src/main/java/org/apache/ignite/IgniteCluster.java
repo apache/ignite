@@ -22,11 +22,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
@@ -107,56 +108,6 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
 
     /**
-     * This method provides ability to detect which cache keys are mapped to which nodes
-     * on cache instance with given name. Use it to determine which nodes are storing which
-     * keys prior to sending jobs that access these keys.
-     * <p>
-     * This method works as following:
-     * <ul>
-     * <li>For local caches it returns only local node mapped to all keys.</li>
-     * <li>
-     *      For fully replicated caches, {@link AffinityFunction} is
-     *      used to determine which keys are mapped to which groups of nodes.
-     * </li>
-     * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
-     * </ul>
-     *
-     * @param cacheName Cache name, if {@code null}, then default cache instance is used.
-     * @param keys Cache keys to map to nodes.
-     * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
-     * @throws IgniteException If failed to map cache keys.
-     * @deprecated Use {@link Affinity#mapKeysToNodes(Collection)} instead.
-     */
-    @Deprecated
-    public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteException;
-
-    /**
-     * This method provides ability to detect which cache keys are mapped to which nodes
-     * on cache instance with given name. Use it to determine which nodes are storing which
-     * keys prior to sending jobs that access these keys.
-     * <p>
-     * This method works as following:
-     * <ul>
-     * <li>For local caches it returns only local node ID.</li>
-     * <li>
-     *      For fully replicated caches first node ID returned by {@link AffinityFunction}
-     *      is returned.
-     * </li>
-     * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
-     * </ul>
-     *
-     * @param cacheName Cache name, if {@code null}, then default cache instance is used.
-     * @param key Cache key to map to a node.
-     * @return Primary node for the key or {@code null} if cache with given name
-     *      is not present in the grid.
-     * @throws IgniteException If failed to map key.
-     * @deprecated Use {@link Affinity#mapKeyToNode(Object)} instead.
-     */
-    @Deprecated
-    public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
-
-    /**
      * Starts one or more nodes on remote host(s).
      * <p>
      * This method takes INI file which defines all startup parameters. It can contain one or
@@ -185,6 +136,33 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public Collection<ClusterStartNodeResult> startNodes(File file, boolean restart, int timeout,
+        int maxConn) throws IgniteException;
+
+    /**
+     * Starts one or more nodes on remote host(s) asynchronously.
+     * <p>
+     * This method takes INI file which defines all startup parameters. It can contain one or
+     * more sections, each for a host or for range of hosts (note that they must have different
+     * names) and a special '{@code defaults}' section with default values. They are applied to
+     * undefined parameters in host's sections.
+     * <p>
+     * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
+     * contains hostname, success flag and error message if attempt was not successful. Note that
+     * successful attempt doesn't mean that node was actually started and joined topology. For large
+     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * node logs for details.
+     *
+     * @param file Configuration file.
+     * @param restart Whether to stop existing nodes. If {@code true}, all existing
+     *      nodes on the host will be stopped before starting new ones. If
+     *      {@code false}, nodes will be started only if there are less
+     *      nodes on the host than expected.
+     * @param timeout Connection timeout.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return a Future representing pending completion of the starting nodes.
+     * @throws IgniteException In case of error.
+     */
+    public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart, int timeout,
         int maxConn) throws IgniteException;
 
     /**
@@ -290,6 +268,104 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
     /**
+     * Starts one or more nodes on remote host(s) asynchronously.
+     * <p>
+     * Each map in {@code hosts} collection
+     * defines startup parameters for one host or for a range of hosts. The following
+     * parameters are supported:
+     *     <table class="doctable">
+     *         <tr>
+     *             <th>Name</th>
+     *             <th>Type</th>
+     *             <th>Description</th>
+     *         </tr>
+     *         <tr>
+     *             <td><b>host</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Hostname (required). Can define several hosts if their IPs are sequential.
+     *                 E.g., {@code 10.0.0.1~5} defines range of five IP addresses. Other
+     *                 parameters are applied to all hosts equally.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>port</b></td>
+     *             <td>Integer</td>
+     *             <td>Port number (default is {@code 22}).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>uname</b></td>
+     *             <td>String</td>
+     *             <td>Username (if not defined, current local username will be used).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>passwd</b></td>
+     *             <td>String</td>
+     *             <td>Password (if not defined, private key file must be defined).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>key</b></td>
+     *             <td>File</td>
+     *             <td>Private key file (if not defined, password must be defined).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>nodes</b></td>
+     *             <td>Integer</td>
+     *             <td>
+     *                 Expected number of nodes on the host. If some nodes are started
+     *                 already, then only remaining nodes will be started. If current count of
+     *                 nodes is equal to this number, and {@code restart} flag is {@code false},
+     *                 then nothing will happen.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>igniteHome</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Path to Ignite installation folder. If not defined, IGNITE_HOME
+     *                 environment variable must be set on remote hosts.
+     *             </td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>cfg</b></td>
+     *             <td>String</td>
+     *             <td>Path to configuration file (relative to {@code igniteHome}).</td>
+     *         </tr>
+     *         <tr>
+     *             <td><b>script</b></td>
+     *             <td>String</td>
+     *             <td>
+     *                 Custom startup script file name and path (relative to {@code igniteHome}).
+     *                 You can also specify a space-separated list of parameters in the same
+     *                 string (for example: {@code "bin/my-custom-script.sh -v"}).
+     *             </td>
+     *         </tr>
+     *     </table>
+     * <p>
+     * {@code dflts} map defines default values. They are applied to undefined parameters in
+     * {@code hosts} collection.
+     * <p>
+     * Completed future contains collection of tuples. Each tuple corresponds to one node start attempt and
+     * contains hostname, success flag and error message if attempt was not successful. Note that
+     * successful attempt doesn't mean that node was actually started and joined topology. For large
+     * topologies (> 100s nodes) it can take over 10 minutes for all nodes to start. See individual
+     * node logs for details.
+     *
+     * @param hosts Startup parameters.
+     * @param dflts Default values.
+     * @param restart Whether to stop existing nodes. If {@code true}, all existing
+     *      nodes on the host will be stopped before starting new ones. If
+     *      {@code false}, nodes will be started only if there are less
+     *      nodes on the host than expected.
+     * @param timeout Connection timeout in milliseconds.
+     * @param maxConn Number of parallel SSH connections to one host.
+     * @return a Future representing pending completion of the starting nodes.
+     * @throws IgniteException In case of error.
+     */
+    public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(Collection<Map<String, Object>> hosts,
+        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
+
+    /**
      * Stops nodes satisfying optional set of predicates.
      * <p>
      * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
@@ -339,6 +415,28 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /**
+     * Enables/disables statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(Collection<String> caches, boolean enabled);
+
+    /**
+     * Clear statistics for caches cluster wide.
+     *
+     * @param caches Collection of cache names.
+     */
+    public void clearStatistics(Collection<String> caches);
+
+    /**
+     * Sets transaction timeout on partition map exchange.
+     *
+     * @param timeout Transaction timeout on partition map exchange in milliseconds.
+     */
+    public void setTxTimeoutOnPartitionMapExchange(long timeout);
+
+    /**
      * If local client node disconnected from cluster returns future
      * that will be completed when client reconnected.
      *
@@ -346,6 +444,149 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     @Nullable public IgniteFuture<?> clientReconnectFuture();
 
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link #state()} instead.
+     */
+    @Deprecated
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @deprecated Use {@link #state(ClusterState)} instead.
+     */
+    @Deprecated
+    public void active(boolean active);
+
+    /**
+     * Gets current cluster state.
+     *
+     * @return Current cluster state.
+     */
+    public ClusterState state();
+
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param newState New cluster state.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void state(ClusterState newState) throws IgniteException;
+
+    /**
+     * Gets current baseline topology. If baseline topology was not set, will return {@code null}.
+     *
+     * @return Collection of nodes included to the current baseline topology.
+     */
+    @Nullable public Collection<BaselineNode> currentBaselineTopology();
+
+    /**
+     * Sets baseline topology. The cluster must be activated for this method to be called.
+     *
+     * @param baselineTop A collection of nodes to be included to the baseline topology.
+     */
+    public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop);
+
+    /**
+     * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds
+     * only if the cluster topology has not changed). All client and daemon nodes will be filtered out of the
+     * resulting baseline.
+     *
+     * @param topVer Topology version to set.
+     */
+    public void setBaselineTopology(long topVer);
+
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteCluster withAsync();
+
+    /**
+     * Disables write-ahead logging for specified cache. When WAL is disabled, changes are not logged to disk.
+     * This significantly improves cache update speed. The drawback is absence of local crash-recovery guarantees.
+     * If node is crashed, local content of WAL-disabled cache will be cleared on restart to avoid data corruption.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     *
+     * @param cacheName Cache name.
+     * @return Whether WAL disabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean disableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
+     * {@link #disableWal(String)}.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all data is persisted to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     *
+     * @param cacheName Cache name.
+     * @return Whether WAL enabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean enableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Checks if write-ahead logging is enabled for specified cache.
+     *
+     * @param cacheName Cache name.
+     * @return {@code True} if WAL is enabled for cache.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     */
+    public boolean isWalEnabled(String cacheName);
+
+    /**
+     * @return Value of manual baseline control or auto adjusting baseline. {@code True} If cluster in auto-adjust.
+     * {@code False} If cluster in manuale.
+     */
+    public boolean isBaselineAutoAdjustEnabled();
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @throws IgniteException If operation failed.
+     */
+    public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException;
+
+    /**
+     * @return Value of time which we would wait before the actual topology change since last server topology change
+     * (node join/left/fail).
+     * @throws IgniteException If operation failed.
+     */
+    public long baselineAutoAdjustTimeout();
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @throws IgniteException If failed.
+     */
+    public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException;
+
+    /**
+     * @return Status of baseline auto-adjust.
+     */
+    public BaselineAutoAdjustStatus baselineAutoAdjustStatus();
 }

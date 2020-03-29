@@ -17,11 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -30,7 +33,9 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,14 +45,19 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /**
      * @param ctx Kernal context.
      */
-    protected TestReconnectProcessor(GridKernalContext ctx) {
+    public TestReconnectProcessor(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, new SecurityCredentials());
     }
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node,
         SecurityCredentials cred) throws IgniteCheckedException {
-        return null;
+        return new TestSecurityContext(new TestSecuritySubject(ctx.localNodeId()));
     }
 
     /** {@inheritDoc} */
@@ -83,11 +93,95 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         ctx.addNodeAttribute("test", "2");
+    }
+
+    /**
+     *
+     */
+    private static class TestSecuritySubject implements SecuritySubject {
+
+        /** Id. */
+        private final UUID id;
+
+        /**
+         * @param id Id.
+         */
+        public TestSecuritySubject(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubjectType type() {
+            return SecuritySubjectType.REMOTE_NODE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object login() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetSocketAddress address() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet permissions() {
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestSecurityContext implements SecurityContext, Serializable {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Subj. */
+        final SecuritySubject subj;
+
+        /**
+         * @param subj Subj.
+         */
+        public TestSecurityContext(SecuritySubject subj) {
+            this.subj = subj;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubject subject() {
+            return subj;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            return true;
+        }
     }
 }

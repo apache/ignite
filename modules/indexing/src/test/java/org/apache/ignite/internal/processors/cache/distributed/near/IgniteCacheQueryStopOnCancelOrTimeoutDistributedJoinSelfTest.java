@@ -32,55 +32,65 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Test for cancel of query containing distributed joins.
  */
 public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extends IgniteCacheQueryAbstractDistributedJoinSelfTest {
     /** */
+    @Test
     public void testCancel1() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 1, TimeUnit.MILLISECONDS, false, true);
     }
 
     /** */
+    @Test
     public void testCancel2() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 50, TimeUnit.MILLISECONDS, false, true);
     }
 
     /** */
+    @Test
     public void testCancel3() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 100, TimeUnit.MILLISECONDS, false, false);
     }
 
     /** */
+    @Test
     public void testCancel4() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, false);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 500, TimeUnit.MILLISECONDS, false, false);
     }
 
     /** */
+    @Test
     public void testTimeout1() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 1, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 1, TimeUnit.MILLISECONDS, true, true);
     }
 
     /** */
+    @Test
     public void testTimeout2() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 50, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 50, TimeUnit.MILLISECONDS, true, true);
     }
 
     /** */
+    @Test
     public void testTimeout3() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 100, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 100, TimeUnit.MILLISECONDS, true, false);
     }
 
     /** */
+    @Test
     public void testTimeout4() throws Exception {
-        testQueryCancel(grid(0), "pe", QRY_0, 500, TimeUnit.MILLISECONDS, true);
+        testQueryCancel(grid(0), "pe", QRY_LONG, 500, TimeUnit.MILLISECONDS, true, false);
     }
 
     /** */
     private void testQueryCancel(Ignite ignite, String cacheName, String sql, int timeoutUnits, TimeUnit timeUnit,
-                           boolean timeout) throws Exception {
+                           boolean timeout, boolean checkCanceled) throws Exception {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setDistributedJoins(true);
 
         IgniteCache<Object, Object> cache = ignite.cache(cacheName);
@@ -101,12 +111,15 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            cursor.iterator();
+            cursor.getAll();
+
+            if (checkCanceled)
+                fail("Query not canceled");
         }
         catch (CacheException ex) {
             log().error("Got expected exception", ex);
 
-            assertTrue("Must throw correct exception", ex.getCause() instanceof QueryCancelledException);
+            assertNotNull("Must throw correct exception", X.cause(ex, QueryCancelledException.class));
         }
 
         // Give some time to clean up.
@@ -118,7 +131,6 @@ public class IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest extend
     /**
      * Validates clean state on all participating nodes after query cancellation.
      */
-    @SuppressWarnings("unchecked")
     private void checkCleanState() throws IgniteCheckedException {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx grid = grid(i);

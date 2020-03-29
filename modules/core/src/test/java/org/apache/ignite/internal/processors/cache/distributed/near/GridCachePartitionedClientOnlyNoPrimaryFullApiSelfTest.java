@@ -26,6 +26,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
 
 /**
  * Tests for local cache.
@@ -37,8 +38,8 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         cfg.setClientMode(true);
@@ -49,15 +50,17 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     /**
      *
      */
+    @Test
     public void testMapKeysToNodes() {
-        grid(0).affinity(null).mapKeysToNodes(Arrays.asList("1", "2"));
+        grid(0).affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(Arrays.asList("1", "2"));
     }
 
     /**
      *
      */
+    @Test
     public void testMapKeyToNode() {
-        assert grid(0).affinity(null).mapKeyToNode("1") == null;
+        assert grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToNode("1") == null;
     }
 
     /**

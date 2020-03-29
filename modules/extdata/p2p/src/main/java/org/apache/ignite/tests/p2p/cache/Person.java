@@ -116,4 +116,45 @@ public class Person implements Serializable {
     public void setSalary(double salary) {
         this.salary = salary;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Person person = (Person)o;
+
+        if (id != person.id)
+            return false;
+        if (Double.compare(person.salary, salary) != 0)
+            return false;
+        if (name != null ? !name.equals(person.name) : person.name != null)
+            return false;
+        return lastName != null ? lastName.equals(person.lastName) : person.lastName == null;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res;
+        long temp;
+        res = name != null ? name.hashCode() : 0;
+        res = 31 * res + id;
+        res = 31 * res + (lastName != null ? lastName.hashCode() : 0);
+        temp = Double.doubleToLongBits(salary);
+        res = 31 * res + (int)(temp ^ (temp >>> 32));
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "Person{" +
+            "name='" + name + '\'' +
+            ", id=" + id +
+            ", lastName='" + lastName + '\'' +
+            ", salary=" + salary +
+            '}';
+    }
 }

@@ -32,12 +32,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,21 +47,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int SRVS = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        if (getTestGridName(SRVS).equals(gridName))
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -74,19 +64,13 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        startGrid(SRVS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(SRVS);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxTopologyChange0() throws Exception {
         nodeJoin(cacheConfiguration(0));
     }
@@ -94,6 +78,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxTopologyChange1() throws Exception {
         nodeJoin(cacheConfiguration(1));
     }
@@ -101,6 +86,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementTxTopologyChange2() throws Exception {
         nodeJoin(cacheConfiguration(2));
     }
@@ -132,7 +118,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
 
                     Ignite ignite = startGrid(node);
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < 1000; i++)
                         incrementTx(ignite, cache, incMap);
@@ -172,7 +158,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
                     checkCache(NODES + START_NODES - (i + 1), incMap);
 
                     for (int n = 0; n < SRVS; n++)
-                        ignite(n).cache(null).rebalance().get();
+                        ignite(n).cache(DEFAULT_CACHE_NAME).rebalance().get();
                 }
             }
             else {
@@ -201,7 +187,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
         assertEquals(expNodes, nodes.size());
 
         for (Ignite node : nodes) {
-            IgniteCache<Integer, Integer> cache = node.cache(null);
+            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
             for (Map.Entry<Integer, AtomicInteger> e : incMap.entrySet())
                 assertEquals((Integer)e.getValue().get(), cache.get(e.getKey()));
@@ -227,7 +213,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
 
                 Thread.currentThread().setName("update-" + ignite.name());
 
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 while (!fut.isDone())
                     incrementTx(ignite, cache, incMap);
@@ -288,7 +274,7 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(int backups) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "sql_test_suite_fixture.h"
@@ -41,7 +37,7 @@ BOOST_AUTO_TEST_CASE(TestSystemFunctionUser)
 
 BOOST_AUTO_TEST_CASE(TestSystemFunctionIfnull)
 {
-    CheckSingleResult<int32_t>("SELECT {fn IFNULL(NULL, 42)}", 42);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn IFNULL(NULL, 42)}", 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

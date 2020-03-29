@@ -112,9 +112,8 @@ public class GridDsiClient implements Callable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
-        IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode())).withAsync();
+        IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode()));
 
         while (!finish.get()) {
             try {
@@ -122,9 +121,8 @@ public class GridDsiClient implements Callable {
 
                 long submitTime1 = t0;
 
-                comp.execute(GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
-
-                ComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.future();
+                ComputeTaskFuture<T3<Long, Integer, Integer>> f1 = comp.executeAsync(
+                    GridDsiRequestTask.class, new GridDsiMessage(terminalId, nodeId));
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -132,9 +130,8 @@ public class GridDsiClient implements Callable {
 
                 submitTime1 = System.currentTimeMillis();
 
-                comp.execute(GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
-
-                ComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.future();
+                ComputeTaskFuture<T3<Long, Integer, Integer>> f2 = comp.executeAsync(
+                    GridDsiResponseTask.class, new GridDsiMessage(terminalId, nodeId));
 
                 submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -165,7 +162,7 @@ public class GridDsiClient implements Callable {
      */
     private static void displayReqCount() {
         new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 int interval = 30;
 
@@ -324,7 +321,7 @@ public class GridDsiClient implements Callable {
                 }
 
                 collector = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @SuppressWarnings({"BusyWait"})
                     @Override public void run() {
                         long txPerSecond = -1;
                         long avgLatency = -1;

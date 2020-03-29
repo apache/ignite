@@ -44,10 +44,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!-- Set to false to allow non-serializable objects in examples, default is true. -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <!-- Enable cache events for examples. -->
@@ -108,6 +105,16 @@
             </list>
         </property>
 
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="maxSize" value="#{200L*1024*1024}"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -129,9 +136,6 @@
 
     <!-- Template for all example cache configurations. -->
     <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
-        <!-- Initial cache size. -->
-        <property name="startSize" value="3000000"/>
-
         <!-- Set synchronous rebalancing (default is asynchronous). -->
         <property name="rebalanceMode" value="SYNC"/>
 

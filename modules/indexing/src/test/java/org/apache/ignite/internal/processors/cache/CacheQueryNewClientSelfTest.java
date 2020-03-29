@@ -20,31 +20,15 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for the case when client is started after the cache is already created.
  */
 public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -53,6 +37,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFromNewClient() throws Exception {
         Ignite srv = startGrid("server");
 
@@ -69,9 +54,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
                 cache2.put(i, i);
             }
 
-            Ignition.setClientMode(true);
-
-            Ignite client = (iter == 0) ? startGrid("client") : grid("client");
+            Ignite client = (iter == 0) ? startClientGrid("client") : grid("client");
 
             IgniteCache<Integer, Integer> cache = client.cache("cache1");
 
@@ -88,6 +71,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFromNewClientCustomSchemaName() throws Exception {
         Ignite srv = startGrid("server");
 
@@ -101,9 +85,7 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
             cache2.put(i, i);
         }
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         IgniteCache<Integer, Integer> cache = client.cache("cache1");
 

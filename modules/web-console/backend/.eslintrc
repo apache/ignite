@@ -1,25 +1,10 @@
 env:
     es6: true
-    node: true
+    browser: false
     mocha: true
-
-ecmaFeatures:
-    arrowFunctions: true
-    blockBindings: true
-    classes: true
-    defaultParams: true
-    destructuring: true
-    module: true
-    objectLiteralComputedProperties: true
-    objectLiteralShorthandMethods: true
-    objectLiteralShorthandProperties: true
-    spread: true
-    templateStrings: true
-    experimentalObjectRestSpread: true
-
-globals:
-    _: true
-    io: true
+parserOptions:
+    sourceType: module
+    ecmaVersion: 2018
 
 rules:
     arrow-parens: [1, "always"]
@@ -47,7 +32,7 @@ rules:
     guard-for-in: 1
     handle-callback-err: 0
     id-length: [2, {"min": 1, "max": 60}]
-    indent: [2, 4, {"SwitchCase": 1}]
+    indent: [2, 4, {"SwitchCase": 1, "MemberExpression": "off", "CallExpression": {"arguments": "off"}}]
     key-spacing: [2, { "beforeColon": false, "afterColon": true }]
     lines-around-comment: 0
     linebreak-style: [0, "unix"]
@@ -104,7 +89,7 @@ rules:
     no-loop-func: 2
     no-mixed-requires: [0, false]
     no-mixed-spaces-and-tabs: [2, true]
-    no-multi-spaces: 2
+    no-multi-spaces: ["error", {"exceptions": { "VariableDeclarator": true }}]
     no-multi-str: 2
     no-multiple-empty-lines: [0, {"max": 2}]
     no-native-reassign: 2
@@ -130,24 +115,25 @@ rules:
     no-script-url: 0
     no-self-compare: 2
     no-sequences: 2
-    no-shadow: 2
+    no-shadow: 0
     no-shadow-restricted-names: 2
     no-spaced-func: 2
     no-sparse-arrays: 1
     no-sync: 0
     no-ternary: 0
-    no-trailing-spaces: 2
+    no-trailing-spaces: ["error", {"ignoreComments": true}]
     no-throw-literal: 0
     no-this-before-super: 2
     no-unexpected-multiline: 2
-    no-undef: 2
+    // The rule produces undesired results with TS
+    // no-undef: 2
     no-undef-init: 2
     no-undefined: 2
     no-unneeded-ternary: 2
     no-unreachable: 2
     no-unused-expressions: [2, { allowShortCircuit: true }]
-    no-unused-vars: [2, {"vars": "all", "args": "after-used"}]
-    no-use-before-define: 2
+    no-unused-vars: [0, {"vars": "all", "args": "after-used"}]
+    typescript/no-unused-vars: [0]
     no-useless-call: 2
     no-void: 0
     no-var: 2
@@ -162,7 +148,7 @@ rules:
     prefer-const: 1
     prefer-spread: 2
     quote-props: [2, "as-needed"]
-    quotes: [2, "single"]
+    quotes: [2, "single", {"allowTemplateLiterals": true}]
     radix: 1
     semi: [2, "always"]
     semi-spacing: [2, {"before": false, "after": true}]
@@ -173,7 +159,7 @@ rules:
     space-in-parens: 0
     space-infix-ops: 2
     space-unary-ops: [2, { "words": true, "nonwords": false }]
-    spaced-comment: [1, "always"]
+    spaced-comment: [1, "always", {"markers": ["/"]}]
     use-isnan: 2
     valid-jsdoc: 0
     valid-typeof: 2
@@ -181,6 +167,3 @@ rules:
     wrap-iife: 0
     wrap-regex: 0
     yoda: [2, "never"]
-
-parserOptions:
-    sourceType: module

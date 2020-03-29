@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -25,15 +27,27 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public interface IgniteTxRemoteEx extends IgniteInternalTx {
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void commitRemoteTx() throws IgniteCheckedException;
+
+    /**
+     *
+     */
+    public void rollbackRemoteTx();
+
+    /**
      * @param baseVer Base version.
      * @param committedVers Committed version.
      * @param rolledbackVers Rolled back version.
      * @param pendingVers Pending versions.
+     *
+     * @throws GridDhtInvalidPartitionException If partition was invalidated.
      */
     public void doneRemote(GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers);
+        Collection<GridCacheVersion> pendingVers) throws GridDhtInvalidPartitionException;
 
     /**
      * @param cntrs Partition update indexes.

@@ -41,11 +41,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -58,6 +57,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests that new transactions do not start until partition exchange is completed.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-807")
 public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstractTest {
     /** Partition does not belong to node. */
     private static final int PARTITION_READER = 0;
@@ -68,24 +68,14 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /** Node is backup for partition. */
     private static final int PARTITION_BACKUP = 2;
 
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-807");
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        // Discovery.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -103,6 +93,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTxNodeJoined() throws Exception {
         checkTxNodeJoined(PARTITION_READER);
     }
@@ -110,6 +101,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryTxNodeJoined() throws Exception {
         checkTxNodeJoined(PARTITION_PRIMARY);
     }
@@ -117,6 +109,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupTxNodeJoined() throws Exception {
         checkTxNodeJoined(PARTITION_BACKUP);
     }
@@ -124,6 +117,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearTxNodeLeft() throws Exception {
         checkTxNodeLeft(PARTITION_READER);
     }
@@ -131,6 +125,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryTxNodeLeft() throws Exception {
         // This test does not make sense because if node is primary for some partition,
         // it will reside on node until node leaves grid.
@@ -139,6 +134,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupTxNodeLeft() throws Exception {
         checkTxNodeLeft(PARTITION_BACKUP);
     }
@@ -146,6 +142,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExplicitLocks() throws Exception {
         try {
             startGridsMultiThreaded(2);
@@ -165,7 +162,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
                             try {
-                                Lock lock = node.cache(null).lock(key);
+                                Lock lock = node.cache(DEFAULT_CACHE_NAME).lock(key);
 
                                 lock.lock();
 
@@ -177,7 +174,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
-                                    Lock lock10 = node.cache(null).lock(key * 10);
+                                    Lock lock10 = node.cache(DEFAULT_CACHE_NAME).lock(key * 10);
 
                                     lock10.lock();
 
@@ -273,7 +270,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -342,7 +339,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.cache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -427,7 +424,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             try {
                                 try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -468,7 +465,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             // Now stop the node.
-            stopGrid(getTestGridName(3), true);
+            stopGrid(getTestIgniteInstanceName(3), true);
 
             leaveLatch.await();
 
@@ -478,7 +475,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        IgniteCache<Integer, Integer> cache = g.cache(null);
+                        IgniteCache<Integer, Integer> cache = g.cache(DEFAULT_CACHE_NAME);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -513,7 +510,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                Affinity affinity = grid(i).affinity(null);
+                Affinity affinity = grid(i).affinity(DEFAULT_CACHE_NAME);
 
                 ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
 
@@ -554,7 +551,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @return Map from partition to key.
      */
     private Map<Integer, Integer> keysFor(IgniteKernal node, Iterable<Integer> parts) {
-        GridCacheContext<Object, Object> ctx = node.internalCache().context();
+        GridCacheContext<Object, Object> ctx = node.internalCache(DEFAULT_CACHE_NAME).context();
 
         Map<Integer, Integer> res = new HashMap<>();
 
@@ -579,7 +576,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private List<Integer> partitions(Ignite node, int partType) {
         List<Integer> res = new LinkedList<>();
 
-        Affinity<Object> aff = node.affinity(null);
+        Affinity<Object> aff = node.affinity(DEFAULT_CACHE_NAME);
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
             ClusterNode locNode = node.cluster().localNode();

@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -37,12 +37,10 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -61,29 +59,25 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
-import org.apache.ignite.binary.BinaryFieldIdentityResolver;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -94,9 +88,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    public static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int ENTRY_CNT = 100;
 
     /** */
@@ -104,14 +95,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = createCacheConfig();
 
@@ -130,33 +115,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         binTypes.add(new BinaryTypeConfiguration() {{
             setTypeName("ArrayHashedKey");
-
-            setIdentityResolver(new BinaryArrayIdentityResolver());
-        }});
-
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("FieldsHashedKey");
-
-            BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
-            id.setFieldNames("fld1", "fld3");
-
-            setIdentityResolver(id);
-        }});
-
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName("CustomHashedKey");
-
-            setIdentityResolver(new IdentityResolver());
-        }});
-
-        binTypes.add(new BinaryTypeConfiguration() {{
-            setTypeName(ComplexBinaryFieldsListHashedKey.class.getName());
-
-            BinaryFieldIdentityResolver id = new BinaryFieldIdentityResolver();
-
-            id.setFieldNames("secondField", "thirdField");
-
-            setIdentityResolver(id);
         }});
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
@@ -165,10 +123,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cfg.setBinaryConfiguration(binCfg);
 
         CacheKeyConfiguration arrayHashCfg = new CacheKeyConfiguration("ArrayHashedKey", "fld1");
-        CacheKeyConfiguration fieldsHashCfg = new CacheKeyConfiguration("FieldsHashedKey", "fld1");
-        CacheKeyConfiguration customHashCfg = new CacheKeyConfiguration("CustomHashedKey", "fld1");
 
-        cfg.setCacheKeyConfiguration(arrayHashCfg, fieldsHashCfg, customHashCfg);
+        cfg.setCacheKeyConfiguration(arrayHashCfg);
 
         GridCacheBinaryObjectsAbstractSelfTest.cfg = cfg;
 
@@ -180,7 +136,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration createCacheConfig() {
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
@@ -190,20 +146,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setBackups(1);
-
-        if (offheapTiered()) {
-            cacheCfg.setMemoryMode(OFFHEAP_TIERED);
-            cacheCfg.setOffHeapMaxMemory(0);
-        }
+        cacheCfg.setOnheapCacheEnabled(false);
 
         return cacheCfg;
-    }
-
-    /**
-     * @return {@code True} if should use OFFHEAP_TIERED mode.
-     */
-    protected boolean offheapTiered() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -212,16 +157,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
+            GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
-            for (GridCacheEntryEx e : c.map().entries()) {
+            for (GridCacheEntryEx e : c.map().entries(c.context().cacheId())) {
                 Object key = e.key().value(c.context().cacheObjectContext(), false);
                 Object val = CU.value(e.rawGet(), c.context(), false);
 
@@ -237,11 +177,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         for (int i = 0; i < ENTRY_CNT; i++)
             c.remove(i);
-
-        if (offheapTiered()) {
-            for (int k = 0; k < 100; k++)
-                c.remove(k);
-        }
 
         assertEquals(0, c.size());
     }
@@ -267,9 +202,17 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     protected abstract int gridCount();
 
     /**
+     * @return {@code True} if on-heap cache is enabled.
+     */
+    protected boolean onheapCacheEnabled() {
+        return false;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testCircularReference() throws Exception {
         IgniteCache c = keepBinaryCache();
 
@@ -295,7 +238,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
 
         assertTrue("Unexpected toString: " + str,
-            S.INCLUDE_SENSITIVE ?
+            S.includeSensitive() ?
             str.startsWith(typeName) && str.contains("obj=" + typeName + " [") :
             str.startsWith("BinaryObject") && str.contains("idHash=") && str.contains("hash=")
         );
@@ -314,6 +257,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -338,6 +282,87 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testReplace() throws Exception {
+        IgniteCache<Integer, TestObject> c = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            c.put(i, new TestObject(i));
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject obj = c.get(i);
+
+            assertEquals(i, obj.val);
+        }
+
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(TestObject.class.getName());
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            BinaryObject po = kpc.get(i);
+
+            assertEquals(i, (int)po.field("val"));
+
+            assertTrue(kpc.replace(i, po, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReplaceWhenEmptyValue() throws Exception {
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder("TestObjCls");
+
+        bldr.setField("val", -42);
+
+        BinaryObject testObj = bldr.build();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            assertNull(kpc.get(i));
+
+            assertFalse(kpc.replace(i, testObj, testObj));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRemove() throws Exception {
+        IgniteCache<Integer, TestObject> c = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++)
+            c.put(i, new TestObject(i));
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject obj = c.get(i);
+
+            assertEquals(i, obj.val);
+        }
+
+        IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            BinaryObject po = kpc.get(i);
+
+            assertEquals(i, (int)po.field("val"));
+
+            assertTrue(kpc.remove(i, po));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testIterator() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -377,6 +402,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollection() throws Exception {
         IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
 
@@ -423,6 +449,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMap() throws Exception {
         IgniteCache<Integer, Map<Integer, TestObject>> c = jcache(0);
 
@@ -468,18 +495,43 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testSingletonList() throws Exception {
+        IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
+
+        c.put(0, Collections.singletonList(new TestObject(123)));
+
+        Collection<TestObject> cFromCache = c.get(0);
+
+        assertEquals(1, cFromCache.size());
+        assertEquals(123, cFromCache.iterator().next().val);
+
+        IgniteCache<Integer, Collection<BinaryObject>> kpc = keepBinaryCache();
+
+        Collection<?> cBinary = kpc.get(0);
+
+        assertEquals(1, cBinary.size());
+
+        Object bObj = cBinary.iterator().next();
+
+        assertTrue(bObj instanceof BinaryObject);
+        assertEquals(Collections.singletonList(null).getClass(), cBinary.getClass());
+
+        assertEquals(Integer.valueOf(123), ((BinaryObject) bObj).field("val"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testGetAsync() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
-
-        IgniteCache<Integer, TestObject> cacheAsync = c.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++)
             c.put(i, new TestObject(i));
 
         for (int i = 0; i < ENTRY_CNT; i++) {
-            cacheAsync.get(i);
-
-            TestObject obj = cacheAsync.<TestObject>future().get();
+            TestObject obj = c.getAsync(i).get();
 
             assertNotNull(obj);
 
@@ -488,12 +540,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
 
-        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
-
         for (int i = 0; i < ENTRY_CNT; i++) {
-            cacheBinaryAsync.get(i);
-
-            BinaryObject po = cacheBinaryAsync.<BinaryObject>future().get();
+            BinaryObject po = kpc.getAsync(i).get();
 
             assertEquals(i, (int)po.field("val"));
         }
@@ -502,6 +550,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicArrays() throws Exception {
         IgniteCache<Integer, Object> cache = jcache(0);
 
@@ -535,9 +584,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-3244")
+    @Test
     public void testCustomArrays() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-3244");
-
         IgniteCache<Integer, TestObject[]> cache = jcache(0);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
@@ -545,7 +594,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             cache.put(0, arr);
         }
-
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             TestObject[] obj = cache.get(i);
@@ -571,6 +619,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTx1() throws Exception {
         checkGetTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -578,6 +627,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTx2() throws Exception {
         checkGetTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -624,6 +674,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTxAsync1() throws Exception {
         checkGetAsyncTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -631,6 +682,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTxAsync2() throws Exception {
         checkGetAsyncTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -644,18 +696,15 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             return;
 
         IgniteCache<Integer, TestObject> c = jcache(0);
-        IgniteCache<Integer, TestObject> cAsync = c.withAsync();
         IgniteCache<Integer, BinaryObject> kbCache = keepBinaryCache();
-        IgniteCache<Integer, BinaryObject> kbCacheAsync = kbCache.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++)
             c.put(i, new TestObject(i));
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
-                cAsync.get(i);
 
-                TestObject obj = (TestObject)cAsync.future().get();
+                TestObject obj = c.getAsync(i).get();
 
                 assertEquals(i, obj.val);
 
@@ -665,17 +714,13 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
-                kbCacheAsync.get(i);
-
-                BinaryObject val = (BinaryObject)kbCacheAsync.future().get();
+                BinaryObject val = kbCache.getAsync(i).get();
 
                 assertFalse("Key=" + i, val instanceof BinaryObjectOffheapImpl);
 
                 assertEquals(i, (int)val.field("val"));
 
-                kbCacheAsync.put(i, val);
-
-                kbCacheAsync.future().get();
+                kbCache.putAsync(i, val).get();
 
                 tx.commit();
             }
@@ -685,22 +730,19 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAsyncTx() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
 
         IgniteCache<Integer, TestObject> c = jcache(0);
 
-        IgniteCache<Integer, TestObject> cacheAsync = c.withAsync();
-
         for (int i = 0; i < ENTRY_CNT; i++)
             c.put(i, new TestObject(i));
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cacheAsync.get(i);
-
-                TestObject obj = cacheAsync.<TestObject>future().get();
+                TestObject obj = c.getAsync(i).get();
 
                 assertEquals(i, obj.val);
 
@@ -709,13 +751,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }
 
         IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
-        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                cacheBinaryAsync.get(i);
-
-                BinaryObject po = cacheBinaryAsync.<BinaryObject>future().get();
+                BinaryObject po = kpc.getAsync(i).get();
 
                 assertEquals(i, (int)po.field("val"));
 
@@ -727,6 +766,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
 
@@ -767,10 +807,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsync() throws Exception {
         IgniteCache<Integer, TestObject> c = jcache(0);
-
-        IgniteCache<Integer, TestObject> cacheAsync = c.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++)
             c.put(i, new TestObject(i));
@@ -781,9 +820,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             for (int j = 0; j < 10; j++)
                 keys.add(i++);
 
-            cacheAsync.getAll(keys);
-
-            Map<Integer, TestObject> objs = cacheAsync.<Map<Integer, TestObject>>future().get();
+            Map<Integer, TestObject> objs = c.getAllAsync(keys).get();
 
             assertEquals(10, objs.size());
 
@@ -792,7 +829,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         }
 
         IgniteCache<Integer, BinaryObject> kpc = keepBinaryCache();
-        IgniteCache<Integer, BinaryObject> cacheBinaryAsync = kpc.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; ) {
             Set<Integer> keys = new HashSet<>();
@@ -800,9 +836,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             for (int j = 0; j < 10; j++)
                 keys.add(i++);
 
-            cacheBinaryAsync.getAll(keys);
-
-            Map<Integer, BinaryObject> objs = cacheBinaryAsync.<Map<Integer, BinaryObject>>future().get();
+            Map<Integer, BinaryObject> objs = kpc.getAllAsync(keys).get();
 
             assertEquals(10, objs.size());
 
@@ -814,6 +848,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllTx1() throws Exception {
         checkGetAllTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -821,6 +856,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllTx2() throws Exception {
         checkGetAllTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -886,6 +922,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsyncTx1() throws Exception {
         checkGetAllAsyncTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -893,6 +930,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsyncTx2() throws Exception {
         checkGetAllAsyncTx(PESSIMISTIC, READ_COMMITTED);
     }
@@ -906,7 +944,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             return;
 
         IgniteCache<Integer, TestObject> c = jcache(0);
-        IgniteCache<Integer, TestObject> cacheAsync = c.withAsync();
 
         for (int i = 0; i < ENTRY_CNT; i++)
             c.put(i, new TestObject(i));
@@ -918,9 +955,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 keys.add(i++);
 
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
-                cacheAsync.getAll(keys);
-
-                Map<Integer, TestObject> objs = cacheAsync.<Map<Integer, TestObject>>future().get();
+                Map<Integer, TestObject> objs = c.getAllAsync(keys).get();
 
                 assertEquals(10, objs.size());
 
@@ -939,12 +974,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             for (int j = 0; j < 10; j++)
                 keys.add(i++);
 
-            IgniteCache<Integer, BinaryObject> asyncCache = cache.withAsync();
-
             try (Transaction tx = grid(0).transactions().txStart(concurrency, isolation)) {
-                asyncCache.getAll(keys);
-
-                Map<Integer, BinaryObject> objs = asyncCache.<Map<Integer, BinaryObject>>future().get();
+                Map<Integer, BinaryObject> objs = cache.getAllAsync(keys).get();
 
                 assertEquals(10, objs.size());
 
@@ -962,45 +993,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({ "ThrowableResultOfMethodCallIgnored", "unchecked" })
-    public void testPutWithoutHashCode() throws Exception {
-        final IgniteCache c = jcache(0);
-
-        GridCacheAdapter<Object, Object> cache0 = grid(0).context().cache().internalCache(null);
-
-        cache0.forceKeyCheck();
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                c.put(new TestObject(5), 5);
-                return null;
-            }
-        }, IllegalArgumentException.class, "Cache key must override hashCode() and equals() methods: ");
-
-        BinaryObjectBuilder bldr = grid(0).binary().builder(TestObject.class.getName());
-        bldr.setField("val", 5);
-
-        final BinaryObject binKey = bldr.build();
-
-        cache0.forceKeyCheck();
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            /** {@inheritDoc} */
-            @Override public Object call() throws Exception {
-                c.put(binKey, 5);
-                return null;
-            }
-        }, IllegalArgumentException.class, "Cache key created with BinaryBuilder is missing hash code - " +
-            "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
-    }
-
-    /**
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testCrossFormatObjectsIdentity() {
         IgniteCache c = binKeysCache();
 
@@ -1009,7 +1005,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         // Now let's build an identical key for get
         BinaryObjectBuilder bldr = grid(0).binary().builder(ComplexBinaryFieldsListHashedKey.class.getName());
 
-        bldr.setField("firstField", 365);
+        bldr.setField("firstField", 1);
         bldr.setField("secondField", "value");
         bldr.setField("thirdField", 0x1020304050607080L);
 
@@ -1022,6 +1018,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutWithArrayHashing() {
         IgniteCache c = binKeysCache();
 
@@ -1056,6 +1053,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutWithFieldsHashing() {
         IgniteCache c = binKeysCache();
 
@@ -1063,7 +1061,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             BinaryObjectBuilder bldr = grid(0).binary().builder("FieldsHashedKey");
 
             bldr.setField("fld1", 5);
-            bldr.setField("fld2", 1);
+            bldr.setField("fld2", 100);
             bldr.setField("fld3", "abc");
 
             BinaryObject binKey = bldr.build();
@@ -1089,6 +1087,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      *
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testPutWithCustomHashing() {
         IgniteCache c = binKeysCache();
 
@@ -1108,7 +1107,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             BinaryObjectBuilder bldr = grid(0).binary().builder("CustomHashedKey");
 
             bldr.setField("fld1", 5);
-            bldr.setField("fld2", "xxx");
+            bldr.setField("fld2", "abc");
 
             BinaryObject binKey = bldr.build();
 
@@ -1119,11 +1118,12 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testKeepBinaryTxOverwrite() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
 
-        IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(0, new TestObject(1));
 
@@ -1143,6 +1143,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCache() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             jcache(i).localLoadCache(null);
@@ -1159,14 +1160,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheAsync() throws Exception {
-        for (int i = 0; i < gridCount(); i++) {
-            IgniteCache<Object, Object> jcache = jcache(i).withAsync();
-
-            jcache.loadCache(null);
-
-            jcache.future().get();
-        }
+        for (int i = 0; i < gridCount(); i++)
+            jcache(i).loadCacheAsync(null).get();
 
         IgniteCache<Integer, TestObject> cache = jcache(0);
 
@@ -1180,17 +1177,16 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheFilteredAsync() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            IgniteCache<Integer, TestObject> c = this.<Integer, TestObject>jcache(i).withAsync();
+            IgniteCache<Integer, TestObject> c = jcache(i);
 
-            c.loadCache(new P2<Integer, TestObject>() {
+            c.loadCacheAsync(new P2<Integer, TestObject>() {
                 @Override public boolean apply(Integer key, TestObject val) {
                     return val.val < 3;
                 }
-            });
-
-            c.future().get();
+            }).get();
         }
 
         IgniteCache<Integer, TestObject> cache = jcache(0);
@@ -1206,6 +1202,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTransform() throws Exception {
         IgniteCache<Integer, BinaryObject> c = keepBinaryCache();
 
@@ -1223,7 +1220,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * @return Cache with keep binary flag.
      */
     private <K, V> IgniteCache<K, V> keepBinaryCache() {
-        return ignite(0).cache(null).withKeepBinary();
+        return ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
     }
 
     /**
@@ -1355,8 +1352,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * No-op entry processor.
      */
     private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
-        @Override
-        public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
+        @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
             TestObject obj = entry.getValue();
 
             entry.setValue(new TestObject(obj.val));
@@ -1423,26 +1419,10 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
-     *
-     */
-    private final static class IdentityResolver implements BinaryIdentityResolver {
-        /** {@inheritDoc} */
-        @Override public int hashCode(BinaryObject builder) {
-            return (Integer) builder.field("fld1") * 31 / 5;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(BinaryObject o1, BinaryObject o2) {
-            return o1 == o2 || (o1 != null && o2 != null && F.eq(o1.field("fld1"), o2.field("fld1")));
-
-        }
-    }
-
-    /**
      * Key to test puts and gets with
      */
     @SuppressWarnings({"ConstantConditions", "unused"})
-    private final static class ComplexBinaryFieldsListHashedKey {
+    private static final class ComplexBinaryFieldsListHashedKey {
         /** */
         private final Integer firstField = 1;
 

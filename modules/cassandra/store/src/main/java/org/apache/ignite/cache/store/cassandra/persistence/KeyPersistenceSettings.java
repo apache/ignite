@@ -17,14 +17,10 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.beans.PropertyDescriptor;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -64,26 +60,53 @@ public class KeyPersistenceSettings extends PersistenceSettings {
             return;
         }
 
-        NodeList keyElem = el.getElementsByTagName(PARTITION_KEY_ELEMENT);
+        Element node = el.getElementsByTagName(PARTITION_KEY_ELEMENT) != null ?
+                (Element)el.getElementsByTagName(PARTITION_KEY_ELEMENT).item(0) : null;
 
-        Element partKeysNode = keyElem != null ? (Element) keyElem.item(0) : null;
+        NodeList partKeysNodes = node == null ? null : node.getElementsByTagName(FIELD_ELEMENT);
 
-        Element clusterKeysNode = el.getElementsByTagName(CLUSTER_KEY_ELEMENT) != null ?
-            (Element)el.getElementsByTagName(CLUSTER_KEY_ELEMENT).item(0) : null;
+        node = el.getElementsByTagName(CLUSTER_KEY_ELEMENT) != null ?
+                (Element)el.getElementsByTagName(CLUSTER_KEY_ELEMENT).item(0) : null;
 
-        if (partKeysNode == null && clusterKeysNode != null) {
+        NodeList clusterKeysNodes = node == null ? null : node.getElementsByTagName(FIELD_ELEMENT);
+
+        if ((partKeysNodes == null || partKeysNodes.getLength() == 0) &&
+                clusterKeysNodes != null && clusterKeysNodes.getLength() > 0) {
             throw new IllegalArgumentException("It's not allowed to specify cluster key fields mapping, but " +
                 "doesn't specify partition key mappings");
         }
 
-        partKeyFields = detectFields(partKeysNode, getPartitionKeyDescriptors());
+        // Detecting partition key fields
+        partKeyFields = detectPojoFields(partKeysNodes);
 
         if (partKeyFields == null || partKeyFields.isEmpty()) {
             throw new IllegalStateException("Failed to initialize partition key fields for class '" +
-                getJavaClass().getName() + "'");
+                    getJavaClass().getName() + "'");
         }
 
-        clusterKeyFields = detectFields(clusterKeysNode, getClusterKeyDescriptors(partKeyFields));
+        List<PojoField> filteredFields = new LinkedList<>();
+
+        // Find all fields annotated by @AffinityKeyMapped
+        for (PojoField field : partKeyFields) {
+            if (field.getAnnotation(AffinityKeyMapped.class) != null)
+                filteredFields.add(field);
+        }
+
+        // If there are any fields annotated by @AffinityKeyMapped then all other fields are part of cluster key
+        partKeyFields = !filteredFields.isEmpty() ? filteredFields : partKeyFields;
+
+        // Detecting cluster key fields
+        clusterKeyFields = detectPojoFields(clusterKeysNodes);
+
+        filteredFields = new LinkedList<>();
+
+        // Removing out all fields which are already in partition key fields list
+        for (PojoField field : clusterKeyFields) {
+            if (!PojoField.containsField(partKeyFields, field.getName()))
+                filteredFields.add(field);
+        }
+
+        clusterKeyFields = filteredFields;
 
         fields = new LinkedList<>();
         fields.addAll(partKeyFields);
@@ -97,6 +120,16 @@ public class KeyPersistenceSettings extends PersistenceSettings {
     /** {@inheritDoc} */
     @Override public List<PojoField> getFields() {
         return fields;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PojoField createPojoField(Element el, Class clazz) {
+        return new PojoKeyField(el, clazz);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PojoField createPojoField(PojoFieldAccessor accessor) {
+        return new PojoKeyField(accessor);
     }
 
     /**
@@ -197,109 +230,5 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         }
 
         return cols;
-    }
-
-    /**
-     * Extracts POJO fields specified in XML element.
-     *
-     * @param el XML element describing fields.
-     * @param descriptors POJO fields descriptors.
-     * @return List of {@code This} fields.
-     */
-    private List<PojoField> detectFields(Element el, List<PropertyDescriptor> descriptors) {
-        List<PojoField> list = new LinkedList<>();
-
-        if (el == null && (descriptors == null || descriptors.isEmpty()))
-            return list;
-
-        if (el == null) {
-            for (PropertyDescriptor desc : descriptors) {
-                boolean valid = desc.getWriteMethod() != null ||
-                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null ||
-                        desc.getReadMethod().getAnnotation(AffinityKeyMapped.class) != null;
-
-                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField or @AffinityKeyMapped.
-                if (valid)
-                    list.add(new PojoKeyField(desc));
-            }
-
-            return list;
-        }
-
-        NodeList nodes = el.getElementsByTagName(FIELD_ELEMENT);
-
-        int cnt = nodes == null ? 0 : nodes.getLength();
-
-        if (cnt == 0) {
-            throw new IllegalArgumentException("Incorrect configuration of Cassandra key persistence settings, " +
-                "no key fields specified inside '" + PARTITION_KEY_ELEMENT + "/" +
-                CLUSTER_KEY_ELEMENT + "' element");
-        }
-
-        for (int i = 0; i < cnt; i++) {
-            PojoKeyField field = new PojoKeyField((Element)nodes.item(i), getJavaClass());
-
-            PropertyDescriptor desc = findPropertyDescriptor(descriptors, field.getName());
-
-            if (desc == null) {
-                throw new IllegalArgumentException("Specified POJO field '" + field.getName() +
-                    "' doesn't exist in '" + getJavaClass().getName() + "' class");
-            }
-
-            list.add(field);
-        }
-
-        return list;
-    }
-
-    /**
-     * @return POJO field descriptors for partition key.
-     */
-    private List<PropertyDescriptor> getPartitionKeyDescriptors() {
-        List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(),
-            AffinityKeyMapped.class, true);
-
-        primitivePropDescriptors = primitivePropDescriptors != null && !primitivePropDescriptors.isEmpty() ?
-            primitivePropDescriptors : PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-
-        boolean valid = false;
-
-        for (PropertyDescriptor desc : primitivePropDescriptors) {
-            if (desc.getWriteMethod() != null) {
-                valid = true;
-
-                break;
-            }
-        }
-
-        if (!valid) {
-            throw new IgniteException("Partition key can't have only calculated read-only fields, there should be " +
-                    "some fields with setter method");
-        }
-
-        return primitivePropDescriptors;
-    }
-
-    /**
-     * @return POJO field descriptors for cluster key.
-     */
-    private List<PropertyDescriptor> getClusterKeyDescriptors(List<PojoField> partKeyFields) {
-        List<PropertyDescriptor> primitivePropDescriptors =
-            PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-
-        if (primitivePropDescriptors == null || primitivePropDescriptors.isEmpty() ||
-            partKeyFields.size() == primitivePropDescriptors.size())
-            return null;
-
-        for (PojoField field : partKeyFields) {
-            for (int i = 0; i < primitivePropDescriptors.size(); i++) {
-                if (primitivePropDescriptors.get(i).getName().equals(field.getName())) {
-                    primitivePropDescriptors.remove(i);
-                    break;
-                }
-            }
-        }
-
-        return primitivePropDescriptors;
     }
 }

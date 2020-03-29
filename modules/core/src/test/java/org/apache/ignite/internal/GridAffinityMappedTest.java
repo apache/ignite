@@ -28,10 +28,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -39,9 +37,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests affinity mapping when {@link AffinityKeyMapper} is used.
  */
 public class GridAffinityMappedTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -50,18 +45,13 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-        disco.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(disco);
-
-        if (gridName.endsWith("1"))
+        if (igniteInstanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
         else {
-            assert gridName.endsWith("2") || gridName.endsWith("3");
+            assert igniteInstanceName.endsWith("2") || igniteInstanceName.endsWith("3");
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -70,7 +60,8 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
             cacheCfg.setAffinityMapper(new MockCacheAffinityKeyMapper());
 
             cfg.setCacheConfiguration(cacheCfg);
-            cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, gridName.endsWith("2") ? 0 : 1));
+            cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR,
+                igniteInstanceName.endsWith("2") ? 0 : 1));
         }
 
         return cfg;
@@ -83,16 +74,10 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-        stopGrid(3);
-    }
-
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testMappedAffinity() throws IgniteCheckedException {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
@@ -109,18 +94,18 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         //Key 0 is mapped to partition 0, first node.
         //Key 1 is mapped to partition 1, second node.
         //key 2 is mapped to partition 0, first node because mapper substitutes key 2 with affinity key 0.
-        Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(null).mapKeysToNodes(F.asList(0));
+        Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList(0));
 
         assertNotNull(map);
         assertEquals("Invalid map size: " + map.size(), 1, map.size());
         assertEquals(F.first(map.keySet()), first);
 
-        UUID id1 = g1.affinity(null).mapKeyToNode(1).id();
+        UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1).id();
 
         assertNotNull(id1);
         assertEquals(second.id(),  id1);
 
-        UUID id2 = g1.affinity(null).mapKeyToNode(2).id();
+        UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(2).id();
 
         assertNotNull(id2);
         assertEquals(first.id(),  id2);

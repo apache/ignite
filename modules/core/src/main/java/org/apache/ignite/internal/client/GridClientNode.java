@@ -119,4 +119,11 @@ public interface GridClientNode {
      *  {@code false} if request may be passed through a router.
      */
     public boolean connectable();
+
+    /**
+     * Node order within grid topology.
+     *
+     * @return Node startup order.
+     */
+    public long order();
 }

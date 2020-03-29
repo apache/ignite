@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
@@ -37,18 +42,12 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
 /**
  * Interop compute.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored", "UnusedDeclaration"})
+@SuppressWarnings({"unchecked"})
 public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_AFFINITY = 1;
@@ -74,6 +73,12 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** */
     private static final int OP_EXEC_NATIVE = 8;
 
+    /** */
+    private static final int OP_WITH_NO_RESULT_CACHE = 9;
+
+    /** */
+    private static final int OP_WITH_EXECUTOR = 10;
+
     /** Compute instance. */
     private final IgniteComputeImpl compute;
 
@@ -97,6 +102,20 @@ public class PlatformCompute extends PlatformAbstractTarget {
         ClusterGroup platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
 
         computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     * @param compute Compute.
+     * @param computeForPlatform Compute over platform-specific nodes.
+     */
+    private PlatformCompute(PlatformContext platformCtx, IgniteComputeImpl compute,
+                            IgniteComputeImpl computeForPlatform) {
+        super(platformCtx);
+        this.compute = compute;
+        this.computeForPlatform = computeForPlatform;
     }
 
     /** {@inheritDoc} */
@@ -124,6 +143,14 @@ public class PlatformCompute extends PlatformAbstractTarget {
             case OP_EXEC_ASYNC:
                 return wrapListenable((PlatformListenable) executeJavaTask(reader, true));
 
+            case OP_WITH_EXECUTOR: {
+                String executorName = reader.readString();
+
+                return new PlatformCompute(platformCtx,
+                        (IgniteComputeImpl)compute.withExecutor(executorName),
+                        (IgniteComputeImpl)computeForPlatform.withExecutor(executorName));
+            }
+
             default:
                 return super.processInStreamOutObject(type, reader);
         }
@@ -142,6 +169,13 @@ public class PlatformCompute extends PlatformAbstractTarget {
             case OP_WITH_NO_FAILOVER: {
                 compute.withNoFailover();
                 computeForPlatform.withNoFailover();
+
+                return TRUE;
+            }
+
+            case OP_WITH_NO_RESULT_CACHE: {
+                compute.withNoResultCache();
+                computeForPlatform.withNoResultCache();
 
                 return TRUE;
             }
@@ -240,9 +274,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * Execute task.
      *
      * @param task Task.
+     * @return Target.
      */
     private PlatformTarget executeNative0(final PlatformAbstractTask task) {
-        IgniteInternalFuture fut = computeForPlatform.executeAsync(task, null);
+        IgniteInternalFuture fut = computeForPlatform.executeAsync0(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             private static final long serialVersionUID = 0L;
@@ -266,7 +301,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * Execute task taking arguments from the given reader.
      *
      * @param reader Reader.
+     * @param async Execute asynchronously flag.
      * @return Task result.
+     * @throws IgniteCheckedException On error.
      */
     protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) throws IgniteCheckedException {
         String taskName = reader.readString();
@@ -277,18 +314,13 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         IgniteCompute compute0 = computeForTask(nodeIds);
 
-        if (async)
-            compute0 = compute0.withAsync();
-
         if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
-        Object res = compute0.execute(taskName, arg);
-
         if (async)
-            return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.future()));
+            return readAndListenFuture(reader, new ComputeConvertingFuture(compute0.executeAsync(taskName, arg)));
         else
-            return toBinary(res);
+            return toBinary(compute0.execute(taskName, arg));
     }
 
     /**
@@ -382,16 +414,6 @@ public class PlatformCompute extends PlatformAbstractTarget {
         /** {@inheritDoc} */
         @Override public boolean isCancelled() {
             return fut.isCancelled();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long startTime() {
-            return fut.startTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long duration() {
-            return fut.duration();
         }
 
         /** {@inheritDoc} */

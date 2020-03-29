@@ -49,11 +49,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Session cancellation tests.
  */
-@SuppressWarnings({"CatchGenericClass, PublicInnerClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstractTest {
     /** */
@@ -80,8 +80,8 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -97,6 +97,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancelSiblings() throws Exception {
         refreshInitialData();
 
@@ -107,6 +108,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 
@@ -139,7 +141,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
      * @throws IgniteCheckedException If failed.
      */
     private void checkTask(int num) throws InterruptedException, IgniteCheckedException {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 
@@ -219,7 +221,6 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
                     private ComputeJobContext jobCtx;
 
                     /** {@inheritDoc} */
-                    @SuppressWarnings({"BusyWait"})
                     @Override public Object execute() {
                         assert taskSes != null;
 

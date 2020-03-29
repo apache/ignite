@@ -22,9 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.log4j.Level;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,13 +35,9 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends IgniteTxSingle
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -59,13 +52,6 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends IgniteTxSingle
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
         cc.setRebalanceMode(NONE);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-        spi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-        c.setDiscoverySpi(spi);
 
         c.setCacheConfiguration(cc);
 

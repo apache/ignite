@@ -22,9 +22,11 @@
 #include <string>
 #include <map>
 
-#include <ignite/common/common.h>
-#include <ignite/common/utils.h>
 #include "ignite/odbc/protocol_version.h"
+#include "ignite/odbc/config/settable_value.h"
+#include "ignite/odbc/ssl_mode.h"
+#include "ignite/odbc/end_point.h"
+#include "ignite/odbc/nested_tx_mode.h"
 
 namespace ignite
 {
@@ -38,42 +40,8 @@ namespace ignite
             class Configuration
             {
             public:
-                /** Map containing connect arguments. */
+                /** Argument map type. */
                 typedef std::map<std::string, std::string> ArgumentMap;
-
-                /** Connection attribute keywords. */
-                struct Key
-                {
-                    /** Connection attribute keyword for DSN attribute. */
-                    static const std::string dsn;
-
-                    /** Connection attribute keyword for Driver attribute. */
-                    static const std::string driver;
-
-                    /** Connection attribute keyword for cache attribute. */
-                    static const std::string cache;
-
-                    /** Connection attribute keyword for address attribute. */
-                    static const std::string address;
-
-                    /** Connection attribute keyword for server attribute. */
-                    static const std::string server;
-
-                    /** Connection attribute keyword for port attribute. */
-                    static const std::string port;
-
-                    /** Connection attribute keyword for distributed joins attribute. */
-                    static const std::string distributedJoins;
-
-                    /** Connection attribute keyword for enforce join order attribute. */
-                    static const std::string enforceJoinOrder;
-
-                    /** Connection attribute keyword for protocol version attribute. */
-                    static const std::string protocolVersion;
-
-                    /** Connection attribute keyword for fetch results page size attribute. */
-                    static const std::string pageSize;
-                };
 
                 /** Default values for configuration. */
                 struct DefaultValue
@@ -84,14 +52,26 @@ namespace ignite
                     /** Default value for Driver attribute. */
                     static const std::string driver;
 
-                    /** Default value for cache attribute. */
-                    static const std::string cache;
+                    /** Default value for schema attribute. */
+                    static const std::string schema;
 
                     /** Default value for address attribute. */
                     static const std::string address;
 
                     /** Default value for server attribute. */
                     static const std::string server;
+
+                    /** Default value for sslMode attribute. */
+                    static const ssl::SslMode::Type sslMode;
+
+                    /** Default value for sslKeyFile attribute. */
+                    static const std::string sslKeyFile;
+
+                    /** Default value for sslCertFile attribute. */
+                    static const std::string sslCertFile;
+
+                    /** Default value for sslCaFile attribute. */
+                    static const std::string sslCaFile;
 
                     /** Default value for protocol version. */
                     static const ProtocolVersion& protocolVersion;
@@ -107,18 +87,27 @@ namespace ignite
 
                     /** Default value for enforce join order attribute. */
                     static const bool enforceJoinOrder;
-                };
 
-                /**
-                 * Connection end point structure.
-                 */
-                struct EndPoint
-                {
-                    /** Remote host. */
-                    std::string host;
+                    /** Default value for replicated only attribute. */
+                    static const bool replicatedOnly;
 
-                    /** TCP port. */
-                    uint16_t port;
+                    /** Default value for collocated attribute. */
+                    static const bool collocated;
+
+                    /** Default value for lazy attribute. */
+                    static const bool lazy;
+
+                    /** Default value for skipReducerOnUpdate attribute. */
+                    static const bool skipReducerOnUpdate;
+
+                    /** Default value for user attribute. */
+                    static const std::string user;
+
+                    /** Default value for password attribute. */
+                    static const std::string password;
+
+                    /** Default value for nestedTxMode attribute. */
+                    static const NestedTxMode::Type nestedTxMode;
                 };
 
                 /**
@@ -132,24 +121,6 @@ namespace ignite
                 ~Configuration();
 
                 /**
-                 * Fill configuration data using connection string.
-                 *
-                 * @param str Pointer to string data.
-                 * @param len String length.
-                 */
-                void FillFromConnectString(const char* str, size_t len);
-                
-                /**
-                 * Fill configuration data using connection string.
-                 *
-                 * @param str Connect string.
-                 */
-                void FillFromConnectString(const std::string& str)
-                {
-                    FillFromConnectString(str.data(), str.size());
-                }
-
-                /**
                  * Convert configure to connect string.
                  *
                  * @return Connect string.
@@ -157,22 +128,11 @@ namespace ignite
                 std::string ToConnectString() const;
 
                 /**
-                 * Fill configuration data using config attributes string.
-                 *
-                 * @param str Pointer to list of zero-terminated strings.
-                 *            Terminated by two zero bytes.
-                 */
-                void FillFromConfigAttributes(const char* attributes);
-
-                /**
                  * Get server port.
                  *
                  * @return Server port.
                  */
-                uint16_t GetTcpPort() const
-                {
-                    return endPoint.port;
-                }
+                uint16_t GetTcpPort() const;
 
                 /**
                  * Set server port.
@@ -182,44 +142,53 @@ namespace ignite
                 void SetTcpPort(uint16_t port);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsTcpPortSet() const;
+
+                /**
                  * Get DSN.
                  *
                  * @return Data Source Name.
                  */
-                const std::string& GetDsn() const
-                {
-                    return GetStringValue(Key::dsn, DefaultValue::dsn);
-                }
+                const std::string& GetDsn(const std::string& dflt = DefaultValue::dsn) const;
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsDsnSet() const;
 
                 /**
                  * Set DSN.
                  *
                  * @param dsn Data Source Name.
                  */
-                void SetDsn(const std::string& dsn)
-                {
-                    arguments[Key::dsn] = dsn;
-                }
+                void SetDsn(const std::string& dsn);
 
                 /**
                  * Get Driver.
                  *
                  * @return Driver name.
                  */
-                const std::string& GetDriver() const
-                {
-                    return GetStringValue(Key::driver, DefaultValue::driver);
-                }
+                const std::string& GetDriver() const;
+
+                /**
+                 * Set driver.
+                 *
+                 * @param driver Driver.
+                 */
+                void SetDriver(const std::string& driver);
 
                 /**
                  * Get server host.
                  *
                  * @return Server host.
                  */
-                const std::string& GetHost() const
-                {
-                    return endPoint.host;
-                }
+                const std::string& GetHost() const;
 
                 /**
                  * Set server host.
@@ -229,81 +198,263 @@ namespace ignite
                 void SetHost(const std::string& server);
 
                 /**
-                 * Get cache.
+                 * Check if the value set.
                  *
-                 * @return Cache name.
+                 * @return @true if the value set.
                  */
-                const std::string& GetCache() const
-                {
-                    return GetStringValue(Key::cache, DefaultValue::cache);
-                }
+                bool IsHostSet() const;
 
                 /**
-                 * Set cache.
+                 * Get schema.
                  *
-                 * @param cache Cache name.
+                 * @return Schema.
                  */
-                void SetCache(const std::string& cache)
-                {
-                    arguments[Key::cache] = cache;
-                }
+                const std::string& GetSchema() const;
 
                 /**
-                 * Get address.
+                 * Set schema.
                  *
-                 * @return Address.
+                 * @param schema Schema name.
                  */
-                const std::string& GetAddress() const
-                {
-                    return GetStringValue(Key::address, DefaultValue::address);
-                }
+                void SetSchema(const std::string& schema);
 
                 /**
-                 * Set address.
+                 * Check if the value set.
                  *
-                 * @param address Address.
+                 * @return @true if the value set.
                  */
-                void SetAddress(const std::string& address);
+                bool IsSchemaSet() const;
+
+                /**
+                 * Get addresses.
+                 *
+                 * @return Addresses.
+                 */
+                const std::vector<EndPoint>& GetAddresses() const;
+
+                /**
+                 * Set addresses to connect to.
+                 *
+                 * @param endPoints Addresses.
+                 */
+                void SetAddresses(const std::vector<EndPoint>& endPoints);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsAddressesSet() const;
+
+                /**
+                 * Get SSL mode.
+                 *
+                 * @return SSL mode.
+                 */
+                ssl::SslMode::Type GetSslMode() const;
+
+                /**
+                 * Set SSL mode.
+                 *
+                 * @param sslMode SSL mode.
+                 */
+                void SetSslMode(ssl::SslMode::Type sslMode);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslModeSet() const;
+
+                /**
+                 * Get SSL key file path.
+                 *
+                 * @return SSL key file path.
+                 */
+                const std::string& GetSslKeyFile() const;
+
+                /**
+                 * Set SSL key file path.
+                 *
+                 * @param sslKeyFile SSL key file path.
+                 */
+                void SetSslKeyFile(const std::string& sslKeyFile);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslKeyFileSet() const;
+
+                /**
+                 * Get SSL certificate file path.
+                 *
+                 * @return SSL certificate file path.
+                 */
+                const std::string& GetSslCertFile() const;
+
+                /**
+                 * Set SSL certificate file path.
+                 *
+                 * @param sslCertFile SSL certificate file path.
+                 */
+                void SetSslCertFile(const std::string& sslCertFile);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslCertFileSet() const;
+
+                /**
+                 * Get SSL certificate authority file path.
+                 *
+                 * @return SSL certificate authority file path.
+                 */
+                const std::string& GetSslCaFile() const;
+
+                /**
+                 * Set SSL certificate authority file path.
+                 *
+                 * @param sslCaFile SSL certificate authority file path.
+                 */
+                void SetSslCaFile(const std::string& sslCaFile);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslCaFileSet() const;
 
                 /**
                  * Check distributed joins flag.
                  *
                  * @return True if distributed joins are enabled.
                  */
-                bool IsDistributedJoins() const
-                {
-                    return GetBoolValue(Key::distributedJoins, DefaultValue::distributedJoins);
-                }
+                bool IsDistributedJoins() const;
 
                 /**
                  * Set distributed joins.
                  *
                  * @param val Value to set.
                  */
-                void SetDistributedJoins(bool val)
-                {
-                    SetBoolValue(Key::distributedJoins, val);
-                }
+                void SetDistributedJoins(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsDistributedJoinsSet() const;
 
                 /**
                  * Check enforce join order flag.
                  *
                  * @return True if enforcing of join order is enabled.
                  */
-                bool IsEnforceJoinOrder() const
-                {
-                    return GetBoolValue(Key::enforceJoinOrder, DefaultValue::enforceJoinOrder);
-                }
+                bool IsEnforceJoinOrder() const;
 
                 /**
                  * Set enforce joins.
                  *
                  * @param val Value to set.
                  */
-                void SetEnforceJoinOrder(bool val)
-                {
-                    SetBoolValue(Key::enforceJoinOrder, val);
-                }
+                void SetEnforceJoinOrder(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsEnforceJoinOrderSet() const;
+
+                /**
+                 * Check replicated only flag.
+                 *
+                 * @return True if replicated only is enabled.
+                 */
+                bool IsReplicatedOnly() const;
+
+                /**
+                 * Set replicated only flag.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetReplicatedOnly(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsReplicatedOnlySet() const;
+
+                /**
+                 * Check collocated flag.
+                 *
+                 * @return True if collocated is enabled.
+                 */
+                bool IsCollocated() const;
+
+                /**
+                 * Set collocated.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetCollocated(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsCollocatedSet() const;
+
+                /**
+                 * Check lazy flag.
+                 *
+                 * @return True if lazy is enabled.
+                 */
+                bool IsLazy() const;
+
+                /**
+                 * Set lazy.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetLazy(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsLazySet() const;
+
+                /**
+                 * Check update on server flag.
+                 *
+                 * @return True if update on server.
+                 */
+                bool IsSkipReducerOnUpdate() const;
+
+                /**
+                 * Set update on server.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetSkipReducerOnUpdate(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSkipReducerOnUpdateSet() const;
 
                 /**
                  * Get protocol version.
@@ -317,101 +468,213 @@ namespace ignite
                  *
                  * @param version Version to set.
                  */
-                void SetProtocolVersion(const std::string& version)
-                {
-                    arguments[Key::protocolVersion] = version;
-                }
+                void SetProtocolVersion(const ProtocolVersion& version);
 
                 /**
-                 * Get argument map.
+                 * Check if the value set.
                  *
-                 * @return Argument map.
+                 * @return @true if the value set.
                  */
-                const ArgumentMap& GetMap() const
-                {
-                    return arguments;
-                }
+                bool IsProtocolVersionSet() const;
 
                 /**
                  * Get fetch results page size.
                  *
                  * @return Fetch results page size.
                  */
-                int32_t GetPageSize() const
-                {
-                    return static_cast<int32_t>(GetIntValue(Key::pageSize, DefaultValue::pageSize));
-                }
+                int32_t GetPageSize() const;
+
                 /**
                  * Set fetch results page size.
                  *
                  * @param size Fetch results page size.
                  */
-                void SetPageSize(int32_t size)
-                {
-                    arguments[Key::pageSize] = common::LexicalCast<std::string>(size);
-                }
+                void SetPageSize(int32_t size);
 
                 /**
-                 * Get string value from the config.
+                 * Check if the value set.
                  *
-                 * @param key Configuration key.
-                 * @param dflt Default value to be returned if there is no value stored.
-                 * @return Found or default value.
+                 * @return @true if the value set.
                  */
-                const std::string& GetStringValue(const std::string& key, const std::string& dflt) const;
+                bool IsPageSizeSet() const;
 
                 /**
-                 * Get int value from the config.
+                 * Get user.
                  *
-                 * @param key Configuration key.
-                 * @param dflt Default value to be returned if there is no value stored.
-                 * @return Found or default value.
+                 * @return User.
                  */
-                int64_t GetIntValue(const std::string& key, int64_t dflt) const;
+                const std::string& GetUser() const;
 
                 /**
-                 * Get bool value from the config.
+                 * Set user.
                  *
-                 * @param key Configuration key.
-                 * @param dflt Default value to be returned if there is no value stored.
-                 * @return Found or default value.
+                 * @param user User.
                  */
-                bool GetBoolValue(const std::string& key, bool dflt) const;
+                void SetUser(const std::string& user);
 
                 /**
-                 * Set bool value to the config.
+                 * Check if the value set.
                  *
-                 * @param key Configuration key.
-                 * @param val Value to set.
+                 * @return @true if the value set.
                  */
-                void SetBoolValue(const std::string& key, bool val);
+                bool IsUserSet() const;
+
+                /**
+                 * Get password.
+                 *
+                 * @return Password.
+                 */
+                const std::string& GetPassword() const;
+
+                /**
+                 * Set password.
+                 *
+                 * @param pass Password.
+                 */
+                void SetPassword(const std::string& pass);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsPasswordSet() const;
+
+                /**
+                 * Get nested transaction mode.
+                 *
+                 * @return Nested transaction mode.
+                 */
+                NestedTxMode::Type GetNestedTxMode() const;
+
+                /**
+                 * Set nested transaction mode.
+                 *
+                 * @param mode Nested transaction mode.
+                 */
+                void SetNestedTxMode(NestedTxMode::Type mode);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsNestedTxModeSet() const;
+
+                /**
+                 * Get argument map.
+                 *
+                 * @param res Resulting argument map.
+                 */
+                void ToMap(ArgumentMap& res) const;
+
             private:
                 /**
-                 * Parse connect string into key-value storage.
+                 * Add key and value to the argument map.
                  *
-                 * @param str String to parse.
-                 * @param len String length.
-                 * @param params Parsing result.
+                 * @param map Map.
+                 * @param key Key.
+                 * @param value Value.
                  */
-                static void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args);
+                template<typename T>
+                static void AddToMap(ArgumentMap& map, const std::string& key, const SettableValue<T>& value);
 
-                /**
-                 * Parse address and extract connection end-point.
-                 *
-                 * @throw IgniteException if address can not be parsed.
-                 * @param address Address string to parse.
-                 * @param res Result is placed here.
-                 */
-                static void ParseAddress(const std::string& address, EndPoint& res);
+                /** DSN. */
+                SettableValue<std::string> dsn;
 
-                /** Arguments. */
-                ArgumentMap arguments;
+                /** Driver name. */
+                SettableValue<std::string> driver;
 
-                /** Connection end-point. */
-                EndPoint endPoint;
+                /** Schema. */
+                SettableValue<std::string> schema;
+
+                /** Server. Deprecated. */
+                SettableValue<std::string> server;
+
+                /** TCP port. Deprecated. */
+                SettableValue<uint16_t> port;
+
+                /** Request and response page size. */
+                SettableValue<int32_t> pageSize;
+
+                /** Distributed joins flag. */
+                SettableValue<bool> distributedJoins;
+
+                /** Enforce join order flag. */
+                SettableValue<bool> enforceJoinOrder;
+
+                /** Replicated only flag. */
+                SettableValue<bool> replicatedOnly;
+
+                /** Collocated flag. */
+                SettableValue<bool> collocated;
+
+                /** Lazy flag. */
+                SettableValue<bool> lazy;
+
+                /** Skip reducer on update flag. */
+                SettableValue<bool> skipReducerOnUpdate;
+
+                /** Protocol version. */
+                SettableValue<ProtocolVersion> protocolVersion;
+
+                /** Connection end-points. */
+                SettableValue< std::vector<EndPoint> > endPoints;
+
+                /** SSL Mode. */
+                SettableValue<ssl::SslMode::Type> sslMode;
+
+                /** SSL private key file path. */
+                SettableValue<std::string> sslKeyFile;
+
+                /** SSL certificate file path. */
+                SettableValue<std::string> sslCertFile;
+
+                /** SSL certificate authority file path. */
+                SettableValue<std::string> sslCaFile;
+
+                /** User. */
+                SettableValue<std::string> user;
+
+                /** Password. */
+                SettableValue<std::string> password;
+
+                /** Nested transaction mode. */
+                SettableValue<NestedTxMode::Type> nestedTxMode;
             };
-        }
 
+            template<>
+            void Configuration::AddToMap<std::string>(ArgumentMap& map, const std::string& key,
+                const SettableValue<std::string>& value);
+
+            template<>
+            void Configuration::AddToMap<uint16_t>(ArgumentMap& map, const std::string& key,
+                const SettableValue<uint16_t>& value);
+
+            template<>
+            void Configuration::AddToMap<int32_t>(ArgumentMap& map, const std::string& key,
+                const SettableValue<int32_t>& value);
+
+            template<>
+            void Configuration::AddToMap<bool>(ArgumentMap& map, const std::string& key,
+                const SettableValue<bool>& value);
+
+            template<>
+            void Configuration::AddToMap<ProtocolVersion>(ArgumentMap& map, const std::string& key,
+                const SettableValue<ProtocolVersion>& value);
+
+            template<>
+            void Configuration::AddToMap< std::vector<EndPoint> >(ArgumentMap& map, const std::string& key,
+                const SettableValue< std::vector<EndPoint> >& value);
+
+            template<>
+            void Configuration::AddToMap<ssl::SslMode::Type>(ArgumentMap& map, const std::string& key,
+                const SettableValue<ssl::SslMode::Type>& value);
+
+            template<>
+            void Configuration::AddToMap<NestedTxMode::Type>(ArgumentMap& map, const std::string& key,
+                const SettableValue<NestedTxMode::Type>& value);
+        }
     }
 }
 

@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.Test;
 
 /**
  * Tests service proxy timeouts.
@@ -57,12 +58,12 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
     private static CountDownLatch latch2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         final ServiceConfiguration scfg = new ServiceConfiguration();
 
-        if (gridName.endsWith("0")) {
+        if (igniteInstanceName.endsWith("0")) {
             scfg.setName("testService");
             scfg.setService(srvc);
             scfg.setMaxPerNodeCount(1);
@@ -102,7 +103,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"Convert2Lambda", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testUnavailableService() throws Exception {
         srvc = new TestWaitServiceImpl();
 
@@ -142,7 +144,8 @@ public class IgniteServiceProxyTimeoutInitializedTest extends GridCommonAbstract
      *
      * @throws Exception If fail.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "Convert2Lambda"})
+    @SuppressWarnings({"Convert2Lambda"})
+    @Test
     public void testServiceException() throws Exception {
         srvc = new HangServiceImpl();
 

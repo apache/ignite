@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.IgniteEx;
 
 /**
  * Prepared statement associated with a data streamer.
@@ -33,16 +32,13 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
      * Creates new prepared statement.
      *
      * @param conn Connection.
-     * @param sql  SQL query.
+     * @param sql SQL query.
      * @param streamer Data streamer to use with this statement. Will be closed on statement close.
      */
-    JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer,
-        PreparedStatement nativeStmt) {
+    JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer) {
         super(conn, sql);
 
         this.streamer = streamer;
-
-        nativeStatement = nativeStmt;
     }
 
     /** {@inheritDoc} */
@@ -53,7 +49,16 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
     }
 
     /** {@inheritDoc} */
-    @Override long doUpdate(String sql, Object[] args) throws SQLException {
-        return ((IgniteEx)conn.ignite()).context().query().streamUpdateQuery(conn.cacheName(), streamer, sql, args);
+    @Override protected void execute0(String sql, Boolean isQuery) throws SQLException {
+        assert isQuery == null || !isQuery;
+
+        long updCnt = conn.ignite().context().query().streamUpdateQuery(conn.cacheName(), conn.schemaName(),
+            streamer, sql, getArgs());
+
+        JdbcResultSet rs = new JdbcResultSet(this, updCnt);
+
+        results = Collections.singletonList(rs);
+
+        curRes = 0;
     }
 }

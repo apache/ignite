@@ -17,21 +17,75 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.VisorEither;
+import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
-import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.scheduleQueryStart;
 
 /**
- * Task for execute SCAN or SQL query and get first page of results.
+ * Task for execute SQL fields query and get first page of results.
  */
 @GridInternal
-public class VisorQueryTask extends VisorOneNodeTask<VisorQueryArg, IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx>> {
+@GridVisorManagementTask
+public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEither<VisorQueryResult>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorQueryJob job(VisorQueryArg arg) {
+    @Override protected VisorQueryJob job(VisorQueryTaskArg arg) {
         return new VisorQueryJob(arg, debug);
+    }
+
+    /**
+     * Job for execute SCAN or SQL query and get first page of results.
+     */
+    private static class VisorQueryJob extends VisorJob<VisorQueryTaskArg, VisorEither<VisorQueryResult>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Create job with specified argument.
+         *
+         * @param arg Job argument.
+         * @param debug Debug flag.
+         */
+        private VisorQueryJob(VisorQueryTaskArg arg, boolean debug) {
+            super(arg, debug);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected VisorEither<VisorQueryResult> run(final VisorQueryTaskArg arg) {
+            try {
+                UUID nid = ignite.localNode().id();
+
+                GridQueryCancel cancel = new GridQueryCancel();
+
+                Map<String, VisorQueryHolder> storage = ignite.cluster().nodeLocalMap();
+
+                VisorQueryHolder holder = new VisorQueryHolder(true, null, cancel);
+
+                storage.put(holder.getQueryID(), holder);
+
+                scheduleQueryStart(ignite, holder, arg, cancel);
+
+                return new VisorEither<>(new VisorQueryResult(nid, holder.getQueryID(), null, null, false, 0));
+            }
+            catch (Throwable e) {
+                return new VisorEither<>(new VisorExceptionWrapper(e));
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorQueryJob.class, this);
+        }
     }
 }

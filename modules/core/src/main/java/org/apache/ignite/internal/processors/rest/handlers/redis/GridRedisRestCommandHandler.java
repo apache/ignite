@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisM
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,19 +46,25 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
     /** REST protocol handler. */
     protected final GridRestProtocolHandler hnd;
 
+    /** Kernel context. */
+    protected final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param log Logger.
      * @param hnd REST protocol handler.
+     * @param ctx Kernal context.
      */
-    public GridRedisRestCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
+    protected GridRedisRestCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
         this.hnd = hnd;
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridRedisMessage msg) {
+    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridNioSession ses,
+        final GridRedisMessage msg) {
         assert msg != null;
 
         try {
@@ -73,7 +81,7 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
 
                         return msg;
                     }
-                });
+                }, ctx.getRestExecutorService());
         }
         catch (IgniteCheckedException e) {
             if (e instanceof GridRedisTypeException)

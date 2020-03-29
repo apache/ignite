@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "sql_test_suite_fixture.h"
@@ -54,7 +50,7 @@ BOOST_AUTO_TEST_CASE(TestGuidEqualsToColumn)
     testCache.Put(1, in1);
     testCache.Put(2, in2);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE guidField = {guid '04cc382a-0b82-f520-08d0-07a0620c0004'}", in2.i32Field);
 }
 
@@ -128,7 +124,7 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
 
     const int8_t data[] = { 'A','B','C','D','E','F','G','H','I','J' };
     std::vector<int8_t> paramData(data, data + sizeof(data) / sizeof(data[0]));
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8ArrayField) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -161,7 +157,7 @@ BOOST_AUTO_TEST_CASE(TestByteParamInsert)
 {
     SQLRETURN ret;
 
-    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";;
+    SQLCHAR request[] = "INSERT INTO TestType(_key, i8Field) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -197,7 +193,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampSelect)
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<int32_t>(
+    CheckSingleResult<SQLINTEGER>(
         "SELECT i32Field FROM TestType WHERE timestampField = '2017-01-13 19:54:01.987654321'", in1.i32Field);
 
     CheckSingleResult<Timestamp>(
@@ -253,29 +249,22 @@ BOOST_AUTO_TEST_CASE(TestTimestampInsert)
 
 BOOST_AUTO_TEST_CASE(TestTimeSelect)
 {
-    SQL_TIME_STRUCT ts;
-    ts.hour = 19;
-    ts.minute = 54;
-    ts.second = 1;
-
     TestType in1;
     in1.i32Field = 1;
-    in1.timestampField = common::MakeTimestampGmt(2017, 1, 13, ts.hour, ts.minute, ts.second);
+    in1.timeField = common::MakeTimeGmt(19, 54, 01);
 
     testCache.Put(1, in1);
 
-    CheckSingleResult<SQL_TIME_STRUCT>(
-        "SELECT CAST(timestampField AS TIME) FROM TestType WHERE i32Field = 1", ts);
+    CheckSingleResult<SQLINTEGER>("SELECT i32Field FROM TestType WHERE timeField = '19:54:01'", in1.i32Field);
 
-    CheckSingleResult<int32_t>(
-        "SELECT i32Field FROM TestType WHERE CAST(timestampField AS TIME) = '19:54:01'", in1.i32Field);
+    CheckSingleResult<Time>("SELECT timeField FROM TestType WHERE i32Field = 1", in1.timeField);
 }
 
-BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
+BOOST_AUTO_TEST_CASE(TestTimeInsert)
 {
     SQLRETURN ret;
 
-    SQLCHAR request[] = "INSERT INTO TestType(_key, timestampField) VALUES(?, ?)";
+    SQLCHAR request[] = "INSERT INTO TestType(_key, timeField) VALUES(?, ?)";
 
     ret = SQLPrepare(stmt, request, SQL_NTS);
 
@@ -294,10 +283,10 @@ BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
     data.second = 1;
 
     using ignite::impl::binary::BinaryUtils;
-    Timestamp expected = common::MakeTimestampGmt(1970, 1, 1, data.hour, data.minute, data.second, 0);
+    Time expected = common::MakeTimeGmt(data.hour, data.minute, data.second);
 
     SQLLEN lenInd = sizeof(data);
-    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIMESTAMP, sizeof(data), 0, &data, sizeof(data), &lenInd);
+    ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_TIME, SQL_TIME, sizeof(data), 0, &data, sizeof(data), &lenInd);
 
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -309,8 +298,7 @@ BOOST_AUTO_TEST_CASE(TestTimeInsertToTimestamp)
 
     TestType out = testCache.Get(key);
 
-    BOOST_REQUIRE_EQUAL(out.timestampField.GetSeconds(), expected.GetSeconds());
-    BOOST_REQUIRE_EQUAL(out.timestampField.GetSecondFraction(), expected.GetSecondFraction());
+    BOOST_REQUIRE_EQUAL(out.timeField.GetSeconds(), expected.GetSeconds());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

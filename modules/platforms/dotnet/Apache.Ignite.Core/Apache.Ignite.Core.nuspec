@@ -27,7 +27,7 @@ Creating NuGet package:
 
 -->
 
-<package >
+<package>
     <metadata>
         <id>Apache.Ignite</id>
         <title>Apache Ignite</title>
@@ -35,38 +35,50 @@ Creating NuGet package:
         <version>$version$</version>
         <authors>Apache Ignite</authors>
         <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+        <license type="expression">Apache-2.0</license>
         <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <icon>images\logo_ignite_128x128.png</icon>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+Apache Ignite is a memory-centric distributed database, caching, and processing platform for transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
+Supports .NET 4+ and .NET Core 2.0+.
             
 More info: https://apacheignite-net.readme.io/
         </description>
-        <releaseNotes></releaseNotes>
-        <copyright>Copyright 2017</copyright>
+        <copyright>Copyright 2020</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
+        <repository type="git" url="https://github.com/apache/ignite.git" />
+
+        <dependencies>
+            <!-- Empty section is required to denote supported framework. -->
+            <group targetFramework=".NETFramework4.0" />
+            <group targetFramework=".NETStandard2.0">
+                <dependency id="System.Configuration.ConfigurationManager" version="[4.4.0, 5.0.0)" />
+            </group>
+        </dependencies>
     </metadata>
     <files>
-        <!-- Install script should be in tools -->
-        <file src="NuGet\Install.ps1" target="tools" />
-        <file src="NuGet\Uninstall.ps1" target="tools" />
-        <file src="NuGet\PostBuild.ps1" target="tools" />
-        
-        <!-- Other files should go to Content folder to be automatically included in project. -->
-        <!--<file src="..\..\..\..\config\default-config.xml" target="Content\Config" />-->
-        
-        <!-- 
-            Library files (jars) should not be included in project, so that NuGet package restore works properly.
-            We keep jars in NuGet dir and copy them over in PostBuild event.
-        -->
-        <file src="..\..\..\..\target\release-package\libs\*.jar" target="Libs" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Libs" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Libs" />
-        <file src="..\..\..\..\target\release-package\libs\licenses\*.*" target="Licenses" />
+        <!-- Binaries -->
+        <file src="bin\$configuration$\Apache.Ignite.Core.dll" target="lib\net40" />
+        <file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\net40" />
+
+        <!-- Binaries for .NET Core & .NET Standard -->
+        <file src="bin\$configuration$\Apache.Ignite.Core.dll" target="lib\netstandard2.0" />
+        <file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\netstandard2.0" />
+
+        <!-- Include Apache.Ignite.exe -->
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
+        <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />
+
+        <!-- Jar files and targets file to copy them to build output -->
+        <file src="..\bin\libs\*.jar" target="build\output\libs" />
+        <file src="..\..\..\..\config\java.util.logging.properties" target="build\output\config" />
+        <file src="Apache.Ignite.targets" target="build" />
     
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
+        
+        <!-- Icon -->
+        <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>
 </package>

@@ -17,6 +17,16 @@
 
 package org.apache.ignite.cache.store.cassandra.datasource;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
 import com.datastax.driver.core.AuthProvider;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ConsistencyLevel;
@@ -31,25 +41,13 @@ import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
 import com.datastax.driver.core.policies.SpeculativeExecutionPolicy;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSession;
 import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data source abstraction to specify configuration of the Cassandra session to be used.
@@ -63,6 +61,9 @@ public class DataSource implements Externalizable {
      * don't support serialization (RetryPolicy, LoadBalancingPolicy and etc).
      */
     private static final UUID NULL_OBJECT = UUID.fromString("45ffae47-3193-5910-84a2-048fe65735d9");
+
+    /** Default expiration timeout for Cassandra driver session. */
+    public static final long DFLT_SESSION_EXPIRATION_TIMEOUT = 300000; // 5 minutes.
 
     /** Number of rows to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
@@ -141,6 +142,9 @@ public class DataSource implements Externalizable {
     /** Netty options to use for connection. */
     private NettyOptions nettyOptions;
 
+    /** Expiration timeout for Cassandra driver session. */
+    private long sessionExpirationTimeout = DFLT_SESSION_EXPIRATION_TIMEOUT;
+
     /** Cassandra session wrapper instance. */
     private volatile CassandraSession ses;
 
@@ -149,7 +153,6 @@ public class DataSource implements Externalizable {
      *
      * @param user user name
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setUser(String user) {
         this.user = user;
 
@@ -161,7 +164,6 @@ public class DataSource implements Externalizable {
      *
      * @param pwd password
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPassword(String pwd) {
         this.pwd = pwd;
 
@@ -173,7 +175,6 @@ public class DataSource implements Externalizable {
      *
      * @param port port
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPort(int port) {
         this.port = port;
 
@@ -220,7 +221,6 @@ public class DataSource implements Externalizable {
     }
 
     /** Sets maximum time to wait for schema agreement before returning from a DDL query. */
-    @SuppressWarnings("UnusedDeclaration")
     public void setMaxSchemaAgreementWaitSeconds(int seconds) {
         maxSchemaAgreementWaitSeconds = seconds;
 
@@ -232,7 +232,6 @@ public class DataSource implements Externalizable {
      *
      * @param ver version number
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setProtocolVersion(int ver) {
         protoVer = ver;
 
@@ -244,7 +243,6 @@ public class DataSource implements Externalizable {
      *
      * @param compression Compression algorithm.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setCompression(String compression) {
         this.compression = compression == null || compression.trim().isEmpty() ? null : compression.trim();
 
@@ -264,7 +262,6 @@ public class DataSource implements Externalizable {
      *
      * @param use Flag to enable/disable SSL.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setUseSSL(boolean use) {
         useSSL = use;
 
@@ -276,7 +273,6 @@ public class DataSource implements Externalizable {
      *
      * @param collect Flag to enable/disable metrics collection.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setCollectMetrix(boolean collect) {
         collectMetrix = collect;
 
@@ -288,7 +284,6 @@ public class DataSource implements Externalizable {
      *
      * @param enableReporting Flag to enable/disable JMX reporting.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setJmxReporting(boolean enableReporting) {
         jmxReporting = enableReporting;
 
@@ -300,7 +295,6 @@ public class DataSource implements Externalizable {
      *
      * @param size Number of rows to fetch.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setFetchSize(int size) {
         fetchSize = size;
 
@@ -356,7 +350,6 @@ public class DataSource implements Externalizable {
      *
      * @param plc Reconnection policy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setReconnectionPolicy(ReconnectionPolicy plc) {
         reconnectionPlc = plc;
 
@@ -368,7 +361,6 @@ public class DataSource implements Externalizable {
      *
      * @param plc Retry policy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setRetryPolicy(RetryPolicy plc) {
         retryPlc = plc;
 
@@ -380,7 +372,6 @@ public class DataSource implements Externalizable {
      *
      * @param translator Address translator.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setAddressTranslator(AddressTranslator translator) {
         addrTranslator = translator;
 
@@ -392,7 +383,6 @@ public class DataSource implements Externalizable {
      *
      * @param plc Speculative execution policy.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setSpeculativeExecutionPolicy(SpeculativeExecutionPolicy plc) {
         speculativeExecutionPlc = plc;
 
@@ -404,7 +394,6 @@ public class DataSource implements Externalizable {
      *
      * @param provider Authentication provider.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setAuthProvider(AuthProvider provider) {
         authProvider = provider;
 
@@ -416,7 +405,6 @@ public class DataSource implements Externalizable {
      *
      * @param options SSL options.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setSslOptions(SSLOptions options) {
         sslOptions = options;
 
@@ -428,7 +416,6 @@ public class DataSource implements Externalizable {
      *
      * @param options pooling options to use.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setPoolingOptions(PoolingOptions options) {
         poolingOptions = options;
 
@@ -440,7 +427,6 @@ public class DataSource implements Externalizable {
      *
      * @param options Socket options.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setSocketOptions(SocketOptions options) {
         sockOptions = options;
 
@@ -452,9 +438,25 @@ public class DataSource implements Externalizable {
      *
      * @param options netty options.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public void setNettyOptions(NettyOptions options) {
         nettyOptions = options;
+
+        invalidate();
+    }
+
+    /**
+     * Sets expiration timeout for Cassandra driver session. Idle sessions that are not
+     * used during this timeout value will be automatically closed and recreated later
+     * on demand.
+     * <p>
+     * If set to {@code 0}, timeout is disabled.
+     * <p>
+     * Default value is {@link #DFLT_SESSION_EXPIRATION_TIMEOUT}.
+     *
+     * @param sessionExpirationTimeout Expiration timeout for Cassandra driver session.
+     */
+    public void setSessionExpirationTimeout(long sessionExpirationTimeout) {
+        this.sessionExpirationTimeout = sessionExpirationTimeout;
 
         invalidate();
     }
@@ -465,7 +467,6 @@ public class DataSource implements Externalizable {
      * @param log logger
      * @return Cassandra session wrapper
      */
-    @SuppressWarnings("deprecation")
     public synchronized CassandraSession session(IgniteLogger log) {
         if (ses != null)
             return ses;
@@ -541,7 +542,8 @@ public class DataSource implements Externalizable {
         if (nettyOptions != null)
             builder = builder.withNettyOptions(nettyOptions);
 
-        return ses = new CassandraSessionImpl(builder, fetchSize, readConsistency, writeConsistency, log);
+        return ses = new CassandraSessionImpl(
+            builder, fetchSize, readConsistency, writeConsistency, sessionExpirationTimeout, log);
     }
 
     /** {@inheritDoc} */

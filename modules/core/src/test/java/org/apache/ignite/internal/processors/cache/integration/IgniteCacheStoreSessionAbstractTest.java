@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache.integration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -41,7 +41,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -57,8 +59,8 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestStore store = new TestStore(); // Use the same store instance for both caches.
 
@@ -71,7 +73,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         ccfg0.setCacheStoreFactory(singletonFactory(store));
 
-        CacheConfiguration ccfg1 = cacheConfiguration(gridName);
+        CacheConfiguration ccfg1 = cacheConfiguration(igniteInstanceName);
 
         ccfg1.setReadThrough(true);
         ccfg1.setWriteThrough(true);
@@ -112,8 +114,9 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSession() throws Exception {
-        assertNull(jcache(0).getName());
+        assertEquals(DEFAULT_CACHE_NAME, jcache(0).getName());
 
         assertEquals(CACHE_NAME1, ignite(0).cache(CACHE_NAME1).getName());
 
@@ -133,13 +136,13 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         boolean tx = atomicityMode() == TRANSACTIONAL;
 
-        expData.add(new ExpectedData(false, "load", new HashMap<>(), cache.getName()));
+        expData.add(new ExpectedData(false, "load", new TreeMap<>(), cache.getName()));
 
         assertEquals(key, cache.get(key));
 
         assertTrue(expData.isEmpty());
 
-        expData.add(new ExpectedData(false, "loadAll", new HashMap<>(), cache.getName()));
+        expData.add(new ExpectedData(false, "loadAll", new TreeMap<>(), cache.getName()));
 
         assertEquals(3, cache.getAll(keys).size());
 
@@ -169,7 +172,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
         assertTrue(expData.isEmpty());
 
-        Map<Object, Object> vals = new HashMap<>();
+        Map<Object, Object> vals = new TreeMap<>();
 
         for (Object key0 : keys)
             vals.put(key0, key0);
@@ -199,7 +202,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
      * @param expCacheName Expected cache name.
      */
     private void expectedData(boolean tx, String expMtd, String expCacheName) {
-        expData.add(new ExpectedData(tx, expMtd, new HashMap<>(), expCacheName));
+        expData.add(new ExpectedData(tx, expMtd, new TreeMap<>(), expCacheName));
 
         if (tx)
             expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, expMtd), expCacheName));
@@ -227,7 +230,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
          * @param expProps Expected properties.
          * @param expCacheName Expected cache name.
          */
-        ExpectedData(boolean tx, String expMtd, Map<Object, Object> expProps, String expCacheName) {
+        ExpectedData(boolean tx, String expMtd, Map<Object, Object> expProps, @NotNull String expCacheName) {
             this.tx = tx;
             this.expMtd = expMtd;
             this.expProps = expProps;
@@ -287,7 +290,7 @@ public abstract class IgniteCacheStoreSessionAbstractTest extends IgniteCacheAbs
 
             checkSession("loadAll");
 
-            Map<Object, Object> loaded = new HashMap<>();
+            Map<Object, Object> loaded = new TreeMap<>();
 
             for (Object key : keys)
                 loaded.put(key, key);

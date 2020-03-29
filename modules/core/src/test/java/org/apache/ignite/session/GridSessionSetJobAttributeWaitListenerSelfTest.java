@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
@@ -44,8 +43,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -56,7 +57,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     public static final int SPLIT_COUNT = 5;
 
     /** */
-    private static final long WAIT_TIME = 20000;
+    private static final long WAIT_TIME = SF.applyLB(10_000, 5_000);
 
     /** */
     private static volatile CountDownLatch startSignal;
@@ -67,8 +68,8 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -84,19 +85,16 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridTaskSessionTestTask.class, GridTaskSessionTestTask.class.getClassLoader());
 
         for (int i = 0; i < 5; i++) {
             refreshInitialData();
 
-            IgniteCompute comp = ignite.compute().withAsync();
-
-            comp.execute(GridTaskSessionTestTask.class.getName(), null);
-
-            ComputeTaskFuture<?> fut = comp.future();
+            ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTaskSessionTestTask.class.getName(), null);
 
             assert fut != null;
 
@@ -145,7 +143,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @SuppressWarnings({"UnconditionalWait"})
+                    @Override @SuppressWarnings({"UnconditionalWait"})
                     public Serializable execute() {
                         assert taskSes != null;
 
@@ -172,7 +170,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                                 lsnr.wait(WAIT_TIME);
                             }
 
-                            return lsnr.getAttributes().size() == 0 ? 0 : 1;
+                            return lsnr.getAttributes().isEmpty() ? 0 : 1;
                         }
                         catch (InterruptedException e) {
                             throw new IgniteException("Failed to wait for listener due to interruption.", e);

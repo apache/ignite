@@ -35,7 +35,7 @@
 
         <!-- The default pattern: Date Priority [Category] Message\n -->
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
 
         <!-- Do not log beyond INFO level. -->
@@ -57,7 +57,7 @@
 
         <!-- The default pattern: Date Priority [Category] Message\n -->
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
     </appender>
 
@@ -71,7 +71,7 @@
         <param name="MaxFileSize" value="10MB"/>
         <param name="MaxBackupIndex" value="10"/>
         <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"/>
+            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </layout>
     </appender>
 
@@ -79,33 +79,48 @@
         Uncomment to enable Ignite query execution debugging.
     -->
     <!--
-    <category name="org.apache.ignite.cache.query">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
     <category name="org.apache.ignite.internal.processors.query">
         <level value="DEBUG"/>
     </category>
     -->
 
-    <!-- Enable Ignite debugging.
-     <category name="org.apache.ignite">
-         <level value="DEBUG"/>
-     </category>
+    <!--
+        Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
+    -->
+    <!--
+         <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
+             <level value="DEBUG"/>
+         </category>
+
+        <category name="org.apache.ignite.internal.processors.cache.distributed.dht.topology">
+            <level value="DEBUG"/>
+        </category>
     -->
 
     <!--
-    <category name="org.apache.ignite.cache.msg">
-        <level value="DEBUG"/>
-    </category>
+        Uncomment to enable debugging of partition counters.
+    -->
+    <!--
+        <category name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper">
+            <level value="DEBUG"/>
+        </category>
     -->
 
     <!--
-    <category name="org.apache.ignite.continuous.query">
-        <level value="DEBUG"/>
-    </category>
+        Uncomment to enable transactions debugging.
+    -->
+    <!--
+         <category name="org.apache.ignite.cache.msg.tx.prepare">
+             <level value="DEBUG"/>
+         </category>
+
+         <category name="org.apache.ignite.cache.msg.tx.finish">
+             <level value="DEBUG"/>
+         </category>
+
+         <category name="org.apache.ignite.cache.msg.tx.recovery">
+             <level value="DEBUG"/>
+         </category>
     -->
 
     <!-- Disable all open source debugging. -->
@@ -119,7 +134,7 @@
 
     <!-- Default settings. -->
     <root>
-        <!-- Print out all debug by default. -->
+        <!-- Print at info by default. -->
         <level value="INFO"/>
 
         <!-- Append to file and console. -->

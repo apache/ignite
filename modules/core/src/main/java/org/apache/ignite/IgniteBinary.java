@@ -23,12 +23,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -256,26 +258,47 @@ import org.jetbrains.annotations.Nullable;
  * or for a specific type via {@link org.apache.ignite.binary.BinaryTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Binary objects can be indexed for querying by specifying index fields in
- * {@link org.apache.ignite.cache.CacheTypeMetadata} inside of specific
+ * {@link org.apache.ignite.cache.QueryEntity} inside of specific
  * {@link org.apache.ignite.configuration.CacheConfiguration} instance,
  * like so:
  * <pre name=code class=xml>
  * ...
  * &lt;bean class="org.apache.ignite.cache.CacheConfiguration"&gt;
  *     ...
- *     &lt;property name="typeMetadata"&gt;
+ *     &lt;property name="queryEntities"&gt;
  *         &lt;list&gt;
- *             &lt;bean class="CacheTypeMetadata"&gt;
+ *             &lt;bean class="QueryEntity"&gt;
  *                 &lt;property name="type" value="Employee"/&gt;
  *
- *                 &lt;!-- Fields to index in ascending order. --&gt;
- *                 &lt;property name="ascendingFields"&gt;
+ *                 &lt;!-- Fields available from query. --&gt;
+ *                 &lt;property name="fields"&gt;
  *                     &lt;map&gt;
  *                     &lt;entry key="name" value="java.lang.String"/&gt;
  *
- *                         &lt;!-- Nested binary objects can also be indexed. --&gt;
- *                         &lt;entry key="address.zip" value="java.lang.Integer"/&gt;
+ *                     &lt;!-- Nested binary objects can also be indexed. --&gt;
+ *                     &lt;entry key="address.zip" value="java.lang.Integer" /&gt;
  *                     &lt;/map&gt;
+ *                 &lt;/property&gt;
+ *
+ *                 &lt;!-- Aliases for full property name in dot notation. --&gt;
+ *                 &lt;property name="fields"&gt;
+ *                     &lt;map&gt;
+ *                     &lt;entry key="address.zip" value="zip" /&gt;
+ *                     &lt;/map&gt;
+ *                 &lt;/property&gt;
+ *
+ *                 &lt;!-- Indexes configuration. --&gt;
+ *                 &lt;property name="indexes"&gt;
+ *                 &lt;list&gt;
+ *                 &lt;bean class="org.apache.ignite.cache.QueryIndex"&gt;
+ *                     &lt;property name="fields"&gt;
+ *                          &lt;map&gt;
+ *                          &lt;!-- The boolean value is the acceding flag. --&gt;
+ *                          &lt;entry key="name" value="true"/&gt;
+ *                          &lt;/map&gt;
+ *                     &lt;/property&gt;
+ *                 &lt;/bean&gt;
+ *                 &lt;/list&gt;
  *                 &lt;/property&gt;
  *             &lt;/bean&gt;
  *         &lt;/list&gt;
@@ -286,17 +309,20 @@ import org.jetbrains.annotations.Nullable;
 public interface IgniteBinary {
     /**
      * Gets type ID for given type name.
+     * If no user defined {@link org.apache.ignite.binary.BinaryIdMapper} is configured
+     * via {@link org.apache.ignite.configuration.BinaryConfiguration}, then system mapper will be used.
+     *
      *
      * @param typeName Type name.
-     * @return Type ID.
+     * @return Type ID which a type would have had if it has been registered in Ignite.
      */
-    public int typeId(String typeName);
+    public int typeId(@NotNull String typeName);
 
     /**
      * Converts provided object to instance of {@link org.apache.ignite.binary.BinaryObject}.
      *
      * @param obj Object to convert.
-     * @return Converted object.
+     * @return Converted object or {@code null} if obj is null.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException;
@@ -306,6 +332,7 @@ public interface IgniteBinary {
      *
      * @param typeName Type name.
      * @return Newly binary builder.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException;
 
@@ -353,11 +380,32 @@ public interface IgniteBinary {
     public Collection<BinaryType> types() throws BinaryObjectException;
 
     /**
-     * Create enum object.
+     * Create enum object using value.
      *
      * @param typeName Type name.
      * @param ord Ordinal.
      * @return Enum object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public BinaryObject buildEnum(String typeName, int ord);
+    public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException;
+
+    /**
+     * Create enum object using name.
+     *
+     * @param typeName Type name.
+     * @param name Name.
+     * @return Enum object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException;
+
+    /**
+     * Register enum type.
+     *
+     * @param typeName Type name.
+     * @param vals Mapping of enum constant names to ordinals.
+     * @return Binary type for registered enum.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException;
 }

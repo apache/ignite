@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
@@ -41,6 +40,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -67,15 +67,14 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldsQuery() throws Exception {
         Person p1 = new Person("Jon", 1500);
         Person p2 = new Person("Jane", 2000);
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        Ignite ignite0 = grid(0);
-
-        IgniteCache<UUID, Person> cache0 = ignite0.cache(null);
+        IgniteCache<UUID, Person> cache0 = jcache(UUID.class, Person.class);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -108,13 +107,14 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesQuery() throws Exception {
         Person p1 = new Person("Jon", 1500);
         Person p2 = new Person("Jane", 2000);
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        IgniteCache<UUID, Person> cache0 = grid(0).cache(null);
+        IgniteCache<UUID, Person> cache0 = jcache(UUID.class, Person.class);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -156,12 +156,13 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryPagination() throws Exception {
         final int pageSize = 5;
 
         final AtomicInteger pages = new AtomicInteger(0);
 
-        IgniteCache<Integer, Integer> cache = ignite().cache(null);
+        IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
 
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
@@ -196,7 +197,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
             List<Cache.Entry<Integer, Integer>> all = cache.query(qry).getAll();
 
-            assertTrue(pages.get() > ignite().cluster().forDataNodes(null).nodes().size());
+            assertTrue(pages.get() > ignite().cluster().forDataNodes(DEFAULT_CACHE_NAME).nodes().size());
 
             assertEquals(50, all.size());
         }

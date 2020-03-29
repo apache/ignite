@@ -24,7 +24,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Cancel request.
+ * Cancel map part of query request.
  */
 public class GridQueryCancelRequest implements Message {
     /** */
@@ -109,7 +109,7 @@ public class GridQueryCancelRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 106;
     }
 

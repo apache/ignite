@@ -23,11 +23,9 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -36,7 +34,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Partitioned affinity test for projections.
  */
-@SuppressWarnings({"PointlessArithmeticExpression"})
 public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAbstractTest {
     /** Backup count. */
     private static final int BACKUPS = 1;
@@ -44,12 +41,9 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     /** Grid count. */
     private static final int GRIDS = 3;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -60,12 +54,6 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
@@ -81,6 +69,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -88,11 +77,11 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         Ignite g1 = grid(1);
 
         for (int i = 0; i < 100; i++)
-            assertEquals(g0.affinity(null).mapKeyToNode(i).id(), g1.affinity(null).mapKeyToNode(i).id());
+            assertEquals(g0.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i).id(), g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i).id());
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testProjectionAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -105,13 +94,12 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
             g1.cluster().forNodeIds(F.asList(g0.cluster().localNode().id(), g1.cluster().localNode().id()));
 
         for (int i = 0; i < 100; i++)
-            assertEquals(g0Pinned.ignite().affinity(null).mapKeyToNode(i).id(),
-                g01Pinned.ignite().affinity(null).mapKeyToNode(i).id());
+            assertEquals(g0Pinned.ignite().affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i).id(),
+                g01Pinned.ignite().affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i).id());
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
-        GridTestUtils.waitTopologyUpdate(null, BACKUPS, log());
+        GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }
 }

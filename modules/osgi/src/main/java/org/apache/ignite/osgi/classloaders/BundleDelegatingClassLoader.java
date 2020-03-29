@@ -71,26 +71,13 @@ public class BundleDelegatingClassLoader extends ClassLoader {
         return resource;
     }
 
-    /**
-     * Finds a given resource from within the {@link #bundle}.
-     *
-     * @param name The resource name.
-     * @return URLs of resources.
-     * @throws IOException
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    protected Enumeration findResources(String name) throws IOException {
+    @Override protected Enumeration findResources(String name) throws IOException {
         return bundle.getResources(name);
     }
 
-    /**
-     * Loads a class trying the {@link #bundle} first, falling back to the ClassLoader {@link #clsLdr}.
-     *
-     * @param name Class name.
-     * @param resolve {@code true} to resolve the class.
-     * @return The Class.
-     * @throws ClassNotFoundException
-     */
+    /** {@inheritDoc} */
     @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         Class<?> cls;
 

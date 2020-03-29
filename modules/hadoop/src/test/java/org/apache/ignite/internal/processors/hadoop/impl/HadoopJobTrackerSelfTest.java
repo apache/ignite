@@ -36,12 +36,14 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.configuration.HadoopConfiguration;
+import org.apache.ignite.hadoop.planner.HadoopTestRoundRobinMrPlanner;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
@@ -70,13 +72,6 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         latch.put("mapAwaitLatch", new CountDownLatch(1));
         latch.put("reduceAwaitLatch", new CountDownLatch(1));
@@ -91,8 +86,8 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         cfg.setMapReducePlanner(new HadoopTestRoundRobinMrPlanner());
 
@@ -105,6 +100,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleTaskSubmit() throws Exception {
         try {
             UUID globalId = UUID.randomUUID();
@@ -120,7 +116,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             HadoopJobId jobId = new HadoopJobId(globalId, 1);
 
-            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
             checkStatus(jobId, false);
 
@@ -151,6 +147,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithCombinerPerMap() throws Exception {
         try {
             UUID globalId = UUID.randomUUID();
@@ -167,7 +164,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             HadoopJobId jobId = new HadoopJobId(globalId, 1);
 
-            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
             checkStatus(jobId, false);
 

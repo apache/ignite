@@ -1,0 +1,151 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'events'
+-var model = '$ctrl.clonedCluster'
+-var modelEventStorage = model + '.eventStorage'
+-var modelEventStorageKind = modelEventStorage + '.kind'
+-var eventStorageMemory = modelEventStorageKind + ' === "Memory"'
+-var eventStorageCustom = modelEventStorageKind + ' === "Custom"'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Events
+    panel-description
+        | Grid events are used for notification about what happens within the grid.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/events" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                +form-field__dropdown({
+                    label: 'Event storage:',
+                    model: modelEventStorageKind,
+                    name: '"eventStorageKind"',
+                    placeholder: 'Disabled',
+                    options: '$ctrl.eventStorage',
+                    tip: 'Regulate how grid store events locally on node\
+                        <ul>\
+                            <li>Memory - All events are kept in the FIFO queue in-memory</li>\
+                            <li>Custom - Custom implementation of event storage SPI</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+                +form-field__dropdown({
+                    label: 'Event storage:',
+                    model: modelEventStorageKind,
+                    name: '"eventStorageKind"',
+                    placeholder: 'Disabled',
+                    options: '$ctrl.eventStorage',
+                    tip: 'Regulate how grid store events locally on node\
+                        <ul>\
+                            <li>Memory - All events are kept in the FIFO queue in-memory</li>\
+                            <li>Custom - Custom implementation of event storage SPI</li>\
+                            <li>Disabled - Events are not collected</li>\
+                        </ul>'
+                })
+            .pc-form-group.pc-form-grid-row(ng-if=modelEventStorageKind)
+                .pc-form-grid-col-30(ng-if-start=eventStorageMemory)
+                    +form-field__number({
+                        label: 'Events expiration time:',
+                        model: `${modelEventStorage}.Memory.expireAgeMs`,
+                        name: '"writeBehindBatchSize"',
+                        placeholder: 'Long.MAX_VALUE',
+                        min: '1',
+                        tip: 'All events that exceed this value will be removed from the queue when next event comes'
+                    })
+                .pc-form-grid-col-30
+                    +form-field__number({
+                        label: 'Events queue size:',
+                        model: `${modelEventStorage}.Memory.expireCount`,
+                        name: '"EventStorageExpireCount"',
+                        placeholder: '10000',
+                        min: '1',
+                        tip: 'Events will be filtered out when new request comes'
+                    })
+                .pc-form-grid-col-60(ng-if-end)
+                    +form-field__java-class({
+                        label: 'Filter:',
+                        model: `${modelEventStorage}.Memory.filter`,
+                        name: '"EventStorageFilter"',
+                        tip: 'Filter for events to be recorded<br/>\
+                             Should be implementation of o.a.i.lang.IgnitePredicate&lt;o.a.i.events.Event&gt;',
+                        validationActive: eventStorageMemory
+                    })
+
+                .pc-form-grid-col-60(ng-if=eventStorageCustom)
+                    +form-field__java-class({
+                        label: 'Class:',
+                        model: `${modelEventStorage}.Custom.className`,
+                        name: '"EventStorageCustom"',
+                        required: eventStorageCustom,
+                        tip: 'Event storage implementation class name',
+                        validationActive: eventStorageCustom
+                    })
+
+                .pc-form-grid-col-60
+                    +form-field__dropdown({
+                        label: 'Include type:',
+                        model: `${model}.includeEventTypes`,
+                        name: '"includeEventTypes"',
+                        multiple: true,
+                        placeholder: 'Choose recorded event types',
+                        placeholderEmpty: '',
+                        options: '$ctrl.eventGroups',
+                        tip: 'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
+                             Note, that either the include event types or the exclude event types can be established'
+                    })
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +form-field__label({label: 'Local event listeners:', name: '"LocalEventListeners"'})
+                        +form-field__tooltip({title: `Local event listeners`})
+
+                    -var items = model + '.localEventListeners'
+                    list-editable.pc-list-editable-with-form-grid(ng-model=items name='LocalEventListeners')
+                        list-editable-item-edit.pc-form-grid-row
+                            - form = '$parent.form'
+                            .pc-form-grid-col-40
+                                +form-field__java-class({
+                                    label: 'Listener class name:',
+                                    model: '$item.className',
+                                    name: '"EventListenerClassName"',
+                                    required: true,
+                                    tip: 'Local event listener implementation class name',
+                                    validationActive: true
+                                })
+                            .pc-form-grid-col-20
+                                +form-field__dropdown({
+                                    label: 'Event types:',
+                                    model: '$item.eventTypes',
+                                    name: '"EventLisneterEventTypes"',
+                                    required: true,
+                                    multiple: true,
+                                    placeholder: 'Choose event types',
+                                    placeholderEmpty: '',
+                                    options: '$ctrl.eventTypes',
+                                    tip: 'Listened event types:'
+                                })
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addLocalEventListener($ctrl.clonedCluster)`
+                                label-single='listener'
+                                label-multiple='listeners'
+                            )
+
+            - form = 'events'
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterEvents')

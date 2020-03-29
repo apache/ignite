@@ -17,22 +17,22 @@
 
 'use strict';
 
+const express = require('express');
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/profiles',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/users']
+    inject: ['mongo', 'services/users']
 };
 
 /**
- *
- * @param _ Lodash module
- * @param express Express module
  * @param mongo
  * @param {UsersService} usersService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, mongo, usersService) {
+module.exports.factory = function(mongo, usersService) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 
@@ -43,7 +43,7 @@ module.exports.factory = function(_, express, mongo, usersService) {
             if (req.body.password && _.isEmpty(req.body.password))
                 return res.status(500).send('Wrong value for new password!');
 
-            usersService.save(req.body)
+            usersService.save(req.user._id, req.body)
                 .then((user) => {
                     const becomeUsed = req.session.viewedUser && req.user.admin;
 

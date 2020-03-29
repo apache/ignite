@@ -30,7 +30,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -38,10 +37,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -49,9 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES = 3;
 
@@ -83,10 +77,8 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     private static final String FIELD_CACHE = "field-cache";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(getCacheConfigurations());
 
@@ -103,18 +95,11 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     }
 
     /**
-     * @return Memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return Cache config.
      */
     protected CacheConfiguration getCacheConfiguration(final String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         QueryEntity person = new QueryEntity();
@@ -123,8 +108,6 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         person.addQueryField("name", String.class.getName(), null);
 
         ccfg.setQueryEntities(Collections.singletonList(person));
-
-        ccfg.setMemoryMode(memoryMode());
 
         ccfg.setName(cacheName);
 
@@ -174,11 +157,10 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration getCacheConfiguration(final String cacheName, final Class<?> key, final Class<?> val) {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName(cacheName);
 
-        cfg.setMemoryMode(memoryMode());
         cfg.setIndexedTypes(key, val);
 
         return cfg;
@@ -193,16 +175,10 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
         startGridsMultiThreaded(nodes);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectArgument() throws Exception {
         testKeyQuery(OBJECT_CACHE, new TestKey(1), new TestKey(2));
     }
@@ -210,6 +186,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveObjectArgument() throws Exception {
         testKeyValQuery(PRIM_CACHE, 1, 2);
     }
@@ -217,6 +194,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStringObjectArgument() throws Exception {
         testKeyValQuery(STR_CACHE, "str1", "str2");
     }
@@ -224,6 +202,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumObjectArgument() throws Exception {
        testKeyValQuery(ENUM_CACHE, EnumKey.KEY1, EnumKey.KEY2);
     }
@@ -231,6 +210,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUuidObjectArgument() throws Exception {
         final UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
@@ -244,6 +224,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDateObjectArgument() throws Exception {
         testKeyValQuery(DATE_CACHE, new Date(0), new Date(1));
     }
@@ -251,6 +232,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimestampArgument() throws Exception {
         testKeyValQuery(TIMESTAMP_CACHE, new Timestamp(0), new Timestamp(1));
     }
@@ -259,6 +241,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigDecimalArgument() throws Exception {
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -303,7 +286,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         final SqlQuery<T, Person> qry = new SqlQuery<>(Person.class, "where _key=?");
 
-        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select * from Person where _key=?");
+        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select _key, _val, * from Person where _key=?");
 
         qry.setLocal(isLocal());
         fieldsQry.setLocal(isLocal());
@@ -346,7 +329,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
 
         final SqlQuery<Person, T> qry = new SqlQuery<>(valType, "where _val=?");
 
-        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select * from " + valType.getSimpleName() + " where _val=?");
+        final SqlFieldsQuery fieldsQry = new SqlFieldsQuery("select _key, _val, * from " + valType.getSimpleName() + " where _val=?");
 
         qry.setLocal(isLocal());
         fieldsQry.setLocal(isLocal());
@@ -371,6 +354,7 @@ public class IgniteBinaryObjectQueryArgumentsTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFieldSearch() throws Exception {
         final IgniteCache<Integer, SearchValue> cache = ignite(0).cache(FIELD_CACHE);
 

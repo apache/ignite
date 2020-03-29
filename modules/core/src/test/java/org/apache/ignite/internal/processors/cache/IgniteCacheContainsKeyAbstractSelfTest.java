@@ -28,6 +28,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -48,8 +49,8 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -65,8 +66,8 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setBackups(1);
 
@@ -76,6 +77,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedContains() throws Exception {
         String key = "1";
 
@@ -91,6 +93,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsInTx() throws Exception {
         if (atomicityMode() == TRANSACTIONAL) {
             String key = "1";

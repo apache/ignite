@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -29,7 +30,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Configuration object for Ignite Binary Objects.
  * @see org.apache.ignite.IgniteBinary
  */
-public class BinaryConfiguration {
+public class BinaryConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Default compact footer flag setting. */
     public static final boolean DFLT_COMPACT_FOOTER = true;
 
@@ -52,13 +56,16 @@ public class BinaryConfiguration {
      * Sets class names of binary objects explicitly.
      *
      * @param clsNames Class names.
+     * @return {@code this} for chaining.
      */
-    public void setClassNames(Collection<String> clsNames) {
+    public BinaryConfiguration setClassNames(Collection<String> clsNames) {
         if (typeCfgs == null)
             typeCfgs = new ArrayList<>(clsNames.size());
 
         for (String clsName : clsNames)
             typeCfgs.add(new BinaryTypeConfiguration(clsName));
+
+        return this;
     }
 
     /**
@@ -74,9 +81,12 @@ public class BinaryConfiguration {
      * Sets ID mapper.
      *
      * @param idMapper ID mapper.
+     * @return {@code this} for chaining.
      */
-    public void setIdMapper(BinaryIdMapper idMapper) {
+    public BinaryConfiguration setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+
+        return this;
     }
 
     /**
@@ -92,9 +102,12 @@ public class BinaryConfiguration {
      * Sets name mapper.
      *
      * @param nameMapper Name mapper.
+     * @return {@code this} for chaining.
      */
-    public void setNameMapper(BinaryNameMapper nameMapper) {
+    public BinaryConfiguration setNameMapper(BinaryNameMapper nameMapper) {
         this.nameMapper = nameMapper;
+
+        return this;
     }
 
     /**
@@ -110,9 +123,12 @@ public class BinaryConfiguration {
      * Sets serializer.
      *
      * @param serializer Serializer.
+     * @return {@code this} for chaining.
      */
-    public void setSerializer(BinarySerializer serializer) {
+    public BinaryConfiguration setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+
+        return this;
     }
 
     /**
@@ -128,9 +144,12 @@ public class BinaryConfiguration {
      * Sets type configurations.
      *
      * @param typeCfgs Type configurations.
+     * @return {@code this} for chaining.
      */
-    public void setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
+    public BinaryConfiguration setTypeConfigurations(Collection<BinaryTypeConfiguration> typeCfgs) {
         this.typeCfgs = typeCfgs;
+
+        return this;
     }
 
     /**
@@ -155,9 +174,12 @@ public class BinaryConfiguration {
      * Set whether to write footers in compact form. See {@link #isCompactFooter()} for more info.
      *
      * @param compactFooter Whether to write footers in compact form.
+     * @return {@code this} for chaining.
      */
-    public void setCompactFooter(boolean compactFooter) {
+    public BinaryConfiguration setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -66,50 +66,23 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<ignite::examples::Organization>
+        struct BinaryType<examples::Organization> : BinaryTypeDefaultAll<examples::Organization>
         {
-            int32_t GetTypeId()
+            static void GetTypeName(std::string& dst)
             {
-                return GetBinaryStringHashCode("Organization");
+                dst = "Organization";
             }
 
-            std::string GetTypeName()
-            {
-                return "Organization";
-            }
-
-            int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            int32_t GetHashCode(ignite::examples::Organization obj)
-            {
-                return 0;
-            }
-
-            bool IsNull(ignite::examples::Organization obj)
-            {
-                return false;
-            }
-
-            ignite::examples::Organization GetNull()
-            {
-                return ignite::examples::Organization("", ignite::examples::Address());
-            }
-
-            void Write(BinaryWriter& writer, ignite::examples::Organization obj)
+            static void Write(BinaryWriter& writer, const examples::Organization& obj)
             {
                 writer.WriteString("name", obj.name);
-                writer.WriteObject<ignite::examples::Address>("addr", obj.addr);
+                writer.WriteObject<examples::Address>("addr", obj.addr);
             }
 
-            ignite::examples::Organization Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, examples::Organization& dst)
             {
-                std::string name = reader.ReadString("name");
-                ignite::examples::Address addr = reader.ReadObject<ignite::examples::Address>("addr");
-
-                return ignite::examples::Organization(name, addr);
+                dst.name = reader.ReadString("name");
+                dst.addr = reader.ReadObject<examples::Address>("addr");
             }
         };
     }

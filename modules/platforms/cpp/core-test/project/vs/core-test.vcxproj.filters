@@ -55,7 +55,13 @@
     <ClCompile Include="..\..\src\dynamic_size_array_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cache_invoke_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\interop_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cluster_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\continuous_query_test.cpp">
@@ -73,7 +79,16 @@
     <ClCompile Include="..\..\src\test_utils.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\date_time_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cache_store_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\future_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compute_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -110,27 +125,72 @@
     <Filter Include="Code\Types">
       <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\Types">
-      <UniqueIdentifier>{fb43524e-3694-44ee-b153-770cd9cf6c7a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\invalid.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\cache-test.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-test-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-test-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\invalid.xml">
+    <None Include="..\..\config\cache-query-32.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\cache-identity.xml">
+    <None Include="..\..\config\cache-query-default.xml">
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\cache-query-continuous.xml">
       <Filter>Configs</Filter>
     </None>
+    <None Include="..\..\config\cache-query-continuous-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-query-continuous-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-identity.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-identity-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-identity-default.xml">
+      <Filter>Configs</Filter>
+    </None>
     <None Include="..\..\config\cache-store.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-store-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-store-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\isolated.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\isolated-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\isolated-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistence-store.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistence-store-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\persistence-store-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

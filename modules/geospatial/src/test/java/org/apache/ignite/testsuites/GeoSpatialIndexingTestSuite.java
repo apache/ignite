@@ -17,27 +17,20 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.query.h2.GridBinaryH2IndexingGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingGeoSelfTest;
-import org.apache.ignite.internal.processors.query.h2.GridH2IndexingSegmentedGeoSelfTest;
+import org.apache.ignite.internal.processors.query.h2.H2IndexingGeoSelfTest;
+import org.apache.ignite.internal.processors.query.h2.H2IndexingSegmentedGeoSelfTest;
+import org.apache.ignite.internal.processors.query.h2.H2IndexesSystemViewTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Geospatial indexing tests.
  */
-public class GeoSpatialIndexingTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("H2 Geospatial Indexing Test Suite");
-
-        // Geo.
-        suite.addTestSuite(GridH2IndexingGeoSelfTest.class);
-        suite.addTestSuite(GridBinaryH2IndexingGeoSelfTest.class);
-        suite.addTestSuite(GridH2IndexingSegmentedGeoSelfTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    H2IndexingGeoSelfTest.class,
+    H2IndexingSegmentedGeoSelfTest.class,
+    H2IndexesSystemViewTest.class
+})
+public class GeoSpatialIndexingTestSuite {
 }

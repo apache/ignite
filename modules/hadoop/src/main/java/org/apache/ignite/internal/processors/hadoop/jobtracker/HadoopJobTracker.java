@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +38,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
@@ -49,14 +52,14 @@ import org.apache.ignite.internal.processors.hadoop.HadoopClassLoader;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounterWriter;
@@ -78,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobPhase.PHASE_CANCELLING;
@@ -101,6 +103,9 @@ import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTa
  */
 public class HadoopJobTracker extends HadoopComponent {
     /** */
+    private static final CachePeekMode[] OFFHEAP_PEEK_MODE = {CachePeekMode.OFFHEAP};
+
+    /** */
     private final GridMutex mux = new GridMutex();
 
     /** */
@@ -114,14 +119,14 @@ public class HadoopJobTracker extends HadoopComponent {
     private HadoopMapReducePlanner mrPlanner;
 
     /** All the known jobs. */
-    private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJob>> jobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJobEx>> jobs = new ConcurrentHashMap<>();
 
     /** Locally active jobs. */
-    private final ConcurrentMap<HadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<HadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap<>();
 
     /** Locally requested finish futures. */
     private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJobId>> activeFinishFuts =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Event processing service. */
     private ExecutorService evtProcSvc;
@@ -129,8 +134,8 @@ public class HadoopJobTracker extends HadoopComponent {
     /** Component busy lock. */
     private GridSpinReadWriteLock busyLock;
 
-    /** Class to create HadoopJob instances from. */
-    private Class<? extends HadoopJob> jobCls;
+    /** Class to create HadoopJobEx instances from. */
+    private Class<? extends HadoopJobEx> jobCls;
 
     /** Closure to check result of async transform of system cache. */
     private final IgniteInClosure<IgniteInternalFuture<?>> failsLog = new CI1<IgniteInternalFuture<?>>() {
@@ -158,7 +163,7 @@ public class HadoopJobTracker extends HadoopComponent {
         HadoopClassLoader ldr = ctx.kernalContext().hadoopHelper().commonClassLoader();
 
         try {
-            jobCls = (Class<HadoopJob>)ldr.loadClass(HadoopCommonUtils.JOB_CLS_NAME);
+            jobCls = (Class<HadoopJobEx>)ldr.loadClass(HadoopCommonUtils.JOB_CLS_NAME);
         }
         catch (Exception ioe) {
             throw new IgniteCheckedException("Failed to load job class [class=" +
@@ -227,7 +232,6 @@ public class HadoopJobTracker extends HadoopComponent {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
@@ -254,6 +258,7 @@ public class HadoopJobTracker extends HadoopComponent {
             null,
             true,
             true,
+            false,
             false
         );
 
@@ -297,7 +302,6 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param info Job info.
      * @return Job completion future.
      */
-    @SuppressWarnings("unchecked")
     public IgniteInternalFuture<HadoopJobId> submit(HadoopJobId jobId, HadoopJobInfo info) {
         if (!busyLock.tryReadLock()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Failed to execute map-reduce job " +
@@ -310,7 +314,7 @@ public class HadoopJobTracker extends HadoopComponent {
             if (jobs.containsKey(jobId) || jobMetaCache().containsKey(jobId))
                 throw new IgniteCheckedException("Failed to submit job. Job with the same ID already exists: " + jobId);
 
-            HadoopJob job = job(jobId, info);
+            HadoopJobEx job = job(jobId, info);
 
             HadoopMapReducePlan mrPlan = mrPlanner.preparePlan(job, ctx.nodes(), null);
 
@@ -420,7 +424,6 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param meta Metadata.
      * @return Status.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static HadoopJobStatus status(HadoopJobMetadata meta) {
         HadoopJobInfo jobInfo = meta.jobInfo();
 
@@ -542,7 +545,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param info Task info.
      * @param status Task status.
      */
-    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ConstantConditions"})
     public void onTaskFinished(HadoopTaskInfo info, HadoopTaskStatus status) {
         if (!busyLock.tryReadLock())
             return;
@@ -679,9 +682,20 @@ public class HadoopJobTracker extends HadoopComponent {
         if (ctx.jobUpdateLeader()) {
             boolean checkSetup = evt.eventNode().order() < ctx.localNodeOrder();
 
+            Iterable<IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>> entries;
+
+            try {
+                entries = jobMetaCache().localEntries(OFFHEAP_PEEK_MODE);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to get local entries", e);
+
+                return;
+            }
+
             // Iteration over all local entries is correct since system cache is REPLICATED.
-            for (Object metaObj : jobMetaCache().values()) {
-                HadoopJobMetadata meta = (HadoopJobMetadata)metaObj;
+            for (IgniteCache.Entry<HadoopJobId, HadoopJobMetadata>  entry : entries) {
+                HadoopJobMetadata meta = entry.getValue();
 
                 HadoopJobId jobId = meta.jobId();
 
@@ -692,7 +706,7 @@ public class HadoopJobTracker extends HadoopComponent {
                 try {
                     if (checkSetup && phase == PHASE_SETUP && !activeJobs.containsKey(jobId)) {
                         // Failover setup task.
-                        HadoopJob job = job(jobId, meta.jobInfo());
+                        HadoopJobEx job = job(jobId, meta.jobInfo());
 
                         Collection<HadoopTaskInfo> setupTask = setupTask(jobId);
 
@@ -787,25 +801,27 @@ public class HadoopJobTracker extends HadoopComponent {
      */
     @SuppressWarnings({"unused", "ConstantConditions" })
     private void printPlan(HadoopJobId jobId, HadoopMapReducePlan plan) {
-        log.info("Plan for " + jobId);
+        if (log.isInfoEnabled()) {
+            log.info("Plan for " + jobId);
 
-        SB b = new SB();
+            SB b = new SB();
 
-        b.a("   Map: ");
+            b.a("   Map: ");
 
-        for (UUID nodeId : plan.mapperNodeIds())
-            b.a(nodeId).a("=").a(plan.mappers(nodeId).size()).a(' ');
+            for (UUID nodeId : plan.mapperNodeIds())
+                b.a(nodeId).a("=").a(plan.mappers(nodeId).size()).a(' ');
 
-        log.info(b.toString());
+            log.info(b.toString());
 
-        b = new SB();
+            b = new SB();
 
-        b.a("   Reduce: ");
+            b.a("   Reduce: ");
 
-        for (UUID nodeId : plan.reducerNodeIds())
-            b.a(nodeId).a("=").a(Arrays.toString(plan.reducers(nodeId))).a(' ');
+            for (UUID nodeId : plan.reducerNodeIds())
+                b.a(nodeId).a("=").a(Arrays.toString(plan.reducers(nodeId))).a(' ');
 
-        log.info(b.toString());
+            log.info(b.toString());
+        }
     }
 
     /**
@@ -818,7 +834,7 @@ public class HadoopJobTracker extends HadoopComponent {
         throws IgniteCheckedException {
         JobLocalState state = activeJobs.get(jobId);
 
-        HadoopJob job = job(jobId, meta.jobInfo());
+        HadoopJobEx job = job(jobId, meta.jobInfo());
 
         HadoopMapReducePlan plan = meta.mapReducePlan();
 
@@ -1048,7 +1064,7 @@ public class HadoopJobTracker extends HadoopComponent {
      * @param job Job instance.
      * @return Collection of task infos.
      */
-    private Collection<HadoopTaskInfo> reducerTasks(int[] reducers, HadoopJob job) {
+    private Collection<HadoopTaskInfo> reducerTasks(int[] reducers, HadoopJobEx job) {
         UUID locNodeId = ctx.localNodeId();
         HadoopJobId jobId = job.id();
 
@@ -1097,15 +1113,15 @@ public class HadoopJobTracker extends HadoopComponent {
      * @return Job.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public HadoopJob job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
-        GridFutureAdapter<HadoopJob> fut = jobs.get(jobId);
+    @Nullable public HadoopJobEx job(HadoopJobId jobId, @Nullable HadoopJobInfo jobInfo) throws IgniteCheckedException {
+        GridFutureAdapter<HadoopJobEx> fut = jobs.get(jobId);
 
-        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<HadoopJob>())) != null)
+        if (fut != null || (fut = jobs.putIfAbsent(jobId, new GridFutureAdapter<HadoopJobEx>())) != null)
             return fut.get();
 
         fut = jobs.get(jobId);
 
-        HadoopJob job = null;
+        HadoopJobEx job = null;
 
         try {
             if (jobInfo == null) {

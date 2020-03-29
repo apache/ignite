@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -43,11 +44,13 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Full API compute test.
@@ -175,6 +178,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTaskClass() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -199,6 +203,32 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testExecuteTaskClassAsync() throws Exception {
+        runTest(jobFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                // Begin with negative to check 'null' value in the test.
+                final int[] i = {-1};
+
+                ComputeTaskFuture<List<Object>> fut = ignite.compute().executeAsync(
+                    TestTask.class,
+                    new T2<>((Factory<ComputeJobAdapter>)factory,
+                        (Factory<Object>)new Factory<Object>() {
+                            @Override public Object create() {
+                                return value(i[0]++);
+                            }
+                        }));
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, fut.get(), value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), fut.get());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testExecuteTask() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -222,6 +252,31 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testExecuteTaskAsync() throws Exception {
+        runTest(jobFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                // Begin with negative to check 'null' value in the test.
+                final int[] i = {-1};
+
+                ComputeTaskFuture<List<Object>> fut = ignite.compute().executeAsync(new TestTask(),
+                    new T2<>((Factory<ComputeJobAdapter>)factory,
+                        (Factory<Object>)new Factory<Object>() {
+                            @Override public Object create() {
+                                return value(i[0]++);
+                            }
+                        }));
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, fut.get(), value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), fut.get());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBroadcastClosure() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -245,6 +300,31 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testBroadcastClosureAsync() throws Exception {
+        runTest(closureFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                final Collection<Object> resultsAllNull = ignite.compute()
+                    .broadcast((IgniteClosure<Object, Object>)factory.create(), null);
+
+                assertEquals("Result's size mismatch: job must be run on all server nodes",
+                    gridCount() - clientsCount(), resultsAllNull.size());
+
+                for (Object o : resultsAllNull)
+                    assertNull("All results must be null", o);
+
+                IgniteFuture<Collection<Object>> fut = ignite.compute()
+                    .broadcastAsync((IgniteClosure<Object, Object>)factory.create(), value(0));
+
+                checkResultsClassCount(gridCount() - clientsCount(), fut.get(), value(0).getClass());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBroadcastCallable() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -274,6 +354,37 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testBroadcastCallableAsync() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                EchoCallable job = (EchoCallable)factory.create();
+                job.setArg(null);
+
+                final IgniteFuture<Collection<Object>> futAllNull = ignite.compute()
+                    .broadcastAsync(job);
+
+                assertEquals("Result's size mismatch: job must be run on all server nodes",
+                    gridCount() - clientsCount(), futAllNull.get().size());
+
+                for (Object o : futAllNull.get())
+                    assertNull("All results must be null", o);
+
+                job.setArg(value(0));
+                IgniteFuture<Collection<Object>> futNotNull = ignite.compute()
+                    .broadcastAsync(job);
+
+                checkResultsClassCount(gridCount() - clientsCount(), futNotNull.get(), value(0).getClass());
+                for (Object o : futNotNull.get())
+                    assertEquals("Invalid broadcast results", value(0), o);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBroadcastRunnable() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -288,6 +399,24 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testBroadcastRunnableAsync() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                IgniteFuture<Void> fut = ignite.compute().broadcastAsync(job);
+
+                fut.get();
+                // All checks are inside the run() method of the job.
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testRun() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -310,24 +439,50 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testRunAsync() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                IgniteFuture<Void> fut0 = ignite.compute().runAsync(job);
+
+                fut0.get();
+                // All checks are inside the run() method of the job.
+
+                Collection<IgniteRunnable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i)
+                    jobs.add((IgniteRunnable)factory.create());
+
+                IgniteFuture<Void> fut1 = ignite.compute().runAsync(jobs);
+
+                fut1.get();
+                // All checks are inside the run() method of the job.
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testApplyAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
-                final IgniteCompute comp = ignite.compute().withAsync();
+                final IgniteCompute comp = ignite.compute();
 
-                Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+                Collection<IgniteFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     // value(i - 1): use negative argument of the value method to generate nullong value.
-                    comp.apply((IgniteClosure<Object, Object>)factory.create(), value(i - 1));
-
-                    futures.add(comp.future());
+                    futures.add(comp.applyAsync((IgniteClosure<Object, Object>)factory.create(), value(i - 1)));
                 }
 
                 // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
 
-                for (ComputeTaskFuture<Object> future : futures)
+                for (IgniteFuture<Object> future : futures)
                     results.add(future.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
@@ -339,7 +494,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
-    public void testApplySync() throws Exception {
+    @Test
+    public void testApply() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
@@ -358,6 +514,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApplyForCollection() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -383,6 +540,34 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testApplyForCollectionAsync() throws Exception {
+        runTest(closureFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection params = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    // value(i - 1): use negative argument of the value method to generate nullong value.
+                    params.add(value(i - 1));
+                }
+
+                IgniteClosure c = (IgniteClosure)factory.create();
+
+                // Use type casting to avoid ambiguous for apply(Callable, Object) vs apply(Callable, Collection<Object>).
+                IgniteFuture<Collection<Object>> fut = ignite.compute().applyAsync(
+                    (IgniteClosure<TestObject, Object>)c,
+                    (Collection<TestObject>)params);
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, fut.get(), value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), fut.get());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testApplyForCollectionWithReducer() throws Exception {
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -409,6 +594,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                             return true;
                         }
                     });
+
                 assertTrue(res);
             }
         });
@@ -417,24 +603,60 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testApplyForCollectionWithReducerAsync() throws Exception {
+        runTest(closureFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<Object> params = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    // value(i - 1): use negative argument of the value method to generate nullong value.
+                    params.add(value(i - 1));
+                }
+
+                IgniteFuture<Boolean> fut = ignite.compute()
+                    .applyAsync((IgniteClosure<Object, Object>)factory.create(), params, new IgniteReducer<Object, Boolean>() {
+
+                        private Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                        @Override public boolean collect(@Nullable Object o) {
+                            results.add(o);
+                            return true;
+                        }
+
+                        @Override public Boolean reduce() {
+                            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                            assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+                            return true;
+                        }
+                    });
+
+                assertTrue(fut.get());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
-                final IgniteCompute comp = ignite.compute().withAsync();
+                final IgniteCompute comp = ignite.compute();
 
-                Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+                Collection<IgniteFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
                     job.setArg(value(i - 1));
 
-                    comp.call(job);
-                    futures.add(comp.future());
+                    futures.add(comp.callAsync(job));
                 }
 
                 // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
-                for (ComputeTaskFuture<Object> future : futures)
+                for (IgniteFuture<Object> future : futures)
                     results.add(future.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
@@ -446,7 +668,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
-    public void testCallSync() throws Exception {
+    @Test
+    public void testCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
@@ -466,6 +689,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallCollection() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -488,6 +712,30 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCallCollectionAsync() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<EchoCallable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+                    job.setArg(value(i - 1));
+                    jobs.add(job);
+                }
+
+                IgniteFuture<Collection<Object>> fut = ignite.compute().callAsync(jobs);
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, fut.get(), value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), fut.get());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCallCollectionWithReducer() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -522,7 +770,43 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
-    public void testDummyAffinityCall() throws Exception {
+    @Test
+    public void testCallCollectionWithReducerAsync() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<EchoCallable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+                    job.setArg(value(i - 1));
+                    jobs.add(job);
+                }
+
+                IgniteFuture<Boolean> fut = ignite.compute().callAsync(jobs, new IgniteReducer<Object, Boolean>() {
+                    private Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                    @Override public boolean collect(@Nullable Object o) {
+                        results.add(o);
+                        return true;
+                    }
+
+                    @Override public Boolean reduce() {
+                        checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                        assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+                        return true;
+                    }
+                });
+
+                assertTrue(fut.get());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 ignite.getOrCreateCache(CACHE_NAME);
@@ -548,7 +832,153 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
-    public void testDummyAffinityRun() throws Exception {
+    @Test
+    public void testAffinityCallAsync() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache(CACHE_NAME);
+
+                final IgniteCompute comp = ignite.compute();
+
+                Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+
+                    job.setArg(value(i - 1));
+
+                    IgniteFuture<Object> fut = comp.affinityCallAsync("test", key(0), job);
+
+                    results.add(fut.get());
+                }
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheAffinityCall() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+
+                    job.setArg(value(i - 1));
+
+                    results.add(comp.affinityCall(Arrays.asList("test0", "test1"), key(0), job));
+                }
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheAffinityCallAsync() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+
+                    job.setArg(value(i - 1));
+
+                    IgniteFuture<Object> fut = comp.affinityCallAsync(Arrays.asList("test0", "test1"), key(0), job);
+
+                    results.add(fut.get());
+                }
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheByPartIdAffinityCall() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+
+                    job.setArg(value(i - 1));
+
+                    results.add(comp.affinityCall(Arrays.asList("test0", "test1"), 0, job));
+                }
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheByPartIdAffinityCallAsync() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+
+                    job.setArg(value(i - 1));
+
+                    IgniteFuture fut = comp.affinityCallAsync(Arrays.asList("test0", "test1"), 0, job);
+
+                    results.add(fut.get());
+                }
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityRun() throws Exception {
         runTest(runnableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 ignite.getOrCreateCache(CACHE_NAME);
@@ -567,6 +997,117 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testAffinityRunAsync() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache(CACHE_NAME);
+
+                final IgniteCompute comp = ignite.compute();
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                    IgniteFuture<Void> fut = comp.affinityRunAsync("test", key(0), job);
+
+                    fut.get();
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheAffinityRun() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                    comp.affinityRun(Arrays.asList("test0", "test1"), key(0), job);
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheAffinityRunAsync() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                    IgniteFuture<Void> fut = comp.affinityRunAsync(Arrays.asList("test0", "test1"), key(0), job);
+
+                    fut.get();
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheByPartIdAffinityRun() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                    comp.affinityRun(Arrays.asList("test0", "test1"), 0, job);
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultiCacheByPartIdAffinityRunAsync() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache("test0");
+                ignite.getOrCreateCache("test1");
+
+                final IgniteCompute comp = ignite.compute();
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                    IgniteFuture<Void> fut = comp.affinityRunAsync(Arrays.asList("test0", "test1"), 0, job);
+
+                    fut.get();
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeployExecuteByName() throws Exception {
         runTest(jobFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
@@ -624,7 +1165,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param ignite Ignite instance to use.
          * @throws Exception If failed.
          */
-        public void test(Factory factory, Ignite ignite) throws Exception;
+        @Test
+    public void test(Factory factory, Ignite ignite) throws Exception;
     }
 
     /**
@@ -821,18 +1363,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(argument(0));
 
             JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             setArguments(in.readObject());
 
@@ -849,9 +1387,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -931,18 +1467,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", argument(0));
 
             JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             Object arg = reader.readObject("arg");
 
@@ -961,9 +1493,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1152,9 +1682,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1247,9 +1775,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1428,18 +1954,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(arg);
 
             JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             arg = in.readObject();
 
@@ -1456,9 +1978,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1538,18 +2058,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", arg);
 
             JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             arg = reader.readObject("arg");
 
@@ -1566,9 +2082,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1647,9 +2161,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void run() {
             checkState();
         }
@@ -1735,16 +2247,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             isVal = in.readBoolean();
             bVal = in.readByte();
@@ -1759,9 +2267,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = (TestJobEnum)in.readObject();
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
@@ -1840,16 +2346,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             isVal = reader.readBoolean("isVal");
             bVal = reader.readByte("bVal");
@@ -1864,9 +2366,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             eVal = reader.readEnum("eVal");
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected void checkState() {
             JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }

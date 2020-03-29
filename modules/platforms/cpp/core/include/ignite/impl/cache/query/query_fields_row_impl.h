@@ -127,6 +127,35 @@ namespace ignite
                     }
 
                     /**
+                     * Get next entry assuming it's an array of 8-byte signed
+                     * integers. Maps to "byte[]" type in Java.
+                     *
+                     * @param dst Array to store data to.
+                     * @param len Expected length of array.
+                     * @return Actual amount of elements read. If "len" argument is less than actual
+                     *     array size or resulting array is set to null, nothing will be written
+                     *     to resulting array and returned value will contain required array length.
+                     *     -1 will be returned in case array in stream was null.
+                     */
+                    int32_t GetNextInt8Array(int8_t* dst, int32_t len)
+                    {
+                        if (IsValid()) {
+
+                            int32_t actualLen = reader.ReadInt8Array(dst, len);
+
+                            if (actualLen == 0 || (dst && len >= actualLen))
+                                ++processed;
+
+                            return actualLen;
+                        }
+                        else
+                        {
+                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                "Instance is not usable (did you check for error?).");
+                        }
+                    }
+
+                    /**
                      * Check if the instance is valid.
                      *
                      * Invalid instance can be returned if some of the previous

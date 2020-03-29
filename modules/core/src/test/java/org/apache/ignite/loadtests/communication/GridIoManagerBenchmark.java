@@ -26,6 +26,8 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -41,9 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
-import org.jsr166.ThreadLocalRandom8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -75,10 +75,10 @@ public class GridIoManagerBenchmark {
     public static final int TEST_TOPIC = 1;
 
     /** */
-    private static final LongAdder8 msgCntr = new LongAdder8();
+    private static final LongAdder msgCntr = new LongAdder();
 
     /** */
-    private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+    private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap<>();
 
     /** */
     private static final byte[][] arrs;
@@ -93,7 +93,7 @@ public class GridIoManagerBenchmark {
      *
      */
     static {
-        ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         arrs = new byte[64][];
 
@@ -149,7 +149,6 @@ public class GridIoManagerBenchmark {
      * @param duration Test duration.
      * @param outputFilename Output file name.
      */
-    @SuppressWarnings("deprecation")
     private static void sendMessages(IgniteKernal g, int threads, int duration, @Nullable final String outputFilename) {
         X.println(">>> Sending messages.");
 
@@ -231,7 +230,6 @@ public class GridIoManagerBenchmark {
     /**
      * @param g Kernal.
      */
-    @SuppressWarnings("deprecation")
     private static void receiveMessages(final IgniteKernal g) {
         X.println(">>> Receiving messages.");
 
@@ -240,7 +238,7 @@ public class GridIoManagerBenchmark {
         GridMessageListener lsnr = new GridMessageListener() {
             private ClusterNode node;
 
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (node == null)
                     node = g.context().discovery().node(nodeId);
 
@@ -249,7 +247,7 @@ public class GridIoManagerBenchmark {
                 testMsg.bytes(null);
 
                 try {
-                    io.send(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
+                    io.sendToCustomTopic(node, TEST_TOPIC, testMsg, PUBLIC_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     e.printStackTrace();
@@ -281,7 +279,7 @@ public class GridIoManagerBenchmark {
 
                 GridIoManager io = g.context().io();
 
-                Random rnd = ThreadLocalRandom8.current();
+                Random rnd = ThreadLocalRandom.current();
 
                 IgniteUuid msgId = IgniteUuid.randomUuid();
 
@@ -293,7 +291,7 @@ public class GridIoManagerBenchmark {
                     else
                         sem.acquire();
 
-                    io.send(
+                    io.sendToCustomTopic(
                         dst,
                         TEST_TOPIC,
                         new GridTestMessage(msgId, testHeavyMsgs ? arrs[rnd.nextInt(arrs.length)] : null),
@@ -336,7 +334,7 @@ public class GridIoManagerBenchmark {
      */
     private static class SenderMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             msgCntr.increment();
 
             if (testLatency)

@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <memory>
 
 #include <boost/test/unit_test.hpp>
@@ -118,32 +114,32 @@ struct C3 : C1, C2
 
 void TestFunction1(Reference<C1> c1, int expected)
 {
-    BOOST_CHECK_EQUAL(c1.Get().c1, expected);
+    BOOST_CHECK_EQUAL(c1.Get()->c1, expected);
 }
 
 void TestFunction2(Reference<C2> c2, int expected)
 {
-    BOOST_CHECK_EQUAL(c2.Get().c2, expected);
+    BOOST_CHECK_EQUAL(c2.Get()->c2, expected);
 }
 
 void TestFunction3(Reference<C3> c3, int expected)
 {
-    BOOST_CHECK_EQUAL(c3.Get().c3, expected);
+    BOOST_CHECK_EQUAL(c3.Get()->c3, expected);
 }
 
 void TestFunctionConst1(ConstReference<C1> c1, int expected)
 {
-    BOOST_CHECK_EQUAL(c1.Get().c1, expected);
+    BOOST_CHECK_EQUAL(c1.Get()->c1, expected);
 }
 
 void TestFunctionConst2(ConstReference<C2> c2, int expected)
 {
-    BOOST_CHECK_EQUAL(c2.Get().c2, expected);
+    BOOST_CHECK_EQUAL(c2.Get()->c2, expected);
 }
 
 void TestFunctionConst3(ConstReference<C3> c3, int expected)
 {
-    BOOST_CHECK_EQUAL(c3.Get().c3, expected);
+    BOOST_CHECK_EQUAL(c3.Get()->c3, expected);
 }
 
 BOOST_AUTO_TEST_SUITE(ReferenceTestSuite)

@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -44,7 +51,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         return false;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected boolean perEntryMetricsEnabled() {
         return true;
     }
@@ -68,28 +75,32 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(null).removeAll();
+            g.cache(DEFAULT_CACHE_NAME).removeAll();
 
-            assert g.cache(null).localSize() == 0;
+            assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
 
-            g.cache(null).localMxBean().clear();
+            g.cache(DEFAULT_CACHE_NAME).localMxBean().clear();
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         super.beforeTest();
 
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(null).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
+            cache.enableStatistics(true);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cc = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cc = super.cacheConfiguration(igniteInstanceName);
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setBackups(1);
@@ -100,10 +111,37 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testNearCacheDoesNotAffectCacheSize() throws Exception {
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100 ; i++)
+            cache0.put(i, i);
+
+        IgniteEx g1 = grid(1);
+
+        IgniteCache<Integer, Integer> cache1 = g1.cache(DEFAULT_CACHE_NAME);
+
+        ClusterNode localNode = g1.cluster().localNode();
+
+        int beforeSize = cache1.localMetrics().getSize();
+
+        for (int i = 0; i < 100 ; i++) {
+            if (!affinity(cache1).isPrimaryOrBackup(localNode, i))
+                cache1.get(i); // put entry to near cache
+        }
+
+        assertEquals(beforeSize, cache1.localMetrics().getSize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testPrimaryPut() throws Exception {
         Ignite g0 = grid(0);
 
-        IgniteCache<Integer, Integer> cache0 = g0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
 
         int key;
 
@@ -129,7 +167,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             info("Checking grid: " + g.name());
 
-            IgniteCache<Object, Object> jcache = g.cache(null);
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             info("Puts: " + jcache.localMetrics().getCachePuts());
             info("Reads: " + jcache.localMetrics().getCacheGets());
@@ -155,10 +193,11 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupPut() throws Exception {
         Ignite g0 = grid(0);
 
-        IgniteCache<Integer, Integer> cache0 = g0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
 
         int key;
 
@@ -181,7 +220,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
         for (int j = 0; j < gridCount(); j++) {
             Ignite g = grid(j);
-            IgniteCache<Object, Object> jcache = g.cache(null);
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals(1, jcache.localMetrics().getCachePuts());
@@ -209,10 +248,11 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearPut() throws Exception {
         Ignite g0 = grid(0);
 
-        IgniteCache<Integer, Integer> cache0 = g0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
 
         int key;
 
@@ -236,7 +276,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int j = 0; j < gridCount(); j++) {
             Ignite g = grid(j);
 
-            IgniteCache<Object, Object> jcache = g.cache(null);
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(1, jcache.localMetrics().getCachePuts());
 
@@ -261,10 +301,11 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryRead() throws Exception {
         Ignite g0 = grid(0);
 
-        IgniteCache<Integer, Integer> cache0 = g0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
 
         int key;
 
@@ -294,7 +335,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             info("Checking grid: " + g.name());
 
-            IgniteCache<Object, Object> jcache = g.cache(null);
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             info("Writes: " + jcache.localMetrics().getCachePuts());
             info("Reads: " + jcache.localMetrics().getCacheGets());
@@ -317,10 +358,11 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupRead() throws Exception {
         Ignite g0 = grid(0);
 
-        IgniteCache<Integer, Integer> cache0 = g0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
 
         int key;
 
@@ -348,7 +390,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int j = 0; j < gridCount(); j++) {
             Ignite g = grid(j);
 
-            IgniteCache<Object, Object> jcache = g.cache(null);
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, jcache.localMetrics().getCachePuts());
 
@@ -368,10 +410,11 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearRead() throws Exception {
         Ignite g0 = grid(0);
 
-        IgniteCache<Integer, Integer> cache0 = g0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
 
         int key;
 
@@ -396,7 +439,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int j = 0; j < gridCount(); j++) {
             Ignite g = grid(j);
 
-            IgniteCache<Object, Object> jcache = g.cache(null);
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, jcache.localMetrics().getCachePuts());
 
@@ -416,5 +459,396 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 assertEquals(2, jcache.localMetrics().getCacheMisses());
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateReadRemoveInvokesFromPrimary() throws Exception {
+        Ignite g0 = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
+
+        int key = primaryKey(cache0);
+
+        setValue1ByEntryProcessor(cache0, key);
+
+        readKeyByEntryProcessor(cache0, key);
+
+        removeKeyByEntryProcessor(cache0, key);
+
+        for (int j = 0; j < gridCount(); j++) {
+            Ignite g = grid(j);
+
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
+                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+            else
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+
+            if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
+                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
+
+                assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+            }
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
+                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
+
+                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+            }
+            else
+                assertNoMetricsChanged(jcache);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateReadRemoveInvokesFromBackup() throws Exception {
+        Ignite g0 = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
+
+        int key = backupKey(cache0);
+
+        setValue1ByEntryProcessor(cache0, key);
+
+        readKeyByEntryProcessor(cache0, key);
+
+        removeKeyByEntryProcessor(cache0, key);
+
+        for (int j = 0; j < gridCount(); j++) {
+            Ignite g = grid(j);
+
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(jcache).isPrimaryOrBackup(g.cluster().localNode(), key))
+                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+            else
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+
+            if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
+                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
+
+                assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+            }
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
+                assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
+
+                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+            }
+            else
+                assertNoMetricsChanged(jcache);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCreateReadRemoveInvokesFromNear() throws Exception {
+        Ignite g0 = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
+
+        int key;
+
+        for (int i = 0; ; i++) {
+            if (!affinity(cache0).isPrimaryOrBackup(g0.cluster().localNode(), i)) {
+                setValue1ByEntryProcessor(cache0, i);
+
+                readKeyByEntryProcessor(cache0, i);
+
+                removeKeyByEntryProcessor(cache0, i);
+
+                key = i;
+
+                break;
+            }
+        }
+
+        for (int j = 0; j < gridCount(); j++) {
+            Ignite g = grid(j);
+
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
+
+            assertEquals(1, jcache.localMetrics().getEntryProcessorPuts());
+            assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+            assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+
+            if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
+                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(3, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(2, jcache.localMetrics().getEntryProcessorHits());
+
+                assertEquals((float) 1 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                assertEquals((float) 2 / 3 * 100.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+            } else {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorHits());
+
+                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+                assertEquals(50.0f, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadRemoveInvokesFromPrimary() throws Exception {
+        Ignite g0 = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
+
+        int key = primaryKey(cache0);
+
+        readKeyByEntryProcessor(cache0, key);
+
+        removeKeyByEntryProcessor(cache0, key);
+
+        for (int j = 0; j < gridCount(); j++) {
+            Ignite g = grid(j);
+
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+
+                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+            else
+                assertNoMetricsChanged(jcache);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadRemoveInvokesFromBackup() throws Exception {
+        Ignite g0 = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
+
+        int key = backupKey(cache0);
+
+        readKeyByEntryProcessor(cache0, key);
+
+        removeKeyByEntryProcessor(cache0, key);
+
+        for (int j = 0; j < gridCount(); j++) {
+            Ignite g = grid(j);
+
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
+
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+            else
+                assertNoMetricsChanged(jcache);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadRemoveInvokesFromNear() throws Exception {
+        Ignite g0 = grid(0);
+
+        IgniteCache<Integer, Integer> cache0 = g0.cache(DEFAULT_CACHE_NAME);
+
+        int key;
+
+        for (int i = 0; ; i++) {
+            if (!affinity(cache0).isPrimaryOrBackup(g0.cluster().localNode(), i)) {
+                readKeyByEntryProcessor(cache0, i);
+
+                removeKeyByEntryProcessor(cache0, i);
+
+                key = i;
+
+                break;
+            }
+        }
+
+        for (int j = 0; j < gridCount(); j++) {
+            Ignite g = grid(j);
+
+            IgniteCache<Object, Object> jcache = g.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(jcache).isPrimary(g.cluster().localNode(), key)) {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(2, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(2, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+            else {
+                assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorRemovals());
+                assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+                assertEquals(1, jcache.localMetrics().getEntryProcessorInvocations());
+
+                assertEquals(1, jcache.localMetrics().getEntryProcessorMisses());
+
+                assertEquals(100.0f, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+            }
+        }
+    }
+
+    /**
+     * Checks no metrics changed in cache.
+     *
+     * @param jcache Cache to be checked.
+     */
+    private void assertNoMetricsChanged(IgniteCache<Object, Object> jcache) {
+        assertEquals(0, jcache.localMetrics().getEntryProcessorPuts());
+        assertEquals(0, jcache.localMetrics().getEntryProcessorRemovals());
+        assertEquals(0, jcache.localMetrics().getEntryProcessorReadOnlyInvocations());
+        assertEquals(0, jcache.localMetrics().getEntryProcessorInvocations());
+
+        assertEquals(0, jcache.localMetrics().getEntryProcessorMisses());
+        assertEquals(0, jcache.localMetrics().getEntryProcessorHits());
+
+        assertEquals(0, jcache.localMetrics().getEntryProcessorMissPercentage(), 0.001f);
+        assertEquals(0, jcache.localMetrics().getEntryProcessorHitPercentage(), 0.001f);
+    }
+
+    /**
+     * Invokes entry processor, which removes key from cache.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private void removeKeyByEntryProcessor(IgniteCache<Integer, Integer> cache, int key) {
+        cache.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override public Object process(MutableEntry<Integer, Integer> entry,
+                Object... arguments) throws EntryProcessorException {
+                entry.remove();
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Invokes entry processor, which reads key from cache.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private void readKeyByEntryProcessor(IgniteCache<Integer, Integer> cache, int key) {
+        cache.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override public Object process(MutableEntry<Integer, Integer> entry,
+                Object... arguments) throws EntryProcessorException {
+                entry.getValue();
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * Invokes entry processor, which sets value "1" for key into cache.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private void setValue1ByEntryProcessor(IgniteCache<Integer, Integer> cache, int key) {
+        cache.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override public Object process(MutableEntry<Integer, Integer> entry,
+                Object... arguments) throws EntryProcessorException {
+                entry.setValue(1);
+
+                return null;
+            }
+        });
     }
 }

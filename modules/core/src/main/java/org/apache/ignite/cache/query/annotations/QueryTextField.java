@@ -25,14 +25,14 @@ import java.lang.annotation.Target;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
 /**
- * Annotation for fields or getters to be indexed for full text
+ * Annotation for fields to be indexed for full text
  * search using Lucene. For more information
  * refer to {@link CacheQuery} documentation.
  * @see CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.TYPE})
+@Target({ElementType.FIELD, ElementType.TYPE})
 public @interface QueryTextField {
     // No-op.
 }

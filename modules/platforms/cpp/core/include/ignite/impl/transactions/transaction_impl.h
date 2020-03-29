@@ -128,7 +128,7 @@ namespace ignite
                  * @param err Error.
                  * @return Current state.
                  */
-                TransactionState GetState(IgniteError& err);
+                TransactionState::Type GetState(IgniteError& err);
 
                 /**
                  * Get concurrency.
@@ -206,7 +206,7 @@ namespace ignite
                 int32_t txSize;
 
                 /** Transaction state. */
-                TransactionState state;
+                TransactionState::Type state;
 
                 /** Closed flag. */
                 bool closed;

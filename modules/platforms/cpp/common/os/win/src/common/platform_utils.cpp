@@ -16,6 +16,7 @@
  */
 
 #include <time.h>
+#include <vector>
 
 #include <windows.h>
 
@@ -49,24 +50,23 @@ namespace ignite
             return localtime_s(&out, &in) == 0;
         }
 
-        std::string GetEnv(const std::string& name, bool& found)
+        std::string GetEnv(const std::string& name)
         {
-            char res0[32767];
+            static const std::string empty;
 
-            DWORD envRes = GetEnvironmentVariableA(name.c_str(), res0, 32767);
+            return GetEnv(name, empty);
+        }
 
-            if (envRes != 0)
-            {
-                found = true;
+        std::string GetEnv(const std::string& name, const std::string& dflt)
+        {
+            char res[32767];
 
-                return std::string(res0);
-            }
-            else
-            {
-                found = false;
+            DWORD envRes = GetEnvironmentVariableA(name.c_str(), res, sizeof(res) / sizeof(res[0]));
 
-                return std::string();
-            }
+            if (envRes == 0 || envRes > sizeof(res))
+                return dflt;
+
+            return std::string(res, static_cast<size_t>(envRes));
         }
 
         bool FileExists(const std::string& path)
@@ -77,12 +77,62 @@ namespace ignite
 
             if (hnd == INVALID_HANDLE_VALUE)
                 return false;
-            else
-            {
-                FindClose(hnd);
 
-                return true;
-            }
+            FindClose(hnd);
+
+            return true;
+        }
+
+        bool IsValidDirectory(const std::string& path)
+        {
+            if (path.empty())
+                return false;
+
+            DWORD attrs = GetFileAttributesA(path.c_str());
+
+            return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        }
+
+        bool DeletePath(const std::string& path)
+        {
+            std::vector<TCHAR> path0(path.begin(), path.end());
+            path0.push_back('\0');
+            path0.push_back('\0');
+
+            SHFILEOPSTRUCT fileop;
+            fileop.hwnd = NULL;
+            fileop.wFunc = FO_DELETE;
+            fileop.pFrom = &path0[0];
+            fileop.pTo = NULL;
+            fileop.fFlags = FOF_NOCONFIRMATION | FOF_SILENT;
+
+            fileop.fAnyOperationsAborted = FALSE;
+            fileop.lpszProgressTitle = NULL;
+            fileop.hNameMappings = NULL;
+
+            int ret = SHFileOperation(&fileop);
+
+            return ret == 0;
+        }
+
+        StdCharOutStream& Fs(StdCharOutStream& ostr)
+        {
+            ostr.put('\\');
+            return ostr;
+        }
+
+        StdCharOutStream& Dle(StdCharOutStream& ostr)
+        {
+            static const char expansion[] = ".dll";
+
+            ostr.write(expansion, sizeof(expansion) - 1);
+
+            return ostr;
+        }
+
+        unsigned GetRandSeed()
+        {
+            return static_cast<unsigned>(GetTickCount() ^ GetCurrentProcessId());
         }
     }
 }

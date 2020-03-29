@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.UUID;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
 /**
  * Tests of Map, Combine and Reduce task executions via running of job of hadoop API v1.
  */
-public class HadoopTasksV1Test extends HadoopTasksAllVersionsTest {
+public class HadoopTasksV1Test extends HadoopTasksVersionsAbstractTest {
     /**
      * Creates WordCount hadoop job for API v1.
      *
@@ -41,12 +41,12 @@ public class HadoopTasksV1Test extends HadoopTasksAllVersionsTest {
      * @return Hadoop job.
      * @throws IOException If fails.
      */
-    @Override public HadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
+    @Override public HadoopJobEx getHadoopJob(String inFile, String outFile) throws Exception {
         JobConf jobConf = HadoopWordCount1.getJob(inFile, outFile);
 
         setupFileSystems(jobConf);
 
-        HadoopDefaultJobInfo jobInfo = createJobInfo(jobConf);
+        HadoopDefaultJobInfo jobInfo = createJobInfo(jobConf, null);
 
         UUID uuid = new UUID(0, 0);
 

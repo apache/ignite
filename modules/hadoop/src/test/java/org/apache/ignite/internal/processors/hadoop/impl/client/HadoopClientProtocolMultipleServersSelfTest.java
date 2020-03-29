@@ -50,11 +50,11 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Hadoop client protocol configured with multiple ignite servers tests.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractSelfTest {
     /** Input path. */
     private static final String PATH_INPUT = "/input";
@@ -83,8 +83,8 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getConnectorConfiguration().setPort(restPort++);
 
@@ -97,7 +97,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     private void beforeJob() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
 
-        igfs.format();
+        igfs.clear();
 
         igfs.mkdirs(new IgfsPath(PATH_INPUT));
 
@@ -131,7 +131,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
             job.setNumReduceTasks(0);
 
-            FileInputFormat.setInputPaths(job, new Path(PATH_INPUT));
+            FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@" + PATH_INPUT));
 
             job.submit();
 
@@ -147,7 +147,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMultipleAddresses() throws Exception {
         restPort = REST_PORT;
 
@@ -163,7 +163,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+    @Test
     public void testSingleAddress() throws Exception {
         try {
             // Don't use REST_PORT to test connection fails if the only this port is configured
@@ -189,7 +189,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
+    @Test
     public void testMixedAddrs() throws Exception {
         restPort = REST_PORT;
 
@@ -219,7 +219,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
         conf.set(MRConfig.FRAMEWORK_NAME, IgniteHadoopClientProtocolProvider.FRAMEWORK_NAME);
         conf.set(MRConfig.MASTER_ADDRESS, "127.0.0.1:" + REST_PORT);
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }
@@ -242,7 +242,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }
@@ -264,7 +264,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
 
         conf.set(MRConfig.MASTER_ADDRESS, F.concat(addrs, ","));
 
-        conf.set("fs.defaultFS", "igfs:///");
+        conf.set("fs.defaultFS", "igfs://" + igfsName + "@/");
 
         return conf;
     }

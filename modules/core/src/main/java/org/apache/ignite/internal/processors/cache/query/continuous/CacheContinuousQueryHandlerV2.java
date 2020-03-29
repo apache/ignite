@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -41,10 +42,10 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     private static final long serialVersionUID = 0L;
 
     /** Remote filter factory. */
-    private Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
+    Factory<? extends CacheEntryEventFilter> rmtFilterFactory;
 
     /** Deployable object for filter factory. */
-    private DeployableObject rmtFilterFactoryDep;
+    private CacheContinuousQueryDeployableObject rmtFilterFactoryDep;
 
     /** Event types for JCache API. */
     private byte types;
@@ -74,8 +75,8 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     public CacheContinuousQueryHandlerV2(
         String cacheName,
         Object topic,
-        CacheEntryUpdatedListener<K, V> locLsnr,
-        Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+        @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
@@ -89,9 +90,6 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
             sync,
             ignoreExpired,
             ignoreClsNotFound);
-
-        assert rmtFilterFactory != null;
-
         this.rmtFilterFactory = rmtFilterFactory;
 
         if (types != null) {
@@ -102,7 +100,7 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventFilter getEventFilter() {
+    @Override protected CacheEntryEventFilter getEventFilter0() {
         if (filter == null) {
             assert rmtFilterFactory != null;
 
@@ -122,15 +120,21 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
         super.p2pMarshal(ctx);
 
         if (rmtFilterFactory != null && !U.isGrid(rmtFilterFactory.getClass()))
-            rmtFilterFactoryDep = new DeployableObject(rmtFilterFactory, ctx);
+            rmtFilterFactoryDep = new CacheContinuousQueryDeployableObject(rmtFilterFactory, ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
-        super.p2pUnmarshal(nodeId, ctx);
-
         if (rmtFilterFactoryDep != null)
-            rmtFilterFactory = rmtFilterFactoryDep.unmarshal(nodeId, ctx);
+            rmtFilterFactory = p2pUnmarshal(rmtFilterFactoryDep, nodeId, ctx);
+
+        super.p2pUnmarshal(nodeId, ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isMarshalled() {
+        return super.isMarshalled() &&
+            (rmtFilterFactory == null || U.isGrid(rmtFilterFactory.getClass()) || rmtFilterFactoryDep != null);
     }
 
     /** {@inheritDoc} */
@@ -166,9 +170,12 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
 
         boolean b = in.readBoolean();
 
-        if (b)
-            rmtFilterFactoryDep = (DeployableObject)in.readObject();
-        else
+        if (b) {
+            rmtFilterFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
+
+            if (p2pUnmarshalFut.isDone())
+                p2pUnmarshalFut = new GridFutureAdapter<>();
+        } else
             rmtFilterFactory = (Factory)in.readObject();
 
         types = in.readByte();

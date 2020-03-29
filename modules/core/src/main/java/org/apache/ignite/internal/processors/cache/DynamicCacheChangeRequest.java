@@ -21,9 +21,10 @@ import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private UUID reqId;
+
     /** Start ID. */
     private IgniteUuid deploymentId;
 
@@ -42,6 +46,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private String cacheName;
 
     /** Cache start configuration. */
+    @GridToStringExclude
     private CacheConfiguration startCfg;
 
     /** Cache type. */
@@ -51,6 +56,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     private UUID initiatingNodeId;
 
     /** Near cache configuration. */
+    @GridToStringExclude
     private NearCacheConfiguration nearCacheCfg;
 
     /** Start only client cache, do not start data nodes. */
@@ -59,8 +65,20 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Stop flag. */
     private boolean stop;
 
-    /** Close flag. */
-    private boolean close;
+    /** Restart flag. */
+    private boolean restart;
+
+    /** Restart operation id. */
+    private IgniteUuid restartId;
+
+    /** Cache active on start or not*/
+    private boolean disabledAfterStart;
+
+    /** Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.*/
+    private boolean destroy;
+
+    /** Whether cache was created through SQL. */
+    private boolean sql;
 
     /** Fail if exists flag. */
     private boolean failIfExists;
@@ -71,49 +89,102 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** */
-    private transient boolean exchangeNeeded;
+    /** Reset lost partitions flag. */
+    private boolean resetLostPartitions;
+
+    /** Dynamic schema. */
+    private QuerySchema schema;
 
     /** */
-    private transient AffinityTopologyVersion cacheFutTopVer;
+    private transient boolean locallyConfigured;
+
+    /** Encryption key. */
+    @Nullable private byte[] encKey;
+
+    /** Master key digest. */
+    @Nullable private byte[] masterKeyDigest;
+
+    /** Cache configuration enrichment. */
+    private CacheConfigurationEnrichment cacheCfgEnrichment;
 
     /**
-     * Constructor creates cache stop request.
-     *
+     * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+    public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
+        assert reqId != null;
+        assert cacheName != null;
+
+        this.reqId = reqId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
     }
 
     /**
-     * @return {@code True} if request should trigger partition exchange.
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @return Request to reset lost partitions.
      */
-    public boolean exchangeNeeded() {
-        return exchangeNeeded;
+    static DynamicCacheChangeRequest resetLostPartitions(GridKernalContext ctx, String cacheName) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.markResetLostPartitions();
+
+        return req;
     }
 
     /**
-     * @param cacheFutTopVer Ready topology version when dynamic cache future should be completed.
+     * @param ctx Context.
+     * @param cfg0 Template configuration.
+     * @param splitCfg Cache configuration splitter.
+     * @return Request to add template.
      */
-    public void cacheFutureTopologyVersion(AffinityTopologyVersion cacheFutTopVer) {
-        this.cacheFutTopVer = cacheFutTopVer;
+    static DynamicCacheChangeRequest addTemplateRequest(
+        GridKernalContext ctx,
+        CacheConfiguration<?, ?> cfg0,
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg
+    ) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cfg0.getName(), ctx.localNodeId());
+
+        req.template(true);
+
+        req.startCacheConfiguration(splitCfg.get1());
+        req.cacheConfigurationEnrichment(splitCfg.get2());
+
+        req.schema(new QuerySchema(cfg0.getQueryEntities()));
+        req.deploymentId(IgniteUuid.randomUuid());
+
+        return req;
     }
 
     /**
-     * @return Ready topology version when dynamic cache future should be completed.
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @param sql {@code true} if the cache must be stopped only if it was created by SQL command {@code CREATE TABLE}.
+     * @param destroy Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.
+     * @return Cache stop request.
      */
-    @Nullable public AffinityTopologyVersion cacheFutureTopologyVersion() {
-        return cacheFutTopVer;
+    public static DynamicCacheChangeRequest stopRequest(
+        GridKernalContext ctx,
+        String cacheName,
+        boolean sql,
+        boolean destroy
+    ) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
+
+        req.sql(sql);
+        req.stop(true);
+        req.destroy(destroy);
+
+        return req;
     }
 
     /**
-     * @param exchangeNeeded {@code True} if request should trigger partition exchange.
+     * @return Request ID.
      */
-    public void exchangeNeeded(boolean exchangeNeeded) {
-        this.exchangeNeeded = exchangeNeeded;
+    public UUID requestId() {
+        return reqId;
     }
 
     /**
@@ -152,6 +223,20 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * Set resetLostPartitions flag.
+     */
+    public void markResetLostPartitions() {
+        resetLostPartitions = true;
+    }
+
+    /**
+     * @return Reset lost partitions flag.
+     */
+    public boolean resetLostPartitions() {
+        return resetLostPartitions;
+    }
+
+    /**
      * @return {@code True} if this is a stop request.
      */
     public boolean stop() {
@@ -159,10 +244,53 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * @return Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
+     */
+    public boolean destroy(){
+        return destroy;
+    }
+
+    /**
+     * Sets cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.
+     * @param destroy Destroy flag.
+     */
+    public void destroy(boolean destroy) {
+        this.destroy = destroy;
+    }
+
+    /**
      * @param stop New stop flag.
      */
     public void stop(boolean stop) {
         this.stop = stop;
+    }
+
+    /**
+     * @return {@code True} if this is a restart request.
+     */
+    public boolean restart() {
+        return restart;
+    }
+
+    /**
+     * @param restart New restart flag.
+     */
+    public void restart(boolean restart) {
+        this.restart = restart;
+    }
+
+    /**
+     * @return Id of restart to allow only initiator start the restarting cache.
+     */
+    public IgniteUuid restartId() {
+        return restartId;
+    }
+
+    /**
+     * @param restartId Id of cache restart requester.
+     */
+    public void restartId(IgniteUuid restartId) {
+        this.restartId = restartId;
     }
 
     /**
@@ -257,17 +385,19 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Close flag.
+     * @return SQL flag.
      */
-    public boolean close() {
-        return close;
+    public boolean sql() {
+        return sql;
     }
 
     /**
-     * @param close New close flag.
+     * Sets if cache is created using create table.
+     *
+     * @param sql New SQL flag.
      */
-    public void close(boolean close) {
-        this.close = close;
+    public void sql(boolean sql) {
+        this.sql = sql;
     }
 
     /**
@@ -284,8 +414,95 @@ public class DynamicCacheChangeRequest implements Serializable {
         return rcvdFrom;
     }
 
+    /**
+     * @return Dynamic schema.
+     */
+    public QuerySchema schema() {
+        return schema;
+    }
+
+    /**
+     * @param schema Dynamic schema.
+     */
+    public void schema(QuerySchema schema) {
+        this.schema = schema != null ? schema.copy() : null;
+    }
+
+    /**
+     * @return Locally configured flag.
+     */
+    public boolean locallyConfigured() {
+        return locallyConfigured;
+    }
+
+    /**
+     * @param locallyConfigured Locally configured flag.
+     */
+    public void locallyConfigured(boolean locallyConfigured) {
+        this.locallyConfigured = locallyConfigured;
+    }
+
+    /**
+     * @return state of cache after start
+     */
+    public boolean disabledAfterStart() {
+        return disabledAfterStart;
+    }
+
+    /**
+     * @param disabledAfterStart state of cache after start
+     */
+    public void disabledAfterStart(boolean disabledAfterStart) {
+        this.disabledAfterStart = disabledAfterStart;
+    }
+
+    /**
+     * @param encKey Encryption key.
+     */
+    public void encryptionKey(@Nullable byte[] encKey) {
+        this.encKey = encKey;
+    }
+
+    /**
+     * @return Encryption key.
+     */
+    @Nullable public byte[] encryptionKey() {
+        return encKey;
+    }
+
+    /** @param masterKeyDigest Master key digest. */
+    public void masterKeyDigest(@Nullable byte[] masterKeyDigest) {
+        this.masterKeyDigest = masterKeyDigest;
+    }
+
+    /** @return Master key digest that encrypted the group encryption key. */
+    @Nullable public byte[] masterKeyDigest() {
+        return masterKeyDigest;
+    }
+
+    /**
+     * @return Cache configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheCfgEnrichment;
+    }
+
+    /**
+     * @param cacheCfgEnrichment Cache config enrichment.
+     */
+    public void cacheConfigurationEnrichment(CacheConfigurationEnrichment cacheCfgEnrichment) {
+        this.cacheCfgEnrichment = cacheCfgEnrichment;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DynamicCacheChangeRequest.class, this, "cacheName", cacheName());
+        return "DynamicCacheChangeRequest [cacheName=" + cacheName() +
+            ", hasCfg=" + (startCfg != null) +
+            ", nodeId=" + initiatingNodeId +
+            ", clientStartOnly=" + clientStartOnly +
+            ", stop=" + stop +
+            ", destroy=" + destroy +
+            ", disabledAfterStart" + disabledAfterStart +
+            ']';
     }
 }

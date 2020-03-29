@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
+import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
 
 /**
  * Cache EntryProcessor + Deployment.
@@ -29,8 +32,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessor
 public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     extends GridCacheAtomicEntryProcessorDeploymentSelfTest {
     /** {@inheritDoc} */
-    protected IgniteCache getCache() {
-        return grid(1).cache(null).withKeepBinary();
+    @Override protected IgniteCache getCache() {
+        return grid(1).cache(DEFAULT_CACHE_NAME).withKeepBinary();
     }
 
     /** {@inheritDoc} */
@@ -41,6 +44,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -50,6 +54,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -59,6 +64,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeploymentWithKeepBinary() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -68,6 +74,7 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testGetDeployment2WithKeepBinary() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -79,19 +86,17 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
      */
     private void doTestGet(boolean withKeepBinary) throws Exception {
         try {
-            clientMode = false;
             startGrid(0);
 
-            clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
 
             assertTrue(grid(1).configuration().isClientMode());
             assertFalse(grid(0).configuration().isClientMode());
 
-            IgniteCache cache1 = grid(1).cache(null);
-            IgniteCache cache0 = grid(0).cache(null);
+            IgniteCache cache1 = grid(1).cache(DEFAULT_CACHE_NAME);
+            IgniteCache cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
             if (withKeepBinary) {
                 cache1 = cache1.withKeepBinary();
@@ -118,8 +123,8 @@ public class GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest
 
                     fail("Exception did not happened.");
                 }
-                catch (BinaryInvalidTypeException ignored) {
-                    // No-op.
+                catch (CacheException ex) {
+                    assertTrue(X.hasCause(ex, BinaryInvalidTypeException.class));
                 }
         }
         finally {

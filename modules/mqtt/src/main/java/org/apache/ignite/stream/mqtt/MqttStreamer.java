@@ -242,7 +242,8 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
             // Create the connection retrier.
             connectionRetrier = new MqttConnectionRetrier(retrier);
 
-            log.info("Starting MQTT Streamer " + cachedLogValues);
+            if (log.isInfoEnabled())
+                log.info("Starting MQTT Streamer " + cachedLogValues);
 
             // Connect.
             connectionRetrier.connect();
@@ -679,7 +680,8 @@ public class MqttStreamer<K, V> extends StreamAdapter<MqttMessage, K, V> impleme
                         client.subscribe(topics.toArray(new String[0]), qoses);
                     }
 
-                    log.info("MQTT Streamer (re-)connected and subscribed " + cachedLogValues);
+                    if (log.isInfoEnabled())
+                        log.info("MQTT Streamer (re-)connected and subscribed " + cachedLogValues);
 
                     return null;
                 }

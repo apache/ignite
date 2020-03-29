@@ -23,6 +23,7 @@ import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.igfs.mapreduce.records.IgfsByteDelimiterRecordResolver;
 import org.apache.ignite.igfs.mapreduce.records.IgfsStringDelimiterRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  * String delimiter split resolver self-test.
@@ -36,6 +37,7 @@ public class IgfsStringDelimiterRecordResolverSelfTest extends IgfsAbstractRecor
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResolver() throws Exception {
         String delim = "aaaaaaaa";
 

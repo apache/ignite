@@ -97,7 +97,6 @@ public class IgfsMarshaller {
 
                     IgfsHandshakeRequest req = (IgfsHandshakeRequest)msg;
 
-                    U.writeString(out, req.gridName());
                     U.writeString(out, req.igfsName());
                     U.writeString(out, req.logDirectory());
 
@@ -132,7 +131,7 @@ public class IgfsMarshaller {
                     writePath(out, req.destinationPath());
                     out.writeBoolean(req.flag());
                     out.writeBoolean(req.colocate());
-                    U.writeStringMap(out, req.properties());
+                    IgfsUtils.writeStringMap(out, req.properties());
 
                     // Minor optimization.
                     if (msg.command() == AFFINITY) {
@@ -183,6 +182,12 @@ public class IgfsMarshaller {
                     break;
                 }
 
+                case MODE_RESOLVER: {
+                    out.write(hdr);
+
+                    break;
+                }
+
                 default: {
                     assert false : "Invalid command: " + msg.command();
 
@@ -214,7 +219,6 @@ public class IgfsMarshaller {
                 case HANDSHAKE: {
                     IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
-                    req.gridName(U.readString(in));
                     req.igfsName(U.readString(in));
                     req.logDirectory(U.readString(in));
 
@@ -250,7 +254,7 @@ public class IgfsMarshaller {
                     req.destinationPath(readPath(in));
                     req.flag(in.readBoolean());
                     req.colocate(in.readBoolean());
-                    req.properties(U.readStringMap(in));
+                    req.properties(IgfsUtils.readStringMap(in));
 
                     // Minor optimization.
                     if (cmd == AFFINITY) {
@@ -297,6 +301,12 @@ public class IgfsMarshaller {
                     res.readExternal(in);
 
                     msg = res;
+
+                    break;
+                }
+
+                case MODE_RESOLVER: {
+                    msg = new IgfsModeResolverRequest();
 
                     break;
                 }

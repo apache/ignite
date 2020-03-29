@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
@@ -53,14 +54,15 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearUpdateTopologyChange() throws Exception {
         awaitPartitionMapExchange();
 
-        final Affinity<Integer> aff = grid(0).affinity(null);
+        final Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         final Integer key = 9;
 
-        IgniteCache<Integer, Integer> primaryCache = primaryCache(key, null);
+        IgniteCache<Integer, Integer> primaryCache = primaryCache(key, DEFAULT_CACHE_NAME);
 
         final Ignite primaryIgnite = primaryCache.unwrap(Ignite.class);
 
@@ -104,7 +106,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
                 gotNewPrimary = true;
 
-                primary.cache(null).put(key, 2);
+                primary.cache(DEFAULT_CACHE_NAME).put(key, 2);
 
                 break;
             }
@@ -130,7 +132,7 @@ public abstract class CacheNearUpdateTopologyChangeAbstractTest extends IgniteCa
 
         assertTrue(wait);
 
-        log.info("Primary node: " + primaryNode(key, null).name());
+        log.info("Primary node: " + primaryNode(key, DEFAULT_CACHE_NAME).name());
 
         assertTrue(aff.isPrimary(primaryIgnite.cluster().localNode(), key));
 

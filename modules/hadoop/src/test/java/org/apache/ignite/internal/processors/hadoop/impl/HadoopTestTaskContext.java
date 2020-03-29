@@ -33,7 +33,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
@@ -192,7 +192,7 @@ class HadoopTestTaskContext extends HadoopV2TaskContext {
      * @param taskInfo Task info.
      * @param gridJob Grid Hadoop job.
      */
-    public HadoopTestTaskContext(HadoopTaskInfo taskInfo, HadoopJob gridJob) throws IgniteCheckedException {
+    public HadoopTestTaskContext(HadoopTaskInfo taskInfo, HadoopJobEx gridJob) throws IgniteCheckedException {
         super(taskInfo, gridJob, gridJob.id(), null, jobConfDataInput(gridJob));
     }
 
@@ -203,7 +203,7 @@ class HadoopTestTaskContext extends HadoopV2TaskContext {
      * @return DataInput with JobConf.
      * @throws IgniteCheckedException If failed.
      */
-    private static DataInput jobConfDataInput(HadoopJob job) throws IgniteCheckedException {
+    private static DataInput jobConfDataInput(HadoopJobEx job) throws IgniteCheckedException {
         JobConf jobConf = new JobConf();
 
         for (Map.Entry<String, String> e : ((HadoopDefaultJobInfo)job.info()).properties().entrySet())

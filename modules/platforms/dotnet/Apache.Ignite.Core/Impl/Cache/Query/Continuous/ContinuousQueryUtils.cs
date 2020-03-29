@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
+    using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Event;
@@ -84,13 +85,18 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 
             Debug.Assert(hasVal || hasOldVal);
 
-            if (!hasOldVal)
-                return new CacheEntryCreateEvent<TK, TV>(key, val);
-
-            if (!hasVal)
-                return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
-
-            return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
+            var eventType = reader.ReadByte();
+            switch (eventType)
+            {
+                case 0:
+                    return new CacheEntryCreateEvent<TK, TV>(key, val);
+                case 1:
+                    return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
+                case 2:
+                    return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
+                default:
+                    throw new NotSupportedException(eventType.ToString());
+            }
         }
     }
 }

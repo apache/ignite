@@ -66,11 +66,12 @@ namespace ignite
                 return dest;
             }
 
-            return NULL;
+            return 0;
         }
 
         void ReleaseChars(char* val)
         {
+            // Its OK to delete null-pointer.
             delete[] val;
         }
 
@@ -118,6 +119,36 @@ namespace ignite
             return CTimeToDate(localTime);
         }
 
+        Time MakeTimeGmt(int hour, int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = 70;
+            date.tm_mon = 0;
+            date.tm_mday = 1;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            return CTmToTime(date);
+        }
+
+        Time MakeTimeLocal(int hour, int min, int sec)
+        {
+            tm date = { 0 };
+
+            date.tm_year = 70;
+            date.tm_mon = 0;
+            date.tm_mday = 1;
+            date.tm_hour = hour;
+            date.tm_min = min;
+            date.tm_sec = sec;
+
+            time_t localTime = common::IgniteTimeLocal(date);
+
+            return CTimeToTime(localTime);
+        }
+
         Timestamp MakeTimestampGmt(int year, int month, int day,
             int hour, int min, int sec, long ns)
         {
@@ -148,6 +179,15 @@ namespace ignite
             time_t localTime = common::IgniteTimeLocal(date);
 
             return CTimeToTimestamp(localTime, ns);
+        }
+
+        std::string GetDynamicLibraryName(const char* name)
+        {
+            std::stringstream libNameBuffer;
+
+            libNameBuffer << name << Dle;
+
+            return libNameBuffer.str();
         }
     }
 }

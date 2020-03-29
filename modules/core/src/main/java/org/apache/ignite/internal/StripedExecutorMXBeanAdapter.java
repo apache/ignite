@@ -32,20 +32,26 @@ public class StripedExecutorMXBeanAdapter implements StripedExecutorMXBean {
     /**
      * @param exec Executor service
      */
-    StripedExecutorMXBeanAdapter(StripedExecutor exec) {
+    public StripedExecutorMXBeanAdapter(StripedExecutor exec) {
         assert exec != null;
 
         this.exec = exec;
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public void checkStarvation() {
-        exec.checkStarvation();
+        exec.detectStarvation();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean detectStarvation() {
+        return exec.detectStarvation();
     }
 
     /** {@inheritDoc} */
     @Override public int getStripesCount() {
-        return exec.stripes();
+        return exec.stripesCount();
     }
 
     /** {@inheritDoc} */

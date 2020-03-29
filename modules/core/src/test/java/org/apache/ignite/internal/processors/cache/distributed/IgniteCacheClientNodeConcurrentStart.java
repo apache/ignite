@@ -23,10 +23,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -35,26 +33,21 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  */
 public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES_CNT = 6;
 
     /** */
     private Set<Integer> clientNodes;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assertNotNull(clientNodes);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         boolean client = false;
 
         for (Integer clientIdx : clientNodes) {
-            if (getTestGridName(clientIdx).equals(gridName)) {
+            if (getTestIgniteInstanceName(clientIdx).equals(igniteInstanceName)) {
                 client = true;
 
                 break;
@@ -63,7 +56,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
 
         cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(0);
         ccfg.setRebalanceMode(SYNC);
@@ -76,6 +69,7 @@ public class IgniteCacheClientNodeConcurrentStart extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

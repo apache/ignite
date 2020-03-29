@@ -37,15 +37,20 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     @AffinityKeyMapped
     private String name;
 
+    /** */
+    private String grpName;
+
     /**
      * Default constructor.
      *
-     * @param name - Name of cache data structure.
+     * @param name Name of cache data structure.
+     * @param grpName Cache group name.
      */
-    public GridCacheInternalKeyImpl(String name) {
-        assert !F.isEmpty(name);
+    public GridCacheInternalKeyImpl(String name, String grpName) {
+        assert !F.isEmpty(name) : name;
 
         this.name = name;
+        this.grpName = grpName;
     }
 
     /**
@@ -61,13 +66,31 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public String groupName() {
+        return grpName;
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return name.hashCode();
+        int result = name != null ? name.hashCode() : 0;
+
+        result = 31 * result + (grpName != null ? grpName.hashCode() : 0);
+
+        return result;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        return this == obj || (obj instanceof GridCacheInternalKey && name.equals(((GridCacheInternalKey)obj).name()));
+        if (this == obj)
+            return true;
+
+        if (obj instanceof GridCacheInternalKeyImpl) {
+            GridCacheInternalKeyImpl other = (GridCacheInternalKeyImpl)obj;
+
+            return F.eq(name, other.name) && F.eq(grpName, other.grpName);
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -78,11 +101,13 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
+        U.writeString(out, grpName);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         name = U.readString(in);
+        grpName = U.readString(in);
     }
 
     /** {@inheritDoc} */

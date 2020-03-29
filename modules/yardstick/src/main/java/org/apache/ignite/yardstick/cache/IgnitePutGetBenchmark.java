@@ -29,6 +29,8 @@ public class IgnitePutGetBenchmark extends IgniteCacheAbstractBenchmark<Integer,
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         Object val = cache.get(key);
 
         if (val != null)

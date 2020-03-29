@@ -19,17 +19,17 @@ package org.apache.ignite.loadtests.direct.newnodes;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.loadtest.GridLoadTestStatistics;
+import org.apache.ignite.loadtests.GridLoadTestStatistics;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Base class for single split on new nodes tests.
@@ -42,15 +42,9 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      */
     protected abstract DiscoverySpi getDiscoverySpi(IgniteConfiguration cfg);
 
-    /**
-     * @return Discovery spi heartbeat frequency.
-     */
-    protected abstract int getHeartbeatFrequency();
-
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
@@ -94,8 +88,9 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
-        final Ignite ignite = startGrid(getTestGridName());
+        final Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         try {
             final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
@@ -121,11 +116,11 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
                                 startGrid(idx);
 
-                                Thread.sleep(getHeartbeatFrequency() * 3);
+                                Thread.sleep(grid(idx).configuration().getMetricsUpdateFrequency() * 3);
 
                                 stopGrid(idx);
 
-                                Thread.sleep(getHeartbeatFrequency() * 3);
+                                Thread.sleep(grid(idx).configuration().getMetricsUpdateFrequency() * 3);
                             }
                         }
                         catch (Throwable e) {
@@ -141,8 +136,6 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    IgniteCompute comp = ignite.compute().withAsync();
-
                     while (end - System.currentTimeMillis() > 0
                         && !Thread.currentThread().isInterrupted()) {
                         long start = System.currentTimeMillis();
@@ -150,9 +143,8 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
                         try {
                             int levels = 3;
 
-                            comp.execute(new GridSingleSplitNewNodesTestTask(), levels);
-
-                            ComputeTaskFuture<Integer> fut = comp.future();
+                            ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(
+                                new GridSingleSplitNewNodesTestTask(), levels);
 
                             int res = fut.get();
 
@@ -176,7 +168,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             info("Final test statistics: " + stats);
         }
         finally {
-            G.stop(getTestGridName(), false);
+            G.stop(getTestIgniteInstanceName(), false);
         }
     }
 }

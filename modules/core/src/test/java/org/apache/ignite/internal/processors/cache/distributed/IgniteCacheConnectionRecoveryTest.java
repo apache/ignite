@@ -35,15 +35,15 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -52,30 +52,21 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
     private static final int SRVS = 5;
 
     /** */
     private static final int CLIENTS = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        cfg.setClientMode(client);
-
         cfg.setCacheConfiguration(
             cacheConfiguration("cache1", TRANSACTIONAL),
-            cacheConfiguration("cache2", ATOMIC));
+            cacheConfiguration("cache2", TRANSACTIONAL_SNAPSHOT),
+            cacheConfiguration("cache3", ATOMIC));
 
         return cfg;
     }
@@ -86,21 +77,14 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @SuppressWarnings("unchecked")
     public void testConnectionRecovery() throws Exception {
         final Map<Integer, Integer> data = new TreeMap<>();
 
@@ -122,18 +106,27 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
                 Thread.currentThread().setName("test-thread-" + idx0 + "-" + node.name());
 
-                IgniteCache cache1 = node.cache("cache1").withAsync();
-                IgniteCache cache2 = node.cache("cache2").withAsync();
+                IgniteCache[] caches = {
+                    node.cache("cache1"),
+                    node.cache("cache2"),
+                    node.cache("cache3")};
 
                 int iter = 0;
 
                 while (U.currentTimeMillis() < stopTime) {
                     try {
-                        cache1.putAll(data);
-                        cache1.future().get(15, SECONDS);
+                        for (IgniteCache cache : caches) {
+                            while (true) {
+                                try {
+                                    cache.putAllAsync(data).get(15, SECONDS);
 
-                        cache2.putAll(data);
-                        cache2.future().get(15, SECONDS);
+                                    break;
+                                }
+                                catch (Exception e) {
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                                }
+                            }
+                        }
 
                         CyclicBarrier b = barrierRef.get();
 
@@ -193,7 +186,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
      * @return Configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setAtomicityMode(atomicityMode);

@@ -22,15 +22,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -41,18 +36,13 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
  */
 public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean daemon;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDaemon(daemon);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -67,6 +57,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalOnDaemonNode1() throws Exception {
         marshalOnDaemonNode(true);
     }
@@ -74,6 +65,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMarshalOnDaemonNode2() throws Exception {
         marshalOnDaemonNode(false);
     }
@@ -82,7 +74,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
      * @param startFirst If {@code true} daemon node is started first.
      * @throws Exception If failed.
      */
-    public void marshalOnDaemonNode(boolean startFirst) throws Exception {
+    private void marshalOnDaemonNode(boolean startFirst) throws Exception {
         int nodeIdx = 0;
 
         if (!startFirst) {
@@ -95,6 +87,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
 
         Ignite daemonNode = startGrid(nodeIdx++);
 
+        assertTrue(daemonNode.cluster().localNode().isDaemon());
         assertEquals("true", daemonNode.cluster().localNode().attribute(ATTR_DAEMON));
 
         daemon = false;
@@ -107,13 +100,6 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
 
         awaitPartitionMapExchange();
 
-        // Workaround for IGNITE-1365.
-        IgniteInternalFuture<?> fut = ((IgniteKernal) daemonNode).context().cache().context().exchange().
-            affinityReadyFuture(new AffinityTopologyVersion(2, 0));
-
-        if (fut != null)
-            fut.get();
-
         TestClass1 res1 = daemonNode.compute(daemonNode.cluster().forRemotes()).call(new TestCallable1());
 
         assertNotNull(res1);
@@ -121,7 +107,7 @@ public class IgniteDaemonNodeMarshallerCacheTest extends GridCommonAbstractTest 
 
         Ignite ignite2 = startGrid(nodeIdx);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setRebalanceMode(SYNC);
         ccfg.setCacheMode(REPLICATED);

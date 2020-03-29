@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -49,10 +50,10 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -68,6 +69,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSimpleTxsNear() throws Exception {
         checkSimpleTxs(true, PESSIMISTIC);
     }
@@ -75,6 +77,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSimpleTxsColocated() throws Exception {
         checkSimpleTxs(false, PESSIMISTIC);
     }
@@ -82,6 +85,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSimpleTxsColocated() throws Exception {
         checkSimpleTxs(false, OPTIMISTIC);
     }
@@ -89,6 +93,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSimpleTxsNear() throws Exception {
         checkSimpleTxs(false, OPTIMISTIC);
     }
@@ -104,7 +109,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             List<Integer> keys = generateKeys(grid(0).localNode(), cache);
 
@@ -173,10 +178,10 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode node = grid.localNode();
 
-            IgniteCache<Object, Object> cache = grid.cache(null);
+            IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
-            boolean primary = grid.affinity(null).isPrimary(node, key);
-            boolean backup = grid.affinity(null).isBackup(node, key);
+            boolean primary = grid.affinity(DEFAULT_CACHE_NAME).isPrimary(node, key);
+            boolean backup = grid.affinity(DEFAULT_CACHE_NAME).isBackup(node, key);
 
             if (primary || backup)
                 assertEquals("Invalid cache value [nodeId=" + node.id() + ", primary=" + primary +

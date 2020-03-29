@@ -19,62 +19,48 @@ package org.apache.ignite.cache.affinity.local;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for local affinity function.
  */
 public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODE_CNT = 1;
 
     /** */
     private static final String CACHE1 = "cache1";
 
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(1);
         ccfg.setName(CACHE1);
         ccfg.setCacheMode(CacheMode.LOCAL);
-        ccfg.setAffinity(new FairAffinityFunction());
+        ccfg.setAffinity(new RendezvousAffinityFunction());
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
 
-    @Override
-    protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
         startGrids(NODE_CNT);
     }
 
-    @Override
-    protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-        stopAllGrids();
-    }
-
+    @Test
     public void testWronglySetAffinityFunctionForLocalCache() {
         Ignite node = ignite(NODE_CNT - 1);
 
         CacheConfiguration ccf = node.cache(CACHE1).getConfiguration(CacheConfiguration.class);
 
-        assertEquals("org.apache.ignite.internal.processors.cache.GridCacheProcessor$LocalAffinityFunction",
-            ccf.getAffinity().getClass().getName());
+        assertEquals(LocalAffinityFunction.class, ccf.getAffinity().getClass());
     }
-
 }

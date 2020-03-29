@@ -42,5 +42,9 @@
                 <property name="socketTimeout" value="300" />
             </bean>
         </property>
+
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration"/>
+        </property>
     </bean>
 </beans>

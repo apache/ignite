@@ -184,7 +184,7 @@ public class GridDeploymentResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 12;
     }
 

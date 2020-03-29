@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.hadoop.impl.shuffle.collections;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
@@ -44,50 +43,16 @@ import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
-
-import static java.lang.Math.abs;
-import static java.lang.Math.ceil;
-import static java.lang.Math.max;
+import org.junit.Test;
 
 /**
  * Skip list tests.
  */
 public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
     /**
-     *
-     */
-    public void testLevel() {
-        Random rnd = new GridRandom();
-
-        int[] levelsCnts = new int[32];
-
-        int all = 10000;
-
-        for (int i = 0; i < all; i++) {
-            int level = HadoopSkipList.randomLevel(rnd);
-
-            levelsCnts[level]++;
-        }
-
-        X.println("Distribution: " + Arrays.toString(levelsCnts));
-
-        for (int level = 0; level < levelsCnts.length; level++) {
-            int exp = (level + 1) == levelsCnts.length ? 0 : all >>> (level + 1);
-
-            double precission = 0.72 / Math.max(32 >>> level, 1);
-
-            int sigma = max((int)ceil(precission * exp), 5);
-
-            X.println("Level: " + level + " exp: " + exp + " act: " + levelsCnts[level] + " precision: " + precission +
-                " sigma: " + sigma);
-
-            assertTrue(abs(exp - levelsCnts[level]) <= sigma); // Sometimes fails.
-        }
-    }
-
-    /**
      * @throws Exception On error.
      */
+    @Test
     public void testMapSimple() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
@@ -237,6 +202,7 @@ public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         GridUnsafeMemory mem = new GridUnsafeMemory(0);
 

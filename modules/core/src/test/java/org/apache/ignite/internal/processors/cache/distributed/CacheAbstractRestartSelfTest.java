@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Abstract restart test.
@@ -44,10 +45,10 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(gridCount() - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(gridCount() - 1)))
             cfg.setClientMode(true);
 
         cfg.setPeerClassLoadingEnabled(false);
@@ -72,6 +73,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestart() throws Exception {
         final int clientGrid = gridCount() - 1;
 

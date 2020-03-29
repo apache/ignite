@@ -18,4 +18,5 @@
 /**
  * Contains implementation of Kafka Streamer.
  */
+
 package org.apache.ignite.stream.kafka;

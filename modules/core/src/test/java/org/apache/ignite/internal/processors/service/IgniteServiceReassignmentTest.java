@@ -17,41 +17,68 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private ServiceConfiguration srvcCfg;
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    /** */
+    private boolean useStrLog;
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    /** */
+    private List<IgniteLogger> strLoggers = new ArrayList<>();
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (srvcCfg != null)
             cfg.setServiceConfiguration(srvcCfg);
 
+        if (useStrLog) {
+            GridStringLogger strLog = new GridStringLogger(false, cfg.getGridLogger());
+
+            strLog.logLength(100 * 1024);
+
+            cfg.setGridLogger(strLog);
+
+            strLoggers.add(strLog);
+        }
+
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -64,16 +91,19 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart1() throws Exception {
         srvcCfg = serviceConfiguration();
 
-        Ignite node1 = startGrid(1);
+        IgniteEx node1 = startGrid(1);
+
+        waitForService(node1);
 
         assertEquals(42, serviceProxy(node1).foo());
 
         srvcCfg = serviceConfiguration();
 
-        Ignite node2 = startGrid(2);
+        IgniteEx node2 = startGrid(2);
 
         node1.close();
 
@@ -83,13 +113,19 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
         srvcCfg = serviceConfiguration();
 
-        Ignite node3 = startGrid(3);
+        IgniteEx node3 = startGrid(3);
+
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node3).foo());
 
         srvcCfg = serviceConfiguration();
 
         node1 = startGrid(1);
+
+        waitForService(node1);
+        waitForService(node2);
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node1).foo());
         assertEquals(42, serviceProxy(node2).foo());
@@ -98,6 +134,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
         node2.close();
 
         waitForService(node1);
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node1).foo());
         assertEquals(42, serviceProxy(node3).foo());
@@ -106,6 +143,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestart2() throws Exception {
         startGrids(3);
 
@@ -134,6 +172,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeRestartRandom() throws Exception {
         final int NODES = 5;
 
@@ -152,7 +191,7 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
                 if (nodeIdx == stopIdx)
                     continue;
 
-                waitForService(ignite(nodeIdx));
+                waitForService(grid(nodeIdx));
 
                 assertEquals(42, serviceProxy(ignite(nodeIdx)).foo());
             }
@@ -165,22 +204,126 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testZombieAssignmentsCleanup() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
+        useStrLog = true;
+
+        final int nodesCnt = 2;
+        final int maxSvc = 30;
+
+        try {
+            startGridsMultiThreaded(nodesCnt);
+
+            IgniteEx ignite = grid(0);
+
+            IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
+
+            List<GridServiceAssignmentsKey> zombieAssignmentsKeys = new ArrayList<>(maxSvc);
+
+            // Adding some assignments without deployments.
+            for (int i = 0; i < maxSvc; i++) {
+                String name = "svc-" + i;
+
+                ServiceConfiguration svcCfg = new ServiceConfiguration();
+
+                svcCfg.setName(name);
+
+                GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(name);
+
+                UUID nodeId = grid(i % nodesCnt).localNode().id();
+
+                sysCache.put(key, new GridServiceAssignments(svcCfg, nodeId, ignite.cluster().topologyVersion()));
+
+                zombieAssignmentsKeys.add(key);
+            }
+
+            // Simulate exchange with merge.
+            GridTestUtils.runAsync(() -> startGrid(nodesCnt));
+            GridTestUtils.runAsync(() -> startGrid(nodesCnt + 1));
+            startGrid(nodesCnt + 2);
+
+            awaitPartitionMapExchange();
+
+            // Checking that all our assignments was removed.
+            for (GridServiceAssignmentsKey key : zombieAssignmentsKeys)
+                assertNull("Found assignment for undeployed service " + key.name(), sysCache.get(key));
+
+            for (IgniteLogger logger : strLoggers)
+                assertFalse(logger.toString().contains("Getting affinity for topology version earlier than affinity is " +
+                    "calculated"));
+        } finally {
+            useStrLog = false;
+
+            strLoggers.clear();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeStopWhileThereAreCacheActivitiesInServiceProcessor() throws Exception {
+        Assume.assumeTrue(!isEventDrivenServiceProcessorEnabled());
+
+        final int nodesCnt = 2;
+        final int maxSvc = 1024;
+
+        startGridsMultiThreaded(nodesCnt);
+
+        IgniteEx ignite = grid(0);
+
+        IgniteInternalCache<GridServiceAssignmentsKey, Object> sysCache = ignite.utilityCache();
+
+        // Adding some assignments without deployments.
+        for (int i = 0; i < maxSvc; i++) {
+            String name = "svc-" + i;
+
+            ServiceConfiguration svcCfg = new ServiceConfiguration();
+
+            svcCfg.setName(name);
+
+            GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(name);
+
+            UUID nodeId = grid(i % nodesCnt).localNode().id();
+
+            sysCache.put(key, new GridServiceAssignments(svcCfg, nodeId, ignite.cluster().topologyVersion()));
+        }
+
+        // Simulate exchange with merge.
+        GridTestUtils.runAsync(() -> startGrid(nodesCnt));
+        GridTestUtils.runAsync(() -> startGrid(nodesCnt + 1));
+        startGrid(nodesCnt + 2);
+
+        Thread.sleep((int)(1000 * ThreadLocalRandom.current().nextDouble()));
+
+        stopAllGrids();
+    }
+
+    /**
      * @param node Node.
      * @throws Exception If failed.
      */
-    private void waitForService(final Ignite node) throws Exception {
-        assertTrue(GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                try {
-                    serviceProxy(node).foo();
+    private void waitForService(final IgniteEx node) throws Exception {
+        if (node.context().service() instanceof IgniteServiceProcessor)
+            waitForServicesReadyTopology(node, node.context().discovery().topologyVersionEx());
+        else {
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    try {
+                        serviceProxy(node).foo();
 
-                    return true;
+                        return true;
+                    }
+                    catch (IgniteException ignored) {
+                        return false;
+                    }
                 }
-                catch (IgniteException ignored) {
-                    return false;
-                }
-            }
-        }, 5000));
+            }, 5000));
+        }
     }
 
     /**

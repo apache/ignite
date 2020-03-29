@@ -25,7 +25,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * The test for the destruction of the cache during the execution of the query
@@ -49,9 +49,14 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
     /** */
     public static final int GRID_CNT = 3;
 
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * The main test code.
      */
+    @Test
     public void testQueue() throws Throwable {
         startGridsMultiThreaded(GRID_CNT);
 
@@ -129,7 +134,6 @@ public class IgniteCacheQueryCacheDestroySelfTest extends GridCommonAbstractTest
 
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED)
             .setRebalanceMode(CacheRebalanceMode.SYNC)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setRebalanceThrottle(100)

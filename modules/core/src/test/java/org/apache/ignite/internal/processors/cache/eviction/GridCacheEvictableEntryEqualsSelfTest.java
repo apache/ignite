@@ -26,6 +26,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for EvictableEntry.equals().
@@ -34,11 +35,13 @@ public class GridCacheEvictableEntryEqualsSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEquals() throws Exception {
         try (Ignite ignite = startGrid()) {
             CacheConfiguration<TestKey, String> cfg = new CacheConfiguration<>("test");
 
             cfg.setEvictionPolicy(new TestEvictionPolicy());
+            cfg.setOnheapCacheEnabled(true);
 
             IgniteCache<TestKey, String> cache = ignite.createCache(cfg);
 

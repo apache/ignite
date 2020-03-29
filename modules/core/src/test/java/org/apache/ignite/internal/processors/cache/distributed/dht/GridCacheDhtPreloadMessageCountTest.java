@@ -28,10 +28,8 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -46,12 +44,9 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     /** Preload mode. */
     private CacheRebalanceMode preloadMode = CacheRebalanceMode.SYNC;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         assert preloadMode != null;
 
@@ -62,13 +57,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setRebalanceMode(preloadMode);
         cc.setAffinity(new RendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
+        cc.setOnheapCacheEnabled(true);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-        c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
@@ -88,12 +78,13 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAutomaticPreload() throws Exception {
         Ignite g0 = startGrid(0);
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -103,8 +94,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         U.sleep(1000);
 
-        IgniteCache<String, Integer> c1 = g1.cache(null);
-        IgniteCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
 
         TestRecordingCommunicationSpi spi0 = (TestRecordingCommunicationSpi)g0.configuration().getCommunicationSpi();
         TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi)g1.configuration().getCommunicationSpi();

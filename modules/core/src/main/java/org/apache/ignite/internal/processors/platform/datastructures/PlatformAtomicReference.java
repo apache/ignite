@@ -23,7 +23,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicReferenceImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 
 /**
  * Platform atomic reference wrapper.
@@ -53,22 +52,14 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
      *
      * @param ctx Context.
      * @param name Name.
-     * @param memPtr Pointer to a stream with initial value. 0 for default value.
+     * @param initVal Initial value.
      * @param create Create flag.
      * @return Instance of a PlatformAtomicReference, or null when Ignite reference with specific name is null.
      */
-    public static PlatformAtomicReference createInstance(PlatformContext ctx, String name, long memPtr,
+    public static PlatformAtomicReference createInstance(PlatformContext ctx, String name, Object initVal,
         boolean create) {
         assert ctx != null;
         assert name != null;
-
-        Object initVal = null;
-
-        if (memPtr != 0) {
-            try (PlatformMemory mem = ctx.memory().get(memPtr)) {
-                initVal = ctx.reader(mem).readObjectDetached();
-            }
-        }
 
         GridCacheAtomicReferenceImpl atomicRef =
             (GridCacheAtomicReferenceImpl)ctx.kernalContext().grid().atomicReference(name, initVal, create);

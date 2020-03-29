@@ -203,4 +203,28 @@ class PlatformCallbackOp {
 
     /** */
     public static final int ComputeJobExecuteLocal = 61;
+
+    /** */
+    public static final int PluginProcessorStop = 62;
+
+    /** */
+    public static final int PluginProcessorIgniteStop = 63;
+
+    /** */
+    public static final int CachePluginCreate = 64;
+
+    /** */
+    public static final int CachePluginDestroy = 65;
+
+    /** */
+    public static final int CachePluginIgniteStart = 66;
+
+    /** */
+    public static final int CachePluginIgniteStop = 67;
+
+    /** */
+    public static final int PluginCallbackInLongLongOutLong = 68;
+
+    /** */
+    public static final int EventLocalListenerApply = 69;
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
@@ -37,21 +38,52 @@ import java.sql.SQLXML;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC result set implementation.
  */
 public class JdbcResultSet implements ResultSet {
+    /** Decimal format to convert streing to decimal. */
+    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocal<DecimalFormat>() {
+        /** {@inheritDoc} */
+        @Override protected DecimalFormat initialValue() {
+            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+
+            symbols.setGroupingSeparator(',');
+            symbols.setDecimalSeparator('.');
+
+            String ptrn = "#,##0.0#";
+
+            DecimalFormat decimalFormat = new DecimalFormat(ptrn, symbols);
+
+            decimalFormat.setParseBigDecimal(true);
+
+            return decimalFormat;
+        }
+    };
+
+    /** Is query. */
+    private final boolean isQry;
+
+    /** Update count. */
+    private final long updCnt;
+
     /** Uuid. */
     private final UUID uuid;
 
@@ -59,13 +91,13 @@ public class JdbcResultSet implements ResultSet {
     private final JdbcStatement stmt;
 
     /** Table names. */
-    private final List<String> tbls;
+    private List<String> tbls;
 
     /** Column names. */
-    private final List<String> cols;
+    private List<String> cols;
 
     /** Class names. */
-    private final List<String> types;
+    private List<String> types;
 
     /** Rows cursor iterator. */
     private Iterator<List<?>> it;
@@ -88,74 +120,67 @@ public class JdbcResultSet implements ResultSet {
     /** Fetch size. */
     private int fetchSize;
 
-    /** Which query task to use under the hood - {@link JdbcQueryTaskV2} if {@code true}, {@link JdbcQueryTask} otherwise. */
-    private final boolean useNewQryTask;
-
     /**
      * Creates new result set.
      *
+     * @param isQry Is query flag.
      * @param uuid Query UUID.
      * @param stmt Statement.
      * @param tbls Table names.
      * @param cols Column names.
      * @param types Types.
      * @param fields Fields.
+     * @param finished Result set finished flag (the last result set).
+     * @throws SQLException On error.
      */
-    JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
-        List<String> types, Collection<List<?>> fields, boolean finished) {
-        this(uuid, stmt, tbls, cols, types, fields, finished, false);
-    }
-
-    /**
-     * Creates new result set that will be based on {@link JdbcQueryTaskV2}. This method is intended for use inside
-     *     {@link JdbcStatement} only.
-     *
-     * @param uuid Query UUID.
-     * @param stmt Statement.
-     * @param tbls Table names.
-     * @param cols Column names.
-     * @param types Types.
-     * @param fields Fields.
-     */
-    static JdbcResultSet resultSetForQueryTaskV2(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls,
-            List<String> cols, List<String> types, Collection<List<?>> fields, boolean finished) {
-        return new JdbcResultSet(uuid, stmt, tbls, cols, types, fields, finished, true);
-    }
-
-    /**
-     * Creates new result set.
-     *
-     * @param uuid Query UUID.
-     * @param stmt Statement.
-     * @param tbls Table names.
-     * @param cols Column names.
-     * @param types Types.
-     * @param fields Fields.
-     * @param useNewQryTask Which query task to use under the hood - {@link JdbcQueryTaskV2} if {@code true},
-     *     {@link JdbcQueryTask} otherwise.
-     */
-    private JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
-        List<String> types, Collection<List<?>> fields, boolean finished, boolean useNewQryTask) {
-        assert stmt != null;
-        assert tbls != null;
-        assert cols != null;
-        assert types != null;
-        assert fields != null;
-
-        this.uuid = uuid;
+    JdbcResultSet(boolean isQry, @Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
+        List<String> types, List<List<?>> fields, boolean finished) throws SQLException {
+        this.isQry = isQry;
         this.stmt = stmt;
-        this.tbls = tbls;
-        this.cols = cols;
-        this.types = types;
-        this.finished = finished;
 
-        this.it = fields.iterator();
+        if (isQry) {
+            this.uuid = uuid;
+            updCnt = -1;
+            this.tbls = tbls;
+            this.cols = cols;
+            this.types = types;
+            this.finished = finished;
 
-        this.useNewQryTask = useNewQryTask;
+            if (fields != null)
+                it = fields.iterator();
+            else
+                it = Collections.emptyIterator();
+        }
+        else {
+            updCnt = updateCounterFromQueryResult(fields);
+
+            this.uuid = null;
+            this.tbls = null;
+            this.cols = null;
+            this.types = null;
+            this.finished = true;
+            it = null;
+        }
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    /**
+     * @param stmt Statement.
+     * @param updCnt Update count.
+     */
+    JdbcResultSet(JdbcStatement stmt, long updCnt) {
+        isQry = false;
+        this.updCnt = updCnt;
+        this.stmt = stmt;
+
+        uuid = null;
+        tbls = null;
+        cols = null;
+        types = null;
+        finished = true;
+        it = null;
+    }
+
+        /** {@inheritDoc} */
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
 
@@ -175,61 +200,54 @@ public class JdbcResultSet implements ResultSet {
             return true;
         }
         else if (!finished) {
-            JdbcConnection conn = (JdbcConnection)stmt.getConnection();
+            fetchPage();
 
-            Ignite ignite = conn.ignite();
-
-            UUID nodeId = conn.nodeId();
-
-            boolean loc = nodeId == null;
-
-            if (useNewQryTask) {
-                // Connections from new clients send queries with new tasks, so we have to continue in the same manner
-                JdbcQueryTaskV2 qryTask = new JdbcQueryTaskV2(loc ? ignite : null, conn.cacheName(), null, true, loc, null,
-                    fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
-
-                try {
-                    JdbcQueryTaskV2.QueryResult res =
-                        loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-
-                    finished = res.isFinished();
-
-                    it = res.getRows().iterator();
-
-                    return next();
-                }
-                catch (IgniteSQLException e) {
-                    throw e.toJdbcException();
-                }
-                catch (Exception e) {
-                    throw new SQLException("Failed to query Ignite.", e);
-                }
-            }
-
-            JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(), null, loc, null,
-                fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
-
-            try {
-                JdbcQueryTask.QueryResult res =
-                    loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-
-                finished = res.isFinished();
-
-                it = res.getRows().iterator();
-
-                return next();
-            }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
-            catch (Exception e) {
-                throw new SQLException("Failed to query Ignite.", e);
-            }
+            return next();
         }
 
         it = null;
 
         return false;
+    }
+
+    /**
+     * Fetch next results page.
+     *
+     * @throws SQLException On error.
+     */
+    private void fetchPage() throws SQLException {
+        JdbcConnection conn = (JdbcConnection)stmt.getConnection();
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        boolean loc = nodeId == null;
+
+        boolean updateMetadata = tbls == null;
+
+        // Connections from new clients send queries with new tasks, so we have to continue in the same manner
+        JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
+            null,true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata, false);
+
+        try {
+            JdbcQueryTaskResult res =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            finished = res.isFinished();
+
+            it = res.getRows().iterator();
+
+            if (updateMetadata) {
+                tbls = res.getTbls();
+                cols = res.getCols();
+                types = res.getTypes();
+            }
+        }
+        catch (Exception e) {
+            throw convertToSqlException(e, "Failed to query Ignite.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -243,11 +261,11 @@ public class JdbcResultSet implements ResultSet {
     /**
      * Marks result set as closed.
      * If this result set is associated with locally executed query then query cursor will also closed.
+     * @throws SQLException On error.
      */
     void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null) {
+        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
             JdbcQueryTask.remove(uuid);
-        }
 
         closed = true;
     }
@@ -259,81 +277,277 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public String getString(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, String.class);
+        Object val = getValue(colIdx);
+
+        return val == null ? null : String.valueOf(val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(int colIdx) throws SQLException {
-        Boolean val = getTypedValue(colIdx, Boolean.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : false;
+        if (val == null)
+            return false;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == Boolean.class)
+            return ((Boolean)val);
+        else if (val instanceof Number)
+            return ((Number)val).intValue() != 0;
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Integer.parseInt(val.toString()) != 0;
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public byte getByte(int colIdx) throws SQLException {
-        Byte val = getTypedValue(colIdx, Byte.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : 0;
+        if (val == null)
+            return 0;
+
+        Class<?> cls = val.getClass();
+
+        if (val instanceof Number)
+            return ((Number)val).byteValue();
+        else if (cls == Boolean.class)
+            return (Boolean) val ? (byte) 1 : (byte) 0;
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Byte.parseByte(val.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public short getShort(int colIdx) throws SQLException {
-        Short val = getTypedValue(colIdx, Short.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : 0;
+        if (val == null)
+            return 0;
+
+        Class<?> cls = val.getClass();
+
+        if (val instanceof Number)
+            return ((Number) val).shortValue();
+        else if (cls == Boolean.class)
+            return (Boolean) val ? (short) 1 : (short) 0;
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Short.parseShort(val.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to short: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to short: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public int getInt(int colIdx) throws SQLException {
-        Integer val = getTypedValue(colIdx, Integer.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : 0;
+        if (val == null)
+            return 0;
+
+        Class<?> cls = val.getClass();
+
+        if (val instanceof Number)
+            return ((Number) val).intValue();
+        else if (cls == Boolean.class)
+            return (Boolean) val ? 1 : 0;
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Integer.parseInt(val.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to int: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to int: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public long getLong(int colIdx) throws SQLException {
-        Long val = getTypedValue(colIdx, Long.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : 0;
+        if (val == null)
+            return 0;
+
+        Class<?> cls = val.getClass();
+
+        if (val instanceof Number)
+            return ((Number)val).longValue();
+        else if (cls == Boolean.class)
+            return (long) ((Boolean) val ? 1 : 0);
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Long.parseLong(val.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to long: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to long: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public float getFloat(int colIdx) throws SQLException {
-        Float val = getTypedValue(colIdx, Float.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : 0;
+        if (val == null)
+            return 0;
+
+        Class<?> cls = val.getClass();
+
+        if (val instanceof Number)
+            return ((Number) val).floatValue();
+        else if (cls == Boolean.class)
+            return (float) ((Boolean) val ? 1 : 0);
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Float.parseFloat(val.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to float: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to float: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public double getDouble(int colIdx) throws SQLException {
-        Double val = getTypedValue(colIdx, Double.class);
+        Object val = getValue(colIdx);
 
-        return val != null ? val : 0;
+        if (val == null)
+            return 0;
+
+        Class<?> cls = val.getClass();
+
+        if (val instanceof Number)
+            return ((Number) val).doubleValue();
+        else if (cls == Boolean.class)
+            return (double)((Boolean) val ? 1 : 0);
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return Double.parseDouble(val.toString());
+            }
+            catch (NumberFormatException e) {
+                throw new SQLException("Cannot convert to double: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to double: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public BigDecimal getBigDecimal(int colIdx, int scale) throws SQLException {
-        return getTypedValue(colIdx, BigDecimal.class);
+        BigDecimal val = getBigDecimal(colIdx);
+
+        return val == null ? null : val.setScale(scale, BigDecimal.ROUND_HALF_UP);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, byte[].class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == byte[].class)
+            return (byte[])val;
+        else if (cls == Byte.class)
+            return new byte[] {(byte)val};
+        else if (cls == Short.class) {
+            short x = (short)val;
+
+            return new byte[] {(byte)(x >> 8), (byte)x};
+        }
+        else if (cls == Integer.class) {
+            int x = (int)val;
+
+            return new byte[] { (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+        }
+        else if (cls == Long.class) {
+            long x = (long)val;
+
+            return new byte[] {(byte) (x >> 56), (byte) (x >> 48), (byte) (x >> 40), (byte) (x >> 32),
+                (byte) (x >> 24), (byte) (x >> 16), (byte) (x >> 8), (byte) x};
+        }
+        else if (cls == String.class)
+            return ((String)val).getBytes();
+        else
+            throw new SQLException("Cannot convert to byte[]: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, Date.class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == Date.class)
+            return (Date)val;
+        else if (cls == java.util.Date.class || cls == Time.class || cls == Timestamp.class)
+            return new Date(((java.util.Date)val).getTime());
+        else
+            throw new SQLException("Cannot convert to date: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public Time getTime(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, Time.class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == Time.class)
+            return (Time)val;
+        else if (cls == java.util.Date.class || cls == Date.class || cls == Timestamp.class)
+            return new Time(((java.util.Date)val).getTime());
+        else
+            throw new SQLException("Cannot convert to time: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, Timestamp.class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == Timestamp.class)
+            return (Timestamp)val;
+        else if (cls == java.util.Date.class || cls == Date.class || cls == Time.class)
+            return new Timestamp(((java.util.Date)val).getTime());
+        else
+            throw new SQLException("Cannot convert to timestamp: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -359,81 +573,93 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public String getString(String colLb) throws SQLException {
-        return getTypedValue(colLb, String.class);
+        int colIdx = findColumn(colLb);
+
+        return getString(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public boolean getBoolean(String colLb) throws SQLException {
-        Boolean val = getTypedValue(colLb, Boolean.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : false;
+        return getBoolean(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public byte getByte(String colLb) throws SQLException {
-        Byte val = getTypedValue(colLb, Byte.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : 0;
+        return getByte(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public short getShort(String colLb) throws SQLException {
-        Short val = getTypedValue(colLb, Short.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : 0;
+        return getShort(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public int getInt(String colLb) throws SQLException {
-        Integer val = getTypedValue(colLb, Integer.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : 0;
+        return getInt(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public long getLong(String colLb) throws SQLException {
-        Long val = getTypedValue(colLb, Long.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : 0;
+        return getLong(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public float getFloat(String colLb) throws SQLException {
-        Float val = getTypedValue(colLb, Float.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : 0;
+        return getFloat(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public double getDouble(String colLb) throws SQLException {
-        Double val = getTypedValue(colLb, Double.class);
+        int colIdx = findColumn(colLb);
 
-        return val != null ? val : 0;
+        return getDouble(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public BigDecimal getBigDecimal(String colLb, int scale) throws SQLException {
-        return getTypedValue(colLb, BigDecimal.class);
+        int colIdx = findColumn(colLb);
+
+        return getBigDecimal(colIdx, scale);
     }
 
     /** {@inheritDoc} */
     @Override public byte[] getBytes(String colLb) throws SQLException {
-        return getTypedValue(colLb, byte[].class);
+        int colIdx = findColumn(colLb);
+
+        return getBytes(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Date getDate(String colLb) throws SQLException {
-        return getTypedValue(colLb, Date.class);
+        int colIdx = findColumn(colLb);
+
+        return getDate(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Time getTime(String colLb) throws SQLException {
-        return getTypedValue(colLb, Time.class);
+        int colIdx = findColumn(colLb);
+
+        return getTime(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(String colLb) throws SQLException {
-        return getTypedValue(colLb, Timestamp.class);
+        int colIdx = findColumn(colLb);
+
+        return getTimestamp(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -480,17 +706,22 @@ public class JdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
+        if (tbls == null)
+            fetchPage();
+
         return new JdbcResultSetMetadata(tbls, cols, types);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, Object.class);
+        return getValue(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject(String colLb) throws SQLException {
-        return getTypedValue(colLb, Object.class);
+        int colIdx = findColumn(colLb);
+
+        return getValue(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -501,6 +732,8 @@ public class JdbcResultSet implements ResultSet {
 
         if (idx == -1)
             throw new SQLException("Column not found: " + colLb);
+
+        assert idx >= 0;
 
         return idx + 1;
     }
@@ -521,12 +754,36 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public BigDecimal getBigDecimal(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, BigDecimal.class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == BigDecimal.class)
+            return (BigDecimal)val;
+        else if (val instanceof Number)
+            return new BigDecimal(((Number)val).doubleValue());
+        else if (cls == Boolean.class)
+            return new BigDecimal((Boolean)val ? 1 : 0);
+        else if (cls == String.class || cls == Character.class) {
+            try {
+                return (BigDecimal)decimalFormat.get().parse(val.toString());
+            }
+            catch (ParseException e) {
+                throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public BigDecimal getBigDecimal(String colLb) throws SQLException {
-        return getTypedValue(colLb, BigDecimal.class);
+        int colIdx = findColumn(colLb);
+
+        return getBigDecimal(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1000,7 +1257,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(int colIdx, Map<String, Class<?>> map) throws SQLException {
-        return getTypedValue(colIdx, Object.class);
+        throw new SQLFeatureNotSupportedException("SQL structured type are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -1012,9 +1269,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(int colIdx) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(getBytes(colIdx));
     }
 
     /** {@inheritDoc} */
@@ -1033,7 +1288,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Object getObject(String colLb, Map<String, Class<?>> map) throws SQLException {
-        return getTypedValue(colLb, Object.class);
+        throw new SQLFeatureNotSupportedException("SQL structured type are not supported.");
     }
 
     /** {@inheritDoc} */
@@ -1045,9 +1300,7 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Blob getBlob(String colLb) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        return new JdbcBlob(getBytes(colLb));
     }
 
     /** {@inheritDoc} */
@@ -1066,42 +1319,62 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public Date getDate(int colIdx, Calendar cal) throws SQLException {
-        return getTypedValue(colIdx, Date.class);
+        return getDate(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Date getDate(String colLb, Calendar cal) throws SQLException {
-        return getTypedValue(colLb, Date.class);
+        return getDate(colLb);
     }
 
     /** {@inheritDoc} */
     @Override public Time getTime(int colIdx, Calendar cal) throws SQLException {
-        return getTypedValue(colIdx, Time.class);
+        return getTime(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Time getTime(String colLb, Calendar cal) throws SQLException {
-        return getTypedValue(colLb, Time.class);
+        return getTime(colLb);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(int colIdx, Calendar cal) throws SQLException {
-        return getTypedValue(colIdx, Timestamp.class);
+        return getTimestamp(colIdx);
     }
 
     /** {@inheritDoc} */
     @Override public Timestamp getTimestamp(String colLb, Calendar cal) throws SQLException {
-        return getTypedValue(colLb, Timestamp.class);
+        return getTimestamp(colLb);
     }
 
     /** {@inheritDoc} */
     @Override public URL getURL(int colIdx) throws SQLException {
-        return getTypedValue(colIdx, URL.class);
+        Object val = getValue(colIdx);
+
+        if (val == null)
+            return null;
+
+        Class<?> cls = val.getClass();
+
+        if (cls == URL.class)
+            return (URL)val;
+        else if (cls == String.class) {
+            try {
+                return new URL(val.toString());
+            }
+            catch (MalformedURLException e) {
+                throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.CONVERSION_FAILED, e);
+            }
+        }
+        else
+            throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
     @Override public URL getURL(String colLb) throws SQLException {
-        return getTypedValue(colLb, URL.class);
+        int colIdx = findColumn(colLb);
+
+        return getURL(colIdx);
     }
 
     /** {@inheritDoc} */
@@ -1479,7 +1752,6 @@ public class JdbcResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> iface) throws SQLException {
         if (!isWrapperFor(iface))
             throw new SQLException("Result set is not a wrapper for " + iface.getName());
@@ -1493,57 +1765,76 @@ public class JdbcResultSet implements ResultSet {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T getObject(int colIdx, Class<T> type) throws SQLException {
-        return getTypedValue(colIdx, type);
+    @Override public <T> T getObject(int colIdx, Class<T> targetCls) throws SQLException {
+        return (T)getObject0(colIdx, targetCls);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T getObject(String colLb, Class<T> type) throws SQLException {
-        return getTypedValue(colLb, type);
+    @Override public <T> T getObject(String colLb, Class<T> targetCls) throws SQLException {
+        int colIdx = findColumn(colLb);
+
+        return getObject(colIdx, targetCls);
     }
 
     /**
-     * Gets casted field value by label.
-     *
-     * @param colLb Column label.
-     * @param cls Value class.
-     * @return Casted field value.
-     * @throws SQLException In case of error.
+     * @param colIdx Column index.
+     * @param targetCls Class representing the Java data type to convert the designated column to.
+     * @return Converted object.
+     * @throws SQLException On error.
      */
-    private <T> T getTypedValue(String colLb, Class<T> cls) throws SQLException {
-        ensureNotClosed();
-        ensureHasCurrentRow();
-
-        String name = colLb.toUpperCase();
-
-        Integer idx = stmt.fieldsIdxs.get(name);
-
-        int colIdx;
-
-        if (idx != null)
-            colIdx = idx;
+    private Object getObject0(int colIdx, Class<?> targetCls) throws SQLException {
+        if (targetCls == Boolean.class)
+            return getBoolean(colIdx);
+        else if (targetCls == Byte.class)
+            return getByte(colIdx);
+        else if (targetCls == Short.class)
+            return getShort(colIdx);
+        else if (targetCls == Integer.class)
+            return getInt(colIdx);
+        else if (targetCls == Long.class)
+            return getLong(colIdx);
+        else if (targetCls == Float.class)
+            return getFloat(colIdx);
+        else if (targetCls == Double.class)
+            return getDouble(colIdx);
+        else if (targetCls == String.class)
+            return getString(colIdx);
+        else if (targetCls == BigDecimal.class)
+            return getBigDecimal(colIdx);
+        else if (targetCls == Date.class)
+            return getDate(colIdx);
+        else if (targetCls == Time.class)
+            return getTime(colIdx);
+        else if (targetCls == Timestamp.class)
+            return getTimestamp(colIdx);
+        else if (targetCls == byte[].class)
+            return getBytes(colIdx);
+        else if (targetCls == URL.class)
+            return getURL(colIdx);
         else {
-            colIdx = cols.indexOf(name) + 1;
+            Object val = getValue(colIdx);
 
-            if (colIdx <= 0)
-                throw new SQLException("Invalid column label: " + colLb);
+            if (val == null)
+                return null;
 
-            stmt.fieldsIdxs.put(name, colIdx);
+            Class<?> cls = val.getClass();
+
+            if (targetCls == cls)
+                return val;
+            else
+                throw new SQLException("Cannot convert to " + targetCls.getName() + ": " + val,
+                    SqlStateCode.CONVERSION_FAILED);
         }
-
-        return getTypedValue(colIdx, cls);
     }
 
     /**
-     * Gets casted field value by index.
+     * Gets object field value by index.
      *
      * @param colIdx Column index.
-     * @param cls Value class.
-     * @return Casted field value.
+     * @return Object field value.
      * @throws SQLException In case of error.
      */
-    @SuppressWarnings("unchecked")
-    private <T> T getTypedValue(int colIdx, Class<T> cls) throws SQLException {
+    private Object getValue(int colIdx) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();
 
@@ -1552,18 +1843,10 @@ public class JdbcResultSet implements ResultSet {
 
             wasNull = val == null;
 
-            if (val == null)
-                return null;
-            else if (cls == String.class)
-                return (T)String.valueOf(val);
-            else
-                return (T)val;
+            return val;
         }
-        catch (IndexOutOfBoundsException ignored) {
-            throw new SQLException("Invalid column index: " + colIdx);
-        }
-        catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+        catch (IndexOutOfBoundsException e) {
+            throw new SQLException("Invalid column index: " + colIdx, e);
         }
     }
 
@@ -1574,7 +1857,7 @@ public class JdbcResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.");
+            throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
     }
 
     /**
@@ -1585,5 +1868,44 @@ public class JdbcResultSet implements ResultSet {
     private void ensureHasCurrentRow() throws SQLException {
         if (curr == null)
             throw new SQLException("Result set is not positioned on a row.");
+    }
+
+    /**
+     * @return Is Query flag.
+     */
+    public boolean isQuery() {
+        return isQry;
+    }
+
+    /**
+     * @return Update count.
+     */
+    public long updateCount() {
+        return updCnt;
+    }
+
+    /**
+     * @param rows query result.
+     * @return update counter, if found.
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+        if (F.isEmpty(rows))
+            return -1;
+
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation.");
+
+        List<?> row = rows.get(0);
+
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation.");
+
+        Object objRes = row.get(0);
+
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type.");
+
+        return (Long)objRes;
     }
 }

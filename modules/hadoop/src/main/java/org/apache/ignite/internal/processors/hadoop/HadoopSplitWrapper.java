@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
 
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -95,7 +96,6 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = in.readInt();
 
@@ -122,7 +122,7 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopSplitWrapper.class, this, "hosts", Arrays.toString(hosts));
     }
 }

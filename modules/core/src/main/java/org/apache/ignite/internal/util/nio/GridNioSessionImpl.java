@@ -18,13 +18,19 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MAX_KEYS_CNT;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
 /**
  *
@@ -75,6 +81,9 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Accepted flag. */
     private final boolean accepted;
 
+    /** For debug purposes. */
+    private volatile boolean markedForClose;
+
     /**
      * @param filterChain Chain.
      * @param locAddr Local address.
@@ -105,7 +114,7 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             resetSendScheduleTime();
 
-            return chain().onSessionWrite(this, msg, true);
+            return chain().onSessionWrite(this, msg, true, null);
         }
         catch (IgniteCheckedException e) {
             close();
@@ -115,9 +124,10 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNoFuture(Object msg) throws IgniteCheckedException {
+    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
         try {
-            chain().onSessionWrite(this, msg, false);
+            chain().onSessionWrite(this, msg, false, ackC);
         }
         catch (IgniteCheckedException e) {
             close();
@@ -153,6 +163,8 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridNioFuture<Boolean> close() {
+        markedForClose = true;
+
         try {
             return filterChain.onSessionClose(this);
         }
@@ -167,7 +179,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override  @Nullable public InetSocketAddress remoteAddress() {
+    @Override @Nullable public InetSocketAddress remoteAddress() {
         return rmtAddr;
     }
 
@@ -260,6 +272,22 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Override public boolean accepted() {
         return accepted;
+    }
+
+    /** */
+    @Override public Certificate[] certificates() {
+        GridSslMeta meta = meta(SSL_META.ordinal());
+
+        if (meta != null) {
+            try {
+                return meta.sslEngine().getSession().getPeerCertificates();
+            }
+            catch (SSLPeerUnverifiedException e) {
+                // Nothing to do.
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.junit.Test;
 
 /**
  * Test attempt to execute a map-reduce task while no Hadoop processor available.
  */
 public class HadoopNoHadoopMapReduceTest extends HadoopMapReduceTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setHadoopConfiguration(null);
         c.setPeerClassLoadingEnabled(true);
@@ -34,6 +35,7 @@ public class HadoopNoHadoopMapReduceTest extends HadoopMapReduceTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testWholeMapReduceExecution() throws Exception {
         try {
             super.testWholeMapReduceExecution();

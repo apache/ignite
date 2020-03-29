@@ -18,16 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.concurrent.CountDownLatch;
-
-import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import org.junit.Test;
 
 /**
  * Test for cluster wide offheap cache metrics.
@@ -39,36 +33,18 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
     /** Client count */
     private static final int CLIENT_CNT = 3;
 
-    /** Grid client mode */
-    private boolean clientMode;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(clientMode);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // start grids
-        clientMode = false;
         for (int i = 0; i < GRID_CNT; i++)
             startGrid("server-" + i);
 
         // start clients
-        clientMode = true;
         for (int i = 0; i < CLIENT_CNT; i++)
-            startGrid("client-" + i);
+            startClientGrid("client-" + i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
+    @Test
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
         IgniteCache<Integer, Integer> cache = grid("client-0").createCache(cacheConfiguration(cacheName));
@@ -76,14 +52,14 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);
 
-        awaitMetricsUpdate();
+        awaitMetricsUpdate(1);
 
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
 
         for (int j = 0; j < 1000; j++)
             cache.get(j);
 
-        awaitMetricsUpdate();
+        awaitMetricsUpdate(1);
 
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
 
@@ -92,50 +68,50 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
         for (int j = 0; j < 1000; j++)
             cache.get(j);
 
-        awaitMetricsUpdate();
+        awaitMetricsUpdate(1);
 
         assertGetOffHeapPrimaryEntriesCount(cacheName, 1000);
     }
 
-    /**
-     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
-     */
-    private void awaitMetricsUpdate() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 2);
-
-        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event ignore) {
-                latch.countDown();
-
-                return true;
-            }
-        };
-
-        for (int i = 0; i < GRID_CNT; i++)
-            grid("server-" + i).events().localListen(lsnr, EVT_NODE_METRICS_UPDATED);
-
-        latch.await();
-    }
-
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {
+        long localPrimary = 0L;
+        long localBackups = 0L;
+
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("server-" + i).cache(cacheName);
             assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
+            assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
+
+            localPrimary += cache.localMxBean().getOffHeapPrimaryEntriesCount();
+            localBackups += cache.localMxBean().getOffHeapPrimaryEntriesCount();
         }
+
+        assertEquals(count, localPrimary);
+        assertEquals(count, localBackups);
 
         for (int i = 0; i < CLIENT_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("client-" + i).cache(cacheName);
             assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
+            assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
+            assertEquals(0L, cache.localMxBean().getOffHeapPrimaryEntriesCount());
+            assertEquals(0L, cache.localMxBean().getOffHeapBackupEntriesCount());
         }
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
     private static CacheConfiguration<Integer, Integer> cacheConfiguration(String cacheName) {
         CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
 
         cfg.setBackups(1);
         cfg.setStatisticsEnabled(true);
-        cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-        cfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         return cfg;
     }
 }

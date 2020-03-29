@@ -214,16 +214,12 @@ public class TxDeadlockDetection {
         /** Timed out flag. */
         private volatile boolean timedOut;
 
-        /** Mutex. */
-        private final Object mux = new Object();
-
         /**
          * @param cctx Context.
          * @param txId Tx ID.
          * @param topVer Transaction topology version.
          * @param keys Keys.
          */
-        @SuppressWarnings("unchecked")
         private TxDeadlockFuture(GridCacheSharedContext cctx,
             GridCacheVersion txId,
             AffinityTopologyVersion topVer,
@@ -521,7 +517,7 @@ public class TxDeadlockDetection {
          * @param val Value.
          */
         private boolean compareAndSet(UUID exp, UUID val) {
-            synchronized (mux) {
+            synchronized (this) {
                 if (Objects.equals(curNodeId, exp)) {
                     curNodeId = val;
 

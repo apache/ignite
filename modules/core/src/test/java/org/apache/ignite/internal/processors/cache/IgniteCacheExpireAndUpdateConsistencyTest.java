@@ -33,28 +33,22 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -65,24 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
     private static final int NODES = 5;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -90,74 +67,57 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        Ignite client = startGrid(4);
+        Ignite client = startClientGrid(4);
 
         assertTrue(client.configuration().isClientMode());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic1() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0));
+        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 0));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic2() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 1));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic3() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 2));
+        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, 2));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicOffheap() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testTx1() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 0));
+        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 0));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx2() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 1));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTx3() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, ONHEAP_TIERED, 2));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheap() throws Exception {
-        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1));
+        updateAndEventConsistencyTest(cacheConfiguration(TRANSACTIONAL, 2));
     }
 
     /**
@@ -193,7 +153,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
                             }
 
                             synchronized (keyEvts) {
-                                keyEvts.add(new T2<>(e.getValue(), e.getOldValue()));
+                                keyEvts.add(new T2<TestValue, TestValue>(e.getValue(), e.getOldValue()));
                             }
                         }
                     }
@@ -347,18 +307,14 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
     /**
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param backups Number of backups.
      * @return Cache configuration.
      */
-    private CacheConfiguration<TestKey, TestValue> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
-        int backups) {
-        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
+    private CacheConfiguration<TestKey, TestValue> cacheConfiguration(CacheAtomicityMode atomicityMode, int backups) {
+        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(backups);
 

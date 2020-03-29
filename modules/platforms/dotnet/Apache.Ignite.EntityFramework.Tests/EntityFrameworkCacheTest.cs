@@ -70,7 +70,7 @@ namespace Apache.Ignite.EntityFramework.Tests
             var cfg = TestUtils.GetTestConfiguration();
             var ignite = Ignition.Start(cfg);
 
-            Ignition.Start(new IgniteConfiguration(cfg) {GridName = "grid2"});
+            Ignition.Start(new IgniteConfiguration(cfg) {IgniteInstanceName = "grid2"});
 
             // Create SQL CE database in a temp file.
             using (var ctx = GetDbContext())

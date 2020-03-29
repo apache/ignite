@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 
 /**
@@ -26,14 +27,17 @@ public class GridRunningQueryInfo {
     /** */
     private final long id;
 
+    /** Originating Node ID. */
+    private final UUID nodeId;
+
     /** */
     private final String qry;
 
     /** Query type. */
     private final GridCacheQueryType qryType;
 
-    /** */
-    private final String cache;
+    /** Schema name. */
+    private final String schemaName;
 
     /** */
     private final long startTime;
@@ -44,21 +48,36 @@ public class GridRunningQueryInfo {
     /** */
     private final boolean loc;
 
+    /** */
+    private final QueryRunningFuture fut = new QueryRunningFuture();
+
     /**
+     * Constructor.
+     *
      * @param id Query ID.
+     * @param nodeId Originating node ID.
      * @param qry Query text.
      * @param qryType Query type.
-     * @param cache Cache where query was executed.
+     * @param schemaName Schema name.
      * @param startTime Query start time.
      * @param cancel Query cancel.
      * @param loc Local query flag.
      */
-    public GridRunningQueryInfo(Long id, String qry, GridCacheQueryType qryType, String cache, long startTime,
-        GridQueryCancel cancel, boolean loc) {
+    public GridRunningQueryInfo(
+        long id,
+        UUID nodeId,
+        String qry,
+        GridCacheQueryType qryType,
+        String schemaName,
+        long startTime,
+        GridQueryCancel cancel,
+        boolean loc
+    ) {
         this.id = id;
+        this.nodeId = nodeId;
         this.qry = qry;
         this.qryType = qryType;
-        this.cache = cache;
+        this.schemaName = schemaName;
         this.startTime = startTime;
         this.cancel = cancel;
         this.loc = loc;
@@ -67,8 +86,15 @@ public class GridRunningQueryInfo {
     /**
      * @return Query ID.
      */
-    public Long id() {
+    public long id() {
         return id;
+    }
+
+    /**
+     * @return Global query ID.
+     */
+    public String globalQueryId() {
+        return QueryUtils.globalQueryId(nodeId, id);
     }
 
     /**
@@ -86,10 +112,10 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Cache where query was executed.
+     * @return Schema name.
      */
-    public String cache() {
-        return cache;
+    public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -117,6 +143,13 @@ public class GridRunningQueryInfo {
     }
 
     /**
+     * @return Query running future.
+     */
+    public QueryRunningFuture runningFuture(){
+        return fut;
+    }
+
+    /**
      * @return {@code true} if query can be cancelled.
      */
     public boolean cancelable() {
@@ -128,5 +161,12 @@ public class GridRunningQueryInfo {
      */
     public boolean local() {
         return loc;
+    }
+
+    /**
+     * @return Originating node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
     }
 }

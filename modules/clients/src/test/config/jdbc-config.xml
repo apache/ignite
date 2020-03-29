@@ -29,13 +29,8 @@
         <!-- JDBC driver should force true value -->
         <property name="clientMode" value="false"/>
 
+        <property name="igniteInstanceName" value="sqlGrid"/>
         <property name="localHost" value="127.0.0.1"/>
-
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="false"/>
-            </bean>
-        </property>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -49,6 +44,12 @@
                     </bean>
                 </property>
             </bean>
+        </property>
+
+        <property name="sqlSchemas">
+            <array>
+                <value>PREDEFINED_CLIENT_SCHEMA</value>
+            </array>
         </property>
 
         <property name="peerClassLoadingEnabled" value="true"/>

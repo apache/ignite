@@ -70,9 +70,6 @@
                         <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
                     </property>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="1500000"/>
-
                     <!--
                         Setting this value will cause local node to wait for remote commits.
                         However, it's important to set it this way in the examples as we assert on
@@ -110,9 +107,6 @@
 
                     <!-- Set synchronous rebalancing (default is asynchronous). -->
                     <property name="rebalanceMode" value="SYNC"/>
-
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="150000"/>
                 </bean>
 
                 <!--
@@ -124,9 +118,6 @@
 
                     <!-- LOCAL cache mode. -->
                     <property name="cacheMode" value="LOCAL"/>
-
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="150000"/>
                 </bean>
             </list>
         </property>
@@ -148,7 +139,6 @@
                         <property name="bucketName" value="YOUR_BUCKET_NAME_IP_FINDER"/>
                     </bean>
                 </property>
-                <property name="heartbeatFrequency" value="2000"/>
             </bean>
         </property>
         -->

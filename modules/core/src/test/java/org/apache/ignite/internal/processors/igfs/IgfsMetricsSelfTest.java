@@ -36,8 +36,8 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -60,9 +60,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
-
-    /** IP finder for the grid with the primary file system. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Primary IGFS instances. */
     private static IgniteFileSystem[] igfsPrimary;
@@ -87,11 +84,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startSecondary();
         startPrimary();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
     }
 
     /**
@@ -120,8 +112,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_PRIMARY);
         igfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
         igfsCfg.setDefaultMode(DUAL_SYNC);
@@ -135,7 +125,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -145,22 +134,18 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-" + idx);
+        cfg.setIgniteInstanceName("grid-" + idx);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -177,8 +162,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private void startSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_SECONDARY);
         igfsCfg.setBlockSize(SECONDARY_BLOCK_SIZE);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -186,7 +169,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -196,22 +178,23 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-secondary");
+        cfg.setIgniteInstanceName("grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -222,6 +205,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMetrics() throws Exception {
         IgniteFileSystem fs = igfsPrimary[0];
 
@@ -350,7 +334,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.format();
+        fs.clear();
 
         m = fs.metrics();
 
@@ -362,6 +346,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultipleClose() throws Exception {
         IgniteFileSystem fs = igfsPrimary[0];
 
@@ -387,6 +372,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
+    @Test
     public void testBlockMetrics() throws Exception {
         IgfsEx igfs = (IgfsEx)igfsPrimary[0];
 

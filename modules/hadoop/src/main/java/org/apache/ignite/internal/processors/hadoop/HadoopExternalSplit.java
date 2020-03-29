@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Externalizable;
@@ -90,7 +91,7 @@ public class HadoopExternalSplit extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopExternalSplit.class, this, "hosts", Arrays.toString(hosts));
     }
 }

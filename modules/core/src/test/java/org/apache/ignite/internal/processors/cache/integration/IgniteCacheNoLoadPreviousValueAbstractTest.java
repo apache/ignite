@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -48,8 +49,8 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -57,8 +58,8 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setReadThrough(true);
 
@@ -72,6 +73,7 @@ public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoLoadPreviousValue() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

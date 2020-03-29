@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+<!--
+    Ignite Spring configuration file to startup grid cache.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean abstract="true" id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration"><null/></property>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="QueryPerson"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="QueryPerson"/>
+
+                                <property name="keyFieldName" value="k"/>
+                                <property name="valueFieldName" value="v"/>
+
+                                <property name="fields">
+                                    <map>
+                                        <entry key="k" value="java.lang.Integer"/>
+                                        <entry key="v" value="QueryPerson"/>
+                                        <entry key="name" value="java.lang.String"/>
+                                        <entry key="age" value="java.lang.Integer"/>
+                                        <entry key="birthday" value="java.util.Date"/>
+                                        <entry key="recordCreated" value="java.sql.Timestamp"/>
+                                    </map>
+                                </property>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="age" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType" value="FULLTEXT"/>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="name" value="false"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                    </list>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="QueryRelation"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="valueType" value="QueryRelation"/>
+                                <property name="fields">
+                                    <map>
+                                        <entry key="personId" value="java.lang.Integer"/>
+                                        <entry key="someVal" value="java.lang.Integer"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="TimeCache"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="java.sql.Time"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="IntCache"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="java.lang.Integer"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="ByteArrayCache"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="ByteArrayType"/>
+                                <property name="fields">
+                                    <map>
+                                        <entry key="intVal" value="java.lang.Integer"/>
+                                        <entry key="arrayVal" value="[B"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <!-- In distributed environment, replace with actual host IP address. -->
+                                <value>127.0.0.1:47500</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+                <property name="socketTimeout" value="300" />
+            </bean>
+        </property>
+    </bean>
+</beans>

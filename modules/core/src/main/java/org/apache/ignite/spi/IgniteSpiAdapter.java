@@ -18,14 +18,13 @@
 package org.apache.ignite.spi;
 
 import java.io.Serializable;
-import java.text.DateFormat;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -36,6 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -43,8 +43,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -57,15 +55,18 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 
 /**
  * This class provides convenient adapter for SPI implementations.
  */
-public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagementMBean {
+public abstract class IgniteSpiAdapter implements IgniteSpi {
     /** */
     private ObjectName spiMBean;
 
@@ -74,13 +75,13 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** */
     @LoggerResource
-    private IgniteLogger log;
+    protected IgniteLogger log;
 
     /** Ignite instance. */
     protected Ignite ignite;
 
-    /** Grid instance name. */
-    protected String gridName;
+    /** Ignite instance name. */
+    protected String igniteInstanceName;
 
     /** SPI name. */
     private String name;
@@ -96,6 +97,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** Failure detection timeout usage switch. */
     private boolean failureDetectionTimeoutEnabled = true;
+
+    /**
+     * Failure detection timeout for client nodes. Initialized with the value of
+     * {@link IgniteConfiguration#getClientFailureDetectionTimeout()}.
+     */
+    private long clientFailureDetectionTimeout;
 
     /**
      * Failure detection timeout. Initialized with the value of
@@ -142,31 +149,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         return startedFlag.get();
     }
 
-    /** {@inheritDoc} */
-    @Override public final String getStartTimestampFormatted() {
-        return DateFormat.getDateTimeInstance().format(new Date(startTstamp));
-    }
-
-    /** {@inheritDoc} */
-    @Override public final String getUpTimeFormatted() {
-        return X.timeSpan2HMSM(getUpTime());
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long getStartTimestamp() {
-        return startTstamp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long getUpTime() {
-        return startTstamp == 0 ? 0 : U.currentTimeMillis() - startTstamp;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID getLocalNodeId() {
-        return ignite.cluster().localNode().id();
-    }
-
     /**
      * @return Local node.
      */
@@ -180,23 +162,30 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /** {@inheritDoc} */
-    @Override public final String getIgniteHome() {
-        return ignite.configuration().getIgniteHome();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getName() {
         return name;
+    }
+
+    /**
+     * Gets ignite instance.
+     *
+     * @return Ignite instance.
+     */
+    public Ignite ignite() {
+        return ignite;
     }
 
     /**
      * Sets SPI name.
      *
      * @param name SPI name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setName(String name) {
+    public IgniteSpiAdapter setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -279,7 +268,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         this.ignite = ignite;
 
         if (ignite != null)
-            gridName = ignite.name();
+            igniteInstanceName = ignite.name();
     }
 
     /**
@@ -351,7 +340,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * @return Uniformly formatted message for SPI start.
      */
     protected final String startInfo() {
-        return "SPI started ok [startMs=" + getUpTime() + ", spiMBean=" + spiMBean + ']';
+        return "SPI started ok [startMs=" + startTstamp + ", spiMBean=" + spiMBean + ']';
+    }
+
+    /**
+     * Gets SPI startup time.
+     * @return Time in millis.
+     */
+    final long getStartTstamp() {
+        return startTstamp;
     }
 
     /**
@@ -401,22 +398,25 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     /**
      * Registers SPI MBean. Note that SPI can only register one MBean.
      *
-     * @param gridName Grid name. If null, then name will be empty.
+     * @param igniteInstanceName Ignite instance name. If null, then name will be empty.
      * @param impl MBean implementation.
      * @param mbeanItf MBean interface (if {@code null}, then standard JMX
      *    naming conventions are used.
      * @param <T> Type of the MBean
      * @throws IgniteSpiException If registration failed.
      */
-    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
-        throws IgniteSpiException {
+    protected final <T extends IgniteSpiManagementMBean> void registerMBean(String igniteInstanceName, T impl, Class<T> mbeanItf
+       ) throws IgniteSpiException {
+        if(ignite == null || U.IGNITE_MBEANS_DISABLED)
+            return;
+
         MBeanServer jmx = ignite.configuration().getMBeanServer();
 
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
 
         try {
-            spiMBean = U.registerMBean(jmx, gridName, "SPIs", getName(), impl, mbeanItf);
+            spiMBean = U.registerMBean(jmx, igniteInstanceName, "SPIs", getName(), impl, mbeanItf);
 
             if (log.isDebugEnabled())
                 log.debug("Registered SPI MBean: " + spiMBean);
@@ -433,7 +433,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
-        if (spiMBean != null) {
+        if (spiMBean != null && ignite != null) {
+            assert !U.IGNITE_MBEANS_DISABLED;
+
             MBeanServer jmx = ignite.configuration().getMBeanServer();
 
             assert jmx != null;
@@ -520,7 +522,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         if (!enabled)
             return;
 
-        if (!checkClient && (CU.clientNode(getLocalNode()) || CU.clientNode(node)))
+        if (!checkClient && (getLocalNode().isClient() || node.isClient()))
             return;
 
         String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);
@@ -548,7 +550,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         if (rmtCls == null) {
             if (!optional && starting)
                 throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr +
-                    " [name=" + name + ", loc=" + locCls + ']');
+                    " [name=" + name + ", loc=" + locCls + ", locNode=" + spiCtx.localNode() + ", rmt=" + rmtCls +
+                    ", rmtNode=" + node + ']');
 
             sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
         }
@@ -660,12 +663,28 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
                 // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
                 log.warning("Failure detection timeout is too low, it may lead to unpredictable behaviour " +
                     "[failureDetectionTimeout=" + failureDetectionTimeout + ']');
+            else if (failureDetectionTimeout <= ignite.configuration().getMetricsUpdateFrequency())
+                log.warning("'IgniteConfiguration.failureDetectionTimeout' should be greater then " +
+                    "'IgniteConfiguration.metricsUpdateFrequency' to prevent unnecessary status checking.");
         }
         // Intentionally compare references using '!=' below
-        else if (ignite.configuration().getFailureDetectionTimeout() !=
-                IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT)
+        else if (ignite.configuration().getFailureDetectionTimeout() != DFLT_FAILURE_DETECTION_TIMEOUT)
             log.warning("Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)");
 
+        clientFailureDetectionTimeout = ignite.configuration().getClientFailureDetectionTimeout();
+
+        if (clientFailureDetectionTimeout <= 0)
+            throw new IgniteSpiException("Invalid client failure detection timeout value: " +
+                clientFailureDetectionTimeout);
+        else if (clientFailureDetectionTimeout <= 10)
+            // Because U.currentTimeInMillis() is updated once in 10 milliseconds.
+            log.warning("Client failure detection timeout is too low, it may lead to unpredictable behaviour " +
+                "[clientFailureDetectionTimeout=" + clientFailureDetectionTimeout + ']');
+
+        if (clientFailureDetectionTimeout < ignite.configuration().getMetricsUpdateFrequency())
+            throw new IgniteSpiException("Inconsistent configuration " +
+                "('IgniteConfiguration.clientFailureDetectionTimeout' must be greater or equal to " +
+                "'IgniteConfiguration.metricsUpdateFrequency').");
     }
 
     /**
@@ -684,6 +703,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     public boolean failureDetectionTimeoutEnabled() {
         return failureDetectionTimeoutEnabled;
+    }
+
+    /**
+     * Returns client failure detection timeout set to use for network related operations.
+     *
+     * @return client failure detection timeout in milliseconds or {@code 0} if the timeout is disabled.
+     */
+    public long clientFailureDetectionTimeout() {
+        return clientFailureDetectionTimeout;
     }
 
     /**
@@ -727,7 +755,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
             if (msgFactory0 == null) {
                 msgFactory0 = new MessageFactory() {
-                    @Nullable @Override public Message create(byte type) {
+                    @Nullable @Override public Message create(short type) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };
@@ -816,7 +844,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> nodes() {
-            return  locNode == null  ? Collections.<ClusterNode>emptyList() : Collections.singletonList(locNode);
+            return  locNode == null  ? Collections.emptyList() : Collections.singletonList(locNode);
         }
 
         /** {@inheritDoc} */
@@ -875,6 +903,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<SecuritySubject> authenticatedSubjects() {
             return Collections.emptyList();
         }
@@ -916,7 +949,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             if (!(ignite0 instanceof IgniteKernal))
                 throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
 
-            ((IgniteKernal)ignite0).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
+            ((IgniteEx)ignite0).context().timeout().addTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
@@ -926,12 +959,42 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             if (!(ignite0 instanceof IgniteKernal))
                 throw new IgniteSpiException("Wrong Ignite instance is set: " + ignite0);
 
-            ((IgniteKernal)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+            ((IgniteEx)ignite0).context().timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
         }
 
         /** {@inheritDoc} */
         @Override public Map<String, Object> nodeAttributes() {
             return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean communicationFailureResolveSupported() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeMetricRegistry(String name) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterable<ReadOnlyMetricRegistry> metricRegistries() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+            // No-op.
         }
     }
 }

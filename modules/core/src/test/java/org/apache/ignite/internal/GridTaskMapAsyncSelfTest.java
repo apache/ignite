@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -50,8 +51,8 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -65,8 +66,9 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskMap() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         info("Executing sync mapped task.");
 

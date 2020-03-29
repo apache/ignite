@@ -21,8 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -32,20 +30,21 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteInternalTx extends AutoCloseable {
+public interface IgniteInternalTx {
     /**
      *
      */
@@ -56,9 +55,6 @@ public interface IgniteInternalTx extends AutoCloseable {
 
         /** Transaction is being finalized by user. */
         USER_FINISH,
-
-        /** Recovery request is received, user finish requests should be ignored. */
-        RECOVERY_WAIT,
 
         /** Transaction is being finalized by recovery procedure. */
         RECOVERY_FINISH
@@ -183,29 +179,6 @@ public interface IgniteInternalTx extends AutoCloseable {
     public boolean isRollbackOnly();
 
     /**
-     * Commits this transaction by initiating {@code two-phase-commit} process.
-     *
-     * @throws IgniteCheckedException If commit failed.
-     */
-    @IgniteAsyncSupported
-    public void commit() throws IgniteCheckedException;
-
-    /**
-     * Ends the transaction. Transaction will be rolled back if it has not been committed.
-     *
-     * @throws IgniteCheckedException If transaction could not be gracefully ended.
-     */
-    @Override public void close() throws IgniteCheckedException;
-
-    /**
-     * Rolls back this transaction.
-     *
-     * @throws IgniteCheckedException If rollback failed.
-     */
-    @IgniteAsyncSupported
-    public void rollback() throws IgniteCheckedException;
-
-    /**
      * Removes metadata by key.
      *
      * @param key Key of the metadata to remove.
@@ -248,7 +221,7 @@ public interface IgniteInternalTx extends AutoCloseable {
      * @return {@code True} if transaction is allowed to use store and transactions spans one or more caches with
      *      store enabled.
      */
-    public boolean storeUsed();
+    public boolean storeWriteThrough();
 
     /**
      * Checks if this is system cache transaction. System transactions are isolated from user transactions
@@ -291,6 +264,11 @@ public interface IgniteInternalTx extends AutoCloseable {
     public boolean activeCachesDeploymentEnabled();
 
     /**
+     * @param depEnabled Flag indicating whether deployment is enabled for caches from this transaction or not.
+     */
+    public void activeCachesDeploymentEnabled(boolean depEnabled);
+
+    /**
      * Attempts to set topology version and returns the current value.
      * If topology version was previously set, then it's value will
      * be returned (but not updated).
@@ -306,21 +284,21 @@ public interface IgniteInternalTx extends AutoCloseable {
     public boolean empty();
 
     /**
-     * @return {@code True} if preparing flag was set with this call.
-     */
-    public boolean markPreparing();
-
-    /**
      * @param status Finalization status to set.
      * @return {@code True} if could mark was set.
      */
     public boolean markFinalizing(FinalizationStatus status);
 
     /**
-     * @param cacheCtx Cache context.
+     * @return Finalization status.
+     */
+    public @Nullable FinalizationStatus finalizationStatus();
+
+    /**
+     * @param cacheId Cache id.
      * @param part Invalid partition.
      */
-    public void addInvalidPartition(GridCacheContext<?, ?> cacheCtx, int part);
+    public void addInvalidPartition(int cacheId, int part);
 
     /**
      * @return Invalid partitions.
@@ -405,11 +383,6 @@ public interface IgniteInternalTx extends AutoCloseable {
     public boolean local();
 
     /**
-     * @return {@code True} if transaction is replicated.
-     */
-    public boolean replicated();
-
-    /**
      * @return Subject ID initiated this transaction.
      */
     public UUID subjectId();
@@ -430,11 +403,6 @@ public interface IgniteInternalTx extends AutoCloseable {
      * </ul>
      */
     public boolean user();
-
-    /**
-     * @return Transaction write synchronization mode.
-     */
-    public CacheWriteSynchronizationMode syncMode();
 
     /**
      * @param key Key to check.
@@ -524,18 +492,9 @@ public interface IgniteInternalTx extends AutoCloseable {
     public void commitVersion(GridCacheVersion commitVer);
 
     /**
-     * Prepare state.
-     *
-     * @throws IgniteCheckedException If failed.
+     * @return Future.
      */
-    public void prepare() throws IgniteCheckedException;
-
-    /**
-     * Prepare stage.
-     *
-     * @return Future for prepare step.
-     */
-    public IgniteInternalFuture<?> prepareAsync();
+    @Nullable public IgniteInternalFuture<?> salvageTx();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -669,7 +628,8 @@ public interface IgniteInternalTx extends AutoCloseable {
      * @param committed Committed transactions relative to base.
      * @param rolledback Rolled back transactions relative to base.
      */
-    public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
+    public void completedVersions(GridCacheVersion base,
+        Collection<GridCacheVersion> committed,
         Collection<GridCacheVersion> rolledback);
 
     /**
@@ -683,23 +643,30 @@ public interface IgniteInternalTx extends AutoCloseable {
     public boolean onePhaseCommit();
 
     /**
-     * @return {@code True} if transaction has transform entries. This flag will be only set for local
-     *      transactions.
-     */
-    public boolean hasTransforms();
-
-    /**
-     * @return Public API proxy.
-     */
-    public TransactionProxy proxy();
-
-    /**
-     * @param topVer New topology version.
-     */
-    public void onRemap(AffinityTopologyVersion topVer);
-
-    /**
      * @param e Commit error.
      */
     public void commitError(Throwable e);
+
+    /**
+     * Returns label of transactions.
+     *
+     * @return Label of transaction or {@code null} if there was not set.
+     */
+    @Nullable public String label();
+
+    /**
+     * @param mvccSnapshot Mvcc snapshot.
+     */
+    public void mvccSnapshot(MvccSnapshot mvccSnapshot);
+
+    /**
+     * @return Mvcc snapshot.
+     */
+    public MvccSnapshot mvccSnapshot();
+
+    /**
+     * @return Transaction counters.
+     * @param createIfAbsent {@code True} if non-null instance is needed.
+     */
+    @Nullable @Contract("true -> !null;") public TxCounters txCounters(boolean createIfAbsent);
 }

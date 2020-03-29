@@ -58,7 +58,7 @@ namespace ignite
              *
              * @param impl Implementation.
              */
-            BinaryWriter(ignite::impl::binary::BinaryWriterImpl* impl);
+            BinaryWriter(impl::binary::BinaryWriterImpl* impl);
 
             /**
              * Write 8-byte signed integer. Maps to "byte" type in Java.
@@ -228,7 +228,7 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteDateArray(const char* fieldName, const Date* val, const int32_t len);
+            void WriteDateArray(const char* fieldName, const Date* val, int32_t len);
 
             /**
              * Write Timestamp. Maps to "Timestamp" type in Java.
@@ -245,7 +245,24 @@ namespace ignite
              * @param val Array.
              * @param len Array length.
              */
-            void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
+            void WriteTimestampArray(const char* fieldName, const Timestamp* val, int32_t len);
+
+            /**
+             * Write Time. Maps to "Time" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Value.
+             */
+            void WriteTime(const char* fieldName, const Time& val);
+
+            /**
+             * Write array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteTimeArray(const char* fieldName, const Time* val, int32_t len);
 
             /**
              * Write string.
@@ -278,10 +295,24 @@ namespace ignite
             /**
              * Start string array write.
              *
+             * Every time you get a BinaryStringArrayWriter from BinaryWriter
+             * you start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryStringArrayWriter::Close() method prior on
+             * obtained BinaryStringArrayWriter class instance.
+             *
              * @param fieldName Field name.
              * @return String array writer.
              */
             BinaryStringArrayWriter WriteStringArray(const char* fieldName);
+
+            /**
+             * Write binary enum entry.
+             *
+             * @param fieldName Field name.
+             * @param entry Binary enum entry.
+             */
+            void WriteBinaryEnum(const char* fieldName, BinaryEnumEntry entry);
 
             /**
              * Write NULL value.
@@ -292,6 +323,12 @@ namespace ignite
 
             /**
              * Start array write.
+             *
+             * Every time you get a BinaryArrayWriter from BinaryWriter you
+             * start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryArrayWriter::Close() method prior on
+             * obtained BinaryArrayWriter class instance.
              *
              * @param fieldName Field name.
              * @return Array writer.
@@ -307,24 +344,36 @@ namespace ignite
             /**
              * Start collection write.
              *
+             * Every time you get a BinaryCollectionWriter from BinaryWriter you
+             * start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryCollectionWriter::Close() method prior on
+             * obtained BinaryCollectionWriter class instance.
+             *
              * @param fieldName Field name.
              * @return Collection writer.
              */
             template<typename T>
             BinaryCollectionWriter<T> WriteCollection(const char* fieldName)
             {
-                return WriteCollection<T>(fieldName, IGNITE_COLLECTION_UNDEFINED);
+                return WriteCollection<T>(fieldName, CollectionType::UNDEFINED);
             }
 
             /**
              * Start collection write.
              *
+             * Every time you get a BinaryCollectionWriter from BinaryWriter you
+             * start writing session. Only one single writing session can be
+             * open at a time. So it is not allowed to start new writing session
+             * without calling BinaryCollectionWriter::Close() method prior on
+             * obtained BinaryCollectionWriter class instance.
+             *
              * @param fieldName Field name.
-             * @param type Collection type.
+             * @param typ Collection type.
              * @return Collection writer.
              */
             template<typename T>
-            BinaryCollectionWriter<T> WriteCollection(const char* fieldName, ignite::binary::CollectionType typ)
+            BinaryCollectionWriter<T> WriteCollection(const char* fieldName, CollectionType::Type typ)
             {
                 int32_t id = impl->WriteCollection(fieldName, typ);
 
@@ -341,7 +390,7 @@ namespace ignite
             template<typename InputIterator>
             void WriteCollection(const char* fieldName, InputIterator first, InputIterator last)
             {
-                WriteCollection(fieldName, first, last, IGNITE_COLLECTION_UNDEFINED);
+                WriteCollection(fieldName, first, last, CollectionType::UNDEFINED);
             }
 
             /**
@@ -353,7 +402,7 @@ namespace ignite
              * @param typ Collection type.
              */
             template<typename InputIterator>
-            void WriteCollection(const char* fieldName, InputIterator first, InputIterator last, CollectionType typ)
+            void WriteCollection(const char* fieldName, InputIterator first, InputIterator last, CollectionType::Type typ)
             {
                 impl->WriteCollection(fieldName, first, last, typ);
             }
@@ -361,25 +410,36 @@ namespace ignite
             /**
              * Start map write.
              *
+             * Every time you get a BinaryMapWriter from BinaryWriter you start
+             * writing session. Only one single writing session can be open at
+             * a time. So it is not allowed to start new writing session without
+             * calling BinaryMapWriter::Close() method prior on obtained
+             * BinaryMapWriter class instance.
+             *
              * @param fieldName Field name.
-             * @param typ Map type.
              * @return Map writer.
              */
             template<typename K, typename V>
             BinaryMapWriter<K, V> WriteMap(const char* fieldName)
             {
-                return WriteMap<K, V>(fieldName, IGNITE_MAP_UNDEFINED);
+                return WriteMap<K, V>(fieldName, MapType::UNDEFINED);
             }
 
             /**
              * Start map write.
+             *
+             * Every time you get a BinaryMapWriter from BinaryWriter you start
+             * writing session. Only one single writing session can be open at
+             * a time. So it is not allowed to start new writing session without
+             * calling BinaryMapWriter::Close() method prior on obtained
+             * BinaryMapWriter class instance.
              *
              * @param fieldName Field name.
              * @param typ Map type.
              * @return Map writer.
              */
             template<typename K, typename V>
-            BinaryMapWriter<K, V> WriteMap(const char* fieldName, ignite::binary::MapType typ)
+            BinaryMapWriter<K, V> WriteMap(const char* fieldName, MapType::Type typ)
             {
                 int32_t id = impl->WriteMap(fieldName, typ);
 
@@ -393,9 +453,23 @@ namespace ignite
              * @param val Value.
              */
             template<typename T>
-            void WriteObject(const char* fieldName, T val)
+            void WriteObject(const char* fieldName, const T& val)
             {
                 impl->WriteObject<T>(fieldName, val);
+            }
+
+            /**
+             * Write enum entry.
+             *
+             * @param fieldName Field name.
+             * @param val Binary enum entry.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            void WriteEnum(const char* fieldName, T val)
+            {
+                impl->WriteEnum(fieldName, val);
             }
 
             /**

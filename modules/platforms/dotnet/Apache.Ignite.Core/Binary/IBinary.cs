@@ -131,5 +131,29 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="value">Enum int value.</param>
         /// <returns>Binary representation of the specified enum value.</returns>
         IBinaryObject BuildEnum(Type type, int value);
+
+        /// <summary>
+        /// Converts enum to a binary form.
+        /// </summary>
+        /// <param name="typeName">Enum type name.</param>
+        /// <param name="valueName">Enum value name.</param>
+        /// <returns>Binary representation of the specified enum value.</returns>
+        IBinaryObject BuildEnum(string typeName, string valueName);
+
+        /// <summary>
+        /// Converts enum to a binary form.
+        /// </summary>
+        /// <param name="type">Enum type.</param>
+        /// <param name="valueName">Enum value name.</param>
+        /// <returns>Binary representation of the specified enum value.</returns>
+        IBinaryObject BuildEnum(Type type, string valueName);
+
+        /// <summary>
+        /// Registers enum type.
+        /// </summary>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="values">Mapping of enum value names to int values.</param>
+        /// <returns>Binary type for registered enum.</returns>
+        IBinaryType RegisterEnum(string typeName, IEnumerable<KeyValuePair<string, int>> values);
     }
 }

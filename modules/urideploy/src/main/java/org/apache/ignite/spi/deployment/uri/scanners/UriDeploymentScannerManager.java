@@ -31,8 +31,8 @@ import org.apache.ignite.spi.IgniteSpiThread;
  * URI deployment scanner manager.
  */
 public class UriDeploymentScannerManager implements UriDeploymentScannerContext {
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** URI that scanner should looks after. */
     @GridToStringExclude
@@ -65,7 +65,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
     /**
      * Creates new scanner.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param uri URI which scanner should looks after.
      * @param deployDir Temporary deployment directory.
      * @param freq Scan frequency.
@@ -75,7 +75,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
      * @param scanner Scanner.
      */
     public UriDeploymentScannerManager(
-        String gridName,
+        String igniteInstanceName,
         URI uri,
         File deployDir,
         long freq,
@@ -91,7 +91,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
         assert lsnr != null;
         assert scanner != null;
 
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.uri = uri;
         this.deployDir = deployDir;
         this.freq = freq;
@@ -105,7 +105,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
      * Starts scanner.
      */
     public void start() {
-        scannerThread = new IgniteSpiThread(gridName, "grid-uri-scanner", log) {
+        scannerThread = new IgniteSpiThread(igniteInstanceName, "grid-uri-scanner", log) {
             /** {@inheritDoc} */
             @SuppressWarnings({"BusyWait"})
             @Override protected void body() throws InterruptedException  {
@@ -113,6 +113,9 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
                     while (!isInterrupted()) {
                         try {
                             scanner.scan(UriDeploymentScannerManager.this);
+                        }
+                        catch (Exception e) {
+                            log.error("Uncaught error in URI deployment scanner", e);
                         }
                         finally {
                             // Do it in finally to avoid any hanging.
@@ -161,14 +164,14 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
     }
 
     /** {@inheritDoc} */
-    public boolean isCancelled() {
+    @Override public boolean isCancelled() {
         assert scannerThread != null;
 
         return scannerThread.isInterrupted();
     }
 
     /** {@inheritDoc} */
-    public File createTempFile(String fileName, File tmpDir) throws IOException {
+    @Override public File createTempFile(String fileName, File tmpDir) throws IOException {
         assert fileName != null;
 
         int idx = fileName.lastIndexOf('.');
@@ -187,32 +190,32 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
     }
 
     /** {@inheritDoc} */
-    public boolean isFirstScan() {
+    @Override public boolean isFirstScan() {
         return firstScan;
     }
 
     /** {@inheritDoc} */
-    public URI getUri() {
+    @Override public URI getUri() {
         return uri;
     }
 
     /** {@inheritDoc} */
-    public File getDeployDirectory() {
+    @Override public File getDeployDirectory() {
         return deployDir;
     }
 
     /** {@inheritDoc} */
-    public FilenameFilter getFilter() {
+    @Override public FilenameFilter getFilter() {
         return filter;
     }
 
     /** {@inheritDoc} */
-    public GridUriDeploymentScannerListener getListener() {
+    @Override public GridUriDeploymentScannerListener getListener() {
         return lsnr;
     }
 
     /** {@inheritDoc} */
-    public IgniteLogger getLogger() {
+    @Override public IgniteLogger getLogger() {
         return log;
     }
 

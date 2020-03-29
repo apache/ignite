@@ -32,31 +32,68 @@ namespace ignite
                 MemoryBarrier();
             }
 
-            CriticalSection::CriticalSection() : hnd(new CRITICAL_SECTION) {
-                InitializeCriticalSection(hnd);
+            CriticalSection::CriticalSection() :
+                hnd()
+            {
+                InitializeCriticalSection(&hnd);
 
                 Memory::Fence();
             }
 
-            CriticalSection::~CriticalSection() {
-                Memory::Fence();
-
-                delete hnd;
+            CriticalSection::~CriticalSection()
+            {
+                // No-op.
             }
 
-            void CriticalSection::Enter() {
+            void CriticalSection::Enter()
+            {
                 Memory::Fence();
 
-                EnterCriticalSection(hnd);
+                EnterCriticalSection(&hnd);
             }
 
-            void CriticalSection::Leave() {
+            void CriticalSection::Leave()
+            {
                 Memory::Fence();
 
-                LeaveCriticalSection(hnd);
+                LeaveCriticalSection(&hnd);
             }
 
-            SingleLatch::SingleLatch() : hnd(CreateEvent(NULL, TRUE, FALSE, NULL))
+            ReadWriteLock::ReadWriteLock() :
+                lock()
+            {
+                InitializeSRWLock(&lock);
+
+                Memory::Fence();
+            }
+
+            ReadWriteLock::~ReadWriteLock()
+            {
+                // No-op.
+            }
+
+            void ReadWriteLock::LockExclusive()
+            {
+                AcquireSRWLockExclusive(&lock);
+            }
+
+            void ReadWriteLock::ReleaseExclusive()
+            {
+                ReleaseSRWLockExclusive(&lock);
+            }
+
+            void ReadWriteLock::LockShared()
+            {
+                AcquireSRWLockShared(&lock);
+            }
+
+            void ReadWriteLock::ReleaseShared()
+            {
+                ReleaseSRWLockShared(&lock);
+            }
+
+            SingleLatch::SingleLatch() :
+                hnd(CreateEvent(NULL, TRUE, FALSE, NULL))
             {
                 Memory::Fence();
             }
@@ -112,7 +149,7 @@ namespace ignite
             {
 #ifdef _WIN64
                 return InterlockedIncrement64(reinterpret_cast<LONG64*>(ptr));
-#else 
+#else
                 while (true)
                 {
                     int64_t expVal = *ptr;
@@ -128,7 +165,7 @@ namespace ignite
             {
 #ifdef _WIN64
                 return InterlockedDecrement64(reinterpret_cast<LONG64*>(ptr));
-#else 
+#else
                 while (true)
                 {
                     int64_t expVal = *ptr;
@@ -139,7 +176,7 @@ namespace ignite
                 }
 #endif
             }
-            
+
             bool ThreadLocal::OnProcessAttach()
             {
                 return (winTlsIdx = TlsAlloc()) != TLS_OUT_OF_INDEXES;

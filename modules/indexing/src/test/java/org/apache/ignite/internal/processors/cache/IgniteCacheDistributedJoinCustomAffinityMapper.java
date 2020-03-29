@@ -32,13 +32,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -47,9 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String PERSON_CACHE = "person";
 
@@ -63,10 +57,8 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
     private static final String ORG_CACHE_REPL_CUSTOM = "orgReplCustomAff";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -137,11 +129,10 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(0);
 
@@ -155,16 +146,10 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
         startGridsMultiThreaded(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinCustomAffinityMapper() throws Exception {
         Ignite ignite = ignite(0);
 
@@ -233,6 +218,7 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
             // No-op.
         }
     }
+
     /**
      *
      */

@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
@@ -60,7 +60,6 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopTaskType.REDUCE
 /**
  * Hadoop process base.
  */
-@SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public class HadoopChildProcessRunner {
     /** Node process descriptor. */
     private HadoopProcessDescriptor nodeDesc;
@@ -90,7 +89,7 @@ public class HadoopChildProcessRunner {
     private final GridFutureAdapter<?> initFut = new GridFutureAdapter<>();
 
     /** Job instance. */
-    private HadoopJob job;
+    private HadoopJobEx job;
 
     /** Number of uncompleted tasks. */
     private final AtomicInteger pendingTasks = new AtomicInteger();

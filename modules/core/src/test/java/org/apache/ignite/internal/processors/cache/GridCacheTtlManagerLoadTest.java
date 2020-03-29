@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -36,6 +37,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         cacheMode = REPLICATED;
 
@@ -46,7 +48,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteCache<Object,Object> cache = g.cache(null).
+                    IgniteCache<Object,Object> cache = g.cache(DEFAULT_CACHE_NAME).
                         withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000)));
 
                     long key = 0;
@@ -61,10 +63,10 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
                 }
             }, 1);
 
-            GridCacheTtlManager ttlMgr = g.internalCache().context().ttl();
+            GridCacheTtlManager ttlMgr = g.internalCache(DEFAULT_CACHE_NAME).context().ttl();
 
-            for (int i = 0; i < 300; i++) {
-                U.sleep(1000);
+            for (int i = 0; i < 5; i++) {
+                U.sleep(5000);
 
                 ttlMgr.printMemoryStats();
             }

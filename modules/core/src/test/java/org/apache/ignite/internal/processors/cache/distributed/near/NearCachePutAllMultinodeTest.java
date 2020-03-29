@@ -31,10 +31,9 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -45,35 +44,27 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
  *
  */
 public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids to start. */
     private static final int GRID_CNT = 3;
 
     /** Number of transactions. */
     private static final int TX_CNT = 10_000;
 
-    /** Client flag. */
-    private boolean client;
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 30_000;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
-        if (!client) {
+        if (!c.isClientMode()) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setSwapEnabled(false);
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setBackups(1);
 
@@ -82,8 +73,6 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
 
             c.setCacheConfiguration(cc);
         }
-        else
-            c.setClientMode(true);
 
         return c;
     }
@@ -92,15 +81,13 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(GRID_CNT - 2);
 
-        client = true;
+        Ignite grid = startClientGrid(GRID_CNT - 2);
 
-        Ignite grid = startGrid(GRID_CNT - 2);
+        grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
-        grid.createNearCache(null, new NearCacheConfiguration());
+        grid = startClientGrid(GRID_CNT - 1);
 
-        grid = startGrid(GRID_CNT - 1);
-
-        grid.cache(null);
+        grid.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -113,6 +100,8 @@ public class NearCachePutAllMultinodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11877")
+    @Test
     public void testMultithreadedPutAll() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 

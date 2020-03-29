@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
-import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
 
@@ -62,6 +62,41 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param key Key for event.
+     * @param tx Possible surrounding transaction.
+     * @param txLbl Possible lable of possible surrounding transaction.
+     * @param val Read value.
+     * @param subjId Subject ID.
+     * @param taskName Task name.
+     * @param keepBinary Keep binary flag.
+     */
+    public void readEvent(KeyCacheObject key,
+        @Nullable IgniteInternalTx tx,
+        @Nullable String txLbl,
+        @Nullable CacheObject val,
+        @Nullable UUID subjId,
+        @Nullable String taskName,
+        boolean keepBinary) {
+        if (isRecordable(EVT_CACHE_OBJECT_READ)) {
+            addEvent(cctx.affinity().partition(key),
+                key,
+                cctx.localNodeId(),
+                tx,
+                txLbl,
+                null,
+                EVT_CACHE_OBJECT_READ,
+                val,
+                val != null,
+                val,
+                val != null,
+                subjId,
+                null,
+                taskName,
+                keepBinary);
+        }
+    }
+
+    /**
      * @param part Partition.
      * @param key Key for the event.
      * @param tx Possible surrounding transaction.
@@ -77,7 +112,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      */
     public void addEvent(int part,
         KeyCacheObject key,
-        IgniteInternalTx tx,
+        @Nullable IgniteInternalTx tx,
         @Nullable GridCacheMvccCandidate owner,
         int type,
         @Nullable CacheObject newVal,
@@ -113,7 +148,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             0,
             null,
             cctx.localNodeId(),
-            (IgniteUuid)null,
+            null,
+            null,
             null,
             type,
             null,
@@ -144,7 +180,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     public void addEvent(int part,
         KeyCacheObject key,
         UUID nodeId,
-        IgniteInternalTx tx,
+        @Nullable IgniteInternalTx tx,
         GridCacheMvccCandidate owner,
         int type,
         CacheObject newVal,
@@ -158,7 +194,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     {
         addEvent(part,
             key,
-            nodeId, tx == null ? null : tx.xid(),
+            nodeId,
+            tx,
+            null,
             owner == null ? null : owner.version(),
             type,
             newVal,
@@ -204,7 +242,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         addEvent(part,
             key,
             evtNodeId,
-            tx == null ? null : tx.xid(),
+            tx,
+            null,
             owner == null ? null : owner.version(),
             type,
             newVal,
@@ -221,7 +260,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @param key Key for the event.
      * @param evtNodeId Event node ID.
-     * @param xid Transaction ID.
+     * @param tx Possible surrounding transaction.
+     * @param txLbl Possible label of possible surrounding transaction.
      * @param lockId Lock ID.
      * @param type Event type.
      * @param newVal New value.
@@ -236,7 +276,8 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         int part,
         KeyCacheObject key,
         UUID evtNodeId,
-        @Nullable IgniteUuid xid,
+        @Nullable IgniteInternalTx tx,
+        @Nullable String txLbl,
         @Nullable Object lockId,
         int type,
         @Nullable CacheObject newVal,
@@ -277,7 +318,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
             }
             catch (Exception e) {
-                if (!cctx.cacheObjectContext().processor().isBinaryEnabled(cctx.config()))
+                if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
                     throw e;
 
                 if (log.isDebugEnabled())
@@ -294,6 +335,10 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
             }
 
+            IgniteUuid xid = tx == null ? null : tx.xid();
+
+            String finalTxLbl = (tx == null || tx.label() == null) ? txLbl : tx.label();
+
             cctx.gridEvents().record(new CacheEvent(cctx.name(),
                 cctx.localNode(),
                 evtNode,
@@ -303,6 +348,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 cctx.isNear(),
                 key0,
                 xid,
+                finalTxLbl,
                 lockId,
                 val0,
                 hasNewVal,
@@ -336,55 +382,31 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Adds preloading event.
-     *
-     * @param part Partition.
-     * @param type Event type.
-     * @param discoNode Discovery node.
-     * @param discoType Discovery event type.
-     * @param discoTs Discovery event timestamp.
-     */
-    public void addPreloadEvent(int part, int type, ClusterNode discoNode, int discoType, long discoTs) {
-        assert discoNode != null;
-        assert type > 0;
-        assert discoType > 0;
-        assert discoTs > 0;
-
-        if (!cctx.events().isRecordable(type))
-            LT.warn(log, "Added event without checking if event is recordable: " + U.gridEventName(type));
-
-        cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
-            "Cache rebalancing event.", type, part, discoNode, discoType, discoTs));
-    }
-
-    /**
-     * Adds partition unload event.
-     *
-     * @param part Partition.
-     */
-    public void addUnloadEvent(int part) {
-        if (!cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_UNLOADED))
-            LT.warn(log, "Added event without checking if event is recordable: " +
-                U.gridEventName(EVT_CACHE_REBALANCE_PART_UNLOADED));
-
-        cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(), cctx.localNode(),
-            "Cache unloading event.", EVT_CACHE_REBALANCE_PART_UNLOADED, part, null, 0, 0));
-    }
-
-    /**
      * @param type Event type.
      * @return {@code True} if event is recordable.
      */
     public boolean isRecordable(int type) {
         GridCacheContext cctx0 = cctx;
 
-        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type);
+        // Event recording is impossible in recovery mode.
+        if (cctx0 == null || cctx0.kernalContext().recoveryMode())
+            return false;
+
+        try {
+            CacheConfiguration cfg = cctx0.config();
+
+            return cctx0.userCache() && cctx0.gridEvents().isRecordable(type) && !cfg.isEventsDisabled();
+        }
+        catch (IllegalStateException e) {
+            // Cache context was cleaned up.
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache event manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() +
-            ", stats=" + "N/A" + ']');
+        X.println(">>> Cache event manager memory stats [igniteInstanceName=" + cctx.igniteInstanceName() +
+            ", cache=" + cctx.name() + ", stats=" + "N/A" + ']');
     }
 }

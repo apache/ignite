@@ -21,14 +21,13 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -39,27 +38,23 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String ATTR_NAME = "cacheAttr";
 
     /** */
     private String attrVal;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
 
         ccfg.setNodeFilter(new TestNodeFilter("A"));
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         if (attrVal != null) {
             Map<String, Object> attrs = new HashMap<>();
@@ -84,12 +79,13 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCofiguredCacheFilter() throws Exception {
         attrVal = "A";
 
         Ignite ignite0 = startGrid(0);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache0);
 
@@ -99,7 +95,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache1);
 
@@ -107,7 +103,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startGrid(2);
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache2);
 
@@ -115,7 +111,7 @@ public class IgniteDynamicCacheFilterTest extends GridCommonAbstractTest {
 
         Ignite ignite3 = startGrid(3);
 
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(cache3);
 

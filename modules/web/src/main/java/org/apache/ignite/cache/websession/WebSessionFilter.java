@@ -31,8 +31,9 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.*;
-
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -241,7 +242,7 @@ public class WebSessionFilter implements Filter {
     @Override public void init(FilterConfig cfg) throws ServletException {
         ctx = cfg.getServletContext();
 
-        String gridName = U.firstNotNull(
+        String igniteInstanceName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
@@ -277,11 +278,11 @@ public class WebSessionFilter implements Filter {
         if (!F.isEmpty(binParam))
             keepBinary = Boolean.parseBoolean(binParam);
 
-        webSesIgnite = G.ignite(gridName);
+        webSesIgnite = G.ignite(igniteInstanceName);
 
         if (webSesIgnite == null)
-            throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
-                gridName);
+            throw new IgniteException("Ignite instance for web sessions caching is not started (is it configured?): " +
+                igniteInstanceName);
 
         txs = webSesIgnite.transactions();
 
@@ -320,8 +321,8 @@ public class WebSessionFilter implements Filter {
         }
 
         if (log.isInfoEnabled())
-            log.info("Started web sessions caching [gridName=" + gridName + ", cacheName=" + cacheName +
-                ", maxRetriesOnFail=" + retries + ']');
+            log.info("Started web sessions caching [igniteInstanceName=" + igniteInstanceName +
+                ", cacheName=" + cacheName + ", maxRetriesOnFail=" + retries + ']');
     }
 
     /**
@@ -420,8 +421,12 @@ public class WebSessionFilter implements Filter {
     private String doFilterV1(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
         ServletException, CacheException {
         WebSession cached = null;
+        String sesId;
 
-        String sesId = httpReq.getRequestedSessionId();
+        if (httpReq.getSession(false) != null)
+            sesId = httpReq.getSession(false).getId();
+        else
+            sesId = httpReq.getRequestedSessionId();
 
         if (sesId != null) {
             sesId = transformSessionId(sesId);
@@ -502,8 +507,12 @@ public class WebSessionFilter implements Filter {
     private String doFilterV2(HttpServletRequest httpReq, ServletResponse res, FilterChain chain)
         throws IOException, ServletException, CacheException {
         WebSessionV2 cached = null;
+        String sesId;
 
-        String sesId = httpReq.getRequestedSessionId();
+        if (httpReq.getSession(false) != null)
+            sesId = httpReq.getSession(false).getId();
+        else
+            sesId = httpReq.getRequestedSessionId();
 
         if (sesId != null) {
             sesId = transformSessionId(sesId);
@@ -560,18 +569,10 @@ public class WebSessionFilter implements Filter {
 
         chain.doFilter(httpReq, res);
 
-        if (!cached.isValid())
-            binaryCache.remove(cached.id());
-        // Changed session ID.
-        else if (!cached.getId().equals(sesId)) {
-            final String oldId = cached.getId();
+        WebSessionV2 cachedNew = (WebSessionV2)httpReq.getSession(false);
 
-            cached.invalidate();
-
-            binaryCache.remove(oldId);
-        }
-        else
-            updateAttributesV2(cached.getId(), cached);
+        if (cachedNew != null && cachedNew.isValid())
+            updateAttributesV2(cachedNew.getId(), cachedNew);
 
         return sesId;
     }
@@ -616,7 +617,6 @@ public class WebSessionFilter implements Filter {
      * @param httpReq Request.
      * @return New session.
      */
-    @SuppressWarnings("unchecked")
     private WebSession createSession(HttpServletRequest httpReq) {
         HttpSession ses = httpReq.getSession(true);
 
@@ -632,7 +632,6 @@ public class WebSessionFilter implements Filter {
      * @param sesId Session id.
      * @return New session.
      */
-    @SuppressWarnings("unchecked")
     private WebSession createSession(HttpSession ses, String sesId) {
         WebSession cached = new WebSession(sesId, ses, true);
 
@@ -747,7 +746,7 @@ public class WebSessionFilter implements Filter {
     private <T> IgniteCache<String, T> cacheWithExpiryPolicy(final int maxInactiveInteval,
         final IgniteCache<String, T> cache) {
         if (maxInactiveInteval > 0) {
-            long ttl = maxInactiveInteval * 1000;
+            long ttl = maxInactiveInteval * 1000L;
 
             ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
@@ -762,6 +761,7 @@ public class WebSessionFilter implements Filter {
      */
     public void destroySession(String sesId) {
         assert sesId != null;
+
         for (int i = 0; i < retries; i++) {
             try {
                 if (cache.remove(sesId) && log.isDebugEnabled())
@@ -786,7 +786,6 @@ public class WebSessionFilter implements Filter {
      * @param updates Updates list.
      * @param maxInactiveInterval Max session inactive interval.
      */
-    @SuppressWarnings("unchecked")
     public void updateAttributes(String sesId, Collection<T2<String, Object>> updates, int maxInactiveInterval) {
         assert sesId != null;
         assert updates != null;
@@ -871,7 +870,6 @@ public class WebSessionFilter implements Filter {
      * Handles cache operation exception.
      * @param e Exception
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     void handleCacheOperationException(Exception e){
         IgniteFuture<?> retryFut = null;
 
@@ -981,6 +979,11 @@ public class WebSessionFilter implements Filter {
             this.ses.filter(WebSessionFilter.this);
             this.ses.resetUpdates();
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRequestedSessionIdValid() {
+            return ses.isValid();
+        }
     }
 
     /**
@@ -1004,7 +1007,7 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
-            if (!ses.isValid()) {
+            if (ses != null && !ses.isValid()) {
                 binaryCache.remove(ses.id());
 
                 if (create) {
@@ -1016,7 +1019,7 @@ public class WebSessionFilter implements Filter {
                     }
                 }
                 else
-                    return null;
+                    ses = null;
             }
 
             return ses;
@@ -1061,6 +1064,11 @@ public class WebSessionFilter implements Filter {
                     throw new IgniteException(e);
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRequestedSessionIdValid() {
+            return ses != null && ses.isValid();
         }
     }
 }

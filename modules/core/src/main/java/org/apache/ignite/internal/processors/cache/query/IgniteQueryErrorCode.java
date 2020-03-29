@@ -20,72 +20,193 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.sql.SQLException;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 
 /**
  * Error codes for query operations.
  */
 public final class IgniteQueryErrorCode {
     /** Unknown error, or the one without specific code. */
-    public final static int UNKNOWN = 1;
+    public static final int UNKNOWN = 1;
 
     /* 1xxx - parsing errors */
 
     /** General parsing error - for the cases when there's no more specific code available. */
-    public final static int PARSING = 1001;
+    public static final int PARSING = 1001;
 
-    /** Code encountered unexpected type of SQL operation - like {@code EXPLAIN MERGE}. */
-    public final static int UNSUPPORTED_OPERATION = 1002;
+    /** Requested operation is not supported. */
+    public static final int UNSUPPORTED_OPERATION = 1002;
 
     /* 2xxx - analysis errors */
 
     /** Code encountered SQL statement of some type that it did not expect in current analysis context. */
-    public final static int UNEXPECTED_OPERATION = 2001;
+    public static final int UNEXPECTED_OPERATION = 2001;
 
     /** Code encountered SQL expression of some type that it did not expect in current analysis context. */
-    public final static int UNEXPECTED_ELEMENT_TYPE = 2002;
+    public static final int UNEXPECTED_ELEMENT_TYPE = 2002;
 
     /** Analysis detected that the statement is trying to directly {@code UPDATE} key or its fields. */
-    public final static int KEY_UPDATE = 2003;
+    public static final int KEY_UPDATE = 2003;
 
     /* 3xxx - database API related runtime errors */
 
     /** Required table not found. */
-    public final static int TABLE_NOT_FOUND = 3001;
+    public static final int TABLE_NOT_FOUND = 3001;
 
     /** Required table does not have a descriptor set. */
-    public final static int NULL_TABLE_DESCRIPTOR = 3002;
+    public static final int NULL_TABLE_DESCRIPTOR = 3002;
 
     /** Statement type does not match that declared by JDBC driver. */
-    public final static int STMT_TYPE_MISMATCH = 3003;
+    public static final int STMT_TYPE_MISMATCH = 3003;
 
-    /** Statement type does not match that declared by JDBC driver. */
-    public final static int TABLE_DROP_FAILED = 3004;
+    /** DROP TABLE failed. */
+    public static final int TABLE_DROP_FAILED = 3004;
+
+    /** Index already exists. */
+    public static final int INDEX_ALREADY_EXISTS = 3005;
+
+    /** Index does not exist. */
+    public static final int INDEX_NOT_FOUND = 3006;
+
+    /** Required table already exists. */
+    public static final int TABLE_ALREADY_EXISTS = 3007;
+
+    /** Required column not found. */
+    public static final int COLUMN_NOT_FOUND = 3008;
+
+    /** Required column already exists. */
+    public static final int COLUMN_ALREADY_EXISTS = 3009;
+
+    /** Conversion failure. */
+    public static final int CONVERSION_FAILED = 3013;
+
+    /** Query canceled. */
+    public static final int QUERY_CANCELED = 3014;
 
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
-    public final static int DUPLICATE_KEY = 4001;
+    public static final int DUPLICATE_KEY = 4001;
 
     /** Attempt to UPDATE or DELETE a key whose value has been updated concurrently by someone else. */
-    public final static int CONCURRENT_UPDATE = 4002;
+    public static final int CONCURRENT_UPDATE = 4002;
 
     /** Attempt to INSERT or MERGE {@code null} key. */
-    public final static int NULL_KEY = 4003;
+    public static final int NULL_KEY = 4003;
 
-    /** Attempt to INSERT or MERGE {@code null} value. */
-    public final static int NULL_VALUE = 4004;
+    /** Attempt to INSERT or MERGE {@code null} value, or to to set {@code null} to a {@code NOT NULL} column. */
+    public static final int NULL_VALUE = 4004;
 
     /** {@link EntryProcessor} has thrown an exception during {@link IgniteCache#invokeAll}. */
-    public final static int ENTRY_PROCESSING = 4005;
+    public static final int ENTRY_PROCESSING = 4005;
+
+    /** Cache not found. */
+    public static final int CACHE_NOT_FOUND = 4006;
+
+    /** Attempt to INSERT, UPDATE or MERGE key that exceed maximum column length. */
+    public static final int TOO_LONG_KEY = 4007;
+
+    /** Attempt to INSERT, UPDATE or MERGE value that exceed maximum column length. */
+    public static final int TOO_LONG_VALUE = 4008;
+
+    /** Attempt to INSERT, UPDATE or MERGE value which scale exceed maximum DECIMAL column scale. */
+    public static final int VALUE_SCALE_OUT_OF_RANGE = 4009;
+
+    /** Attempt to INSERT, UPDATE or MERGE value which scale exceed maximum DECIMAL column scale. */
+    public static final int KEY_SCALE_OUT_OF_RANGE = 4010;
+
+    /** Attempt to INSERT, UPDATE or DELETE value on read-only cluster. */
+    public static final int CLUSTER_READ_ONLY_MODE_ENABLED = 4011;
+
+    /* 5xxx - transactions related runtime errors. */
+
+    /** Transaction is already open. */
+    public static final int TRANSACTION_EXISTS = 5001;
+
+    /** MVCC disabled. */
+    public static final int MVCC_DISABLED = 5002;
+
+    /** Transaction type mismatch (SQL/non SQL). */
+    public static final int TRANSACTION_TYPE_MISMATCH = 5003;
+
+    /** Transaction is already completed. */
+    public static final int TRANSACTION_COMPLETED = 5004;
+
+    /** Transaction serialization error. */
+    public static final int TRANSACTION_SERIALIZATION_ERROR = 5005;
+
+    /** */
+    private IgniteQueryErrorCode() {
+        // No-op.
+    }
 
     /**
-     * Create a {@link SQLException} for given code and message with null state.
+     * Create a {@link SQLException} for given code and message with detected state.
      *
      * @param msg Message.
      * @param code Ignite status code.
      * @return {@link SQLException} with given details.
      */
     public static SQLException createJdbcSqlException(String msg, int code) {
-        return new SQLException(msg, null, code);
+        return new SQLException(msg, codeToSqlState(code));
+    }
+
+    /**
+     * Map Ignite specific error code to standard SQL state.
+     * @param statusCode Ignite specific error code.
+     * @return SQL state string.
+     * @see <a href="http://en.wikibooks.org/wiki/Structured_Query_Language/SQLSTATE">Wikipedia: SQLSTATE spec.</a>
+     * @see IgniteQueryErrorCode
+     */
+    public static String codeToSqlState(int statusCode) {
+        switch (statusCode) {
+            case DUPLICATE_KEY:
+            case TOO_LONG_KEY:
+            case TOO_LONG_VALUE:
+            case KEY_SCALE_OUT_OF_RANGE:
+            case VALUE_SCALE_OUT_OF_RANGE:
+                return SqlStateCode.CONSTRAINT_VIOLATION;
+
+            case NULL_KEY:
+            case NULL_VALUE:
+                return SqlStateCode.NULL_VALUE;
+
+            case UNSUPPORTED_OPERATION:
+                return SqlStateCode.UNSUPPORTED_OPERATION;
+
+            case CONVERSION_FAILED:
+                return SqlStateCode.CONVERSION_FAILED;
+
+            case PARSING:
+            case TABLE_NOT_FOUND:
+            case TABLE_ALREADY_EXISTS:
+            case INDEX_ALREADY_EXISTS:
+            case INDEX_NOT_FOUND:
+            case COLUMN_NOT_FOUND:
+            case COLUMN_ALREADY_EXISTS:
+            case STMT_TYPE_MISMATCH:
+            case UNEXPECTED_OPERATION:
+            case UNEXPECTED_ELEMENT_TYPE:
+            case KEY_UPDATE:
+                return SqlStateCode.PARSING_EXCEPTION;
+
+            case MVCC_DISABLED:
+            case TRANSACTION_EXISTS:
+            case TRANSACTION_TYPE_MISMATCH:
+            case TRANSACTION_COMPLETED:
+                return SqlStateCode.TRANSACTION_STATE_EXCEPTION;
+
+            case TRANSACTION_SERIALIZATION_ERROR:
+                return SqlStateCode.SERIALIZATION_FAILURE;
+
+            case QUERY_CANCELED:
+                return SqlStateCode.QUERY_CANCELLED;
+
+            case CLUSTER_READ_ONLY_MODE_ENABLED:
+                return SqlStateCode.CLUSTER_READ_ONLY_MODE_ENABLED;
+
+            default:
+                return SqlStateCode.INTERNAL_ERROR;
+        }
     }
 }

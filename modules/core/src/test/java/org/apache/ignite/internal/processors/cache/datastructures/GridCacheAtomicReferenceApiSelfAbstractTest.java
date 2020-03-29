@@ -22,8 +22,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -42,11 +44,12 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareAtomicReference() throws Exception {
-        /** Name of first atomic. */
+        /* Name of first atomic. */
         String atomicName1 = UUID.randomUUID().toString();
 
-        /** Name of second atomic. */
+        /* Name of second atomic. */
         String atomicName2 = UUID.randomUUID().toString();
 
         String initVal = "1";
@@ -80,6 +83,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSetAndGet() throws Exception {
         String atomicName = UUID.randomUUID().toString();
 
@@ -99,6 +103,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompareAndSetSimpleValue() throws Exception {
         String atomicName = UUID.randomUUID().toString();
 
@@ -122,6 +127,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompareAndSetNullValue() throws Exception {
         String atomicName = UUID.randomUUID().toString();
 
@@ -141,10 +147,11 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("myCache");
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -184,5 +191,73 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends Ignite
         finally {
             ignite.destroyCache(cfg.getName());
         }
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        IgniteAtomicReference<String> ref1 = ignite.atomicReference("ref1", "a", true);
+        IgniteAtomicReference<String> ref2 = ignite.atomicReference("ref2", "b", true);
+        IgniteAtomicReference<String> ref3 = ignite.atomicReference("ref3", "c", true);
+
+        AtomicConfiguration cfg = new AtomicConfiguration().setGroupName("grp1");
+
+        IgniteAtomicReference<String> ref4 = ignite.atomicReference("ref4", cfg, "d", true);
+        IgniteAtomicReference<String> ref5 = ignite.atomicReference("ref5", cfg, "e", true);
+        IgniteAtomicReference<String> ref6 = ignite.atomicReference("ref6", cfg, "f", true);
+
+        assertNull(ignite.atomicReference("ref4", "a", false));
+        assertNull(ignite.atomicReference("ref5", "a", false));
+        assertNull(ignite.atomicReference("ref6", "a", false));
+
+        assertNull(ignite.atomicReference("ref1", cfg, "a", false));
+        assertNull(ignite.atomicReference("ref2", cfg, "a", false));
+        assertNull(ignite.atomicReference("ref3", cfg, "a", false));
+
+        assertTrue(ref1.compareAndSet("a", "A"));
+        assertTrue(ref2.compareAndSet("b", "B"));
+        assertTrue(ref3.compareAndSet("c", "C"));
+        assertTrue(ref4.compareAndSet("d", "D"));
+        assertTrue(ref5.compareAndSet("e", "E"));
+        assertTrue(ref6.compareAndSet("f", "F"));
+
+        assertFalse(ref1.compareAndSet("a", "Z"));
+        assertFalse(ref2.compareAndSet("b", "Z"));
+        assertFalse(ref3.compareAndSet("c", "Z"));
+        assertFalse(ref4.compareAndSet("d", "Z"));
+        assertFalse(ref5.compareAndSet("e", "Z"));
+        assertFalse(ref6.compareAndSet("f", "Z"));
+
+        assertEquals("A", ref1.get());
+        assertEquals("B", ref2.get());
+        assertEquals("C", ref3.get());
+        assertEquals("D", ref4.get());
+        assertEquals("E", ref5.get());
+        assertEquals("F", ref6.get());
+
+        ref2.close();
+        ref5.close();
+
+        assertTrue(ref2.removed());
+        assertTrue(ref5.removed());
+
+        assertNull(ignite.atomicReference("ref2", "b", false));
+        assertNull(ignite.atomicReference("ref5", cfg, "e", false));
+
+        assertFalse(ref1.removed());
+        assertFalse(ref3.removed());
+        assertFalse(ref4.removed());
+        assertFalse(ref6.removed());
+
+        assertNotNull(ignite.atomicReference("ref1", "a", false));
+        assertNotNull(ignite.atomicReference("ref3", "c", false));
+        assertNotNull(ignite.atomicReference("ref4", cfg, "d", false));
+        assertNotNull(ignite.atomicReference("ref6", cfg, "f", false));
     }
 }

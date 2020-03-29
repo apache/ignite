@@ -36,6 +36,7 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests exceptions that are thrown by event storage and deployment spi.
@@ -51,8 +52,8 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setEventStorageSpi(new GridTestRuntimeExceptionSpi());
         cfg.setDeploymentSpi(new GridTestCheckedExceptionSpi());
@@ -66,6 +67,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiFail() throws Exception {
         Ignite ignite = startGrid();
 
@@ -105,7 +107,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class GridTestRuntimeExceptionSpi extends IgniteSpiAdapter implements EventStorageSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             startStopwatch();
         }
 
@@ -131,7 +133,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class GridTestCheckedExceptionSpi extends IgniteSpiAdapter implements DeploymentSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             startStopwatch();
         }
 

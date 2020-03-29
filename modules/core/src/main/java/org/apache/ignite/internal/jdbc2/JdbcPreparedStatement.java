@@ -39,6 +39,15 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinParameterMetadata;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * JDBC prepared statement implementation.
@@ -47,8 +56,17 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     /** SQL query. */
     private final String sql;
 
-    /** H2's parsed statement to retrieve metadata from. */
-    PreparedStatement nativeStatement;
+    /** Batch arguments. */
+    private List<List<Object>> batchArgs;
+
+    /** Parameters metadata (initialized lazily). */
+    private ParameterMetaData paramsMeta;
+
+    /** Result set metadata (initialized lazily). */
+    private ResultSetMetaData resMeta;
+
+    /** Whether metadata of returning result set have been fetched. */
+    private boolean resMetaFetched;
 
     /**
      * Creates new prepared statement.
@@ -66,29 +84,22 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch not supported for prepared statement.");
+        throw new SQLFeatureNotSupportedException("Adding new SQL command to batch is not supported for prepared " +
+            "statement (use addBatch() to add new set of arguments)");
     }
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery() throws SQLException {
         ensureNotClosed();
 
-        ResultSet rs = executeQuery(sql);
-
-        args = null;
-
-        return rs;
+        return executeQuery(sql);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate() throws SQLException {
         ensureNotClosed();
 
-        int res = executeUpdate(sql);
-
-        args = null;
-
-        return res;
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
@@ -193,7 +204,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        batchArgs = null;
     }
 
     /** {@inheritDoc} */
@@ -215,13 +226,25 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        if (batchArgs == null)
+            batchArgs = new ArrayList<>();
+
+        batchArgs.add(args);
+
+        args = null;
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
-        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
+        ensureNotClosed();
+
+        List<List<Object>> batchArgs = this.batchArgs;
+
+        this.batchArgs = null;
+
+        return doBatchUpdate(sql, null, batchArgs);
     }
+
 
     /** {@inheritDoc} */
     @Override public void setCharacterStream(int paramIdx, Reader x, int len) throws SQLException {
@@ -239,9 +262,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
     /** {@inheritDoc} */
     @Override public void setBlob(int paramIdx, Blob x) throws SQLException {
-        ensureNotClosed();
-
-        throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
+        setBytes(paramIdx, x.getBytes(1, (int)x.length()));
     }
 
     /** {@inheritDoc} */
@@ -262,7 +283,38 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return getNativeStatement().getMetaData();
+        if (!resMetaFetched) {
+            assert resMeta == null;
+
+            resMeta = getMetadata0();
+
+            resMetaFetched = true;
+        }
+
+        return resMeta;
+    }
+
+    /**
+     * Fetches metadata of the result set is returned when specified query gets executed.
+     *
+     * @return metadata describing result set or {@code null} if query is not a SELECT operation.
+     */
+    @Nullable private ResultSetMetaData getMetadata0() throws SQLException {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+
+        setupQuery(qry);
+
+        try {
+            List<GridQueryFieldMetadata> meta = conn.ignite().context().query().getIndexing().resultMetaData(conn.schemaName(), qry);
+
+            if (meta == null)
+                return null;
+
+            return new JdbcResultSetMetadata(meta);
+        }
+        catch (IgniteSQLException ex) {
+            throw ex.toJdbcException();
+        }
     }
 
     /** {@inheritDoc} */
@@ -290,11 +342,37 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         setArgument(paramIdx, x);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * Implementation note: If this prepared statement is a multi-statement, returned meta contains meta of parameters
+     * from the all statements.
+     */
     @Override public ParameterMetaData getParameterMetaData() throws SQLException {
         ensureNotClosed();
 
-        return getNativeStatement().getParameterMetaData();
+        if (paramsMeta == null)
+            paramsMeta = parameterMetaData();
+
+        return paramsMeta;
+    }
+
+    /**
+     * Fetches parameters metadata of the specified query.
+     */
+    private ParameterMetaData parameterMetaData() throws SQLException {
+        SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, null);
+
+        setupQuery(qry);
+
+        try {
+            List<JdbcParameterMeta> params = conn.ignite().context().query().getIndexing().parameterMetaData(conn.schemaName(), qry);
+
+            return new JdbcThinParameterMetadata(params);
+        }
+        catch (IgniteSQLException ex) {
+            throw ex.toJdbcException();
+        }
     }
 
     /** {@inheritDoc} */
@@ -459,16 +537,5 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
 
         while (args.size() < size)
             args.add(null);
-    }
-
-    /**
-     * @return H2's prepared statement to get metadata from.
-     * @throws SQLException if failed.
-     */
-    private PreparedStatement getNativeStatement() throws SQLException {
-        if (nativeStatement != null)
-            return nativeStatement;
-
-        return (nativeStatement = conn.prepareNativeStatement(sql));
     }
 }

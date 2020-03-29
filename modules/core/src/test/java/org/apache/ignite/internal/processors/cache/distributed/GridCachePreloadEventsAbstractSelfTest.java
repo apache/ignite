@@ -26,13 +26,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,16 +43,14 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOAD
  *
  */
 public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+    }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -61,6 +59,8 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         evtStorageSpi.setExpireCount(50_000);
 
         cfg.setEventStorageSpi(evtStorageSpi);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -95,10 +95,11 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 
-        IgniteCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, "val1");
         cache.put(2, "val2");
@@ -122,7 +123,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
         for (Event evt : evts) {
             CacheEvent cacheEvt = (CacheEvent)evt;
             assertEquals(EVT_CACHE_REBALANCE_OBJECT_LOADED, cacheEvt.type());
-            assertEquals(g.cache(null).getName(), cacheEvt.cacheName());
+            assertEquals(g.cache(DEFAULT_CACHE_NAME).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue(cacheEvt.hasNewValue());

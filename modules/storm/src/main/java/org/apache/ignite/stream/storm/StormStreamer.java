@@ -280,6 +280,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
         /** Instance holder. */
         private static class Holder {
             private static final Ignite IGNITE = Ignition.start(igniteConfigFile);
+
             private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
         }
 

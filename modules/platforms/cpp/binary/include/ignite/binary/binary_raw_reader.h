@@ -31,6 +31,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_containers.h"
+#include "ignite/binary/binary_enum_entry.h"
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
@@ -275,6 +276,25 @@ namespace ignite
             int32_t ReadTimestampArray(Timestamp* res, int32_t len);
 
             /**
+             * Read Time. Maps to "Time" type in Java.
+             *
+             * @return Result.
+             */
+            Time ReadTime();
+
+            /**
+             * Read array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param res Array to store data to.
+             * @param len Expected length of array.
+             * @return Actual amount of elements read. If "len" argument is less than actual
+             *     array size or resulting array is set to null, nothing will be written
+             *     to resulting array and returned value will contain required array length.
+             *     -1 will be returned in case array in stream was null.
+             */
+            int32_t ReadTimeArray(Time* res, int32_t len);
+
+            /**
              * Read string.
              *
              * @param res Array to store data to. 
@@ -294,29 +314,58 @@ namespace ignite
              */
             std::string ReadString()
             {
+                std::string res;
+
+                ReadString(res);
+
+                return res;
+            }
+
+            /**
+             * Read string from the stream.
+             *
+             * @param dst String.
+             */
+            void ReadString(std::string& dst)
+            {
                 int32_t len = ReadString(NULL, 0);
 
                 if (len != -1)
                 {
-                    ignite::common::FixedSizeArray<char> arr(len + 1);
+                    dst.resize(static_cast<size_t>(len));
 
-                    ReadString(arr.GetData(), static_cast<int32_t>(arr.GetSize()));
-
-                    return std::string(arr.GetData());
+                    ReadString(&dst[0], len);
                 }
                 else
-                    return std::string();
+                    dst.clear();
             }
 
             /**
              * Start string array read.
+             *
+             * Every time you get a BinaryStringArrayReader from BinaryRawReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return String array reader.
              */
             BinaryStringArrayReader ReadStringArray();
 
             /**
+             * Read enum entry.
+             *
+             * @return Enum entry.
+             */
+            BinaryEnumEntry ReadBinaryEnum();
+
+            /**
              * Start array read.
+             *
+             * Every time you get a BinaryArrayReader from BinaryRawReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @return Array reader.
              */
@@ -333,12 +382,17 @@ namespace ignite
             /**
              * Start collection read.
              *
+             * Every time you get a BinaryCollectionReader from BinaryRawReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
+             *
              * @return Collection reader.
              */
             template<typename T>
             BinaryCollectionReader<T> ReadCollection()
             {
-                CollectionType typ;
+                CollectionType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadCollection(&typ, &size);
@@ -361,12 +415,17 @@ namespace ignite
             /**
              * Start map read.
              *
+             * Every time you get a BinaryMapReader from BinaryRawReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
+             *
              * @return Map reader.
              */
             template<typename K, typename V>
             BinaryMapReader<K, V> ReadMap()
             {
-                MapType typ;
+                MapType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadMap(&typ, &size);
@@ -379,7 +438,7 @@ namespace ignite
              *
              * @return Collection type.
              */
-            CollectionType ReadCollectionType();
+            CollectionType::Type ReadCollectionType();
 
             /**
              * Read type of the collection.
@@ -392,11 +451,26 @@ namespace ignite
              * Read object.
              *
              * @return Object.
+             *
+             * @trapam T Object type. BinaryType class template should be specialized for the type.
              */
             template<typename T>
             T ReadObject()
             {
                 return impl->ReadObject<T>();
+            }
+
+            /**
+             * Read enum value.
+             *
+             * @return Enum value.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            T ReadEnum()
+            {
+                return impl->ReadEnum<T>();
             }
 
             /**

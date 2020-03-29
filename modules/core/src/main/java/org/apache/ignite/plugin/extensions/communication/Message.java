@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
  * Base class for all communication messages.
  */
 public interface Message extends Serializable {
+    /** Direct type size in bytes. */
+    public int DIRECT_TYPE_SIZE = 2;
+
     /**
      * Writes this message to provided byte buffer.
      *
@@ -47,7 +50,7 @@ public interface Message extends Serializable {
      *
      * @return Message type.
      */
-    public byte directType();
+    public short directType();
 
     /**
      * Gets fields count.

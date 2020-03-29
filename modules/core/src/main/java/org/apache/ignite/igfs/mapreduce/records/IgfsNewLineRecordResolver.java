@@ -53,7 +53,6 @@ public class IgfsNewLineRecordResolver extends IgfsByteDelimiterRecordResolver {
      *
      * @param b Artificial flag to differentiate from empty constructor.
      */
-    @SuppressWarnings("UnusedParameters")
     private IgfsNewLineRecordResolver(boolean b) {
         super(new byte[] { SYM_CR, SYM_LF }, new byte[] { SYM_LF });
     }

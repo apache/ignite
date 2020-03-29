@@ -31,11 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -45,19 +42,13 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,9 +58,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings({"unchecked", "PackageVisibleField", "serial"})
 public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String PERSON_CACHE_NAME = "person";
 
@@ -81,9 +69,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
     /** */
     private static final int NODES = 5;
-
-    /** */
-    private boolean client;
 
     /** */
     private Data data;
@@ -100,28 +85,9 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /** */
     private static Random rnd;
 
-    /** */
-    private CacheMemoryMode memMode = ONHEAP_TIERED;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration[] cacheConfigurations() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
-        throw new UnsupportedOperationException();
+    @Override protected void createCaches() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -134,9 +100,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
 
         awaitPartitionMapExchange();
 
@@ -331,6 +295,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoins1() throws Exception {
         distributedJoins = true;
 
@@ -340,15 +305,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
-    public void testDistributedJoins1Offheap() throws Exception {
-        memMode = OFFHEAP_TIERED;
-
-        testDistributedJoins1();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testDistributedJoins2() throws Exception {
         distributedJoins = true;
 
@@ -358,6 +315,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoins3() throws Exception {
         distributedJoins = true;
 
@@ -367,6 +325,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocatedJoins1() throws Exception {
         distributedJoins = false;
 
@@ -376,6 +335,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocatedJoins2() throws Exception {
         distributedJoins = false;
 
@@ -385,6 +345,7 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollocatedJoins3() throws Exception {
         distributedJoins = false;
 
@@ -572,8 +533,8 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
                 boolean distributeJoins0 = distributedJoins;
 
                 if (replicated(cache)) {
-                    if (!testNode.configuration().isClientMode())
-                        assertProperException(cache);
+//                    if (!testNode.configuration().isClientMode())
+//                        assertProperException(cache);
 
                     boolean all3CachesAreReplicated =
                         replicated(ignite(0).cache(ACC_CACHE_NAME)) &&
@@ -620,36 +581,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
      */
     private boolean replicated(IgniteCache<?, ?> cache) {
         return cache.getConfiguration(CacheConfiguration.class).getCacheMode() == REPLICATED;
-    }
-
-    /**
-     * @param cache Cache.
-     */
-    private void assertProperException(final IgniteCache cache) {
-        qry = "assertProperException";
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                cache.query(new SqlFieldsQuery("select p.name from " +
-                    "\"" + PERSON_CACHE_NAME + "\".Person p, " +
-                    "\"" + ACC_CACHE_NAME + "\".Account a " +
-                    "where p._key = a.personId").setDistributedJoins(true));
-
-                return null;
-            }
-        }, CacheException.class, "Queries using distributed JOINs have to be run on partitioned cache");
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                cache.query(new SqlQuery(Person.class,
-                    "from \"" + PERSON_CACHE_NAME + "\".Person , " +
-                        "\"" + ACC_CACHE_NAME + "\".Account  " +
-                        "where Person._key = Account.personId")
-                    .setDistributedJoins(true));
-
-                return null;
-            }
-        }, CacheException.class, "Queries using distributed JOINs have to be run on partitioned cache");
     }
 
     /**
@@ -739,10 +670,9 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         boolean accountCache,
         boolean personCache,
         boolean orgCache) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(cacheName);
-        ccfg.setMemoryMode(memMode);
         ccfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED)
@@ -1197,45 +1127,6 @@ public class IgniteCrossCachesJoinsQueryTest extends AbstractH2CompareQueryTest 
         for (int i = 0; i < 10; i++) {
             Integer personId = keys.get(rnd.nextInt(keys.size()));
             Integer cnt = data.accountsPerPerson.get(personId);
-
-            q.setArgs(personId);
-
-            List<List<?>> res = cache.query(q).getAll();
-
-            String errMsg = "Expected data [personId=" + personId + ", cnt=" + cnt + ", data=" + data + "]";
-
-            // Cnt == 0 means that there are no accounts for the person.
-            if (cnt > 0) {
-                assertEquals(errMsg, 1, res.size());
-                assertEquals(errMsg, 1, res.get(0).size());
-                assertEquals(errMsg, (long)cnt, res.get(0).get(0));
-            }
-            else
-                assertEquals(errMsg, 0, res.size());
-        }
-    }
-
-    /**
-     * @param cache Cache.
-     */
-    private void checkPersonAccountOrganizationGroupBy(IgniteCache cache) {
-        qry = "checkPersonAccountOrganizationGroupBy";
-
-        // Max count of accounts at org.
-        SqlFieldsQuery q = new SqlFieldsQuery("select max(count(a.id)) " +
-            "from " +
-            "\"" + PERSON_CACHE_NAME + "\".Person p " +
-            "\"" + ORG_CACHE_NAME + "\".Organization o " +
-            "\"" + ACC_CACHE_NAME + "\".Account a " +
-            "where p.id = a.personId and p.orgStrId = o.strId " +
-            "group by org.id " +
-            "having o.id = ?");
-
-        q.setDistributedJoins(distributedJoins());
-
-        for (Map.Entry<Integer, Integer> e : data.accountsPerPerson.entrySet()) {
-            Integer personId = e.getKey();
-            Integer cnt = e.getValue();
 
             q.setArgs(personId);
 

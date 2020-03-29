@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,9 @@ import javax.management.ObjectName;
 import mx4j.tools.adaptor.http.HttpAdaptor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -46,6 +47,7 @@ import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
@@ -54,7 +56,6 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
  * Base discovery self-test class.
  * @param <T> SPI implementation class.
  */
-@SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
 public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final String HTTP_ADAPTOR_MBEAN_NAME = "mbeanAdaptor:protocol=HTTP";
@@ -90,6 +91,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      * @throws Exception If failed.
      */
     @SuppressWarnings({"UnconditionalWait"})
+    @Test
     public void testDiscovery() throws Exception {
         assert spis.size() > 1;
         assert spiStartTime > 0;
@@ -156,10 +158,22 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
-            Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage data) {
+        @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<?> onDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> topSnapshot,
+            Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage data
+        ) {
             if (type == EVT_NODE_METRICS_UPDATED)
                 isMetricsUpdate = true;
+
+            return new IgniteFinishedFutureImpl<>();
         }
     }
 
@@ -167,6 +181,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      * @throws Exception If failed.
      */
     @SuppressWarnings({"UnconditionalWait"})
+    @Test
     public void testMetrics() throws Exception {
         Collection<DiscoveryListener> listeners = new ArrayList<>();
 
@@ -215,11 +230,12 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     }
 
     /**
-     * Tests whether local node heartbeats cause METRICS_UPDATE event.
+     * Tests whether local node metrics update cause METRICS_UPDATE event.
      *
      * @throws Exception If test failed.
      */
-    public void testLocalHeartbeat() throws Exception {
+    @Test
+    public void testLocalMetricsUpdate() throws Exception {
         AtomicInteger[] locUpdCnts = new AtomicInteger[getSpiCount()];
 
         int i = 0;
@@ -227,30 +243,36 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         for (final DiscoverySpi spi : spis) {
             final AtomicInteger spiCnt = new AtomicInteger(0);
 
-            DiscoverySpiListener locHeartbeatLsnr = new DiscoverySpiListener() {
-                @Override public void onDiscovery(int type, long topVer, ClusterNode node,
+            DiscoverySpiListener locMetricsUpdateLsnr = new DiscoverySpiListener() {
+                /** {@inheritDoc} */
+                @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                    // No-op.
+                }
+
+                @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node,
                     Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
                     @Nullable DiscoverySpiCustomMessage data) {
                     // If METRICS_UPDATED came from local node
                     if (type == EVT_NODE_METRICS_UPDATED
                         && node.id().equals(spi.getLocalNode().id()))
                         spiCnt.addAndGet(1);
+
+                    return new IgniteFinishedFutureImpl<>();
                 }
             };
 
             locUpdCnts[i] = spiCnt;
 
-            spi.setListener(locHeartbeatLsnr);
+            spi.setListener(locMetricsUpdateLsnr);
 
             i++;
         }
 
-        // Sleep fro 3 Heartbeats.
+        // Sleep for 3 metrics update.
         Thread.sleep(getMaxDiscoveryTime() * 3);
 
-        for (AtomicInteger cnt : locUpdCnts) {
-            assert cnt.get() > 1 : "One of the SPIs did not get at least 2 METRICS_UPDATE events from local node";
-        }
+        for (AtomicInteger cnt : locUpdCnts)
+            assertTrue("One of the SPIs did not get at least 2 METRICS_UPDATE events from local node", cnt.get() > 1);
     }
 
     /**
@@ -272,6 +294,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     /**
      * Checks that physical address of local node is equal to local.ip property.
      */
+    @Test
     public void testLocalNode() {
         for (DiscoverySpi spi : spis) {
             ClusterNode loc = spi.getLocalNode();
@@ -285,6 +308,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     /**
      * Check that "test.node.prop" is present on all nodes.
      */
+    @Test
     public void testNodeAttributes() {
         for (DiscoverySpi spi : spis) {
             assert !spi.getRemoteNodes().isEmpty() : "No remote nodes found in Spi.";
@@ -320,6 +344,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     /**
      * Checks that each spi can pings all other.
      */
+    @Test
     public void testPing() {
         for (DiscoverySpi spi : spis) {
             for (IgniteTestResources rscrs : spiRsrcs) {
@@ -338,6 +363,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSerialize() throws Exception {
         for (DiscoverySpi spi : spis) {
             ClusterNode node = spi.getLocalNode();
@@ -391,24 +417,36 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     fromString("99.99.99"));
 
                 spi.setListener(new DiscoverySpiListener() {
+                    /** {@inheritDoc} */
+                    @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                        // No-op.
+                    }
+
                     @SuppressWarnings({"NakedNotify"})
-                    @Override public void onDiscovery(int type, long topVer, ClusterNode node,
-                        Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
-                        @Nullable DiscoverySpiCustomMessage data) {
+                    @Override public IgniteFuture<?> onDiscovery(
+                        int type,
+                        long topVer,
+                        ClusterNode node,
+                        Collection<ClusterNode> topSnapshot,
+                        Map<Long, Collection<ClusterNode>> topHist,
+                        @Nullable DiscoverySpiCustomMessage data
+                    ) {
                         info("Discovery event [type=" + type + ", node=" + node + ']');
 
                         synchronized (mux) {
                             mux.notifyAll();
                         }
+
+                        return new IgniteFinishedFutureImpl<>();
                     }
                 });
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
-                    @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                        return new HashMap<>();
+                    @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                        return dataBag;
                     }
 
-                    @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                    @Override public void onExchange(DiscoveryDataBag dataBag) {
                         // No-op.
                     }
                 });
@@ -426,7 +464,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     ignite.setStaticCfg(cfg);
                 }
 
-                spi.spiStart(getTestGridName() + i);
+                spi.spiStart(getTestIgniteInstanceName() + i);
 
                 spis.add(spi);
 
@@ -477,9 +515,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         }
 
         for (IgniteTestResources rscrs : spiRsrcs) {
-            MBeanServer mBeanServer = rscrs.getMBeanServer();
+            MBeanServer mBeanSrv = rscrs.getMBeanServer();
 
-            mBeanServer.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
+            mBeanSrv.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
 
             rscrs.stopThreads();
         }
@@ -493,8 +531,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         httpAdaptors.clear();
 
         spiStartTime = 0;
-
-        tearDown();
     }
 
     /**

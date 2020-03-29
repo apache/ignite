@@ -139,6 +139,16 @@ namespace ignite
             return impl->ReadTimestampArray(res, len);
         }
 
+        Time BinaryRawReader::ReadTime()
+        {
+            return impl->ReadTime();
+        }
+
+        int32_t BinaryRawReader::ReadTimeArray(Time* res, int32_t len)
+        {
+            return impl->ReadTimeArray(res, len);
+        }
+
         int32_t BinaryRawReader::ReadString(char* res, const int32_t len)
         {
             return impl->ReadString(res, len);
@@ -153,7 +163,12 @@ namespace ignite
             return BinaryStringArrayReader(impl, id, size);
         }
 
-        CollectionType BinaryRawReader::ReadCollectionType()
+        BinaryEnumEntry BinaryRawReader::ReadBinaryEnum()
+        {
+            return impl->ReadBinaryEnum();
+        }
+
+        CollectionType::Type BinaryRawReader::ReadCollectionType()
         {
             return impl->ReadCollectionType();
         }

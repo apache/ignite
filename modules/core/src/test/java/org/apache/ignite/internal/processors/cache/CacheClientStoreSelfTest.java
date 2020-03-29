@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -32,15 +31,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
@@ -48,9 +48,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
  * Tests for cache client with and without store.
  */
 public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "test-cache";
 
@@ -66,15 +63,21 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /** */
     private static volatile boolean loadedFromClient;
 
+    /** */
+    @Before
+    public void beforeCacheClientStoreSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        boolean client = gridName != null && gridName.startsWith("client");
+        boolean client = igniteInstanceName != null && igniteInstanceName.startsWith("client");
+        if (client)
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
-        cfg.setClientMode(client);
-
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setName(CACHE_NAME);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -92,12 +95,6 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cc);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -111,6 +108,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectStore() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -118,9 +116,9 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Ignite ignite = startGrid("client-1");
+        Ignite ignite = startClientGrid("client-1");
 
-        IgniteCache cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -142,6 +140,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvalidStore() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -151,12 +150,13 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         factory = new Factory2();
 
-        startGrid("client-1");
+        startClientGrid("client-1");
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabledConsistencyCheck() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -168,18 +168,19 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
 
-        startGrid("client-1");
+        startClientGrid("client-1");
 
         factory = new Factory1();
 
         System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
 
-        startGrid("client-2");
+        startClientGrid("client-2");
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoStoreNearDisabled() throws Exception {
         nearEnabled = false;
         cacheMode = CacheMode.PARTITIONED;
@@ -193,6 +194,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoStoreNearEnabled() throws Exception {
         nearEnabled = true;
         cacheMode = CacheMode.PARTITIONED;
@@ -209,9 +211,9 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     private void doTestNoStore() throws Exception {
         factory = null;
 
-        Ignite ignite = startGrid("client-1");
+        Ignite ignite = startClientGrid("client-1");
 
-        IgniteCache cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
         cache.get(0);
         cache.getAll(F.asSet(0, 1));
@@ -233,17 +235,18 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache created on client as LOCAL and see if it only loaded on client
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadClient() throws Exception {
         cacheMode = CacheMode.LOCAL;
         factory = new Factory3();
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
-        IgniteCache cache = client.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
 
         cache.loadCache(null);
 
@@ -258,15 +261,16 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache from server that created on client as LOCAL and see if it only loaded on server
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadServer() throws Exception {
         cacheMode = CacheMode.LOCAL;
         factory = new Factory3();
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache cache = grid(0).cache(CACHE_NAME);
 
@@ -282,13 +286,14 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache created on client as REPLICATED and see if it only loaded on servers
      */
+    @Test
     public void testReplicatedLoadFromClient() throws Exception {
         cacheMode = CacheMode.REPLICATED;
         factory = new Factory3();
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache cache = client.cache(CACHE_NAME);
 
@@ -305,13 +310,14 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      * Load cache created on client as REPLICATED and see if it only loaded on servers
      */
+    @Test
     public void testPartitionedLoadFromClient() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
         factory = new Factory3();
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache cache = client.cache(CACHE_NAME);
 
@@ -355,6 +361,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class EP implements CacheEntryProcessor {
+        /** {@inheritDoc} */
         @Override public Object process(MutableEntry entry, Object... arguments) {
             return null;
         }
@@ -364,24 +371,27 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
      * Test store that loads 10 item
      */
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
-        @Override
-        public Integer load(Object key) throws CacheLoaderException {
+        /** {@inheritDoc} */
+        @Override public Integer load(Object key) {
             return null;
         }
 
-        @Override
-        public void write(Cache.Entry<? extends Object, ? extends Object> entry) throws CacheWriterException {
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) {
+            // No-op.
         }
 
-        @Override
-        public void delete(Object key) throws CacheWriterException {
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            // No-op.
         }
 
-        @Override
-        public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             if (ignite.cluster().localNode().isClient())
                 loadedFromClient = true;
 

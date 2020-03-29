@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test P2P class loading in SHARED_CLASSLOADER_UNDEPLOY mode.
@@ -56,8 +57,8 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
     private DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
 
@@ -105,6 +106,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -116,6 +118,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 

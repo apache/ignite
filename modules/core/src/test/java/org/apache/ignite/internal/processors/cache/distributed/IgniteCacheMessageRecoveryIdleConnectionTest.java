@@ -30,13 +30,13 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -45,19 +45,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 3;
 
     /** */
     private static final long IDLE_TIMEOUT = 50;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -81,16 +76,10 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
         startGridsMultiThreaded(NODES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheOperationsIdleConnectionCloseTx() throws Exception {
         cacheOperationsIdleConnectionClose(TRANSACTIONAL);
     }
@@ -98,6 +87,15 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCacheOperationsIdleConnectionCloseMvccTx() throws Exception {
+        cacheOperationsIdleConnectionClose(TRANSACTIONAL_SNAPSHOT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testCacheOperationsIdleConnectionCloseAtomic() throws Exception {
         cacheOperationsIdleConnectionClose(ATOMIC);
     }
@@ -107,28 +105,26 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void cacheOperationsIdleConnectionClose(CacheAtomicityMode atomicityMode) throws Exception {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        IgniteCache<Object, Object> cache = ignite(0).createCache(ccfg).withAsync();
+        IgniteCache<Object, Object> cache = ignite(0).createCache(ccfg);
 
         try {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             int iter = 0;
 
-            long stopTime = System.currentTimeMillis() + 90_000;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.apply(90_000);
 
             while (System.currentTimeMillis() < stopTime) {
                 if (iter++ % 50 == 0)
                     log.info("Iteration: " + iter);
 
-                cache.put(iter, 1);
-
-                IgniteFuture<?> fut = cache.future();
+                IgniteFuture<?> fut = cache.putAsync(iter, 1);
 
                 try {
                     fut.get(10_000);
@@ -151,7 +147,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
             }
         }
         finally {
-            ignite(0).destroyCache(ccfg.getName());
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 }

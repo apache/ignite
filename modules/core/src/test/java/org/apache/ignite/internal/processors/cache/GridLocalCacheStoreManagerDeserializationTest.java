@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.UUID;
+import org.junit.Test;
 
 /**
  * Checks whether storing to local store doesn't cause binary objects unmarshalling,
@@ -50,6 +51,7 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
      *
      * @throws Exception
      */
+    @Test
     public void testUpdate() throws Exception {
         // Goal is to check correct saving to store (no exception must be thrown)
 
@@ -78,6 +80,7 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
      *
      * @throws Exception
      */
+    @Test
     public void testBinaryUpdate() throws Exception {
         // Goal is to check correct saving to store (no exception must be thrown)
         final Ignite grid = startGrid("binaryGrid");
@@ -86,7 +89,7 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
 
         final BinaryObjectBuilder builder = grid.binary().builder("custom_type");
 
-        final BinaryObject entity = builder.setField("id", 0).hashCode(0).build();
+        final BinaryObject entity = builder.setField("id", 0).build();
 
         cache.put(entity, entity);
 

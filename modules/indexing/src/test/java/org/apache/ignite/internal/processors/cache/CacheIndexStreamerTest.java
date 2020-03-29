@@ -25,42 +25,24 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
 public class CacheIndexStreamerTest extends GridCommonAbstractTest {
-    /** */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerAtomic() throws Exception {
         checkStreamer(ATOMIC);
     }
@@ -68,6 +50,7 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerTx() throws Exception {
         checkStreamer(TRANSACTIONAL);
     }
@@ -91,7 +74,10 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (!stop.get()) {
-                        try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
+                        try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                            // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
+                            streamer.allowOverwrite(atomicityMode == TRANSACTIONAL);
+
                             for (int i = 0; i < 1; i++)
                                 streamer.addData(rnd.nextInt(KEYS), String.valueOf(i));
                         }
@@ -138,17 +124,13 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setMemoryMode(OFFHEAP_TIERED);
-        ccfg.setOffHeapMaxMemory(0);
         ccfg.setBackups(1);
         ccfg.setIndexedTypes(Integer.class, String.class);
 
         return ccfg;
     }
-
-
 }

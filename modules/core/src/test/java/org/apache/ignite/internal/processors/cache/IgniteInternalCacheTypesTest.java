@@ -23,13 +23,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 
@@ -38,21 +35,16 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTI
  */
 public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String CACHE1 = "cache1";
 
     /** */
     private static final String CACHE2 = "cache2";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        if (gridName.equals(getTestGridName(0))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0))) {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
             ccfg.setName(CACHE1);
@@ -63,16 +55,10 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheTypes() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -111,27 +97,7 @@ public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
             }
         }, IllegalStateException.class, null);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ignite.cache(CU.MARSH_CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ignite.cache(CU.ATOMICS_CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
         checkCache(ignite, CU.UTILITY_CACHE_NAME, UTILITY_CACHE_POOL, false, true);
-
-        checkCache(ignite, CU.MARSH_CACHE_NAME, MARSH_CACHE_POOL, false, false);
-
-        checkCache(ignite, CU.ATOMICS_CACHE_NAME, SYSTEM_POOL, false, true);
 
         for (String cache : userCaches)
             checkCache(ignite, cache, SYSTEM_POOL, true, false);

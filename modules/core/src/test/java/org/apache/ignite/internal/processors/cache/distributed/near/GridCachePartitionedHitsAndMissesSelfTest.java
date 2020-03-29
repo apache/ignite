@@ -28,11 +28,10 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -49,17 +48,9 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /** Count of total numbers to generate. */
     private static final int CNT = 2000;
 
-    /** IP Finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        // DiscoverySpi.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-        disco.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Cache.
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -84,7 +75,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setStartSize(700000);
         cfg.setWriteSynchronizationMode(FULL_ASYNC);
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
@@ -99,7 +89,10 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHitsAndMisses() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
+
         startGrids(GRID_CNT);
 
         awaitPartitionMapExchange();
@@ -114,7 +107,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             long misses = 0;
 
             for (int i = 0; i < GRID_CNT; i++) {
-                CacheMetrics m = grid(i).cache(null).localMetrics();
+                CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 hits += m.getCacheHits();
                 misses += m.getCacheMisses();
@@ -135,7 +128,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @param g Grid.
      */
     private static void realTimePopulate(final Ignite g) {
-        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(DEFAULT_CACHE_NAME)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelOperations(1);
 

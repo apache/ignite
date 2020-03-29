@@ -21,18 +21,19 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManagerAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Checkpoint manager test using {@link S3CheckpointSpi}.
  */
 public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        assertTrue("Unexpected grid name: " + gridName, gridName.contains("s3"));
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        assertTrue("Unexpected Ignite instance name: " + igniteInstanceName, igniteInstanceName.contains("s3"));
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         S3CheckpointSpi spi = new S3CheckpointSpi();
 
@@ -41,7 +42,7 @@ public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSe
 
         spi.setAwsCredentials(cred);
 
-        spi.setBucketNameSuffix("unit-test-bucket");
+        spi.setBucketNameSuffix(S3CheckpointSpiSelfTest.getBucketNameSuffix());
 
         cfg.setCheckpointSpi(spi);
 
@@ -51,7 +52,8 @@ public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSe
     /**
      * @throws Exception Thrown if any exception occurs.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Test
     public void testS3Based() throws Exception {
         retries = 6;
 
@@ -61,7 +63,8 @@ public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSe
     /**
      * @throws Exception Thrown if any exception occurs.
      */
-    @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Test
     public void testMultiNodeS3Based() throws Exception {
         retries = 6;
 

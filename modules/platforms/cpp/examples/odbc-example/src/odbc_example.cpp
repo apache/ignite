@@ -169,7 +169,7 @@ void GetDataWithOdbc(SQLHDBC dbc, const std::string& query)
 
 /**
  * Populate Person cache with sample data.
- * 
+ *
  * @param dbc Database connection.
  */
 void PopulatePerson(SQLHDBC dbc)
@@ -387,7 +387,7 @@ void PopulatePerson(SQLHDBC dbc)
 
 /**
  * Populate Organization cache with sample data.
- * 
+ *
  * @param dbc Database connection.
  */
 void PopulateOrganization(SQLHDBC dbc)
@@ -525,7 +525,7 @@ void DeletePerson(SQLHDBC dbc, int64_t key)
 
 /**
  * Query tables.
- * 
+ *
  * @param dbc Database connection.
  */
 void QueryData(SQLHDBC dbc)
@@ -552,12 +552,9 @@ void QueryData(SQLHDBC dbc)
  *
  * @return Exit code.
  */
-int main() 
+int main()
 {
     IgniteConfiguration cfg;
-
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 1024;
 
     cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-odbc.xml";
 
@@ -580,7 +577,7 @@ int main()
         SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
         // Combining connect string
-        std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;CACHE=Person;";
+        std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;SCHEMA=Person;";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -632,6 +629,8 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;

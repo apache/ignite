@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +60,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.igfs.IgfsPathSummary;
+import org.apache.ignite.igfs.IgfsUserContext;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -66,7 +68,6 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadabl
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
@@ -82,6 +83,7 @@ import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallabl
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -94,14 +96,11 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_READ;
 import static org.apache.ignite.events.EventType.EVT_IGFS_META_UPDATED;
-import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
-import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
@@ -117,9 +116,6 @@ public final class IgfsImpl implements IgfsEx {
 
     /** Default directory metadata. */
     static final Map<String, String> DFLT_DIR_META = F.asMap(IgfsUtils.PROP_PERMISSION, PERMISSION_DFLT_VAL);
-
-    /** Handshake message. */
-    private final IgfsPaths secondaryPaths;
 
     /** Cache based structure (meta data) manager. */
     private IgfsMetaManager meta;
@@ -149,7 +145,7 @@ public final class IgfsImpl implements IgfsEx {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
-    private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap<>();
 
     /** Client log directory. */
     private volatile String logDir;
@@ -179,8 +175,11 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
-        if (secondaryFs instanceof IgfsKernalContextAware)
-            ((IgfsKernalContextAware)secondaryFs).setKernalContext(igfsCtx.kernalContext());
+        if (secondaryFs != null) {
+            igfsCtx.kernalContext().resource().injectGeneric(secondaryFs);
+
+            igfsCtx.kernalContext().resource().injectFileSystem(secondaryFs, this);
+        }
 
         if (secondaryFs instanceof LifecycleAware)
             ((LifecycleAware)secondaryFs).start();
@@ -198,28 +197,10 @@ public final class IgfsImpl implements IgfsEx {
             dfltMode = cfg.getDefaultMode();
 
         Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
-        Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
-
-        if (cfg.isInitializeDefaultPathModes() && IgfsUtils.isDualMode(dfltMode)) {
-            dfltModes.put("/ignite/primary", PRIMARY);
-
-            if (secondaryFs != null) {
-                dfltModes.put("/ignite/proxy", PROXY);
-                dfltModes.put("/ignite/sync", DUAL_SYNC);
-                dfltModes.put("/ignite/async", DUAL_ASYNC);
-            }
-        }
-
-        cfgModes.putAll(dfltModes);
 
         if (cfg.getPathModes() != null) {
-            for (Map.Entry<String, IgfsMode> e : cfg.getPathModes().entrySet()) {
-                if (!dfltModes.containsKey(e.getKey()))
-                    cfgModes.put(e.getKey(), e.getValue());
-                else
-                    U.warn(log, "Ignoring path mode because it conflicts with Ignite reserved path " +
-                        "(use another path) [mode=" + e.getValue() + ", path=" + e.getKey() + ']');
-            }
+            for (Map.Entry<String, IgfsMode> e : cfg.getPathModes().entrySet())
+                cfgModes.put(e.getKey(), e.getValue());
         }
 
         ArrayList<T2<IgfsPath, IgfsMode>> modes = null;
@@ -251,19 +232,14 @@ public final class IgfsImpl implements IgfsEx {
 
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
-        Object secondaryFsPayload = null;
-
-        if (secondaryFs instanceof HadoopPayloadAware)
-            secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
-
-        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
-
         // Check whether IGFS LRU eviction policy is set on data cache.
-        String dataCacheName = igfsCtx.configuration().getDataCacheName();
+        String dataCacheName = igfsCtx.configuration().getDataCacheConfiguration().getName();
 
         for (CacheConfiguration cacheCfg : igfsCtx.kernalContext().config().getCacheConfiguration()) {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
-                EvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
+                EvictionPolicy evictPlc = cacheCfg.getEvictionPolicyFactory() != null ?
+                    (EvictionPolicy)cacheCfg.getEvictionPolicyFactory().create()
+                    : cacheCfg.getEvictionPolicy();
 
                 if (evictPlc != null & evictPlc instanceof IgfsPerBlockLruEvictionPolicy)
                     this.evictPlc = (IgfsPerBlockLruEvictionPolicy)evictPlc;
@@ -273,7 +249,7 @@ public final class IgfsImpl implements IgfsEx {
         }
 
         dualPool = secondaryFs != null ? new IgniteThreadPoolExecutor(4, Integer.MAX_VALUE, 5000L,
-            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName()), null) : null;
+            new SynchronousQueue<Runnable>(), new IgfsThreadFactory(cfg.getName())) : null;
     }
 
     /** {@inheritDoc} */
@@ -300,6 +276,9 @@ public final class IgfsImpl implements IgfsEx {
         // Restore interrupted flag.
         if (interrupted)
             Thread.currentThread().interrupt();
+
+        if (dualPool != null)
+            dualPool.shutdownNow();
     }
 
     /**
@@ -410,23 +389,18 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * @return Mode resolver.
      */
-    IgfsModeResolver modeResolver() {
+    public IgfsModeResolver modeResolver() {
         return modeRslvr;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public String name() {
+    @Override public String name() {
         return cfg.getName();
     }
 
     /** {@inheritDoc} */
     @Override public FileSystemConfiguration configuration() {
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsPaths proxyPaths() {
-        return secondaryPaths;
     }
 
     /** {@inheritDoc} */
@@ -440,7 +414,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public IgfsStatus globalSpace() {
         return safeOp(new Callable<IgfsStatus>() {
             @Override public IgfsStatus call() throws Exception {
@@ -481,6 +454,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         });
     }
+
     /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return data.groupBlockSize();
@@ -491,7 +465,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientExistsCallable(cfg.getName(), path));
+            return meta.runClientTask(new IgfsClientExistsCallable(cfg.getName(), IgfsUserContext.currentUser(), path));
 
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -541,7 +515,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientInfoCallable(cfg.getName(), path));
+            return meta.runClientTask(new IgfsClientInfoCallable(cfg.getName(), IgfsUserContext.currentUser(), path));
 
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
@@ -567,7 +541,8 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientSummaryCallable(cfg.getName(), path));
+            return meta.runClientTask(new IgfsClientSummaryCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path));
 
         return safeOp(new Callable<IgfsPathSummary>() {
             @Override public IgfsPathSummary call() throws Exception {
@@ -586,7 +561,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientUpdateCallable(cfg.getName(), path, props));
+            return meta.runClientTask(new IgfsClientUpdateCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path, props));
 
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
@@ -632,10 +608,9 @@ public final class IgfsImpl implements IgfsEx {
                     default:
                         assert mode == PROXY : "Unknown mode: " + mode;
 
-                        IgfsFile file = secondaryFs.update(path, props);
+                        IgfsFile status = secondaryFs.update(path, props);
 
-                        if (file != null)
-                            return new IgfsFileImpl(secondaryFs.update(path, props), data.groupBlockSize());
+                        return status != null ? new IgfsFileImpl(status, data.groupBlockSize()) : null;
                 }
 
                 return null;
@@ -649,7 +624,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(dest, "dest");
 
         if (meta.isClient()) {
-            meta.runClientTask(new IgfsClientRenameCallable(cfg.getName(), src, dest));
+            meta.runClientTask(new IgfsClientRenameCallable(cfg.getName(), IgfsUserContext.currentUser(), src, dest));
 
             return;
         }
@@ -709,7 +684,8 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientDeleteCallable(cfg.getName(), path, recursive));
+            return meta.runClientTask(new IgfsClientDeleteCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path, recursive));
 
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -751,7 +727,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient()) {
-            meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), path, props));
+            meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), IgfsUserContext.currentUser(), path, props));
 
             return ;
         }
@@ -789,12 +765,11 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            meta.runClientTask(new IgfsClientListPathsCallable(cfg.getName(), path));
+            meta.runClientTask(new IgfsClientListPathsCallable(cfg.getName(), IgfsUserContext.currentUser(), path));
 
         return safeOp(new Callable<Collection<IgfsPath>>() {
             @Override public Collection<IgfsPath> call() throws Exception {
@@ -843,7 +818,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            meta.runClientTask(new IgfsClientListFilesCallable(cfg.getName(), path));
+            meta.runClientTask(new IgfsClientListFilesCallable(cfg.getName(), IgfsUserContext.currentUser(), path));
 
         return safeOp(new Callable<Collection<IgfsFile>>() {
             @Override public Collection<IgfsFile> call() throws Exception {
@@ -923,7 +898,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsInputStream open(IgfsPath path) {
-        return open(path, cfg.getStreamBufferSize(), cfg.getSequentialReadsBeforePrefetch());
+        return open(path, cfg.getBufferSize(), cfg.getSequentialReadsBeforePrefetch());
     }
 
     /** {@inheritDoc} */
@@ -943,7 +918,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (log.isDebugEnabled())
                     log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
-                int bufSize0 = bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
+                int bufSize0 = bufSize == 0 ? cfg.getBufferSize() : bufSize;
 
                 IgfsMode mode = resolveMode(path);
 
@@ -1026,7 +1001,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
-        return create0(path, cfg.getStreamBufferSize(), overwrite, null, 0, null, true);
+        return create0(path, cfg.getBufferSize(), overwrite, null, 0, null, true);
     }
 
     /** {@inheritDoc} */
@@ -1133,7 +1108,7 @@ public final class IgfsImpl implements IgfsEx {
 
     /** {@inheritDoc} */
     @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
-        return append(path, cfg.getStreamBufferSize(), create, null);
+        return append(path, cfg.getBufferSize(), create, null);
     }
 
     /** {@inheritDoc} */
@@ -1213,14 +1188,15 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(final IgfsPath path, final long accessTime, final long modificationTime) {
+    @Override public void setTimes(final IgfsPath path, final long modificationTime, final long accessTime) {
         A.notNull(path, "path");
 
         if (accessTime == -1 && modificationTime == -1)
             return;
 
         if (meta.isClient()) {
-            meta.runClientTask(new IgfsClientSetTimesCallable(cfg.getName(), path, accessTime, modificationTime));
+            meta.runClientTask(new IgfsClientSetTimesCallable(cfg.getName(), IgfsUserContext.currentUser(), path,
+                accessTime, modificationTime));
 
             return;
         }
@@ -1229,19 +1205,11 @@ public final class IgfsImpl implements IgfsEx {
             @Override public Void call() throws Exception {
                 IgfsMode mode = resolveMode(path);
 
-                if (mode == PROXY) {
-                    if (secondaryFs instanceof IgfsSecondaryFileSystemV2)
-                        ((IgfsSecondaryFileSystemV2)secondaryFs).setTimes(path, accessTime, modificationTime);
-                    else
-                        throw new UnsupportedOperationException("setTimes is not supported in PROXY mode for " +
-                            "this secondary file system,");
-                }
+                if (mode == PROXY)
+                    secondaryFs.setTimes(path, modificationTime, accessTime);
                 else {
-                    boolean useSecondary =
-                        IgfsUtils.isDualMode(mode) && secondaryFs instanceof IgfsSecondaryFileSystemV2;
-
-                    meta.updateTimes(path, accessTime, modificationTime,
-                        useSecondary ? (IgfsSecondaryFileSystemV2) secondaryFs : null);
+                    meta.updateTimes(path, modificationTime, accessTime,
+                        IgfsUtils.isDualMode(mode) ? secondaryFs : null);
                 }
 
                 return null;
@@ -1262,7 +1230,8 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(len >= 0, "len >= 0");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), path, start, len, maxLen));
+            return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), IgfsUserContext.currentUser(),
+                path, start, len, maxLen));
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
             @Override public Collection<IgfsBlockLocation> call() throws Exception {
@@ -1270,6 +1239,9 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Get affinity for file block [path=" + path + ", start=" + start + ", len=" + len + ']');
 
                 IgfsMode mode = resolveMode(path);
+
+                if (mode == PROXY)
+                    return secondaryFs.affinity(path, start, len, maxLen);
 
                 // Check memory first.
                 IgfsEntryInfo info = meta.infoForPath(path);
@@ -1345,7 +1317,7 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
 
         if (meta.isClient())
-            return meta.runClientTask(new IgfsClientSizeCallable(cfg.getName(), path));
+            return meta.runClientTask(new IgfsClientSizeCallable(cfg.getName(), IgfsUserContext.currentUser(), path));
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
@@ -1399,7 +1371,7 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void format() {
+    @Override public void clear() {
         try {
             IgniteUuid id = meta.format();
 
@@ -1426,12 +1398,17 @@ public final class IgfsImpl implements IgfsEx {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> clearAsync() throws IgniteException {
+        return (IgniteFuture<Void>)createFuture(clearAsync0());
+    }
+
     /**
      * Formats the file system removing all existing entries from it.
      *
      * @return Future.
      */
-    IgniteInternalFuture<?> formatAsync() {
+    IgniteInternalFuture<?> clearAsync0() {
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
         Thread t = new Thread(new FormatRunnable(fut), "igfs-format-" + cfg.getName() + "-" +
@@ -1448,18 +1425,24 @@ public final class IgfsImpl implements IgfsEx {
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return executeAsync(task, rslvr, paths, arg).get();
+            return executeAsync0(task, rslvr, paths, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+        Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(task, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         try {
-            return executeAsync(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
+            return executeAsync0(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
@@ -1467,14 +1450,27 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen,
+        @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(task, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
+    }
+
+    /** {@inheritDoc} */
     @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
         try {
-            return executeAsync(taskCls, rslvr, paths, arg).get();
+            return executeAsync0(taskCls, rslvr, paths, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(taskCls, rslvr, paths, arg));
     }
 
     /** {@inheritDoc} */
@@ -1482,11 +1478,18 @@ public final class IgfsImpl implements IgfsEx {
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeSize, @Nullable T arg) {
         try {
-            return executeAsync(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
+            return executeAsync0(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeSize, arg).get();
         }
         catch (Exception e) {
             throw IgfsUtils.toIgfsException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen,
+        @Nullable T arg) throws IgniteException {
+        return createFuture(executeAsync0(taskCls, rslvr, paths, skipNonExistentFiles, maxRangeLen, arg));
     }
 
     /**
@@ -1498,9 +1501,9 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync0(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) {
-        return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+        return executeAsync0(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
     /**
@@ -1517,7 +1520,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync0(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return igfsCtx.kernalContext().task().execute(task, new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
@@ -1532,9 +1535,9 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+    <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
-        return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
+        return executeAsync0(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
 
     /**
@@ -1550,8 +1553,7 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    @SuppressWarnings("unchecked")
-    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+    <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         return igfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
@@ -1772,13 +1774,20 @@ public final class IgfsImpl implements IgfsEx {
      * @return Real buffer size.
      */
     private int bufferSize(int bufSize) {
-        return bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
+        return bufSize == 0 ? cfg.getBufferSize() : bufSize;
+    }
+
+    /**
+     * @param fut Internal future.
+     * @return Public API future.
+     */
+    private <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
+        return new IgniteFutureImpl<>(fut);
     }
 
     /**
      * IGFS thread factory.
      */
-    @SuppressWarnings("NullableProblems")
     private static class IgfsThreadFactory implements ThreadFactory {
         /** IGFS name. */
         private final String name;
@@ -1827,7 +1836,7 @@ public final class IgfsImpl implements IgfsEx {
             IgfsException err = null;
 
             try {
-                format();
+                clear();
             }
             catch (Throwable err0) {
                 err = IgfsUtils.toIgfsException(err0);

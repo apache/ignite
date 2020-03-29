@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -36,10 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -50,9 +50,6 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String PARTITIONED = "partitioned";
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @return Node count.
      */
@@ -61,14 +58,10 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientReconnectDisabled(true);
-
-        if (getTestGridName(nodeCount() - 1).equals(gridName) || getTestGridName(nodeCount() - 2).equals(gridName))
-            cfg.setClientMode(true);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -79,6 +72,11 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(commSpi);
 
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
+        dbCfg.setPageSize(16 * 1024);
+
+        cfg.setDataStorageConfiguration(dbCfg);
+
         return cfg;
     }
 
@@ -86,19 +84,15 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(nodeCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+        startGrids(nodeCount() - 2);
+        startClientGrid(nodeCount() - 2);
+        startClientGrid(nodeCount() - 1);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSlowClient() throws Exception {
         final IgniteEx slowClient = grid(nodeCount() - 1);
 

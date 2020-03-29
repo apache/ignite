@@ -44,10 +44,10 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 return Casters<TFrom>.Caster(obj);
             }
-            catch (InvalidCastException)
+            catch (InvalidCastException e)
             {
                 throw new InvalidCastException(string.Format("Specified cast is not valid: {0} -> {1}", typeof (TFrom),
-                    typeof (T)));
+                    typeof (T)), e);
             }
 #else
             return Casters<TFrom>.Caster(obj);
@@ -77,8 +77,13 @@ namespace Apache.Ignite.Core.Impl.Common
                 {
                     // Just return what we have
                     var pExpr = Expression.Parameter(typeof(TFrom));
-                    
+
                     return Expression.Lambda<Func<TFrom, T>>(pExpr, pExpr).Compile();
+                }
+
+                if (typeof(T) == typeof(UIntPtr) && typeof(TFrom) == typeof(long))
+                {
+                    return l => unchecked ((T) (object) (UIntPtr) (ulong) (long) (object) l);
                 }
 
                 var paramExpr = Expression.Parameter(typeof(TFrom));

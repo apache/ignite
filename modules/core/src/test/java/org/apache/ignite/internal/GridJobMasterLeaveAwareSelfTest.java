@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -53,12 +52,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -71,9 +68,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /** Total grid count within the cloud. */
     private static final int GRID_CNT = 2;
-
-    /** Default IP finder for single-JVM cloud grid. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Counts how many times master-leave interface implementation was called. */
     private static volatile CountDownLatch invokeLatch;
@@ -101,13 +95,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new CommunicationSpi());
 
@@ -146,13 +135,14 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalJobOnMaster() throws Exception {
         invokeLatch  = new CountDownLatch(1);
         jobLatch = new CountDownLatch(1);
 
         Ignite g = startGrid(0);
 
-        g.compute().withAsync().execute(new TestTask(1), null);
+        g.compute().executeAsync(new TestTask(1), null);
 
         jobLatch.await();
 
@@ -182,6 +172,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterStoppedNormally() throws Exception {
         // Start grids.
         for (int i = 0; i < GRID_CNT; i++)
@@ -189,8 +180,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
-            execute(new TestTask(GRID_CNT - 1), null);
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()))
+            .executeAsync(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
 
@@ -207,6 +198,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMasterStoppedAbruptly() throws Exception {
         // Start grids.
         for (int i = 0; i < GRID_CNT; i++)
@@ -214,8 +206,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
-            execute(new TestTask(GRID_CNT - 1), null);
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()))
+            .executeAsync(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
 
@@ -234,6 +226,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCannotSendJobExecuteResponse() throws Exception {
         awaitMasterLeaveCallback = false;
 
@@ -243,8 +236,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate())).withAsync().
-            execute(new TestTask(GRID_CNT - 1), null);
+        compute(grid(lastGridIdx).cluster().forPredicate(excludeLastPredicate()))
+            .executeAsync(new TestTask(GRID_CNT - 1), null);
 
         jobLatch.await();
 
@@ -260,6 +253,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         // Now we stop master grid.
         stopGrid(lastGridIdx, true);
 
+        waitForTopology(GRID_CNT - 1);
+
         // Release communication SPI wait latches. As master node is stopped, job worker will receive and exception.
         for (int i = 0; i < lastGridIdx; i++)
             ((CommunicationSpi)grid(i).configuration().getCommunicationSpi()).releaseWaitLatch();
@@ -270,14 +265,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
-                IgniteCompute comp = compute(grid).withAsync();
-
-                comp.apply(new TestClosure(), "arg");
-
-                return comp.future();
+                return compute(grid).applyAsync(new TestClosure(), "arg");
             }
         });
     }
@@ -285,14 +277,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
-                IgniteCompute comp = compute(grid).withAsync();
-
-                comp.apply(new TestClosure(), Arrays.asList("arg1", "arg2"));
-
-                return comp.future();
+                return compute(grid).applyAsync(new TestClosure(), Arrays.asList("arg1", "arg2"));
             }
         });
     }
@@ -300,12 +289,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testApply3() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
-                IgniteCompute comp = compute(grid).withAsync();
-
-                comp.apply(new TestClosure(),
+                return compute(grid).applyAsync(new TestClosure(),
                     Arrays.asList("arg1", "arg2"),
                     new IgniteReducer<Void, Object>() {
                         @Override public boolean collect(@Nullable Void aVoid) {
@@ -316,8 +304,6 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                             return null;
                         }
                     });
-
-                return comp.future();
             }
         });
     }
@@ -325,14 +311,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.run(new TestRunnable());
-
-                return comp.future();
+                return compute(prj).runAsync(new TestRunnable());
             }
         });
     }
@@ -340,14 +323,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRun2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.run(Arrays.asList(new TestRunnable(), new TestRunnable()));
-
-                return comp.future();
+                return compute(prj).runAsync(Arrays.asList(new TestRunnable(), new TestRunnable()));
             }
         });
     }
@@ -355,14 +335,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.call(new TestCallable());
-
-                return comp.future();
+                return compute(prj).callAsync(new TestCallable());
             }
         });
     }
@@ -370,14 +347,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall2() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.call(Arrays.asList(new TestCallable(), new TestCallable()));
-
-                return comp.future();
+                return compute(prj).callAsync(Arrays.asList(new TestCallable(), new TestCallable()));
             }
         });
     }
@@ -385,12 +359,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall3() throws Exception {
         testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.call(
+                return compute(prj).callAsync(
                     Arrays.asList(new TestCallable(), new TestCallable()),
                     new IgniteReducer<Void, Object>() {
                         @Override public boolean collect(@Nullable Void aVoid) {
@@ -401,8 +374,6 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                             return null;
                         }
                     });
-
-                return comp.future();
             }
         });
     }
@@ -410,14 +381,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast1() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.broadcast(new TestRunnable());
-
-                return comp.future();
+                return compute(prj).broadcastAsync(new TestRunnable());
             }
         });
     }
@@ -425,14 +393,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast2() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.broadcast(new TestCallable());
-
-                return comp.future();
+                return compute(prj).broadcastAsync(new TestCallable());
             }
         });
     }
@@ -440,14 +405,11 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBroadcast3() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                comp.broadcast(new TestClosure(), "arg");
-
-                return comp.future();
+                return compute(prj).broadcastAsync(new TestClosure(), "arg");
             }
         });
     }
@@ -455,18 +417,15 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                Affinity<Object> aff = prj.ignite().affinity(null);
+                Affinity<Object> aff = prj.ignite().affinity(DEFAULT_CACHE_NAME);
 
                 ClusterNode node = F.first(prj.nodes());
 
-                comp.affinityRun((String)null, keyForNode(aff, node), new TestRunnable());
-
-                return comp.future();
+                return compute(prj).affinityRunAsync(DEFAULT_CACHE_NAME, keyForNode(aff, node), new TestRunnable());
             }
         });
     }
@@ -474,18 +433,15 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
-                IgniteCompute comp = compute(prj).withAsync();
-
-                Affinity<Object> aff = prj.ignite().affinity(null);
+                Affinity<Object> aff = prj.ignite().affinity(DEFAULT_CACHE_NAME);
 
                 ClusterNode node = F.first(prj.nodes());
 
-                comp.affinityCall((String)null, keyForNode(aff, node), new TestCallable());
-
-                return comp.future();
+                return compute(prj).affinityCallAsync(DEFAULT_CACHE_NAME, keyForNode(aff, node), new TestCallable());
             }
         });
     }

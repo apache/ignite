@@ -21,24 +21,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.CIX1;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -53,9 +48,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int TEST_TIMEOUT = 60 * 1000;
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(1);
@@ -65,29 +57,15 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-
-        assertEquals(0, G.allGrids().size());
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
-        if (getTestGridName(1).equals(gridName))
+        if (getTestIgniteInstanceName(1).equals(igniteInstanceName))
             c.setCacheConfiguration(/* no configured caches */);
         else {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -110,6 +88,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNotAffinityJobs() throws Exception {
         /* =========== Test properties =========== */
         int jobsNum = 5000;
@@ -121,6 +100,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAffinityJobs() throws Exception {
         /* =========== Test properties =========== */
         int jobsNum = 5000;
@@ -162,11 +142,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new IgniteCheckedException("Could not instantiate a job.", e);
                     }
 
-                    IgniteCompute comp = ignite1.compute().withAsync();
-
-                    comp.call(job);
-
-                    ComputeTaskFuture<Boolean> fut = comp.future();
+                    IgniteFuture<Boolean> fut = ignite1.compute().callAsync(job);
 
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);
@@ -222,6 +198,10 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         /** */
         private static AtomicInteger cnt = new AtomicInteger();
 
+        /** */
+        @AffinityKeyMapped
+        private String affKey = "key";
+
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
             int c = cnt.incrementAndGet();
@@ -232,14 +212,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10);
 
             return true;
-        }
-
-        /**
-         * @return Affinity key.
-         */
-        @AffinityKeyMapped
-        public String affinityKey() {
-            return "key";
         }
     }
 }

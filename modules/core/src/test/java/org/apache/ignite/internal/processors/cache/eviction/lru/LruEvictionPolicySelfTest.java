@@ -21,6 +21,7 @@ import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.processors.cache.eviction.EvictionAbstractTest;
+import org.junit.Test;
 
 /**
  * LRU Eviction policy tests.
@@ -30,6 +31,7 @@ public class LruEvictionPolicySelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMiddleAccess() throws Exception {
         startGrid();
 

@@ -17,34 +17,33 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionMessageMarshallingTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionUnmasrhalErrorsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Deadlock detection related tests.
  */
-public class TxDeadlockDetectionTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Deadlock Detection Test Suite");
-
-        suite.addTestSuite(DepthFirstSearchTest.class);
-        suite.addTestSuite(TxOptimisticDeadlockDetectionTest.class);
-        suite.addTestSuite(TxOptimisticDeadlockDetectionCrossCacheTest.class);
-        suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
-        suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
-        suite.addTestSuite(TxDeadlockDetectionTest.class);
-        suite.addTestSuite(TxDeadlockDetectionNoHangsTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    DepthFirstSearchTest.class,
+    TxOptimisticDeadlockDetectionTest.class,
+    TxOptimisticDeadlockDetectionCrossCacheTest.class,
+    TxPessimisticDeadlockDetectionTest.class,
+    TxPessimisticDeadlockDetectionCrossCacheTest.class,
+    //TxDeadlockCauseTest.class,
+    TxDeadlockDetectionTest.class,
+    TxDeadlockDetectionNoHangsTest.class,
+    TxDeadlockDetectionUnmasrhalErrorsTest.class,
+    TxDeadlockDetectionMessageMarshallingTest.class
+})
+public class TxDeadlockDetectionTestSuite {
 }

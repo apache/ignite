@@ -27,6 +27,13 @@ public class NodeStoppingException extends IgniteCheckedException {
     private static final long serialVersionUID = 0L;
 
     /**
+     * @param cause Original node stopping cause.
+     */
+    public NodeStoppingException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
      * @param msg Exception message.
      */
     public NodeStoppingException(String msg) {

@@ -20,7 +20,6 @@ package org.apache.ignite.cache.affinity;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,10 +27,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -39,9 +36,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODE_CNT = 4;
 
@@ -52,58 +46,43 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
     private static final String CACHE2 = "cache2";
 
     /** */
-    private static final String CACHE3 = "cache3";
-
-    /** */
     private static final String CACHE4 = "cache4";
 
     /** */
     private static final String CACHE5 = "cache5";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg1.setBackups(1);
         ccfg1.setName(CACHE1);
         ccfg1.setAffinity(new RendezvousAffinityFunction());
         ccfg1.setNodeFilter(new TestNodesFilter());
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration ccfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg2.setBackups(1);
         ccfg2.setName(CACHE2);
         ccfg2.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration ccfg3 = new CacheConfiguration();
-
-        ccfg3.setBackups(1);
-        ccfg3.setName(CACHE3);
-        ccfg3.setAffinity(new FairAffinityFunction());
-        ccfg3.setNodeFilter(new TestNodesFilter());
-
-        CacheConfiguration ccfg4 = new CacheConfiguration();
+        CacheConfiguration ccfg4 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg4.setCacheMode(REPLICATED);
         ccfg4.setName(CACHE4);
         ccfg4.setNodeFilter(new TestNodesFilter());
 
-        CacheConfiguration ccfg5 = new CacheConfiguration();
+        CacheConfiguration ccfg5 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg5.setBackups(1);
         ccfg5.setName(CACHE5);
 
-        if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
-            cfg.setClientMode(true);
-
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODE_CNT - 1)))
             cfg.setCacheConfiguration(ccfg5);
-        }
         else
-            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3, ccfg4);
+            cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg4);
 
         return cfg;
     }
@@ -114,23 +93,17 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(NODE_CNT - 1);
 
-        startGrid(NODE_CNT - 1); // Start client after servers.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        startClientGrid(NODE_CNT - 1); // Start client after servers.
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNodeNotInAffinity() throws Exception {
         checkCache(CACHE1, 2);
 
         checkCache(CACHE2, 2);
-
-        checkCache(CACHE3, 2);
 
         checkCache(CACHE4, 3);
 
@@ -138,7 +111,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
 
         Ignite client = ignite(NODE_CNT - 1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(0);
 
@@ -147,7 +120,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = client.createCache(ccfg);
 
         try {
-            checkCache(null, 1);
+            checkCache(DEFAULT_CACHE_NAME, 1);
         }
         finally {
             cache.destroy();
@@ -156,7 +129,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         cache = client.createCache(ccfg, new NearCacheConfiguration());
 
         try {
-            checkCache(null, 1);
+            checkCache(DEFAULT_CACHE_NAME, 1);
         }
         finally {
             cache.destroy();

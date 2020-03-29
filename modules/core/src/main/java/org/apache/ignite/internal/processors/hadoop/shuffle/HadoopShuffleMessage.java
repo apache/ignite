@@ -23,6 +23,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -36,6 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Shuffle message.
  */
+@IgniteCodeGeneratingFail
 public class HadoopShuffleMessage implements Message, HadoopMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -213,7 +215,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("msgId", msgId))
+                if (!writer.writeByteArray("buf", this.buf))
                     return false;
 
                 writer.incrementState();
@@ -225,19 +227,19 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("reducer", reducer))
+                if (!writer.writeLong("msgId", msgId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("buf", this.buf))
+                if (!writer.writeInt("off", off))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeInt("off", off))
+                if (!writer.writeInt("reducer", reducer))
                     return false;
 
                 writer.incrementState();
@@ -256,7 +258,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
 
         switch (reader.state()) {
             case 0:
-                msgId = reader.readLong("msgId");
+                this.buf = reader.readByteArray("buf");
 
                 if (!reader.isLastRead())
                     return false;
@@ -272,7 +274,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 2:
-                reducer = reader.readInt("reducer");
+                msgId = reader.readLong("msgId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -280,7 +282,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 3:
-                this.buf = reader.readByteArray("buf");
+                off = reader.readInt("off");
 
                 if (!reader.isLastRead())
                     return false;
@@ -288,7 +290,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
                 reader.incrementState();
 
             case 4:
-                off = reader.readInt("off");
+                reducer = reader.readInt("reducer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -301,7 +303,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -37;
     }
 

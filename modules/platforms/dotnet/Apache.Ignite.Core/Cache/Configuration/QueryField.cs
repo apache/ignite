@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,7 +21,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
 
@@ -41,7 +43,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public QueryField()
         {
-            // No-op.
+            Precision = -1;
+            Scale = -1;
         }
 
         /// <summary>
@@ -49,7 +52,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="javaFieldTypeName">Java type name.</param>
-        public QueryField(string name, string javaFieldTypeName)
+        public QueryField(string name, string javaFieldTypeName): this()
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNullOrEmpty(javaFieldTypeName, "typeName");
@@ -63,13 +66,53 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="fieldType">Type.</param>
-        public QueryField(string name, Type fieldType)
+        public QueryField(string name, Type fieldType): this()
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(fieldType, "type");
 
             Name = name;
             FieldType = fieldType;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryField"/> class.
+        /// </summary>
+        internal QueryField(IBinaryRawReader reader, ClientProtocolVersion srvVer)
+        {
+            Debug.Assert(reader != null);
+
+            Name = reader.ReadString();
+            FieldTypeName = reader.ReadString();
+            IsKeyField = reader.ReadBoolean();
+            NotNull = reader.ReadBoolean();
+            DefaultValue = reader.ReadObject<object>();
+
+            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            {
+                Precision = reader.ReadInt();
+                Scale = reader.ReadInt();
+            }
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
+        {
+            Debug.Assert(writer != null);
+
+            writer.WriteString(Name);
+            writer.WriteString(FieldTypeName);
+            writer.WriteBoolean(IsKeyField);
+            writer.WriteBoolean(NotNull);
+            writer.WriteObject(DefaultValue);
+
+            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            {
+                writer.WriteInt(Precision);
+                writer.WriteInt(Scale);
+            }
         }
 
         /// <summary>
@@ -89,7 +132,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 FieldTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetSqlTypeName(value));
 
                 _type = value;
             }
@@ -115,6 +158,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool IsKeyField { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether null value is allowed for the field.
+        /// </summary>
+        public bool NotNull { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default value for the field.
+        /// </summary>
+        public object DefaultValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets the precision for the field.
+        /// </summary>
+        public int Precision { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scale for the field.
+        /// </summary>
+        public int Scale { get; set; }
+
+        /// <summary>
         /// Validates this instance and outputs information to the log, if necessary.
         /// </summary>
         internal void Validate(ILogger log, string logInfo)
@@ -125,6 +188,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
             logInfo += string.Format(", QueryField '{0}'", Name);
 
             JavaTypes.LogIndirectMappingWarning(_type, log, logInfo);
+        }
+
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        internal void CopyLocalProperties(QueryField field)
+        {
+            Debug.Assert(field != null);
+
+            if (field._type != null)
+            {
+                _type = field._type;
+            }
         }
     }
 }

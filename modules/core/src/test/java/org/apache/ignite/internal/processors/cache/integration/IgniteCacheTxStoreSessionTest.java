@@ -23,11 +23,15 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -38,6 +42,19 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstractTest {
+    /** */
+    @Before
+    public void beforeIgniteCacheTxStoreSessionTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        return super.cacheConfiguration(igniteInstanceName);
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -61,6 +78,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreSessionTx() throws Exception {
         testTxPut(jcache(0), null, null);
 
@@ -110,9 +128,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             cache.remove(key3);
 
-            expData.add(new ExpectedData(true, "writeAll", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "delete", F.<Object, Object>asMap(0, "writeAll"), null));
-            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "writeAll", 1, "delete"), null));
+            expData.add(new ExpectedData(true, "writeAll", new HashMap<>(), DEFAULT_CACHE_NAME));
+            expData.add(new ExpectedData(true, "delete", F.<Object, Object>asMap(0, "writeAll"), DEFAULT_CACHE_NAME));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "writeAll", 1, "delete"), DEFAULT_CACHE_NAME));
 
             log.info("Do tx commit.");
 
@@ -206,8 +224,8 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             cache.remove(key1, key1);
 
-            expData.add(new ExpectedData(true, "delete", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "delete"), null));
+            expData.add(new ExpectedData(true, "delete", new HashMap<>(), DEFAULT_CACHE_NAME));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "delete"), DEFAULT_CACHE_NAME));
 
             log.info("Do tx commit.");
 
@@ -228,8 +246,8 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             cache.remove(key3, key3);
 
-            expData.add(new ExpectedData(true, "deleteAll", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "deleteAll"), null));
+            expData.add(new ExpectedData(true, "deleteAll", new HashMap<>(), DEFAULT_CACHE_NAME));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "deleteAll"), DEFAULT_CACHE_NAME));
 
             log.info("Do tx commit.");
 
@@ -256,8 +274,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionCrossCacheTx() throws Exception {
-        IgniteCache<Object, Object> cache0 = ignite(0).cache(null);
+        IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         IgniteCache<Object, Object> cache1 = ignite(0).cache(CACHE_NAME1);
 
@@ -269,9 +288,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             cache1.put(key2, 0);
 
-            expData.add(new ExpectedData(true, "write", new HashMap<>(), null));
+            expData.add(new ExpectedData(true, "write", new HashMap<>(), DEFAULT_CACHE_NAME));
             expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), CACHE_NAME1));
-            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
+            expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), DEFAULT_CACHE_NAME));
 
             tx.commit();
         }
@@ -284,7 +303,7 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
             cache0.put(key2, 0);
 
             expData.add(new ExpectedData(true, "write", new HashMap<>(), CACHE_NAME1));
-            expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), null));
+            expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), DEFAULT_CACHE_NAME));
             expData.add(new ExpectedData(true, "sessionEnd", F.<Object, Object>asMap(0, "write", 1, "write"), CACHE_NAME1));
 
             tx.commit();

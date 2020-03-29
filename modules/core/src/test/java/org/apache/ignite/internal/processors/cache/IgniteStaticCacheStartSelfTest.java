@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests cache deploy on topology from static configuration.
@@ -37,11 +38,11 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
     private boolean hasCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (hasCache) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(CacheMode.PARTITIONED);
             ccfg.setBackups(1);
@@ -58,6 +59,7 @@ public class IgniteStaticCacheStartSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployCacheOnNodeStart() throws Exception {
         startGrids(3);
 

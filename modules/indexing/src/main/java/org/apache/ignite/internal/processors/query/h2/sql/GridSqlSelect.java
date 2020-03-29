@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
@@ -55,6 +57,9 @@ public class GridSqlSelect extends GridSqlQuery {
 
     /** */
     private int havingCol = -1;
+
+    /** */
+    private boolean isForUpdate;
 
     /**
      * @param colIdx Column index as for {@link #column(int)}.
@@ -167,6 +172,9 @@ public class GridSqlSelect extends GridSqlQuery {
 
         getSortLimitSQL(buff);
 
+        if (isForUpdate)
+            buff.append("\nFOR UPDATE");
+
         return buff.toString();
     }
 
@@ -174,7 +182,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @return {@code True} if this simple SQL query like 'SELECT A, B, C from SOME_TABLE' without any conditions
      *      and expressions.
      */
-    @Override public boolean simpleQuery() {
+    @Override public boolean skipMergeTable() {
         boolean simple = !distinct &&
             from instanceof GridSqlTable &&
             where == null &&
@@ -364,9 +372,69 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /**
+     * @return Whether this statement is {@code FOR UPDATE}.
+     */
+    public boolean isForUpdate() {
+        return isForUpdate;
+    }
+
+    /**
+     * @param forUpdate Whether this statement is {@code FOR UPDATE}.
+     */
+    public void forUpdate(boolean forUpdate) {
+        isForUpdate = forUpdate;
+    }
+
+    /**
      * @return Index of HAVING column.
      */
     public int havingColumn() {
         return havingCol;
+    }
+
+    /**
+     * Collect aliases from FROM part.
+     *
+     * @param aliases Table aliases in FROM.
+     */
+    public void collectFromAliases(Set<GridSqlAlias> aliases) {
+        GridSqlAst from = from();
+
+        if (from == null)
+            return;
+
+        while (from instanceof GridSqlJoin) {
+            GridSqlElement right = ((GridSqlJoin)from).rightTable();
+
+            aliases.add((GridSqlAlias)right);
+
+            from = ((GridSqlJoin)from).leftTable();
+        }
+
+        aliases.add((GridSqlAlias)from);
+    }
+
+    /**
+     * @return Copy of this select for SELECT FOR UPDATE specific tasks.
+     */
+    public GridSqlSelect copySelectForUpdate() {
+        assert isForUpdate && !distinct && havingCol < 0 && grpCols == null; // Not supported by SFU.
+
+        GridSqlSelect copy = new GridSqlSelect();
+
+        copy.from(from())
+            .where(where());
+
+        int vis = visibleColumns();
+
+        for (int i = 0; i < columns(false).size(); i++)
+            copy.addColumn(column(i), i < vis);
+
+        if (!sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : sort())
+                copy.addSort(sortCol);
+        }
+
+        return copy;
     }
 }

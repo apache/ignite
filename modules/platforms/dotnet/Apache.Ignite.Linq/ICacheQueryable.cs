@@ -37,6 +37,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets the Ignite instance associated with this query.
         /// </summary>
+        [Obsolete("Deprecated, null for thin client.")]
         IIgnite Ignite { get; }
 
         /// <summary>

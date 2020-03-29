@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/impl/interop/interop.h"
@@ -151,6 +147,24 @@ BOOST_AUTO_TEST_CASE(TestDate)
     InteropInputStream in(&mem);
     BinaryReaderImpl reader(&in);
     Date readVal = reader.ReadTopObject<Date>();
+
+    BOOST_REQUIRE(readVal == writeVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestTime)
+{
+    Time writeVal = Time(42);
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writeSes(&out, NULL);
+    writeSes.WriteTopObject<Time>(writeVal);
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    Time readVal = reader.ReadTopObject<Time>();
 
     BOOST_REQUIRE(readVal == writeVal);
 }

@@ -1,0 +1,36 @@
+apache-ignite (2.7.6-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.7.6
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Tue, 10 Sep 2019 11:00:13 +0300
+
+apache-ignite (2.7.5-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.7.5
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Fri, 12 Apr 2019 17:57:44 +0300
+
+apache-ignite (2.7.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.7.0
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Thu, 26 Jul 2018 12:00:00 +0300
+
+apache-ignite (2.6.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.6.0
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Fri, 15 Jun 2018 12:00:00 +0300
+
+apache-ignite (2.5.0-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.5.0
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Tue, 17 Apr 2018 12:00:00 +0300
+
+apache-ignite (2.4.0-1) unstable; urgency=low
+
+  * Initial package release
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Wed, 17 Jan 2018 12:00:00 +0300
+

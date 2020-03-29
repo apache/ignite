@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -87,7 +88,7 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
+    @Override public V value(CacheObjectValueContext ctx) {
         return value(keepBinary);
     }
 
@@ -97,7 +98,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
      * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
-    @SuppressWarnings("unchecked")
     public V value(boolean keepBinary) {
         if (val == null)
             val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
@@ -108,6 +108,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLazyPlainVersionedEntry.class, this,
-            "super", super.toString(), "key", key(), "val", value());
+            "super", super.toString(), "key", key(), "val", value(keepBinary));
     }
 }

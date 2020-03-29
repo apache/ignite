@@ -23,10 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,9 +85,8 @@ import org.jetbrains.annotations.Nullable;
  * <h1 class="header">Cluster Node Metrics</h1>
  * Cluster node metrics (see {@link #metrics()}) are updated frequently for all nodes
  * and can be used to get dynamic information about a node. The frequency of update
- * is often directly related to the heartbeat exchange between nodes. So if, for example,
- * default {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} is used,
- * the metrics data will be updated every {@code 2} seconds by default.
+ * is controlled by  {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+ * The metrics data will be updated every {@code 2} seconds by default.
  * <p>
  * Grid node metrics provide information that can frequently change,
  * such as Heap and Non-Heap memory utilization, CPU load, number of active and waiting
@@ -102,7 +99,7 @@ import org.jetbrains.annotations.Nullable;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterNode {
+public interface ClusterNode extends BaselineNode {
     /**
      * Gets globally unique node ID. A new ID is generated every time a node restarts.
      *
@@ -116,7 +113,7 @@ public interface ClusterNode {
      *
      * @return Consistent globally unique node ID.
      */
-    public Object consistentId();
+    @Override public Object consistentId();
 
     /**
      * Gets a node attribute. Attributes are assigned to nodes at startup
@@ -136,7 +133,7 @@ public interface ClusterNode {
      *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
-    @Nullable public <T> T attribute(String name);
+    @Override @Nullable public <T> T attribute(String name);
 
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
@@ -145,9 +142,9 @@ public interface ClusterNode {
      * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
-     * Node metrics are updated with some delay which is directly related to heartbeat
-     * frequency. For example, when used with default
-     * {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi} the update will happen every {@code 2} seconds.
+     * Node metrics are updated with some delay which is controlled by
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency()} parameter.
+     * By default the update will happen every {@code 2} seconds.
      *
      * @return Runtime metrics snapshot for this node.
      */
@@ -168,7 +165,7 @@ public interface ClusterNode {
      *
      * @return All node attributes.
      */
-    public Map<String, Object> attributes();
+    @Override public Map<String, Object> attributes();
 
     /**
      * Gets collection of addresses this node is known by.
@@ -246,17 +243,11 @@ public interface ClusterNode {
     public boolean isDaemon();
 
     /**
-     * Tests whether or not this node is connected to cluster as a client.
-     * <p>
-     * Do not confuse client in terms of
-     * discovery {@link DiscoverySpi#isClientMode()} and client in terms of cache
-     * {@link IgniteConfiguration#isClientMode()}. Cache clients cannot carry data,
-     * while topology clients connect to topology in a different way.
+     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
      *
-     * @return {@code True} if this node is a client node, {@code false} otherwise.
+     * @return {@code True if client}.
+     *
      * @see IgniteConfiguration#isClientMode()
-     * @see Ignition#isClientMode()
-     * @see DiscoverySpi#isClientMode()
      */
     public boolean isClient();
 }

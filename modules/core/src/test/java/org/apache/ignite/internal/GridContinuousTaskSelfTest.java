@@ -28,7 +28,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -55,7 +54,9 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Continuous task test.
@@ -71,19 +72,14 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsChain() throws Exception {
         try {
             Ignite ignite = startGrid(0);
 
-            IgniteCompute comp = ignite.compute().withAsync();
+            ComputeTaskFuture<Integer> fut1 = ignite.compute().executeAsync(TestJobsChainTask.class, true);
 
-            comp.execute(TestJobsChainTask.class, true);
-
-            ComputeTaskFuture<Integer> fut1 = comp.future();
-
-            comp.execute(TestJobsChainTask.class, false);
-
-            ComputeTaskFuture<Integer> fut2 = comp.future();
+            ComputeTaskFuture<Integer> fut2 = ignite.compute().executeAsync(TestJobsChainTask.class, false);
 
             assert fut1.get() == 55;
             assert fut2.get() == 55;
@@ -96,6 +92,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsChainMultiThreaded() throws Exception {
         try {
             final Ignite ignite = startGrid(0);
@@ -105,15 +102,9 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 /** {@inheritDoc} */
                 @Override public void run() {
                     try {
-                        IgniteCompute comp = ignite.compute().withAsync();
+                        ComputeTaskFuture<Integer> fut1 = ignite.compute().executeAsync(TestJobsChainTask.class, true);
 
-                        comp.execute(TestJobsChainTask.class, true);
-
-                        ComputeTaskFuture<Integer> fut1 = comp.future();
-
-                        comp.execute(TestJobsChainTask.class, false);
-
-                        ComputeTaskFuture<Integer> fut2 = comp.future();
+                        ComputeTaskFuture<Integer> fut2 = ignite.compute().executeAsync(TestJobsChainTask.class, false);
 
                         assert fut1.get() == 55;
                         assert fut2.get() == 55;
@@ -134,6 +125,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobsSessionChain() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -150,6 +142,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousSlowMap() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -167,6 +160,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testClearTimeouts() throws Exception {
         int holdccTimeout = 4000;
 
@@ -189,6 +183,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultipleHoldccCalls() throws Exception {
         try {
             Ignite grid = startGrid(0);
@@ -203,6 +198,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testClosureWithNestedInternalTask() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);
@@ -228,7 +224,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @GridInternal
     public static class NestedHoldccTask extends ComputeTaskAdapter<String, String> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
@@ -366,7 +362,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean arg) {
             assert mapper != null;
             assert arg != null;
 
@@ -542,7 +538,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             mapper.send(new TestJob(++cnt));
 
             try {

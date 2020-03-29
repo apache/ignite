@@ -17,11 +17,15 @@
 
 package org.apache.ignite.binary;
 
+import java.io.Serializable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -30,7 +34,10 @@ import org.jetbrains.annotations.Nullable;
  * However, this class allows you to change configuration properties for a specific
  * binary type without affecting configuration for other binary types.
  */
-public class BinaryTypeConfiguration {
+public class BinaryTypeConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Class name. */
     private String typeName;
 
@@ -43,11 +50,11 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
-    /** Identity. */
-    private BinaryIdentityResolver identityRslvr;
-
     /** Enum flag. */
     private boolean isEnum;
+
+    /** Enum names to ordinals mapping. */
+    private Map<String, Integer> enumValues;
 
     /**
      * Constructor.
@@ -64,10 +71,10 @@ public class BinaryTypeConfiguration {
     public BinaryTypeConfiguration(BinaryTypeConfiguration other) {
         A.notNull(other, "other");
 
-        identityRslvr = other.identityRslvr;
         idMapper = other.idMapper;
         isEnum = other.isEnum;
         serializer = other.serializer;
+        enumValues = other.enumValues != null ? new LinkedHashMap<>(other.enumValues) : null;
         typeName = other.typeName;
     }
 
@@ -91,9 +98,12 @@ public class BinaryTypeConfiguration {
      * Sets type name.
      *
      * @param typeName Type name.
+     * @return {@code this} for chaining.
      */
-    public void setTypeName(String typeName) {
+    public BinaryTypeConfiguration setTypeName(String typeName) {
         this.typeName = typeName;
+
+        return this;
     }
 
     /**
@@ -109,9 +119,12 @@ public class BinaryTypeConfiguration {
      * Sets ID mapper.
      *
      * @param idMapper ID mapper.
+     * @return {@code this} for chaining.
      */
-    public void setIdMapper(BinaryIdMapper idMapper) {
+    public BinaryTypeConfiguration setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+
+        return this;
     }
 
     /**
@@ -127,9 +140,12 @@ public class BinaryTypeConfiguration {
      * Sets name mapper.
      *
      * @param nameMapper Name mapper.
+     * @return {@code this} for chaining.
      */
-    public void setNameMapper(BinaryNameMapper nameMapper) {
+    public BinaryTypeConfiguration setNameMapper(BinaryNameMapper nameMapper) {
         this.nameMapper = nameMapper;
+
+        return this;
     }
 
     /**
@@ -145,27 +161,12 @@ public class BinaryTypeConfiguration {
      * Sets serializer.
      *
      * @param serializer Serializer.
+     * @return {@code this} for chaining.
      */
-    public void setSerializer(BinarySerializer serializer) {
+    public BinaryTypeConfiguration setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
-    }
 
-    /**
-     * Gets identity resolver.
-     *
-     * @return Identity resolver.
-     */
-    @Nullable public BinaryIdentityResolver getIdentityResolver() {
-        return identityRslvr;
-    }
-
-    /**
-     * Sets identity resolver.
-     *
-     * @param identityRslvr Identity resolver.
-     */
-    public void setIdentityResolver(@Nullable BinaryIdentityResolver identityRslvr) {
-        this.identityRslvr = identityRslvr;
+        return this;
     }
 
     /**
@@ -181,9 +182,31 @@ public class BinaryTypeConfiguration {
      * Sets whether this is enum type.
      *
      * @param isEnum {@code True} if enum.
+     * @return {@code this} for chaining.
      */
-    public void setEnum(boolean isEnum) {
+    public BinaryTypeConfiguration setEnum(boolean isEnum) {
         this.isEnum = isEnum;
+
+        return this;
+    }
+
+    /**
+     * Set enum ordinal to names mapping.
+     *
+     * @param values Map of enum name to ordinal.
+     * @return {@code this} for chaining.
+     */
+    public BinaryTypeConfiguration setEnumValues(@Nullable Map<String, Integer> values) {
+        this.enumValues = values;
+
+        return this;
+    }
+
+    /**
+     * @return Enum name to ordinal mapping
+     */
+    @Nullable public Map<String, Integer> getEnumValues() {
+        return enumValues;
     }
 
     /** {@inheritDoc} */

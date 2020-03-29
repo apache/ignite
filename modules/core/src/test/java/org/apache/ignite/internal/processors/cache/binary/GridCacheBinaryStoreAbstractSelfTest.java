@@ -31,20 +31,15 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
+import org.junit.Test;
 
 /**
  * Tests for cache store with binary.
  */
 public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final TestStore STORE = new TestStore();
 
@@ -53,8 +48,8 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
@@ -67,7 +62,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheStoreFactory(singletonFactory(STORE));
         cacheCfg.setStoreKeepBinary(keepBinaryInStore());
@@ -76,12 +71,6 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
         cacheCfg.setLoadPreviousValue(true);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         GridCacheBinaryStoreAbstractSelfTest.cfg = cfg;
 
@@ -99,11 +88,6 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         STORE.map().clear();
 
@@ -115,6 +99,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
         jcache().put(new Key(1), new Value(1));
 
@@ -124,6 +109,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
         Map<Object, Object> map = new HashMap<>();
 
@@ -138,6 +124,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoad() throws Exception {
         populateMap(STORE.map(), 1);
 
@@ -151,6 +138,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         populateMap(STORE.map(), 1, 2, 3);
 
@@ -175,6 +163,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         for (int i = 1; i <= 3; i++)
             jcache().put(new Key(i), new Value(i));
@@ -187,6 +176,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAll() throws Exception {
         for (int i = 1; i <= 3; i++)
             jcache().put(new Key(i), new Value(i));
@@ -283,7 +273,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
      */
     private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
-        private final Map<Object, Object> map = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {

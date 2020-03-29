@@ -18,4 +18,5 @@
 /**
  * Contains implementation of Flume Sink.
  */
+
 package org.apache.ignite.stream.flume;

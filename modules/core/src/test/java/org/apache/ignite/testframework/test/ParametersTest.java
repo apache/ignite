@@ -19,19 +19,25 @@ package org.apache.ignite.testframework.test;
 
 import java.util.HashSet;
 import java.util.Set;
-import junit.framework.TestCase;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.Parameters;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test.
  */
-public class ParametersTest extends TestCase {
+public class ParametersTest {
+    /** */
+    private static final String DEFAULT_CACHE_NAME = "default";
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumVariations() throws Exception {
         ConfigParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
 
@@ -40,7 +46,7 @@ public class ParametersTest extends TestCase {
         Set<CacheMode> res = new HashSet<>();
 
         for (ConfigParameter<CacheConfiguration> modeApplier : modes) {
-            CacheConfiguration cfg = new CacheConfiguration();
+            CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             modeApplier.apply(cfg);
 
@@ -57,7 +63,7 @@ public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testEnumVariationsWithNull() throws Exception {
         ConfigParameter<CacheConfiguration>[] cfgParam =
             Parameters.enumParameters(true, "setCacheMode", CacheMode.class);
@@ -71,7 +77,7 @@ public class ParametersTest extends TestCase {
         for (int i = 1; i < cfgParam.length; i++) {
             ConfigParameter<CacheConfiguration> modeApplier = cfgParam[i];
 
-            CacheConfiguration cfg = new CacheConfiguration();
+            CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             modeApplier.apply(cfg);
 

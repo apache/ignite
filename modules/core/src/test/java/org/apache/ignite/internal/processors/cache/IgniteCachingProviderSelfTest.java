@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CachingProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
 
 /**
  *
@@ -54,17 +55,17 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName(int idx) {
+    @Override public String getTestIgniteInstanceName(int idx) {
         assert idx == 0;
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        assert gridName == null;
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        assert igniteInstanceName == null;
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache1 = cacheConfiguration(null);
         cache1.setName("cache1");
@@ -84,12 +85,17 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        try {
+            Caching.getCachingProvider().close();
+        } finally {
+            stopAllGrids();
+        }
     }
 
     /**
      *
      */
+    @Test
     public void testStartIgnite() {
         javax.cache.spi.CachingProvider cachingProvider = Caching.getCachingProvider();
 
@@ -118,6 +124,7 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseManager() throws Exception {
         startGridsMultiThreaded(1);
 

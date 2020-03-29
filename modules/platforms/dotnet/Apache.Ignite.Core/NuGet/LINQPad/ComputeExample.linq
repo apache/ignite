@@ -5,6 +5,7 @@
   <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
   <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
   <Namespace>Apache.Ignite.Core.Compute</Namespace>
+  <Namespace>Apache.Ignite.Core.Deployment</Namespace>
 </Query>
 
 /*
@@ -35,9 +36,23 @@ void Main()
 {
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
+
+	// Enable peer assembly loading.
+	// This example can be run with standalone nodes started with Apache.Ignite.exe.
+	// To download and start a standalone node from NuGet:
+	// 1) > nuget install Apache.Ignite
+	// 2) > cd Apache.Ignite*\lib\net40
+	// 3) Enable peer assembly loading in Apache.Ignite.exe.config: 
+	//    <igniteConfiguration peerAssemblyLoadingMode='CurrentAppDomain'>
+	// 4) Run Apache.Ignite.exe	(one or more times)
+	// 5) Start this example, check output in the standalone node`s console	
+	var cfg = new IgniteConfiguration 
+	{
+		PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain 
+	};
 	
 	// Start instance
-    using (var ignite = Ignition.Start())
+    using (var ignite = Ignition.Start(cfg))
 	{
 		// Split the string by spaces to count letters in each word in parallel.
 		var words = "Count characters using closure".Split();
@@ -57,7 +72,6 @@ void Main()
 /// <summary>
 /// Closure counting characters in a string.
 /// </summary>
-[Serializable]
 public class CharacterCountClosure : IComputeFunc<string, int>
 {
 	/// <summary>

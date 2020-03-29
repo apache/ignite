@@ -27,10 +27,8 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -39,24 +37,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Grid cache concurrent hash map self test.
  */
 public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(LOCAL);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setStartSize(4);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cc);
 
@@ -76,8 +64,9 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehash() throws Exception {
-        IgniteCache<Integer, String> c = grid().cache(null);
+        IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
         int cnt = 100 * 1024;
 
@@ -107,8 +96,9 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehashRandom() throws Exception {
-        IgniteCache<Integer, String> c = grid().cache(null);
+        IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
         int cnt = 100 * 1024;
 
@@ -146,6 +136,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehashMultithreaded1() throws Exception {
         final AtomicInteger tidGen = new AtomicInteger();
 
@@ -156,7 +147,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> c = grid().cache(null);
+                IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
                 int tid = tidGen.getAndIncrement();
 
@@ -218,6 +209,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRehashMultithreaded2() throws Exception {
         final AtomicInteger tidGen = new AtomicInteger(0);
 
@@ -228,7 +220,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, String> c = grid().cache(null);
+                IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
                 int tid = tidGen.getAndIncrement();
 
@@ -311,9 +303,9 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ResultOfObjectAllocationIgnored")
+    @Test
     public void testEmptyWeakIterator() throws Exception {
-        final IgniteCache<Integer, String> c = grid().cache(null);
+        final IgniteCache<Integer, String> c = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 10; i++) {
             multithreaded(new Callable<Object>() {

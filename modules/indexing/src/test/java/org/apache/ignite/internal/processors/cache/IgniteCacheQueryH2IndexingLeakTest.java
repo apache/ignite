@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,12 +28,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
@@ -51,7 +54,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int THREAD_COUNT = 10;
 
     /** Timeout */
-    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 1000;
+    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 500;
 
     /** Orig cleanup period. */
     private static String origCacheCleanupPeriod;
@@ -63,8 +66,8 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int ITERATIONS = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -106,8 +109,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD,
             origCacheCleanupPeriod != null ? origCacheCleanupPeriod : "");
 
@@ -120,19 +121,22 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
-        IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
+        IgniteH2Indexing h2Idx = (IgniteH2Indexing)qryProcessor.getIndexing();
 
-        ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "stmtCache");
+        Map<Thread, ConcurrentMap<H2ConnectionWrapper, Boolean>> conns = h2Idx.connections().connectionsForThread();
 
-        return stmtCache.size();
+        return conns.values().stream()
+            .mapToInt(set ->
+                set.keySet().stream()
+                    .mapToInt(H2ConnectionWrapper::statementCacheSize).sum()).sum();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for(int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
@@ -142,10 +146,10 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Open iterator on the created cursor: add entries to the cache.
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
                         while (!stop.get()) {
                             c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
-
                             c.query(new SqlQuery(Integer.class, "_val >= 1")).getAll();
                         }
                     }
@@ -157,7 +161,11 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 // Wait for stmt cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return getStatementCacheSize(qryProc) == THREAD_COUNT;
+                        // '>' case is for lazy query flag turned on - in this case, there's more threads
+                        // than those run by test explicitly, and we can't rely on exact number.
+                        // Still the main check for this test is that all threads, no matter how many of them
+                        // is out there, are terminated and their statement caches are cleaned up.
+                        return getStatementCacheSize(qryProc) >= THREAD_COUNT;
                     }
                 }, STMT_CACHE_CLEANUP_TIMEOUT));
             }
@@ -172,15 +180,16 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return getStatementCacheSize(qryProc) == 0;
                 }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
+            }, STMT_CACHE_CLEANUP_TIMEOUT * 10));
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -190,6 +199,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Open iterator on the created cursor: add entries to the cache
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
+                    @SuppressWarnings("unchecked")
                     @Override public void applyx() throws IgniteCheckedException {
                         c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 

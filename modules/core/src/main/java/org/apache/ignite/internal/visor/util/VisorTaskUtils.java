@@ -23,14 +23,19 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,35 +46,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEventV2;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
 import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -109,6 +114,18 @@ public class VisorTaskUtils {
     public static final int LOG_FILES_COUNT_LIMIT = 5000;
 
     /** */
+    public static final int NOTHING_TO_REBALANCE = -1;
+
+    /** */
+    public static final int REBALANCE_NOT_AVAILABLE = -2;
+
+    /** */
+    public static final double MINIMAL_REBALANCE = 0.01;
+
+    /** */
+    public static final int REBALANCE_COMPLETE = 1;
+
+    /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
 
     /** Only task event types that Visor should collect. */
@@ -142,7 +159,7 @@ public class VisorTaskUtils {
     /** Comparator for log files by last modified date. */
     private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
         @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
-            return Long.compare(f2.lastModified(), f1.lastModified());
+            return Long.compare(f2.getLastModified(), f1.getLastModified());
         }
     };
 
@@ -259,7 +276,7 @@ public class VisorTaskUtils {
                     sb.append(", ");
             }
 
-            sb.append("]");
+            sb.append(']');
 
             return sb.toString();
         }
@@ -294,6 +311,26 @@ public class VisorTaskUtils {
     }
 
     /**
+     * Compact classes names.
+
+     * @param clss Classes to compact.
+     * @return Compacted string.
+     */
+    @Nullable public static List<String> compactClasses(Class<?>[] clss) {
+        if (clss == null)
+            return null;
+
+        int len = clss.length;
+
+        List<String> res = new ArrayList<>(len);
+
+        for (Class<?> cls: clss)
+            res.add(U.compact(cls.getName()));
+
+        return res;
+    }
+
+    /**
      * Joins array elements to string.
      *
      * @param arr Array.
@@ -308,6 +345,29 @@ public class VisorTaskUtils {
         StringBuilder sb = new StringBuilder();
 
         for (Object s : arr)
+            sb.append(s).append(sep);
+
+        if (sb.length() > 0)
+            sb.setLength(sb.length() - sep.length());
+
+        return U.compact(sb.toString());
+    }
+
+    /**
+     * Joins iterable collection elements to string.
+     *
+     * @param col Iterable collection.
+     * @return String.
+     */
+    @Nullable public static String compactIterable(Iterable col) {
+        if (col == null || !col.iterator().hasNext())
+            return null;
+
+        String sep = ", ";
+
+        StringBuilder sb = new StringBuilder();
+
+        for (Object s : col)
             sb.append(s).append(sep);
 
         if (sb.length() > 0)
@@ -390,17 +450,6 @@ public class VisorTaskUtils {
     /** Mapper from grid event to Visor data transfer object. */
     public static final VisorEventMapper EVT_MAPPER = new VisorEventMapper();
 
-    /** Mapper from grid event to Visor data transfer object. */
-    public static final VisorEventMapper EVT_MAPPER_V2 = new VisorEventMapper() {
-        @Override protected VisorGridEvent discoveryEvent(DiscoveryEvent de, int type, IgniteUuid id, String name,
-            UUID nid, long ts, String msg, String shortDisplay) {
-            ClusterNode node = de.eventNode();
-
-            return new VisorGridDiscoveryEventV2(type, id, name, nid, ts, msg, shortDisplay, node.id(),
-                F.first(node.addresses()), node.isDaemon(), de.topologyVersion());
-        }
-    };
-
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
@@ -432,7 +481,7 @@ public class VisorTaskUtils {
      * @param evtMapper Closure to map grid events to Visor data transfer objects.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
+    public static List<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         int[] evtTypes, IgniteClosure<Event, VisorGridEvent> evtMapper) {
         assert ignite != null;
         assert evtTypes != null && evtTypes.length > 0;
@@ -464,7 +513,9 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<Event> evts = ignite.events().localQuery(p, evtTypes);
+        Collection<Event> evts = ignite.configuration().getEventStorageSpi() instanceof NoopEventStorageSpi
+            ? Collections.<Event>emptyList()
+            : ignite.events().localQuery(p, evtTypes);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
@@ -479,7 +530,7 @@ public class VisorTaskUtils {
 
         boolean lost = !lastFound.get() && throttle == 0;
 
-        Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
+        List<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
             res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
@@ -495,14 +546,45 @@ public class VisorTaskUtils {
     }
 
     /**
+     * @param path Path to resolve only relative to IGNITE_HOME.
+     * @return Resolved path as file, or {@code null} if path cannot be resolved.
+     * @throws IOException If failed to resolve path.
+     */
+    public static File resolveIgnitePath(String path) throws IOException {
+        File folder = U.resolveIgnitePath(path);
+
+        if (folder == null)
+            return null;
+
+        if (!folder.toPath().toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(Paths.get(U.getIgniteHome())))
+            return null;
+
+        return folder;
+    }
+
+    /**
+     * @param file File to resolve.
+     * @return Resolved file if it is a symbolic link or original file.
+     * @throws IOException If failed to resolve symlink.
+     */
+    public static File resolveSymbolicLink(File file) throws IOException {
+        Path path = file.toPath();
+
+        return Files.isSymbolicLink(path) ? Files.readSymbolicLink(path).toFile() : file;
+    }
+
+    /**
      * Finds all files in folder and in it's sub-tree of specified depth.
      *
      * @param file Starting folder
      * @param maxDepth Depth of the tree. If 1 - just look in the folder, no sub-folders.
      * @param filter file filter.
      * @return List of found files.
+     * @throws IOException If failed to list files.
      */
-    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) {
+    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) throws IOException {
+        file = resolveSymbolicLink(file);
+
         if (file.isDirectory()) {
             File[] files = (filter == null) ? file.listFiles() : file.listFiles(filter);
 
@@ -521,16 +603,18 @@ public class VisorTaskUtils {
             return res;
         }
 
-        return F.asList(new VisorLogFile(file));
+        // Return ArrayList, because it could be sorted in matchedFiles() method.
+        return new ArrayList<>(F.asList(new VisorLogFile(file)));
     }
 
     /**
-     * @param fld Folder with files to match.
+     * @param file Folder with files to match.
      * @param ptrn Pattern to match against file name.
      * @return Collection of matched files.
+     * @throws IOException If failed to filter files.
      */
-    public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
-        List<VisorLogFile> files = fileTree(fld, MAX_FOLDER_DEPTH,
+    public static List<VisorLogFile> matchedFiles(File file, final String ptrn) throws IOException {
+        List<VisorLogFile> files = fileTree(file, MAX_FOLDER_DEPTH,
             new FileFilter() {
                 @Override public boolean accept(File f) {
                     return !f.isHidden() && (f.isDirectory() || f.isFile() && f.getName().matches(ptrn));
@@ -645,6 +729,7 @@ public class VisorTaskUtils {
                 raf.seek(pos);
 
                 byte[] buf = new byte[toRead];
+
                 int cntRead = raf.read(buf, 0, toRead);
 
                 if (cntRead != toRead)
@@ -689,15 +774,9 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
-        if (plc instanceof LruEvictionPolicyMBean)
-            return ((LruEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof FifoEvictionPolicyMBean)
-            return ((FifoEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof SortedEvictionPolicyMBean)
-            return ((SortedEvictionPolicyMBean)plc).getMaxSize();
+    public static Integer evictionPolicyMaxSize(@Nullable Factory plc) {
+        if (plc instanceof AbstractEvictionPolicyFactory)
+            return ((AbstractEvictionPolicyFactory) plc).getMaxSize();
 
         return null;
     }
@@ -777,7 +856,7 @@ public class VisorTaskUtils {
      * @param start Start time.
      */
     public static void logFinish(@Nullable IgniteLogger log, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: FINISHED, duration: %s", clazz.getSimpleName(), formatDuration(end - start)));
     }
@@ -790,7 +869,7 @@ public class VisorTaskUtils {
      * @param nodes Mapped nodes.
      */
     public static void logMapped(@Nullable IgniteLogger log, Class<?> clazz, Collection<ClusterNode> nodes) {
-        log0(log, U.currentTimeMillis(),
+        log0(log, System.currentTimeMillis(),
             String.format("[%s]: MAPPED: %s", clazz.getSimpleName(), U.toShortString(nodes)));
     }
 
@@ -804,7 +883,7 @@ public class VisorTaskUtils {
      * @return Time when message was logged.
      */
     public static long log(@Nullable IgniteLogger log, String msg, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
@@ -818,7 +897,7 @@ public class VisorTaskUtils {
      * @param msg Message.
      */
     public static void log(@Nullable IgniteLogger log, String msg) {
-        log0(log, U.currentTimeMillis(), " " + msg);
+        log0(log, System.currentTimeMillis(), " " + msg);
     }
 
     /**
@@ -873,8 +952,6 @@ public class VisorTaskUtils {
         if (cmdFilePath == null || !cmdFilePath.exists())
             throw new FileNotFoundException(String.format("File not found: %s", cmdFile));
 
-        String ignite = cmdFilePath.getCanonicalPath();
-
         File nodesCfgPath = U.resolveIgnitePath(cfgPath);
 
         if (nodesCfgPath == null || !nodesCfgPath.exists())
@@ -887,6 +964,8 @@ public class VisorTaskUtils {
         List<Process> run = new ArrayList<>();
 
         try {
+            String igniteCmd = cmdFilePath.getCanonicalPath();
+
             for (int i = 0; i < nodesToStart; i++) {
                 if (U.isMacOs()) {
                     Map<String, String> macEnv = new HashMap<>(System.getenv());
@@ -915,9 +994,9 @@ public class VisorTaskUtils {
                                     entry.getKey(), val.replace('\n', ' ').replace("'", "\'")));
                     }
 
-                    run.add(openInConsole(envs.toString(), ignite, quitePar, nodeCfg));
+                    run.add(openInConsole(envs.toString(), igniteCmd, quitePar, nodeCfg));
                 } else
-                    run.add(openInConsole(null, envVars, ignite, quitePar, nodeCfg));
+                    run.add(openInConsole(null, envVars, igniteCmd, quitePar, nodeCfg));
             }
 
             return run;
@@ -1048,5 +1127,167 @@ public class VisorTaskUtils {
      */
     public static boolean joinTimedOut(String msg) {
         return msg != null && msg.startsWith("Join process timed out.");
+    }
+
+    /**
+     * Special wrapper over address that can be sorted in following order:
+     *     IPv4, private IPv4, IPv4 local host, IPv6.
+     *     Lower addresses first.
+     */
+    private static class SortableAddress implements Comparable<SortableAddress> {
+        /** */
+        private int type;
+
+        /** */
+        private BigDecimal bits;
+
+        /** */
+        private String addr;
+
+        /**
+         * Constructor.
+         *
+         * @param addr Address as string.
+         */
+        private SortableAddress(String addr) {
+            this.addr = addr;
+
+            if (addr.indexOf(':') > 0)
+                type = 4; // IPv6
+            else {
+                try {
+                    InetAddress inetAddr = InetAddress.getByName(addr);
+
+                    if (inetAddr.isLoopbackAddress())
+                        type = 3;  // localhost
+                    else if (inetAddr.isSiteLocalAddress())
+                        type = 2;  // private IPv4
+                    else
+                        type = 1; // other IPv4
+                }
+                catch (UnknownHostException ignored) {
+                    type = 5;
+                }
+            }
+
+            bits = BigDecimal.valueOf(0L);
+
+            try {
+                String[] octets = addr.contains(".") ? addr.split(".") : addr.split(":");
+
+                int len = octets.length;
+
+                for (int i = 0; i < len; i++) {
+                    long oct = F.isEmpty(octets[i]) ? 0 : Long.valueOf( octets[i]);
+                    long pow = Double.valueOf(Math.pow(256, octets.length - 1 - i)).longValue();
+
+                    bits = bits.add(BigDecimal.valueOf(oct * pow));
+                }
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull SortableAddress o) {
+            return (type == o.type ? bits.compareTo(o.bits) : Integer.compare(type, o.type));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SortableAddress other = (SortableAddress)o;
+
+            return addr != null ? addr.equals(other.addr) : other.addr == null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return addr != null ? addr.hashCode() : 0;
+        }
+
+        /**
+         * @return Address.
+         */
+        public String address() {
+            return addr;
+        }
+    }
+
+    /**
+     * Sort addresses: IPv4 & real addresses first.
+     *
+     * @param addrs Addresses to sort.
+     * @return Sorted list.
+     */
+    public static Collection<String> sortAddresses(Collection<String> addrs) {
+        if (F.isEmpty(addrs))
+            return Collections.emptyList();
+
+        int sz = addrs.size();
+
+        List<SortableAddress> sorted = new ArrayList<>(sz);
+
+        for (String addr : addrs)
+            sorted.add(new SortableAddress(addr));
+
+        Collections.sort(sorted);
+
+        Collection<String> res = new ArrayList<>(sz);
+
+        for (SortableAddress sa : sorted)
+            res.add(sa.address());
+
+        return res;
+    }
+
+    /**
+     * Split addresses.
+     *
+     * @param s String with comma separted addresses.
+     * @return Collection of addresses.
+     */
+    public static Collection<String> splitAddresses(String s) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        String[] addrs = s.split(",");
+
+        for (int i = 0; i < addrs.length; i++)
+            addrs[i] = addrs[i].trim();
+
+        return Arrays.asList(addrs);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name to check.
+     * @return {@code true} if cache on local node is not a data cache or near cache disabled.
+     */
+    public static boolean isProxyCache(IgniteEx ignite, String cacheName) {
+        GridDiscoveryManager discovery = ignite.context().discovery();
+
+        ClusterNode locNode = ignite.localNode();
+
+        return !(discovery.cacheAffinityNode(locNode, cacheName) || discovery.cacheNearNode(locNode, cacheName));
+    }
+
+    /**
+     * Check whether cache restarting in progress.
+     *
+     * @param ignite Grid.
+     * @param cacheName Cache name to check.
+     * @return {@code true} when cache restarting in progress.
+     */
+    public static boolean isRestartingCache(IgniteEx ignite, String cacheName)  {
+        IgniteCacheProxy<Object, Object> proxy = ignite.context().cache().jcache(cacheName);
+
+        return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl) proxy).isRestarting();
     }
 }

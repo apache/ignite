@@ -19,21 +19,23 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -45,7 +47,11 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  */
 public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    @Before
+    public void beforeGridCacheEvictionEventAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+    }
 
     /**
      *
@@ -56,18 +62,17 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         IgniteConfiguration c = super.getConfiguration();
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(atomicityMode());
+        cc.setEvictionPolicy(new FifoEvictionPolicy());
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 
@@ -89,6 +94,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvictionEvent() throws Exception {
         Ignite g = grid();
 
@@ -108,14 +114,12 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteCache<String, String> c = g.cache(null);
+        IgniteCache<String, String> c = g.cache(DEFAULT_CACHE_NAME);
 
         c.put("1", "val1");
 
         c.localEvict(Collections.singleton("1"));
 
-        latch.await();
-
-        assertNotNull(oldVal.get());
+        assertTrue("Failed to wait for eviction event", latch.await(10, TimeUnit.SECONDS));
     }
 }

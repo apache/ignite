@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheBasicStoreMultithrea
  * Local test.
  */
 public class GridCacheLocalBasicStoreMultithreadedSelfTest extends GridCacheBasicStoreMultithreadedAbstractTest {
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.LOCAL;
     }

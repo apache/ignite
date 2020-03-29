@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,12 +35,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -54,10 +52,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     private static final String NO_COMMIT = "no_commit";
 
     /** */
-    private final Collection<TestCommunicationSpi> commSpis = new ConcurrentLinkedDeque8<>();
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private final Collection<TestCommunicationSpi> commSpis = new ConcurrentLinkedDeque<>();
 
     /**
      *
@@ -67,8 +62,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -78,17 +73,11 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         c.setCacheConfiguration(cc);
 
-        TestCommunicationSpi commSpi = new TestCommunicationSpi(gridName.equals(NO_COMMIT));
+        TestCommunicationSpi commSpi = new TestCommunicationSpi(igniteInstanceName.equals(NO_COMMIT));
 
         c.setCommunicationSpi(commSpi);
 
         commSpis.add(commSpi);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         return c;
     }
@@ -103,11 +92,12 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSynchronousCommit() throws Exception {
         try {
             Ignite firstIgnite = startGrid("1");
 
-            IgniteCache<Integer, String> firstCache = firstIgnite.cache(null);
+            IgniteCache<Integer, String> firstCache = firstIgnite.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < ADDITION_CACHE_NUMBER; i++)
                 startGrid(String.valueOf(i + 2));
@@ -119,7 +109,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
             for (TestCommunicationSpi commSpi : commSpis)
                 cnt += commSpi.messagesCount();
 
-            assert cnt == ADDITION_CACHE_NUMBER;
+            assertEquals(ADDITION_CACHE_NUMBER, cnt);
         }
         finally {
             stopAllGrids();
@@ -129,6 +119,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSynchronousCommitNodeLeave() throws Exception {
         try {
             Ignite ignite1 = startGrid("1");
@@ -137,8 +128,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
             Ignite ignite3 = startGrid("3");
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
-            IgniteCache<Integer, String> cache3 = ignite3.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, String> cache3 = ignite3.cache(DEFAULT_CACHE_NAME);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {

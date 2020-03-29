@@ -69,14 +69,11 @@ import org.jetbrains.annotations.Nullable;
  * @see EventType#EVT_CACHE_ENTRY_DESTROYED
  * @see EventType#EVT_CACHE_ENTRY_EVICTED
  * @see EventType#EVT_CACHE_OBJECT_EXPIRED
- * @see EventType#EVT_CACHE_OBJECT_FROM_OFFHEAP
  * @see EventType#EVT_CACHE_OBJECT_LOCKED
  * @see EventType#EVT_CACHE_OBJECT_PUT
  * @see EventType#EVT_CACHE_OBJECT_READ
  * @see EventType#EVT_CACHE_OBJECT_REMOVED
- * @see EventType#EVT_CACHE_OBJECT_SWAPPED
  * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
- * @see EventType#EVT_CACHE_OBJECT_UNSWAPPED
  * @see EventType#EVTS_CACHE
  */
 public class CacheEvent extends EventAdapter {
@@ -93,9 +90,13 @@ public class CacheEvent extends EventAdapter {
     @GridToStringInclude(sensitive = true)
     private Object key;
 
-    /** Event ID. */
+    /** Transaction Id. */
     @GridToStringInclude
     private final IgniteUuid xid;
+
+    /** Transaction label. */
+    @GridToStringInclude
+    private String txLbl;
 
     /** Lock ID. */
     @GridToStringInclude
@@ -155,6 +156,7 @@ public class CacheEvent extends EventAdapter {
      * @param near Flag indicating whether event happened on {@code near} or {@code partitioned} cache.
      * @param key Cache key.
      * @param xid Transaction ID.
+     * @param txLbl Transaction label.
      * @param lockId Lock ID.
      * @param newVal New value.
      * @param hasNewVal Flag indicating whether new value is present in case if we
@@ -166,7 +168,7 @@ public class CacheEvent extends EventAdapter {
      * @param cloClsName Closure class name.
      */
     public CacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
-        boolean near, Object key, IgniteUuid xid, Object lockId, Object newVal, boolean hasNewVal,
+        boolean near, Object key, IgniteUuid xid, String txLbl, Object lockId, Object newVal, boolean hasNewVal,
         Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
@@ -175,6 +177,7 @@ public class CacheEvent extends EventAdapter {
         this.near = near;
         this.key = key;
         this.xid = xid;
+        this.txLbl = txLbl;
         this.lockId = lockId;
         this.newVal = newVal;
         this.hasNewVal = hasNewVal;
@@ -226,19 +229,28 @@ public class CacheEvent extends EventAdapter {
      *
      * @return Cache entry associated with event.
      */
-    @SuppressWarnings({"unchecked"})
     public <K> K key() {
         return (K)key;
     }
 
     /**
-     * ID of surrounding cache cache transaction or <tt>null</tt> if there is
+     * ID of surrounding cache transaction or <tt>null</tt> if there is
      * no surrounding transaction.
      *
      * @return ID of surrounding cache transaction.
      */
     public IgniteUuid xid() {
         return xid;
+    }
+
+    /**
+     * Label of surrounding cache transaction or <tt>null</tt> if there either is
+     * no surrounding transaction or label was not set.
+     *
+     * @return Label of surrounding cache transaction.
+     */
+    public String txLabel() {
+        return txLbl;
     }
 
     /**

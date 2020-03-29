@@ -354,7 +354,6 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             }
         };
 
-
     /** Reentrant lock read closure. */
     private final CIX1<Ignite> reentrantLockReadClos =
         new CIX1<Ignite>() {
@@ -484,7 +483,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
         final Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 

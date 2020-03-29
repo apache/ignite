@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
-#include <time.h>
+#include <cstdio>
+#include <ctime>
 
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <dirent.h>
 #include <dlfcn.h>
+#include <glob.h>
+#include <unistd.h>
+#include <ftw.h>
 
 #include <ignite/common/utils.h>
 
@@ -51,31 +56,82 @@ namespace ignite
             return localtime_r(&in, &out) == 0;
         }
 
-        std::string GetEnv(const std::string& name, bool& found)
+        std::string GetEnv(const std::string& name)
         {
-            char* val = std::getenv(name.c_str());
+            static const std::string empty;
 
-            if (val)
-            {
-                found = true;
+            return GetEnv(name, empty);
+        }
 
-                return std::string(val);
-            }
-            else
-            {
-                found = false;
+        std::string GetEnv(const std::string& name, const std::string& dflt)
+        {
+            char* val0 = std::getenv(name.c_str());
 
-                return std::string();
-            }
+            if (!val0)
+                return dflt;
+
+            return std::string(val0);
         }
 
         bool FileExists(const std::string& path)
         {
-            struct stat s;
+            glob_t gs;
 
-            int res = stat(path.c_str(), &s);
+            int res = glob(path.c_str(), 0, 0, &gs);
 
-            return res != -1;
+            globfree(&gs);
+
+            return res == 0;
+        }
+
+        bool IsValidDirectory(const std::string& path)
+        {
+            if (path.empty())
+                return false;
+
+            struct stat pathStat;
+
+            return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
+        }
+
+        static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+        {
+            remove(pathname);
+
+            return 0;
+        }
+
+        bool DeletePath(const std::string& path)
+        {
+            return nftw(path.c_str(), rmFiles, 10, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) == 0;
+        }
+
+        StdCharOutStream& Fs(StdCharOutStream& ostr)
+        {
+            ostr.put('/');
+            return ostr;
+        }
+
+        StdCharOutStream& Dle(StdCharOutStream& ostr)
+        {
+            static const char expansion[] = ".so";
+
+            ostr.write(expansion, sizeof(expansion) - 1);
+
+            return ostr;
+        }
+
+        unsigned GetRandSeed()
+        {
+            timespec ts;
+
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+
+            unsigned res = static_cast<unsigned>(ts.tv_sec);
+            res ^= static_cast<unsigned>(ts.tv_nsec);
+            res ^= static_cast<unsigned>(getpid());
+
+            return res;
         }
     }
 }

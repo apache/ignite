@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -109,7 +110,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             data.idx = i;
 
-            data.ignite = startGridWithIgfs(getTestGridName(i), igfsMode, null);
+            data.ignite = startGridWithIgfs(getTestIgniteInstanceName(i), igfsMode, null);
 
             data.igfsImpl = (IgfsImpl) data.ignite.fileSystem("igfs");
 
@@ -123,18 +124,17 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithIgfs(String gridName, IgfsMode mode, @Nullable IgfsSecondaryFileSystem secondaryFs)
-        throws Exception {
+    protected Ignite startGridWithIgfs(
+        String igniteInstanceName, IgfsMode mode, @Nullable IgfsSecondaryFileSystem secondaryFs
+    ) throws Exception {
         final FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName("igfs");
         igfsCfg.setBlockSize(igfsBlockSize);
         igfsCfg.setDefaultMode(mode);
@@ -142,7 +142,6 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration<?,?> dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(affGrpSize));
@@ -151,21 +150,23 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
 
-        return startGrid(gridName, cfg);
+        return startGrid(igniteInstanceName, cfg);
     }
 
     /** {@inheritDoc} */
@@ -205,6 +206,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testReadFailoverAfterStopMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
@@ -259,6 +261,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testReadFailoverWhileStoppingMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
@@ -340,6 +343,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testWriteFailoverAfterStopMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
@@ -434,6 +438,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void testWriteFailoverWhileStoppingMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 

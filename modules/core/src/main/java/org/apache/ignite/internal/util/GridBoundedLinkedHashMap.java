@@ -119,7 +119,6 @@ public class GridBoundedLinkedHashMap<K, V> extends LinkedHashMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public Object clone() {
         GridBoundedLinkedHashMap<K, V> m = (GridBoundedLinkedHashMap<K, V>)super.clone();
 

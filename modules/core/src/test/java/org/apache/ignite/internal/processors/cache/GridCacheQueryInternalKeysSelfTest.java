@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -56,8 +57,8 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cc = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cc = super.cacheConfiguration(igniteInstanceName);
 
         cc.setRebalanceMode(SYNC);
 
@@ -68,9 +69,10 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testInternalKeysPreloading() throws Exception {
         try {
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < ENTRY_CNT; i++)
                 cache.put(new GridCacheQueueHeaderKey("queue" + i), 1);
@@ -80,7 +82,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
             for (int i = 0; i < ENTRY_CNT; i++) {
                 GridCacheQueueHeaderKey internalKey = new GridCacheQueueHeaderKey("queue" + i);
 
-                Collection<ClusterNode> nodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(internalKey);
+                Collection<ClusterNode> nodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(internalKey);
 
                 for (ClusterNode n : nodes) {
                     Ignite g = findGridForNodeId(n.id());
@@ -88,7 +90,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
                     assertNotNull(g);
 
                     assertTrue("Affinity node doesn't contain internal key [key=" + internalKey + ", node=" + n + ']',
-                        ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht().containsKey(internalKey));
+                        ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht().containsKey(internalKey));
                 }
             }
         }

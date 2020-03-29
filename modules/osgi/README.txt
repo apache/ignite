@@ -33,33 +33,3 @@ dependency like this (replace '${ignite.version}' with actual Ignite version you
     </dependencies>
     ...
 </project>
-
-Running the tests in this module
---------------------------------
-
-We use the Pax Exam framework to fire up an Apache Karaf container (forked process) in order to execute the OSGi tests.
-
-Bundles are provisioned into the container via mvn: URLs. For this to work, you must have run a full build from the
-top directory of the Ignite source tree, including the install goal, which provisions the modules into your local
-Maven repository:
-
-   mvn clean install -Plgpl
-
-Neither compiling and running the tests, nor generating Javadocs are necessary. To disable these steps,
-use these switches:
-
-   -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
-
-You may then run the OSGi test suite:
-
-   mvn test -Dtest=IgniteOsgiTestSuite
-
-NOTE: This test uses environment variables set by the maven-surefire-plugin configuration. If you are running the
-test suite from within an IDE, either run it via Maven or set these environment variables manually in your
-Run/Debug configuration:
-
-  - projectVersion
-  - karafVersion
-  - camelVersion
-
-See the pom.xml file of this module to understand which values to set.

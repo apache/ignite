@@ -28,9 +28,12 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Cancellation tests.
     /// </summary>
-    public class CancellationTest : IgniteTestBase
+    public class CancellationTest : SpringTestBase
     {
-        public CancellationTest() 
+        /** */
+        private const int MillisecondsTimeout = 50;
+
+        public CancellationTest()
             : base("config\\compute\\compute-grid1.xml", "config\\compute\\compute-grid2.xml")
         {
             // No-op.
@@ -71,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestClosure((c, t) => c.BroadcastAsync(new ComputeFunc(), t));
             TestClosure((c, t) => c.BroadcastAsync(new ComputeBiFunc(), 10, t));
 
-            TestClosure((c, t) => c.AffinityRunAsync(null, 0, new ComputeAction(), t));
+            TestClosure((c, t) => c.AffinityRunAsync("default", 0, new ComputeAction(), t));
 
             TestClosure((c, t) => c.RunAsync(new ComputeAction(), t));
             TestClosure((c, t) => c.RunAsync(Enumerable.Range(1, 10).Select(x => new ComputeAction()), t));
@@ -81,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestClosure((c, t) => c.CallAsync(Enumerable.Range(1, 10).Select(x => new ComputeFunc()), 
                 new ComputeReducer(), t));
 
-            TestClosure((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
+            TestClosure((c, t) => c.AffinityCallAsync("default", 0, new ComputeFunc(), t));
 
             TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
             TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 100), t));
@@ -92,16 +95,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Job.CancelCount = 0;
 
-            TestClosure(runner);
+            TestClosure(runner, MillisecondsTimeout * 2);
 
             Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
         }
 
-        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
+        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner, int delay = 0)
         {
             using (var cts = new CancellationTokenSource())
             {
                 var task = runner(Compute, cts.Token);
+
+                Thread.Sleep(delay);
 
                 Assert.IsFalse(task.IsCanceled);
 
@@ -148,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public int Execute()
             {
-                Thread.Sleep(50);
+                Thread.Sleep(MillisecondsTimeout);
                 return 1;
             }
 
@@ -163,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public int Invoke(int arg)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(MillisecondsTimeout);
                 return arg;
             }
         }

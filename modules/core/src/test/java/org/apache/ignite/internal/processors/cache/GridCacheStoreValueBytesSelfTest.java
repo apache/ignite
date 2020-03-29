@@ -22,10 +22,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -37,23 +35,16 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean storeValBytes;
 
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        ccfg.setStoreKeepBinary(storeValBytes);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -72,19 +63,23 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testEnabled() throws Exception {
         storeValBytes = true;
 
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        IgniteCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.cache(DEFAULT_CACHE_NAME);
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().peekEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).entryEx(1);
 
         assert entry != null;
+
+        entry.unswap();
+
         assert entry.valueBytes() != null;
     }
 }

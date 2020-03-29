@@ -41,7 +41,6 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,12 +55,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -87,9 +84,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
     /** Proceed put condition. */
     private final Condition putCond = lock.newCondition();
-
-    /** Shared IP finder. */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Caches comparison start latch. */
     private CountDownLatch cmpLatch;
@@ -137,13 +131,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      */
     protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
-    }
-
-    /**
-     * @return Atomic write order mode.
-     */
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return null;
     }
 
     /**
@@ -213,36 +200,24 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private IgniteConfiguration configuration(int idx) throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setRebalanceMode(SYNC);
-        ccfg.setSwapEnabled(false);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setEvictionPolicy(null);
 
         if (cacheMode() == PARTITIONED)
             ccfg.setBackups(backups());
 
-        if (atomicityMode() == ATOMIC) {
-            assert atomicWriteOrderMode() != null;
-
-            ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
-        }
-        else {
-            if (cacheMode() == PARTITIONED)
-                ccfg.setNearConfiguration(new NearCacheConfiguration());
+        if (atomicityMode() != ATOMIC && cacheMode() == PARTITIONED) {
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
         }
 
         IgniteConfiguration cfg = getConfiguration(nodeName(idx));
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(ccfg);
         cfg.setConnectorConfiguration(null);
@@ -255,6 +230,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         startUp();
 
@@ -381,21 +357,21 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                         try {
                             int idx = ThreadLocalRandom.current().nextInt(1, dataNodes());
 
-                            String gridName = nodeName(idx);
+                            String igniteInstanceName = nodeName(idx);
 
                             if (stop.get())
                                 return null;
 
-                            log.info("Killing node [gridName=" + gridName + ']');
+                            log.info("Killing node [igniteInstanceName=" + igniteInstanceName + ']');
 
-                            stopGrid(gridName);
+                            stopGrid(igniteInstanceName);
 
                             U.sleep(ThreadLocalRandom.current().nextLong(restartDelay().get1(), restartDelay().get2()));
 
                             if (stop.get())
                                 return null;
 
-                            log.info("Restarting node [gridName=" + gridName + ']');
+                            log.info("Restarting node [igniteInstanceName=" + igniteInstanceName + ']');
 
                             G.start(configuration(idx));
                         }
@@ -509,7 +485,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @return {@code True} if check passed successfully.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
+    @SuppressWarnings({"TooBroadScope"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
         List<IgniteCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;

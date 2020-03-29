@@ -56,6 +56,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
@@ -67,12 +68,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -85,11 +85,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests basic client behavior with multiple nodes.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Partitioned cache name. */
     private static final String PARTITIONED_CACHE_NAME = "partitioned";
 
@@ -154,8 +150,8 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setLocalHost(HOST);
 
@@ -176,19 +172,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             c.setConnectorConfiguration(clientCfg);
         }
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
         TestCommunicationSpi spi = new TestCommunicationSpi();
 
         spi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
 
         c.setCommunicationSpi(spi);
 
-        c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
+        c.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
         c.setPublicThreadPoolSize(40);
@@ -203,20 +193,24 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
-        if (cacheName == null)
-            cfg.setCacheMode(LOCAL);
-        else if (PARTITIONED_CACHE_NAME.equals(cacheName)) {
-            cfg.setCacheMode(PARTITIONED);
+        switch (cacheName) {
+            case DEFAULT_CACHE_NAME:
+                cfg.setCacheMode(LOCAL);
+                break;
+            case PARTITIONED_CACHE_NAME:
+                cfg.setCacheMode(PARTITIONED);
 
-            cfg.setBackups(0);
+                cfg.setBackups(0);
+                break;
+            default:
+                cfg.setCacheMode(REPLICATED);
+                break;
         }
-        else
-            cfg.setCacheMode(REPLICATED);
 
         cfg.setName(cacheName);
 
@@ -230,13 +224,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        info("Stopping grids.");
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -256,6 +243,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEmptyProjections() throws Exception {
         final GridClientCompute dflt = client.compute();
 
@@ -282,8 +270,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         }, GridClientException.class, null);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return singleNodePrj.projection(targetFilter);
             }
         }, GridClientException.class, null);
@@ -292,6 +279,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testProjectionRun() throws Exception {
         GridClientCompute dflt = client.compute();
 
@@ -321,6 +309,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyListener() throws Exception {
         final Collection<UUID> added = new ArrayList<>(1);
         final Collection<UUID> rmvd = new ArrayList<>(1);
@@ -433,7 +422,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
-                    @SuppressWarnings("OverlyStrongTypeCast")
                     @Override public Object execute() {
                         try {
                             Thread.sleep(1000);
@@ -477,14 +465,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     /**
      * Communication SPI which checks cache flags.
      */
-    @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             checkSyncFlags((GridIoMessage)msg);
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**
@@ -512,13 +499,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             IgniteInternalTx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x1"))))
-                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, t.syncMode());
+                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, ((IgniteTxLocalAdapter)t).syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x2"))))
-                assertEquals("Invalid tx flags: " + t, FULL_SYNC, t.syncMode());
+                assertEquals("Invalid tx flags: " + t, FULL_SYNC, ((IgniteTxLocalAdapter)t).syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x3"))))
-                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, t.syncMode());
+                assertEquals("Invalid tx flags: " + t, FULL_ASYNC, ((IgniteTxLocalAdapter)t).syncMode());
             else if (t.hasWriteKey(cacheCtx.txKey(cacheCtx.toCacheKeyObject("x4"))))
-                assertEquals("Invalid tx flags: " + t, FULL_SYNC, t.syncMode());
+                assertEquals("Invalid tx flags: " + t, FULL_SYNC, ((IgniteTxLocalAdapter)t).syncMode());
         }
     }
 }

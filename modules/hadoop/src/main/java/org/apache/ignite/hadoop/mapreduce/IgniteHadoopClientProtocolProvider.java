@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.proto.HadoopClientProto
 import org.apache.ignite.internal.processors.hadoop.mapreduce.MapReduceClient;
 import org.apache.ignite.internal.util.typedef.F;
 
-
 /**
  * Ignite Hadoop client protocol provider.
  */
@@ -111,7 +110,6 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client.
      * @throws IOException If failed.
      */
-    @SuppressWarnings("unchecked")
     private MapReduceClient client(String clusterName, Collection<String> addrs) throws IOException {
         while (true) {
             MapReduceClient cli = cliMap.get(clusterName);

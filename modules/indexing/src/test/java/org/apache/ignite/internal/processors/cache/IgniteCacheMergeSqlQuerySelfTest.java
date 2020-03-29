@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.junit.Test;
 
 /**
  *
@@ -28,6 +29,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeWithExplicitKey() {
         IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -42,6 +44,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeFromSubquery() {
         IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -62,6 +65,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P").withKeepBinary();
 
@@ -77,6 +81,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testMergeWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
@@ -91,6 +96,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
@@ -105,6 +111,7 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
     /**
      *
      */
+    @Test
     public void testPrimitives() {
         IgniteCache<Integer, Integer> p = ignite(0).cache("I2I").withKeepBinary();
 
@@ -114,39 +121,5 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         assertEquals(2, (int)p.get(1));
 
         assertEquals(4, (int)p.get(3));
-    }
-
-    /**
-     *
-     */
-    public void testFieldsListIdentity() {
-        if (!isBinaryMarshaller())
-            return;
-
-        IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
-
-        p.query(new SqlFieldsQuery(
-            "merge into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
-
-        assertEquals(createPerson(1, "Sergi"), p.get(new Key3(1)));
-
-        assertEquals(createPerson(2, "Alex"), p.get(new Key3(2)));
-    }
-
-    /**
-     *
-     */
-    public void testCustomIdentity() {
-        if (!isBinaryMarshaller())
-            return;
-
-        IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
-
-        p.query(new SqlFieldsQuery(
-            "merge into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')").setArgs(1, "Sergi"));
-
-        assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
-
-        assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
     }
 }

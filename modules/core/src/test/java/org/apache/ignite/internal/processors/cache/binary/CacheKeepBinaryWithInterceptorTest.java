@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -24,30 +25,24 @@ import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import javax.cache.Cache;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
@@ -55,23 +50,19 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        super.afterTestsStopped();
+        super.afterTest();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKeepBinaryWithInterceptor() throws Exception {
+        startGrid(0);
+
         keepBinaryWithInterceptor(cacheConfiguration(ATOMIC, false));
         keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL, false));
 
@@ -88,6 +79,23 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9323")
+    @Test
+    public void testKeepBinaryWithInterceptorOnMvccCache() throws Exception {
+        startGrid(0);
+
+        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
+        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
+
+        startGridsMultiThreaded(1, 3);
+
+        keepBinaryWithInterceptor(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, false));
+        keepBinaryWithInterceptorPrimitives(cacheConfiguration(TRANSACTIONAL_SNAPSHOT, true));
+    }
+
+    /**
      * @param ccfg Cache configuration.
      */
     private void keepBinaryWithInterceptor(CacheConfiguration ccfg) {
@@ -100,9 +108,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             TestInterceptor1.onBeforePut = 0;
             TestInterceptor1.onGet = 0;
 
-            IgniteCache cache = ignite(0).cache(null).withKeepBinary();
-
-            IgniteCache asyncCache = cache.withAsync();
+            IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
             cache.put(new TestKey(1), new TestValue(10));
 
@@ -111,16 +117,14 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             BinaryObject obj = (BinaryObject)cache.get(new TestKey(1));
             assertEquals(10, (int)obj.field("val"));
 
-            asyncCache.get(new TestKey(1));
-            obj = (BinaryObject)asyncCache.future().get();
+            obj = (BinaryObject)cache.getAsync(new TestKey(1)).get();
             assertEquals(10, (int)obj.field("val"));
 
             Cache.Entry<BinaryObject, BinaryObject> e = (Cache.Entry)cache.getEntry(new TestKey(1));
             assertEquals(1, (int)e.getKey().field("key"));
             assertEquals(10, (int)e.getValue().field("val"));
 
-            asyncCache.getEntry(new TestKey(1));
-            e = (Cache.Entry)asyncCache.future().get();
+            e = (Cache.Entry)cache.getEntryAsync(new TestKey(1)).get();
             assertEquals(1, (int)e.getKey().field("key"));
             assertEquals(10, (int)e.getValue().field("val"));
 
@@ -155,9 +159,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             TestInterceptor2.onBeforePut = 0;
             TestInterceptor2.onGet = 0;
 
-            IgniteCache cache = ignite(0).cache(null).withKeepBinary();
-
-            IgniteCache asyncCache = cache.withAsync();
+            IgniteCache cache = ignite(0).cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
             cache.put(1, 10);
 
@@ -166,16 +168,14 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             Integer obj = (Integer)cache.get(1);
             assertEquals((Integer)10, obj);
 
-            asyncCache.get(1);
-            obj = (Integer)asyncCache.future().get();
+            obj = (Integer)cache.getAsync(1).get();
             assertEquals((Integer)10, obj);
 
             Cache.Entry<Integer, Integer> e = (Cache.Entry)cache.getEntry(1);
             assertEquals((Integer)1, e.getKey());
             assertEquals((Integer)10, e.getValue());
 
-            asyncCache.getEntry(1);
-            e = (Cache.Entry)asyncCache.future().get();
+            e = (Cache.Entry)cache.getEntryAsync(1).get();
             assertEquals((Integer)1, e.getKey());
             assertEquals((Integer)10, e.getValue());
 
@@ -203,7 +203,7 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(CacheAtomicityMode atomicityMode, boolean testPrimitives) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setInterceptor(testPrimitives ? new TestInterceptor2() : new TestInterceptor1());
@@ -245,7 +245,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public BinaryObject onBeforePut(Cache.Entry<BinaryObject, BinaryObject> entry, BinaryObject newVal) {
+        @Nullable @Override public BinaryObject onBeforePut(Cache.Entry<BinaryObject, BinaryObject> entry,
+            BinaryObject newVal) {
             System.out.println("Before put [e=" + entry + ", newVal=" + newVal + ']');
 
             onBeforePut++;
@@ -270,7 +271,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(Cache.Entry<BinaryObject, BinaryObject> entry) {
+        @Nullable @Override public IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(
+            Cache.Entry<BinaryObject, BinaryObject> entry) {
             assertEquals(1, (int)entry.getKey().field("key"));
             assertEquals(10, (int)entry.getValue().field("val"));
 

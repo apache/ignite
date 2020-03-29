@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Transactions
 {
     using System;
     using System.ComponentModel;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Transactions configuration.
@@ -40,6 +41,12 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary> The default value for <see cref="PessimisticTransactionLogLinger"/> property. </summary>
         public static readonly TimeSpan DefaultPessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(10000);
 
+        /// <summary> The default value for <see cref="DefaultTimeoutOnPartitionMapExchange"/></summary>
+        public static readonly TimeSpan DefaultDefaultTimeoutOnPartitionMapExchange = TimeSpan.Zero;
+
+        /// <summary> The default value for <see cref="DeadlockTimeout"/></summary>
+        public static readonly TimeSpan DefaultDeadlockTimeout = TimeSpan.FromSeconds(10);
+
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
         /// </summary>
@@ -60,7 +67,7 @@ namespace Apache.Ignite.Core.Transactions
         public TimeSpan DefaultTimeout { get; set; }
 
         /// <summary>
-        /// Gets or sets the size of pessimistic transactions log stored on node in order to recover 
+        /// Gets or sets the size of pessimistic transactions log stored on node in order to recover
         /// transaction commit if originating node has left grid before it has sent all messages to transaction nodes.
         /// <code>0</code> for unlimited.
         /// </summary>
@@ -74,6 +81,24 @@ namespace Apache.Ignite.Core.Transactions
         public TimeSpan PessimisticTransactionLogLinger { get; set; }
 
         /// <summary>
+        /// Gets or sets transaction timeout for partition map synchronization.
+        /// <see cref="TimeSpan.Zero"/> for infinite timeout.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:00")]
+        public TimeSpan DefaultTimeoutOnPartitionMapExchange { get; set; }
+
+        /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
+        /// Gets or sets timeout before starting deadlock detection for caches configured with
+        /// <code>TransactionalSnapshot</code> cache atomicity mode.
+        /// <see cref="TimeSpan.Zero"/> for disabling deadlock detection.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        [IgniteExperimentalAttribute]
+        public TimeSpan DeadlockTimeout { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TransactionConfiguration" /> class.
         /// </summary>
         public TransactionConfiguration()
@@ -83,6 +108,8 @@ namespace Apache.Ignite.Core.Transactions
             DefaultTimeout = DefaultDefaultTimeout;
             PessimisticTransactionLogSize = DefaultPessimisticTransactionLogSize;
             PessimisticTransactionLogLinger = DefaultPessimisticTransactionLogLinger;
+            DefaultTimeoutOnPartitionMapExchange = DefaultDefaultTimeoutOnPartitionMapExchange;
+            DeadlockTimeout = DefaultDeadlockTimeout;
         }
     }
 }

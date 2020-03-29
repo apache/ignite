@@ -17,23 +17,25 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryArrayIdentityResolverSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
+import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
-import org.apache.ignite.internal.binary.BinaryFieldIdentityResolverSelfTest;
+import org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
-import org.apache.ignite.internal.binary.BinaryIdentityResolverConfigurationSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectToStringSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectToStringTest;
+import org.apache.ignite.internal.binary.BinaryObjectTypeCompatibilityTest;
 import org.apache.ignite.internal.binary.BinarySerialiedFieldComparatorSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.BinaryTreeSelfTest;
@@ -50,113 +52,115 @@ import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSe
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
+import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
-import org.apache.ignite.internal.processors.cache.BinaryObjectOffHeapUnswapTemporaryTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheApiTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationCacheStoreTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataRegistrationEntryProcessorTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectMetadataExchangeMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
-import org.apache.ignite.internal.processors.cache.portable.BinaryAtomicCacheLocalEntriesSelfTest;
-import org.apache.ignite.internal.processors.cache.portable.BinaryTxCacheLocalEntriesSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test for binary objects stored in cache.
  */
-public class IgniteBinaryObjectsTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    BinarySimpleNameTestPropertySelfTest.class,
 
-        suite.addTestSuite(BinarySimpleNameTestPropertySelfTest.class);
+    BinaryBasicIdMapperSelfTest.class,
+    BinaryBasicNameMapperSelfTest.class,
 
-        suite.addTestSuite(BinaryBasicIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryBasicNameMapperSelfTest.class);
+    BinaryTreeSelfTest.class,
+    BinaryMarshallerSelfTest.class,
+    BinaryObjectExceptionSelfTest.class,
 
-        suite.addTestSuite(BinaryTreeSelfTest.class);
-        suite.addTestSuite(BinaryMarshallerSelfTest.class);
+    BinarySerialiedFieldComparatorSelfTest.class,
+    BinaryArrayIdentityResolverSelfTest.class,
 
-        suite.addTestSuite(BinarySerialiedFieldComparatorSelfTest.class);
-        suite.addTestSuite(BinaryArrayIdentityResolverSelfTest.class);
-        suite.addTestSuite(BinaryFieldIdentityResolverSelfTest.class);
-        suite.addTestSuite(BinaryIdentityResolverConfigurationSelfTest.class);
+    BinaryConfigurationConsistencySelfTest.class,
+    BinaryConfigurationCustomSerializerSelfTest.class,
+    GridBinaryMarshallerCtxDisabledSelfTest.class,
+    BinaryObjectBuilderDefaultMappersSelfTest.class,
+    BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class,
+    BinaryObjectBuilderAdditionalSelfTest.class,
+    BinaryFieldExtractionSelfTest.class,
+    BinaryFieldsHeapSelfTest.class,
+    BinaryFieldsOffheapSelfTest.class,
+    BinaryFooterOffsetsHeapSelfTest.class,
+    BinaryFooterOffsetsOffheapSelfTest.class,
+    BinaryEnumsSelfTest.class,
+    GridDefaultBinaryMappersBinaryMetaDataSelfTest.class,
+    GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class,
+    GridBinaryAffinityKeySelfTest.class,
+    GridBinaryWildcardsSelfTest.class,
+    BinaryObjectToStringSelfTest.class,
+    BinaryObjectToStringTest.class,
+    BinaryObjectTypeCompatibilityTest.class,
 
-        suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
-        suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
-        suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
-        suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
-        suite.addTestSuite(BinaryEnumsSelfTest.class);
-        suite.addTestSuite(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
-        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
-        suite.addTestSuite(BinaryObjectToStringSelfTest.class);
+    // Tests for objects with non-compact footers.
+    BinaryMarshallerNonCompactSelfTest.class,
+    BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class,
+    BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class,
+    BinaryObjectBuilderAdditionalNonCompactSelfTest.class,
+    BinaryFieldsHeapNonCompactSelfTest.class,
+    BinaryFieldsOffheapNonCompactSelfTest.class,
+    BinaryFooterOffsetsHeapNonCompactSelfTest.class,
+    BinaryFooterOffsetsOffheapNonCompactSelfTest.class,
 
-        // Tests for objects with non-compact footers.
-        suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSelfTest.class);
+    GridCacheBinaryObjectsLocalSelfTest.class,
+    //GridCacheBinaryObjectsLocalOnheapSelfTest.class,
+    GridCacheBinaryObjectsAtomicLocalSelfTest.class,
+    GridCacheBinaryObjectsReplicatedSelfTest.class,
+    GridCacheBinaryObjectsPartitionedSelfTest.class,
+    GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class,
+    //GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class,
+    //GridCacheBinaryObjectsPartitionedOnheapSelfTest.class,
+    GridCacheBinaryObjectsAtomicSelfTest.class,
+    //GridCacheBinaryObjectsAtomicOnheapSelfTest.class,
+    GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class,
+    //GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class,
 
-        suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsReplicatedSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class);
-        suite.addTestSuite(BinaryObjectOffHeapUnswapTemporaryTest.class);
+    GridCacheBinaryStoreObjectsSelfTest.class,
+    GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class,
+    GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class,
 
-        suite.addTestSuite(GridCacheBinaryObjectsLocalOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsAtomicNearDisabledOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedOffheapTieredSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
+    GridCacheClientNodeBinaryObjectMetadataTest.class,
+    GridCacheBinaryObjectMetadataExchangeMultinodeTest.class,
+    BinaryMetadataUpdatesFlowTest.class,
+    BinaryMetadataRegistrationCacheApiTest.class,
+    BinaryMetadataRegistrationEntryProcessorTest.class,
+    BinaryMetadataRegistrationCacheStoreTest.class,
+    GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class,
+    IgniteBinaryMetadataUpdateChangingTopologySelfTest.class,
 
-        suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
+    BinaryTxCacheLocalEntriesSelfTest.class,
+    BinaryAtomicCacheLocalEntriesSelfTest.class,
 
-        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
-        suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);
-        suite.addTestSuite(IgniteBinaryMetadataUpdateChangingTopologySelfTest.class);
+    // Byte order
+    BinaryHeapStreamByteOrderSelfTest.class,
+    BinaryAbstractOutputStreamTest.class,
+    BinaryOffheapStreamByteOrderSelfTest.class,
 
-        suite.addTestSuite(BinaryTxCacheLocalEntriesSelfTest.class);
-        suite.addTestSuite(BinaryAtomicCacheLocalEntriesSelfTest.class);
-
-        // Byte order
-        suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
-        suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
-
-        suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
-
-        return suite;
-    }
+    GridCacheBinaryObjectUserClassloaderSelfTest.class
+})
+public class IgniteBinaryObjectsTestSuite {
 }

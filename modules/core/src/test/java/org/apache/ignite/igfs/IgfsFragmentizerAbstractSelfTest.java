@@ -27,9 +27,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsMetaManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -39,9 +36,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Fragmentizer abstract self test.
  */
 public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test nodes count. */
     protected static final int NODE_CNT = 4;
 
@@ -51,29 +45,13 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     /** IGFS group size. */
     protected static final int IGFS_GROUP_SIZE = 32;
 
-    /** Metadata cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
-    /** File data cache name. */
-    protected static final String DATA_CACHE_NAME = "data";
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        cfg.setCacheConfiguration(metaConfiguration(), dataConfiguration());
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
 
         // Need to set this to avoid thread starvation.
@@ -81,6 +59,9 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfsCfg.setFragmentizerThrottlingBlockLength(16 * IGFS_BLOCK_SIZE);
         igfsCfg.setFragmentizerThrottlingDelay(10);
+
+        igfsCfg.setMetaCacheConfiguration(metaConfiguration());
+        igfsCfg.setDataCacheConfiguration(dataConfiguration());
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
@@ -94,8 +75,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected CacheConfiguration metaConfiguration() {
         CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setName(META_CACHE_NAME);
 
         cfg.setCacheMode(REPLICATED);
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -111,8 +90,6 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected CacheConfiguration dataConfiguration() {
         CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setName(DATA_CACHE_NAME);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(0);
@@ -161,12 +138,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem("igfs").format();
+        grid(0).fileSystem("igfs").clear();
     }
 }

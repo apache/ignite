@@ -29,8 +29,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  */
 public class IgniteCacheSslStartStopSelfTest extends IgniteCachePutRetryAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setSslContextFactory(GridTestUtils.sslFactory());
 

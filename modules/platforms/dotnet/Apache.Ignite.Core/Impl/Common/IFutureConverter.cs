@@ -17,14 +17,12 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
-    using System;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Marshals and converts future value.
     /// </summary>
-    [CLSCompliant(false)]
-    public interface IFutureConverter<out T>
+    internal interface IFutureConverter<out T>
     {
         /// <summary>
         /// Reads and converts a value.

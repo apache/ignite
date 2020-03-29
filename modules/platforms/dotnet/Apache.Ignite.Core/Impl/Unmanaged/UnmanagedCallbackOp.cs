@@ -81,6 +81,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         AffinityFunctionRemoveNode = 58,
         AffinityFunctionDestroy = 59,
         ComputeTaskLocalJobResult = 60,
-        ComputeJobExecuteLocal = 61
+        ComputeJobExecuteLocal = 61,
+        PluginProcessorStop = 62,
+        PluginProcessorIgniteStop = 63,
+        PluginCallbackInLongLongOutLong = 68,
+        EventLocalListenerApply = 69
     }
 }

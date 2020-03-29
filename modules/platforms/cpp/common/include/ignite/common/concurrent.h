@@ -30,6 +30,11 @@ namespace ignite
         namespace concurrent
         {
             /**
+             * Type tag for static pointer cast.
+             */
+            struct StaticTag {};
+
+            /**
              * Default deleter implementation.
              *
              * @param obj Object to be deleted.
@@ -198,6 +203,20 @@ namespace ignite
                 }
 
                 /**
+                 * Static-cast constructor.
+                 *
+                 * @param other Instance to copy.
+                 */
+                template<typename T2>
+                SharedPointer(const SharedPointer<T2>& other, StaticTag) :
+                    ptr(static_cast<T*>(other.ptr)),
+                    impl(other.impl)
+                {
+                    if (impl)
+                        impl->Increment();
+                }
+
+                /**
                  * Assignment operator.
                  *
                  * @param other Other instance.
@@ -313,6 +332,17 @@ namespace ignite
             };
 
             /**
+             * Enables static-cast semantics for SharedPointer.
+             *
+             * @param val Value to cast.
+             */
+            template<class T1, class T2>
+            SharedPointer<T1> StaticPointerCast(const SharedPointer<T2>& val)
+            {
+                return SharedPointer<T1>(val, StaticTag());
+            }
+
+            /**
              * The class provides functionality that allows objects of derived
              * classes to create instances of shared_ptr pointing to themselves
              * and sharing ownership with existing shared_ptr objects.
@@ -401,7 +431,7 @@ namespace ignite
                  * @param lock Lockable object.
                  */
                 LockGuard(T& lock) :
-                    lock(lock)
+                    lock(&lock)
                 {
                     lock.Enter();
                 }
@@ -411,14 +441,149 @@ namespace ignite
                  */
                 ~LockGuard()
                 {
-                    lock.Leave();
+                    if (lock)
+                        lock->Leave();
+                }
+
+                /**
+                 * Releases control over lock without unlocking it.
+                 */
+                void Forget()
+                {
+                    lock = 0;
+                }
+
+                /**
+                 * Releases control over lock and unlocks it as if it would
+                 * go out of scope.
+                 */
+                void Reset()
+                {
+                    if (lock)
+                    {
+                        lock->Leave();
+
+                        Forget();
+                    }
                 }
 
             private:
-                T& lock;
+                T* lock;
             };
 
             typedef LockGuard<CriticalSection> CsLockGuard;
+
+            /**
+             * Shared lock guard.
+             * Locks guard in shared mode.
+             */
+            template<typename T>
+            class SharedLockGuard
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param lock Lockable object.
+                 */
+                SharedLockGuard(T& lock) :
+                    lock(&lock)
+                {
+                    lock.LockShared();
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~SharedLockGuard()
+                {
+                    if (lock)
+                        lock->ReleaseShared();
+                }
+
+                /**
+                 * Releases control over lock without unlocking it.
+                 */
+                void Forget()
+                {
+                    lock = 0;
+                }
+
+                /**
+                 * Releases control over lock and unlocks it as if it would
+                 * go out of scope.
+                 */
+                void Reset()
+                {
+                    if (lock)
+                    {
+                        lock->ReleaseShared();
+
+                        Forget();
+                    }
+                }
+
+            private:
+                T* lock;
+            };
+
+            typedef SharedLockGuard<ReadWriteLock> RwSharedLockGuard;
+
+            /**
+             * Exclusive lock guard.
+             * Locks guard in exclusive mode.
+             */
+            template<typename T>
+            class ExclusiveLockGuard
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param lock Lockable object.
+                 */
+                ExclusiveLockGuard(T& lock) :
+                    lock(&lock)
+                {
+                    lock.LockExclusive();
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ExclusiveLockGuard()
+                {
+                    if (lock)
+                        lock->ReleaseExclusive();
+                }
+
+                /**
+                 * Releases control over lock without unlocking it.
+                 */
+                void Forget()
+                {
+                    lock = 0;
+                }
+
+                /**
+                 * Releases control over lock and unlocks it as if it would
+                 * go out of scope.
+                 */
+                void Reset()
+                {
+                    if (lock)
+                    {
+                        lock->ReleaseExclusive();
+
+                        Forget();
+                    }
+                }
+
+            private:
+                T* lock;
+            };
+
+            typedef ExclusiveLockGuard<ReadWriteLock> RwExclusiveLockGuard;
         }
     }
 }

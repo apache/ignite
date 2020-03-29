@@ -1,4 +1,4 @@
-/*
+ /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,7 +40,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -80,7 +81,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
         @Override public byte[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid byte array length: " + len);
 
             switch (len) {
                 case 0:
@@ -95,7 +97,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<short[]> SHORT_ARR_CREATOR = new ArrayCreator<short[]>() {
         @Override public short[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid short array length: " + len);
 
             switch (len) {
                 case 0:
@@ -110,7 +113,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<int[]> INT_ARR_CREATOR = new ArrayCreator<int[]>() {
         @Override public int[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid int array length: " + len);
 
             switch (len) {
                 case 0:
@@ -125,7 +129,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<long[]> LONG_ARR_CREATOR = new ArrayCreator<long[]>() {
         @Override public long[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid long array length: " + len);
 
             switch (len) {
                 case 0:
@@ -140,7 +145,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<float[]> FLOAT_ARR_CREATOR = new ArrayCreator<float[]>() {
         @Override public float[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid float array length: " + len);
 
             switch (len) {
                 case 0:
@@ -155,7 +161,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<double[]> DOUBLE_ARR_CREATOR = new ArrayCreator<double[]>() {
         @Override public double[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid double array length: " + len);
 
             switch (len) {
                 case 0:
@@ -170,7 +177,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<char[]> CHAR_ARR_CREATOR = new ArrayCreator<char[]>() {
         @Override public char[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid char array length: " + len);
 
             switch (len) {
                 case 0:
@@ -185,7 +193,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private static final ArrayCreator<boolean[]> BOOLEAN_ARR_CREATOR = new ArrayCreator<boolean[]>() {
         @Override public boolean[] create(int len) {
-            assert len >= 0;
+            if (len < 0)
+                throw new IgniteException("Read invalid boolean array length: " + len);
 
             switch (len) {
                 case 0:
@@ -205,6 +214,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     private final MessageFactory msgFactory;
 
     /** */
+    @GridToStringExclude
     private ByteBuffer buf;
 
     /** */
@@ -221,6 +231,9 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** */
     private int tmpArrOff;
+
+    /** Number of bytes of the boundary value, read from previous message. */
+    private int valReadBytes;
 
     /** */
     private int tmpArrBytes;
@@ -286,7 +299,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     private long uuidLocId;
 
     /** */
-    private boolean lastFinished;
+    protected boolean lastFinished;
 
     /**
      * @param msgFactory Message factory.
@@ -303,7 +316,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
-            baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : BYTE_ARR_OFF;
+            baseOff = buf.isDirect() ? GridUnsafe.bufferAddress(buf) : BYTE_ARR_OFF;
         }
     }
 
@@ -517,6 +530,17 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            if (BIG_ENDIAN)
+                lastFinished = writeArrayLE(val, LONG_ARR_OFF, len, 8, 3);
+            else
+                lastFinished = writeArray(val, LONG_ARR_OFF, len, len << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
         if (val != null)
             if (BIG_ENDIAN)
@@ -635,6 +659,11 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
@@ -653,7 +682,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 lastFinished = false;
         }
         else
-            writeByte(Byte.MIN_VALUE);
+            writeShort(Short.MIN_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -759,7 +788,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType, MessageWriter writer) {
         if (map != null) {
@@ -1130,18 +1158,22 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining()) {
+            if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
 
                 return null;
             }
 
-            byte type = readByte();
+            short type = readShort();
 
-            msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
+            msg = type == Short.MIN_VALUE ? null : msgFactory.create(type);
 
             msgTypeDone = true;
         }
@@ -1174,7 +1206,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls,
         MessageReader reader) {
         if (readSize == -1) {
@@ -1214,7 +1245,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
         MessageReader reader) {
         if (readSize == -1) {
@@ -1254,7 +1284,6 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked, MessageReader reader) {
         if (readSize == -1) {
@@ -1312,7 +1341,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param bytes Length in bytes.
      * @return Whether array was fully written.
      */
-    private boolean writeArray(Object arr, long off, int len, int bytes) {
+    boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1356,9 +1385,10 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Offset.
      * @param len Length.
      * @param typeSize Primitive type size in bytes. Needs for byte reverse.
+     * @param shiftCnt Shift for length.
      * @return Whether array was fully written.
      */
-    private boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
+    boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1431,8 +1461,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    @SuppressWarnings("unchecked")
-    private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
+    <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1495,8 +1524,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    @SuppressWarnings("unchecked")
-    private <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
+    <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1522,14 +1550,30 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             }
         }
 
-        int toRead = (tmpArrBytes - tmpArrOff) >> lenShift;
-        int remaining = buf.remaining() >> lenShift;
+        int toRead = tmpArrBytes - tmpArrOff - valReadBytes;
+        int remaining = buf.remaining();
 
-        lastFinished = toRead <= buf.remaining();
+        lastFinished = toRead <= remaining;
+
+        if (!lastFinished)
+            toRead = remaining;
+
+        int pos = buf.position();
+
+        for (int i = 0; i < toRead; i++) {
+            byte b = GridUnsafe.getByte(heapArr, baseOff + pos + i);
+
+            GridUnsafe.putByteField(tmpArr, off + tmpArrOff + (typeSize - valReadBytes - 1), b);
+
+            if (++valReadBytes == typeSize) {
+                valReadBytes = 0;
+                tmpArrOff += typeSize;
+            }
+        }
+
+        buf.position(pos + toRead);
 
         if (lastFinished) {
-            readArrayLE(typeSize, off, toRead);
-
             T arr = (T)tmpArr;
 
             tmpArr = null;
@@ -1538,43 +1582,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
             return arr;
         }
-        else {
-            for (int i = 0; i < remaining; i++) {
-                int pos = buf.position();
-
-                for (int j = 0; j < typeSize; j++) {
-                    byte b = GridUnsafe.getByte(heapArr, baseOff + pos + (typeSize - j - 1));
-
-                    GridUnsafe.putByteField(tmpArr, off + tmpArrOff + j, b);
-                }
-
-                buf.position(pos + typeSize);
-                tmpArrOff += typeSize;
-            }
-
-            tmpArrOff += buf.remaining();
-
+        else
             return null;
-        }
-    }
-
-    /**
-     * @param typeSize Primitive type size in bytes.
-     * @param off Offset.
-     * @param toRead To read.
-     */
-    private void readArrayLE(int typeSize, long off, int toRead) {
-        for (int i = 0; i < toRead; i++) {
-            int pos = buf.position();
-
-            for (int j = 0; j < typeSize; j++) {
-                byte b = GridUnsafe.getByte(heapArr, baseOff + pos + (typeSize - j - 1));
-
-                GridUnsafe.putByteField(tmpArr, off + tmpArrOff++, b);
-            }
-
-            buf.position(pos + typeSize);
-        }
     }
 
     /**
@@ -1582,7 +1591,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    private void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
+    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1684,6 +1693,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                 break;
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 try {
                     if (val != null)
@@ -1708,7 +1718,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param reader Reader.
      * @return Value.
      */
-    private Object read(MessageCollectionItemType type, MessageReader reader) {
+    protected Object read(MessageCollectionItemType type, MessageReader reader) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1770,6 +1780,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 return readMessage(reader);
 
@@ -1786,7 +1797,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /**
      * Array creator.
      */
-    private interface ArrayCreator<T> {
+    interface ArrayCreator<T> {
         /**
          * @param len Array length or {@code -1} if array was not fully read.
          * @return New array.

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.StringUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.expression.Aggregate;
+import org.h2.util.StatementBuilder;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.AVG;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.COUNT;
@@ -37,8 +40,50 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
 //        STDDEV_POP, STDDEV_SAMP, VAR_POP, VAR_SAMP, BOOL_OR, BOOL_AND, SELECTIVITY, HISTOGRAM,
     };
 
+    /**
+     * Map type.
+     *
+     * @param type H2 type.
+     * @return Ignite type, {@code null} if not supported.
+     */
+    @Nullable private static GridSqlFunctionType mapType(Aggregate.AggregateType type) {
+        switch (type) {
+            case COUNT_ALL:
+                return COUNT_ALL;
+
+            case COUNT:
+                return COUNT;
+
+            case GROUP_CONCAT:
+                return GROUP_CONCAT;
+
+            case SUM:
+                return SUM;
+
+            case MIN:
+                return MIN;
+
+            case MAX:
+                return MAX;
+
+            case AVG:
+                return AVG;
+        }
+
+        return null;
+    }
+
     /** */
     private final boolean distinct;
+
+    /** */
+    private GridSqlElement groupConcatSeparator;
+
+    /** */
+    private GridSqlElement[] groupConcatOrderExpression;
+
+    /** */
+    private boolean[] groupConcatOrderDesc;
 
     /**
      * @param distinct Distinct.
@@ -52,20 +97,20 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
 
     /**
      * @param distinct Distinct.
-     * @param typeId Type.
+     * @param type Type.
      */
-    public GridSqlAggregateFunction(boolean distinct, int typeId) {
-        this(distinct, TYPE_INDEX[typeId]);
+    public GridSqlAggregateFunction(boolean distinct, Aggregate.AggregateType type) {
+        this(distinct, mapType(type));
     }
 
     /**
      * Checks if the aggregate type is valid.
      *
-     * @param typeId Aggregate type id.
+     * @param type Aggregate type.
      * @return True is valid, otherwise false.
      */
-    protected static boolean isValidType(int typeId) {
-        return (typeId >= 0) && (typeId < TYPE_INDEX.length);
+    protected static boolean isValidType(Aggregate.AggregateType type) {
+        return mapType(type) != null;
     }
 
     /**
@@ -75,26 +120,74 @@ public class GridSqlAggregateFunction extends GridSqlFunction {
         return distinct;
     }
 
+    /**
+     * @param orderExpression Order expression.
+     * @param orderDesc Order descending flag.
+     * @return {@code this} for chaining.
+     */
+    public GridSqlAggregateFunction setGroupConcatOrder(GridSqlElement[] orderExpression, boolean[] orderDesc) {
+        groupConcatOrderExpression = orderExpression;
+        groupConcatOrderDesc = orderDesc;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} in case GROUP_CONCAT function contains ORDER BY expressions.
+     */
+    public boolean hasGroupConcatOrder() {
+        return ! F.isEmpty(groupConcatOrderExpression);
+    }
+
+    /**
+     * @param separator Separator expression.
+     * @return {@code this} for chaining.
+     */
+    public GridSqlAggregateFunction setGroupConcatSeparator(GridSqlElement separator) {
+        groupConcatSeparator = separator;
+
+        return this;
+    }
+
+    /**
+     * @return Separator expression.
+     */
+    public GridSqlElement getGroupConcatSeparator() {
+        return groupConcatSeparator;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        String text;
+        if (type == COUNT_ALL)
+            return "COUNT(*)";
 
-        switch (type) {
-            case GROUP_CONCAT:
-                throw new UnsupportedOperationException();
-
-            case COUNT_ALL:
-                return "COUNT(*)";
-
-            default:
-                text = type.name();
-
-                break;
-        }
+        StatementBuilder buff = new StatementBuilder(name()).append('(');
 
         if (distinct)
-            return text + "(DISTINCT " + child().getSQL() + ")";
+            buff.append("DISTINCT ");
 
-        return text + StringUtils.enclose(child().getSQL());
+        buff.append(child().getSQL());
+
+        if (!F.isEmpty(groupConcatOrderExpression)) {
+            buff.append(" ORDER BY ");
+
+            buff.resetCount();
+
+            for (int i = 0; i < groupConcatOrderExpression.length; ++i) {
+                buff.appendExceptFirst(", ");
+
+                buff.append(groupConcatOrderExpression[i].getSQL());
+
+                if (groupConcatOrderDesc[i])
+                    buff.append(" DESC");
+            }
+        }
+
+        if (groupConcatSeparator != null)
+            buff.append(" SEPARATOR ").append(groupConcatSeparator.getSQL());
+
+        buff.append(')');
+
+        return buff.toString();
     }
 }

@@ -38,13 +38,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -54,35 +54,29 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests cache in-place modification logic with iterative value increment.
  */
 public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of nodes to test on. */
     private static final int GRID_CNT = 2;
 
     /** Number of increment iterations. */
-    private static final int INCREMENTS = 100;
+    private final int INCREMENTS = SF.apply(100);
+
+    /** Number of test iterations. */
+    private final int ITERATIONS = SF.applyLB(10, 2);
 
     /** */
-    private static final int KEYS = 50;
+    private final int KEYS = SF.apply(50);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -91,7 +85,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(atomicityMode());
@@ -111,7 +105,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */
@@ -122,6 +116,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleEntryProcessorNodeJoin() throws Exception {
         checkEntryProcessorNodeJoin(false);
     }
@@ -129,6 +124,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllEntryProcessorNodeJoin() throws Exception {
         checkEntryProcessorNodeJoin(true);
     }
@@ -136,13 +132,14 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorNodeLeave() throws Exception {
         startGrid(GRID_CNT);
 
         // TODO: IGNITE-1525 (test fails with one-phase commit).
-        boolean createCache = atomicityMode() == TRANSACTIONAL;
+        boolean createCache = atomicityMode() != ATOMIC;
 
-        String cacheName = null;
+        String cacheName = DEFAULT_CACHE_NAME;
 
         if (createCache) {
             CacheConfiguration ccfg = cacheConfiguration();
@@ -160,7 +157,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
             final int RESTART_IDX = GRID_CNT + 1;
 
-            for (int iter = 0; iter < 10; iter++) {
+            for (int iter = 0; iter < ITERATIONS; iter++) {
                 log.info("Iteration: " + iter);
 
                 startGrid(RESTART_IDX);
@@ -179,7 +176,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     }
                 }, "stop-thread");
 
-                int increments = checkIncrement(cacheName, iter % 2 == 2, fut, latch);
+                int increments = checkIncrement(cacheName, iter % 2 == 1, fut, latch);
 
                 assert increments >= INCREMENTS;
 
@@ -212,34 +209,33 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;
 
-        try {
-            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        for (int i = 0; i < started; i++) {
-                            U.sleep(1_000);
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    for (int i = 0; i < started && !stop.get(); i++) {
+                        U.sleep(1_000);
 
+                        if (!stop.get())
                             startGrid(GRID_CNT + i);
-                        }
-                    }
-                    catch (Exception e) {
-                        error.compareAndSet(null, e);
                     }
                 }
-            }, 1, "starter");
+                catch (Exception e) {
+                    error.compareAndSet(null, e);
+                }
+            }
+        }, "starter");
 
+        try {
             try {
-                checkIncrement(null, invokeAll, null, null);
+                checkIncrement(DEFAULT_CACHE_NAME, invokeAll, null, null);
             }
             finally {
-                stop.set(true);
-
                 fut.get(getTestTimeout());
             }
 
             for (int i = 0; i < KEYS; i++) {
                 for (int g = 0; g < GRID_CNT + started; g++) {
-                    Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
+                    Set<String> vals = ignite(g).<String, Set<String>>cache(DEFAULT_CACHE_NAME).get("set-" + i);
 
                     assertNotNull(vals);
                     assertEquals(INCREMENTS, vals.size());
@@ -247,8 +243,10 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }
         }
         finally {
-            for (int i = 0; i < started; i++)
-                stopGrid(GRID_CNT + i);
+            stop.set(true);
+
+            if (!fut.isDone())
+                fut.cancel();
         }
     }
 
@@ -257,8 +255,8 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @param invokeAll If {@code true} tests invokeAll operation.
      * @param fut If not null then executes updates while future is not done.
      * @param latch Latch to count down when first update is done.
-     * @throws Exception If failed.
      * @return Number of increments.
+     * @throws Exception If failed.
      */
     private int checkIncrement(
         String cacheName,
@@ -289,7 +287,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     EntryProcessorResult<Integer> res = resMap.get(key);
 
                     assertNotNull(res);
-                    assertEquals(k + 1, (Object) res.get());
+                    assertEquals(k + 1, (Object)res.get());
                 }
             }
             else {
@@ -323,60 +321,61 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplaceNodeJoin() throws Exception {
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final int started = 6;
 
-        try {
-            int keys = 100;
+        int keys = 100;
 
-            final AtomicBoolean done = new AtomicBoolean(false);
+        final AtomicBoolean stop = new AtomicBoolean(false);
 
-            for (int i = 0; i < keys; i++)
-                ignite(0).cache(null).put(i, 0);
+        for (int i = 0; i < keys; i++)
+            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, 0);
 
-            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        for (int i = 0; i < started; i++) {
-                            U.sleep(1_000);
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    for (int i = 0; i < started && !stop.get(); i++) {
+                        U.sleep(1_000);
 
-                            IgniteEx grid = startGrid(GRID_CNT + i);
+                        if (stop.get())
+                            continue;
 
-                            info("Test started grid [idx=" + (GRID_CNT + i) + ", nodeId=" + grid.localNode().id() + ']');
-                        }
-                    }
-                    catch (Exception e) {
-                        error.compareAndSet(null, e);
-                    }
-                    finally {
-                        done.set(true);
+                        IgniteEx grid = startGrid(GRID_CNT + i);
+
+                        info("Test started grid [idx=" + (GRID_CNT + i) + ", nodeId=" + grid.localNode().id() + ']');
                     }
                 }
-            }, 1, "starter");
+                catch (Exception e) {
+                    error.compareAndSet(null, e);
+                }
+                finally {
+                    stop.set(true);
+                }
+            }
+        }, 1, "starter");
 
+        try {
             int updVal = 0;
 
-            try {
-                while (!done.get()) {
-                    info("Will put: " + (updVal + 1));
+            while (!stop.get()) {
+                info("Will put: " + (updVal + 1));
 
-                    for (int i = 0; i < keys; i++)
-                        assertTrue("Failed [key=" + i + ", oldVal=" + updVal+ ']',
-                            ignite(0).cache(null).replace(i, updVal, updVal + 1));
+                for (int i = 0; i < keys; i++)
+                    assertTrue("Failed [key=" + i + ", oldVal=" + updVal + ']',
+                        ignite(0).cache(DEFAULT_CACHE_NAME).replace(i, updVal, updVal + 1));
 
-                    updVal++;
-                }
+                updVal++;
             }
-            finally {
-                fut.get(getTestTimeout());
-            }
+
+            fut.get(getTestTimeout());
 
             for (int i = 0; i < keys; i++) {
                 for (int g = 0; g < GRID_CNT + started; g++) {
-                    Integer val = ignite(g).<Integer, Integer>cache(null).get(i);
+                    Integer val = ignite(g).<Integer, Integer>cache(DEFAULT_CACHE_NAME).get(i);
 
-                    GridCacheEntryEx entry = ((IgniteKernal)grid(g)).internalCache(null).peekEx(i);
+                    GridCacheEntryEx entry = ((IgniteKernal)grid(g)).internalCache(DEFAULT_CACHE_NAME).peekEx(i);
 
                     if (updVal != val)
                         info("Invalid value for grid [g=" + g + ", entry=" + entry + ']');
@@ -386,8 +385,10 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }
         }
         finally {
-            for (int i = 0; i < started; i++)
-                stopGrid(GRID_CNT + i);
+            stop.set(true);
+
+            if (!fut.isDone())
+                fut.cancel();
         }
     }
 

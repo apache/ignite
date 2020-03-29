@@ -23,16 +23,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,8 +42,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -58,7 +61,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -80,6 +85,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysCommit() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 
@@ -92,6 +98,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysRollback() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 
@@ -104,6 +111,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureCommit() throws Exception {
         checkPrimaryNodeCrash(true);
     }
@@ -111,6 +119,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureRollback() throws Exception {
         checkPrimaryNodeCrash(false);
     }
@@ -162,7 +171,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).cache(DEFAULT_CACHE_NAME).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -174,7 +183,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(grid(1).affinity(null).mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(grid(1).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(txNode);
 
@@ -191,7 +200,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                IgniteCache<Integer, String> cache = originatingNodeGrid.cache(null);
+                IgniteCache<Integer, String> cache = originatingNodeGrid.cache(DEFAULT_CACHE_NAME);
 
                 assertNotNull(cache);
 
@@ -204,11 +213,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     info("Before commitAsync");
 
-                    tx = (Transaction)tx.withAsync();
-
-                    tx.commit();
-
-                    IgniteFuture<Transaction> fut = tx.future();
+                    IgniteFuture<?> fut = tx.commitAsync();
 
                     info("Got future for commitAsync().");
 
@@ -233,7 +238,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (IgniteKernal g : grids) {
-                    GridCacheAdapter<?, ?> cache = g.internalCache();
+                    GridCacheAdapter<?, ?> cache = g.internalCache(DEFAULT_CACHE_NAME);
 
                     IgniteTxManager txMgr = cache.isNear() ?
                         ((GridNearCacheAdapter)cache).dht().context().tm() :
@@ -269,12 +274,14 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        IgniteCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         assertNotNull(cache);
 
-                        assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            fullFailure ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                        if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
+                            assertEquals("Failed to check entry value on node: " + checkNodeId,
+                                fullFailure ? initVal : val, cache.localPeek(key));
+                        }
 
                         return null;
                     }
@@ -282,9 +289,25 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         }
 
+        awaitPartitionMapExchange();
+
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Ignite g : G.allGrids())
-                assertEquals(fullFailure ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
+            long cntr0 = -1;
+
+            for (Ignite g : G.allGrids()) {
+                Integer key = e.getKey();
+
+                assertEquals(fullFailure ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(key));
+
+                if (g.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(((IgniteEx)g).localNode(), key)) {
+                    long nodeCntr = updateCoutner(g, key);
+
+                    if (cntr0 == -1)
+                        cntr0 = nodeCntr;
+
+                    assertEquals(cntr0, nodeCntr);
+                }
+            }
         }
     }
 
@@ -316,14 +339,14 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).cache(DEFAULT_CACHE_NAME).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         info("Failing node ID: " + grid(1).localNode().id());
 
@@ -349,12 +372,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
             TransactionProxyImpl txProxy = (TransactionProxyImpl)tx;
 
-            IgniteInternalTx txEx = txProxy.tx();
+            GridNearTxLocal txEx = txProxy.tx();
 
             assertTrue(txEx.pessimistic());
 
             if (commmit) {
-                txEx.prepare();
+                txEx.prepare(true);
 
                 // Fail the node in the middle of transaction.
                 info(">>> Stopping primary node " + primaryNode);
@@ -380,7 +403,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 for (IgniteKernal g : grids) {
-                    GridCacheAdapter<?, ?> cache = g.internalCache();
+                    GridCacheAdapter<?, ?> cache = g.internalCache(DEFAULT_CACHE_NAME);
 
                     IgniteTxManager txMgr = cache.isNear() ?
                         ((GridNearCacheAdapter)cache).dht().context().tm() :
@@ -407,6 +430,9 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
             assertFalse(e.getValue().isEmpty());
 
+            if (atomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                continue;
+
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
@@ -416,12 +442,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        IgniteCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            !commmit ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                            !commmit ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }
@@ -429,9 +455,25 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         }
 
+        awaitPartitionMapExchange();
+
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Ignite g : G.allGrids())
-                assertEquals(!commmit ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
+            long cntr0 = -1;
+
+            for (Ignite g : G.allGrids()) {
+                Integer key = e.getKey();
+
+                assertEquals(!commmit ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(key));
+
+                if (g.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(((IgniteEx)g).localNode(), key)) {
+                    long nodeCntr = updateCoutner(g, key);
+
+                    if (cntr0 == -1)
+                        cntr0 = nodeCntr;
+
+                    assertEquals(cntr0, nodeCntr);
+                }
+            }
         }
     }
 
@@ -448,8 +490,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
             @Override public void sendMessage(ClusterNode node, Message msg,
@@ -473,8 +515,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
@@ -533,5 +575,22 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         }
         else
             return false;
+    }
+
+    /** */
+    private static long updateCoutner(Ignite ign, Object key) {
+        return dataStore(((IgniteEx)ign).cachex(DEFAULT_CACHE_NAME).context(), key)
+            .map(IgniteCacheOffheapManager.CacheDataStore::updateCounter)
+            .orElse(0L);
+    }
+
+    /** */
+    private static Optional<IgniteCacheOffheapManager.CacheDataStore> dataStore(
+        GridCacheContext<?, ?> cctx, Object key) {
+        int p = cctx.affinity().partition(key);
+
+        return StreamSupport.stream(cctx.offheap().cacheDataStores().spliterator(), false)
+            .filter(ds -> ds.partId() == p)
+            .findFirst();
     }
 }

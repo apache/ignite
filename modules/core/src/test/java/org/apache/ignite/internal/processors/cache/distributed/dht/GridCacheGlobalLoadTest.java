@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -31,9 +32,10 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -69,37 +71,58 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         return new NearCacheConfiguration();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLoadCache() throws Exception {
-        loadCache(false);
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testLoadCache() throws Exception {
+        loadCache(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLoadCacheAsyncOld() throws Exception {
+        loadCache(true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testLoadCacheAsync() throws Exception {
-        loadCache(true);
+        loadCache(true, false);
     }
 
     /**
      * @param async If {@code true} uses asynchronous method.
+     * @param oldAsyncApi Flag to use old async API.
      * @throws Exception If failed.
      */
-    private void loadCache(boolean async) throws Exception {
+    private void loadCache(boolean async, boolean oldAsyncApi) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
         assertTrue(asyncCache.isAsync());
 
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         if (async) {
-            asyncCache.loadCache(null, 1, 2, 3);
+            if (oldAsyncApi) {
+                asyncCache.loadCache(null, 1, 2, 3);
 
-            asyncCache.future().get();
+                asyncCache.future().get();
+            } else
+                cache.loadCacheAsync(null, 1, 2, 3).get();
         }
         else
             cache.loadCache(null, 1, 2, 3);
@@ -109,7 +132,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         Object[] expArgs = {1, 2, 3};
 
         for (int i = 0; i < gridCount(); i++) {
-            Object[] args = map.get(getTestGridName(i));
+            Object[] args = map.get(getTestIgniteInstanceName(i));
 
             Assert.assertArrayEquals(expArgs, args);
         }
@@ -118,7 +141,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         assertEquals(cache.get(2), (Integer)2);
         assertEquals(cache.get(3), (Integer)3);
 
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         if (async) {
             asyncCache.loadCache(new IgniteBiPredicate<Integer, Integer>() {
@@ -148,7 +171,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         expArgs = new Object[]{1, 2, 3, 4, 5, 6};
 
         for (int i = 0; i < gridCount(); i++) {
-            Object[] args = map.get(getTestGridName(i));
+            Object[] args = map.get(getTestIgniteInstanceName(i));
 
             Assert.assertArrayEquals(expArgs, args);
         }

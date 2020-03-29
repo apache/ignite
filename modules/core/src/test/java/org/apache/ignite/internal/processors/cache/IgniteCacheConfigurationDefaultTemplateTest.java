@@ -21,25 +21,18 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        CacheConfiguration templateCfg = new CacheConfiguration();
+        CacheConfiguration templateCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         templateCfg.setName("org.apache.ignite.template*");
         templateCfg.setBackups(3);
@@ -59,6 +52,7 @@ public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultTemplate() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -66,11 +60,11 @@ public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstr
 
         checkDefaultTemplate(ignite, "org.apache.ignite.templat");
 
-        checkDefaultTemplate(ignite, null);
+        checkDefaultTemplate(ignite, DEFAULT_CACHE_NAME);
 
         checkGetOrCreate(ignite, "org.apache.ignite.template", 3);
 
-        CacheConfiguration templateCfg = new CacheConfiguration();
+        CacheConfiguration templateCfg = new CacheConfiguration("*");
 
         templateCfg.setBackups(4);
 

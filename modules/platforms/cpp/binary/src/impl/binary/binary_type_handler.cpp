@@ -25,53 +25,22 @@ namespace ignite
     {
         namespace binary
         {
-            BinaryTypeHandler::BinaryTypeHandler(SPSnap snap) : snap(snap), fieldIds(NULL), fields(NULL)
+            BinaryTypeHandler::BinaryTypeHandler(SPSnap snap) :
+                origin(snap),
+                updated()
             {
                 // No-op.
-            }
-            
-            BinaryTypeHandler::~BinaryTypeHandler()
-            {
-                if (fieldIds)
-                    delete fieldIds;
-
-                if (fields)
-                    delete fields;
             }
 
             void BinaryTypeHandler::OnFieldWritten(int32_t fieldId, std::string fieldName, int32_t fieldTypeId)
             {
-                if (!snap.Get() || !snap.Get()->ContainsFieldId(fieldId))
+                if (!origin.Get() || !origin.Get()->ContainsFieldId(fieldId))
                 {
-                    if (!HasDifference())
-                    {
-                        fieldIds = new std::set<int32_t>();
-                        fields = new std::map<std::string, int32_t>();
-                    }
+                    if (!updated.Get())
+                        updated = SPSnap(new Snap(*origin.Get()));
 
-                    fieldIds->insert(fieldId);
-                    (*fields)[fieldName] = fieldTypeId;
+                    updated.Get()->AddField(fieldId, fieldName, fieldTypeId);
                 }
-            }
-
-            SPSnap BinaryTypeHandler::GetSnapshot()
-            {
-                return snap;
-            }
-
-            bool BinaryTypeHandler::HasDifference()
-            {
-                return fieldIds ? true : false;
-            }
-
-            std::set<int32_t>* BinaryTypeHandler::GetFieldIds()
-            {
-                return fieldIds;
-            }
-
-            std::map<std::string, int32_t>* BinaryTypeHandler::GetFields()
-            {
-                return fields;
             }
         }
     }

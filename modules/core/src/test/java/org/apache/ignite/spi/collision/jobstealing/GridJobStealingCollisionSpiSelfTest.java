@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.STEALING_ATTEMPT_COUNT_ATTR;
@@ -148,6 +149,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testTwoPassiveJobs() throws Exception {
         final List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
         final List<CollisionJobContext> activeCtxs = new ArrayList<>(1);
@@ -184,6 +186,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testOnePassiveOneActiveJobs() throws Exception {
         List<CollisionJobContext> waitCtxs = new ArrayList<>(1);
 
@@ -217,6 +220,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultiplePassiveOneActive() throws Exception {
         List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
 
@@ -254,6 +258,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultiplePassiveZeroActive() throws Exception {
         final List<CollisionJobContext> waitCtxs = new ArrayList<>(2);
         final List<CollisionJobContext> activeCtxs = new ArrayList<>(2);
@@ -309,6 +314,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testOnePassiveZeroActive() throws Exception {
         List<CollisionJobContext> waitCtxs = new ArrayList<>(1);
 
@@ -335,6 +341,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testZeroPassiveOneActive() throws Exception {
         Collection<CollisionJobContext> empty = Collections.emptyList();
 
@@ -362,6 +369,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testZeroPassiveZeroActive() throws Exception {
         Collection<CollisionJobContext> empty = Collections.emptyList();
 
@@ -383,6 +391,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMaxHopsExceeded() throws Exception {
         Collection<CollisionJobContext> waitCtxs = new ArrayList<>(2);
 

@@ -18,17 +18,15 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
-import org.jsr166.ThreadLocalRandom8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -43,9 +41,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  */
 public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int GRID_CNT = 3;
 
     /** */
@@ -58,14 +53,8 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     private String[] vals = new String[2048];
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeProperties();
 
@@ -82,8 +71,6 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             cc.setNearConfiguration(null);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setStartSize(ENTRY_CNT / GRID_CNT);
-            cc.setSwapEnabled(false);
 
             cc.setBackups(1);
 
@@ -101,12 +88,12 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         for (int i = 0; i < vals.length; i++) {
-            int valLen = ThreadLocalRandom8.current().nextInt(128, 512);
+            int valLen = ThreadLocalRandom.current().nextInt(128, 512);
 
             StringBuilder sb = new StringBuilder();
 
             for (int j = 0; j < valLen; j++)
-                sb.append('a' + ThreadLocalRandom8.current().nextInt(20));
+                sb.append('a' + ThreadLocalRandom.current().nextInt(20));
 
             vals[i] = sb.toString();
 
@@ -117,6 +104,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         doTest();
     }
@@ -138,13 +126,13 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid();
 
-            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(null);
+            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
             ldr.perNodeBufferSize(8192);
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 
-            final LongAdder8 cnt = new LongAdder8();
+            final LongAdder cnt = new LongAdder();
 
             long start = U.currentTimeMillis();
 
@@ -173,7 +161,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             multithreaded(new Callable<Object>() {
                 @SuppressWarnings("InfiniteLoopStatement")
                 @Override public Object call() throws Exception {
-                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (true) {
                         int i = rnd.nextInt(ENTRY_CNT);

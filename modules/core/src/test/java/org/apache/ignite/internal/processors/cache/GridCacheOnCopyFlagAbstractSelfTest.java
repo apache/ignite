@@ -36,11 +36,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.junit.Assert.assertNotEquals;
 
@@ -48,9 +46,6 @@ import static org.junit.Assert.assertNotEquals;
  * Tests that cache value is copied for get, interceptor and invoke closure.
  */
 public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     public static final int ITER_CNT = 1000;
 
@@ -80,14 +75,8 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(spi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setPeerClassLoadingEnabled(p2pEnabled);
 
@@ -96,7 +85,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
         return c;
     }
 
-    /** {@inheritDoc} */
+    /** */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();
@@ -117,6 +106,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadFlagP2PEnabled() throws Exception {
         doTest(true);
     }
@@ -124,6 +114,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCopyOnReadFlagP2PDisbaled() throws Exception {
         doTest(false);
     }
@@ -178,7 +169,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                 cache.put(key, val);
 
                 CacheObject obj =
-                    ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
+                    ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(key).peekVisibleValue();
 
                 // Check thar internal entry wasn't changed.
                 assertEquals(i, getValue(obj, cache));
@@ -211,7 +202,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
                 cache.put(key, newTestVal);
 
-                obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
+                obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(key).peekVisibleValue();
 
                 // Check thar internal entry wasn't changed.
                 assertEquals(-i, getValue(obj, cache));
@@ -290,7 +281,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                 });
 
                 CacheObject obj =
-                    ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
+                    ((GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate()).peekEx(key).peekVisibleValue();
 
                 assertNotEquals(WRONG_VALUE, getValue(obj, cache));
             }

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains default no-op indexing SPI implementation.
  */
+
 package org.apache.ignite.spi.indexing.noop;

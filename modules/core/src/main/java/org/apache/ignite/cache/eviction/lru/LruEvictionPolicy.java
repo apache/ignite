@@ -22,6 +22,7 @@ import java.util.Collections;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
 
@@ -42,7 +43,7 @@ import org.jsr166.ConcurrentLinkedDeque8.Node;
  * This implementation is very efficient since it is lock-free and does not create any additional table-like
  * data structures. The {@code LRU} ordering information is maintained by attaching ordering metadata to cache entries.
  */
-public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements LruEvictionPolicyMBean {
+public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements IgniteMBeanAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,6 +72,27 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
         return queue.sizex();
     }
 
+    /** {@inheritDoc} */
+    @Override public LruEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {
+        super.setMaxMemorySize(maxMemSize);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public LruEvictionPolicy<K, V> setMaxSize(int max) {
+        super.setMaxSize(max);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public LruEvictionPolicy<K, V> setBatchSize(int batchSize) {
+        super.setBatchSize(batchSize);
+
+        return this;
+    }
+
     /**
      * Gets read-only view on internal {@code FIFO} queue in proper order.
      *
@@ -81,7 +103,6 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
@@ -163,7 +184,57 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
     }
 
     /** {@inheritDoc} */
+    @Override public Object getMBean() {
+        return new LruEvictionPolicyMBeanImpl();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LruEvictionPolicy.class, this, "size", getCurrentSize());
+    }
+
+    /**
+     * MBean implementation for LruEvictionPolicy.
+     */
+    private class LruEvictionPolicyMBeanImpl implements LruEvictionPolicyMBean {
+        /** {@inheritDoc} */
+        @Override public long getCurrentMemorySize() {
+            return LruEvictionPolicy.this.getCurrentMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentSize() {
+            return LruEvictionPolicy.this.getCurrentSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxSize() {
+            return LruEvictionPolicy.this.getMaxSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxSize(int max) {
+            LruEvictionPolicy.this.setMaxSize(max);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getBatchSize() {
+            return LruEvictionPolicy.this.getBatchSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setBatchSize(int batchSize) {
+            LruEvictionPolicy.this.setBatchSize(batchSize);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMemorySize() {
+            return LruEvictionPolicy.this.getMaxMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxMemorySize(long maxMemSize) {
+            LruEvictionPolicy.this.setMaxMemorySize(maxMemSize);
+        }
     }
 }

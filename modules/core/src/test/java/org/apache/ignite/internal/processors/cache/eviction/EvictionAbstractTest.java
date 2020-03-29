@@ -38,12 +38,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -63,9 +61,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
-    /** IP finder. */
-    protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Put entry size. */
     protected static final int PUT_ENTRY_SIZE = 10;
 
@@ -74,12 +69,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
     /** Near enabled flag. */
     protected boolean nearEnabled;
-
-    /** Evict backup sync. */
-    protected boolean evictSync;
-
-    /** Evict near sync. */
-    protected boolean evictNearSync = true;
 
     /** Policy max. */
     protected int plcMax = 10;
@@ -103,17 +92,15 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     protected EvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
         cc.setEvictionPolicy(createPolicy(plcMax));
-        cc.setEvictSynchronized(evictSync);
-        cc.setSwapEnabled(false);
+        cc.setOnheapCacheEnabled(true);
         cc.setWriteSynchronizationMode(syncCommit ? FULL_SYNC : FULL_ASYNC);
-        cc.setStartSize(plcMax);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (nearEnabled) {
@@ -134,12 +121,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
         c.setCacheConfiguration(cc);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
         c.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
         c.setIncludeProperties();
@@ -150,13 +131,12 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         filter = null;
-
-        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePolicy() throws Exception {
         plcMax = 3;
         plcMaxMemSize = 0;
@@ -168,6 +148,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePolicyWithBatch() throws Exception {
         plcMax = 3;
         plcMaxMemSize = 0;
@@ -179,6 +160,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizePolicy() throws Exception {
         plcMax = 0;
         plcMaxMemSize = 3 * MockEntry.ENTRY_SIZE;
@@ -192,6 +174,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizePolicyWithBatch() throws Exception {
         plcMax = 3;
         plcMaxMemSize = 10 * MockEntry.ENTRY_SIZE;
@@ -203,6 +186,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeMemory() throws Exception {
         int max = 10;
 
@@ -216,6 +200,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeMemoryWithBatch() throws Exception {
         int max = 10;
 
@@ -229,6 +214,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizeMemory() throws Exception {
         int max = 10;
 
@@ -242,6 +228,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeRandom() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -253,6 +240,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeRandomWithBatch() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -264,6 +252,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizeRandom() throws Exception {
         plcMax = 0;
         plcMaxMemSize = 10 * MockEntry.KEY_SIZE;
@@ -275,6 +264,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeAllowEmptyEntries() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -286,6 +276,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizeAllowEmptyEntriesWithBatch() throws Exception {
         plcMax = 10;
         plcMaxMemSize = 0;
@@ -297,6 +288,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizeAllowEmptyEntries() throws Exception {
         plcMax = 0;
         plcMaxMemSize = 10 * MockEntry.KEY_SIZE;
@@ -308,6 +300,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePut() throws Exception {
         plcMax = 100;
         plcBatchSize = 1;
@@ -319,6 +312,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxSizePutWithBatch() throws Exception {
         plcMax = 100;
         plcBatchSize = 2;
@@ -330,6 +324,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxMemSizePut() throws Exception {
         int max = 100;
 
@@ -488,7 +483,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         try {
             Ignite ignite = startGrid();
 
-            IgniteCache<Object, Object> cache = ignite.cache(null);
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             int cnt = 500;
 
@@ -603,7 +598,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)grid().cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
+        return (T)grid().cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -612,7 +607,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)grid(i).cache(null).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
+        return (T)grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getEvictionPolicy();
     }
 
     /**
@@ -621,7 +616,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        CacheConfiguration cfg = grid(i).cache(null).getConfiguration(CacheConfiguration.class);
+        CacheConfiguration cfg = grid(i).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class);
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -648,7 +643,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      * @param c Collection.
      * @return String.
      */
-    @SuppressWarnings("unchecked")
     protected static String string(Iterable<? extends Cache.Entry> c) {
         return "[" +
             F.fold(
@@ -663,6 +657,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMaxSizePartitionedNearDisabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -675,6 +670,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMaxSizePartitionedNearDisabledWithBatch() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -688,6 +684,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMaxMemSizePartitionedNearDisabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
@@ -701,12 +698,12 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearEnabled() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;
         nearMax = 3;
         plcMax = 10;
-        evictNearSync = true;
         syncCommit = true;
 
         gridCnt = 2;
@@ -715,11 +712,11 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearDisabledMultiThreaded() throws Exception {
         mode = PARTITIONED;
         nearEnabled = false;
         plcMax = 100;
-        evictSync = false;
 
         gridCnt = 2;
 
@@ -727,39 +724,33 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     }
 
     /** @throws Exception If failed. */
-    public void testPartitionedNearDisabledBackupSyncMultiThreaded() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = false;
-        plcMax = 100;
-        evictSync = true;
-
-        gridCnt = 2;
-
-        checkPartitionedMultiThreaded();
-    }
-
-    /** @throws Exception If failed. */
+    @Test
     public void testPartitionedNearEnabledMultiThreaded() throws Exception {
         mode = PARTITIONED;
         nearEnabled = true;
         plcMax = 10;
-        evictSync = false;
 
         gridCnt = 2;
 
         checkPartitionedMultiThreaded();
     }
 
-    /** @throws Exception If failed. */
-    public void testPartitionedNearEnabledBackupSyncMultiThreaded() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = true;
-        plcMax = 10;
-        evictSync = true;
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testEvictionPolicyMbeanValidity() throws Exception {
+        try {
+            Ignite ignite = startGrids(2);
 
-        gridCnt = 2;
+            //Instantiate policy object to know exact class.
+            EvictionPolicy plc = createPolicy(0);
 
-        checkPartitionedMultiThreaded();
+            validateMbeans(ignite, plc.getClass().getName());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -779,7 +770,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).cache(DEFAULT_CACHE_NAME);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -815,7 +806,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
                 if (plcMax > 0) {
                     for (int i = 0; i < gridCnt; i++) {
-                        int actual = colocated(i).size();
+                        int actual = colocated(i).map().internalSize();
 
                         assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
                             actual <= endSize + (plcMaxMemSize > 0 ? 1 : plcBatchSize));
@@ -848,7 +839,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
                         IgniteEx grid = grid(rand.nextInt(2));
 
-                        IgniteCache<Integer, String> cache = grid.cache(null);
+                        IgniteCache<Integer, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
@@ -925,7 +916,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     /**
      *
      */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static class MockEntry extends GridCacheMockEntry<String, String> {
         /** Key size. */
         public static final int KEY_SIZE = 1;
@@ -968,7 +958,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public <T> T unwrap(Class<T> clazz) {
             if (clazz.isAssignableFrom(IgniteCache.class))
                 return (T)parent;
@@ -1008,15 +997,16 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
         /**
          * @param plc Policy.
+         * @return Policy proxy.
          */
         public static EvictionPolicyProxy proxy(EvictionPolicy plc) {
             return new EvictionPolicyProxy(plc);
         }
 
         /**
-         * Get current size.
+         * @return Get current size.
          */
-        public int getCurrentSize() {
+        int getCurrentSize() {
             try {
                 return (Integer)plc.getClass().getDeclaredMethod("getCurrentSize").invoke(plc);
             }
@@ -1026,9 +1016,9 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /**
-         * Current memory size.
+         * @return Current memory size.
          */
-        public long getCurrentMemorySize() {
+        long getCurrentMemorySize() {
             try {
                 return (Long)plc.getClass().getMethod("getCurrentMemorySize").invoke(plc);
             }
@@ -1038,7 +1028,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         }
 
         /**
-         * Current queue.
+         * @return Current queue.
          */
         public Collection<EvictableEntry> queue() {
             try {

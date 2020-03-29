@@ -30,29 +30,30 @@ import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for NIO future.
  */
 public class GridNioFutureSelfTest extends GridCommonAbstractTest {
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnDone() throws Exception {
-        GridNioFutureImpl<String> fut = new GridNioFutureImpl<>();
+        GridNioFutureImpl<String> fut = new GridNioFutureImpl<>(null);
 
         fut.onDone();
 
         assertNull(fut.get());
 
-        fut = new GridNioFutureImpl<>();
+        fut = new GridNioFutureImpl<>(null);
 
         fut.onDone("test");
 
         assertEquals("test", fut.get());
 
-        fut = new GridNioFutureImpl<>();
+        fut = new GridNioFutureImpl<>(null);
 
         fut.onDone(new IgniteCheckedException("TestMessage"));
 
@@ -64,7 +65,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
             }
         }, IgniteCheckedException.class, "TestMessage");
 
-        fut = new GridNioFutureImpl<>();
+        fut = new GridNioFutureImpl<>(null);
 
         fut.onDone("test", new IgniteCheckedException("TestMessage"));
 
@@ -76,7 +77,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
             }
         }, IgniteCheckedException.class, "TestMessage");
 
-        fut = new GridNioFutureImpl<>();
+        fut = new GridNioFutureImpl<>(null);
 
         fut.onDone("test");
 
@@ -86,12 +87,13 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
+    @Test
     public void testOnCancelled() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridNioFutureImpl<String> fut = new GridNioFutureImpl<>();
+                GridNioFutureImpl<String> fut = new GridNioFutureImpl<>(null);
 
                 fut.onCancelled();
 
@@ -101,7 +103,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                GridNioFutureImpl<String> fut = new GridNioFutureImpl<>();
+                GridNioFutureImpl<String> fut = new GridNioFutureImpl<>(null);
 
                 fut.onCancelled();
 
@@ -115,8 +117,9 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testListenSyncNotify() throws Exception {
-        GridNioFutureImpl<String> fut = new GridNioFutureImpl<>();
+        GridNioFutureImpl<String> fut = new GridNioFutureImpl<>(null);
 
         int lsnrCnt = 10;
 
@@ -166,10 +169,11 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
-        GridNioFutureImpl<Object> unfinished = new GridNioFutureImpl<>();
-        GridNioFutureImpl<Object> finished = new GridNioFutureImpl<>();
-        GridNioFutureImpl<Object> cancelled = new GridNioFutureImpl<>();
+        GridNioFutureImpl<Object> unfinished = new GridNioFutureImpl<>(null);
+        GridNioFutureImpl<Object> finished = new GridNioFutureImpl<>(null);
+        GridNioFutureImpl<Object> cancelled = new GridNioFutureImpl<>(null);
 
         finished.onDone("Finished");
 

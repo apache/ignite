@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// <summary>
     /// Affinity topology version.
     /// </summary>
-    public struct AffinityTopologyVersion : IEquatable<AffinityTopologyVersion>
+    public struct AffinityTopologyVersion : IEquatable<AffinityTopologyVersion>, IComparable<AffinityTopologyVersion>
     {
         /** */
         private readonly long _version;
@@ -101,8 +101,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Implements the operator ==.
         /// </summary>
-        /// <param name="left">The left.</param>
-        /// <param name="right">The right.</param>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
         /// <returns>
         /// The result of the operator.
         /// </returns>
@@ -114,14 +114,66 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Implements the operator !=.
         /// </summary>
-        /// <param name="left">The left.</param>
-        /// <param name="right">The right.</param>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
         /// <returns>
         /// The result of the operator.
         /// </returns>
         public static bool operator !=(AffinityTopologyVersion left, AffinityTopologyVersion right)
         {
             return !left.Equals(right);
+        }
+
+        /// <summary>
+        /// Implements the operator 'less than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator <(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) < 0;
+        }
+
+        /// <summary>
+        /// Implements the operator 'greater than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator >(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) > 0;
+        }
+
+        /// <summary>
+        /// Implements the operator 'less or equal than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator <=(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) <= 0;
+        }
+
+        /// <summary>
+        /// Implements the operator 'greater or equal than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator >=(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) >= 0;
         }
 
         /// <summary>
@@ -133,6 +185,20 @@ namespace Apache.Ignite.Core.Cache.Affinity
         public override string ToString()
         {
             return string.Format("AffinityTopologyVersion [Version={0}, MinorVersion={1}]", _version, _minorVersion);
+        }
+
+        /// <summary>
+        /// Compares the current instance with another object of the same type and returns an integer that indicates
+        /// whether the current instance precedes, follows,
+        /// or occurs in the same position in the sort order as the other object.
+        /// </summary>
+        public int CompareTo(AffinityTopologyVersion other)
+        {
+            var versionComparison = _version.CompareTo(other._version);
+
+            return versionComparison != 0
+                ? versionComparison
+                : _minorVersion.CompareTo(other._minorVersion);
         }
     }
 }

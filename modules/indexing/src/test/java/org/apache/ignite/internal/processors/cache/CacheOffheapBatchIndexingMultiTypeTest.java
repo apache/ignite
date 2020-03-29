@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Test;
 
 /**
  * Tests various cache operations with indexing enabled.
@@ -31,33 +31,22 @@ public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchInd
     /**
      * Tests putAll with multiple indexed entities and streamer pre-loading with low off-heap cache size.
      */
+    @Test
     public void testPutAllMultupleEntitiesAndStreamer() {
         doStreamerBatchTest(50, 1_000, new Class<?>[] {
             Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
             Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            1,
-            true);
-    }
-
-    /**
-     * Tests putAll with multiple indexed entities and streamer preloading with default off-heap cache size.
-     */
-    public void testPutAllMultupleEntitiesAndStreamerDfltOffHeapRowCacheSize() {
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {
-            Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
-            Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE,
             true);
     }
 
     /**
      * Tests putAll after with streamer batch load with one entity.
      */
+    @Test
     public void testPuAllSingleEntity() {
         doStreamerBatchTest(50,
             1_000,
             new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            1,
             false);
     }
 
@@ -65,18 +54,16 @@ public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchInd
      * @param iterations Number of iterations.
      * @param entitiesCnt Number of entities to put.
      * @param entityClasses Entity classes.
-     * @param onHeapRowCacheSize Cache size.
      * @param preloadInStreamer Data preload flag.
      */
     private void doStreamerBatchTest(int iterations,
         int entitiesCnt,
         Class<?>[] entityClasses,
-        int onHeapRowCacheSize,
         boolean preloadInStreamer) {
         Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache =
-            ignite.createCache(cacheConfiguration(onHeapRowCacheSize, entityClasses));
+            ignite.createCache(cacheConfiguration(entityClasses));
 
         try {
             if (preloadInStreamer)

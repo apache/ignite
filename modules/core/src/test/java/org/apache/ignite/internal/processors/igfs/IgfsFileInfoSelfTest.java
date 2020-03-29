@@ -17,36 +17,41 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.Externalizable;
+import java.util.Random;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Externalizable;
-import java.util.Random;
-import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * {@link IgfsEntryInfo} test case.
  */
 public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final Marshaller marshaller = new OptimizedMarshaller();
+    private final Marshaller marshaller;
+
+    /** Ctor. */
+    public IgfsFileInfoSelfTest() throws IgniteCheckedException {
+        marshaller = createStandaloneBinaryMarshaller();
+    }
+
 
     /**
      * Test node info serialization.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         marshaller.setContext(new MarshallerContextTestImpl());
 
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
             @Nullable @Override public Object call() throws IgniteCheckedException {
                 testSerialization(IgfsUtils.createDirectory(IgniteUuid.randomUuid()));
 

@@ -17,40 +17,50 @@
 
 package org.apache.ignite.internal.visor.event;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.UUID;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for lightweight counterpart for various {@link org.apache.ignite.events.Event}.
  */
-public class VisorGridEvent implements Serializable, LessNamingBean {
+public class VisorGridEvent extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Event type. */
-    private final int typeId;
+    private int typeId;
 
     /** Globally unique ID of this event. */
-    private final IgniteUuid id;
+    private IgniteUuid id;
 
     /** Name of this event. */
-    private final String name;
+    private String name;
 
     /** Node Id where event occurred and was recorded. */
-    private final UUID nid;
+    private UUID nid;
 
     /** Event timestamp. */
-    private final long ts;
+    private long ts;
 
     /** Event message. */
-    private final String msg;
+    private String msg;
 
     /** Shortened version of {@code toString()} result. Suitable for humans to read. */
-    private final String shortDisplay;
+    private String shortDisplay;
+
+    /**
+     * Default constructor.
+     */
+    public VisorGridEvent() {
+        // No-op.
+    }
 
     /**
      * Create event with given parameters.
@@ -77,50 +87,72 @@ public class VisorGridEvent implements Serializable, LessNamingBean {
     /**
      * @return Event type.
      */
-    public int typeId() {
+    public int getTypeId() {
         return typeId;
     }
 
     /**
      * @return Globally unique ID of this event.
      */
-    public IgniteUuid id() {
+    public IgniteUuid getId() {
         return id;
     }
 
     /**
      * @return Name of this event.
      */
-    public String name() {
+    public String getName() {
         return name;
     }
 
     /**
      * @return Node Id where event occurred and was recorded.
      */
-    public UUID nid() {
+    public UUID getNid() {
         return nid;
     }
 
     /**
      * @return Event timestamp.
      */
-    public long timestamp() {
+    public long getTimestamp() {
         return ts;
     }
 
     /**
      * @return Event message.
      */
-    @Nullable public String message() {
+    @Nullable public String getMessage() {
         return msg;
     }
 
     /**
      * @return Shortened version of  result. Suitable for humans to read.
      */
-    public String shortDisplay() {
+    public String getShortDisplay() {
         return shortDisplay;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeInt(typeId);
+        U.writeGridUuid(out, id);
+        U.writeString(out, name);
+        U.writeUuid(out, nid);
+        out.writeLong(ts);
+        U.writeString(out, msg);
+        U.writeString(out, shortDisplay);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        typeId = in.readInt();
+        id = U.readGridUuid(in);
+        name = U.readString(in);
+        nid = U.readUuid(in);
+        ts = in.readLong();
+        msg = U.readString(in);
+        shortDisplay = U.readString(in);
     }
 
     /** {@inheritDoc} */

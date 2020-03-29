@@ -23,23 +23,30 @@ import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
+
+import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC;
+import static org.apache.ignite.internal.util.nio.GridNioServer.OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME;
 
 /**
  * Session implementation bound to selector API and socket API.
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
  */
-class GridSelectorNioSessionImpl extends GridNioSessionImpl {
+public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
     /** Pending write requests. */
-    private final ConcurrentLinkedDeque8<SessionWriteRequest> queue = new ConcurrentLinkedDeque8<>();
+    private final FastSizeDeque<SessionWriteRequest> queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Selection key associated with this session. */
     @GridToStringExclude
@@ -76,6 +83,12 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** */
     private Object sysMsg;
 
+    /** Close channel on session #close() called. */
+    private volatile boolean closeSocket = true;
+
+    /** Outbound messages queue size metric. */
+    @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
+
     /**
      * Creates session instance.
      *
@@ -97,6 +110,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         InetSocketAddress rmtAddr,
         boolean accepted,
         int sndQueueLimit,
+        @Nullable MetricRegistry mreg,
         @Nullable ByteBuffer writeBuf,
         @Nullable ByteBuffer readBuf
     ) {
@@ -127,6 +141,21 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             this.readBuf = readBuf;
         }
+
+        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasSession() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridSelectorNioSessionImpl session() {
+        return this;
     }
 
     /**
@@ -164,8 +193,22 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @return Registered selection key for this session.
      */
-    SelectionKey key() {
+    public SelectionKey key() {
         return key;
+    }
+
+    /**
+     * @return {@code True} to close SocketChannel on current session close occured.
+     */
+    public boolean closeSocketOnSessionClose() {
+        return closeSocket;
+    }
+
+    /**
+     * @param closeSocket {@code False} remain SocketChannel open on session close.
+     */
+    public void closeSocketOnSessionClose(boolean closeSocket) {
+        this.closeSocket = closeSocket;
     }
 
     /**
@@ -266,6 +309,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert res : "Future was not added to queue";
 
+        if (outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.increment();
+
         return queue.sizex();
     }
 
@@ -291,6 +337,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
         assert res : "Future was not added to queue";
 
+        if (outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.increment();
+
         return queue.sizex();
     }
 
@@ -303,6 +352,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         boolean add = queue.addAll(futs);
 
         assert add;
+
+        if (outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.add(futs.size());
     }
 
     /**
@@ -312,6 +364,9 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         SessionWriteRequest last = queue.poll();
 
         if (last != null) {
+            if (outboundMessagesQueueSizeMetric != null)
+                outboundMessagesQueueSizeMetric.decrement();
+
             if (sem != null && !last.messageThread())
                 sem.release();
 
@@ -342,7 +397,12 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     boolean removeFuture(SessionWriteRequest fut) {
         assert closed();
 
-        return queue.removeLastOccurrence(fut);
+        boolean rmv = queue.removeLastOccurrence(fut);
+
+        if (rmv && outboundMessagesQueueSizeMetric != null)
+            outboundMessagesQueueSizeMetric.decrement();
+
+        return rmv;
     }
 
     /**
@@ -366,6 +426,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         assert recoveryDesc != null;
 
         outRecovery = recoveryDesc;
+
+        outRecovery.session(this);
     }
 
     /** {@inheritDoc} */
@@ -383,22 +445,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** {@inheritDoc} */
     @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return inRecovery;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T addMeta(int key, @Nullable T val) {
-        if (!accepted() && val instanceof GridNioRecoveryDescriptor) {
-            outRecovery = (GridNioRecoveryDescriptor)val;
-
-            if (!outRecovery.pairedConnections())
-                inRecovery = outRecovery;
-
-            outRecovery.onConnected();
-
-            return null;
-        }
-        else
-            return super.addMeta(key, val);
     }
 
     /**
@@ -439,6 +485,26 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         sysMsg = null;
 
         return ret;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridNioFuture<Boolean> close() {
+        GridNioFuture<Boolean> fut = super.close();
+
+        if (!fut.isDone()) {
+            fut.listen(fut0 -> {
+                try {
+                    fut0.get();
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to close session [ses=" + GridSelectorNioSessionImpl.this + ']', e);
+                }
+            });
+        }
+        else if (fut.error() != null)
+            log.error("Failed to close session [ses=" + GridSelectorNioSessionImpl.this + ']', fut.error());
+
+        return fut;
     }
 
     /** {@inheritDoc} */

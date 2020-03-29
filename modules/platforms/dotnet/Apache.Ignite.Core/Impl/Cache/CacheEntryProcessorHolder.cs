@@ -105,8 +105,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_proc));
-            writer0.WithDetach(w => w.WriteObject(_arg));
+            writer0.WriteObjectDetached(_proc);
+            writer0.WriteObjectDetached(_arg);
         }
 
         /// <summary>

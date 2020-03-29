@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.lang.reflect.Array;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,11 +28,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -39,6 +38,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.CLEAR_ALL_SPLIT_THRESHOLD;
+import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
 
 /**
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
@@ -59,9 +59,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     /** Grid nodes count. */
     private static final int GRID_CNT = 3;
 
-    /** VM IP finder for TCP discovery SPI. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Local caches. */
     private IgniteCache<Integer, Integer>[] cachesLoc;
 
@@ -75,17 +72,17 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] cachesReplicated;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfgLoc = new CacheConfiguration();
+        CacheConfiguration ccfgLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgLoc.setName(CACHE_LOCAL);
         ccfgLoc.setCacheMode(LOCAL);
         ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
         ccfgLoc.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgPartitioned = new CacheConfiguration();
+        CacheConfiguration ccfgPartitioned = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgPartitioned.setName(CACHE_PARTITIONED);
         ccfgPartitioned.setCacheMode(PARTITIONED);
@@ -95,11 +92,11 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         ccfgPartitioned.setNearConfiguration(nearCfg);
 
-        ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestGridName(0)));
+        ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestIgniteInstanceName(0)));
 
         ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgColocated = new CacheConfiguration();
+        CacheConfiguration ccfgColocated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgColocated.setName(CACHE_COLOCATED);
         ccfgColocated.setCacheMode(PARTITIONED);
@@ -107,7 +104,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgColocated.setWriteSynchronizationMode(FULL_SYNC);
         ccfgColocated.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgReplicated = new CacheConfiguration();
+        CacheConfiguration ccfgReplicated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgReplicated.setName(CACHE_REPLICATED);
         ccfgReplicated.setCacheMode(REPLICATED);
@@ -115,12 +112,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgReplicated.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfgLoc, ccfgPartitioned, ccfgColocated, ccfgReplicated);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -170,6 +161,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalNoSplit() throws Exception {
         test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -179,6 +171,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalSplit() throws Exception {
         test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -188,6 +181,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedNoSplit() throws Exception {
         test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -197,6 +191,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedSplit() throws Exception {
         test(Mode.TEST_PARTITIONED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -206,6 +201,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedNoSplit() throws Exception {
         test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -215,6 +211,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedSplit() throws Exception {
         test(Mode.TEST_COLOCATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -224,6 +221,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedNoSplit() throws Exception {
         test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD / 2);
     }
@@ -233,6 +231,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedSplit() throws Exception {
         test(Mode.TEST_REPLICATED, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
@@ -245,6 +244,9 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     private void test(Mode mode, int keysCnt) throws Exception {
+        if (forcedMvcc())
+            return;
+
         startUp();
 
         switch (mode) {
@@ -267,14 +269,15 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
                 // Ensure correct no-op clean of CLIENT_ONLY cache.
                 warmCache(cachesPartitioned[2], keysCnt);
-                assert cachesPartitioned[2].localSize() == 0;
-                assert cachesPartitioned[2].localSize() == 0;
+                assert cachesPartitioned[1].localSize(CachePeekMode.ALL) == 0;
+                // XXX I think it was supposed that NEAR cache will only be present on node 1.
+                assert cachesPartitioned[2].localSize(CachePeekMode.PRIMARY) == 0;
 
                 stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
 
-                // Ensure correct clearLocally of NEA_ONLY cache.
+                // Ensure correct clearLocally of NEAR_ONLY cache.
                 warmCache(cachesPartitioned[1], keysCnt);
-                assert cachesPartitioned[1].localSize() != 0;
+                assert cachesPartitioned[1].localSize(CachePeekMode.NEAR) != 0;
                 cachesPartitioned[1].localClearAll(keySet(cachesPartitioned[1]));
                 assert cachesPartitioned[1].localSize() == 0;
                 fillCache(cachesPartitioned[1], keysCnt);
@@ -321,6 +324,8 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
+
+        awaitPartitionMapExchange(true, true, null);
     }
 
     /**
@@ -368,10 +373,10 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String gridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+            String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, gridName))
+                if (F.eq(attr, igniteInstanceName))
                     return true;
             }
 

@@ -227,10 +227,8 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        Guid elem = *(val + i);
-
                         stream->WriteInt8(IGNITE_TYPE_UUID);
-                        BinaryUtils::WriteGuid(stream, elem);
+                        BinaryUtils::WriteGuid(stream, val[i]);
                     }
                 }
                 else
@@ -262,11 +260,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                    {
-                        Guid elem = *(val + i);
-
-                        WriteTopObject(elem);
-                    }
+                        WriteTopObject0<ignite::binary::BinaryWriter>(val[i]);
                 }
                 else
                 {
@@ -296,10 +290,8 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        const Date& elem = *(val + i);
-
                         stream->WriteInt8(IGNITE_TYPE_DATE);
-                        BinaryUtils::WriteDate(stream, elem);
+                        BinaryUtils::WriteDate(stream, val[i]);
                     }
                 }
                 else
@@ -331,11 +323,7 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                    {
-                        const Date& elem = *(val + i);
-
-                        WriteTopObject(elem);
-                    }
+                        WriteTopObject0<ignite::binary::BinaryWriter>(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -363,10 +351,8 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        const Timestamp& elem = *(val + i);
-
                         stream->WriteInt8(IGNITE_TYPE_TIMESTAMP);
-                        BinaryUtils::WriteTimestamp(stream, elem);
+                        BinaryUtils::WriteTimestamp(stream, val[i]);
                     }
                 }
                 else
@@ -398,11 +384,68 @@ namespace ignite
                     stream->WriteInt32(len);
 
                     for (int i = 0; i < len; i++)
-                    {
-                        const Timestamp& elem = *(val + i);
+                        WriteTopObject0<ignite::binary::BinaryWriter>(val[i]);
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
 
-                        WriteTopObject(elem);
+            void BinaryWriterImpl::WriteTime(const Time& val)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                stream->WriteInt8(IGNITE_TYPE_TIME);
+
+                BinaryUtils::WriteTime(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteTimeArray(const Time* val, const int32_t len)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_TIME);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        stream->WriteInt8(IGNITE_TYPE_TIME);
+                        BinaryUtils::WriteTime(stream, val[i]);
                     }
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
+
+            void BinaryWriterImpl::WriteTime(const char* fieldName, const Time& val)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_TIME);
+
+                stream->WriteInt8(IGNITE_TYPE_TIME);
+
+                BinaryUtils::WriteTime(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteTimeArray(const char* fieldName, const Time* val, const int32_t len)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_ARRAY_TIME);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_TIME);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                        WriteTopObject0<ignite::binary::BinaryWriter>(val[i]);
                 }
                 else
                     stream->WriteInt8(IGNITE_HDR_NULL);
@@ -478,12 +521,33 @@ namespace ignite
                 elemCnt++;
             }
 
+            void BinaryWriterImpl::WriteBinaryEnum(BinaryEnumEntry entry)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                stream->WriteInt8(IGNITE_TYPE_ENUM);
+
+                BinaryUtils::WriteBinaryEnumEntry(stream, entry);
+            }
+
+            void BinaryWriterImpl::WriteBinaryEnum(const char* fieldName, BinaryEnumEntry entry)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_ENUM);
+                stream->WriteInt8(IGNITE_TYPE_ENUM);
+
+                BinaryUtils::WriteBinaryEnumEntry(stream, entry);
+            }
+
             void BinaryWriterImpl::WriteNull()
             {
                 CheckRawMode(true);
                 CheckSingleMode(true);
 
-                stream->WriteInt8(IGNITE_HDR_NULL);
+                WriteNull0();
             }
 
             void BinaryWriterImpl::WriteNull(const char* fieldName)
@@ -492,6 +556,11 @@ namespace ignite
                 CheckSingleMode(true);
 
                 WriteFieldId(fieldName, IGNITE_TYPE_OBJECT);
+                WriteNull0();
+            }
+
+            void BinaryWriterImpl::WriteNull0()
+            {
                 stream->WriteInt8(IGNITE_HDR_NULL);
             }
 
@@ -517,7 +586,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteCollection(CollectionType typ)
+            int32_t BinaryWriterImpl::WriteCollection(CollectionType::Type typ)
             {
                 StartContainerSession(true);
 
@@ -528,7 +597,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteCollection(const char* fieldName, CollectionType typ)
+            int32_t BinaryWriterImpl::WriteCollection(const char* fieldName, CollectionType::Type typ)
             {
                 StartContainerSession(false);
                 
@@ -541,7 +610,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteMap(ignite::binary::MapType typ)
+            int32_t BinaryWriterImpl::WriteMap(ignite::binary::MapType::Type typ)
             {
                 StartContainerSession(true);
 
@@ -552,7 +621,7 @@ namespace ignite
                 return elemId;
             }
 
-            int32_t BinaryWriterImpl::WriteMap(const char* fieldName, ignite::binary::MapType typ)
+            int32_t BinaryWriterImpl::WriteMap(const char* fieldName, ignite::binary::MapType::Type typ)
             {
                 StartContainerSession(false);
 
@@ -639,70 +708,88 @@ namespace ignite
                     metaHnd->OnFieldWritten(fieldId, fieldName, fieldTypeId);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<int8_t>(const int8_t& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int8_t>(const int8_t& obj)
             {
                 WriteTopObject0<int8_t>(obj, BinaryUtils::WriteInt8, IGNITE_TYPE_BYTE);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<bool>(const bool& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, bool>(const bool& obj)
             {
                 WriteTopObject0<bool>(obj, BinaryUtils::WriteBool, IGNITE_TYPE_BOOL);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<int16_t>(const int16_t& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int16_t>(const int16_t& obj)
             {
                 WriteTopObject0<int16_t>(obj, BinaryUtils::WriteInt16, IGNITE_TYPE_SHORT);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<uint16_t>(const uint16_t& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, uint16_t>(const uint16_t& obj)
             {
                 WriteTopObject0<uint16_t>(obj, BinaryUtils::WriteUInt16, IGNITE_TYPE_CHAR);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<int32_t>(const int32_t& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int32_t>(const int32_t& obj)
             {
                 WriteTopObject0<int32_t>(obj, BinaryUtils::WriteInt32, IGNITE_TYPE_INT);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<int64_t>(const int64_t& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, int64_t>(const int64_t& obj)
             {
                 WriteTopObject0<int64_t>(obj, BinaryUtils::WriteInt64, IGNITE_TYPE_LONG);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<float>(const float& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, float>(const float& obj)
             {
                 WriteTopObject0<float>(obj, BinaryUtils::WriteFloat, IGNITE_TYPE_FLOAT);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<double>(const double& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, double>(const double& obj)
             {
                 WriteTopObject0<double>(obj, BinaryUtils::WriteDouble, IGNITE_TYPE_DOUBLE);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<Guid>(const Guid& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Guid>(const Guid& obj)
             {
                 WriteTopObject0<Guid>(obj, BinaryUtils::WriteGuid, IGNITE_TYPE_UUID);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<Date>(const Date& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Date>(const Date& obj)
             {
                 WriteTopObject0<Date>(obj, BinaryUtils::WriteDate, IGNITE_TYPE_DATE);
             }
 
-            template <>
-            void BinaryWriterImpl::WriteTopObject<Timestamp>(const Timestamp& obj)
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Timestamp>(const Timestamp& obj)
             {
                 WriteTopObject0<Timestamp>(obj, BinaryUtils::WriteTimestamp, IGNITE_TYPE_TIMESTAMP);
+            }
+
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, Time>(const Time& obj)
+            {
+                WriteTopObject0<Time>(obj, BinaryUtils::WriteTime, IGNITE_TYPE_TIME);
+            }
+
+            template<>
+            void BinaryWriterImpl::WriteTopObject0<ignite::binary::BinaryWriter, std::string>(const std::string& obj)
+            {
+                const char* obj0 = obj.c_str();
+
+                int32_t len = static_cast<int32_t>(obj.size());
+
+                stream->WriteInt8(IGNITE_TYPE_STRING);
+
+                BinaryUtils::WriteString(stream, obj0, len);
             }
 
             void BinaryWriterImpl::PostWrite()
@@ -724,7 +811,7 @@ namespace ignite
                 else
                 {
                     int32_t schemaId = schema.GetId();
-                    BinaryOffsetType schemaType = schema.GetType();
+                    BinaryOffsetType::Type schemaType = schema.GetType();
 
                     WriteAndClearSchema();
 
@@ -735,9 +822,9 @@ namespace ignite
 
                     flags |= IGNITE_BINARY_FLAG_HAS_SCHEMA;
 
-                    if (schemaType == OFFSET_TYPE_ONE_BYTE)
+                    if (schemaType == BinaryOffsetType::ONE_BYTE)
                         flags |= IGNITE_BINARY_FLAG_OFFSET_ONE_BYTE;
-                    else if (schemaType == OFFSET_TYPE_TWO_BYTES)
+                    else if (schemaType == BinaryOffsetType::TWO_BYTES)
                         flags |= IGNITE_BINARY_FLAG_OFFSET_TWO_BYTES;
 
                     stream->WriteInt16(start + IGNITE_OFFSET_FLAGS, flags);

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
@@ -24,11 +27,17 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  */
 public class IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest extends
     IgniteHadoopFileSystemLoopbackAbstractSelfTest {
-
     /**
      * Constructor.
      */
     public IgniteHadoopFileSystemLoopbackEmbeddedSecondarySelfTest() {
         super(PROXY, false);
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9919")
+    @Test
+    @Override public void testRenameIfSrcPathIsAlreadyBeingOpenedToRead() throws Exception {
+        super.testRenameIfSrcPathIsAlreadyBeingOpenedToRead();
     }
 }

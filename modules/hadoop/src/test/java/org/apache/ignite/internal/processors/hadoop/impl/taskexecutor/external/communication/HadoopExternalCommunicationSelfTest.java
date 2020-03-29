@@ -36,19 +36,23 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Tests Hadoop external communication component.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-404")
 public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-404");
+    @Override protected void beforeTest() {
+        // No-op.
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleMessageSendingTcp() throws Exception {
         checkSimpleMessageSending(false);
     }
@@ -56,6 +60,7 @@ public class HadoopExternalCommunicationSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleMessageSendingShmem() throws Exception {
         checkSimpleMessageSending(true);
     }

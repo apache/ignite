@@ -34,11 +34,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -49,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final long TEST_TIME = 60_000;
 
@@ -68,10 +63,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     private ThreadLocal<Boolean> client = new ThreadLocal<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -83,7 +76,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
             client.remove();
         }
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }
@@ -112,12 +105,13 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIME + 60_000;
+        return TEST_TIME + 3 * 60_000;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartReplicated() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(REPLICATED, 0, false);
 
@@ -127,6 +121,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitioned1() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, false);
 
@@ -136,6 +131,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitioned2() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 2, false);
 
@@ -145,6 +141,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetRestartPartitionedNearEnabled() throws Exception {
         CacheConfiguration<Object, Object> cache = cacheConfiguration(PARTITIONED, 1, true);
 
@@ -198,6 +195,8 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
                 @Override public Void call() throws Exception {
                     int nodeIdx = restartNodeIdx.getAndIncrement();
 
+                    Thread.currentThread().setName("restart-thread-" + nodeIdx);
+
                     boolean clientMode = clientNode.compareAndSet(false, true);
 
                     while (U.currentTimeMillis() < stopTime) {
@@ -206,25 +205,28 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
                         log.info("Restart node [node=" + nodeIdx + ", client=" + clientMode + ']');
 
-                        Ignite ignite = startGrid(nodeIdx);
+                        try {
+                            Ignite ignite = startGrid(nodeIdx);
 
-                        IgniteCache<Object, Object> cache;
+                            IgniteCache<Object, Object> cache;
 
-                        if (clientMode && ccfg.getNearConfiguration() != null)
-                            cache = ignite.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
-                        else
-                            cache = ignite.cache(ccfg.getName());
+                            if (clientMode && ccfg.getNearConfiguration() != null)
+                                cache = ignite.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
+                            else
+                                cache = ignite.cache(ccfg.getName());
 
-                        checkGet(cache);
-
-                        IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
-
-                        while (!syncFut.isDone())
                             checkGet(cache);
 
-                        checkGet(cache);
+                            IgniteInternalFuture<?> syncFut = ((IgniteCacheProxy)cache).context().preloader().syncFuture();
 
-                        stopGrid(nodeIdx);
+                            while (!syncFut.isDone() && U.currentTimeMillis() < stopTime)
+                                checkGet(cache);
+
+                            checkGet(cache);
+                        }
+                        finally {
+                            stopGrid(nodeIdx);
+                        }
                     }
 
                     return null;
@@ -269,7 +271,7 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(CacheMode cacheMode, int backups, boolean near) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
 

@@ -37,7 +37,7 @@ public class IgniteTxKey implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Key. */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private KeyCacheObject key;
 
     /** Cache ID. */
@@ -178,7 +178,7 @@ public class IgniteTxKey implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 94;
     }
 

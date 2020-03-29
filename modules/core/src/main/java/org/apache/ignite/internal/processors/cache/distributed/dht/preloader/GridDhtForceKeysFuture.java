@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,8 +40,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -59,8 +61,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 
@@ -102,9 +104,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /** Future ID. */
     private IgniteUuid futId = IgniteUuid.randomUuid();
 
-    /** Preloader. */
-    private GridDhtPreloader preloader;
-
     /** Trackable flag. */
     private boolean trackable;
 
@@ -112,21 +111,19 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param cctx Cache context.
      * @param topVer Topology version.
      * @param keys Keys.
-     * @param preloader Preloader.
      */
     public GridDhtForceKeysFuture(
         GridCacheContext<K, V> cctx,
         AffinityTopologyVersion topVer,
-        Collection<KeyCacheObject> keys,
-        GridDhtPreloader preloader
+        Collection<KeyCacheObject> keys
     ) {
         assert topVer.topologyVersion() != 0 : topVer;
         assert !F.isEmpty(keys) : keys;
+        assert !cctx.isNear();
 
         this.cctx = cctx;
         this.keys = keys;
         this.topVer = topVer;
-        this.preloader = preloader;
 
         top = cctx.dht().topology();
 
@@ -158,7 +155,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     @Override public boolean onDone(@Nullable Collection<K> res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             if (trackable)
-                preloader.remoteFuture(this);
+                cctx.dht().removeFuture(this);
 
             return true;
         }
@@ -169,7 +166,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param evt Discovery event.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
@@ -193,11 +189,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /**
-     * @param nodeId Node left callback.
      * @param res Response.
      */
-    @SuppressWarnings( {"unchecked"})
-    public void onResult(UUID nodeId, GridDhtForceKeysResponse res) {
+    public void onResult(GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
@@ -241,11 +235,13 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         boolean ret = false;
 
         if (mappings != null) {
+            assert !cctx.mvccEnabled(); // Should not happen when MVCC enabled.
+
             ClusterNode loc = cctx.localNode();
 
             int curTopVer = topCntr.get();
 
-            if (!preloader.addFuture(this)) {
+            if (!cctx.dht().addFuture(this)) {
                 assert isDone() : this;
 
                 return false;
@@ -278,8 +274,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                         assert !n.id().equals(loc.id());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Sending force key request [cacheName=" + cctx.name() + "node=" + n.id() +
+                        if (log.isTraceEnabled())
+                            log.trace("Sending force key request [cacheName=" + cctx.name() + "node=" + n.id() +
                                 ", req=" + req + ']');
 
                         cctx.io().send(n, req, cctx.ioPolicy());
@@ -306,18 +302,17 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     private Map<ClusterNode, Set<KeyCacheObject>> map(KeyCacheObject key,
         @Nullable Map<ClusterNode, Set<KeyCacheObject>> mappings,
-        Collection<ClusterNode> exc)
-    {
+        Collection<ClusterNode> exc) {
         ClusterNode loc = cctx.localNode();
 
         GridCacheEntryEx e = cctx.dht().peekEx(key);
 
         try {
             if (e != null && !e.isNewLocked()) {
-                if (log.isDebugEnabled()) {
+                if (log.isTraceEnabled()) {
                     int part = cctx.affinity().partition(key);
 
-                    log.debug("Will not rebalance key (entry is not new) [cacheName=" + cctx.name() +
+                    log.trace("Will not rebalance key (entry is not new) [cacheName=" + cctx.name() +
                         ", key=" + key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');
                 }
 
@@ -326,8 +321,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Received removed DHT entry for force keys request [entry=" + e +
+            if (log.isTraceEnabled())
+                log.trace("Received removed DHT entry for force keys request [entry=" + e +
                     ", locId=" + cctx.nodeId() + ']');
         }
 
@@ -337,8 +332,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             new ArrayList<>(F.view(top.owners(part, topVer), F.notIn(exc)));
 
         if (owners.isEmpty() || (owners.contains(loc) && cctx.rebalanceEnabled())) {
-            if (log.isDebugEnabled())
-                log.debug("Will not rebalance key (local node is owner) [key=" + key + ", part=" + part +
+            if (log.isTraceEnabled())
+                log.trace("Will not rebalance key (local node is owner) [key=" + key + ", part=" + part +
                     "topVer=" + topVer + ", locId=" + cctx.nodeId() + ']');
 
             // Key is already rebalanced.
@@ -348,14 +343,13 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         // Create partition.
         GridDhtLocalPartition locPart = top.localPartition(part, topVer, false);
 
-        if (log.isDebugEnabled())
-            log.debug("Mapping local partition [loc=" + cctx.localNodeId() + ", topVer" + topVer +
+        if (log.isTraceEnabled())
+            log.trace("Mapping local partition [loc=" + cctx.localNodeId() + ", topVer" + topVer +
                 ", part=" + locPart + ", owners=" + owners + ", allOwners=" + U.toShortString(top.owners(part)) + ']');
 
         if (locPart == null)
             invalidParts.add(part);
-        // If rebalance is disabled, then local partition is always MOVING.
-        else if (locPart.state() == MOVING) {
+        else if (!cctx.rebalanceEnabled() || locPart.state() == MOVING) {
             Collections.sort(owners, CU.nodeComparator(false));
 
             // Load from youngest owner.
@@ -367,8 +361,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
 
             if (pick == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Will not rebalance key (no nodes to request from with rebalancing disabled) [key=" +
+                if (log.isTraceEnabled())
+                    log.trace("Will not rebalance key (no nodes to request from with rebalancing disabled) [key=" +
                         key + ", part=" + part + ", locId=" + cctx.nodeId() + ']');
 
                 return mappings;
@@ -383,15 +377,15 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             mappedKeys.add(key);
 
-            if (log.isDebugEnabled())
-                log.debug("Will rebalance key from node [cacheName=" + cctx.namex() + ", key=" + key + ", part=" +
+            if (log.isTraceEnabled())
+                log.trace("Will rebalance key from node [cacheName=" + cctx.name() + ", key=" + key + ", part=" +
                     part + ", node=" + pick.id() + ", locId=" + cctx.nodeId() + ']');
         }
         else if (locPart.state() != OWNING)
             invalidParts.add(part);
         else {
-            if (log.isDebugEnabled())
-                log.debug("Will not rebalance key (local partition is not MOVING) [cacheName=" + cctx.name() +
+            if (log.isTraceEnabled())
+                log.trace("Will not rebalance key (local partition is not MOVING) [cacheName=" + cctx.name() +
                     ", key=" + key + ", part=" + locPart + ", locId=" + cctx.nodeId() + ']');
         }
 
@@ -412,13 +406,9 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /**
-     * Mini-future for get operations. Mini-futures are only waiting on a single
-     * node as opposed to multiple nodes.
+     * Mini-future for get operations. Mini-futures are only waiting on a single node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Mini-future ID. */
         private IgniteUuid miniId = IgniteUuid.randomUuid();
 
@@ -539,13 +529,19 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
-                if (locPart != null && locPart.state() == MOVING && locPart.reserve()) {
+                if (locPart != null && (!cctx.rebalanceEnabled() || locPart.state() == MOVING) && locPart.reserve()) {
                     GridCacheEntryEx entry = cctx.dht().entryEx(info.key());
+
+                    cctx.shared().database().checkpointReadLock();
 
                     try {
                         if (entry.initialValue(
                             info.value(),
                             info.version(),
+                            cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
+                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
+                            cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccTxState() : TxState.NA,
+                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccTxState() : TxState.NA,
                             info.ttl(),
                             info.expireTime(),
                             true,
@@ -554,8 +550,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             false
                         )) {
                             if (rec && !entry.isInternal())
-                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                    null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null, false);
                         }
                     }
@@ -565,11 +561,13 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                         return;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Trying to rebalance removed entry (will ignore) [cacheName=" +
-                                cctx.namex() + ", entry=" + entry + ']');
+                        if (log.isTraceEnabled())
+                            log.trace("Trying to rebalance removed entry (will ignore) [cacheName=" +
+                                cctx.name() + ", entry=" + entry + ']');
                     }
                     finally {
+                        cctx.shared().database().checkpointReadUnlock();
+
                         locPart.release();
                     }
                 }

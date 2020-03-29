@@ -27,6 +27,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
 import org.apache.ignite.internal.util.nio.GridNioException;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
@@ -82,7 +84,7 @@ class GridNioSslHandler extends ReentrantLock {
     /** Input buffer from which SSL engine will decrypt data. */
     private ByteBuffer inNetBuf;
 
-    /** Empty buffer used in handshake procedure.  */
+    /** Empty buffer used in handshake procedure. */
     private ByteBuffer handshakeBuf = ByteBuffer.allocate(0);
 
     /** Application buffer. */
@@ -274,7 +276,7 @@ class GridNioSslHandler extends ReentrantLock {
                             log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
                                 handshakeStatus + ", ses=" + ses + ']');
 
-                        writeNetBuffer();
+                        writeNetBuffer(null);
 
                         break;
                     }
@@ -339,8 +341,8 @@ class GridNioSslHandler extends ReentrantLock {
      * Encrypts data to be written to the network.
      *
      * @param src data to encrypt.
-     * @throws SSLException on errors.
      * @return Output buffer with encrypted data.
+     * @throws SSLException on errors.
      */
     ByteBuffer encrypt(ByteBuffer src) throws SSLException {
         assert handshakeFinished;
@@ -412,22 +414,24 @@ class GridNioSslHandler extends ReentrantLock {
      * Adds write request to the queue.
      *
      * @param buf Buffer to write.
+     * @param ackC Closure invoked when message ACK is received.
      * @return Write future.
      */
-    GridNioFuture<?> deferredWrite(ByteBuffer buf) {
+    GridNioFuture<?> deferredWrite(ByteBuffer buf, IgniteInClosure<IgniteException> ackC) {
         assert isHeldByCurrentThread();
 
         GridNioEmbeddedFuture<Object> fut = new GridNioEmbeddedFuture<>();
 
         ByteBuffer cp = copy(buf);
 
-        deferredWriteQueue.offer(new WriteRequest(fut, cp));
+        deferredWriteQueue.offer(new WriteRequest(fut, cp, ackC));
 
         return fut;
     }
 
     /**
      * Flushes all deferred write events.
+     *
      * @throws GridNioException If failed to forward writes to the filter.
      */
     void flushDeferredWrites() throws IgniteCheckedException {
@@ -437,17 +441,16 @@ class GridNioSslHandler extends ReentrantLock {
         while (!deferredWriteQueue.isEmpty()) {
             WriteRequest req = deferredWriteQueue.poll();
 
-            req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer(), true));
+            req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer(), true, req.ackC));
         }
     }
 
     /**
      * Writes close_notify message to the network output buffer.
      *
-     * @throws SSLException If wrap failed or SSL engine does not get closed
-     * after wrap.
-     * @return {@code True} if <tt>close_notify</tt> message was encoded, {@code false} if outbound
-     *      stream was already closed.
+     * @return {@code True} if <tt>close_notify</tt> message was encoded, {@code false} if outbound stream was already
+     * closed.
+     * @throws SSLException If wrap failed or SSL engine does not get closed after wrap.
      */
     boolean closeOutbound() throws SSLException {
         assert isHeldByCurrentThread();
@@ -474,15 +477,16 @@ class GridNioSslHandler extends ReentrantLock {
     /**
      * Copies data from out net buffer and passes it to the underlying chain.
      *
+     * @param ackC Closure invoked when message ACK is received.
      * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer() throws IgniteCheckedException {
+    GridNioFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert isHeldByCurrentThread();
 
         ByteBuffer cp = copy(outNetBuf);
 
-        return parent.proceedSessionWrite(ses, cp, true);
+        return parent.proceedSessionWrite(ses, cp, true, ackC);
     }
 
     /**
@@ -600,7 +604,7 @@ class GridNioSslHandler extends ReentrantLock {
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
         }
         while ((res.getStatus() == Status.OK || res.getStatus() == Status.BUFFER_OVERFLOW) &&
-            (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING || res.getHandshakeStatus() == NEED_UNWRAP));
+            (handshakeFinished || res.getHandshakeStatus() == NEED_UNWRAP));
 
         return res;
     }
@@ -670,20 +674,27 @@ class GridNioSslHandler extends ReentrantLock {
      */
     private static class WriteRequest {
         /** Future that should be completed. */
-        private GridNioEmbeddedFuture<Object> fut;
+        private final GridNioEmbeddedFuture<Object> fut;
 
         /** Buffer needed to be written. */
-        private ByteBuffer buf;
+        private final ByteBuffer buf;
+
+        /** */
+        private final IgniteInClosure<IgniteException> ackC;
 
         /**
          * Creates write request.
          *
          * @param fut Future.
          * @param buf Buffer to write.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        private WriteRequest(GridNioEmbeddedFuture<Object> fut, ByteBuffer buf) {
+        private WriteRequest(GridNioEmbeddedFuture<Object> fut,
+            ByteBuffer buf,
+            IgniteInClosure<IgniteException> ackC) {
             this.fut = fut;
             this.buf = buf;
+            this.ackC = ackC;
         }
 
         /**

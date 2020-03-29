@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -36,12 +37,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.jsr166.LongAdder8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -53,31 +52,30 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
  *
  */
 public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of grids to start. */
     private static final int GRID_CNT = 5;
 
     /** Number of transactions. */
     private static final int TX_CNT = 1000;
 
-    /** Client flag. */
-    private boolean client;
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        super.beforeTestsStarted();
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(GRID_CNT - 2);
 
-        client = true;
+        Ignite grid = startClientGrid(GRID_CNT - 2);
 
-        Ignite grid = startGrid(GRID_CNT - 2);
+        grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
-        grid.createNearCache(null, new NearCacheConfiguration());
+        grid = startClientGrid(GRID_CNT - 1);
 
-        grid = startGrid(GRID_CNT - 1);
-
-        grid.cache(null);
+        grid.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -87,21 +85,16 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
-        if (!client) {
+        if (!c.isClientMode()) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setSwapEnabled(false);
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setBackups(1);
 
@@ -112,8 +105,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             c.setCacheConfiguration(cc);
         }
-        else
-            c.setClientMode(true);
 
         return c;
     }
@@ -121,6 +112,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPut() throws Exception {
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -159,6 +151,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPutAll() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -185,6 +178,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedExplicitTx() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -193,7 +187,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteEx ignite = grid(rnd.nextInt(GRID_CNT));
 
-                    IgniteCache<Object, Object> cache = ignite.cache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     try (Transaction tx = ignite.transactions().txStart()) {
                         cache.put(1, "value");
@@ -250,12 +244,12 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         assertEquals(GRID_CNT, Ignition.allGrids().size());
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache().context();
+            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context();
 
             CacheStore store = cctx.store().configuredStore();
 
-            long opened = ((LongAdder8)U.field(store, "opened")).sum();
-            long closed = ((LongAdder8)U.field(store, "closed")).sum();
+            long opened = ((LongAdder)U.field(store, "opened")).sum();
+            long closed = ((LongAdder)U.field(store, "closed")).sum();
 
             assert opened > 0;
             assert closed > 0;

@@ -17,56 +17,132 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.GridCacheAffinityBackupsSelfTest;
+import org.apache.ignite.IgniteCacheAffinitySelfTest;
+import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
+import org.apache.ignite.cache.affinity.AffinityDistributionLoggingTest;
+import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
+import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
+import org.apache.ignite.internal.GridCacheHashMapPutAllWarningsTest;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerWarningsTest;
+import org.apache.ignite.internal.processors.cache.CacheKeepBinaryTransactionTest;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.ClientSlowDiscoveryTopologyChangeTest;
+import org.apache.ignite.internal.processors.cache.ClientSlowDiscoveryTransactionRemapTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateClientPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateClientReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateNoRebalancePartitionedTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateNoRebalanceReplicatedTest;
+import org.apache.ignite.internal.processors.cache.ClusterStatePartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateThinClientPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ClusterStateThinClientReplicatedSelfTest;
+import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
-import org.apache.ignite.internal.processors.cache.GridCacheOffHeapCleanupTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
-import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeSwitchTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.NotMappedPartitionInTxTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicProtocolTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 /**
  * Test suite.
  */
-public class IgniteCacheTestSuite5 extends TestSuite {
+@RunWith(DynamicSuite.class)
+public class IgniteCacheTestSuite5 {
     /**
      * @return IgniteCache test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
+    public static List<Class<?>> suite() {
+        return suite(null);
+    }
 
-        suite.addTestSuite(CacheSerializableTransactionsTest.class);
-        suite.addTestSuite(CacheNearReaderUpdateTest.class);
-        suite.addTestSuite(IgniteCacheStoreCollectionTest.class);
-        suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
-        suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSpaceSpiConsistencySelfTest.class);
+    /**
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
+     */
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
-        suite.addTestSuite(CacheLateAffinityAssignmentFairAffinityTest.class);
-        suite.addTestSuite(CacheLateAffinityAssignmentNodeJoinValidationTest.class);
-        suite.addTestSuite(EntryVersionConsistencyReadThroughTest.class);
-        suite.addTestSuite(IgniteCacheSyncRebalanceModeSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheSerializableTransactionsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheNearReaderUpdateTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheStoreCollectionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheWriteBehindNoUpdateSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePutStackOverflowSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheKeepBinaryTransactionTest.class, ignoredTests);
 
-        suite.addTest(IgniteCacheReadThroughEvictionsVariationsSuite.suite());
-        suite.addTestSuite(IgniteCacheTxIteratorSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheLateAffinityAssignmentTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheLateAffinityAssignmentNodeJoinValidationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridExchangeFreeSwitchTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, EntryVersionConsistencyReadThroughTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheSyncRebalanceModeSelfTest.class, ignoredTests);
 
-        suite.addTestSuite(GridCacheOffHeapCleanupTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxIteratorSelfTest.class, ignoredTests);
 
-        suite.addTestSuite(CacheRebalancingSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStatePartitionedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateClientPartitionedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateThinClientPartitionedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateNoRebalancePartitionedTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateClientReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateThinClientReplicatedSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterStateNoRebalanceReplicatedTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterReadOnlyModeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionLossPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheGroupsPartitionLossPolicySelfTest.class, ignoredTests);
 
-        suite.addTestSuite(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheRebalancingSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheManualRebalancingTest.class, ignoredTests);
+
+        // Affinity tests.
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAffinityBackupsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAffinitySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, AffinityClientNodeSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LocalAffinityFunctionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, AffinityHistoryCleanupTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, AffinityDistributionLoggingTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicProtocolTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PartitionsExchangeOnDiscoveryHistoryOverflowTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionExchangeManagerHistSizeTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionExchangeManagerWarningsTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCacheHashMapPutAllWarningsTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, NotMappedPartitionInTxTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, ConcurrentCacheStartTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheReadThroughEvictionsVariationsSuite.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTopologyChangeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTransactionRemapTest.class, ignoredTests);
+
+        //GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
 
         return suite;
     }

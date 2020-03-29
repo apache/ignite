@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.redis.GridRedisRestCommandHandler;
@@ -51,9 +52,10 @@ public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
      *
      * @param log Logger to use.
      * @param hnd Rest handler.
+     * @param ctx Kernal context.
      */
-    public GridRedisMSetCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd) {
-        super(log, hnd);
+    public GridRedisMSetCommandHandler(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
+        super(log, hnd, ctx);
     }
 
     /** {@inheritDoc} */
@@ -71,6 +73,7 @@ public class GridRedisMSetCommandHandler extends GridRedisRestCommandHandler {
         restReq.key(msg.key());
 
         restReq.command(CACHE_PUT_ALL);
+        restReq.cacheName(msg.cacheName());
 
         List<String> els = msg.auxMKeys();
         Map<Object, Object> mset = U.newHashMap(els.size() / 2);

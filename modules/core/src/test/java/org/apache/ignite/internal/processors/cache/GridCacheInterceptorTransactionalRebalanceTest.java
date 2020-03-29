@@ -18,19 +18,19 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  *
  */
 public class GridCacheInterceptorTransactionalRebalanceTest extends GridAbstractCacheInterceptorRebalanceTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.ONHEAP_TIERED;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 }

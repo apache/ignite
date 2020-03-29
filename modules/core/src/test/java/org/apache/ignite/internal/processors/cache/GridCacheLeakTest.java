@@ -24,10 +24,9 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -38,24 +37,18 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Leak test.
  */
 public class GridCacheLeakTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "igfs-data";
+
+    /** Iterations to run. */
+    private static final int ITERS = 10_000;
 
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -86,6 +79,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeakTransactional() throws Exception {
         checkLeak(TRANSACTIONAL);
     }
@@ -93,6 +87,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLeakAtomic() throws Exception {
         checkLeak(ATOMIC);
     }
@@ -127,24 +122,19 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
                     for (int g = 0; g < 3; g++) {
                         GridCacheConcurrentMap map = ((IgniteKernal)grid(g)).internalCache(CACHE_NAME).map();
 
-                        info("Map size for cache [g=" + g + ", size=" + map.size() +
-                            ", pubSize=" + map.publicSize() + ']');
+                        info("Map size for cache [g=" + g + ", size=" + map.internalSize() +
+                            ", pubSize=" + map.publicSize(CU.cacheId(CACHE_NAME)) + ']');
 
-                        assertTrue("Wrong map size: " + map.size(), map.size() <= 8192);
+                        assertTrue("Wrong map size: " + map.internalSize(), map.internalSize() <= 8192);
                     }
                 }
 
-                if (i == 500_000)
+                if (i == ITERS)
                     break;
             }
         }
         finally {
             stopAllGrids();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 }

@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
@@ -59,6 +58,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -94,6 +94,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLock() throws Exception {
         checkReentrantLock(false);
 
@@ -103,6 +104,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailover() throws Exception {
         if (atomicsCacheMode() == LOCAL)
             return;
@@ -122,10 +124,11 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setName("myCache");
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -243,9 +246,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         lock1.lock();
 
-        IgniteCompute comp = grid(0).compute().withAsync();
-
-        comp.call(new IgniteCallable<Object>() {
+        IgniteFuture<Object> fut = grid(0).compute().callAsync(new IgniteCallable<Object>() {
             @IgniteInstanceResource
             private Ignite ignite;
 
@@ -281,8 +282,6 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                 return null;
             }
         });
-
-        IgniteFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 
@@ -411,7 +410,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         // Ensure reentrant lock is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assertNull(((IgniteKernal)g).context().dataStructures().reentrantLock(lockName, false, fair, false));
+            assertNull(((IgniteKernal)g).context().dataStructures().reentrantLock(lockName, null, false, fair, false));
 
         checkRemovedReentrantLock(lock);
     }
@@ -419,6 +418,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockSerialization() throws Exception {
         final IgniteLock lock = grid(0).reentrantLock("lock", true, true, true);
 
@@ -448,6 +448,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInitialization() throws Exception {
         // Test #name() method.
         {
@@ -687,6 +688,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReentrantLockMultinode1() throws Exception {
         testReentrantLockMultinode1(false);
 
@@ -764,6 +766,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockInterruptibly() throws Exception {
         testLockInterruptibly(false);
 
@@ -841,6 +844,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockInterruptiblyMultinode() throws Exception {
         testLockInterruptiblyMultinode(false);
 
@@ -964,6 +968,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLock() throws Exception {
         testLock(false);
 
@@ -1047,6 +1052,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryLock() throws Exception {
         testTryLock(false);
 
@@ -1130,6 +1136,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryLockTimed() throws Exception {
         testTryLockTimed(false);
 
@@ -1206,6 +1213,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConditionAwaitUninterruptibly() throws Exception {
         testConditionAwaitUninterruptibly(false);
 
@@ -1295,6 +1303,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConditionInterruptAwait() throws Exception {
         testConditionInterruptAwait(false);
 
@@ -1374,6 +1383,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasQueuedThreads() throws Exception {
         testHasQueuedThreads(false);
 
@@ -1451,6 +1461,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHasConditionQueuedThreads() throws Exception {
         testHasConditionQueuedThreads(false);
 
@@ -1562,6 +1573,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      * on the OS thread scheduling, certain deviation from uniform distribution is tolerated.
      * @throws Exception If failed.
      */
+    @Test
     public void testFairness() throws Exception {
         if (gridCount() == 1)
             return;

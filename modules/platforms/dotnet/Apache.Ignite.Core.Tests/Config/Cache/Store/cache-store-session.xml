@@ -25,18 +25,10 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="storeFactory" class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-        <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Store.CacheStoreSessionTest+Store, Apache.Ignite.Core.Tests"/>
-    </bean>
-  
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
-        <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
-        </property>
-      
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -46,7 +38,11 @@
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
 
-                    <property name="cacheStoreFactory" ref="storeFactory" />
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Store.CacheStoreSessionTest+Store, Apache.Ignite.Core.Tests"/>
+                        </bean>
+                    </property>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -56,7 +52,11 @@
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
 
-                    <property name="cacheStoreFactory" ref="storeFactory" />
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Store.CacheStoreSessionTest+Store, Apache.Ignite.Core.Tests"/>
+                        </bean>
+                    </property>
                 </bean>
             </list>
         </property>

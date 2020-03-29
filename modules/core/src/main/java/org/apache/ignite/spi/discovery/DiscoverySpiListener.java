@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -28,6 +29,15 @@ import org.jetbrains.annotations.Nullable;
  * {@link DiscoverySpi} for information on how grid nodes get discovered.
  */
 public interface DiscoverySpiListener {
+    /**
+     *  Notification of local node initialization. At the time this method is called, it is guaranteed that
+     *  local node consistent ID is available, but the discovery process is not started yet.
+     *  This method should not block for a long time since it blocks discovery.
+     *
+     * @param locNode Initialized local node.
+     */
+    public void onLocalNodeInitialized(ClusterNode locNode);
+
     /**
      * Notification for grid node discovery events.
      *
@@ -39,8 +49,10 @@ public interface DiscoverySpiListener {
      *      {@code EVT_NODE_JOINED}, then joined node will be in snapshot).
      * @param topHist Topology snapshots history.
      * @param data Data for custom event.
+     *
+     * @return A future that will be completed when notification process has finished.
      */
-    public void onDiscovery(
+    public IgniteFuture<?> onDiscovery(
         int type,
         long topVer,
         ClusterNode node,

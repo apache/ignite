@@ -36,28 +36,20 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
     private int selectors;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
@@ -68,11 +60,17 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
+        if (sslEnabled())
+            cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
         return cfg;
+    }
+
+    /**
+     * @return {@code True} to enable SSL.
+     */
+    protected boolean sslEnabled() {
+        return false;
     }
 
     /**
@@ -99,7 +97,11 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBalance1() throws Exception {
+        if (sslEnabled())
+            return;
+
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "5000");
 
         try {
@@ -109,9 +111,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(SRVS);
 
-            client = true;
-
-            final Ignite client = startGrid(SRVS);
+            final Ignite client = startClientGrid(SRVS);
 
             for (int i = 0; i < SRVS; i++) {
                 ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
@@ -197,15 +197,13 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBalance2() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "1000");
 
         try {
             startGridsMultiThreaded(5);
-
-            client = true;
-
-            startGridsMultiThreaded(5, 5);
+            startClientGridsMultiThreaded(5, 5);
 
             for (int i = 0; i < 5; i++) {
                 log.info("Iteration: " + i);
@@ -304,6 +302,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomBalance() throws Exception {
         System.setProperty(GridNioServer.IGNITE_IO_BALANCE_RANDOM_BALANCE, "true");
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "500");

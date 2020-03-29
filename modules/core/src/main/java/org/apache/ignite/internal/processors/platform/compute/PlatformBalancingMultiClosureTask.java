@@ -29,6 +29,7 @@ import org.apache.ignite.compute.ComputeTaskNoResultCache;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.LoadBalancerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,7 +44,6 @@ public class PlatformBalancingMultiClosureTask extends PlatformAbstractTask {
     private Collection<PlatformJob> jobs;
 
     /** Load balancer. */
-    @SuppressWarnings("UnusedDeclaration")
     @LoadBalancerResource
     private ComputeLoadBalancer lb;
 
@@ -58,7 +58,7 @@ public class PlatformBalancingMultiClosureTask extends PlatformAbstractTask {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object arg) {
         assert !F.isEmpty(jobs) : "Jobs emptiness must be checked in native platform.";
 

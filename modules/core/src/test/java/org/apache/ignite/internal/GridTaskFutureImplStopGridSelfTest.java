@@ -38,12 +38,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for task future when grid stops.
  */
 @GridCommonTest(group = "Kernal Self")
-@SuppressWarnings({"UnusedDeclaration"})
 public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int WAIT_TIME = 5000;
@@ -58,7 +58,6 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     private static final Object mux = new Object();
 
     /** */
-    @SuppressWarnings({"StaticNonFinalField"})
     private static int cnt;
 
     /** */
@@ -69,8 +68,9 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGet() throws Exception {
-        Ignite ignite = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         Thread futThread = null;
 
@@ -127,7 +127,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
             }
 
             // Stops grid.
-            stopGrid(getTestGridName());
+            stopGrid(getTestIgniteInstanceName());
 
             boolean finished = latch.await(WAIT_TIME, TimeUnit.MILLISECONDS);
 
@@ -146,13 +146,13 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                 futThread.interrupt();
             }
 
-            if (G.state(getTestGridName()) != IgniteState.STOPPED)
-                stopGrid(getTestGridName());
+            if (G.state(getTestIgniteInstanceName()) != IgniteState.STOPPED)
+                stopGrid(getTestIgniteInstanceName());
         }
     }
 
     /** */
-    @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
+    @SuppressWarnings({"PublicInnerClass"})
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
         @LoggerResource

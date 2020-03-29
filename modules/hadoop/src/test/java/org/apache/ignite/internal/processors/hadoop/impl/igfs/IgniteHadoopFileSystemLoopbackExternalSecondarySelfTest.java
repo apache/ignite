@@ -24,7 +24,6 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  */
 public class IgniteHadoopFileSystemLoopbackExternalSecondarySelfTest extends
     IgniteHadoopFileSystemLoopbackAbstractSelfTest {
-
     /**
      * Constructor.
      */

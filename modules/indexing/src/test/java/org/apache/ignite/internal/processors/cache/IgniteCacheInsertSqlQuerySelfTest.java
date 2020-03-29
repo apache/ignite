@@ -17,36 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -54,20 +48,32 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertWithExplicitKey() {
-        IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
 
-        p.query(new SqlFieldsQuery("insert into Person (_key, id, firstName) values ('s', ?, ?), " +
-            "('a', 2, 'Alex')").setArgs(1, "Sergi"));
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
 
-        assertEquals(createPerson(1, "Sergi"), p.get("s"));
+        try {
+            IgniteCache<String, Person> p = ignite(0).cache("S2P").withKeepBinary();
 
-        assertEquals(createPerson(2, "Alex"), p.get("a"));
+            p.query(new SqlFieldsQuery("insert into Person (_key, id, firstName) values ('s', ?, ?), " +
+                "('a', 2, 'Alex')").setArgs(1, "Sergi"));
+
+            assertEquals(createPerson(1, "Sergi"), p.get("s"));
+
+            assertEquals(createPerson(2, "Alex"), p.get("a"));
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 
     /**
      *
      */
+    @Test
     public void testInsertFromSubquery() {
         IgniteCache p = ignite(0).cache("S2P").withKeepBinary();
 
@@ -88,6 +94,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertWithExplicitPrimitiveKey() {
         IgniteCache<Integer, Person> p = ignite(0).cache("I2P").withKeepBinary();
 
@@ -103,6 +110,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testInsertWithDynamicKeyInstantiation() {
         IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
 
@@ -115,8 +123,28 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     }
 
     /**
+     * Test insert with implicit column names.
+     */
+    @Test
+    public void testImplicitColumnNames() {
+        IgniteCache<Key, Person> p = ignite(0).cache("K2P").withKeepBinary();
+
+        p.query(new SqlFieldsQuery(
+            "insert into Person values (1, 1, 'Vova')")).getAll();
+
+        assertEquals(createPerson(1, "Vova"), p.get(new Key(1)));
+
+        p.query(new SqlFieldsQuery(
+            "insert into Person values (2, 2, 'Sergi'), (3, 3, 'Alex')")).getAll();
+
+        assertEquals(createPerson(2, "Sergi"), p.get(new Key(2)));
+        assertEquals(createPerson(3, "Alex"), p.get(new Key(3)));
+    }
+
+    /**
      *
      */
+    @Test
     public void testFieldsCaseSensitivity() {
         IgniteCache<Key2, Person> p = ignite(0).cache("K22P").withKeepBinary();
 
@@ -131,6 +159,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
+    @Test
     public void testPrimitives() {
         IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
@@ -145,7 +174,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testDuplicateKeysException() {
         final IgniteCache<Integer, Integer> p = ignite(0).cache("I2I");
 
@@ -171,42 +200,7 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
     /**
      *
      */
-    public void testFieldsListIdentity() {
-        if (!isBinaryMarshaller())
-            return;
-
-        IgniteCache<Key3, Person> p = ignite(0).cache("K32P").withKeepBinary();
-
-        p.query(new SqlFieldsQuery(
-            "insert into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')")
-            .setArgs(1, "Sergi"));
-
-        assertEquals(createPerson(1, "Sergi"), p.get(new Key3(1)));
-
-        assertEquals(createPerson(2, "Alex"), p.get(new Key3(2)));
-    }
-
-    /**
-     *
-     */
-    public void testCustomIdentity() {
-        if (!isBinaryMarshaller())
-            return;
-
-        IgniteCache<Key4, Person> p = ignite(0).cache("K42P").withKeepBinary();
-
-        p.query(new SqlFieldsQuery(
-            "insert into Person (key, strKey, id, firstName) values (1, 'aa', ?, ?), (2, 'bb', 2, 'Alex')")
-            .setArgs(1, "Sergi"));
-
-        assertEquals(createPerson(1, "Sergi"), p.get(new Key4(1)));
-
-        assertEquals(createPerson(2, "Alex"), p.get(new Key4(2)));
-    }
-
-    /**
-     *
-     */
+    @Test
     public void testUuidHandling() {
         IgniteCache<UUID, Integer> p = ignite(0).cache("U2I");
 
@@ -215,5 +209,77 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
         p.query(new SqlFieldsQuery("insert into Integer(_key, _val) values (?, ?)").setArgs(id, 1));
 
         assertEquals(1, (int)p.get(id));
+    }
+
+    /**
+     * Test that nested fields could be updated using sql UPDATE just by nested field name.
+     */
+    @Test
+    public void testNestedFieldsHandling1() {
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
+
+        try {
+            IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
+
+            final int ROOT_KEY = 1;
+
+            // Create 1st level value
+            AllTypes rootVal = new AllTypes(1L);
+
+            // With random inner field
+            rootVal.innerTypeCol = new AllTypes.InnerType(42L);
+
+            p.query(new SqlFieldsQuery(
+                "INSERT INTO AllTypes(_key,_val) VALUES (?, ?)").setArgs(ROOT_KEY, rootVal)
+            ).getAll();
+
+            // Update inner fields just by their names
+            p.query(new SqlFieldsQuery("UPDATE AllTypes SET innerLongCol = ?, innerStrCol = ?, arrListCol = ?;")
+                .setArgs(50L, "sss", new ArrayList<>(Arrays.asList(3L, 2L, 1L)))).getAll();
+
+            AllTypes res = p.get(ROOT_KEY);
+
+            AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
+
+            resInner.innerStrCol = "sss";
+            resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
+
+            assertEquals(resInner, res.innerTypeCol);
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
+    }
+
+    /**
+     * Check that few sequential start-stops of the cache do not affect work of DML.
+     */
+    @Test
+    public void testCacheRestartHandling() {
+        boolean oldAllowColumnsVal = GridTestUtils.getFieldValue(UpdatePlanBuilder.class, UpdatePlanBuilder.class,
+            "ALLOW_KEY_VAL_UPDATES");
+
+        GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", true);
+
+        try {
+            for (int i = 0; i < 4; i++) {
+                IgniteCache<Integer, AllTypes> p =
+                    ignite(0).getOrCreateCache(cacheConfig("I2AT", true, false, Integer.class,
+                        AllTypes.class));
+
+                p.query(new SqlFieldsQuery("INSERT INTO AllTypes(_key, _val) VALUES (1, ?)")
+                    .setArgs(new AllTypes(1L))).getAll();
+
+                p.query(new SqlFieldsQuery("UPDATE AllTypes SET dateCol = null;")).getAll();
+
+                p.destroy();
+            }
+        }
+        finally {
+            GridTestUtils.setFieldValue(UpdatePlanBuilder.class, "ALLOW_KEY_VAL_UPDATES", oldAllowColumnsVal);
+        }
     }
 }

@@ -19,6 +19,9 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+const mongoose = require('mongoose');
+
 const testAccounts = require('../data/accounts.json');
 const testClusters = require('../data/clusters.json');
 const testCaches = require('../data/caches.json');
@@ -28,10 +31,10 @@ const testSpaces = require('../data/spaces.json');
 
 module.exports = {
     implements: 'dbHelper',
-    inject: ['require(lodash)', 'mongo', 'mongoose']
+    inject: ['mongo']
 };
 
-module.exports.factory = (_, mongo, mongoose) => {
+module.exports.factory = (mongo) => {
     const prepareUserSpaces = () => Promise.all([mongo.Account.create(testAccounts), mongo.Space.create(testSpaces)]);
     const prepareClusters = () => mongo.Cluster.create(testClusters);
     const prepareDomains = () => mongo.DomainModel.create(testDomains);
@@ -39,7 +42,7 @@ module.exports.factory = (_, mongo, mongoose) => {
     const prepareIgfss = () => mongo.Igfs.create(testIgfss);
 
     const drop = () => {
-        return Promise.all(_.map(mongoose.connection.collections, (collection) => collection.remove()));
+        return Promise.all(_.map(mongoose.connection.collections, (collection) => collection.deleteMany()));
     };
 
     const init = () => {

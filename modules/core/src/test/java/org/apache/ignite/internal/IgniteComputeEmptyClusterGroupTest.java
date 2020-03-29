@@ -22,17 +22,15 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -40,18 +38,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -67,41 +56,30 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsync() throws Exception {
         ClusterGroup empty = ignite(0).cluster().forNodeId(UUID.randomUUID());
 
         assertEquals(0, empty.nodes().size());
 
-        IgniteCompute comp = ignite(0).compute(empty).withAsync();
+        IgniteCompute comp = ignite(0).compute(empty);
 
-        comp.affinityRun((String)null, 1, new FailRunnable());
+        checkFutureFails(comp.affinityRunAsync(DEFAULT_CACHE_NAME, 1, new FailRunnable()));
 
-        checkFutureFails(comp);
+        checkFutureFails(comp.applyAsync(new FailClosure(), new Object()));
 
-        comp.apply(new FailClosure(), new Object());
+        checkFutureFails(comp.affinityCallAsync(DEFAULT_CACHE_NAME, 1, new FailCallable()));
 
-        checkFutureFails(comp);
-
-        comp.affinityCall((String)null, 1, new FailCallable());
-
-        checkFutureFails(comp);
-
-        comp.broadcast(new FailCallable());
-
-        checkFutureFails(comp);
+        checkFutureFails(comp.broadcastAsync(new FailCallable()));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSync() throws Exception {
         ClusterGroup empty = ignite(0).cluster().forNodeId(UUID.randomUUID());
 
@@ -110,9 +88,8 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         final IgniteCompute comp = ignite(0).compute(empty);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                comp.affinityRun((String)null, 1, new FailRunnable());
+            @Override public Void call() throws Exception {
+                comp.affinityRun(DEFAULT_CACHE_NAME, 1, new FailRunnable());
 
                 return null;
             }
@@ -127,9 +104,8 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
         }, ClusterGroupEmptyException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                comp.affinityCall((String)null, 1, new FailCallable());
+            @Override public Void call() throws Exception {
+                comp.affinityCall(DEFAULT_CACHE_NAME, 1, new FailCallable());
 
                 return null;
             }
@@ -145,11 +121,9 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param comp Compute.
+     * @param fut Future.
      */
-    private void checkFutureFails(IgniteCompute comp) {
-        final ComputeTaskFuture fut = comp.future();
-
+    private void checkFutureFails(final IgniteFuture fut) {
         assertNotNull(fut);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {

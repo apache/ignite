@@ -26,6 +26,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -33,6 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests usage of affinity in case when cache doesn't exist.
@@ -48,16 +50,10 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityProxyNoCache() throws Exception {
         checkAffinityProxyNoCache(new Object());
     }
@@ -65,6 +61,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityProxyNoCacheCacheObject() throws Exception {
         checkAffinityProxyNoCache(new TestCacheObject(new Object()));
     }
@@ -87,6 +84,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityImplCacheDeleted() throws Exception {
         checkAffinityImplCacheDeleted(new Object());
     }
@@ -94,6 +92,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityImplCacheDeletedCacheObject() throws Exception {
         checkAffinityImplCacheDeleted(new TestCacheObject(new Object()));
     }
@@ -235,14 +234,14 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+        @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
             A.notNull(ctx, "ctx");
 
             return (T)val;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
@@ -257,17 +256,39 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int putValue(long addr) throws IgniteCheckedException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
+            throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr)
+            throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
@@ -287,7 +308,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             throw new UnsupportedOperationException();
         }
 

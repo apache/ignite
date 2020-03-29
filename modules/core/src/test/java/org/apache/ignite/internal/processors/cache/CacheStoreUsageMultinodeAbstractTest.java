@@ -26,7 +26,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
@@ -38,9 +37,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -51,19 +47,13 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
  */
 public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    protected boolean client;
-
     /** */
     protected boolean cache;
 
@@ -83,12 +73,8 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
     protected static Map<String, List<Cache.Entry<?, ?>>> writeMap;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cache)
             cfg.setCacheConfiguration(cacheConfiguration());
@@ -101,11 +87,10 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
-        ccfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -149,12 +134,13 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache0 = ignite(0).cache(null);
-        IgniteCache<Object, Object> cache1 = ignite(1).cache(null);
-        IgniteCache<Object, Object> clientCache = client.cache(null);
+        IgniteCache<Object, Object> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = ignite(1).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(((IgniteCacheProxy)cache0).context().store().configured());
-        assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());
+        if (atomicityMode() != ATOMIC)
+            assertEquals(clientStore, ((IgniteCacheProxy) clientCache).context().store().configured());
 
         List<TransactionConcurrency> tcList = new ArrayList<>();
 
@@ -209,13 +195,13 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
 
         assertNotNull(node);
 
-        String expNode = storeOnPrimary ? (String)node.attribute(ATTR_GRID_NAME) : ignite.name();
+        String expNode = storeOnPrimary ? (String)node.attribute(ATTR_IGNITE_INSTANCE_NAME) : ignite.name();
 
         assertNotNull(expNode);
 
         log.info("Put [node=" + ignite.name() +
             ", key=" + key +
-            ", primary=" + node.attribute(ATTR_GRID_NAME) +
+            ", primary=" + node.attribute(ATTR_IGNITE_INSTANCE_NAME) +
             ", tx=" + tc +
             ", nearCache=" + (cache.getConfiguration(CacheConfiguration.class).getNearConfiguration() != null) +
             ", storeOnPrimary=" + storeOnPrimary + ']');
@@ -236,7 +222,7 @@ public abstract class CacheStoreUsageMultinodeAbstractTest extends GridCommonAbs
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override
             public boolean apply() {
-                return writeMap.size() > 0;
+                return !writeMap.isEmpty();
             }
         }, 1000);
 

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains query-related annotations.
  */
+
 package org.apache.ignite.cache.query.annotations;

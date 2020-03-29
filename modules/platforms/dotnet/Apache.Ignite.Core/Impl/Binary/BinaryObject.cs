@@ -77,7 +77,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             _header = header;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type id.
+        /// </summary>
         public int TypeId
         {
             get { return _header.TypeId; }
@@ -131,8 +133,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get
             {
-                throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
-                    "Check IBinaryObject.IsEnum property before accessing Value.");
+                throw new NotSupportedException("IBinaryObject.EnumValue is only supported for enums. " +
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
+            }
+        }
+
+        /** <inheritdoc /> */
+        [ExcludeFromCodeCoverage]
+        public string EnumName
+        {
+            get
+            {
+                throw new NotSupportedException("IBinaryObject.EnumName is only supported for enums. " +
+                    "Check IBinaryObject.GetBinaryType().IsEnum property before accessing Value.");
             }
         }
 
@@ -228,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema,_marsh)
+                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema, _marsh.Ignite)
                     .ToDictionary() ?? EmptyFields;
             }
         }
@@ -247,74 +260,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             BinaryObject that = obj as BinaryObject;
 
-            if (that != null)
-            {
-                if (_data == that._data && _offset == that._offset)
-                    return true;
+            if (that == null)
+                return false;
 
-                if (TypeId != that.TypeId)
-                    return false;
+            if (_data == that._data && _offset == that._offset)
+                return true;
 
-                var desc = _marsh.GetDescriptor(true, TypeId);
+            if (TypeId != that.TypeId)
+                return false;
 
-                if (desc != null && desc.EqualityComparer != null)
-                    return desc.EqualityComparer.Equals(this, that);
-
-                // 1. Check headers
-                if (_header == that._header)
-                {
-                    // 2. Check if objects have the same field sets.
-                    InitializeFields();
-                    that.InitializeFields();
-
-                    if (_fields.Keys.Count != that._fields.Keys.Count)
-                        return false;
-
-                    foreach (int id in _fields.Keys)
-                    {
-                        if (!that._fields.ContainsKey(id))
-                            return false;
-                    }
-
-                    // 3. Check if objects have the same field values.
-                    foreach (KeyValuePair<int, int> field in _fields)
-                    {
-                        object fieldVal = GetField<object>(field.Value, null);
-                        object thatFieldVal = that.GetField<object>(that._fields[field.Key], null);
-
-                        var arr = fieldVal as Array;
-                        var thatArr = thatFieldVal as Array;
-
-                        if (arr != null && thatArr != null && arr.Length == thatArr.Length)
-                        {
-                            for (var i = 0; i < arr.Length; i++)
-                            {
-                                if (!Equals(arr.GetValue(i), thatArr.GetValue(i)))
-                                    return false;
-                            }
-                        }
-                        else if (!Equals(fieldVal, thatFieldVal))
-                        {
-                            return false;
-                        }
-                    }
-
-                    // 4. Check if objects have the same raw data.
-                    // ReSharper disable ImpureMethodCallOnReadonlyValueField (method is not impure)
-                    using (var stream = new BinaryHeapStream(_data))
-                    using (var thatStream = new BinaryHeapStream(that._data))
-                    {
-                        var rawOffset = _header.GetRawOffset(stream, _offset);
-                        var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
-
-                        return BinaryUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset,
-                            that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
-                    }
-                    // ReSharper restore ImpureMethodCallOnReadonlyValueField
-                }
-            }
-
-            return false;
+            return BinaryArrayEqualityComparer.Equals(this, that);
         }
 
         /** <inheritdoc /> */

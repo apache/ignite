@@ -26,7 +26,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,9 +38,9 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContex
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
@@ -68,11 +67,6 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode collectionMemoryMode() {
-        return ONHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
@@ -89,8 +83,9 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueue() throws Exception {
-        final String queueName = "q";
+        final String queueName = "qq";
 
         System.out.println(U.filler(20, '\n'));
 

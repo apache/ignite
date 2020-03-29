@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -54,14 +53,12 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
@@ -71,13 +68,13 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Test fo regular igfs operations.
  */
-@SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "ConstantConditions"})
+@SuppressWarnings({"ConstantConditions"})
 public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
     /** Default block size (32Mb). */
-    protected static final long BLOCK_SIZE = 32 * 1024 * 1024;
+    protected static final long BLOCK_SIZE = 32L * 1024 * 1024;
 
     /** Default repeat count. */
     protected static final int REPEAT_CNT = 5; // Diagnostic: up to 500; Regression: 5
@@ -166,9 +163,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /** Dual mode flag. */
     protected final boolean dual;
 
-    /** Memory mode. */
-    protected final CacheMemoryMode memoryMode;
-
     /** IP finder for primary topology. */
     protected final TcpDiscoveryVmIpFinder primaryIpFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -196,18 +190,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param mode IGFS mode.
      */
     protected IgfsAbstractBaseSelfTest(IgfsMode mode) {
-        this(mode, ONHEAP_TIERED);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param mode IGFS mode.
-     * @param memoryMode Memory mode.
-     */
-    protected IgfsAbstractBaseSelfTest(IgfsMode mode, CacheMemoryMode memoryMode) {
         this.mode = mode;
-        this.memoryMode = memoryMode;
 
         dual = (mode == DUAL_SYNC || mode == DUAL_ASYNC);
     }
@@ -227,23 +210,9 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * @return Relaxed consistency flag.
-     */
-    protected boolean initializeDefaultPathModes() {
-        return false;
-    }
-
-    /**
      * @return Client flag.
      */
     protected boolean client() {
-        return false;
-    }
-
-    /**
-     * @return Use optimized marshaller flag.
-     */
-    protected boolean useOptimizedMarshaller() {
         return false;
     }
 
@@ -360,7 +329,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
@@ -370,13 +339,11 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String igniteInstanceName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg,
         TcpDiscoveryIpFinder ipFinder) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -387,11 +354,8 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setRelaxedConsistency(relaxedConsistency());
         igfsCfg.setFragmentizerEnabled(fragmentizerEnabled());
 
-        igfsCfg.setInitializeDefaultPathModes(initializeDefaultPathModes());
-
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
@@ -399,32 +363,28 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setMemoryMode(memoryMode);
-        dataCacheCfg.setOffHeapMaxMemory(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
+
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        if (useOptimizedMarshaller())
-            cfg.setMarshaller(new OptimizedMarshaller());
-
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(ipFinder);
 
-        prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
-
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -545,6 +505,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     /**
      * Create the file in the given IGFS and write provided data chunks to it.
      *
+     * @param uni FS tests adaptor.
      * @param file File.
      * @param chunks Data chunks.
      * @throws IOException In case of IO exception.
@@ -942,7 +903,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @return The data cache.
      */
     protected static GridCacheAdapter<IgfsBlockKey, byte[]> getDataCache(IgniteFileSystem igfs) {
-        String dataCacheName = igfs.configuration().getDataCacheName();
+        String dataCacheName = igfs.configuration().getDataCacheConfiguration().getName();
 
         IgniteEx igniteEx = ((IgfsEx)igfs).context().kernalContext().grid();
 
@@ -956,7 +917,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @return The data cache.
      */
     protected static GridCacheAdapter<IgniteUuid, IgfsEntryInfo> getMetaCache(IgniteFileSystem igfs) {
-        String dataCacheName = igfs.configuration().getMetaCacheName();
+        String dataCacheName = igfs.configuration().getMetaCacheConfiguration().getName();
 
         IgniteEx igniteEx = ((IgfsEx)igfs).context().kernalContext().grid();
 
@@ -969,7 +930,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param igfs IGFS.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static void clear(IgniteFileSystem igfs) throws Exception {
         Field workerMapFld = IgfsImpl.class.getDeclaredField("workerMap");
 
@@ -991,7 +951,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         }
 
         // Clear igfs.
-        igfs.format();
+        igfs.clear();
 
         int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
         int constCnt = 0, totalCnt = 0;
@@ -1075,7 +1035,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
      * @param uni IGFS.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public static void clear(IgfsSecondaryFileSystemTestAdapter uni) throws Exception {
         IgfsEx igfsEx = uni.igfs();
 

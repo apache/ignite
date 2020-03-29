@@ -109,7 +109,6 @@ public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> 
      * @throws NullPointerException Thrown in case when there no arguments set.
      * @throws IllegalArgumentException Thrown if index is invalid.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> T argument(int idx) {
         A.notNull(args, "args");
         A.ensure(idx >= 0 && idx < args.length, "idx >= 0 && idx < args.length");
@@ -123,7 +122,7 @@ public abstract class ComputeJobAdapter implements ComputeJob, Callable<Object> 
      *
      * @return Array of job arguments.
      */
-    @Nullable Object[] arguments() {
+    @Nullable protected Object[] arguments() {
         return args;
     }
 

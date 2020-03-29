@@ -18,46 +18,72 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
     using System;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Cursor for entry-based queries.
     /// </summary>
-    internal class FieldsQueryCursor<T> : AbstractQueryCursor<T>
+    internal class FieldsQueryCursor<T> : PlatformQueryQursorBase<T>
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="target">Target.</param>
+        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="readerFunc">The reader function.</param>
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
+            Func<IBinaryRawReader, int, T> readerFunc)
+            : base(target, keepBinary, r =>
+            {
+                // Reading and skipping row size in bytes.
+                r.ReadInt();
+
+                int cnt = r.ReadInt();
+
+                return readerFunc(r, cnt);
+
+            })
+        {
+            // No-op.
+        }
+    }
+
+    /// <summary>
+    /// Cursor for entry-based queries.
+    /// </summary>
+    internal class FieldsQueryCursor : FieldsQueryCursor<IList<object>>, IFieldsQueryCursor
     {
         /** */
-        private readonly Func<IBinaryRawReader, int, T> _readerFunc;
+        private const int OpGetFieldNames = 7;
+
+        /** */
+        private IList<string> _fieldNames;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaler.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
         /// <param name="readerFunc">The reader function.</param>
-        public FieldsQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
-            Func<IBinaryRawReader, int, T> readerFunc)
-            : base(target, marsh, keepBinary)
+        public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
+            Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
         {
-            Debug.Assert(readerFunc != null);
-
-            _readerFunc = readerFunc;
+            // No-op.
         }
 
         /** <inheritdoc /> */
-        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        protected override T Read(BinaryReader reader)
+        public IList<string> FieldNames
         {
-            // Reading and skipping row size in bytes.
-            reader.ReadInt();
-
-            int cnt = reader.ReadInt();
-
-            return _readerFunc(reader, cnt);
+            get
+            {
+                return _fieldNames ??
+                       (_fieldNames = new ReadOnlyCollection<string>(
+                           Target.OutStream(OpGetFieldNames, reader => reader.ReadStringCollection())));
+            }
         }
     }
 }

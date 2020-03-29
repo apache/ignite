@@ -1,0 +1,160 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'sslConfiguration'
+-var cluster = '$ctrl.clonedCluster'
+-var enabled = '$ctrl.clonedCluster.sslEnabled'
+-var model = cluster + '.sslContextFactory'
+-var trust = model + '.trustManagers'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title SSL configuration
+    panel-description
+        | Settings for SSL configuration for creating a secure socket layer.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/ssltls" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Enabled',
+                    model: enabled,
+                    name: '"sslEnabled"',
+                    tip: 'Flag indicating whether to configure SSL configuration'
+                })
+            .pc-form-grid-col-60
+                +form-field__typeahead({
+                    label: 'Algorithm to create a key manager:',
+                    model: `${model}.keyAlgorithm`,
+                    name: '"keyAlgorithm"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'SumX509',
+                    options: '["SumX509", "X509"]',
+                    tip: 'Sets key manager algorithm that will be used to create a key manager<br/>\
+                         Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509'
+                })
+
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Key store file:',
+                    model: `${model}.keyStoreFilePath`,
+                    name: '"keyStoreFilePath"',
+                    disabled: `!(${enabled})`,
+                    required: enabled,
+                    placeholder: 'Path to the key store file',
+                    tip: 'Path to the key store file<br/>\
+                          This is a mandatory parameter since ssl context could not be initialized without key manager'
+                })
+            .pc-form-grid-col-30
+                +form-field__typeahead({
+                    label: 'Key store type:',
+                    model: `${model}.keyStoreType`,
+                    name: '"keyStoreType"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'JKS',
+                    options: '["JKS", "PCKS11", "PCKS12"]',
+                    tip: 'Key store type used in context initialization'
+                })
+            .pc-form-grid-col-30
+                +form-field__typeahead({
+                    label: 'Protocol:',
+                    model: `${model}.protocol`,
+                    name: '"protocol"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'TSL',
+                    options: '["TSL", "SSL"]',
+                    tip: 'Protocol for secure transport'
+                })
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    list-editable(
+                        ng-model=trust
+                        name='trustManagers'
+                        list-editable-cols=`::[{name: "Pre-configured trust managers:"}]`
+                        ng-disabled=enabledToDisabled(enabled)
+                        ng-required=`${enabled} && !${model}.trustStoreFilePath`
+                    )
+                        list-editable-item-view {{ $item }}
+
+                        list-editable-item-edit
+                            +list-java-class-field('Trust manager', '$item', '"trustManager"', trust)
+                                +form-field__error({ error: 'igniteUnique', message: 'Such trust manager already exists!' })
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$editLast((${trust} = ${trust} || []).push(''))`
+                                label-single='trust manager'
+                                label-multiple='trust managers'
+                            )
+                    .form-field__errors(
+                        ng-messages=`sslConfiguration.trustManagers.$error`
+                        ng-show=`sslConfiguration.trustManagers.$invalid`
+                    )
+                        +form-field__error({ error: 'required', message: 'Trust managers or trust store file should be configured' })
+
+            .pc-form-grid-col-30(ng-if-start=`!${trust}.length`)
+                +form-field__text({
+                    label: 'Trust store file:',
+                    model: `${model}.trustStoreFilePath`,
+                    name: '"trustStoreFilePath"',
+                    required: `${enabled} && !${trust}.length`,
+                    disabled: enabledToDisabled(enabled),
+                    placeholder: 'Path to the trust store file',
+                    tip: 'Path to the trust store file'
+                })
+                    +form-field__error({ error: 'required', message: 'Trust store file or trust managers should be configured' })
+            .pc-form-grid-col-30(ng-if-end)
+                +form-field__typeahead({
+                    label: 'Trust store type:',
+                    model: `${model}.trustStoreType`,
+                    name: '"trustStoreType"',
+                    disabled: `!(${enabled})`,
+                    placeholder: 'JKS',
+                    options: '["JKS", "PCKS11", "PCKS12"]',
+                    tip: 'Trust store type used in context initialization'
+                })
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.7.0")')
+                .ignite-form-field
+                    +list-text-field({
+                        items: `${model}.cipherSuites`,
+                        lbl: 'Cipher suite',
+                        name: 'cipherSuite',
+                        itemName: 'cipher suite',
+                        itemsName: 'cipher suites'
+
+                    })(
+                        list-editable-cols=`::[{name: 'Suites:'}]`
+                        ng-disabled=`!(${enabled})`
+                    )
+                        +form-field__error({error: 'igniteUnique', message: 'Such suite is already configured!'})
+            .pc-form-grid-col-60(ng-if-end)
+                .ignite-form-field
+                    +list-text-field({
+                        items: `${model}.protocols`,
+                        lbl: 'Protocol',
+                        name: 'protocols',
+                        itemName: 'protocol',
+                        itemsName: 'protocols'
+
+                    })(
+                        list-editable-cols=`::[{name: 'Protocols:'}]`
+                        ng-disabled=`!(${enabled})`
+                    )
+                        +form-field__error({error: 'igniteUnique', message: 'Such protocol already exists!'})
+        .pca-form-column-6
+            +preview-xml-java(cluster, 'clusterSsl')

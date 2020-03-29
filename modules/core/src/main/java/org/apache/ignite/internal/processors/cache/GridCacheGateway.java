@@ -85,7 +85,7 @@ public class GridCacheGateway<K, V> {
 
             if (state == State.STOPPED) {
                 if (stopErr)
-                    throw new IllegalStateException("Cache has been stopped: " + ctx.name());
+                    throw new IllegalStateException(new CacheStoppedException(ctx.name()));
                 else
                     return false;
             }
@@ -93,7 +93,8 @@ public class GridCacheGateway<K, V> {
                 assert reconnectFut != null;
 
                 throw new CacheException(
-                    new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + ctx.gridName()));
+                    new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " +
+                        ctx.igniteInstanceName()));
             }
         }
 
@@ -106,7 +107,7 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStopped() {
-        onEnter();
+        onEnter(null);
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
         rwLock.readLock().lock();
@@ -120,7 +121,7 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStoppedNoLock() {
-        onEnter();
+        onEnter(null);
 
         return checkState(false, false);
     }
@@ -131,6 +132,8 @@ public class GridCacheGateway<K, V> {
     public void leaveNoLock() {
         ctx.tm().resetContext();
         ctx.mvcc().contextReset();
+
+        ctx.tm().leaveNearTxSystemSection();
 
         // Unwind eviction notifications.
         if (!ctx.shared().closed(ctx))
@@ -160,7 +163,7 @@ public class GridCacheGateway<K, V> {
             GridCachePreloader preldr = cache != null ? cache.preloader() : null;
 
             if (preldr == null)
-                throw new IllegalStateException("Cache has been closed or destroyed: " + ctx.name());
+                throw new IllegalStateException(new CacheStoppedException(ctx.name()));
 
             preldr.startFuture().get();
         }
@@ -169,7 +172,9 @@ public class GridCacheGateway<K, V> {
                 ctx.name() + "]", e);
         }
 
-        onEnter();
+        ctx.tm().enterNearTxSystemSection();
+
+        onEnter(opCtx);
 
         Lock lock = rwLock.readLock();
 
@@ -194,7 +199,7 @@ public class GridCacheGateway<K, V> {
      * @return Previous operation context set on this thread.
      */
     @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
-        onEnter();
+        onEnter(opCtx);
 
         checkState(false, false);
 
@@ -238,18 +243,30 @@ public class GridCacheGateway<K, V> {
         // Unwind eviction notifications.
         CU.unwindEvicts(ctx);
 
+        ctx.tm().leaveNearTxSystemSection();
+
         // Return back previous thread local operation context per call.
         ctx.operationContextPerCall(prev);
     }
 
     /**
-     *
+     * @param opCtx Cache operation context.
      */
-    private void onEnter() {
+    private void onEnter(CacheOperationContext opCtx) {
         ctx.itHolder().checkWeakQueue();
 
         if (ctx.deploymentEnabled())
             ctx.deploy().onEnter();
+
+        if (opCtx != null)
+            checkAtomicOpsInTx(opCtx);
+    }
+
+    /**
+     *
+     */
+    public boolean isStopped() {
+        return !checkState(false, false);
     }
 
     /**
@@ -334,5 +351,19 @@ public class GridCacheGateway<K, V> {
 
         /** */
         STOPPED
+    }
+
+    /**
+     * Checks if this operation is available to be used in transaction.
+     *
+     * @throws IgniteException - in case of atomic operation inside transaction without permission.
+     */
+    private void checkAtomicOpsInTx(CacheOperationContext opCtx) throws IgniteException {
+        if (ctx.atomic() && !opCtx.allowedAtomicOpsInTx()) {
+            if (ctx.grid().transactions().tx() != null) {
+                throw new IgniteException("Transaction spans operations on atomic cache " +
+                    "(don't use atomic cache inside transaction or set up flag by cache.allowedAtomicOpsInTx()).");
+            }
+        }
     }
 }

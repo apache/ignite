@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -208,6 +211,14 @@ public class BinarySchema implements Externalizable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return o != null && o instanceof BinarySchema && schemaId == ((BinarySchema)o).schemaId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinarySchema.class, this,
+            "ids", Arrays.toString(ids),
+            "names", Arrays.toString(names),
+            "idToOrderData", Arrays.toString(idToOrderData));
     }
 
     /** {@inheritDoc} */

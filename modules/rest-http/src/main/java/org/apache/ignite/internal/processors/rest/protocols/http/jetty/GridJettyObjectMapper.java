@@ -17,31 +17,29 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
+import java.io.IOException;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.util.Locale;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.sql.SQLException;
-import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.internal.LessNamingBean;
-import org.apache.ignite.internal.visor.cache.VisorCache;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -63,7 +61,11 @@ public class GridJettyObjectMapper extends ObjectMapper {
         module.addSerializer(Throwable.class, THROWABLE_SERIALIZER);
         module.addSerializer(IgniteBiTuple.class, IGNITE_TUPLE_SERIALIZER);
         module.addSerializer(IgniteUuid.class, IGNITE_UUID_SERIALIZER);
-        module.addSerializer(LessNamingBean.class, LESS_NAMING_SERIALIZER);
+        module.addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER);
+        module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
+        module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
+
+        configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         registerModule(module);
     }
@@ -84,14 +86,6 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
     };
 
-    /** Custom {@code null} string serializer. */
-    private static final JsonSerializer<Object> NULL_STRING_VALUE_SERIALIZER = new JsonSerializer<Object>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(Object val, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeString("");
-        }
-    };
-
     /**
      * Custom serializers provider that provide special serializers for {@code null} values.
      */
@@ -100,7 +94,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
          * Default constructor.
          */
         CustomSerializerProvider() {
-            super();
+            // No-op.
         }
 
         /**
@@ -115,31 +109,29 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
 
         /** {@inheritDoc} */
-        public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
+        @Override public DefaultSerializerProvider createInstance(SerializationConfig cfg, SerializerFactory jsf) {
             return new CustomSerializerProvider(this, cfg, jsf);
         }
 
         /** {@inheritDoc} */
-        @Override public JsonSerializer<Object> findNullKeySerializer(JavaType serializationType,
-            BeanProperty prop) throws JsonMappingException {
+        @Override public JsonSerializer<Object> findNullKeySerializer(JavaType serializationType, BeanProperty prop) {
             return NULL_KEY_SERIALIZER;
         }
 
         /** {@inheritDoc} */
-        @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) throws JsonMappingException {
-            if (prop.getType().getRawClass() == String.class)
-                return NULL_STRING_VALUE_SERIALIZER;
-
+        @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) {
             return NULL_VALUE_SERIALIZER;
         }
     }
 
     /** Custom serializer for {@link Throwable} */
     private static final JsonSerializer<Throwable> THROWABLE_SERIALIZER = new JsonSerializer<Throwable>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(Throwable e, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeStartObject();
-
+        /**
+         * @param e Exception to write.
+         * @param gen JSON generator.
+         * @throws IOException If failed to write.
+         */
+        private void writeException(Throwable e, JsonGenerator gen) throws IOException {
             if (e instanceof VisorExceptionWrapper) {
                 VisorExceptionWrapper wrapper = (VisorExceptionWrapper)e;
 
@@ -151,14 +143,30 @@ public class GridJettyObjectMapper extends ObjectMapper {
             if (e.getMessage() != null)
                 gen.writeStringField("message", e.getMessage());
 
-            if (e.getCause() != null)
-                gen.writeObjectField("cause", e.getCause());
-
             if (e instanceof SQLException) {
                 SQLException sqlE = (SQLException)e;
 
                 gen.writeNumberField("errorCode", sqlE.getErrorCode());
                 gen.writeStringField("SQLState", sqlE.getSQLState());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void serialize(Throwable e, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            gen.writeStartObject();
+
+            writeException(e, gen);
+
+            if (e.getCause() != null)
+                gen.writeObjectField("cause", e.getCause());
+
+            if (!F.isEmpty(e.getSuppressed())) {
+                gen.writeArrayFieldStart("suppressed");
+
+                for (Throwable sup : e.getSuppressed())
+                    gen.writeObject(sup);
+
+                gen.writeEndArray();
             }
 
             gen.writeEndObject();
@@ -186,88 +194,73 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
     };
 
-    /**
-     * Custom serializer for Visor classes with non JavaBeans getters.
-     */
-    private static final JsonSerializer<Object> LESS_NAMING_SERIALIZER = new JsonSerializer<Object>() {
-        /** Methods to exclude. */
-        private final Collection<String> exclMtds = Arrays.asList("toString", "hashCode", "clone", "getClass");
-
-        /** */
-        private final Map<Class<?>, Collection<Method>> clsCache = new HashMap<>();
-
-        /** */
-        private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
-
+    /** Custom serializer for {@link GridCacheSqlMetadata} */
+    private static final JsonSerializer<GridCacheSqlMetadata> IGNITE_SQL_METADATA_SERIALIZER = new JsonSerializer<GridCacheSqlMetadata>() {
         /** {@inheritDoc} */
-        @Override public void serialize(Object bean, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            if (bean != null) {
-                gen.writeStartObject();
+        @Override public void serialize(GridCacheSqlMetadata m, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            gen.writeStartObject();
 
-                Class<?> cls = bean.getClass();
+            gen.writeStringField("cacheName", m.cacheName());
+            gen.writeObjectField("types", m.types());
+            gen.writeObjectField("keyClasses", m.keyClasses());
+            gen.writeObjectField("valClasses", m.valClasses());
+            gen.writeObjectField("fields", m.fields());
+            gen.writeObjectField("indexes", m.indexes());
 
-                Collection<Method> methods;
+            gen.writeEndObject();
+        }
+    };
 
-                // Get descriptor from cache.
-                rwLock.readLock().lock();
+    /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
+    private static final JsonSerializer<GridCacheSqlIndexMetadata> IGNITE_SQL_INDEX_METADATA_SERIALIZER = new JsonSerializer<GridCacheSqlIndexMetadata>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(GridCacheSqlIndexMetadata idx, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            gen.writeStartObject();
 
-                try {
-                    methods = clsCache.get(cls);
+            gen.writeStringField("name", idx.name());
+            gen.writeObjectField("fields", idx.fields());
+            gen.writeObjectField("descendings", idx.descendings());
+            gen.writeBooleanField("unique", idx.unique());
+
+            gen.writeEndObject();
+        }
+    };
+
+    /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
+    private static final JsonSerializer<BinaryObjectImpl> IGNITE_BINARY_OBJECT_SERIALIZER = new JsonSerializer<BinaryObjectImpl>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(BinaryObjectImpl bin, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            try {
+                BinaryType meta = bin.rawType();
+
+                // Serialize to JSON if we have metadata.
+                if (meta != null && !F.isEmpty(meta.fieldNames())) {
+                    gen.writeStartObject();
+
+                    for (String name : meta.fieldNames()) {
+                        Object val = bin.field(name);
+
+                        if (val instanceof BinaryObjectImpl) {
+                            BinaryObjectImpl ref = (BinaryObjectImpl)val;
+
+                            if (ref.hasCircularReferences())
+                                throw ser.mappingException("Failed convert to JSON object for circular references");
+                        }
+
+                        gen.writeObjectField(name, val);
+                    }
+
+                    gen.writeEndObject();
                 }
-                finally {
-                    rwLock.readLock().unlock();
+                else {
+                    // Otherwise serialize as Java object.
+                    Object obj = bin.deserialize();
+
+                    gen.writeObject(obj);
                 }
-
-                // If missing in cache - build descriptor
-                if (methods == null) {
-                    Method[] publicMtds = cls.getMethods();
-
-                    methods = new ArrayList<>(publicMtds.length);
-
-                    for (Method mtd : publicMtds) {
-                        Class retType = mtd.getReturnType();
-
-                        String mtdName = mtd.getName();
-
-                        if (mtd.getParameterTypes().length != 0 ||
-                            retType == void.class || retType == cls ||
-                            exclMtds.contains(mtdName) ||
-                            (VisorCache.class.isAssignableFrom(retType) && "history".equals(mtdName)))
-                            continue;
-
-                        mtd.setAccessible(true);
-
-                        methods.add(mtd);
-                    }
-
-                    // Allow multiple puts for the same class - they will simply override.
-                    rwLock.writeLock().lock();
-
-                    try {
-                        clsCache.put(cls, methods);
-                    }
-                    finally {
-                        rwLock.writeLock().unlock();
-                    }
-                }
-
-                // Extract fields values using descriptor and build JSONObject.
-                for (Method mtd : methods) {
-                    try {
-                        Object prop = mtd.invoke(bean);
-
-                        if (prop != null)
-                            gen.writeObjectField(mtd.getName(), prop);
-                    }
-                    catch (IOException ioe) {
-                        throw ioe;
-                    }
-                    catch (Exception e) {
-                        throw new IOException(e);
-                    }
-                }
-
-                gen.writeEndObject();
+            }
+            catch (BinaryObjectException ignore) {
+                gen.writeNull();
             }
         }
     };

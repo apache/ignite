@@ -46,6 +46,19 @@ public class GridSpringDynamicCacheTestService {
      * @param key Key.
      * @return Value.
      */
+    @Cacheable(value = "dynamicCache", sync = true)
+    public String cacheableSync(Integer key) {
+        assert key != null;
+
+        cnt.incrementAndGet();
+
+        return "value" + key;
+    }
+
+    /**
+     * @param key Key.
+     * @return Value.
+     */
     @CachePut("dynamicCache")
     public String cachePut(Integer key) {
         assert key != null;

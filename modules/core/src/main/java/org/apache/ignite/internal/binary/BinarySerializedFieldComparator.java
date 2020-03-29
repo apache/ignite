@@ -229,6 +229,9 @@ public class BinarySerializedFieldComparator {
             case GridBinaryMarshaller.TIMESTAMP:
                 return c1.readLong(1) == c2.readLong(1) && c1.readInt(1 + 8) == c2.readInt(1 + 8);
 
+            case GridBinaryMarshaller.TIME:
+                return c1.readLong(1) == c2.readLong(1);
+
             case GridBinaryMarshaller.UUID:
                 return c1.readLong(1) == c2.readLong(1) && c1.readLong(1 + 8) == c2.readLong(1 + 8);
 

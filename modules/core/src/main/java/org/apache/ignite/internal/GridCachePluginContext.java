@@ -35,28 +35,17 @@ public class GridCachePluginContext<C extends CachePluginConfiguration> implemen
     /** */
     private final CacheConfiguration igniteCacheCfg;
 
-    /** */
-    private final CachePluginConfiguration cachePluginCfg;
-
     /**
      * @param ctx Kernal context.
-     * @param cachePluginCfg Cache plugin config.
      * @param igniteCacheCfg Ignite config.
      */
-    public GridCachePluginContext(GridKernalContext ctx, CacheConfiguration igniteCacheCfg,
-        CachePluginConfiguration cachePluginCfg) {
+    public GridCachePluginContext(GridKernalContext ctx, CacheConfiguration igniteCacheCfg) {
         this.ctx = ctx;
-        this.cachePluginCfg = cachePluginCfg;
         this.igniteCacheCfg = igniteCacheCfg;
     }
 
     @Override public IgniteConfiguration igniteConfiguration() {
         return ctx.config();
-    }
-
-    /** {@inheritDoc} */
-    @Override public C cacheConfiguration() {
-        return (C)cachePluginCfg;
     }
 
     /** {@inheritDoc} */

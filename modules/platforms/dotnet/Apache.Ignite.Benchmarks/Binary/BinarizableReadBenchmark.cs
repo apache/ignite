@@ -43,6 +43,7 @@ namespace Apache.Ignite.Benchmarks.Binary
         private readonly Address _address = BenchmarkUtils.GetRandomAddress();
 
         /** Pre-allocated model. */
+        // ReSharper disable once UnusedMember.Local
         private readonly TestModel _model = new TestModel
         {
             Byte = 5,

@@ -20,13 +20,15 @@
 
 #include <stdint.h>
 
-#include "ignite/common/utils.h"
+#include <ignite/common/utils.h>
 
-#include "ignite/guid.h"
-#include "ignite/date.h"
-#include "ignite/timestamp.h"
+#include <ignite/guid.h>
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
+#include <ignite/time.h>
 
-#include "ignite/binary/binary_type.h"
+#include <ignite/binary/binary_enum_entry.h>
+#include <ignite/binary/binary_type.h>
 
 namespace ignite
 {
@@ -99,7 +101,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.                 
                  */
-                static void ReadInt8Array(interop::InteropInputStream* stream, int8_t* res, const int32_t len);
+                static void ReadInt8Array(interop::InteropInputStream* stream, int8_t* res, int32_t len);
 
                 /**
                  * Utility method to write signed 8-bit integer array to stream.
@@ -108,7 +110,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteInt8Array(interop::InteropOutputStream* stream, const int8_t* val, const int32_t len);
+                static void WriteInt8Array(interop::InteropOutputStream* stream, const int8_t* val, int32_t len);
 
                 /**
                  * Utility method to read boolean from stream.
@@ -133,7 +135,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.
                  */
-                static void ReadBoolArray(interop::InteropInputStream* stream, bool* res, const int32_t len);
+                static void ReadBoolArray(interop::InteropInputStream* stream, bool* res, int32_t len);
 
                 /**
                  * Utility method to write bool array to stream.
@@ -142,7 +144,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteBoolArray(interop::InteropOutputStream* stream, const bool* val, const int32_t len);
+                static void WriteBoolArray(interop::InteropOutputStream* stream, const bool* val, int32_t len);
 
                 /**
                  * Utility method to read signed 16-bit integer from stream.
@@ -187,7 +189,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.                 
                  */
-                static void ReadInt16Array(interop::InteropInputStream* stream, int16_t* res, const int32_t len);
+                static void ReadInt16Array(interop::InteropInputStream* stream, int16_t* res, int32_t len);
 
                 /**
                  * Utility method to write signed 16-bit integer array to stream.
@@ -196,7 +198,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteInt16Array(interop::InteropOutputStream* stream, const int16_t* val, const int32_t len);
+                static void WriteInt16Array(interop::InteropOutputStream* stream, const int16_t* val, int32_t len);
 
                 /**
                  * Utility method to read unsigned 16-bit integer from stream.
@@ -221,7 +223,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.
                  */
-                static void ReadUInt16Array(interop::InteropInputStream* stream, uint16_t* res, const int32_t len);
+                static void ReadUInt16Array(interop::InteropInputStream* stream, uint16_t* res, int32_t len);
 
                 /**
                  * Utility method to write unsigned 16-bit integer array to stream.
@@ -230,7 +232,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteUInt16Array(interop::InteropOutputStream* stream, const uint16_t* val, const int32_t len);
+                static void WriteUInt16Array(interop::InteropOutputStream* stream, const uint16_t* val, int32_t len);
 
                 /**
                  * Utility method to read signed 32-bit integer from stream.
@@ -275,7 +277,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.
                  */
-                static void ReadInt32Array(interop::InteropInputStream* stream, int32_t* res, const int32_t len);
+                static void ReadInt32Array(interop::InteropInputStream* stream, int32_t* res, int32_t len);
 
                 /**
                  * Utility method to write signed 32-bit integer array to stream.
@@ -284,7 +286,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteInt32Array(interop::InteropOutputStream* stream, const int32_t* val, const int32_t len);
+                static void WriteInt32Array(interop::InteropOutputStream* stream, const int32_t* val, int32_t len);
 
                 /**
                  * Utility method to read signed 64-bit integer from stream.
@@ -309,7 +311,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.
                  */
-                static void ReadInt64Array(interop::InteropInputStream* stream, int64_t* res, const int32_t len);
+                static void ReadInt64Array(interop::InteropInputStream* stream, int64_t* res, int32_t len);
 
                 /**
                  * Utility method to write signed 64-bit integer array to stream.
@@ -318,7 +320,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteInt64Array(interop::InteropOutputStream* stream, const int64_t* val, const int32_t len);
+                static void WriteInt64Array(interop::InteropOutputStream* stream, const int64_t* val, int32_t len);
 
                 /**
                  * Utility method to read float from stream.
@@ -343,7 +345,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.
                  */
-                static void ReadFloatArray(interop::InteropInputStream* stream, float* res, const int32_t len);
+                static void ReadFloatArray(interop::InteropInputStream* stream, float* res, int32_t len);
 
                 /**
                  * Utility method to write float array to stream.
@@ -352,7 +354,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteFloatArray(interop::InteropOutputStream* stream, const float* val, const int32_t len);
+                static void WriteFloatArray(interop::InteropOutputStream* stream, const float* val, int32_t len);
 
                 /**
                  * Utility method to read double from stream.
@@ -377,7 +379,7 @@ namespace ignite
                  * @param res Target array.
                  * @param len Array length.
                  */
-                static void ReadDoubleArray(interop::InteropInputStream* stream, double* res, const int32_t len);
+                static void ReadDoubleArray(interop::InteropInputStream* stream, double* res, int32_t len);
 
                 /**
                  * Utility method to write double array to stream.
@@ -386,13 +388,12 @@ namespace ignite
                  * @param val Value.
                  * @param len Array length.
                  */
-                static void WriteDoubleArray(interop::InteropOutputStream* stream, const double* val, const int32_t len);
+                static void WriteDoubleArray(interop::InteropOutputStream* stream, const double* val, int32_t len);
 
                 /**
                  * Utility method to read Guid from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
                  */
                 static Guid ReadGuid(interop::InteropInputStream* stream);
 
@@ -402,13 +403,12 @@ namespace ignite
                  * @param stream Stream.
                  * @param val Value.
                  */
-                static void WriteGuid(interop::InteropOutputStream* stream, const Guid val);
+                static void WriteGuid(interop::InteropOutputStream* stream, Guid val);
 
                 /**
                  * Utility method to read Date from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
                  */
                 static Date ReadDate(interop::InteropInputStream* stream);
 
@@ -418,13 +418,13 @@ namespace ignite
                  * @param stream Stream.
                  * @param val Value.
                  */
-                static void WriteDate(interop::InteropOutputStream* stream, const Date val);
+                static void WriteDate(interop::InteropOutputStream* stream, Date val);
 
                 /**
                  * Utility method to read Timestamp from stream.
                  *
                  * @param stream Stream.
-                 * @param res Value.
+                 * @return Value.
                  */
                 static Timestamp ReadTimestamp(interop::InteropInputStream* stream);
 
@@ -434,7 +434,52 @@ namespace ignite
                  * @param stream Stream.
                  * @param val Value.
                  */
-                static void WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val);
+                static void WriteTimestamp(interop::InteropOutputStream* stream, Timestamp val);
+
+                /**
+                 * Utility method to read Time from stream.
+                 *
+                 * @param stream Stream.
+                 * @return Value.
+                 */
+                static Time ReadTime(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write Time to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteTime(interop::InteropOutputStream* stream, Time val);
+
+                /**
+                 * Utility method to read BinaryEnumEntry from stream.
+                 *
+                 * @param stream Stream.
+                 * @return Value.
+                 */
+                static ignite::binary::BinaryEnumEntry ReadBinaryEnumEntry(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write BinaryEnumEntry to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteBinaryEnumEntry(interop::InteropOutputStream* stream,
+                    ignite::binary::BinaryEnumEntry val)
+                {
+                    WriteBinaryEnumEntry(stream, val.GetTypeId(), val.GetOrdinal());
+                }
+
+                /**
+                 * Utility method to write Binary Enum Entry to stream.
+                 *
+                 * @param stream Stream.
+                 * @param typeId Type ID.
+                 * @param ordinal Ordinal.
+                 */
+                static void WriteBinaryEnumEntry(interop::InteropOutputStream* stream, int32_t typeId, int32_t ordinal);
 
                 /**
                  * Utility method to write string to stream.
@@ -443,7 +488,7 @@ namespace ignite
                  * @param val Value.
                  * @param len Length.
                  */
-                static void WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len);
+                static void WriteString(interop::InteropOutputStream* stream, const char* val, int32_t len);
 
                 /**
                  * Get default value for the type.
@@ -453,9 +498,11 @@ namespace ignite
                 template<typename T>
                 static T GetDefaultValue()
                 {
-                    ignite::binary::BinaryType<T> binType;
+                    T res;
 
-                    return binType.GetNull();
+                    ignite::binary::BinaryType<T>::GetNull(res);
+
+                    return res;
                 }
             };
 
@@ -523,6 +570,18 @@ namespace ignite
             inline Timestamp BinaryUtils::GetDefaultValue<Timestamp>()
             {
                 return Timestamp();
+            }
+
+            template<>
+            inline Time BinaryUtils::GetDefaultValue<Time>()
+            {
+                return Time();
+            }
+
+            template<>
+            inline ignite::binary::BinaryEnumEntry BinaryUtils::GetDefaultValue<ignite::binary::BinaryEnumEntry>()
+            {
+                return ignite::binary::BinaryEnumEntry();
             }
 
             template<>

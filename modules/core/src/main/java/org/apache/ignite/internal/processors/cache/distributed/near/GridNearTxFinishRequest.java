@@ -24,8 +24,10 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -40,25 +42,10 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     private static final long serialVersionUID = 0L;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
-    /** Explicit lock flag. */
-    private boolean explicitLock;
-
-    /** Store enabled flag. */
-    private boolean storeEnabled;
-
-    /** Topology version. */
-    private AffinityTopologyVersion topVer;
-
-    /** Subject ID. */
-    private UUID subjId;
-
-    /** Task name hash. */
-    private int taskNameHash;
-
-    /** Write synchronization mode. */
-    private CacheWriteSynchronizationMode syncMode;
+    /** */
+    private MvccSnapshot mvccSnapshot;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -105,87 +92,83 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
+        MvccSnapshot mvccSnapshot,
         boolean addDepInfo) {
         super(
             xidVer,
             futId,
+            topVer,
             null,
             threadId,
             commit,
             invalidate,
             sys,
             plc,
-            syncMode == CacheWriteSynchronizationMode.FULL_SYNC,
-            syncMode == CacheWriteSynchronizationMode.FULL_SYNC,
+            syncMode,
             baseVer,
             committedVers,
             rolledbackVers,
+            subjId,
+            taskNameHash,
             txSize,
             addDepInfo
         );
 
-        this.syncMode = syncMode;
-        this.explicitLock = explicitLock;
-        this.storeEnabled = storeEnabled;
-        this.topVer = topVer;
-        this.subjId = subjId;
-        this.taskNameHash = taskNameHash;
+        explicitLock(explicitLock);
+        storeEnabled(storeEnabled);
+
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
-     * @return Transaction write synchronization mode (can be null is message sent from old nodes).
+     * @return Mvcc info.
      */
-    @Nullable public CacheWriteSynchronizationMode syncMode() {
-        return syncMode;
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
      * @return Explicit lock flag.
      */
     public boolean explicitLock() {
-        return explicitLock;
+        return isFlag(EXPLICIT_LOCK_FLAG_MASK);
+    }
+
+    /**
+     * @param explicitLock Explicit lock flag.
+     */
+    private void explicitLock(boolean explicitLock) {
+        setFlag(explicitLock, EXPLICIT_LOCK_FLAG_MASK);
     }
 
     /**
      * @return Store enabled flag.
      */
     public boolean storeEnabled() {
-        return storeEnabled;
+        return isFlag(STORE_ENABLED_FLAG_MASK);
+    }
+
+    /**
+     * @param storeEnabled Store enabled flag.
+     */
+    private void storeEnabled(boolean storeEnabled) {
+        setFlag(storeEnabled, STORE_ENABLED_FLAG_MASK);
     }
 
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(IgniteUuid miniId) {
+    public void miniId(int miniId) {
+        assert miniId > 0;
+
         this.miniId = miniId;
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * @return Task name hash.
-     */
-    public int taskNameHash() {
-        return taskNameHash;
-    }
-
-    /**
-     * @return Topology version.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -203,44 +186,14 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         }
 
         switch (writer.state()) {
-            case 18:
-                if (!writer.writeBoolean("explicitLock", explicitLock))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeBoolean("storeEnabled", storeEnabled))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
             case 22:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
@@ -261,60 +214,16 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         switch (reader.state()) {
-            case 18:
-                explicitLock = reader.readBoolean("explicitLock");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                storeEnabled = reader.readBoolean("storeEnabled");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 22:
-                byte syncModeOrd;
-
-                syncModeOrd = reader.readByte("syncMode");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
 
                 reader.incrementState();
 
             case 23:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                topVer = reader.readMessage("topVer");
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;
@@ -327,13 +236,18 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 53;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 25;
+        return 24;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return U.safeAbs(version().hashCode());
     }
 
     /** {@inheritDoc} */

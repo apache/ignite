@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
-    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     /// <summary>
     /// Tests AffinityFunction defined in Spring XML.
     /// </summary>
-    public class AffinityFunctionSpringTest : IgniteTestBase
+    public class AffinityFunctionSpringTest : SpringTestBase
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
@@ -94,6 +94,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(3, aff.GetPartition(4L));
         }
 
+        // ReSharper disable once UnusedType.Local (used from config)
         private class TestFunc : IAffinityFunction   // [Serializable] is not necessary
         {
             [InstanceResource]
@@ -117,7 +118,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 var longKey = (long)key;
                 int res;
 
-                if (TestFairFunc.PredefinedParts.TryGetValue(longKey, out res))
+                if (TestRendezvousFunc.PredefinedParts.TryGetValue(longKey, out res))
                     return res;
 
                 return (int)(longKey * 2 % 5);
@@ -135,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
-        private class TestFairFunc : FairAffinityFunction   // [Serializable] is not necessary
+        private class TestRendezvousFunc : RendezvousAffinityFunction   // [Serializable] is not necessary
         {
             public static readonly Dictionary<long, int> PredefinedParts = new Dictionary<long, int>
             {

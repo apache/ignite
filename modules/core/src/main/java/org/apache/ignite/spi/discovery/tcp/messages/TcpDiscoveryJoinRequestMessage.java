@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
 /**
@@ -33,20 +33,20 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     /** New node that wants to join the topology. */
     private final TcpDiscoveryNode node;
 
-    /** Discovery data. */
-    private final Map<Integer, byte[]> discoData;
+    /** Discovery data container. */
+    private final DiscoveryDataPacket dataPacket;
 
     /**
      * Constructor.
      *
      * @param node New node that wants to join.
-     * @param discoData Discovery data.
+     * @param dataPacket Discovery data.
      */
-    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, Map<Integer, byte[]> discoData) {
+    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, DiscoveryDataPacket dataPacket) {
         super(node.id());
 
         this.node = node;
-        this.discoData = discoData;
+        this.dataPacket = dataPacket;
     }
 
     /**
@@ -59,10 +59,10 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
-     * @return Discovery data.
+     *
      */
-    public Map<Integer, byte[]> discoveryData() {
-        return discoData;
+    public DiscoveryDataPacket gridDiscoveryData() {
+        return dataPacket;
     }
 
     /**

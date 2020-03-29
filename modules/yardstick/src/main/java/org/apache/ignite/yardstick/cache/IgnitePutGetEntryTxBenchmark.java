@@ -45,6 +45,8 @@ public class IgnitePutGetEntryTxBenchmark extends IgniteCacheAbstractBenchmark<I
 
         clo = new Callable<Void>() {
             @Override public Void call() throws Exception {
+                IgniteCache<Integer, Object> cache = cacheForOperation();
+
                 int key = nextRandom(0, args.range() / 2);
 
                 CacheEntry<Integer, Object> val = cache.getEntry(key);

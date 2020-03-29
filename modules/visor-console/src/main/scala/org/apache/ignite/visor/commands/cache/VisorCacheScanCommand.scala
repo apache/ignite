@@ -18,7 +18,6 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.lang.IgniteBiTuple
 import org.apache.ignite.visor.commands.common.VisorTextTable
 import org.apache.ignite.visor.visor._
 
@@ -33,19 +32,21 @@ import scala.collection.JavaConversions._
  *
  * ====Specification====
  * {{{
- *     cache {-id=<node-id>|-id8=<node-id8>} {-p=<page size>} -c=<cache name> -scan
+ *     cache -scan -c=<cache name> {-near} {-id=<node-id>|-id8=<node-id8>} {-p=<page size>}
  * }}}
  *
  * ====Arguments====
  * {{{
+ *     <cache-name>
+ *         Name of the cache.
+ *     <near>
+ *         Prints list of all entries from near cache of cache.
  *     <node-id>
  *         Full node ID.
  *     <node-id8>
  *         Node ID8.
  *     <page size>
  *         Number of object to fetch from cache at once.
- *     <cache-name>
- *         Name of the cache.
  * }}}
  *
  * ====Examples====
@@ -55,8 +56,10 @@ import scala.collection.JavaConversions._
  *    cache -c=@c0 -scan -p=50
  *        List entries from cache with name taken from 'c0' memory variable with page of 50 items
  *        from all nodes with this cache.
- *    cache -c=cache -scan -id8=12345678
+ *    cache -scan -c=cache -id8=12345678
  *        List entries from cache with name 'cache' and node '12345678' ID8.
+ *    cache -scan -near -c=cache -id8=12345678
+ *        List entries from near cache of cache with name 'cache' and node '12345678' ID8.
  * }}}
  */
 class VisorCacheScanCommand {
@@ -101,6 +104,7 @@ class VisorCacheScanCommand {
     def scan(argLst: ArgList, node: Option[ClusterNode]) {
         val pageArg = argValue("p", argLst)
         val cacheArg = argValue("c", argLst)
+        val near = hasArgName("near", argLst)
 
         var pageSize = 25
 
@@ -139,12 +143,34 @@ class VisorCacheScanCommand {
         val firstPage =
             try
                 executeRandom(groupForDataNode(node, cacheName),
-                    classOf[VisorQueryTask], new VisorQueryArg(cacheName, null, false, pageSize)) match {
-                    case x if x.get1() != null =>
-                        error(x.get1())
+                    classOf[VisorScanQueryTask], new VisorScanQueryTaskArg(cacheName, null, false, false, near, false, pageSize)) match {
+                    case x if x.getError != null =>
+                        error(x.getError)
 
                         return
-                    case x => x.get2()
+                    case x if x.getResult.getRows != null =>
+                        x.getResult
+
+                    case x =>
+                        var res = x.getResult
+
+                        Thread.sleep(100)
+
+                        while (res.getRows == null) {
+                            res = executeOne(res.getResponseNodeId, classOf[VisorQueryFetchFirstPageTask],
+                                new VisorQueryNextPageTaskArg(res.getQueryId, pageSize)) match {
+                                case x if x.getError != null =>
+                                    error(x.getError)
+
+                                    return
+                                case x => x.getResult
+                            }
+
+                            if (res.getRows == null)
+                                Thread.sleep(500)
+                        }
+
+                        res
                 }
             catch {
                 case e: ClusterGroupEmptyException =>
@@ -157,8 +183,8 @@ class VisorCacheScanCommand {
                     return
             }
 
-        if (firstPage.rows.isEmpty) {
-            println(s"Cache: ${escapeName(cacheName)} is empty")
+        if (firstPage.getRows.isEmpty) {
+            println(s"${if (near) "Near cache" else "Cache"}: ${escapeName(cacheName)} is empty")
 
             return
         }
@@ -166,25 +192,25 @@ class VisorCacheScanCommand {
         var nextPage: VisorQueryResult = firstPage
 
         def render() {
-            println("Entries in cache: " + escapeName(cacheName))
+            println(s"Entries in ${if (near) "near" else ""} cache: " + escapeName(cacheName))
 
             val t = VisorTextTable()
 
             t #= ("Key Class", "Key", "Value Class", "Value")
 
-            nextPage.rows.foreach(r => t += (r(0), r(1), r(2), r(3)))
+            nextPage.getRows.foreach(r => t += (r(0), r(1), r(2), r(3)))
 
             t.render()
         }
 
         render()
 
-        while (nextPage.hasMore) {
+        while (nextPage.isHasMore) {
             ask("\nFetch more objects (y/n) [y]:", "y") match {
                 case "y" | "Y" =>
                     try {
-                        nextPage = executeOne(firstPage.responseNodeId(), classOf[VisorQueryNextPageTask],
-                            new IgniteBiTuple[String, Integer](firstPage.queryId(), pageSize))
+                        nextPage = executeOne(firstPage.getResponseNodeId, classOf[VisorQueryNextPageTask],
+                            new VisorQueryNextPageTaskArg(firstPage.getQueryId, pageSize))
 
                         render()
                     }

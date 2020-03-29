@@ -37,10 +37,8 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_PORT;
@@ -49,9 +47,6 @@ import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
  */
 public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends IgfsCommonAbstractTest {
-    /** IP finder. */
-    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     private static final AtomicInteger mgmtPort = new AtomicInteger(DFLT_MGMT_PORT);
 
     /** {@inheritDoc} */
@@ -62,6 +57,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackEndpointsRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfiguration();
 
@@ -81,6 +77,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoopbackEndpointsCustomHostRegistration() throws Exception {
         IgniteConfiguration cfg = gridConfigurationManyIgfsCaches(2);
 
@@ -128,12 +125,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @throws Exception In case of any error.
      */
     protected IgniteConfiguration gridConfiguration() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestGridName());
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -163,12 +155,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @throws Exception In case of any error.
      */
     IgniteConfiguration gridConfigurationManyIgfsCaches(int cacheCtn) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestGridName());
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName());
 
         List<CacheConfiguration> cachesCfg = new ArrayList<>();
 
@@ -240,10 +227,23 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
 
         FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
 
-        igfsConfiguration.setDataCacheName(dataCacheName);
-        igfsConfiguration.setMetaCacheName(metaCacheName);
         igfsConfiguration.setName("igfs" + UUID.randomUUID());
         igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
+
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+
+        dataCacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
+        dataCacheCfg.setBackups(0);
+        dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+
+        metaCacheCfg.setCacheMode(CacheMode.REPLICATED);
+        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+
+        igfsConfiguration.setMetaCacheConfiguration(metaCacheCfg);
+        igfsConfiguration.setDataCacheConfiguration(dataCacheCfg);
 
         if (endPntCfg != null)
             igfsConfiguration.setIpcEndpointConfiguration(endPntCfg);

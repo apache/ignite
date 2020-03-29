@@ -1,8 +1,987 @@
 Apache Ignite Release Notes
 ===========================
 
-Apache Ignite In-Memory Data Fabric 1.9
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 2.8
+---------------------------------------------------------
+
+Ignite Experimental API:
+* Added monitoring API - an exporter of Ignite metrics to external recipients
+* Extended IgniteCache API with withReadRepair to perform backup nodes consistency check on each cache get attempt
+* Marked MVCC feature (added by 2.7.0 RELEASE)
+
+
+Ignite Monitoring:
+* Added support of exposing objects as system views (SQL, JMX exporters supported "out of the box")
+* Added support of storing and updating metrics (JMX, SQL, Log, OpenCensus exporters supported "out of the box")
+* Added SQL query system view
+* Added client connections (JDBC, ODBC, Thin) system view
+* Added cluster nodes system view
+* Added columns system view
+* Added continuous query system view
+* Added free-lists system view
+* Added indexes system view
+* Added metrics for PME timings
+* Added metrics for transaction duration
+* Added metrics to measure cache API performance
+* Added metrics to show index building in progress
+* Added scan query system view
+* Added schemas system view
+* Added striped thread pool queue system view
+* Added support of metrics configuration via JMX
+* Added tables system view
+* Added total time threads parked if checkpoint throttling occurred
+* Added transactions system view
+* Moved CacheGroupMetrics to the new framework
+* Moved ClusterMetricsMxBean to the new framework
+* Moved Communication metrics to the new framework
+* Moved GridJobMetricsProcessor to the new framework
+* Moved GridLocalMetrics to the new framework
+* Moved IgniteMXBean to the new framework
+* Moved QueryMetrics to the new framework
+* Moved TransactionMetricsMxBean to the new framework
+
+
+Ignite Core:
+* Added @IgniteExperimental annotation to notify users about early access API available
+* Added IGNITE_CONSISTENT_ID system property
+* Added IGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE system property
+* Added IGNITE_YARN_QUEUE property to override YARN queue name
+* Added JMX ability to exclude node from topology
+* Added JMX metrics for partition map exchange timings
+* Added SSL support for ZookeeperSpi
+* Added Spark SQL Table Schema Specification
+* Added WAL page snapshot records compression
+* Added ability to override all caches 'rebalanceThrottle' option via JVM node option
+* Added ability to set default parallelism of rebuild indexes in configuration
+* Added ability to track system/user time held in the transaction
+* Added binary mode (withKeepBinary) to Data Structures Queue
+* Added a withReadRepair for IgniteCache to perform backup nodes consistency check on each cache get attempt
+* Added cache validation logic on primary node instead of near node
+* Added cluster activation/deactivation events
+* Added configuration for explicit plugins providing (via spring configuration)
+* Added disk page compression support
+* Added extra logging for client-server connections in TcpDiscoverySpi implementations
+* Added information about possible long GC pause to checkpoint started message
+* Added initial support of Spark 2.4 (new internal changes since Spark 2.3)
+* Added parallel write&evict same key in CacheWriteBehindStore
+* Added possibility to have different rebalance thread pool size for nodes in the cluster
+* Added support TcpCommunicationSpi of TLSv1.3
+* Added support TcpDiscoveryS3IpFinder client-side encryption
+* Added support UriDeploymentSpi for JAR files
+* Added support array as key for the cache
+* Added support discovery messages for service deployment
+* Added support for baseline auto-adjustment
+* Added support for Kubernetes discovery for non-ready pods
+* Added support for spring data update/delete operations
+* Added support logical recovery phase outside of PME
+* Added support best effort affinity for thin clients (partition awareness)
+* Added support node discovery through AWS ELB
+* Added transaction label to transaction cache events (e.g. EVT_TX_STARTED, EVT_TX_COMMITTED)
+* Added transactions support to thin clients
+* Added 'limit' as a parameter for TextQuery constructor and builder
+* Added ignite-spring-data_2.2 module to be used with Spring Framework 5.2.x and Spring Data 2.2.x
+* Added integration with hibernate 5.3
+* Added support for non-blocking PME on node left
+* Added support for IgniteSpark skipStore option for internal dataStreamer (IgniteRdd and Ignite DataFrame)
+* Avoid synchronous initialization of storage managers during PME
+* Fixed B+Tree corruption caused by byte array values
+* Fixed ComputeJob cancel method executes with the wrong SecurityContext
+* Fixed IGNITE_ENABLE_FORCIBLE_NODE_KILL system property behaviour
+* Fixed IO race during read\write cache configurations
+* Fixed Ignite Queue hanging after several read/write operations
+* Fixed IgniteCache replace method does not work in a binary mode without classes
+* Fixed P2P for remote filter and filter factory
+* Fixed RobinHoodBackwardShiftHashMap on big-endian architectures
+* Fixed ScanQuery doesn't take lost partitions into account
+* Fixed Spark DataFrame will get the wrong schema if a user executes add/drop column DDL
+* Fixed TTL manager may not clear entries from the underlying CacheDataStore
+* Fixed TcpDiscovery lock on SSLSocket close
+* Fixed WebSessionFilter does not work with jetty 9.4 anymore
+* Fixed a new exchange coordinator skips client fast reply for a previous exchange
+* Fixed activate\deactivate hanging
+* Fixed affinity calculation and fetching on client nodes
+* Fixed binary metadata is not registered during the start of the cache
+* Fixed blinking baseline node sometimes unable to connect to a cluster
+* Fixed cache start while the cache is restarting with the same name
+* Fixed checkpoint temp files don't removed on a node start
+* Fixed client does not survive after several cluster restarts for ZookeeperDiscoverySpi
+* Fixed cluster hanging on cache invoke with binary objects creation
+* Fixed compatibility issue with JDBC drivers of older versions
+* Fixed continuous query handlers are not called on backups when a one-phase commit is used
+* Fixed data corruption when an exception occurred during tx commit without node stopping
+* Fixed data loss during starting of the nodes with empty persistence data storage
+* Fixed deadlock between restore partition states and checkpoint begin phase
+* Fixed deadlock on client node in case of network problems or long GC pauses
+* Fixed detection of corrupted index storage on a file system
+* Fixed dynamic columns and indexes can be lost after the cluster restart
+* Fixed exchange hanging while new node restoring state from disk and starting caches
+* Fixed exchange on node left hanging when a cluster is in the transition state
+* Fixed index usage is not applicable for mixed IN and EQUALS queries
+* Fixed node hanging on join to topology
+* Fixed node hanging with TcpDiscoveryS3IpFinder while stopping
+* Fixed p2p incorrectly loaded classes of remote query filter
+* Fixed partition hanging in MOVING state after node joined and rebalanced
+* Fixed partition may restore wrong MOVING state during crash recovery
+* Fixed possible exceptions during simultaneous cache group stop and partition eviction
+* Fixed race between rollback exception and timeout exception on changing transaction state
+* Fixed segmenting node can cause ring topology broke
+* Fixed stopping caches concurrently with node join may lead to a crash of the node
+* Fixed transaction commit exception about missing binary schema on large clusters
+* Fixed transaction prepare-commit ordering in one-phase commit scenario
+* Fixed transactions that potentially may cause hanging in COMMITING state and partitions desync
+* Fixed validation of joining nodes for Zookeeper
+* Fixed when collocated IgniteSet close is not working on non-affinity node
+* Forbidding joining persistence node to an in-memory cluster
+* IGNITE_DISABLE_WAL_DURING_REBALANCING turned on by default
+* Improved CRC32 calculation algorithms for internal usages
+* Improved LRT diagnostic messages
+* Improved PME speed during full partition map generation (parallel execution)
+* Improved PME speed during full partition map updating (parallel execution)
+* Improved PME speed for starting multiple caches on joining node
+* Improved large clusters discovery meta exchange (by add compression on Discovery data bag)
+* Improved logging for the index rebuild procedure
+* Improved read of hot variables in WAL
+* Improved speed of WAL segment archiving
+* Improved speed of checkpoint finalization on binary memory recovery
+* Optimize GC pressure on rebalance procedure
+* Optimize HistoryAffinityAssignment heap usage
+* Performance improvements for affinity initialization for started cache groups
+* Removed IGNITE_SERVICES_COMPATIBILITY_MODE system property
+* Removed Java 7 and AI 1.x leftovers from IgniteSystemProperties & IgniteProductVersion
+* Replaced IGNITE_BINARY_META_UPDATE_TIMEOUT with IGNITE_WAIT_SCHEMA_UPDATE
+* Massive performance and stability improvements
+
+
+SQL:
+* Added Decimal precision and scale constraint
+* Added KILL QUERY command
+* Added a table row count statistics for the local queries
+* Added a view with the list of existing SCHEMAS
+* Added a view with the list of existing tables
+* Added ability to specify query parallelism in CREATE TABLE's WITH "" clause
+* Added automatic pages history dump on CorruptedTreeException
+* Added cluster-wide unique identifier for running queries
+* Added counter left partition for index rebuild to cache group metrics
+* Added default query timeout
+* Added drop _VER field support
+* Added extract partition info from BETWEEN and range conditions for integer types
+* Added extract partition info from JOINs
+* Added lazy execution for the local queries
+* Added query history statistics API
+* Added support for data page scan on ScanQuery, SqlQuery and SqlFieldsQuery
+* Added support of allocating memory for a data region when the first cache assigned to this region is created
+* Added support of autoclose iterator for query cursor when all data has been read
+* Added support of trivial IN-operation for partition extraction
+* Added tracking all running queries on initial query node
+* Added validation for PK index does not use wrapped object
+* Added warning about long query execution printed by timeout (instead of on query finished)
+* Disabled implicit distributed joins when queryParallelizm > 1
+* Do not store default precision and scale in the QueryEntity for CHAR/VARCHAR and DECIMAL types
+* Fixed DDL operations don't work on not started caches on non-affinity nodes
+* Fixed IF NOT EXISTS in CREATE TABLE doesn't work
+* Fixed SQL event is not fired when a query is reduced to local form
+* Fixed SQL query when the value has SQL field which name equals to affinity key name
+* Fixed cache destroy operation which has created via SQL
+* Fixed creating table with DateTime for PK on a server node
+* Fixed error parsing INLINE_SIZE if CREATE INDEX is one of the multiple statements
+* Fixed exception after change column type (drop, add)
+* Fixed partition pruning is integrated with DML
+* Fixed security checks are skipped on some SELECT paths
+* Fixed subjectId is lost for SqlFieldsQuery event on the local node
+* Fixed when same SQL requests with multiple statements produce a different result
+* Fixed when unable to find row by an index created on partial baseline topology
+* Forbid mixing _key and key columns in the DML queries
+* Move rebalance configuration properties to the IgniteConfiguration level
+* Optimize query execution if it targets only one or none partitions
+* Reduce excessive int boxing when accessing cache by ID
+* Remove scan index for merge table
+* Renamed IGNITE schema to SYS
+
+
+MVCC:
+* Added continuous query failover for mvcc-caches
+* Added deadlock detector
+* Added late affinity assignment support
+* Added mvcc-compatible cache peek operation for key-value API
+* Fixed JVM crash when node stopped with errors
+* Fixed SQL API methods should throw proper TransactionExceptions in case of tx failure
+* Fixed client operation hangs if all data nodes left the cluster
+* Fixed client reconnect became unstable after mvcc coordinator reassign
+* Fixed concurrent cache stop can cause vacuum failure
+* Fixed failure to perform non-MVCC SQL from transactions
+* Fixed implicit mvcc transaction could use completed one instead of starting new
+* Fixed incorrect data region metrics
+* Fixed incorrect exception is thrown if no data nodes found for a partition
+* Fixed missing EntryProcessor resource injection
+* Fixed mvcc history can be missed during remove operation
+* Fixed mvcc-cache rebalance procedure leads to data loss
+* Fixed query trackers are not released
+* Fixed query with specified explicit partitions
+* Fixed race on invokeAll operations
+* Fixed read transactions remap when coordinator fails
+* Fixed removeAll on unstable topology
+* Fixed transaction asynchronous rollback
+* Fixed update operation hanging on backup on unstable topology
+* Fixed vacuums do not clean up all outdated versions
+
+
+JDBC:
+* Added cache expiry policies
+* Added support JDBC thin driver: connection timeout
+* Added support data page scan for JDBC
+* Added support of handling multiple async requests in parallel
+* Added support query cancel
+* Added support query timeout
+* Fixed JDBC getPrimaryKeys returns wrong value for COLUMN_NAME
+* Fixed JDBC thin driver metadata misses caches with queryEntities and names containing underscores
+* Fixed STREAMING mode fails on streamer reopen on not ordered mode
+* Fixed memory leak caused by executing a JDBC prepared statement
+* Fixed sqline command !tables works incorrectly for a client node
+* Fixed suspended optimistic transaction automatically resumes to last thread after a timeout
+* Now driver starts with a random server to connect
+* Updated handshake protocol so that the node returns its UUID
+
+
+ODBC:
+* Fixed SQLColumns does not work for tables with escape sequences in name
+* Fixed backward compatibility between 2.5 and 2.7
+
+
+Web Agent:
+* Added support for the cluster-ID
+* Added support of two way SSL authentication in Web Console agent
+* Fixed flag --disable-demo doesn't work
+* Fixed hostname verifier must be disabled if "-Dtrust.all=true".
+* Improve information message in case REST command failed on cluster
+* Improve logging when cluster topology changed
+
+
+Web Console:
+* Added TypeScript support
+* Added ability to cancel queries
+* Added ability to configure disk page compression properties
+* Added check for supported MongoDb version before WC start
+* Added email confirmation
+* Added management events (EVT_MANAGEMENT_TASK_STARTED)
+* Added missed configurations for some of the properties from IgniteConfiguration
+* Added option to disable self-registration on Web Console
+* Added possibility to configure distributed MVCC
+* Added support for "date", "time" and "date-and-time" on InputDialog
+* Added support for "type=number" on InputDialog
+* Added support for new countries Taiwan, Hong Kong, Singapore
+* Fixed can't select cluster memory eviction mode
+* Fixed long-running SQL queries could be randomly cancelled from WC
+* Fixed memory leak in chart component
+* Fixed priority for field validations
+* Fixed validation in Firefox
+* Update styles of top menu items
+* Update to RxJS 6
+
+
+Node.js:
+* Fixed Node.js thin client UUID marshalling
+
+
+Ignite .NET:
+* Added Thin Client Partition Awareness
+* Added Thin Client Expiry Policy
+* Added Thin Client Cluster API
+* Added .NET Core 3.x support
+* Added Ignite.NET Dockerfile
+* Added Runnable .NET Core assembly
+* Added ICache.GetLongSize
+* Added IClusterNode.Version
+* Added ICompute.WithExecutor
+* Added IIgnite.GetVersion
+* Added IBinaryObjectBuilder.SetField(name, val, type) overload
+* Added Partition Preload API (PreloadPartition, PreloadPartitionAsync)
+* Fixed JVM thread leak
+* Fixed serialization performance for ISerializable
+
+
+Ignite C++:
+* Added BinaryType methods implementations (GetTypeId, GetFieldId)
+* Fixed compilation ODBC and thin client with OpenSSL 1.1
+* Fixed compilation on ubuntu 18.04
+* Implement atomic part of Cache API for C++ thin client (ReplaceIfEquals, RemoveIfEquals etc.)
+* Improve Best Effort Affinity for C++ thin client
+* Remove strong dependency on Boost 1.58.0
+
+
+REST:
+* Added "caches" param for "top" command
+* Added baseline topology commands to REST API
+* Added memory policy metrics via REST
+* Fixed IGNITE_REST_SECURITY_TOKEN_TIMEOUT parameter is set in deciseconds instead of seconds
+
+
+Visor:
+* Added ability to set nodeId for VisorIdleVerifyDumpTask executed from ./control.sh --host HOST --cache idle_verify
+* Added dynamic turn on/off cache statistics for Visor
+* Added guard for cache restarting in progress for Visor tasks.
+* Fixed rebalance status in Visor stays on 99.99%.
+
+
+Control utility:
+* Added ability to check CRC sums of stored pages
+* Added ability to exclude cache from an output file
+* Added ability to show more information about cache configuration
+* Added ability to use simultaneous cache filtering options with control.sh --cache idle_verify
+* Added command to deal with garbage in partitions which left after cache destroy in shared cache groups
+* Added information about coordinator in control.sh output
+* Added showing information about lost on idle_verify
+* Added support SSL to work with baseline configuration (CommandHandler)
+* Added support of changing baseline auto-adjust parameters via console.sh
+* Added support request an SSL Keystore password and SSL truststore password
+* Display time to baseline auto-adjust event in console.sh
+* Fixed connection to cluster error in control.sh while using --cache
+* Fixed control.sh --baseline remove outputs wrong error message when trying to remove a node from baseline
+* Fixed control.sh not working on a multinode cluster setup
+* Fixed idle_verify utility doesn't show both update counter and hash conflicts
+* Fixed incorrect error message after three tries on an unsuccessful authorization
+* Log all action performed thought control.sh
+
+
+ML:
+* Added Gaussian Mixture Model (GMM) trainer with fixed components
+* Added ML logger and env variables in Spark ML Parser
+* Added NamedVectors to replace HashMap in Model
+* Added OneVsRest Trainer to handling cases with multiple class labels in a dataset
+* Added Pipeline support to Cross-Validation process
+* Added integration between Ignite SQL and Ignite ML
+* Added new Hyper-parameter tuning via Genetic Algorithm
+* Added parser for parquet file with the instance of DecisionTreeClassificationModel from Spark ML
+* Added parser for parquet file with the instance of DecisionTreeRegressor from Spark ML
+* Added parser for parquet file with the instance of GBTRegressionModel from Spark ML
+* Added parser for parquet file with the instance of GradientBoostedTreesModel from Spark ML
+* Added parser for parquet file with the instance of KMeansModel from Spark ML
+* Added parser for parquet file with the instance of LinearRegressionModel from Spark ML
+* Added parser for parquet file with the instance of LinearSVCModel from Spark ML
+* Added parser for parquet file with the instance of RandomForestClassificationModel from Spark ML
+* Added parser for parquet file with the instance of RandomForestRegressionModel from Spark ML
+* Added support for using H2O MOJO models for inference and prediction on Ignite data
+* Added support new feature-label extraction API (Vectorizers) to Preprocessor trainers
+* Added various Naive Bayes classifiers
+* Added vector projection
+* Advanced support of categorical features (LabelEncoding, Strings in vectorizers)
+* Fixed the problem with ML Labmdas which are not working in binary builds
+* Implementation of a distributed estimator
+* Import models from XGBoost
+* Improve model loading from the directory instead a full path to file with model
+* Improve the PeerClassloading for ml related lambdas
+* Improvements of IgniteModelStorage for IgniteModel and SQL functionality
+* Initial phase of integration with Spark ML (parsing of Spark ML models from ml package)
+* Merge InfModel and Model
+* Merge XGBoost and Ignite ML trees together
+* Provide metrics to evaluate the quality of the model
+* Provide the recommendation engine to build the recommendation system over the Ignite cache and via SQL operators
+* Replace all label/feature extractors on new vectorizers
+* Stacking for training and inference
+* Unify API for ensemble training algorithms.
+
+
+Dependency updates:
+* Added dependency spring-data-2.2
+* Added dependency hibernate-5.3
+* Added dependency spark-2.4
+* Added dependency spring-5.2
+* Updated Jetbrains Annotations to 16.0.3
+* Updated Kafka to 2.0.1
+* Updated RocketMQ to 4.4.0
+* Updated Commons Beanutils to 1.9.4
+* Updated Jackson to 2.9.10
+* Updated Jetty to 9.4.25
+* Updated Spring to 4.3.26
+* Updated spring-5.0 to 5.0.16
+* Updated spring-data-2.0 to 2.0.13
+* Moved Flink to ignite-extension
+
+
+Apache Ignite In-Memory Database and Caching Platform 2.7.6
+-----------------------------------------------------------
+
+Ignite:
+* Changed default persistence directory location when IGNITE_HOME is not set, native persistence files will not be stored in the temp directory anymore
+* Fixed a bug that caused a SELECT query with an equality predicate on a part of the primary compound key to return a single row even if the query matched multiple rows
+* Fixed an issue that could cause data corruption during checkpointing
+* Fixed an issue where a row size was calculated incorrectly for shared cache groups, which caused a tree corruption
+* Reduced java heap footprint by optimizing GridDhtPartitionsFullMessage maps in exchange history
+* Fixed an issue where an outdated node with a destroyed cache caused the cluster to hang
+* Fixed a bug that made it impossible to change the inline_size property of an existing index after it was dropped and recreated with a different value
+* Fixed an issue causing silent control.sh script fail when JAVA_HOME is not set
+* Fixed an issue causing sporadic node failure when persistence is enabled and WAL mmap is disabled
+* Fixed an issue causing potential PDS corruption when a node is killed during checkpoint mark phase
+
+Ignite .NET:
+* Native persistence now works with a custom affinity function
+* Fixed missing CacheEntryEventType.Removed event
+
+Apache Ignite In-Memory Database and Caching Platform 2.7.5
+-----------------------------------------------------------
+
+Ignite:
+* Added Java 11 support
+* Fixed infinite looping during SSL handshake, affecting Java 11/Windows
+* Fixed storage corruption case after incorrectly rotated page
+* Erroneous WAL record after incorrectly rotated page processed automatically
+* Addressed ignite.sh failure on Mac OS and Linux, affecting Java 11
+* Launch scripts and some Ignite initialization steps were fixed for Java 12
+* Fixed indexes corruption on node stop under load
+* Fixed case of node crash during node deactivation
+* Error message with advice about required JVM parameters printed when Java 9+ is used
+* Introduced SYSTEM_CRITICAL_OPERATION_TIMEOUT failure type
+
+Apache Ignite In-Memory Database and Caching Platform 2.7
+---------------------------------------------------------
+
+Ignite:
+* Added experimental support for multi-version concurrency control with snapshot isolation
+  - available for both cache API and SQL
+  - use CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT to enable it
+  - not production ready, data consistency is not guaranteed in case of node failures
+* Implemented Transparent Data Encryption based on JKS certificates
+* Implemented Node.JS Thin Client
+* Implemented Python Thin Client
+* Implemented PHP Thin Client
+* Ignite start scripts now support Java 9 and higher
+* Added ability to set WAL history size in bytes
+* Added SslContextFactory.protocols and SslContextFactory.cipherSuites properties to control which SSL encryption algorithms can be used
+* Added JCache 1.1 compliance
+* Added IgniteCompute.withNoResultCache method with semantics similar to ComputeTaskNoResultCache annotation
+* Spring Data 2.0 is now supported in the separate module 'ignite-spring-data_2.0'
+* Added monitoring of critical system workers
+* Added ability to provide custom implementations of ExceptionListener for JmsStreamer
+* Ignite KafkaStreamer was upgraded to use new KafkaConsmer configuration
+* S3 IP Finder now supports subfolder usage instead of bucket root
+* Improved dynamic cache start speed
+* Improved checkpoint performance by decreasing mark duration.
+* Added ability to manage compression level for compressed WAL archives.
+* Added metrics for Entry Processor invocations.
+* Added JMX metrics: ClusterMetricsMXBean.getTotalBaselineNodes and ClusterMetricsMXBean.getActiveBaselineNodes
+* Node uptime metric now includes days count
+* Exposed info about thin client connections through JMX
+* Introduced new system property IGNITE_REUSE_MEMORY_ON_DEACTIVATE to enable reuse of allocated memory on node deactivation (disabled by default)
+* Optimistic transaction now will be properly rolled back if waiting too long for a new topology on remap
+* ScanQuery with setLocal flag now checks if the partition is actually present on local node
+* Improved cluster behaviour when a left node does not cause partition affinity assignment changes
+* Interrupting user thread during partition initialization will no longer cause node to stop
+* Fixed problem when partition lost event was not triggered if multiple nodes left cluster
+* Fixed massive node drop from the cluster on temporary network issues
+* Fixed service redeployment on cluster reactivation
+* Fixed client node stability under ZooKeeper discovery
+* Massive performance and stability improvements
+
+Ignite .Net:
+* Add .NET Core 2.1 support
+* Added thin client connection failover
+
+Ignite C++:
+* Implemented Thin Client with base cache operations
+* Implemented smart affinity routing for Thin Client to send requests directly to nodes containing data when possible
+* Added Clang compiler support
+
+SQL:
+* Added experimental support for fully ACID transactional SQL with the snapshot isolation:
+  - use CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT to enable it
+  - a transaction can be started through native API (IgniteTransactions), thin JDBC driver or ODBC driver
+  - not production ready, data consistency is not guaranteed in case of node failures
+* Added a set of system views located in "IGNITE" schema to view cluster information (NODES, NODE_ATTRIBUTES, NODE_METRICS, BASELINE_NODES)
+* Added ability to create predefined SQL schemas
+* Added GROUP_CONCAT function support
+* Added string length constraint
+* Custom Java objects are now inlined into primary and secondary indexes what may significantly improve performance when AFFINITY_KEY is used
+* Added timeout to fail query execution in case it cannot be mapped to topology
+* Restricted number of cores allocated for CREATE INDEX by default to 4 to avoid contention on index tree Fixed transaction hanging during runtime error on commit.
+* Fixed possible memory leak when result set size is multiple of the page size
+* Fixed situation when data may be returned from cache partitions in LOST state even when PartitionLossPolicy doesn't permit it
+* Fixed "Caches have distinct sets of data nodes" during SQL JOIN query execution between REPLICATED and PARTITIONED caches
+* Fixed wrong result for SQL queries when item size exceeds the page size
+* Fixed error during SQL query from client node with the local flag set to "true"
+* Fixed handling UUID as a column type
+
+JDBC:
+* Implemented DataSource interface for the thin driver
+
+ODBC:
+* Added streaming mode support
+* Fixed crash in Linux when there are more than 1023 open file descriptors
+* Fixed bug that prevented cursors on a server from being closed
+* Fixed segmentation fault when reusing a closed connection
+
+Web Console:
+* Added new metrics: WAL and Data size on disk
+* Added support for "collocated" query mode on Query screen
+* Added support for Java 9+ for Web Agent.
+* Added ability to show/hide password field value
+* Implemented execution of selected part of SQL query
+* Implemented explain of the selected part of SQL query
+* Implemented connection to a secured cluster
+* Implemented responsive full-screen layout
+* Split "Sign In" page to three separate pages
+* UI updated to modern look and feel
+* Improved backend stability
+* Fixed fail when working with web sockets
+
+REST:
+* Added option IGNITE_REST_GETALL_AS_ARRAY for array format in "getAll" call
+
+Visor:
+* Added output of node "Consistent ID"
+* Visor now collects information about cache groups instead of separate caches to reduce memory consumption
+* Improved help for "start" command
+* Fixed output of cache metrics
+
+Control utility:
+* Added information about transaction start time
+* Added command to collect information about a distribution of partitions
+* Added command to reset lost partitions
+* Added support for empty label (control.sh --tx label null)
+* Added atomicity mode to utility output.
+* Added orphaned local and remote transactions and ability to rollback them
+* Added "--dump" flag to dump current partition state to file.
+* Renamed command argument '--force' to '--yes'
+* Removed "initOrder" and "loc keys" from an info
+* Fixed control utility hanging when connected to a joining node with PME
+
+ML:
+* Added TensorFlow integration
+* Added Estimator API support to TensorFlow cluster on top of Apache Ignite
+* Added ANN algorithm based on ACD concept
+* Added Random Forest algorithm
+* Added OneHotEncoder for categorical features
+* Added model estimation
+* Added K-fold cross-validation for ML models
+* Added splitter for splitting the dataset into test and train subsets
+* Added ability of filtering data during datasets creation
+* Added encoding categorical features with One-of-K Encoder
+* Added MinMax scaler preprocessor
+* Added gradient boosting for trees
+* Added indexing for decision trees
+* Added GDB convergence by error support
+* Added ability to build pipeline of data preprocessing and model training
+* Added ability to start and maintain TensorFlow cluster on top of Apache Ignite
+* Added support of Multi-Class for Logistic Regression
+* Implemented distributed binary logistic regression
+
+Dependency updates:
+* Apache Camel updated to 2.22.0
+* Apache Commons Beanutils updated to 1.9.3
+* Apache Hadoop Yarn updated to 2.7.7
+* Apache Kafka updated to 1.1.0
+* Apache Lucene updated to 7.4.0
+* Apache Mesos updated to 1.5.0
+* Apache Tomcat updated to 9.0.10
+* Apache Zookeeper updated to 3.4.13
+* Guava updated to 25.1-jre
+* Jackson Databind updated to 2.9.6
+* Jackson 1 usages replaced with Jackson 2
+* JCraft updated to 0.1.54
+* H2 version updated to 1.4.197
+* Log4j 2.x updated to 2.11.0
+* Netty updated to 4.1.27.Final
+* RocketMQ updated to 4.3.0
+* Scala 2.10.x was updated to 2.10.7
+* Scala 2.11.x updated to 2.11.12
+
+Apache Ignite In-Memory Database and Caching Platform 2.6
+---------------------------------------------------------
+Ignite:
+* Fixed incorrect calculation of client affinity assignment with baseline.
+* Fixed incorrect calculation of switch segment record in WAL.
+* Fixed JVM crush during in-progress eviction and cache group stop.
+
+REST:
+* Fixed serialization of BinaryObjects to JSON.
+
+Apache Ignite In-Memory Database and Caching Platform 2.5
+---------------------------------------------------------
+Ignite:
+* Implemented Zookeeper discovery SPI.
+* Added Java thin client.
+* Added continuous queries with transformers.
+* Implemented general approach for critical failures handling.
+* Added the new method IgniteMXBean.getCurrentCoordinatorFormatted() which displays formatted information about current coordiantor.
+* Added partition update counters verification on partition map exchange.
+* Added ability to disable WAL during initial data rebalancing.
+* Added additional data storage metrics
+* Added additional transactional metrics.
+* Added DEB package and improved RPM package.
+* Added information about fields serialization/deserialization errors in BinaryMarshaller.
+* Added configurable automatic rollback timeout for pending transactions preventing partition map exchange to complete.
+* Added preventing infinite iterations of corrupted B+Tree. New IGNITE_BPLUS_TREE_LOCK_RETRIES property was added, default value is Integer.MAX_VALUE.
+* Implemented handling of broken segment in WAL compaction.
+* Fixed affinity to always choose primary node from one of the owners when persistence is enabled.
+* Partition eviction now does not block exchange.
+* Fixed the issue that prevented rebalancing on a new baseline node join.
+* Fixed potential deadlock during preloading.
+* Fixed exception handling in IsolatedUpdater of DataStreamer.
+* Fixed the issue when ComputeTaskFuture.get() threw a trimmed exception chain: now full exception chain is propagated to the caller; the exception thrown from IgniteCompute methods may now differ from the previous behavior.
+* Fixed null value being passed to entry processor when such entry actually exists.
+* Fixed problem when cluster could not survive after IgniteOutOfMemoryException.
+* Fixed NullPointerException on batch atomic cache operations with cache store.
+* Fixed bug with ScanQuery transformer which applies to the first result page only.
+* Fixed hanging of node stopping in case when node is invalidated and persistence is enabled.
+* BinaryMetadata exchange is triggered only if there are actual changes in BinaryMetadata.
+* Fixed contention while executing parallel atomic single get operations.
+* Fixed cache metadata corruption during concurrent checkpoint and cache destroy.
+* Implemented additional synchronization for correct partition counters update on partition map exchange.
+* Optimized checkpoint lock acquisition for demander thread.
+* Destroyed caches with enabled persistence now will not survive grid restart.
+* Nodes with incompatible SQL metadata will not be able to join grid. This fixes known case for index corruption.
+* Fixed fillFactor memory metric value.
+* Fixed bug with checkpoint buffer overflow with enabled throttling.
+* Fixed crash recovery problem when index tree could reference to removed data pages.
+* Fixed error during cluster initialization with partially acceptable WAL archive.
+* Fixed issue with local partitions size changing inside checkpoint write lock.
+* Fixed LOG_ONLY and BACKGROUND modes to be power-crash resistant.
+* Fixed incorrect finishing of implicit transactions on unstable topology.
+* Fixed incorrect mapping of smallint Cassandra type.
+* Introduced log markers support to IgniteLogger and standard DEV_ONLY marker.
+* Changed Log4J and Log4J2 adapters to update active logger configuration when configuration source file is modified.
+* Fixed sqlline.sh script to use Java from JAVA_HOME.
+* Improved Docker image build.
+* Default and recommended JVM options are updated.
+
+Ignite .Net:
+* Added SSL configuration for node-to-node links.
+* Added dynamic service proxies.
+* Propagated query metrics to ICache.GetQueryMetrics() and ICache.ResetQueryMetrics().
+* DML update via LINQ.
+* Fixed hang caused by mishandled exception during custom cache store deserialization.
+* Fixed GroupBy and Where issues in LINQ.
+* .Net thin client SSL support.
+
+Ignite C++:
+* Fixed bug with LocalSize cache method.
+
+SQL:
+* Implemented COPY command for fast data load.
+* Added support of authorization for CREATE TABLE and DROP TABLE commands.
+* Improved deadlock handling in DML.
+* Added IGNITE_SQL_FORCE_LAZY_RESULT_SET option to force all SQL queries on node using lazy result set.
+* Fixed SQL query hang if cluster contains nodes not in baseline.
+
+JDBC:
+* Added SSL support.
+* Added authentication.
+* Added streaming mode to thin driver.
+* Semicolon now can be used as delimiter for properties in URL string.
+* Changed default socket buffer size to 64Kb in thin driver.
+* Added FQDN to thin client in order to support multiple IPs for connection establishment.
+
+ODBC:
+* Added SSL support.
+* Implemented username/password authentication.
+* Added support of multiple addresses in connection string.
+* Added support for SQL_ATTR_LOGIN_TIMEOUT.
+
+Web Console:
+* Added support for persistence in demo mode.
+* Configuration screen is reworked to new modern design with improved usability.
+* Implemented support for comma-separated list of node URIs.
+* Fixed Docker file generation.
+* Fixed code generation for large numbers in configuration params.
+* Fixed demo for non-collocated joins.
+* Fixed enum values decoding for SQL queries.
+* Upgraded build to use Webpack 4.
+
+REST:
+* Added AUTHENTICATE command.
+* Added support for new authentication API.
+* Implemented possibility to get values from cache inserted via API or SQL.
+* Enhanced GET_OR_CREATE_CACHE command with optional "templateName", "backups", "cacheGroup", "dataRegion" and "writeSynchronizationMode" options.
+* Added support of Java built-in types (boolean, int, long, ..., UUID) for put/get operations.
+
+Visor:
+* Added "cache -slp" and "cache -rlp" commands to show and reset lost partitions for specified cache.
+* Added scan queries of near cache support.
+
+Control utility:
+* Added utilities to control.sh script to display cache info.
+* Added new tools (control.sh --tx, TransactionsMXBean) to view active transactions and ability to kill them .
+* Added confirmation on dangerous operations.
+* Fixed NullPointerException in case of empty base line and not active cluster.
+* Fixed timeout on changing baseline in control.sh
+
+ML:
+* Implemented framework for genetic algorithms over Apache Ignite caches.
+* Implemented LSQR-based linear regression.
+* Implemented Linear SVM for binary classification.
+* Implemented distributed version of SVM (support vector machine) algoritm.
+
+Apache Ignite In-Memory Database and Caching Platform 2.4
+---------------------------------------------------------
+Ignite:
+* Introduced Baseline Affinity Topology
+* Ability to disable WAL for cache in runtime through IgniteCluster API or ALTER TABLE command
+* Added ability to convert WAL to human-readable form
+* Ability to enable/disable JDBC, ODBC and thin client endpoints
+* Project moved to Java 8
+* Java 7 is no longer supported
+* Apache Ignite can be run on Java 9
+* Introduced Apache Ignite packaging with RPM
+* Spark Data Frames support
+* Added integration with Spring 3.x
+* Added handler to stop node when IO error is encountered
+* EvictionPolicyFactory support added to CacheConfiguration
+* Added JMX metrics for memory regions
+* Added detailed memory consumption on start and OOM reporting
+* Added custom thread pools monitoring
+* Support Ignite MR in Kerberized environment without IGFS
+* S3 IP finder: support server side encryption and bucket endpoint configuration
+* Multiple fixes and performance optimizations
+
+Ignite.NET:
+* Thin Client initial release
+* .NET Core / Linux / macOS support
+* Mono platform support
+* Removed C++ JNI layer
+
+SQL:
+* Added DEFAULT support to CREATE TABLE command
+* Added ALTER TABLE DROP COLUMN support
+* Added INLINE_SIZE option to CREATE INDEX command
+* Added PARALLEL option to CREATE INDEX command
+* Added optional on-heap row cache
+* INSERT command now can be executed without explicit column names (INSERT INTO table VALUES ...)
+* Allowed multiple caches to share the same schema
+* Added support for Java 8 Date and Time API
+* Added "notNull" property to QuerySqlField annotation
+* Improved COUNT(*) performance
+* Fixed a problem causing an exception in certain nodes do not have primary partitions for REPLICATED cache
+* Fixed per-thread H2 connection leak.
+* Fixed partition exchange hang due to SQL query running inside a transaction.
+
+JDBC Driver:
+* Optimized batched operations processing
+
+ODBC Driver:
+* Added support of multiple statements execution with one call
+* Added support of SQL_ATTR_CONNECTION_TIMEOUT
+* Added support of SQL_ATTR_QUERY_TIMEOUT
+* Optimized batched operations processing
+* Proper handling of ungraceful TCP disconnects (keep-alive connection)
+* Fixed error preventing close of executed DML statement
+* Fixed table names returned by SQLTables for DDL-created tables
+
+Machine Learning:
+* Implemented Fuzzy c-means algorithm
+* Implemented gradient descent for OLS Linear Regression
+* Implemented K nearest neighbor algorithm
+* Introduced API for datasets
+* Introduced API for ML model and trainers
+* Introduced common mechanism for group training of models
+* Added distributed version of multilayer perceptron
+* Added local version of multilayer perceptron
+* Added basic import/export functionality for ml models
+* Added decision tree algorithm
+* Performance optimizations for distributed operations
+
+Web Console:
+* Implemented component for cluster selection and activation
+* Implemented support for multiple statements on Queries screen
+* Implemented progress indication for 'execute', 'scan' and 'export' actions on Queries screen
+* Added support for ClientConnectorConfiguration
+* Added several SQL examples on Queries screen
+* Added "Connected clusters" component in header
+* Added support for custom SMTP server configuration
+* Added detection of CSV separator based on browser locale
+* Added "Copy to clipboard" action on Queries screen
+* Added duration and node ID in results header and 'Show query' modal
+* Improved support for binary JDBC types on import from RDBMS
+* Fixed Web Console under IE11
+* Fixed configuration generation for imported model in case of Oracle NUMBER(5) data type
+* Fixed output of big numbers in SQL query results
+
+Visor:
+* Added "-quiet" flag for batch mode
+* Added ability to start cache rebalance
+* Added output of data region metrics to "node" command
+* Added dialog to put/get/remove values to/from cache for simple key types
+* Show valid message for caches when cluster is inactive
+* Fixed 'cache -a' in case of node filter
+* Fixed reading last command line in batch mode
+* Updated eviction policy factory in configs
+
+Apache Ignite In-Memory Database and Caching Platform 2.3
+---------------------------------------------------------
+Ignite:
+* Ability to enable persistence per data region.
+* Default page size is changed to 4KB.
+* Ability to enable and disable rebalancing per-node.
+* Added methods for batch services deployment.
+* Introduced cache start/stop order on cluster activation.
+* EstimatedRebalancingFinishTime and RebalancingStartTime metrics are exposed through MXBean interface.
+* Ability to (de)activate cluster via http-rest API.
+* Added Ignite update notifier.
+* Updated Lucene dependency to version 5.5.2.
+* Added an option to disable MBeans.
+* Added sorted and multithreaded checkpoint modes.
+* Added calculation of fill factor memory metric in persistent mode.
+* Added estimated time for rebalance start and completion to cache metrics.
+* Added API to add binary metadata locally.
+* Added write throttling during an ongoing checkpoint to avoid zero performance drops.
+* Ability to convert WAL to human-redable form.
+* Ability to handle CacheObject from DataRecord in standalone WAL iterator.
+* Support for uninterruptable writes using AsyncFileIOFactory; enabled with -DIGNITE_USE_ASYNC_FILE_IO_FACTORY=true.
+* Enhanced persistent store path resolving to not rely on automatically generated consistent ID.
+* Pre-configure local event listeners with IgniteConfiguration.LocalEventListeners.
+* Massive performance and stability improvements.
+
+Ignite.NET:
+* LINQ: Local collections joins support.
+* LINQ: Regex support.
+
+Ignite CPP:
+* Added Compute::Broadcast method.
+* Added Ignite::SetActive method.
+
+SQL:
+* Added sqlline utility to the build.
+* CREATE TABLE: Added NOT NULL support.
+* CREATE TABLE: Ability to specify cache, key type and value type names.
+* CREATE TABLE: Added "WRAP_KEY" and "WRAP_VALUE" options to CREATE TABLE command.
+* CREATE TABLE: Added DATA_REGION option.
+* CREATE TABLE: Added WRITE_SYNCHRONIZATION_MODE option.
+* ALTER TABLE: ADD COLUMN support.
+* Added lazy query execution mode (SqlFieldsQuery.setLazy).
+* Added QuerySqlField.inlineSize property.
+* Added FieldsQueryCursor interface to get fields metadata for SqlFieldsQuery.
+* Added QueryEntity(Class keyClass, Class valueClass) constructor.
+* Improved LocalDate, LocalTime and LocalDateTime support for Java 8.
+* Optimized memory consumption during query execution.
+* Fixed BigInteger data type handling.
+
+JDBC Driver:
+* Batch update support.
+* SQLSTATE error codes support.
+* Added "enforceJoinOrder" flag to connection string.
+* Added "skipReducerOnUpdate" flag.
+* Thin driver: Allowed execution of multiple SQL statements in one command.
+* Thin driver: Added metadata support.
+* Thin driver: Added type conversions in accordance with specification.
+* Thin driver: Added schema to connection string.
+* Thin driver: Added Statement.closeOnCompletion() support.
+* Appended UUID to thick driver's Ignite instance name to avoid collision with user-created instances.
+* Fixed a bug in PreparedStatement not clearing query parameters after execution.
+
+ODBC Driver:
+* SQLSTATE error codes support.
+* Support for BINARY and VARBINARY types.
+* DML statement batching.
+* SQL_ATTR_CONNECTION_DEAD connection attribute.
+* SQLGetInfo for info types.
+* Added "skipReducerOnUpdate" flag.
+* SQLRowCount now returns number of affected rows for non-batch queries.
+* SQLBindParameter do not unbind parameter if the ParameterValuePtr is NULL anymore.
+* Fixed error on cursor closing before all the rows from the result fetched.
+
+Machine Learning:
+* Implemented K-means clustering algorithm optimized for distributed storages.
+* Introduced sparse block distributed matrix.
+* Initial BLAS implementation.
+* Integration with BLAS via netlib.
+* Added getRow() and getCol() methods to Matrix API.
+
+Web Console:
+* Improved DDL support.
+* Added PK alias generation on Models screen.
+* Added generation of QueryEntity.keyFields on model import from RDBMS.
+* Added sanitize user on save.
+* Added charts with throughput and latency metrics for cache operations.
+* Added version to footer.
+* Added "Lazy ResultSet" flag on Queries screen.
+* Implemented refresh rate for Monitoring screen.
+* Implemented cluster nodes log viewer.
+
+Visor:
+* Ability to keep connection opened in batch mode.
+* Ability to activate/deactivate cluster.
+* Improved cache statistics.
+* Added missing configuration properties to "config" command.
+* Fixed script execution after alert throttling interval.
+
+Apache Ignite In-Memory Database and Caching Platform 2.2
+---------------------------------------------------------
+Ignite:
+* Checkpointing algorithm optimized
+* Default max memory size changed from 80% to 20%
+
+Ignite CPP:
+* Now possible to start node with persistent store
+* Ignite.setActive method added to C++ API
+
+Apache Ignite In-Memory Database and Caching Platform 2.1
+---------------------------------------------------------
+Ignite:
+* Persistent cache store
+* Added IgniteFuture.listenAsync() and IgniteFuture.chainAsync() mehtods
+* Deprecated IgniteConfiguration.marshaller
+* Updated Lucene dependency to version 5.5.2
+* Machine learning: implemented K-means clusterization algorithm optimized for distributed storages
+* SQL: CREATE TABLE and DROP TABLE commands support
+* SQL: New thin JDBC driver
+* SQL: Improved performance of certain queries, when affinity node can be calculated in advance
+* SQL: Fixed return type of AVG() function
+* SQL: BLOB type support added to thick JDBC driver
+* SQL: Improved LocalDate, LocalTime and LocalDateTime support for Java 8
+* SQL: Added FieldsQueryCursor interface to get fields metadata for SqlFieldsQuery
+* ODBC: Implemented DML statement batching
+* Massive performance and stability improvements
+
+Ignite.NET:
+* Automatic remote assembly loading
+* NuGet-based standalone node deployment
+* Added conditional data removeal via LINQ DeleteAll
+* Added TimestampAttribute to control DateTime serialization mode
+* Added local collections joins support to LINQ.
+
+Ignite CPP:
+* Added Compute::Call and Compute::Broadcast methods
+
+Web Console:
+* Implemented support for UNIQUE indexes for key fields on import model from RDBMS
+* Added option to show full stack trace on Queries screen
+* Added PK alias generation on Models screen.
+
+Apache Ignite In-Memory Database and Caching Platform 2.0
+---------------------------------------------------------
+Ignite:
+* Introduced new page memory architecture
+* Machine Learning beta: distributed algebra support for dense and sparse data sets
+* Reworked and simplified API for asynchronous operations
+* Custom thread pool executors for compute tasks
+* Removed CLOCK mode in ATOMIC cache
+* Deprecated schema-import utility in favor of Web Console
+* Integration with Spring Data
+* Integration with Hibernate 5
+* Integration with RocketMQ
+* Integration with ZeroMQ
+* SQL: CREATE INDEX and DROP INDEX commands
+* SQL: Ability to execute queries over specific set of partitions
+* SQL: Improved REPLICATED cache support
+* SQL: Updated H2 version to 1.4.195
+* SQL: Improved performance of MIN/MAX aggregate functions
+* ODBC: Added Time data type support
+* Massive performance improvements
+
+Ignite.NET:
+* Custom plugin API
+* Generic cache store
+* Binary types now can be registered dynamically
+* LINQ: join, "contains" and DateTime property support
+
+Ignite CPP:
+* Implemented Cache::Invoke
+* Added remote filters support to continuous queries
+
+Web Console:
+* Multi-cluster support
+* Possibility to configure Kubernetes IP finder
+* EnforceJoinOrder option on Queries screen
+
+Apache Ignite In-Memory Database and Caching Platform 1.9
+---------------------------------------------------------
 Ignite:
 * Added Data streamer mode for DML
 * Added Discovery SPI Implementation for Ignite Kubernetes Pods
@@ -21,8 +1000,8 @@ Ignite CPP:
 * Implemented LoadCache
 * ContinuousQuery support
 
-Apache Ignite In-Memory Data Fabric 1.8
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.8
+---------------------------------------------------------
 Ignite:
 * SQL: Added DML operations support (INSERT, UPDATE, DELETE, MERGE)
 * SQL: Improved DISTINCT keyword handling in aggregates
@@ -43,8 +1022,8 @@ ODBC driver:
 * Added DSN support
 * Performance improvements
 
-Apache Ignite In-Memory Data Fabric 1.7
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.7
+---------------------------------------------------------
 Ignite:
 * Added distributed SQL JOIN.
 * Node can be assigned as primary only after preloading is finished.
@@ -62,8 +1041,8 @@ Ignite.NET:
 Ignite CPP:
 * Marshalling performance improvements.
 
-Apache Ignite In-Memory Data Fabric 1.6
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.6
+---------------------------------------------------------
 Ignite .NET:
 * Added LINQ Provider for cache SQL queries
 * Added native configuration mechanism (C#, app.config, web.config - instead of Spring XML)
@@ -151,8 +1130,8 @@ Ignite:
 * Web sessions: user session classes are no longer needed on server nodes.
 * A lot of stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.5
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.5
+---------------------------------------------------------
 * Ignite.NET: Initial Release.
 * Ignite C++: Initial Release.
 * Massive performance improvements for cache operations and SQL.
@@ -174,8 +1153,8 @@ Apache Ignite In-Memory Data Fabric 1.5
 
 Complete list of closed issues: https://issues.apache.org/jira/issues/?jql=project%20%3D%20IGNITE%20AND%20fixVersion%20%3D%201.5%20AND%20status%20%3D%20closed
 
-Apache Ignite In-Memory Data Fabric 1.4
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.4
+---------------------------------------------------------
 * Added SSL support to communication and discovery.
 * Added support for log4j2.
 * Added versioned entry to cache API.
@@ -192,8 +1171,8 @@ Apache Ignite In-Memory Data Fabric 1.4
 * Fixed affinity routing in compute grid.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.3
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.3
+---------------------------------------------------------
 
 * Added auto-retries for cache operations in recoverable cases.
 * Added integration with Apache YARN.
@@ -206,8 +1185,8 @@ Apache Ignite In-Memory Data Fabric 1.3
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.2
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.2
+---------------------------------------------------------
 
 * Added client mode to TCP discovery SPI.
 * Added memory based evictions.
@@ -218,8 +1197,8 @@ Apache Ignite In-Memory Data Fabric 1.2
 * Bug fixes in In-Memory Accelerator For Apache Hadoop.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.1
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.1
+---------------------------------------------------------
 
 * Added Google Compute Engine TCP discovery IP finder.
 * Added generic cloud TCP discovery IP finder (based on jclouds).
@@ -238,8 +1217,8 @@ Apache Ignite In-Memory Data Fabric 1.1
 * Made deployment scanners for URI-based deployment pluggable.
 * Many stability and fault-tolerance fixes.
 
-Apache Ignite In-Memory Data Fabric 1.0
----------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.0
+---------------------------------------------------------
 
 * Simplified query API.
 * Added automatic aggregation, grouping, and sorting support to SQL queries.
@@ -254,14 +1233,14 @@ Apache Ignite In-Memory Data Fabric 1.0
 * Added ability to automatically exclude LGPL optional dependencies during build.
 
 
-Apache Ignite In-Memory Data Fabric 1.0 RC3
--------------------------------------------
+Apache Ignite In-Memory Database and Caching Platform 1.0 RC3
+-------------------------------------------------------------
 
 This is the first release of Apache Ignite project. The source code in large part is based
-on the 7 year old GridGain In-Memory Data Fabric, open source edition, v. 6.6.2, which was
+on the 7 year old GridGain In-Memory Database and Caching Platform, open source edition, v. 6.6.2, which was
 donated to Apache Software Foundation in September 2014.
 
-The main feature set of Ignite In-Memory Data Fabric includes:
+The main feature set of Ignite In-Memory Database and Caching Platform includes:
 * Advanced Clustering
 * Compute Grid
 * Data Grid

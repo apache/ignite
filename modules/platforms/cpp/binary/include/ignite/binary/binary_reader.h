@@ -272,7 +272,7 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadDateArray(const char* fieldName, Date* res, const int32_t len);
+            int32_t ReadDateArray(const char* fieldName, Date* res, int32_t len);
 
             /**
              * Read Timestamp. Maps to "Timestamp" type in Java.
@@ -293,7 +293,28 @@ namespace ignite
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
              */
-            int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, const int32_t len);
+            int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, int32_t len);
+
+            /**
+             * Read Time. Maps to "Time" type in Java.
+             *
+             * @param fieldName Field name.
+             * @return Result.
+             */
+            Time ReadTime(const char* fieldName);
+
+            /**
+             * Read array of Times. Maps to "Time[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param res Array to store data to.
+             * @param len Expected length of array.
+             * @return Actual amount of elements read. If "len" argument is less than actual
+             *     array size or resulting array is set to null, nothing will be written
+             *     to resulting array and returned value will contain required array length.
+             *     -1 will be returned in case array in stream was null.
+             */
+            int32_t ReadTimeArray(const char* fieldName, Time* res, int32_t len);
 
             /**
              * Read string.
@@ -334,13 +355,31 @@ namespace ignite
             /**
              * Start string array read.
              *
+             * Every time you get a BinaryStringArrayReader from BinaryReader
+             * you start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
+             *
              * @param fieldName Field name.
              * @return String array reader.
              */
             BinaryStringArrayReader ReadStringArray(const char* fieldName);
 
             /**
+             * Read enum entry.
+             *
+             * @param fieldName Field name.
+             * @return Enum entry.
+             */
+            BinaryEnumEntry ReadBinaryEnum(const char* fieldName);
+
+            /**
              * Start array read.
+             *
+             * Every time you get a BinaryArrayReader from BinaryReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
              *
              * @param fieldName Field name.
              * @return Array reader.
@@ -358,13 +397,18 @@ namespace ignite
             /**
              * Start collection read.
              *
+             * Every time you get a BinaryCollectionReader from BinaryReader you
+             * start reading session. Only one single reading session can be
+             * open at a time. So it is not allowed to start new reading session
+             * until all elements of the collection have been read.
+             *
              * @param fieldName Field name.
              * @return Collection reader.
              */
             template<typename T>
             BinaryCollectionReader<T> ReadCollection(const char* fieldName)
             {
-                CollectionType typ;
+                CollectionType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadCollection(fieldName, &typ, &size);
@@ -388,13 +432,18 @@ namespace ignite
             /**
              * Start map read.
              *
+             * Every time you get a BinaryMapReader from BinaryReader you start
+             * reading session. Only one single reading session can be open at
+             * a time. So it is not allowed to start new reading session until
+             * all elements of the collection have been read.
+             *
              * @param fieldName Field name.
              * @return Map reader.
              */
             template<typename K, typename V>
             BinaryMapReader<K, V> ReadMap(const char* fieldName)
             {
-                MapType typ;
+                MapType::Type typ;
                 int32_t size;
 
                 int32_t id = impl->ReadMap(fieldName, &typ, &size);
@@ -408,7 +457,7 @@ namespace ignite
              * @param fieldName Field name.
              * @return Collection type.
              */
-            CollectionType ReadCollectionType(const char* fieldName);
+            CollectionType::Type ReadCollectionType(const char* fieldName);
 
             /**
              * Read type of the collection.
@@ -423,11 +472,26 @@ namespace ignite
              *
              * @param fieldName Field name.
              * @return Object.
+             *
+             * @trapam T Object type. BinaryType class template should be specialized for the type.
              */
             template<typename T>
             T ReadObject(const char* fieldName)
             {
                 return impl->ReadObject<T>(fieldName);
+            }
+
+            /**
+             * Read enum value.
+             *
+             * @return Enum value.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            T ReadEnum(const char* fieldName)
+            {
+                return impl->ReadEnum<T>(fieldName);
             }
 
             /**

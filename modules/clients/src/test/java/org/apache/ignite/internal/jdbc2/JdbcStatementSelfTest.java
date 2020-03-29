@@ -28,10 +28,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -41,11 +39,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public class JdbcStatementSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX
+        + "cache=default:multipleStatementsAllowed=true@modules/clients/src/test/config/jdbc-config.xml";
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -57,8 +53,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -71,12 +67,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
@@ -86,20 +76,13 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<String, Person> cache = grid(0).cache(null);
+        IgniteCache<String, Person> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
         cache.put("p1", new Person(1, "John", "White", 25));
         cache.put("p2", new Person(2, "Joe", "Black", 35));
         cache.put("p3", new Person(3, "Mike", "Green", 40));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -125,6 +108,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteQuery() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -157,6 +141,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecute() throws Exception {
         assert stmt.execute(SQL);
 
@@ -191,6 +176,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxRows() throws Exception {
         stmt.setMaxRows(1);
 
@@ -252,9 +238,138 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExecuteQueryMultipleOnlyResultSets() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder();
+
+        for (int i = 0; i < stmtCnt; ++i)
+            sql.append("select ").append(i).append("; ");
+
+        assert stmt.execute(sql.toString());
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            ResultSet rs = stmt.getResultSet();
+
+            assert rs.next();
+            assert rs.getInt(1) == i;
+            assert !rs.next();
+        }
+
+        assert !stmt.getMoreResults();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExecuteQueryMultipleOnlyDml() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
+
+        conn.setSchema(null);
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder(
+            "drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+
+        for (int i = 0; i < stmtCnt; ++i)
+            sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
+
+        assert !stmt.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        // CREATE TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            assert stmt.getResultSet() == null;
+            assert stmt.getUpdateCount() == 1;
+        }
+
+        assert !stmt.getMoreResults();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExecuteQueryMultipleMixed() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
+
+        conn.setSchema(null);
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder(
+            "drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            if (i % 2 == 0)
+                sql.append(" insert into test (ID, NAME) values (" + i + ", 'name_" + i + "'); ");
+            else
+                sql.append(" select * from test where id < " + i + "; ");
+        }
+
+        assert !stmt.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        // CREATE TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        boolean notEmptyResult = false;
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            if (i % 2 == 0) {
+                assert stmt.getResultSet() == null;
+                assert stmt.getUpdateCount() == 1;
+            }
+            else {
+                assert stmt.getUpdateCount() == -1;
+
+                ResultSet rs = stmt.getResultSet();
+
+                assert rs.getMetaData().getColumnCount() == 2;
+
+                int rowsCnt = 0;
+
+                while(rs.next())
+                    rowsCnt++;
+
+                assert rowsCnt <= (i + 1) / 2;
+
+                if (rowsCnt == (i + 1) / 2)
+                    notEmptyResult = true;
+            }
+        }
+
+        assert notEmptyResult;
+
+        assert !stmt.getMoreResults();
+    }
+
+    /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

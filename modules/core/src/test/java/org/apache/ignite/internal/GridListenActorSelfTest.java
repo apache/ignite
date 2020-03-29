@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.ignite.messaging.MessagingListenActor}.
@@ -43,12 +44,6 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected void afterTest() throws Exception {
         ((IgniteKernal)grid()).context().io().
             removeMessageListener(GridTopic.TOPIC_COMM_USER.name());
@@ -58,6 +53,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown if failed.
      */
+    @Test
     public void testBasicFlow() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 
@@ -91,6 +87,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImmediateStop() throws Exception {
         doSendReceive(MSG_QTY, 1);
     }
@@ -98,6 +95,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReceiveAll() throws Exception {
         doSendReceive(MSG_QTY, MSG_QTY);
     }
@@ -107,6 +105,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRespondToRemote() throws Exception {
         startGrid(1);
 
@@ -150,6 +149,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPingPong() throws Exception {
         final AtomicInteger pingCnt = new AtomicInteger();
         final AtomicInteger pongCnt = new AtomicInteger();

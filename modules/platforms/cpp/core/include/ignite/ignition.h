@@ -51,7 +51,7 @@ namespace ignite
          * @param err Error.
          * @return Ignite instance.
          */
-        static Ignite Start(const IgniteConfiguration& cfg, IgniteError* err);
+        static Ignite Start(const IgniteConfiguration& cfg, IgniteError& err);
 
         /**
          * Start Ignite instance with specific name.
@@ -70,7 +70,7 @@ namespace ignite
          * @param err Error.
          * @return Ignite instance.
          */
-        static Ignite Start(const IgniteConfiguration& cfg, const char* name, IgniteError* err);
+        static Ignite Start(const IgniteConfiguration& cfg, const char* name, IgniteError& err);
 
         /**
          * Get default Ignite instance.
@@ -85,7 +85,7 @@ namespace ignite
          * @param err Error.
          * @return Default Ignite instance.
          */
-        static Ignite Get(IgniteError* err);
+        static Ignite Get(IgniteError& err);
 
         /**
          * Get Ignite instance with the given name.
@@ -102,7 +102,7 @@ namespace ignite
          * @param err Error.
          * @return Ignite instance.
          */
-        static Ignite Get(const char* name, IgniteError* err);
+        static Ignite Get(const char* name, IgniteError& err);
 
         /**
          * Stop default Ignite instance.
@@ -119,7 +119,7 @@ namespace ignite
          * @param err Error.
          * @return True if Ignite instance was stopped by this call.
          */
-        static bool Stop(bool cancel, IgniteError* err);
+        static bool Stop(bool cancel, IgniteError& err);
 
         /**
          * Stop Ignite instance with the given name.
@@ -138,7 +138,7 @@ namespace ignite
          * @param err Error.
          * @return True if Ignite instance was stopped by this call.
          */
-        static bool Stop(const char* name, bool cancel, IgniteError* err);
+        static bool Stop(const char* name, bool cancel, IgniteError& err);
 
         /**
          * Stop all running Ignite instances.
@@ -153,7 +153,7 @@ namespace ignite
          * @param cancel Cancel flag.
          * @param err Error.
          */
-        static void StopAll(bool cancel, IgniteError* err);
+        static void StopAll(bool cancel, IgniteError& err);
     };
 }
 

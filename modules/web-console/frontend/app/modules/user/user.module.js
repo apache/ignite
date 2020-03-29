@@ -20,37 +20,41 @@ import aclData from './permissions';
 
 import Auth from './Auth.service';
 import User from './User.service';
-import AclRouteProvider from './AclRoute.provider';
+import {registerInterceptor} from './emailConfirmationInterceptor';
 
-angular.module('ignite-console.user', [
-    'mm.acl',
-    'ignite-console.config',
-    'ignite-console.core'
-])
-.factory('sessionRecoverer', ['$injector', '$q', ($injector, $q) => {
+/**
+ * @param {ng.auto.IInjectorService} $injector
+ * @param {ng.IQService} $q
+ */
+function sessionRecoverer($injector, $q) {
+    /** @type {ng.IHttpInterceptor} */
     return {
         responseError: (response) => {
             // Session has expired
             if (response.status === 401) {
                 $injector.get('User').clean();
 
-                const $state = $injector.get('$state');
+                const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if ($state.current.name !== 'signin')
-                    $state.go('signin');
+                if (!_.includes(['', 'signin', 'terms', '403', '404'], stateName))
+                    $injector.get('$state').go('signin');
             }
 
             return $q.reject(response);
         }
     };
-}])
-.config(['$httpProvider', ($httpProvider) => {
-    $httpProvider.interceptors.push('sessionRecoverer');
-}])
-.service(...Auth)
-.service(...User)
-.provider('AclRoute', AclRouteProvider)
-.run(['$rootScope', 'AclService', ($root, AclService) => {
+}
+
+sessionRecoverer.$inject = ['$injector', '$q'];
+
+/**
+ * @param {ng.IRootScopeService} $root
+ * @param {import('@uirouter/angularjs').TransitionService} $transitions
+ * @param {unknown} AclService
+ * @param {ReturnType<typeof import('./User.service').default>} User
+ * @param {ReturnType<typeof import('app/components/activities-user-dialog/index').default>} Activities
+ */
+function run($root, $transitions, AclService, User, Activities) {
     AclService.setAbilities(aclData);
     AclService.attachRole('guest');
 
@@ -70,4 +74,38 @@ angular.module('ignite-console.user', [
 
         AclService.attachRole(role);
     });
-}]);
+
+    $transitions.onBefore({}, (trans) => {
+        const $state = trans.router.stateService;
+        const {permission} = trans.to();
+
+        if (_.isEmpty(permission))
+            return;
+
+        return trans.injector().get('User').read()
+            .then(() => {
+                if (!AclService.can(permission))
+                    throw new Error('Illegal access error');
+            })
+            .catch(() => {
+                return $state.target(trans.to().failState || 'base.403');
+            });
+    });
+}
+
+run.$inject = ['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
+
+angular
+    .module('ignite-console.user', [
+        'mm.acl',
+        'ignite-console.config',
+        'ignite-console.core'
+    ])
+    .factory('sessionRecoverer', sessionRecoverer)
+    .config(registerInterceptor)
+    .config(['$httpProvider', ($httpProvider) => {
+        $httpProvider.interceptors.push('sessionRecoverer');
+    }])
+    .service('Auth', Auth)
+    .service('User', User)
+    .run(run);

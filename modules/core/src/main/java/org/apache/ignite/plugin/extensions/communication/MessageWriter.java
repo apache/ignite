@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -48,9 +49,10 @@ public interface MessageWriter {
      * Writes message header.
      *
      * @param type Message type.
-     * @param fieldCnt Fields count.ß
+     * @param fieldCnt Fields count.
+     * @return {@code true} if successfully. Otherwise returns {@code false}.
      */
-    public boolean writeHeader(byte type, byte fieldCnt);
+    public boolean writeHeader(short type, byte fieldCnt);
 
     /**
      * Writes {@code byte} value.
@@ -172,6 +174,16 @@ public interface MessageWriter {
     public boolean writeLongArray(String name, long[] val);
 
     /**
+     * Writes {@code long} array.
+     *
+     * @param name Field name.
+     * @param val {@code long} array.
+     * @param len Length.
+     * @return Whether array was fully written.
+     */
+    public boolean writeLongArray(String name, long[] val, int len);
+
+    /**
      * Writes {@code float} array.
      *
      * @param name Field name.
@@ -242,6 +254,15 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeIgniteUuid(String name, IgniteUuid val);
+
+    /**
+     * Writes {@link AffinityTopologyVersion}.
+     *
+     * @param name Field name.
+     * @param val {@link AffinityTopologyVersion}.
+     * @return Whether value was fully written.
+     */
+    public boolean writeAffinityTopologyVersion(String name, AffinityTopologyVersion val);
 
     /**
      * Writes nested message.

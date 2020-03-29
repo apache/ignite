@@ -46,6 +46,11 @@ namespace ignite_test
                 return val;
             }
 
+            BinaryOuter::BinaryOuter()
+            {
+                // No-op.
+            }
+
             BinaryOuter::BinaryOuter(int32_t valIn, int32_t valOut) : inner(valIn), val(valOut)
             {
                 // No-op.

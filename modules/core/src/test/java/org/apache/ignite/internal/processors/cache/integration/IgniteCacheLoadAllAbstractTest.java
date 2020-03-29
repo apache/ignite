@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
@@ -30,12 +31,13 @@ import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CompletionListener;
 import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Before;
+import org.junit.Test;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
@@ -45,12 +47,14 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private volatile boolean writeThrough = true;
 
     /** */
-    private static ConcurrentHashMap8<Object, Object> storeMap;
+    private static ConcurrentHashMap<Object, Object> storeMap;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteThrough(writeThrough);
 
@@ -61,11 +65,19 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
         return ccfg;
     }
 
+    /** */
+    @Before
+    public void beforeIgniteCacheLoadAllAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTest();
 
-        storeMap = new ConcurrentHashMap8<>();
+        storeMap = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -78,6 +90,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         IgniteCache<Integer, String> cache0 = jcache(0);
 
@@ -175,7 +188,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
      * @param expVals Expected values.
      */
     private void checkValues(int keys, Map<Integer, String> expVals) {
-        Affinity<Object> aff = grid(0).affinity(null);
+        Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = ignite(i).cluster().localNode();
@@ -186,12 +199,12 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
                 String expVal = expVals.get(key);
 
                 if (aff.isPrimaryOrBackup(node, key)) {
-                    assertEquals(expVal, cache.localPeek(key, CachePeekMode.ONHEAP));
+                    assertEquals(expVal, cache.localPeek(key));
 
                     assertEquals(expVal, cache.get(key));
                 }
                 else {
-                    assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+                    assertNull(cache.localPeek(key));
 
                     if (!expVals.containsKey(key))
                         assertNull(cache.get(key));
@@ -199,7 +212,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
             }
 
             for (int key = keys + 1000; i < keys + 1010; i++) {
-                assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+                assertNull(cache.localPeek(key));
 
                 assertNull(cache.get(key));
             }
@@ -210,6 +223,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
      *
      */
     private static class CacheLoaderFactory implements Factory<CacheLoader> {
+        /** {@inheritDoc} */
         @Override public CacheLoader create() {
             return new CacheLoader<Object, Object>() {
                 @Override public Object load(Object key) throws CacheLoaderException {
@@ -236,6 +250,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
      *
      */
     private static class CacheWriterFactory implements Factory<CacheWriter> {
+        /** {@inheritDoc} */
         @Override public CacheWriter create() {
             return new CacheWriter<Object, Object>() {
                 @Override public void write(Cache.Entry<?, ?> e) {

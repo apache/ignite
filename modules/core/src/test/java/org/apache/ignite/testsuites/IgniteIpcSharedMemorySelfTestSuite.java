@@ -17,28 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryCrashDetectionSelfTest;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoaderSelfTest;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemorySpaceSelfTest;
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryUtilsSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Shared memory test suite.
  */
-public class IgniteIpcSharedMemorySelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite IPC Shared Memory Test Suite.");
-
-        suite.addTest(new TestSuite(IpcSharedMemorySpaceSelfTest.class));
-        suite.addTest(new TestSuite(IpcSharedMemoryUtilsSelfTest.class));
-        suite.addTest(new TestSuite(IpcSharedMemoryCrashDetectionSelfTest.class));
-        suite.addTest(new TestSuite(IpcSharedMemoryNativeLoaderSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IpcSharedMemorySpaceSelfTest.class,
+    IpcSharedMemoryUtilsSelfTest.class,
+    IpcSharedMemoryCrashDetectionSelfTest.class,
+    IpcSharedMemoryNativeLoaderSelfTest.class
+})
+public class IgniteIpcSharedMemorySelfTestSuite {
 }

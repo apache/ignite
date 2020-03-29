@@ -30,6 +30,7 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid deployment manager stop test.
@@ -39,6 +40,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnKernalStop() throws Exception {
         DeploymentSpi spi = new GridTestDeploymentSpi();
 
@@ -80,7 +82,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException { /* No-op. */ }
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
         @Override public void spiStop() throws IgniteSpiException { /* No-op. */ }

@@ -76,9 +76,7 @@ namespace Apache.Ignite.Config
 
             foreach (var arg in args)
             {
-                if (string.IsNullOrWhiteSpace(arg.Item2))
-                    throw new IgniteException(string.Format(
-                        "Missing argument value: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
+                ValidateArgValue(arg);
 
                 var arg0 = arg;  // copy captured variable
                 Func<string, bool> argIs = x => arg0.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
@@ -132,6 +130,22 @@ namespace Apache.Ignite.Config
         }
 
         /// <summary>
+        /// Validates arg value, throws an exception when not valid.
+        /// </summary>
+        /// <param name="arg">Tuple of arg name and value.</param>
+        /// <returns>Arg value.</returns>
+        public static string ValidateArgValue(Tuple<string, string> arg)
+        {
+            if (string.IsNullOrWhiteSpace(arg.Item2))
+            {
+                throw new IgniteException(
+                    string.Format("Missing argument value: '{0}'. See 'Apache.Ignite.exe /help'", arg.Item1));
+            }
+
+            return arg.Item2;
+        }
+
+        /// <summary>
         /// Reads the configuration section.
         /// </summary>
         private static IgniteConfiguration ReadConfigurationSection(Tuple<string, string>[] args)
@@ -176,9 +190,12 @@ namespace Apache.Ignite.Config
         /// </summary>
         private static string FindValue(IEnumerable<Tuple<string, string>> args, string name)
         {
-            return args.Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
-                    .Select(x => x.Item2)
-                    .FirstOrDefault();
+            // Search in reverse so that command line has preference over config file.
+            return args
+                .Reverse()
+                .Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.Item2)
+                .FirstOrDefault();
         }
     }
 }

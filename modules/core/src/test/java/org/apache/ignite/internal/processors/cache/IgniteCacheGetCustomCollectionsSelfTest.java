@@ -28,25 +28,20 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
-        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>();
+        final CacheConfiguration<String, MyMap> mapCacheConfig = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         mapCacheConfig.setCacheMode(CacheMode.PARTITIONED);
         mapCacheConfig.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -55,18 +50,13 @@ public class IgniteCacheGetCustomCollectionsSelfTest extends GridCommonAbstractT
 
         cfg.setCacheConfiguration(mapCacheConfig);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGet() throws Exception {
         startGrids(3);
 

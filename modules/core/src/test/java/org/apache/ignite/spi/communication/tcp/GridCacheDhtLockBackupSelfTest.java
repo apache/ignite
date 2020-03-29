@@ -35,12 +35,10 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -49,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  * Special cases for GG-2329.
  */
 public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
-    /** Ip-finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Communication spi for grid start. */
     private CommunicationSpi commSpi;
 
@@ -66,14 +61,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -102,7 +91,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -110,15 +99,15 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startGridWithSpi(2, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
-        if (!ignite1.affinity(null).mapKeyToNode(kv).id().equals(ignite1.cluster().localNode().id())) {
+        if (!ignite1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(kv).id().equals(ignite1.cluster().localNode().id())) {
             Ignite tmp = ignite1;
             ignite1 = ignite2;
             ignite2 = tmp;
         }
 
         // Now, grid1 is always primary node for key 1.
-        final IgniteCache<Integer, String> cache1 = ignite1.cache(null);
-        final IgniteCache<Integer, String> cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+        final IgniteCache<Integer, String> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         info(">>> Primary: " + ignite1.cluster().localNode().id());
         info(">>>  Backup: " + ignite2.cluster().localNode().id());

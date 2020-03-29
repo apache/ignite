@@ -19,15 +19,23 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for {@link ClusterGroup}.
@@ -44,33 +52,33 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT > 2;
 
         ids = new LinkedList<>();
 
-        try {
-            for (int i = 0; i < NODES_CNT; i++) {
-                Ignition.setClientMode(i > 1);
+        for (int i = 0; i < NODES_CNT; i++) {
+            Ignite g;
 
-                Ignite g = startGrid(i);
+            if (i > 1)
+                g = startClientGrid(i);
+            else
+                g = startGrid(i);
 
-                ids.add(g.cluster().localNode().id());
+            ids.add(g.cluster().localNode().id());
 
-                if (i == 0)
-                    ignite = g;
-            }
+            if (i == 0)
+                ignite = g;
         }
-        finally {
-            Ignition.setClientMode(false);
-        }
+
+        waitForTopology(NODES_CNT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++)
-            stopGrid(i);
+        super.afterTestsStopped();
+
+        ignite = null;
     }
 
     /** {@inheritDoc} */
@@ -86,6 +94,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandom() throws Exception {
         assertTrue(ignite.cluster().nodes().contains(ignite.cluster().forRandom().node()));
     }
@@ -93,6 +102,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldest() throws Exception {
         ClusterGroup oldest = ignite.cluster().forOldest();
 
@@ -118,6 +128,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testYoungest() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
 
@@ -143,6 +154,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForDaemons() throws Exception {
         assertEquals(4, ignite.cluster().nodes().size());
 
@@ -168,6 +180,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNewNodes() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
         ClusterGroup oldest = ignite.cluster().forOldest();
@@ -191,6 +204,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForPredicate() throws Exception {
         IgnitePredicate<ClusterNode> evenP = new IgnitePredicate<ClusterNode>() {
             @Override public boolean apply(ClusterNode node) {
@@ -234,6 +248,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAgeClusterGroupSerialization() throws Exception {
         Marshaller marshaller = ignite.configuration().getMarshaller();
 
@@ -257,6 +272,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientServer() throws Exception {
         ClusterGroup srv = ignite.cluster().forServers();
 
@@ -274,6 +290,102 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testForCacheNodesOnDynamicCacheCreateDestroy() throws Exception {
+        Random rnd = ThreadLocalRandom.current();
+
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        IgniteInternalFuture fut = runCacheCreateDestroyTask(ex);
+
+        while (!fut.isDone())
+            ignite.cluster().forCacheNodes("cache" + rnd.nextInt(16)).nodes();
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testForClientNodesOnDynamicCacheCreateDestroy() throws Exception {
+        Random rnd = ThreadLocalRandom.current();
+
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        IgniteInternalFuture fut = runCacheCreateDestroyTask(ex);
+
+        while (!fut.isDone())
+            ignite.cluster().forClientNodes("cache" + rnd.nextInt(16)).nodes();
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * @param exHldr Exception holder.
+     * @return Task future.
+     */
+    private IgniteInternalFuture runCacheCreateDestroyTask(final AtomicReference<Exception> exHldr) {
+        final long deadline = System.currentTimeMillis() + 5000;
+
+        final AtomicInteger cntr = new AtomicInteger();
+
+        return GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                int startIdx = cntr.getAndAdd(4);
+                int idx = 0;
+                boolean start = true;
+
+                Set<String> caches = U.newHashSet(4);
+
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        if (start) {
+                            caches.add("cache" + (startIdx + idx));
+                            ignite.createCache("cache" + (startIdx + idx));
+                        }
+                        else {
+                            ignite.destroyCache("cache" + (startIdx + idx));
+                            caches.remove("cache" + (startIdx + idx));
+                        }
+
+                        if ((idx = (idx + 1) % 4) == 0)
+                            start = !start;
+                    }
+                    catch (Exception e) {
+                        addException(exHldr, e);
+
+                        break;
+                    }
+                }
+
+                for (String cache : caches) {
+                    try {
+                        ignite.destroyCache(cache);
+                    }
+                    catch (Exception e) {
+                        addException(exHldr, e);
+                    }
+                }
+            }
+        }, 4, "cache-start-destroy");
+    }
+
+    /**
+     * @param exHldr Exception holder.
+     * @param ex Exception.
+     */
+    private void addException(AtomicReference<Exception> exHldr, Exception ex) {
+        if (exHldr.get() != null || !exHldr.compareAndSet(null, ex))
+            exHldr.get().addSuppressed(ex);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testEmptyGroup() throws Exception {
         ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
 

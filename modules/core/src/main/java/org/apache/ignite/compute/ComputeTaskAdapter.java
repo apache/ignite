@@ -99,7 +99,7 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
                 return ComputeJobResultPolicy.FAILOVER;
 
             throw new IgniteException("Remote job threw user exception (override or implement ComputeTask.result(..) " +
-                "method if you would like to have automatic failover for this exception).", e);
+                "method if you would like to have automatic failover for this exception): " + e.getMessage(), e);
         }
 
         // Wait for all job responses.

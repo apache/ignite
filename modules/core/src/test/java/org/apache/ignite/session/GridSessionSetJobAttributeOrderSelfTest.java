@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,6 +37,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Grid session set job attribute self test.
@@ -56,6 +57,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSetAttribute() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
@@ -63,12 +65,9 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
 
             ignite1.compute().localDeployTask(SessionTestTask.class, SessionTestTask.class.getClassLoader());
 
-            IgniteCompute comp = ignite1.compute().withAsync();
-
             for (int i = 0; i < TESTS_COUNT; i++) {
-                comp.withTimeout(100000).execute(SessionTestTask.class.getName(), ignite2.cluster().localNode().id());
-
-                ComputeTaskFuture<?> fut = comp.future();
+                ComputeTaskFuture<?> fut = ignite1.compute().withTimeout(100000).executeAsync(
+                    SessionTestTask.class.getName(), ignite2.cluster().localNode().id());
 
                 fut.getTaskSession().setAttribute(TEST_ATTR_KEY, SETS_ATTR_COUNT);
 
@@ -98,7 +97,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
             assert subgrid.size() == 2;
             assert arg != null;
 

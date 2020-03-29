@@ -25,7 +25,6 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -34,13 +33,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -70,9 +69,6 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     /** Number of partitions. */
     private int partitions = DFLT_PARTITIONS;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -81,8 +77,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -94,11 +90,6 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         //cacheCfg.setRebalanceThreadPoolSize(1);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDeploymentMode(CONTINUOUS);
 
@@ -107,6 +98,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
     }
@@ -121,10 +114,11 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @return Topology.
      */
     private GridDhtPartitionTopology topology(int i) {
-        return near(grid(i).cache(null)).dht().topology();
+        return near(grid(i).cache(DEFAULT_CACHE_NAME)).dht().topology();
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSamePartitionMap() throws Exception {
         backups = 1;
         partitions = 10;
@@ -174,11 +168,12 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDisabledPreloader() throws Exception {
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             int keyCnt = 10;
 
@@ -186,9 +181,9 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             for (int i = 0; i < keyCnt; i++) {
                 assertNull(near(cache1).peekEx(i));
-                assertNotNull((dht(cache1).peekEx(i)));
+                assertNotNull((dht(cache1).localPeek(i, null)));
 
-                assertEquals(Integer.toString(i), cache1.localPeek(i, CachePeekMode.ONHEAP));
+                assertEquals(Integer.toString(i), cache1.localPeek(i));
             }
 
             int nodeCnt = 3;
@@ -199,16 +194,16 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < keyCnt; i++)
-                    assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                    assertNull(c.localPeek(i));
             }
 
             Collection<Integer> keys = new LinkedList<>();
 
             for (int i = 0; i < keyCnt; i++)
-                if (ignite1.affinity(null).mapKeyToNode(i).equals(ignite1.cluster().localNode()))
+                if (ignite1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(i).equals(ignite1.cluster().localNode()))
                     keys.add(i);
 
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
@@ -223,15 +218,15 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                 // Check all nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.cache(null);
+                    IgniteCache<Integer, String> c = gg.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < keyCnt; i++)
-                        assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
+                        assertNull(c.localPeek(i));
                 }
             }
 
             for (Integer i : keys)
-                assertEquals(i.toString(), cache1.localPeek(i, CachePeekMode.ONHEAP));
+                assertEquals(i.toString(), cache1.localPeek(i));
         }
         catch (Error | Exception e) {
             error("Test failed.", e);
@@ -256,7 +251,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
             if (DEBUG)
                 g.events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
-                        info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
+                        info("\n>>> Preload event [igniteInstanceName=" + g.name() + ", evt=" + evt + ']');
 
                         return true;
                     }

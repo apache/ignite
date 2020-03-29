@@ -29,11 +29,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -44,9 +43,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
  *
  */
 public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_CNT = 3;
 
@@ -60,24 +56,12 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     private static final AtomicBoolean received = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(discoverySpi());
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
-    }
-
-    /**
-     * @return Discovery SPI;
-     */
-    private DiscoverySpi discoverySpi() {
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        return spi;
     }
 
     /**
@@ -90,8 +74,6 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(true);
-        cc.setEvictSynchronized(false);
         cc.setNearConfiguration(null);
 
         return cc;
@@ -108,19 +90,15 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         received.set(false);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromPrimaryNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + grid(i).localNode().id());
 
                 c.get(KEY);
@@ -135,11 +113,16 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromBackupNode() throws Exception {
-        for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10274", MvccFeatureChecker.forcedMvcc());
 
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), KEY)) {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
+
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isBackup(grid(i).localNode(), KEY)) {
                 info("Backup node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -166,11 +149,12 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetFromNearNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
+            if (!grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
                 info("Near node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -211,22 +195,21 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
     private void prepare() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + g.cluster().localNode().id());
 
                 // Put value.
-                g.cache(null).put(KEY, VAL);
+                g.cache(DEFAULT_CACHE_NAME).put(KEY, VAL);
 
                 // Register listener.
                 ((IgniteKernal)g).context().io().addMessageListener(
                     TOPIC_CACHE,
                     new GridMessageListener() {
-                        @Override public void onMessage(UUID nodeId, Object msg) {
+                        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                             info("Received message from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
                             if (msg instanceof GridNearSingleGetRequest) {

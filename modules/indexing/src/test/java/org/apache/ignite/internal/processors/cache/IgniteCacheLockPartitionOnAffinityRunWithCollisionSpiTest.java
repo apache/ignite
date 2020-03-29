@@ -35,6 +35,7 @@ import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
@@ -45,8 +46,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     private static volatile boolean cancelAllJobs = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CollisionSpi colSpi = new AlwaysCancelCollisionSpi();
 
@@ -58,6 +59,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionReservation() throws Exception {
         int orgId = 0;
         cancelAllJobs = true;
@@ -81,8 +83,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
-    public void _testJobFinishing() throws Exception {
-//        fail("Affinity run / call doesn't receive response where many job rejections happen.");
+    @Test
+    public void testJobFinishing() throws Exception {
         final AtomicInteger jobNum = new AtomicInteger(0);
 
         cancelAllJobs = true;
@@ -180,7 +182,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
         }

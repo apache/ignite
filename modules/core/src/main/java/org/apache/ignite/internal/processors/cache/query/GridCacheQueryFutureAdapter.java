@@ -50,7 +50,6 @@ import org.jetbrains.annotations.Nullable;
  * Query future adapter.
  *
  * @param <R> Result type.
- *
  */
 public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAdapter<Collection<R>>
     implements CacheQueryFuture<R>, GridTimeoutObject {
@@ -69,6 +68,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected final GridCacheQueryBean qry;
 
+    /** */
+    private int capacity;
+
+    /** */
+    private boolean limitDisabled;
+
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
 
@@ -76,16 +81,10 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private final Queue<Collection<R>> queue = new LinkedList<>();
 
     /** */
-    private final Collection<Object> allCol = new LinkedList<>();
-
-    /** */
     private final AtomicInteger cnt = new AtomicInteger();
 
     /** */
     private Iterator<R> iter;
-
-    /** */
-    protected final Object mux = new Object();
 
     /** */
     private IgniteUuid timeoutId = IgniteUuid.randomUuid();
@@ -99,9 +98,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected boolean loc;
 
-    /**
-     *
-     */
+    /** */
     protected GridCacheQueryFutureAdapter() {
         qry = null;
         keys = null;
@@ -123,6 +120,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
+        capacity = query().query().limit();
+        limitDisabled = capacity <= 0;
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -183,81 +182,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     public abstract void awaitFirstPage() throws IgniteCheckedException;
 
     /**
-     * Returns next page for the query.
-     *
-     * @return Next page or {@code null} if no more pages available.
-     * @throws IgniteCheckedException If fetch failed.
-     */
-    public Collection<R> nextPage() throws IgniteCheckedException {
-        return nextPage(qry.query().timeout(), startTime);
-    }
-
-    /**
-     * Returns next page for the query.
-     *
-     * @param timeout Timeout.
-     * @return Next page or {@code null} if no more pages available.
-     * @throws IgniteCheckedException If fetch failed.
-     */
-    public Collection<R> nextPage(long timeout) throws IgniteCheckedException {
-        return nextPage(timeout, U.currentTimeMillis());
-    }
-
-    /**
-     * Returns next page for the query.
-     *
-     * @param timeout Timeout.
-     * @param startTime Timeout wait start time.
-     * @return Next page or {@code null} if no more pages available.
-     * @throws IgniteCheckedException If fetch failed.
-     */
-    private Collection<R> nextPage(long timeout, long startTime) throws IgniteCheckedException {
-        Collection<R> res = null;
-
-        while (res == null) {
-            synchronized (mux) {
-                res = queue.poll();
-            }
-
-            if (res == null) {
-                if (!isDone()) {
-                    loadPage();
-
-                    long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
-
-                    if (waitTime <= 0)
-                        break;
-
-                    synchronized (mux) {
-                        try {
-                            if (queue.isEmpty() && !isDone())
-                                mux.wait(waitTime);
-                        }
-                        catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-
-                            throw new IgniteCheckedException("Query was interrupted: " + qry, e);
-                        }
-                    }
-                }
-                else
-                    break;
-            }
-        }
-
-        checkError();
-
-        return res;
-    }
-
-    /**
      * @throws IgniteCheckedException If future is done with an error.
      */
     private void checkError() throws IgniteCheckedException {
         if (error() != null) {
             clear();
 
-            throw new IgniteCheckedException("Query execution failed: " + qry, error());
+            throw U.cast(error());
         }
     }
 
@@ -273,7 +204,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         while (it == null || !it.hasNext()) {
             Collection<R> c;
 
-            synchronized (mux) {
+            synchronized (this) {
                 it = iter;
 
                 if (it != null && it.hasNext())
@@ -301,10 +232,10 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     break;
                 }
 
-                synchronized (mux) {
+                synchronized (this) {
                     try {
                         if (queue.isEmpty() && !isDone())
-                            mux.wait(waitTime);
+                            wait(waitTime);
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -330,28 +261,42 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * @param col Collection.
      */
-    @SuppressWarnings({"unchecked"})
     protected void enqueue(Collection<?> col) {
-        assert Thread.holdsLock(mux);
+        assert Thread.holdsLock(this);
 
-        queue.add((Collection<R>)col);
+        if (limitDisabled) {
+            queue.add((Collection<R>)col);
 
-        cnt.addAndGet(col.size());
+            cnt.addAndGet(col.size());
+        }
+        else {
+            if (capacity >= col.size()) {
+                queue.add((Collection<R>)col);
+                capacity -= col.size();
+
+                cnt.addAndGet(col.size());
+            }
+            else if (capacity > 0) {
+                queue.add(new ArrayList<>((Collection<R>)col).subList(0, capacity));
+                capacity = 0;
+
+                cnt.addAndGet(capacity);
+            }
+        }
     }
 
     /**
      * @param col Query data collection.
-     * @return If dedup flag is {@code true} deduplicated collection (considering keys),
-     *      otherwise passed in collection without any modifications.
+     * @return If dedup flag is {@code true} deduplicated collection (considering keys), otherwise passed in collection
+     * without any modifications.
      */
-    @SuppressWarnings({"unchecked"})
     private Collection<?> dedupIfRequired(Collection<?> col) {
         if (!qry.query().enableDedup())
             return col;
 
         Collection<Object> dedupCol = new ArrayList<>(col.size());
 
-        synchronized (mux) {
+        synchronized (this) {
             for (Object o : col)
                 if (!(o instanceof Map.Entry) || keys.add(((Map.Entry<K, V>)o).getKey()))
                     dedupCol.add(o);
@@ -366,28 +311,36 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param err Error (if was).
      * @param finished Finished or not.
      */
-    @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
     public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         if (isCancelled())
             return;
 
         if (log.isDebugEnabled())
-            log.debug("Received query result page [nodeId=" + nodeId + ", data=" + data +
-                ", err=" + err + ", finished=" + finished + "]");
+            log.debug(S.toString("Received query result page",
+                "nodeId", nodeId, false,
+                "data", data, true,
+                "err", err, false,
+                "finished", finished, false));
 
         try {
             if (err != null)
-                synchronized (mux) {
+                synchronized (this) {
                     enqueue(Collections.emptyList());
 
-                    onDone(nodeId != null ?
-                        new IgniteCheckedException("Failed to execute query on node [query=" + qry +
-                            ", nodeId=" + nodeId + "]", err) :
-                        new IgniteCheckedException("Failed to execute query locally: " + qry, err));
+                    if (err instanceof IgniteCheckedException)
+                        onDone(err);
+                    else
+                        onDone(new IgniteCheckedException(nodeId != null ?
+                            S.toString("Failed to execute query on node",
+                                "query", qry, true,
+                                "nodeId", nodeId, false) :
+                            S.toString("Failed to execute query locally",
+                                "query", qry, true),
+                            err));
 
                     onPage(nodeId, true);
 
-                    mux.notifyAll();
+                    notifyAll();
                 }
             else {
                 if (data == null)
@@ -397,19 +350,16 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                 data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
-                synchronized (mux) {
+                synchronized (this) {
                     enqueue(data);
 
-                    if (qry.query().keepAll())
-                        allCol.addAll(maskNulls((Collection<Object>)data));
-
                     if (onPage(nodeId, finished)) {
-                        onDone((Collection<R>)(qry.query().keepAll() ? unmaskNulls(allCol) : data));
+                        onDone(/* data */);
 
                         clear();
                     }
 
-                    mux.notifyAll();
+                    notifyAll();
                 }
             }
         }
@@ -426,14 +376,14 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param e Error.
      */
     private void onPageError(@Nullable UUID nodeId, Throwable e) {
-        synchronized (mux) {
+        synchronized (this) {
             enqueue(Collections.emptyList());
 
             onPage(nodeId, true);
 
             onDone(e);
 
-            mux.notifyAll();
+            notifyAll();
         }
     }
 
@@ -441,7 +391,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with masked {@code null} values.
      */
-    @SuppressWarnings("unchecked")
     private Collection<Object> maskNulls(Collection<Object> col) {
         assert col != null;
 
@@ -456,7 +405,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param col Collection.
      * @return Collection with unmasked {@code null} values.
      */
-    @SuppressWarnings("unchecked")
     private Collection<Object> unmaskNulls(Collection<Object> col) {
         assert col != null;
 
@@ -573,11 +521,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         return S.toString(GridCacheQueryFutureAdapter.class, this);
     }
 
-    /** */
+    /**
+     *
+     */
     public void printMemoryStats() {
         X.println(">>> Query future memory statistics.");
         X.println(">>>  queueSize: " + queue.size());
-        X.println(">>>  allCollSize: " + allCol.size());
         X.println(">>>  keysSize: " + keys.size());
         X.println(">>>  cnt: " + cnt);
     }

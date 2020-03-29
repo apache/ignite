@@ -37,24 +37,63 @@ namespace ignite
                     /**
                      * Children windows ids.
                      */
-                    enum ChildId
+                    struct ChildId
                     {
-                        ID_CONNECTION_SETTINGS_GROUP_BOX,
-                        ID_NAME_EDIT,
-                        ID_NAME_LABEL,
-                        ID_ADDRESS_EDIT,
-                        ID_ADDRESS_LABEL,
-                        ID_CACHE_EDIT,
-                        ID_CACHE_LABEL,
-                        ID_PAGE_SIZE_EDIT,
-                        ID_PAGE_SIZE_LABEL,
-                        ID_DISTRIBUTED_JOINS_CHECK_BOX,
-                        ID_ENFORCE_JOIN_ORDER_CHECK_BOX,
-                        ID_PROTOCOL_VERSION_LABEL,
-                        ID_PROTOCOL_VERSION_COMBO_BOX,
-                        ID_OK_BUTTON,
-                        ID_CANCEL_BUTTON
+                        enum Type
+                        {
+                            CONNECTION_SETTINGS_GROUP_BOX = 100,
+                            SSL_SETTINGS_GROUP_BOX,
+                            ADDITIONAL_SETTINGS_GROUP_BOX,
+                            AUTH_SETTINGS_GROUP_BOX,
+                            NAME_EDIT,
+                            NAME_LABEL,
+                            ADDRESS_EDIT,
+                            ADDRESS_LABEL,
+                            SCHEMA_EDIT,
+                            SCHEMA_LABEL,
+                            PAGE_SIZE_EDIT,
+                            PAGE_SIZE_LABEL,
+                            DISTRIBUTED_JOINS_CHECK_BOX,
+                            ENFORCE_JOIN_ORDER_CHECK_BOX,
+                            REPLICATED_ONLY_CHECK_BOX,
+                            COLLOCATED_CHECK_BOX,
+                            LAZY_CHECK_BOX,
+                            SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
+                            PROTOCOL_VERSION_LABEL,
+                            PROTOCOL_VERSION_COMBO_BOX,
+                            NESTED_TX_MODE_LABEL,
+                            NESTED_TX_MODE_COMBO_BOX,
+                            SSL_MODE_LABEL,
+                            SSL_MODE_COMBO_BOX,
+                            SSL_KEY_FILE_LABEL,
+                            SSL_KEY_FILE_EDIT,
+                            SSL_CERT_FILE_LABEL,
+                            SSL_CERT_FILE_EDIT,
+                            SSL_CA_FILE_LABEL,
+                            SSL_CA_FILE_EDIT,
+                            USER_LABEL,
+                            USER_EDIT,
+                            PASSWORD_LABEL,
+                            PASSWORD_EDIT,
+                            OK_BUTTON,
+                            CANCEL_BUTTON
+                        };
                     };
+
+                    // Window margin size.
+                    enum { MARGIN = 10 };
+
+                    // Standard interval between UI elements.
+                    enum { INTERVAL = 10 };
+
+                    // Standard row height.
+                    enum { ROW_HEIGHT = 20 };
+
+                    // Standard button width.
+                    enum { BUTTON_WIDTH = 80 };
+
+                    // Standard button height.
+                    enum { BUTTON_HEIGHT = 25 };
 
                 public:
                     /**
@@ -95,6 +134,78 @@ namespace ignite
                      */
                     void RetrieveParameters(config::Configuration& cfg) const;
 
+                    /**
+                     * Retrieves current values from the connection UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveConnectionParameters(config::Configuration& cfg) const;
+
+                    /**
+                     * Retrieves current values from the Authentication UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveAuthParameters(config::Configuration& cfg) const;
+
+                    /**
+                     * Retrieves current values from the SSL UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveSslParameters(config::Configuration& cfg) const;
+
+                    /**
+                     * Retrieves current values from the additional UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveAdditionalParameters(config::Configuration& cfg) const;
+
+                    /**
+                     * Create connection settings group box.
+                     *
+                     * @param posX X position.
+                     * @param posY Y position.
+                     * @param sizeX Width.
+                     * @return Size by Y.
+                     */
+                    int CreateConnectionSettingsGroup(int posX, int posY, int sizeX);
+
+                    /**
+                     * Create aythentication settings group box.
+                     *
+                     * @param posX X position.
+                     * @param posY Y position.
+                     * @param sizeX Width.
+                     * @return Size by Y.
+                     */
+                    int CreateAuthSettingsGroup(int posX, int posY, int sizeX);
+
+                    /**
+                     * Create SSL settings group box.
+                     *
+                     * @param posX X position.
+                     * @param posY Y position.
+                     * @param sizeX Width.
+                     * @return Size by Y.
+                     */
+                    int CreateSslSettingsGroup(int posX, int posY, int sizeX);
+
+                    /**
+                     * Create additional settings group box.
+                     *
+                     * @param posX X position.
+                     * @param posY Y position.
+                     * @param sizeX Width.
+                     * @return Size by Y.
+                     */
+                    int CreateAdditionalSettingsGroup(int posX, int posY, int sizeX);
+
                     /** Window width. */
                     int width;
 
@@ -103,6 +214,15 @@ namespace ignite
 
                     /** Connection settings group box. */
                     std::auto_ptr<Window> connectionSettingsGroupBox;
+
+                    /** SSL settings group box. */
+                    std::auto_ptr<Window> sslSettingsGroupBox;
+
+                    /** Authentication settings group box. */
+                    std::auto_ptr<Window> authSettingsGroupBox;
+
+                    /** Additional settings group box. */
+                    std::auto_ptr<Window> additionalSettingsGroupBox;
 
                     /** DSN name edit field label. */
                     std::auto_ptr<Window> nameLabel;
@@ -116,11 +236,11 @@ namespace ignite
                     /** DSN address edit field. */
                     std::auto_ptr<Window> addressEdit;
 
-                    /** DSN cache edit field label. */
-                    std::auto_ptr<Window> cacheLabel;
+                    /** DSN schema edit field label. */
+                    std::auto_ptr<Window> schemaLabel;
 
-                    /** DSN cache edit field. */
-                    std::auto_ptr<Window> cacheEdit;
+                    /** DSN schema edit field. */
+                    std::auto_ptr<Window> schemaEdit;
 
                     /** DSN fetch page size edit field label. */
                     std::auto_ptr<Window> pageSizeLabel;
@@ -134,6 +254,18 @@ namespace ignite
                     /** Enforce join order CheckBox. */
                     std::auto_ptr<Window> enforceJoinOrderCheckBox;
 
+                    /** Replicated only CheckBox. */
+                    std::auto_ptr<Window> replicatedOnlyCheckBox;
+
+                    /** Collocated CheckBox. */
+                    std::auto_ptr<Window> collocatedCheckBox;
+
+                    /** Lazy CheckBox. */
+                    std::auto_ptr<Window> lazyCheckBox;
+
+                    /** Update on server CheckBox. */
+                    std::auto_ptr<Window> skipReducerOnUpdateCheckBox;
+
                     /** Protocol version edit field. */
                     std::auto_ptr<Window> protocolVersionLabel;
 
@@ -145,6 +277,48 @@ namespace ignite
 
                     /** Cancel button. */
                     std::auto_ptr<Window> cancelButton;
+
+                    /** SSL Mode label. */
+                    std::auto_ptr<Window> sslModeLabel;
+
+                    /** SSL Mode ComboBox. */
+                    std::auto_ptr<Window> sslModeComboBox;
+
+                    /** SSL Private Key File label. */
+                    std::auto_ptr<Window> sslKeyFileLabel;
+
+                    /** SSL Private Key File edit. */
+                    std::auto_ptr<Window> sslKeyFileEdit;
+
+                    /** SSL Certificate File label. */
+                    std::auto_ptr<Window> sslCertFileLabel;
+
+                    /** SSL Certificate File edit. */
+                    std::auto_ptr<Window> sslCertFileEdit;
+
+                    /** SSL Certificate Authority File label. */
+                    std::auto_ptr<Window> sslCaFileLabel;
+
+                    /** SSL Certificate Authority File edit. */
+                    std::auto_ptr<Window> sslCaFileEdit;
+
+                    /** User label. */
+                    std::auto_ptr<Window> userLabel;
+
+                    /** User edit. */
+                    std::auto_ptr<Window> userEdit;
+
+                    /** Password label. */
+                    std::auto_ptr<Window> passwordLabel;
+
+                    /** Password edit. */
+                    std::auto_ptr<Window> passwordEdit;
+
+                    /** Nested transaction mode label. */
+                    std::auto_ptr<Window> nestedTxModeLabel;
+
+                    /** Nested transaction mode combo box. */
+                    std::auto_ptr<Window> nestedTxModeComboBox;
 
                     /** Configuration. */
                     config::Configuration& config;

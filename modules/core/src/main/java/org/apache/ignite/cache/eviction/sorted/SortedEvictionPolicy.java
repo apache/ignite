@@ -28,12 +28,13 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static java.lang.Math.abs;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE;
@@ -58,7 +59,7 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * <p>
  * User defined comparator should implement {@link Serializable} interface.
  */
-public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements SortedEvictionPolicyMBean {
+public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implements IgniteMBeanAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -120,6 +121,27 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     public SortedEvictionPolicy(@Nullable Comparator<EvictableEntry<K, V>> comp) {
         this.comp = comp == null ? new DefaultHolderComparator<K, V>() : new HolderComparator<>(comp);
         this.set = new GridConcurrentSkipListSetEx<>(this.comp);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SortedEvictionPolicy<K, V> setMaxMemorySize(long maxMemSize) {
+        super.setMaxMemorySize(maxMemSize);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SortedEvictionPolicy<K, V> setMaxSize(int max) {
+        super.setMaxSize(max);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SortedEvictionPolicy<K, V> setBatchSize(int batchSize) {
+        super.setBatchSize(batchSize);
+
+        return this;
     }
 
     /**
@@ -210,6 +232,11 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     }
 
     /** {@inheritDoc} */
+    @Override public Object getMBean() {
+        return new SortedEvictionPolicyMBeanImpl();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
@@ -217,7 +244,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
@@ -229,7 +255,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
      *
      * @param meta Holder.
      */
-    @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
         Holder<K, V> holder = (Holder<K, V>)meta;
 
@@ -270,7 +295,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public boolean equals(Object obj) {
             if (this == obj)
                 return true;
@@ -326,7 +350,6 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public int compare(Holder<K, V> h1, Holder<K, V> h2) {
             if (h1 == h2)
                 return 0;
@@ -354,7 +377,7 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
         private static final long serialVersionUID = 0L;
 
         /** Size. */
-        private final LongAdder8 size = new LongAdder8();
+        private final LongAdder size = new LongAdder();
 
         /**
          * @param comp Comparator.
@@ -399,6 +422,51 @@ public class SortedEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imp
                 size.decrement();
 
             return e;
+        }
+    }
+
+    /**
+     * MBean implementation for SortedEvictionPolicy.
+     */
+    private class SortedEvictionPolicyMBeanImpl implements SortedEvictionPolicyMBean {
+        /** {@inheritDoc} */
+        @Override public long getCurrentMemorySize() {
+            return SortedEvictionPolicy.this.getCurrentMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentSize() {
+            return SortedEvictionPolicy.this.getCurrentSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxSize() {
+            return SortedEvictionPolicy.this.getMaxSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxSize(int max) {
+            SortedEvictionPolicy.this.setMaxSize(max);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getBatchSize() {
+            return SortedEvictionPolicy.this.getBatchSize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setBatchSize(int batchSize) {
+            SortedEvictionPolicy.this.setBatchSize(batchSize);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMemorySize() {
+            return SortedEvictionPolicy.this.getMaxMemorySize();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaxMemorySize(long maxMemSize) {
+            SortedEvictionPolicy.this.setMaxMemorySize(maxMemSize);
         }
     }
 }

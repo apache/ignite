@@ -25,11 +25,9 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -42,22 +40,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -80,6 +69,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoWrite() throws Exception {
         txNoWrite(true);
     }
@@ -87,6 +77,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxNoWriteRollback() throws Exception {
         txNoWrite(false);
     }
@@ -98,18 +89,18 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
     private void txNoWrite(boolean commit) throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        Affinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Integer, Object> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Object> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
-        try (IgniteDataStreamer<Integer, Object> streamer = ignite0.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Object> streamer = ignite0.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < 1000; i++)
                 streamer.addData(i + 10000, new byte[1024]);
         }
 
         Ignite ignite1 = startGrid(1);
 
-        Integer key = primaryKey(ignite1.cache(null));
+        Integer key = primaryKey(ignite1.cache(DEFAULT_CACHE_NAME));
 
         // Want test scenario when ignite1 is new primary node, but ignite0 is still partition owner.
         assertTrue(aff.isPrimary(ignite1.cluster().localNode(), key));
@@ -121,7 +112,7 @@ public class IgniteCacheTxPreloadNoWriteTest extends GridCommonAbstractTest {
                 tx.commit();
         }
 
-        GridCacheAdapter cacheAdapter = ((IgniteKernal)ignite(0)).context().cache().internalCache();
+        GridCacheAdapter cacheAdapter = ((IgniteKernal)ignite(0)).context().cache().internalCache(DEFAULT_CACHE_NAME);
 
         // Check all transactions are finished.
         assertEquals(0, cacheAdapter.context().tm().idMapSize());

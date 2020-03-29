@@ -39,7 +39,7 @@ public abstract class GridWorker implements Runnable {
     private final String name;
 
     /** */
-    private final String gridName;
+    private final String igniteInstanceName;
 
     /** */
     private final GridWorkerListener lsnr;
@@ -48,10 +48,13 @@ public abstract class GridWorker implements Runnable {
     private volatile boolean finished;
 
     /** Whether or not this runnable is cancelled. */
-    private volatile boolean isCancelled;
+    protected volatile boolean isCancelled;
 
     /** Actual thread runner. */
     private volatile Thread runner;
+
+    /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
+    private volatile long heartbeatTs;
 
     /** */
     private final Object mux = new Object();
@@ -59,38 +62,45 @@ public abstract class GridWorker implements Runnable {
     /**
      * Creates new grid worker with given parameters.
      *
-     * @param gridName Name of grid this runnable is used in.
+     * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
      * @param name Worker name. Note that in general thread name and worker (runnable) name are two
      *      different things. The same worker can be executed by multiple threads and therefore
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
      */
-    protected GridWorker(String gridName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
+    protected GridWorker(
+        String igniteInstanceName,
+        String name,
+        IgniteLogger log,
+        @Nullable GridWorkerListener lsnr
+    ) {
         assert name != null;
         assert log != null;
 
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.name = name;
-        this.lsnr = lsnr;
         this.log = log;
+        this.lsnr = lsnr;
     }
 
     /**
      * Creates new grid worker with given parameters.
      *
-     * @param gridName Name of grid this runnable is used in.
+     * @param igniteInstanceName Name of the Ignite instance this runnable is used in.
      * @param name Worker name. Note that in general thread name and worker (runnable) name are two
      *      different things. The same worker can be executed by multiple threads and therefore
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
      */
-    protected GridWorker(@Nullable String gridName, String name, IgniteLogger log) {
-        this(gridName, name, log, null);
+    protected GridWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+        this(igniteInstanceName, name, log, null);
     }
 
     /** {@inheritDoc} */
     @Override public final void run() {
+        updateHeartbeat();
+
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
@@ -182,12 +192,12 @@ public abstract class GridWorker implements Runnable {
     }
 
     /**
-     * Gets name of the grid this runnable belongs to.
+     * Gets name of the Ignite instance this runnable belongs to.
      *
-     * @return Name of the grid this runnable belongs to.
+     * @return Name of the Ignite instance this runnable belongs to.
      */
-    public String gridName() {
-        return gridName;
+    public String igniteInstanceName() {
+        return igniteInstanceName;
     }
 
     /**
@@ -253,6 +263,38 @@ public abstract class GridWorker implements Runnable {
      */
     public boolean isDone() {
         return finished;
+    }
+
+    /** */
+    public long heartbeatTs() {
+        return heartbeatTs;
+    }
+
+    /** */
+    public void updateHeartbeat() {
+        heartbeatTs = U.currentTimeMillis();
+    }
+
+    /**
+     * Protects the worker from timeout penalties if subsequent instructions in the calling thread does not update
+     * heartbeat timestamp timely, e.g. due to blocking operations, up to the nearest {@link #blockingSectionEnd()}
+     * call. Nested calls are not supported.
+     */
+    public void blockingSectionBegin() {
+        heartbeatTs = Long.MAX_VALUE;
+    }
+
+    /**
+     * Closes the protection section previously opened by {@link #blockingSectionBegin()}.
+     */
+    public void blockingSectionEnd() {
+        updateHeartbeat();
+    }
+
+    /** Can be called from {@link #runner()} thread to perform idleness handling. */
+    protected void onIdle() {
+        if (lsnr != null)
+            lsnr.onIdle(this);
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.igfs;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,19 +28,20 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Format IGFS instance.
  */
 @GridInternal
-public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
+@GridVisorManagementTask
+public class VisorIgfsFormatTask extends VisorOneNodeTask<VisorIgfsFormatTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorIgfsFormatJob job(String arg) {
+    @Override protected VisorIgfsFormatJob job(VisorIgfsFormatTaskArg arg) {
         return new VisorIgfsFormatJob(arg, debug);
     }
 
     /**
      * Job that format IGFS.
      */
-    private static class VisorIgfsFormatJob extends VisorJob<String, Void> {
+    private static class VisorIgfsFormatJob extends VisorJob<VisorIgfsFormatTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -47,17 +49,17 @@ public class VisorIgfsFormatTask extends VisorOneNodeTask<String, Void> {
          * @param arg IGFS name to format.
          * @param debug Debug flag.
          */
-        private VisorIgfsFormatJob(String arg, boolean debug) {
+        private VisorIgfsFormatJob(VisorIgfsFormatTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String igfsName) {
+        @Override protected Void run(VisorIgfsFormatTaskArg arg) {
             try {
-                ignite.fileSystem(igfsName).format();
+                ignite.fileSystem(arg.getIgfsName()).clear();
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteException("Failed to format IGFS: " + igfsName, iae);
+                throw new IgniteException("Failed to format IGFS: " + arg.getIgfsName(), iae);
             }
 
             return null;

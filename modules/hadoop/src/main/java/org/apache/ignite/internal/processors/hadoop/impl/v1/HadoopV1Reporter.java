@@ -30,13 +30,17 @@ public class HadoopV1Reporter implements Reporter {
     /** Context. */
     private final HadoopTaskContext ctx;
 
+    /** Input split */
+    private final InputSplit split;
+
     /**
      * Creates new instance.
      *
      * @param ctx Context.
      */
-    public HadoopV1Reporter(HadoopTaskContext ctx) {
+    public HadoopV1Reporter(HadoopTaskContext ctx, InputSplit split) {
         this.ctx = ctx;
+        this.split = split;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +70,7 @@ public class HadoopV1Reporter implements Reporter {
 
     /** {@inheritDoc} */
     @Override public InputSplit getInputSplit() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("reporter has no input"); // TODO
+        return split;
     }
 
     /** {@inheritDoc} */

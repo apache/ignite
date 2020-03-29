@@ -22,48 +22,40 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CACHE_REBALANCE;
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -96,9 +88,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /** Number of partitions. */
     private int partitions = DFLT_PARTITIONS;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -107,15 +96,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
         cfg.setDeploymentMode(CONTINUOUS);
 
         return cfg;
@@ -124,10 +108,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration for grid with given name.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -136,17 +120,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceMode(preloadMode);
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
+        cacheCfg.setOnheapCacheEnabled(onheapCacheEnabled());
 
         return cacheCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-//        resetLog4j(Level.DEBUG, true,
-//            // Categories.
-//            GridDhtPreloader.class.getPackage().getName(),
-//            GridDhtPartitionTopologyImpl.class.getName(),
-//            GridDhtLocalPartition.class.getName());
     }
 
     /** {@inheritDoc} */
@@ -163,8 +139,16 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code True} if on-heap cache is enabled.
+     */
+    protected boolean onheapCacheEnabled() {
+        return false;
+    }
+
+    /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferSyncSameCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -174,6 +158,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferAsyncSameCoordinator() throws Exception {
         checkActivePartitionTransfer(1000, 4, true, false);
     }
@@ -181,6 +166,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferSyncChangingCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -190,6 +176,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferAsyncChangingCoordinator() throws Exception {
         checkActivePartitionTransfer(1000, 4, false, false);
     }
@@ -197,6 +184,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferSyncRandomCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -206,6 +194,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivePartitionTransferAsyncRandomCoordinator() throws Exception {
         checkActivePartitionTransfer(1000, 4, false, true);
     }
@@ -219,16 +208,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkActivePartitionTransfer(int keyCnt, int nodeCnt, boolean sameCoord, boolean shuffle)
         throws Exception {
-//        resetLog4j(Level.DEBUG, true,
-//            // Categories.
-//            GridDhtPreloader.class.getPackage().getName(),
-//            GridDhtPartitionTopologyImpl.class.getName(),
-//            GridDhtLocalPartition.class.getName());
-
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             putKeys(cache1, keyCnt);
             checkKeys(cache1, keyCnt, F.asList(ignite1));
@@ -239,7 +222,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 checkKeys(c, keyCnt, ignites);
             }
@@ -262,8 +245,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
                 U.grids2names(ignites) + ']');
 
-            Collection<IgniteFuture<?>> futs = new LinkedList<>();
-
             Ignite last = F.last(ignites);
 
             for (Iterator<Ignite> it = ignites.iterator(); it.hasNext(); ) {
@@ -277,20 +258,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 checkActiveState(ignites);
 
-                final UUID nodeId = g.cluster().localNode().id();
-
                 it.remove();
-
-                futs.add(waitForLocalEvent(last.events(), new P1<Event>() {
-                    @Override public boolean apply(Event e) {
-                        CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
-
-                        ClusterNode node = evt.discoveryNode();
-
-                        return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
-                            (evt.discoveryEventType() == EVT_NODE_LEFT || evt.discoveryEventType() == EVT_NODE_FAILED);
-                    }
-                }, EVT_CACHE_REBALANCE_STOPPED));
 
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
@@ -300,21 +268,15 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 // Check all left nodes.
                 checkActiveState(ignites);
+
+                awaitPartitionMapExchange(); // Need wait, otherwise test logic is broken if EVT_NODE_FAILED exchanges are merged.
             }
-
-            info("Waiting for preload futures: " + F.view(futs, new IgnitePredicate<IgniteFuture<?>>() {
-                @Override public boolean apply(IgniteFuture<?> fut) {
-                    return !fut.isDone();
-                }
-            }));
-
-            X.waitAll(futs);
 
             info("Finished waiting for preload futures.");
 
             assert last != null;
 
-            IgniteCache<Integer, String> lastCache = last.cache(null);
+            IgniteCache<Integer, String> lastCache = last.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(lastCache);
 
@@ -344,7 +306,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             error("Test failed.", e);
 
             throw e;
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -355,13 +318,13 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     private void checkActiveState(Iterable<Ignite> grids) {
         // Check that nodes don't have non-active information about other nodes.
         for (Ignite g : grids) {
-            IgniteCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
 
             GridDhtPartitionFullMap allParts = dht.topology().partitionMap(false);
 
-            for (GridDhtPartitionMap2 parts : allParts.values()) {
+            for (GridDhtPartitionMap parts : allParts.values()) {
                 if (!parts.nodeId().equals(g.cluster().localNode().id())) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
                         int p = e.getKey();
@@ -369,7 +332,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                         GridDhtPartitionState state = e.getValue();
 
                         assert state == OWNING || state == MOVING || state == RENTING :
-                            "Invalid state [grid=" + g.name() + ", part=" + p + ", state=" + state +
+                            "Invalid state [igniteInstanceName=" + g.name() + ", part=" + p + ", state=" + state +
                                 ", parts=" + parts + ']';
 
                         assert state.active();
@@ -382,6 +345,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiplePartitionBatchesSyncPreload() throws Exception {
         preloadMode = SYNC;
         preloadBatchSize = 100;
@@ -393,6 +357,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiplePartitionBatchesAsyncPreload() throws Exception {
         preloadBatchSize = 100;
         partitions = 2;
@@ -403,6 +368,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesSyncPreloadSameCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -412,6 +378,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesAsyncPreloadSameCoordinator() throws Exception {
         checkNodes(1000, 4, true, false);
     }
@@ -419,6 +386,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesSyncPreloadChangingCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -428,14 +396,15 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesAsyncPreloadChangingCoordinator() throws Exception {
         checkNodes(1000, 4, false, false);
     }
 
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesSyncPreloadRandomCoordinator() throws Exception {
         preloadMode = SYNC;
 
@@ -445,6 +414,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleNodesAsyncPreloadRandomCoordinator() throws Exception {
         checkNodes(1000, 4, false, true);
     }
@@ -462,7 +432,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             if (DEBUG)
                 g.events().localListen(new IgnitePredicate<Event>() {
                     @Override public boolean apply(Event evt) {
-                        info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
+                        info("\n>>> Preload event [igniteInstanceName=" + g.name() + ", evt=" + evt + ']');
 
                         return true;
                     }
@@ -489,16 +459,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkNodes(int keyCnt, int nodeCnt, boolean sameCoord, boolean shuffle)
         throws Exception {
-//        resetLog4j(Level.DEBUG, true,
-//            // Categories.
-//            GridDhtPreloader.class.getPackage().getName(),
-//            GridDhtPartitionTopologyImpl.class.getName(),
-//            GridDhtLocalPartition.class.getName());
-
         try {
             Ignite ignite1 = startGrid(0);
 
-            IgniteCache<Integer, String> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, String> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             putKeys(cache1, keyCnt);
             checkKeys(cache1, keyCnt, F.asList(ignite1));
@@ -509,7 +473,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                IgniteCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
                 checkKeys(c, keyCnt, ignites);
             }
@@ -545,35 +509,19 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 it.remove();
 
-                Collection<IgniteFuture<?>> futs = new LinkedList<>();
-
-                for (Ignite gg : ignites)
-                    futs.add(waitForLocalEvent(gg.events(), new P1<Event>() {
-                            @Override public boolean apply(Event e) {
-                                CacheRebalancingEvent evt = (CacheRebalancingEvent)e;
-
-                                ClusterNode node = evt.discoveryNode();
-
-                                return evt.type() == EVT_CACHE_REBALANCE_STOPPED && node.id().equals(nodeId) &&
-                                    (evt.discoveryEventType() == EVT_NODE_LEFT ||
-                                    evt.discoveryEventType() == EVT_NODE_FAILED);
-                            }
-                        }, EVT_CACHE_REBALANCE_STOPPED));
-
-
                 info("Before grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
                 stopGrid(g.name());
 
                 info(">>> Waiting for preload futures [leftNode=" + g.name() + ", remaining=" + U.grids2names(ignites) + ']');
 
-                X.waitAll(futs);
+                awaitPartitionMapExchange();
 
                 info("After grid stop [name=" + g.name() + ", fullTop=" + top2string(ignites));
 
                 // Check all left nodes.
                 for (Ignite gg : ignites) {
-                    IgniteCache<Integer, String> c = gg.cache(null);
+                    IgniteCache<Integer, String> c = gg.cache(DEFAULT_CACHE_NAME);
 
                     checkKeys(c, keyCnt, ignites);
                 }
@@ -581,7 +529,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             assert last != null;
 
-            IgniteCache<Integer, String> lastCache = last.cache(null);
+            IgniteCache<Integer, String> lastCache = last.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(lastCache);
 
@@ -607,7 +555,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             error("Test failed.", e);
 
             throw e;
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }
@@ -643,7 +592,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             assert !affNodes.isEmpty();
 
             if (affNodes.contains(loc)) {
-                String val = sync ? cache.localPeek(i, CachePeekMode.ONHEAP) : cache.get(i);
+                String val = sync ? cache.localPeek(i) : cache.get(i);
 
                 ClusterNode primaryNode = F.first(affNodes);
 
@@ -651,10 +600,11 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 boolean primary = primaryNode.equals(loc);
 
-                assert Integer.toString(i).equals(val) : "Key check failed [grid=" + ignite.name() +
-                    ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
-                    ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
-                    ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']';
+                assertEquals("Key check failed [igniteInstanceName=" + ignite.name() +
+                        ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
+                        ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
+                        ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']',
+                    Integer.toString(i), val);
             }
         }
     }
@@ -663,12 +613,11 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      * @param grids Grids
      * @return String representation of all partitions and their state.
      */
-    @SuppressWarnings( {"ConstantConditions"})
     private String top2string(Iterable<Ignite> grids) {
         Map<String, String> map = new HashMap<>();
 
         for (Ignite g : grids) {
-            IgniteCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.cache(DEFAULT_CACHE_NAME);
 
             GridDhtCacheAdapter<Integer, String> dht = dht(c);
 

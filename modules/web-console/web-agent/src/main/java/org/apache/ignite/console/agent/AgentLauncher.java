@@ -17,12 +17,6 @@
 
 package org.apache.ignite.console.agent;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
-import io.socket.client.Ack;
-import io.socket.client.IO;
-import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
 import java.net.Authenticator;
@@ -32,38 +26,53 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import javax.net.ssl.SSLContext;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.TrustManager;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
+import okhttp3.OkHttpClient;
+import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
+import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.log4j.Logger;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import static io.socket.client.Socket.EVENT_CONNECT;
-import static io.socket.client.Socket.EVENT_CONNECTING;
 import static io.socket.client.Socket.EVENT_CONNECT_ERROR;
 import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
-import static io.socket.client.Socket.EVENT_RECONNECTING;
+import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
+import static org.apache.ignite.console.agent.AgentUtils.sslConnectionSpec;
+import static org.apache.ignite.console.agent.AgentUtils.sslSocketFactory;
+import static org.apache.ignite.console.agent.AgentUtils.toJSON;
+import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 
 /**
- * Control Center Agent launcher.
+ * Ignite Web Agent launcher.
  */
 public class AgentLauncher {
     /** */
-    private static final Logger log = Logger.getLogger(AgentLauncher.class.getName());
-
-    /** */
-    private static final String EVENT_NODE_REST = "node:rest";
+    private static final Logger log = LoggerFactory.getLogger(AgentLauncher.class);
 
     /** */
     private static final String EVENT_SCHEMA_IMPORT_DRIVERS = "schemaImport:drivers";
@@ -75,112 +84,102 @@ public class AgentLauncher {
     private static final String EVENT_SCHEMA_IMPORT_METADATA = "schemaImport:metadata";
 
     /** */
-    private static final String EVENT_AGENT_WARNING = "agent:warning";
+    private static final String EVENT_NODE_VISOR_TASK = "node:visorTask";
 
     /** */
-    private static final String EVENT_AGENT_CLOSE = "agent:close";
+    private static final String EVENT_NODE_REST = "node:rest";
 
-    /**
-     * Create a trust manager that trusts all certificates It is not using a particular keyStore
-     */
-    private static TrustManager[] getTrustManagers() {
-        return new TrustManager[] {
-            new X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
+    /** */
+    private static final String EVENT_RESET_TOKEN = "agent:reset:token";
 
-                public void checkClientTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
-                }
+    /** */
+    private static final String EVENT_LOG_WARNING = "log:warn";
 
-                public void checkServerTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
-                }
-            }};
+    static {
+        // Optionally remove existing handlers attached to j.u.l root logger.
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+
+        // Add SLF4JBridgeHandler to j.u.l's root logger.
+        SLF4JBridgeHandler.install();
     }
 
     /**
      * On error listener.
      */
-    private static final Emitter.Listener onError = new Emitter.Listener() {
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        @Override public void call(Object... args) {
-            Throwable e = (Throwable)args[0];
+    private static final Emitter.Listener onError = args -> {
+        Throwable e = (Throwable)args[0];
 
-            ConnectException ce = X.cause(e, ConnectException.class);
+        ConnectException ce = X.cause(e, ConnectException.class);
 
-            if (ce != null)
-                log.error("Failed to receive response from server (connection refused).");
-            else {
-                Exception ignore = X.cause(e, SSLHandshakeException.class);
+        if (ce != null) {
+            log.error("Failed to establish connection to server or missing proxy settings (connection refused).");
+            log.error("Documentation for proxy configuration can be found here: https://apacheignite-tools.readme.io/docs/getting-started#section-proxy-configuration");
+        }
+        else {
+            if (X.hasCause(e, SSLHandshakeException.class)) {
+                log.error("Failed to establish SSL connection to server, due to errors with SSL handshake:", e);
+                log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
 
-                if (ignore != null) {
-                    log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
-                    log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
-
-                    System.exit(1);
-                }
-
-                ignore = X.cause(e, UnknownHostException.class);
-
-                if (ignore != null) {
-                    log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.");
-                    log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
-
-                    System.exit(1);
-                }
-
-                ignore = X.cause(e, IOException.class);
-
-                if (ignore != null && "404".equals(ignore.getMessage())) {
-                    log.error("Failed to receive response from server (connection refused).");
-
-                    return;
-                }
-
-                if (ignore != null && "407".equals(ignore.getMessage())) {
-                    log.error("Failed to establish connection to server, due to proxy requires authentication.");
-
-                    String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
-
-                    if (userName == null || userName.trim().isEmpty())
-                        userName = readLine("Enter proxy user name: ");
-                    else
-                        System.out.println("Read username from system properties: " + userName);
-
-                    char[] pwd = readPassword("Enter proxy password: ");
-
-                    final PasswordAuthentication pwdAuth = new PasswordAuthentication(userName, pwd);
-
-                    Authenticator.setDefault(new Authenticator() {
-                        @Override protected PasswordAuthentication getPasswordAuthentication() {
-                            return pwdAuth;
-                        }
-                    });
-
-                    return;
-                }
-
-                log.error("Connection error.", e);
+                System.exit(1);
             }
+
+            if (X.hasCause(e, UnknownHostException.class)) {
+                log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.", e);
+                log.error("Documentation for proxy configuration can be found here: https://apacheignite-tools.readme.io/docs/getting-started#section-proxy-configuration");
+
+                System.exit(1);
+            }
+
+            if (X.hasCause(e, ProxyAuthException.class)) {
+                log.error("Failed to establish connection to server, due to proxy requires authentication.");
+
+                String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
+
+                if (userName == null || userName.trim().isEmpty())
+                    userName = readLine("Enter proxy user name: ");
+                else
+                    System.out.println("Read username from system properties: " + userName);
+
+                char[] pwd = readPassword("Enter proxy password: ");
+
+                final PasswordAuthentication pwdAuth = new PasswordAuthentication(userName, pwd);
+
+                Authenticator.setDefault(new Authenticator() {
+                    @Override protected PasswordAuthentication getPasswordAuthentication() {
+                        return pwdAuth;
+                    }
+                });
+
+                return;
+            }
+
+            IOException ignore = X.cause(e, IOException.class);
+
+            if (ignore != null && "404".equals(ignore.getMessage())) {
+                log.error("Failed to receive response from server (connection refused).");
+
+                return;
+            }
+
+            log.error("Connection error.", e);
         }
     };
 
     /**
      * On disconnect listener.
      */
-    private static final Emitter.Listener onDisconnect = new Emitter.Listener() {
-        @Override public void call(Object... args) {
-            log.error(String.format("Connection closed: %s.", args));
-        }
-    };
+    private static final Emitter.Listener onDisconnect = args -> log.error("Connection closed: {}", args);
+
+    /**
+     * On token reset listener.
+     */
+    private static final Emitter.Listener onLogWarning = args -> log.warn(String.valueOf(args[0]));
 
     /**
      * @param fmt Format string.
      * @param args Arguments.
      */
-    private static String readLine(String fmt, Object ... args) {
+    private static String readLine(String fmt, Object... args) {
         if (System.console() != null)
             return System.console().readLine(fmt, args);
 
@@ -193,7 +192,7 @@ public class AgentLauncher {
      * @param fmt Format string.
      * @param args Arguments.
      */
-    private static char[] readPassword(String fmt, Object ... args) {
+    private static char[] readPassword(String fmt, Object... args) {
         if (System.console() != null)
             return System.console().readPassword(fmt, args);
 
@@ -205,7 +204,6 @@ public class AgentLauncher {
     /**
      * @param args Args.
      */
-    @SuppressWarnings("BusyWait")
     public static void main(String[] args) throws Exception {
         log.info("Starting Apache Ignite Web Console Agent...");
 
@@ -236,13 +234,13 @@ public class AgentLauncher {
             File f = AgentUtils.resolvePath(prop);
 
             if (f == null)
-                log.warn("Failed to find agent property file: " + prop);
+                log.warn("Failed to find agent property file: {}", prop);
             else
                 propCfg.load(f.toURI().toURL());
         }
-        catch (IOException ignore) {
+        catch (IOException e) {
             if (!AgentConfiguration.DFLT_CFG_PATH.equals(prop))
-                log.warn("Failed to load agent property file: " + prop, ignore);
+                log.warn("Failed to load agent property file: " + prop, e);
         }
 
         cfg.merge(propCfg);
@@ -258,34 +256,32 @@ public class AgentLauncher {
         System.out.println(cfg);
         System.out.println();
 
+        URI uri;
+
+        try {
+            uri = new URI(cfg.serverUri());
+        }
+        catch (URISyntaxException e) {
+            log.error("Failed to parse Ignite Web Console uri", e);
+
+            return;
+        }
+
         if (cfg.tokens() == null) {
-            String webHost;
-
-            try {
-                webHost = new URI(cfg.serverUri()).getHost();
-            }
-            catch (URISyntaxException e) {
-                log.error("Failed to parse Ignite Web Console uri", e);
-
-                return;
-            }
-
             System.out.println("Security token is required to establish connection to the web console.");
-            System.out.println(String.format("It is available on the Profile page: https://%s/profile", webHost));
+            System.out.println(String.format("It is available on the Profile page: https://%s/profile", uri.getHost()));
 
             String tokens = String.valueOf(readPassword("Enter security tokens separated by comma: "));
 
-            cfg.tokens(Arrays.asList(tokens.trim().split(",")));
+            cfg.tokens(new ArrayList<>(Arrays.asList(tokens.trim().split(","))));
         }
-
-        URI uri = URI.create(cfg.serverUri());
 
         // Create proxy authenticator using passed properties.
         switch (uri.getScheme()) {
             case "http":
             case "https":
                 final String username = System.getProperty(uri.getScheme() + ".proxyUsername");
-                final char[] pwd = System.getProperty(uri.getScheme() +  ".proxyPassword", "").toCharArray();
+                final char[] pwd = System.getProperty(uri.getScheme() + ".proxyPassword", "").toCharArray();
 
                 Authenticator.setDefault(new Authenticator() {
                     @Override protected PasswordAuthentication getPasswordAuthentication() {
@@ -299,106 +295,217 @@ public class AgentLauncher {
                 // No-op.
         }
 
-        IO.Options opts = new IO.Options();
+        List<String> nodeURIs = cfg.nodeURIs();
 
+        for (int i = nodeURIs.size() - 1; i >= 0; i--) {
+            String nodeURI = nodeURIs.get(i);
+
+            try {
+                new URI(nodeURI);
+            }
+            catch (URISyntaxException ignored) {
+                log.warn("Failed to parse Ignite node URI: {}.", nodeURI);
+
+                nodeURIs.remove(i);
+            }
+        }
+
+        if (nodeURIs.isEmpty()) {
+            log.error("Failed to find valid URIs for connect to Ignite node via REST. Please check agent settings");
+
+            return;
+        }
+
+        boolean serverTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasServerTrustStore = cfg.serverTrustStore() != null;
+
+        if (serverTrustAll && hasServerTrustStore) {
+            log.warn("Options contains both '--server-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to Web server.");
+
+            serverTrustAll = false;
+        }
+
+        boolean nodeTrustAll = Boolean.getBoolean("trust.all");
+        boolean hasNodeTrustStore = cfg.nodeTrustStore() != null;
+
+        if (nodeTrustAll && hasNodeTrustStore) {
+            log.warn("Options contains both '--node-trust-store' and '-Dtrust.all=true'. " +
+                "Option '-Dtrust.all=true' will be ignored on connect to cluster.");
+
+            nodeTrustAll = false;
+        }
+
+        cfg.nodeURIs(nodeURIs);
+
+        IO.Options opts = new IO.Options();
         opts.path = "/agents";
 
-        // Workaround for use self-signed certificate
-        if (Boolean.getBoolean("trust.all")) {
-            SSLContext ctx = SSLContext.getInstance("TLS");
+        List<String> cipherSuites = cfg.cipherSuites();
 
-            // Create an SSLContext that uses our TrustManager
-            ctx.init(null, getTrustManagers(), null);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+            .proxyAuthenticator(new ProxyAuthenticator());
 
-            opts.sslContext = ctx;
+        if (
+            serverTrustAll ||
+            hasServerTrustStore ||
+            cfg.serverKeyStore() != null
+        ) {
+            X509TrustManager serverTrustMgr = trustManager(
+                serverTrustAll,
+                cfg.serverTrustStore(),
+                cfg.serverTrustStorePassword()
+            );
+
+            if (serverTrustAll)
+                builder.hostnameVerifier((hostname, session) -> true);
+
+            SSLSocketFactory sslSocketFactory = sslSocketFactory(
+                cfg.serverKeyStore(),
+                cfg.serverKeyStorePassword(),
+                serverTrustMgr,
+                cipherSuites
+            );
+
+            if (sslSocketFactory != null) {
+                if (serverTrustMgr != null)
+                    builder.sslSocketFactory(sslSocketFactory, serverTrustMgr);
+                else
+                    builder.sslSocketFactory(sslSocketFactory);
+
+                if (!F.isEmpty(cipherSuites))
+                    builder.connectionSpecs(sslConnectionSpec(cipherSuites));
+            }
+
+            opts.secure = true;
         }
+
+        OkHttpClient okHttpClient = builder.build();
+        
+        opts.callFactory = okHttpClient;
+        opts.webSocketFactory = okHttpClient;
 
         final Socket client = IO.socket(uri, opts);
 
-        final RestListener restHnd = new RestListener(cfg);
+        try (
+            RestExecutor restExecutor = new RestExecutor(
+                nodeTrustAll,
+                cfg.nodeKeyStore(), cfg.nodeKeyStorePassword(),
+                cfg.nodeTrustStore(), cfg.nodeTrustStorePassword(),
+                cipherSuites);
 
-        final DatabaseListener dbHnd = new DatabaseListener(cfg);
+            ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)
+        ) {
+            Emitter.Listener onConnect = connectRes -> {
+                log.info("Connection established.");
 
-        try {
-            Emitter.Listener onConnecting = new Emitter.Listener() {
-                @Override public void call(Object... args) {
-                    log.info("Connecting to: " + cfg.serverUri());
-                }
-            };
+                JSONObject authMsg = new JSONObject();
 
-            Emitter.Listener onConnect = new Emitter.Listener() {
-                @Override public void call(Object... args) {
-                    log.info("Connection established.");
+                try {
+                    authMsg.put("tokens", toJSON(cfg.tokens()));
+                    authMsg.put("disableDemo", cfg.disableDemo());
 
-                    JSONObject authMsg = new JSONObject();
+                    String clsName = AgentLauncher.class.getSimpleName() + ".class";
 
-                    try {
-                        authMsg.put("tokens", cfg.tokens());
+                    String clsPath = AgentLauncher.class.getResource(clsName).toString();
 
-                        String clsName = AgentLauncher.class.getSimpleName() + ".class";
+                    if (clsPath.startsWith("jar")) {
+                        String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
+                            "/META-INF/MANIFEST.MF";
 
-                        String clsPath = AgentLauncher.class.getResource(clsName).toString();
+                        Manifest manifest = new Manifest(new URL(manifestPath).openStream());
 
-                        if (clsPath.startsWith("jar")) {
-                            String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
-                                "/META-INF/MANIFEST.MF";
+                        Attributes attr = manifest.getMainAttributes();
 
-                            Manifest manifest = new Manifest(new URL(manifestPath).openStream());
+                        authMsg.put("ver", attr.getValue("Implementation-Version"));
+                        authMsg.put("bt", attr.getValue("Build-Time"));
+                    }
 
-                            Attributes attr = manifest.getMainAttributes();
+                    client.emit("agent:auth", authMsg, (Ack) authRes -> {
+                        if (authRes != null) {
+                            if (authRes[0] instanceof String) {
+                                log.error((String)authRes[0]);
 
-                            authMsg.put("ver", attr.getValue("Implementation-Version"));
-                            authMsg.put("bt", attr.getValue("Build-Time"));
-                        }
+                                System.exit(1);
+                            }
 
-                        client.emit("agent:auth", authMsg, new Ack() {
-                            @Override public void call(Object... args) {
-                                // Authentication failed if response contains args.
-                                if (args != null && args.length > 0) {
-                                    onDisconnect.call(args);
+                            if (authRes[0] == null && authRes[1] instanceof JSONArray) {
+                                try {
+                                    List<String> activeTokens = fromJSON(authRes[1], List.class);
+
+                                    if (!F.isEmpty(activeTokens)) {
+                                        Collection<String> missedTokens = cfg.tokens();
+
+                                        cfg.tokens(activeTokens);
+
+                                        missedTokens.removeAll(activeTokens);
+
+                                        if (!F.isEmpty(missedTokens)) {
+                                            String tokens = F.concat(missedTokens, ", ");
+
+                                            log.warn("Failed to authenticate with token(s): {}. " +
+                                                "Please reload agent archive or check settings", tokens);
+                                        }
+
+                                        log.info("Authentication success.");
+
+                                        clusterLsnr.watch();
+
+                                        return;
+                                    }
+                                }
+                                catch (Exception e) {
+                                    log.error("Failed to authenticate agent. Please check agent\'s tokens", e);
 
                                     System.exit(1);
                                 }
-
-                                log.info("Authentication success.");
                             }
-                        });
-                    }
-                    catch (JSONException | IOException e) {
-                        log.error("Failed to construct authentication message", e);
+                        }
 
-                        client.close();
-                    }
+                        log.error("Failed to authenticate agent. Please check agent\'s tokens");
+
+                        System.exit(1);
+                    });
+                }
+                catch (JSONException | IOException e) {
+                    log.error("Failed to construct authentication message", e);
+
+                    client.close();
                 }
             };
 
+            DatabaseListener dbHnd = new DatabaseListener(cfg);
+
+            RestListener restHnd = new RestListener(cfg, restExecutor);
+
             final CountDownLatch latch = new CountDownLatch(1);
 
+            log.info("Connecting to: {}", cfg.serverUri());
+
             client
-                .on(EVENT_CONNECTING, onConnecting)
                 .on(EVENT_CONNECT, onConnect)
                 .on(EVENT_CONNECT_ERROR, onError)
-                .on(EVENT_RECONNECTING, onConnecting)
-                .on(EVENT_NODE_REST, restHnd)
-                .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())
-                .on(EVENT_SCHEMA_IMPORT_SCHEMAS, dbHnd.schemasListener())
-                .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
                 .on(EVENT_ERROR, onError)
                 .on(EVENT_DISCONNECT, onDisconnect)
-                .on(EVENT_AGENT_WARNING, new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        log.warn(args[0]);
-                    }
-                })
-                .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        onDisconnect.call(args);
+                .on(EVENT_LOG_WARNING, onLogWarning)
+                .on(EVENT_RESET_TOKEN, res -> {
+                    String tok = String.valueOf(res[0]);
 
+                    log.warn("Security token has been reset: {}", tok);
+
+                    cfg.tokens().remove(tok);
+
+                    if (cfg.tokens().isEmpty()) {
                         client.off();
 
                         latch.countDown();
                     }
-                });
+                })
+                .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())
+                .on(EVENT_SCHEMA_IMPORT_SCHEMAS, dbHnd.schemasListener())
+                .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
+                .on(EVENT_NODE_VISOR_TASK, restHnd)
+                .on(EVENT_NODE_REST, restHnd);
 
             client.connect();
 
@@ -406,10 +513,6 @@ public class AgentLauncher {
         }
         finally {
             client.close();
-
-            restHnd.stop();
-
-            dbHnd.stop();
         }
     }
 }

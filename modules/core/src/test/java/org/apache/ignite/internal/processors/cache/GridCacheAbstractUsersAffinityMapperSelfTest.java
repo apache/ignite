@@ -32,10 +32,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -45,9 +43,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int KEY_CNT = 1000;
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     public static final AffinityKeyMapper AFFINITY_MAPPER = new UsersAffinityKeyMapper();
@@ -65,12 +60,11 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cacheCfg.setName(null);
         cacheCfg.setCacheMode(getCacheMode());
         cacheCfg.setAtomicityMode(getAtomicMode());
         cacheCfg.setNearConfiguration(nearConfiguration());
@@ -79,12 +73,6 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         cacheCfg.setAffinityMapper(AFFINITY_MAPPER);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
@@ -107,8 +95,9 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMapper() throws Exception {
-        IgniteCache<Object, Object> cache = startGrid(0).cache(null);
+        IgniteCache<Object, Object> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             cache.put(String.valueOf(i), String.valueOf(i));
@@ -121,7 +110,7 @@ public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridC
         startGrid(1);
 
         for (int i = 0; i < KEY_CNT; i++)
-            grid(i % 2).compute().affinityRun((String)null, new TestAffinityKey(1, "1"), new NoopClosure());
+            grid(i % 2).compute().affinityRun(DEFAULT_CACHE_NAME, new TestAffinityKey(1, "1"), new NoopClosure());
     }
 
     /**

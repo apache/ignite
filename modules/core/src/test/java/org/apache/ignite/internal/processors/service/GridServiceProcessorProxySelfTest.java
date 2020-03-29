@@ -18,12 +18,17 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Service proxy test.
@@ -37,6 +42,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonProxy() throws Exception {
         String name = "testNodeSingletonProxy";
 
@@ -64,8 +70,35 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     }
 
     /**
+     * Unwraps error message from InvocationTargetException.
+     *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
+    @Test
+    public void testException() throws Exception {
+        String name = "errorService";
+
+        Ignite ignite = grid(0);
+
+        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new ErrorServiceImpl());
+
+        final ErrorService svc = ignite.services().serviceProxy(name, ErrorService.class, false);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                svc.go();
+
+                return null;
+            }
+        }, ErrorServiceException.class, "Test exception");
+
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClusterSingletonProxy() throws Exception {
         String name = "testClusterSingletonProxy";
 
@@ -84,6 +117,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiNodeProxy() throws Exception {
         Ignite ignite = randomGrid();
 
@@ -109,6 +143,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonRemoteNotStickyProxy() throws Exception {
         String name = "testNodeSingletonRemoteNotStickyProxy";
 
@@ -147,6 +182,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonRemoteStickyProxy() throws Exception {
         String name = "testNodeSingletonRemoteStickyProxy";
 
@@ -182,6 +218,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingletonProxyInvocation() throws Exception {
         final String name = "testProxyInvocationFromSeveralNodes";
 
@@ -190,7 +227,8 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services(ignite.cluster().forLocal()).deployClusterSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 1; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+            MapService<Integer, String> svc =  grid(i).services()
+                .serviceProxy(name, MapService.class, false, 1_000L);
 
             // Make sure service is a proxy.
             assertFalse(svc instanceof Service);
@@ -204,6 +242,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalProxyInvocation() throws Exception {
         final String name = "testLocalProxyInvocation";
 
@@ -212,12 +251,27 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 0; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
+            final int idx = i;
+
+            final AtomicReference< MapService<Integer, String>> ref = new AtomicReference<>();
+
+            //wait because after deployNodeSingleton we don't have guarantees what service was deploy.
+            boolean wait = GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    MapService<Integer, String> svc = grid(idx)
+                        .services()
+                        .serviceProxy(name, MapService.class, false);
+
+                    ref.set(svc);
+
+                    return svc instanceof Service;
+                }
+            }, 2000);
 
             // Make sure service is a local instance.
-            assertTrue("Invalid service instance [srv=" + svc + ", node=" + i + ']', svc instanceof Service);
+            assertTrue("Invalid service instance [srv=" + ref.get() + ", node=" + i + ']', wait);
 
-            svc.put(i, Integer.toString(i));
+            ref.get().put(i, Integer.toString(i));
         }
 
         MapService<Integer, String> map = ignite.services().serviceProxy(name, MapService.class, false);
@@ -229,6 +283,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteNotStickProxyInvocation() throws Exception {
         final String name = "testRemoteNotStickProxyInvocation";
 
@@ -264,6 +319,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteStickyProxyInvocation() throws Exception {
         final String name = "testRemoteStickyProxyInvocation";
 
@@ -353,6 +409,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             map.clear();
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return map.size();
         }
@@ -370,6 +427,49 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         /** {@inheritDoc} */
         @Override public void execute(ServiceContext ctx) throws Exception {
             X.println("Executing cache service: " + ctx.name());
+        }
+    }
+
+    /**
+     *
+     */
+    protected interface ErrorService extends Service {
+        /**
+         *
+         */
+        void go() throws Exception;
+    }
+
+    /**
+     *
+     */
+    protected static class ErrorServiceImpl implements ErrorService {
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void go() throws Exception {
+            throw new ErrorServiceException("Test exception");
+        }
+    }
+
+    /** */
+    private static class ErrorServiceException extends Exception {
+        /** */
+        ErrorServiceException(String msg) {
+            super(msg);
         }
     }
 }

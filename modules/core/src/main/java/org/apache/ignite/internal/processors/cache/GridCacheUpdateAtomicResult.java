@@ -29,8 +29,8 @@ import org.jetbrains.annotations.Nullable;
  * Cache entry atomic update result.
  */
 public class GridCacheUpdateAtomicResult {
-    /** Success flag.*/
-    private final boolean success;
+    /** Update operation outcome. */
+    private final UpdateOutcome outcome;
 
     /** Old value. */
     @GridToStringInclude
@@ -54,11 +54,11 @@ public class GridCacheUpdateAtomicResult {
     @GridToStringInclude
     private final GridCacheVersionConflictContext<?, ?> conflictRes;
 
-    /** Whether update should be propagated to DHT node. */
-    private final boolean sndToDht;
-
     /** */
     private final long updateCntr;
+
+    /** Flag indicating whether value is transformed. */
+    private boolean transformed;
 
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
@@ -66,7 +66,7 @@ public class GridCacheUpdateAtomicResult {
     /**
      * Constructor.
      *
-     * @param success Success flag.
+     * @param outcome Update outcome.
      * @param oldVal Old value.
      * @param newVal New value.
      * @param res Value computed by the {@link EntryProcessor}.
@@ -74,10 +74,10 @@ public class GridCacheUpdateAtomicResult {
      * @param conflictExpireTime Explicit DR expire time (if any).
      * @param rmvVer Version for deferred delete.
      * @param conflictRes DR resolution result.
-     * @param sndToDht Whether update should be propagated to DHT node.
      * @param updateCntr Partition update counter.
+     * @param transformed {@code True} if result was transformed.
      */
-    public GridCacheUpdateAtomicResult(boolean success,
+    GridCacheUpdateAtomicResult(UpdateOutcome outcome,
         @Nullable CacheObject oldVal,
         @Nullable CacheObject newVal,
         @Nullable IgniteBiTuple<Object, Exception> res,
@@ -85,9 +85,11 @@ public class GridCacheUpdateAtomicResult {
         long conflictExpireTime,
         @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
-        boolean sndToDht,
-        long updateCntr) {
-        this.success = success;
+        long updateCntr,
+        boolean transformed) {
+        assert outcome != null;
+
+        this.outcome = outcome;
         this.oldVal = oldVal;
         this.newVal = newVal;
         this.res = res;
@@ -95,8 +97,15 @@ public class GridCacheUpdateAtomicResult {
         this.conflictExpireTime = conflictExpireTime;
         this.rmvVer = rmvVer;
         this.conflictRes = conflictRes;
-        this.sndToDht = sndToDht;
         this.updateCntr = updateCntr;
+        this.transformed = transformed;
+    }
+
+    /**
+     * @return Update operation outcome.
+     */
+    UpdateOutcome outcome() {
+        return outcome;
     }
 
     /**
@@ -110,7 +119,7 @@ public class GridCacheUpdateAtomicResult {
      * @return Success flag.
      */
     public boolean success() {
-        return success;
+        return outcome.success();
     }
 
     /**
@@ -167,7 +176,81 @@ public class GridCacheUpdateAtomicResult {
      * @return Whether update should be propagated to DHT node.
      */
     public boolean sendToDht() {
-        return sndToDht;
+        return outcome.sendToDht();
+    }
+
+    /**
+     *
+     */
+    public enum UpdateOutcome {
+        /** */
+        CONFLICT_USE_OLD(false, false, false),
+
+        /** */
+        VERSION_CHECK_FAILED(false, false, false),
+
+        /** */
+        FILTER_FAILED(false, false, true),
+
+        /** */
+        INVOKE_NO_OP(false, false, true),
+
+        /** */
+        INTERCEPTOR_CANCEL(false, false, true),
+
+        /** */
+        REMOVE_NO_VAL(false, true, true),
+
+        /** */
+        SUCCESS(true, true, true);
+
+        /** */
+        private final boolean success;
+
+        /** */
+        private final boolean sndToDht;
+
+        /** */
+        private final boolean updateReadMetrics;
+
+        /**
+         * @param success Success flag.
+         * @param sndToDht Whether update should be propagated to DHT node.
+         * @param updateReadMetrics Metrics update flag.
+         */
+        UpdateOutcome(boolean success, boolean sndToDht, boolean updateReadMetrics) {
+            this.success = success;
+            this.sndToDht = sndToDht;
+            this.updateReadMetrics = updateReadMetrics;
+        }
+
+        /**
+         * @return Success flag.
+         */
+        public boolean success() {
+            return success;
+        }
+
+        /**
+         * @return Whether update should be propagated to DHT node.
+         */
+        public boolean sendToDht() {
+            return sndToDht;
+        }
+
+        /**
+         * @return Metrics update flag.
+         */
+        public boolean updateReadMetrics() {
+            return updateReadMetrics;
+        }
+    }
+
+    /**
+     * @return {@code True} if transformed.
+     */
+    public boolean transformed() {
+        return transformed;
     }
 
     /** {@inheritDoc} */

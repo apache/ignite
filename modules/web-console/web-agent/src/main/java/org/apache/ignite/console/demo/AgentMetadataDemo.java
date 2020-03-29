@@ -58,6 +58,8 @@ public class AgentMetadataDemo {
             log.info("DEMO: Prepare in-memory H2 database...");
 
             try {
+                Class.forName("org.h2.Driver");
+
                 Connection conn = DriverManager.getConnection("jdbc:h2:mem:demo-db;DB_CLOSE_DELAY=-1", "sa", "");
 
                 File sqlScript = resolvePath("demo/db-init.sql");
@@ -74,6 +76,11 @@ public class AgentMetadataDemo {
                 log.info("DEMO: TcpServer stared.");
 
                 log.info("DEMO: JDBC URL for test drive metadata load: jdbc:h2:mem:demo-db");
+            }
+            catch (ClassNotFoundException e) {
+                log.error("DEMO: Failed to load H2 driver!", e);
+
+                throw new SQLException("Failed to load H2 driver", e);
             }
             catch (SQLException e) {
                 log.error("DEMO: Failed to start test drive for metadata!", e);

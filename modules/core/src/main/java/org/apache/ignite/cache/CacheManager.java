@@ -43,7 +43,8 @@ import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -107,7 +108,7 @@ public class CacheManager implements javax.cache.CacheManager {
                     cfg.setDiscoverySpi(discoSpi);
                 }
 
-                cfg.setGridName("CacheManager_" + igniteCnt.getAndIncrement());
+                cfg.setIgniteInstanceName("CacheManager_" + igniteCnt.getAndIncrement());
 
                 cfg.setClassLoader(clsLdr);
 
@@ -147,7 +148,6 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V, C extends Configuration<K, V>> Cache<K, V> createCache(String cacheName, C cacheCfg)
         throws IllegalArgumentException {
         kernalGateway.readLock();
@@ -176,7 +176,7 @@ public class CacheManager implements javax.cache.CacheManager {
             if (res == null)
                 throw new CacheException();
 
-            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
+            ((GatewayProtectedCacheProxy<K, V>)res).setCacheManager(this);
 
             if (igniteCacheCfg.isManagementEnabled())
                 enableManagement(cacheName, true);
@@ -218,17 +218,7 @@ public class CacheManager implements javax.cache.CacheManager {
         kernalGateway.readLock();
 
         try {
-            IgniteCache<K, V> cache = getCache0(cacheName);
-
-            if (cache != null) {
-                if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
-                    throw new IllegalArgumentException();
-
-                if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
-                    throw new IllegalArgumentException();
-            }
-
-            return cache;
+            return getCache0(cacheName);
         }
         finally {
             kernalGateway.readUnlock();
@@ -257,8 +247,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
         try {
             if (kernalGateway.getState() != GridKernalState.STARTED)
-                return Collections.emptySet(); // javadoc of #getCacheNames() says that IllegalStateException should be
-                                               // thrown but CacheManagerTest.close_cachesEmpty() require empty collection.
+                throw new IllegalStateException();
 
             Collection<String> res = new ArrayList<>();
 
@@ -314,6 +303,9 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
+        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+            return;
+
         kernalGateway.readLock();
 
         try {
@@ -336,6 +328,9 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
+        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+            return;
+
         kernalGateway.readLock();
 
         try {
@@ -344,14 +339,12 @@ public class CacheManager implements javax.cache.CacheManager {
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
 
-            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
             if (enabled)
                 registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
             else
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
 
-            cfg.setStatisticsEnabled(enabled);
+            ignite.context().cache().cache(cacheName).context().statisticsEnabled(enabled);
         }
         finally {
             kernalGateway.readUnlock();
@@ -389,6 +382,9 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param beanType Mxbean name.
      */
     private void unregisterCacheObject(String name, String beanType) {
+        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+            return;
+
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
         Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, beanType), null);

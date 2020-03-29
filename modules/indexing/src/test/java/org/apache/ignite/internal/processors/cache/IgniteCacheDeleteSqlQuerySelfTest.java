@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.junit.Test;
 
 /**
  *
@@ -31,6 +32,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testDeleteSimple() {
         IgniteCache p = cache();
 
@@ -39,7 +41,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -55,6 +57,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
     /**
      *
      */
+    @Test
     public void testDeleteSingle() {
         IgniteCache p = cache();
 
@@ -63,7 +66,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id, _key"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -83,6 +86,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
      * In binary mode, this test checks that inner forcing of keepBinary works - without it, EntryProcessors
      * inside DML engine would compare binary and non-binary objects with the same keys and thus fail.
      */
+    @Test
     public void testDeleteSimpleWithoutKeepBinary() {
         IgniteCache p = ignite(0).cache("S2P");
 
@@ -91,7 +95,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id"));
 
         List<List<?>> leftovers = c.getAll();
 

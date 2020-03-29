@@ -23,12 +23,14 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <iterator>
 
 #include <ignite/common/common.h>
 #include <ignite/common/platform_utils.h>
 
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
+#include "ignite/time.h"
 
 #ifdef IGNITE_FRIEND
 #   define IGNITE_FRIEND_EXPORT IGNITE_EXPORT
@@ -69,6 +71,67 @@ namespace ignite
          * @param str String to be transformed.
          */
         IGNITE_IMPORT_EXPORT void StripSurroundingWhitespaces(std::string& str);
+
+        /**
+         * Skip leading spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to first non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipLeadingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = begin;
+
+            while (isspace(*res) && res != end)
+                ++res;
+
+            return res;
+        }
+
+        /**
+         * Skip trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return Iterator to last non-blanc character.
+         */
+        template<typename Iterator>
+        Iterator SkipTrailingSpaces(Iterator begin, Iterator end)
+        {
+            Iterator res = end - 1;
+
+            while (isspace(*res) && res != begin - 1)
+                --res;
+
+            return res + 1;
+        }
+
+        /**
+         * Remove leading and trailing spaces.
+         * 
+         * @param begin Iterator to the beginning of the character sequence.
+         * @param end Iterator to the end of the character sequence.
+         * @return String without leading and trailing spaces.
+         */
+        template<typename Iterator>
+        std::string StripSurroundingWhitespaces(Iterator begin, Iterator end)
+        {
+            std::string res;
+
+            if (begin >= end)
+                return res;
+
+            Iterator skipped_leading = SkipLeadingSpaces(begin, end);
+            Iterator skipped_trailing = SkipTrailingSpaces(skipped_leading, end);
+
+            res.reserve(skipped_trailing - skipped_leading);
+
+            std::copy(skipped_leading, skipped_trailing, std::back_inserter(res));
+
+            return res;
+        }
 
         /**
          * Get string representation of long in decimal form.
@@ -189,6 +252,17 @@ namespace ignite
         }
 
         /**
+         * Convert Time type to standard C type time_t.
+         *
+         * @param time Time type value.
+         * @return Corresponding value of time_t.
+         */
+        inline time_t TimeToCTime(const Time& time)
+        {
+            return static_cast<time_t>(time.GetSeconds());
+        }
+
+        /**
          * Convert Date type to standard C type time_t.
          *
          * @param date Date type value.
@@ -217,7 +291,21 @@ namespace ignite
         }
 
         /**
-         * Convert standard C type time_t to Date struct tm.
+         * Convert Time type to standard C type struct tm.
+         *
+         * @param time Time type value.
+         * @param ctime Corresponding value of struct tm.
+         * @return True on success.
+         */
+        inline bool TimeToCTm(const Time& time, tm& ctime)
+        {
+            time_t tmt = TimeToCTime(time);
+
+            return common::IgniteGmTime(tmt, ctime);
+        }
+
+        /**
+         * Convert standard C type time_t to Date.
          *
          * @param ctime Standard C type time_t.
          * @return Corresponding value of Date.
@@ -225,6 +313,17 @@ namespace ignite
         inline Date CTimeToDate(time_t ctime)
         {
             return Date(ctime * 1000);
+        }
+
+        /**
+         * Convert standard C type time_t to Time.
+         *
+         * @param ctime Standard C type time_t.
+         * @return Corresponding value of Time.
+         */
+        inline Time CTimeToTime(time_t ctime)
+        {
+            return Time(ctime * 1000);
         }
 
         /**
@@ -250,6 +349,19 @@ namespace ignite
             time_t time = common::IgniteTimeGm(ctime);
 
             return CTimeToDate(time);
+        }
+
+        /**
+         * Convert standard C type struct tm to Time type.
+         *
+         * @param ctime Standard C type struct tm.
+         * @return Corresponding value of Time.
+         */
+        inline Time CTmToTime(const tm& ctime)
+        {
+            time_t time = common::IgniteTimeGm(ctime);
+
+            return CTimeToTime(time);
         }
 
         /**
@@ -299,7 +411,31 @@ namespace ignite
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
-         * Make Date in human understandable way.
+         * Make Time in human understandable way.
+         *
+         * Created Time uses GMT timezone.
+         *
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @return Time.
+         */
+        Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Time in human understandable way.
+         *
+         * Created Time uses Local timezone.
+         *
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @return Time.
+         */
+        Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Timestamp in human understandable way.
          *
          * Created Timestamp uses GMT timezone.
          *
@@ -351,6 +487,185 @@ namespace ignite
         {
             typedef T2 type;
         };
+
+        /**
+         * Returns the bigger type.
+         */
+        template<typename T1, typename T2>
+        struct Bigger
+        {
+            typedef typename Conditional<(sizeof(T1) > sizeof(T2)), T1, T2>::type type;
+        };
+
+        /**
+         * Utility class to bind class instance with member function.
+         */
+        template<typename R, typename T>
+        class BoundInstance
+        {
+        public:
+            typedef R FunctionReturnType;
+            typedef T ClassType;
+            typedef FunctionReturnType(ClassType::* MemberFunctionType)();
+
+            /**
+             * Constructor.
+             *
+             * @param instance Class instance.
+             * @param mfunc Member function.
+             */
+            BoundInstance(ClassType* instance, MemberFunctionType mfunc) : 
+                instance(instance),
+                mfunc(mfunc)
+            {
+                // No-op.
+            }
+
+            /**
+             * Invoke operator.
+             *
+             * @return Result of the invokation of the member function on the bound instance.
+             */
+            FunctionReturnType operator()()
+            {
+                return (instance->*mfunc)();
+            }
+                
+        private:
+            /** Instance reference. */
+            ClassType* instance;
+
+            /** Member function pointer. */
+            MemberFunctionType mfunc;
+        };
+
+        /**
+         * Utility function for binding.
+         */
+        template<typename R, typename T>
+        BoundInstance<R, T> Bind(T* instance, R(T::* mfunc)())
+        {
+            return BoundInstance<R, T>(instance, mfunc);
+        }
+
+        /**
+         * Method guard class template.
+         *
+         * Upon destruction calls provided method on provided class instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class MethodGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Mehtod type. */
+            typedef void (ValueType::*MethodType)();
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            MethodGuard(ValueType* val, MethodType method) :
+                val(val),
+                method(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~MethodGuard()
+            {
+                if (val && method)
+                    (val->*method)();
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                method = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            MethodType method;
+        };
+
+        /**
+         * Deinit guard class template.
+         *
+         * Upon destruction calls provided deinit function on provided instance.
+         *
+         * @tparam T Value type.
+         */
+        template<typename T>
+        class DeinitGuard
+        {
+        public:
+            /** Value type. */
+            typedef T ValueType;
+
+            /** Deinit function type. */
+            typedef void (*FuncType)(ValueType*);
+
+            /**
+             * Constructor.
+             *
+             * @param val Instance, to call method on.
+             * @param method Method to call.
+             */
+            DeinitGuard(ValueType* val, FuncType method) :
+                val(val),
+                func(method)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~DeinitGuard()
+            {
+                if (val && func)
+                    (func)(val);
+            }
+
+            /**
+             * Release control over object.
+             */
+            void Release()
+            {
+                val = 0;
+                func = 0;
+            }
+
+        private:
+            /** Instance, to call method on. */
+            ValueType* val;
+
+            /** Method to call. */
+            FuncType func;
+        };
+
+        /**
+         * Get dynamic library full name.
+         * @param name Name without extension.
+         * @return Full name.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
     }
 }
 

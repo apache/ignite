@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -58,57 +57,39 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
      *
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
-     * @param futVer Future version.
-     * @param fastMap Fast map scheme flag.
-     * @param updateVer Update version set if fast map is performed.
+     * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
      * @param filter Optional filter for atomic check.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
-     * @param clientReq Client node request flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateFilterRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
-        boolean fastMap,
-        @Nullable GridCacheVersion updateVer,
+        long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
         @Nullable CacheEntryPredicate[] filter,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean skipStore,
-        boolean keepBinary,
-        boolean clientReq,
+        byte flags,
         boolean addDepInfo
     ) {
         super(
             cacheId,
             nodeId,
-            futVer,
-            fastMap,
-            updateVer,
+            futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
             subjId,
             taskNameHash,
-            skipStore,
-            keepBinary,
-            clientReq,
+            flags,
             addDepInfo
         );
 
@@ -173,7 +154,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         }
 
         switch (writer.state()) {
-            case 14:
+            case 13:
                 if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
@@ -195,7 +176,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             return false;
 
         switch (reader.state()) {
-            case 14:
+            case 13:
                 filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
@@ -209,13 +190,13 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 127;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 14;
     }
 
     /** {@inheritDoc} */

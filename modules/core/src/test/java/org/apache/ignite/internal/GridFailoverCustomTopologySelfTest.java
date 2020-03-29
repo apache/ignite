@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,6 +40,8 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Test failover and custom topology. Topology returns local node if remote node fails.
@@ -60,8 +61,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNodeId(null);
 
@@ -76,12 +77,14 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         return cfg;
     }
+
     /**
      * Tests that failover don't pick local node if it has been excluded from topology.
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait", "unchecked"})
+    @SuppressWarnings({"WaitNotInLoop", "UnconditionalWait"})
+    @Test
     public void testFailoverTopology() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
@@ -96,11 +99,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                 ComputeTaskFuture<String> fut;
 
                 synchronized(mux){
-                    IgniteCompute comp = ignite1.compute().withAsync();
-
-                    comp.execute(JobTask.class, null);
-
-                    fut = comp.future();
+                    fut = ignite1.compute().executeAsync(JobTask.class, null);
 
                     mux.wait();
                 }
@@ -139,7 +138,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             assert ignite != null;
 
             UUID locNodeId = ignite.configuration().getNodeId();

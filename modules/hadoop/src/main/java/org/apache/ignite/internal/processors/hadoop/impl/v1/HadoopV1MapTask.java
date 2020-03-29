@@ -27,9 +27,9 @@ import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapperUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -55,7 +55,7 @@ public class HadoopV1MapTask extends HadoopV1Task {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void run(HadoopTaskContext taskCtx) throws IgniteCheckedException {
-        HadoopJob job = taskCtx.job();
+        HadoopJobEx job = taskCtx.job();
 
         HadoopV2TaskContext taskCtx0 = (HadoopV2TaskContext)taskCtx;
 
@@ -83,7 +83,7 @@ public class HadoopV1MapTask extends HadoopV1Task {
 
             assert nativeSplit != null;
 
-            Reporter reporter = new HadoopV1Reporter(taskCtx);
+            Reporter reporter = new HadoopV1Reporter(taskCtx, nativeSplit);
 
             HadoopV1OutputCollector collector = null;
 

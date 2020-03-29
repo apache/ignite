@@ -25,11 +25,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -40,23 +39,23 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * TTL manager self test.
  */
 public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test cache mode. */
     protected CacheMode cacheMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        super.beforeTestsStarted();
+    }
 
-        discoSpi.setIpFinder(IP_FINDER);
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
-        cfg.setDiscoverySpi(discoSpi);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);
@@ -69,6 +68,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalTtl() throws Exception {
         checkTtl(LOCAL);
     }
@@ -76,6 +76,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTtl() throws Exception {
         checkTtl(PARTITIONED);
     }
@@ -83,6 +84,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTtl() throws Exception {
         checkTtl(REPLICATED);
     }
@@ -99,20 +101,21 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         try {
             final String key = "key";
 
-            g.cache(null).withExpiryPolicy(
+            g.cache(DEFAULT_CACHE_NAME).withExpiryPolicy(
                     new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
 
-            assertEquals(1, g.cache(null).get(key));
+            assertEquals(1, g.cache(DEFAULT_CACHE_NAME).get(key));
 
             U.sleep(1100);
 
             GridTestUtils.retryAssert(log, 10, 100, new CAX() {
                 @Override public void applyx() {
                     // Check that no more entries left in the map.
-                    assertNull(g.cache(null).get(key));
+                    assertNull(g.cache(DEFAULT_CACHE_NAME).get(key));
 
-                    if (!g.internalCache().context().deferredDelete())
-                        assertNull(g.internalCache().map().getEntry(g.internalCache().context().toCacheKeyObject(key)));
+                    if (!g.internalCache(DEFAULT_CACHE_NAME).context().deferredDelete())
+                        assertNull(g.internalCache(DEFAULT_CACHE_NAME).map().getEntry(g.internalCache(DEFAULT_CACHE_NAME).context(),
+                            g.internalCache(DEFAULT_CACHE_NAME).context().toCacheKeyObject(key)));
                 }
             });
         }

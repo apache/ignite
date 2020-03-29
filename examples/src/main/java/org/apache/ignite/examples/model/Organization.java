@@ -62,6 +62,15 @@ public class Organization {
     }
 
     /**
+     * @param id Organization ID.
+     * @param name Organization name.
+     */
+    public Organization(long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    /**
      * @param name Name.
      * @param addr Address.
      * @param type Type.

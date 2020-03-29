@@ -20,14 +20,15 @@ namespace Apache.Ignite.AspNet.Tests
     using System;
     using System.Collections.Specialized;
     using System.Configuration;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
-    using System.Threading.Tasks;
     using System.Web;
     using System.Web.SessionState;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests;
     using NUnit.Framework;
 
@@ -55,7 +56,7 @@ namespace Apache.Ignite.AspNet.Tests
         private const string Id = "1";
 
         /** Test context. */
-        private static readonly HttpContext HttpContext = 
+        private static readonly HttpContext HttpContext =
             new HttpContext(new HttpRequest(null, "http://tempuri.org", null), new HttpResponse(null));
 
         /// <summary>
@@ -64,7 +65,7 @@ namespace Apache.Ignite.AspNet.Tests
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) { GridName = GridName });
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) { IgniteInstanceName = GridName });
         }
 
         /// <summary>
@@ -86,7 +87,7 @@ namespace Apache.Ignite.AspNet.Tests
             var ignite = Ignition.GetIgnite(GridName);
             ignite.GetCacheNames().ToList().ForEach(x => ignite.GetCache<object, object>(x).RemoveAll());
         }
-        
+
         /// <summary>
         /// Test setup.
         /// </summary>
@@ -229,7 +230,7 @@ namespace Apache.Ignite.AspNet.Tests
 
             // Add item.
             provider.CreateUninitializedItem(HttpContext, Id, 7);
-            
+
             // Check added item.
             res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
             Assert.IsNotNull(res);
@@ -265,7 +266,7 @@ namespace Apache.Ignite.AspNet.Tests
             Assert.AreEqual(SessionStateActions.None, actions);
 
             // Try to get it in a different thread.
-            Task.Factory.StartNew(() =>
+            TaskRunner.Run(() =>
             {
                 object lockId1;   // do not overwrite lockId
                 res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId1, out actions);
@@ -277,7 +278,7 @@ namespace Apache.Ignite.AspNet.Tests
             }).Wait();
 
             // Try to get it in a different thread.
-            Task.Factory.StartNew(() =>
+            TaskRunner.Run(() =>
             {
                 object lockId1;   // do not overwrite lockId
                 res = provider.GetItemExclusive(HttpContext, Id, out locked, out lockAge, out lockId1, out actions);
@@ -292,7 +293,7 @@ namespace Apache.Ignite.AspNet.Tests
             provider.ReleaseItemExclusive(HttpContext, Id, lockId);
 
             // Make sure it is accessible in a different thread.
-            Task.Factory.StartNew(() =>
+            TaskRunner.Run(() =>
             {
                 res = provider.GetItem(HttpContext, Id, out locked, out lockAge, out lockId, out actions);
                 Assert.IsNotNull(res);
@@ -417,8 +418,12 @@ namespace Apache.Ignite.AspNet.Tests
             var statics = data.StaticObjects;
 
             // Modification method is internal.
-            statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(statics, new object[] {"int", typeof(int), false});
+            var method = statics.GetType()
+                .GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic);
+            
+            Debug.Assert(method != null);
+            
+            method.Invoke(statics, new object[] {"int", typeof(int), false});
 
             CheckStoreData(data);
 

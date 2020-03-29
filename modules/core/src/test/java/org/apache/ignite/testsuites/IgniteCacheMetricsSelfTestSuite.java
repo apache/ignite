@@ -17,51 +17,71 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.ignite.internal.TransactionMetricsTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsCacheSizeTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsEntitiesCountTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
+import org.apache.ignite.internal.processors.cache.GridEvictionPolicyMBeansTest;
 import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedTckMetricsSelfTestImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearAtomicMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedHitsAndMissesSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheAtomicReplicatedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.local.LocalCacheOffHeapAndSwapMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsNoStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test suite for cache metrics.
  */
-public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
+public class IgniteCacheMetricsSelfTestSuite {
     /**
+     * @param ignoredTests Ignored tests.
      * @return Cache metrics test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Cache Metrics Test Suite");
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
+        List<Class<?>> suite = new ArrayList<>();
 
-        suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
-        suite.addTestSuite(LocalCacheOffHeapAndSwapMetricsSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheNearAtomicMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedHitsAndMissesSelfTest.class, ignoredTests);
 
         // Atomic cache.
-        suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
-        suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicLocalMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicLocalMetricsNoStoreSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicReplicatedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPartitionedMetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicLocalTckMetricsSelfTestImpl.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CacheGroupsMetricsRebalanceTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheValidatorMetricsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsEntitiesCountTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsCacheSizeTest.class, ignoredTests);
 
         // Cluster wide metrics.
-        suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
-        suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsForClusterGroupSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OffheapCacheMetricsForClusterGroupSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TransactionMetricsTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridEvictionPolicyMBeansTest.class, ignoredTests);
 
         return suite;
     }

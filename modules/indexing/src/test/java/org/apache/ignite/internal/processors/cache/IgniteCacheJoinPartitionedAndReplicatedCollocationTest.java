@@ -24,22 +24,17 @@ import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -49,23 +44,17 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends AbstractH2CompareQueryTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String PERSON_CACHE = "person";
 
     /** */
     private static final String ACCOUNT_CACHE = "acc";
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean h2DataInserted;
 
     /** {@inheritDoc} */
-    @Override protected void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) {
-        // No-op.
+    @Override protected void createCaches() {
+
     }
 
     /** {@inheritDoc} */
@@ -76,19 +65,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     /** {@inheritDoc} */
     @Override protected void checkAllDataEquals() throws Exception {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
-
-        return cfg;
     }
 
     /**
@@ -135,11 +111,10 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name, int backups) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(backups);
 
@@ -150,16 +125,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = true;
-
-        startGrid(SRVS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(SRVS);
     }
 
     /** {@inheritDoc} */
@@ -186,6 +152,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin() throws Exception {
         Ignite client = grid(SRVS);
 

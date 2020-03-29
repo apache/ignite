@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Discovery message used for Continuous Query registration.
  */
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
@@ -35,16 +41,20 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     private final StartRequestData startReqData;
 
     /** */
-    private final Map<UUID, IgniteCheckedException> errs = new HashMap<>();
+    // Initilized here as well to preserve compatibility with previous versions
+    private Map<UUID, IgniteCheckedException> errs = new HashMap<>();
 
     /** */
-    private Map<Integer, Long> updateCntrs;
+    private Map<Integer, T2<Long, Long>> updateCntrs;
 
     /** */
-    private Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
+    private Map<UUID, Map<Integer, T2<Long, Long>>> updateCntrsPerNode;
 
     /** Keep binary flag. */
     private boolean keepBinary;
+
+    /** */
+    private transient ClassNotFoundException deserEx;
 
     /**
      * @param routineId Routine id.
@@ -69,21 +79,24 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @param e Exception.
      */
     public void addError(UUID nodeId, IgniteCheckedException e) {
+        if (errs == null)
+            errs = new HashMap<>();
+
         errs.put(nodeId, e);
     }
 
     /**
      * @param cntrs Update counters.
      */
-    private void addUpdateCounters(Map<Integer, Long> cntrs) {
+    private void addUpdateCounters(Map<Integer, T2<Long, Long>> cntrs) {
         if (updateCntrs == null)
             updateCntrs = new HashMap<>();
 
-        for (Map.Entry<Integer, Long> e : cntrs.entrySet()) {
-            Long cntr0 = updateCntrs.get(e.getKey());
-            Long cntr1 = e.getValue();
+        for (Map.Entry<Integer, T2<Long, Long>> e : cntrs.entrySet()) {
+            T2<Long, Long> cntr0 = updateCntrs.get(e.getKey());
+            T2<Long, Long> cntr1 = e.getValue();
 
-            if (cntr0 == null || cntr1 > cntr0)
+            if (cntr0 == null || cntr1.get2() > cntr0.get2())
                 updateCntrs.put(e.getKey(), cntr1);
         }
     }
@@ -92,13 +105,13 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @param nodeId Local node ID.
      * @param cntrs Update counters.
      */
-    public void addUpdateCounters(UUID nodeId, Map<Integer, Long> cntrs) {
+    public void addUpdateCounters(UUID nodeId, Map<Integer, T2<Long, Long>> cntrs) {
         addUpdateCounters(cntrs);
 
         if (updateCntrsPerNode == null)
             updateCntrsPerNode = new HashMap<>();
 
-        Map<Integer, Long> old = updateCntrsPerNode.put(nodeId, cntrs);
+        Map<Integer, T2<Long, Long>> old = updateCntrsPerNode.put(nodeId, cntrs);
 
         assert old == null : old;
     }
@@ -107,7 +120,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @return Errs.
      */
     public Map<UUID, IgniteCheckedException> errs() {
-        return errs;
+        return errs != null ? errs : Collections.emptyMap();
     }
 
     /**
@@ -124,7 +137,28 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
+        return new StartRoutineAckDiscoveryMessage(routineId, errs(), updateCntrs, updateCntrsPerNode);
+    }
+
+    /** */
+    private void readObject(ObjectInputStream in) throws IOException {
+        // Override default serialization in order to tolerate missing classes exceptions (e.g. remote filter class).
+        // We need this means because CQ registration process assumes that an "ack message" will be sent.
+        try {
+            in.defaultReadObject();
+        }
+        catch (ClassNotFoundException e) {
+            deserEx = e;
+
+            throw new IncompleteDeserializationException(this);
+        }
+    }
+
+    /**
+     * @return Exception occurred during deserialization.
+     */
+    @Nullable public ClassNotFoundException deserializationException() {
+        return deserEx;
     }
 
     /** {@inheritDoc} */

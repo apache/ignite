@@ -37,7 +37,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -52,6 +53,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 
 /**
  * Common code for {@link IgniteQueue} implementation.
@@ -101,15 +103,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
 
-    /** */
-    private final boolean binaryMarsh;
-
     /**
      * @param queueName Queue name.
      * @param hdr Queue hdr.
      * @param cctx Cache context.
      */
-    @SuppressWarnings("unchecked")
     protected GridCacheQueueAdapter(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         this.cctx = cctx;
         this.queueName = queueName;
@@ -118,7 +116,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         collocated = hdr.collocated();
         queueKey = new GridCacheQueueHeaderKey(queueName);
         cache = cctx.kernalContext().cache().internalCache(cctx.name());
-        binaryMarsh = cctx.binaryMarshaller();
         this.compute = cctx.kernalContext().grid().compute();
 
         log = cctx.logger(getClass());
@@ -369,15 +366,17 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
         try {
-            IgniteBiTuple<Long, Long> t =
-                (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id)).get();
+            Object obj = cache.invoke(queueKey, new ClearProcessor(id)).get();
 
-            if (t == null)
+            if (obj == null)
                 return;
+
+            IgniteBiTuple<Long, Long> t = obj instanceof BinaryObject ? ((BinaryObject)obj).deserialize()
+                : (IgniteBiTuple<Long, Long>)obj;
 
             checkRemoved(t.get1());
 
-            removeKeys(cache, id, queueName, collocated, binaryMarsh, t.get1(), t.get2(), batchSize);
+            removeKeys(cache, id, queueName, collocated, t.get1(), t.get2(), batchSize);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -411,7 +410,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    public void affinityRun(IgniteRunnable job) {
+    @Override public void affinityRun(IgniteRunnable job) {
         if (!collocated)
             throw new IgniteException("Failed to execute affinityRun() for non-collocated queue: " + name() +
                 ". This operation is supported only for collocated queues.");
@@ -420,7 +419,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    public <R> R affinityCall(IgniteCallable<R> job) {
+    @Override public <R> R affinityCall(IgniteCallable<R> job) {
         if (!collocated)
             throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
                 ". This operation is supported only for collocated queues.");
@@ -428,12 +427,35 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         return compute.affinityCall(cache.name(), queueKey, job);
     }
 
+    /** {@inheritDoc} */
+    @Override public <V1> IgniteQueue<V1> withKeepBinary() {
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        if (opCtx != null && opCtx.isKeepBinary())
+            return (GridCacheQueueAdapter<V1>)this;
+
+        opCtx = opCtx == null ? new CacheOperationContext(
+            false,
+            null,
+            true,
+            null,
+            false,
+            null,
+            false,
+            false,
+            DFLT_ALLOW_ATOMIC_OPS_IN_TX)
+            : opCtx.keepBinary();
+
+        cctx.operationContextPerCall(opCtx);
+
+        return (GridCacheQueueAdapter<V1>)this;
+    }
+
     /**
      * @param cache Queue cache.
      * @param id Queue unique ID.
      * @param name Queue name.
      * @param collocated Collocation flag.
-     * @param binaryMarsh {@code True} if binary marshaller is configured.
      * @param startIdx Start item index.
      * @param endIdx End item index.
      * @param batchSize Batch size.
@@ -445,7 +467,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         IgniteUuid id,
         String name,
         boolean collocated,
-        boolean binaryMarsh,
         long startIdx,
         long endIdx,
         int batchSize)
@@ -453,7 +474,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         Set<QueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
-            keys.add(itemKey(id, name, collocated, binaryMarsh, idx));
+            keys.add(itemKey(id, name, collocated, idx));
 
             if (batchSize > 0 && keys.size() == batchSize) {
                 cache.removeAll(keys);
@@ -484,6 +505,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected final void checkRemoved(@Nullable GridCacheQueueHeader hdr) {
         if (queueRemoved(hdr, id))
             onRemoved(true);
+    }
+
+    /** Release all semaphores used in blocking operations in case of client disconnect. */
+    public void onClientDisconnected() {
+        releaseSemaphores();
     }
 
     /**
@@ -565,11 +591,10 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @return Item key.
      */
     protected QueueItemKey itemKey(Long idx) {
-        return itemKey(id, queueName, collocated(), binaryMarsh, idx);
+        return itemKey(id, queueName, collocated(), idx);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void close() {
         if (rmvd)
             return;
@@ -586,18 +611,15 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param id Queue unique ID.
      * @param queueName Queue name.
      * @param collocated Collocation flag.
-     * @param binaryMarsh {@code True} if binary marshaller is configured.
      * @param idx Item index.
      * @return Item key.
      */
     private static QueueItemKey itemKey(IgniteUuid id,
         String queueName,
         boolean collocated,
-        boolean binaryMarsh,
         long idx) {
         return collocated ?
-            (binaryMarsh ? new CollocatedQueueItemKey(id, queueName, idx) : new CollocatedItemKey(id, queueName, idx)) :
-            new GridCacheQueueItemKey(id, queueName, idx);
+            new CollocatedQueueItemKey(id, queueName, idx) : new GridCacheQueueItemKey(id, queueName, idx);
     }
 
     /**
@@ -691,38 +713,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
-        }
-    }
-
-    /**
-     * Item key for collocated queue.
-     */
-    private static class CollocatedItemKey extends GridCacheQueueItemKey {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public CollocatedItemKey() {
-            // No-op.
-        }
-
-        /**
-         * @param id Queue unique ID.
-         * @param queueName Queue name.
-         * @param idx Item index.
-         */
-        private CollocatedItemKey(IgniteUuid id, String queueName, long idx) {
-            super(id, queueName, idx);
-        }
-
-        /**
-         * @return Item affinity key.
-         */
-        @AffinityKeyMapped
-        public Object affinityKey() {
-            return queueName();
         }
     }
 
@@ -1055,13 +1045,13 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeGridUuid(out, id);
-            out.writeLong(idx);
+            out.writeObject(idx);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             id = U.readGridUuid(in);
-            idx = in.readLong();
+            idx = (Long)in.readObject();
         }
     }
 

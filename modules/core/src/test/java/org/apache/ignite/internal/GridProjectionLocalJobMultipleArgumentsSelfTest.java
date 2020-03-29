@@ -28,10 +28,8 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -39,9 +37,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests for methods that run job locally with multiple arguments.
  */
 public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static Collection<Object> ids;
 
@@ -56,8 +51,8 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = defaultCacheConfiguration();
 
@@ -65,12 +60,6 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
         cache.setBackups(1);
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -84,11 +73,12 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         Collection<Integer> res = new ArrayList<>();
 
         for (int i : F.asList(1, 2, 3)) {
-            res.add(grid().compute().affinityCall((String)null, i, new IgniteCallable<Integer>() {
+            res.add(grid().compute().affinityCall(DEFAULT_CACHE_NAME, i, new IgniteCallable<Integer>() {
                 @Override public Integer call() {
                     ids.add(this);
 
@@ -104,9 +94,10 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         for (int i : F.asList(1, 2, 3)) {
-            grid().compute().affinityRun((String)null, i, new IgniteRunnable() {
+            grid().compute().affinityRun(DEFAULT_CACHE_NAME, i, new IgniteRunnable() {
                 @Override public void run() {
                     ids.add(this);
 
@@ -122,6 +113,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCall() throws Exception {
         Collection<Integer> res = grid().compute().apply(new C1<Integer, Integer>() {
             @Override public Integer apply(Integer arg) {
@@ -138,6 +130,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCallWithProducer() throws Exception {
         Collection<Integer> args = Arrays.asList(1, 2, 3);
 

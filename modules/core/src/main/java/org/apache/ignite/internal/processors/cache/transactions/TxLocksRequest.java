@@ -70,6 +70,16 @@ public class TxLocksRequest extends GridCacheMessage {
         this.txKeys = txKeys;
     }
 
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cacheGroupMessage() {
+        return false;
+    }
+
     /**
      * @return Future ID.
      */
@@ -189,7 +199,7 @@ public class TxLocksRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -24;
     }
 

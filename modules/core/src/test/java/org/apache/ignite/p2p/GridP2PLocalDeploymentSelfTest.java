@@ -24,6 +24,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -33,10 +36,18 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
+import static org.apache.ignite.spi.deployment.local.LocalDeploymentSpi.IGNITE_DEPLOYMENT_ADDITIONAL_CHECK;
 
 /**
  * Test to make sure that if job executes on the same node, it reuses the same class loader as task.
@@ -56,8 +67,8 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     private static ClassLoader taskLdr;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
 
@@ -96,6 +107,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     @SuppressWarnings({"unchecked"})
+    @Test
     public void testLocalDeployment() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -173,6 +185,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processIsolatedModeTest(DeploymentMode.PRIVATE);
     }
@@ -182,6 +195,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processIsolatedModeTest(DeploymentMode.ISOLATED);
     }
@@ -191,6 +205,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processSharedModeTest(DeploymentMode.CONTINUOUS);
     }
@@ -200,8 +215,110 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processSharedModeTest(DeploymentMode.SHARED);
+    }
+
+    /**
+     * Tests concurrent deployment using delegating classloader for the task.
+     */
+    @Test
+    public void testConcurrentDeploymentWithDelegatingClassloader() throws Exception {
+        depMode = DeploymentMode.SHARED;
+
+        // Force rmvQueue removal task to run very often.
+        System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1");
+        System.setProperty(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK, "true");
+
+        try {
+            final Ignite ignite = startGrid();
+
+            final ClassLoader delegate = ignite.getClass().getClassLoader();
+
+            final ClassLoader root = new DelegateClassLoader(null, delegate);
+
+            final AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    while (!stop.get()) {
+                        final Class<?> clazz = root.loadClass("org.apache.ignite.p2p.GridP2PLocalDeploymentSelfTest$TestClosure");
+
+                        ignite.compute().
+                            call((IgniteCallable) clazz.getDeclaredConstructor(ClassLoader.class).newInstance(root));
+                    }
+
+                    return null;
+                }
+            }, 1);
+
+            ignite.scheduler().runLocal(new Runnable() {
+                @Override public void run() {
+                    stop.set(true);
+                }
+            }, 10, TimeUnit.SECONDS);
+
+            fut.get();
+        } finally {
+            stopAllGrids();
+
+            System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+            System.clearProperty(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);
+        }
+    }
+
+    /** */
+    private static class TestClosure implements IgniteCallable, GridPeerDeployAware {
+        /** */
+        transient ClassLoader clsLdr;
+
+        /**
+         * @param cls Class.
+         */
+        public TestClosure(ClassLoader cls) {
+            this.clsLdr = cls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> deployClass() {
+            return this.getClass();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClassLoader classLoader() {
+            return clsLdr;
+        }
+    }
+
+    /** */
+    private static class DelegateClassLoader extends ClassLoader {
+        /** Delegate class loader. */
+        private ClassLoader delegateClsLdr;
+
+        /**
+         * @param parent Parent.
+         * @param delegateClsLdr Delegate class loader.
+         */
+        public DelegateClassLoader(ClassLoader parent, ClassLoader delegateClsLdr) {
+            super(parent); // Parent doesn't matter.
+            this.delegateClsLdr = delegateClsLdr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public URL getResource(String name) {
+            return delegateClsLdr.getResource(name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
+            return delegateClsLdr.loadClass(name);
+        }
     }
 
     /**
@@ -216,7 +333,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg) {
             taskLdr = getClass().getClassLoader();
 
             for (ClusterNode node : subgrid) {

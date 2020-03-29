@@ -30,15 +30,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -46,9 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
  * Test for reproducing problems during simultaneously Ignite instances stopping and cache requests executing.
  */
 public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid count. */
     private static final int GRID_CNT = 8;
 
@@ -60,17 +55,12 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
-        marsh.setRequireSerializable(false);
-
-        cfg.setMarshaller(marsh);
+        cfg.setMarshaller(new BinaryMarshaller());
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -85,13 +75,6 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10 * 60_000;
     }
@@ -99,6 +82,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testContainsKeyFailover() throws Exception {
         int cnt = 3;
 
@@ -140,7 +124,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
@@ -164,7 +148,7 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                         T2<Ignite, Integer> ignite;
 
                         while ((ignite = randomNode()) != null) {
-                            IgniteCache<Object, Object> cache = ignite.get1().cache(null);
+                            IgniteCache<Object, Object> cache = ignite.get1().cache(DEFAULT_CACHE_NAME);
 
                             for (int i = 0; i < 100; i++)
                                 cache.put(ThreadLocalRandom.current().nextInt(100_000), UUID.randomUUID());

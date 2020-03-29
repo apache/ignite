@@ -23,6 +23,7 @@
 #ifndef _IGNITE_CACHE_CACHE_ENTRY
 #define _IGNITE_CACHE_CACHE_ENTRY
 
+#include <utility>
 #include <ignite/common/common.h>
 
 namespace ignite
@@ -78,6 +79,20 @@ namespace ignite
             {
                 // No-op.
             }
+
+            /**
+             * Constructor.
+             *
+             * @param p Pair.
+             */
+            CacheEntry(const std::pair<K, V>& p) :
+                key(p.first),
+                val(p.second),
+                hasValue(true)
+            {
+                // No-op.
+            }
+
 
             /**
              * Destructor.

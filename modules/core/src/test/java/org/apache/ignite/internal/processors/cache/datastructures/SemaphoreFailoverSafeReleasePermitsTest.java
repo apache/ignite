@@ -23,10 +23,8 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -35,9 +33,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  *
  */
 public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
@@ -45,14 +40,8 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
     private CacheMode atomicsCacheMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         AtomicConfiguration atomicCfg = atomicConfiguration();
 
@@ -66,6 +55,7 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsPartitioned() throws Exception {
         atomicsCacheMode = PARTITIONED;
 
@@ -75,6 +65,7 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReleasePermitsReplicated() throws Exception {
         atomicsCacheMode = REPLICATED;
 
@@ -92,6 +83,9 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
 
             IgniteSemaphore sem = ignite.semaphore("sem", 1, true, true);
 
+            // Initialize second semaphore before the first one is broken.
+            IgniteSemaphore sem2 = grid(1).semaphore("sem", 1, true, true);
+
             assertEquals(1, sem.availablePermits());
 
             sem.acquire(1);
@@ -102,11 +96,7 @@ public class SemaphoreFailoverSafeReleasePermitsTest extends GridCommonAbstractT
 
             awaitPartitionMapExchange();
 
-            ignite = grid(1);
-
-            sem = ignite.semaphore("sem", 1, true, true);
-
-            assertTrue(sem.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
+            assertTrue(sem2.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
         }
         finally {
             stopAllGrids();

@@ -24,13 +24,13 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.scheduler.SchedulerFuture;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Provides functionality for scheduling jobs locally using UNIX cron-based syntax.
  * Instance of {@code GridScheduler} is obtained from grid as follows:
  * <pre name="code" class="java">
- * GridScheduler s = Ignition.ignite().scheduler();
+ * IgniteScheduler s = Ignition.ignite().scheduler();
  * </pre>
  * <p>
  * Scheduler supports standard UNIX {@code cron} format with optional prefix of
@@ -39,12 +39,13 @@ import org.jetbrains.annotations.Nullable;
  * Here's an example of scheduling a closure that broadcasts a message
  * to all nodes five times, once every minute, with initial delay of two seconds:
  * <pre name="code" class="java">
- * Ignition.ignite().scheduler().scheduleLocal(
- *     GridSchedulerFuture&lt;?&gt; = Ignition.ignite().scheduler().scheduleLocal(new Callable&lt;Object&gt;() {
+ * SchedulerFuture&lt;?&gt; s = Ignition.ignite().scheduler().scheduleLocal(
+ *     new Callable&lt;Object&gt;() {
  *         &#64;Override public Object call() throws IgniteCheckedException {
- *             g.broadcast(new GridCallable() {...}).get();
+ *             g.broadcast(new IgniteCallable() {...}).get();
  *         }
- *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
+ *     },
+ *     "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
  * );
  * </pre>
  */
@@ -55,23 +56,23 @@ public interface IgniteScheduler {
      * Note that class {@link IgniteRunnable} implements {@link Runnable} and class {@link IgniteOutClosure}
      * implements {@link Callable} interface.
      *
-     * @param r Runnable to execute. If {@code null} - this method is no-op.
+     * @param r Not null runnable to execute.
      * @return Future for this execution.
      * @see #callLocal(Callable)
      * @see org.apache.ignite.lang.IgniteClosure
      */
-    public IgniteFuture<?> runLocal(@Nullable Runnable r);
+    public IgniteFuture<?> runLocal(@NotNull Runnable r);
 
     /**
      * Executes given closure after the delay.
      * <p>
      * Note that class {@link IgniteRunnable} implements {@link Runnable}
-     * @param r Runnable to execute.
+     * @param r Not null runnable to execute.
      * @param delay Initial delay.
      * @param timeUnit Time granularity.
      * @return java.io.Closeable which can be used to cancel execution.
      */
-    public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit);
+    public Closeable runLocal(@NotNull Runnable r, long delay, TimeUnit timeUnit);
 
     /**
      * Executes given callable on internal system thread pool asynchronously.
@@ -79,34 +80,33 @@ public interface IgniteScheduler {
      * Note that class {@link IgniteRunnable} implements {@link Runnable} and class {@link IgniteOutClosure}
      * implements {@link Callable} interface.
      *
-     * @param c Callable to execute. If {@code null} - this method is no-op.
+     * @param c Not null callable to execute.
      * @return Future for this execution.
      * @param <R> Type of the return value for the closure.
      * @see #runLocal(Runnable)
      * @see IgniteOutClosure
      */
-    public <R> IgniteFuture<R> callLocal(@Nullable Callable<R> c);
+    public <R> IgniteFuture<R> callLocal(@NotNull Callable<R> c);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     * @param job Job to schedule to run as a background cron-based job.
-     *      If {@code null} - this method is no-op.
+     * @param job Not null job to schedule to run as a background cron-based job.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
      */
-    public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn);
+    public SchedulerFuture<?> scheduleLocal(@NotNull Runnable job, String ptrn);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     * @param c Job to schedule to run as a background cron-based job.
+     * @param job Not null job to schedule to run as a background cron-based job.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
      */
-    public <R> SchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn);
+    public <R> SchedulerFuture<R> scheduleLocal(@NotNull Callable<R> job, String ptrn);
 }

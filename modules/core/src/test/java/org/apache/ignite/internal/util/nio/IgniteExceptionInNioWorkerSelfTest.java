@@ -24,10 +24,8 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -36,22 +34,15 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration("cache");
 
         ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -65,6 +56,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBrokenMessage() throws Exception {
         startGrids(GRID_CNT);
 
@@ -74,7 +66,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
             UUID nodeId = ignite(1).cluster().localNode().id();
 
             // This should trigger a failure in a NIO thread.
-            kernal.context().io().send(nodeId, GridTopic.TOPIC_CACHE.topic("cache"), new BrokenMessage(), (byte)0);
+            kernal.context().io().sendToCustomTopic(nodeId, GridTopic.TOPIC_CACHE.topic("cache"), new BrokenMessage(), (byte)0);
 
             for (int i = 0; i < 100; i++)
                 ignite(0).cache("cache").put(i, i);
@@ -92,7 +84,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         private boolean fail = true;
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             if (fail) {
                 fail = false;
 

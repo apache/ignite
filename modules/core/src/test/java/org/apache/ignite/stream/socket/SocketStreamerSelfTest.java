@@ -38,19 +38,18 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -58,11 +57,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  * Tests {@link SocketStreamer}.
  */
 public class SocketStreamerSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid count. */
-    private final static int GRID_CNT = 3;
+    private static final int GRID_CNT = 3;
 
     /** Count. */
     private static final int CNT = 500;
@@ -74,18 +70,14 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     private static int port;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -100,14 +92,10 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeBasedDefaultConverter() throws Exception {
         test(null, null, new Runnable() {
             @Override public void run() {
@@ -136,6 +124,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleEntriesFromOneMessage() throws Exception {
         test(null, null, new Runnable() {
             @Override public void run() {
@@ -144,9 +133,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                     Marshaller marsh = new JdkMarshaller();
 
                     int[] values = new int[CNT];
-                    for (int i = 0; i < CNT; i++) {
+                    for (int i = 0; i < CNT; i++)
                         values[i] = i;
-                    }
 
                     byte[] msg = marsh.marshal(new Message(values));
 
@@ -167,6 +155,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
             @Override public Message convert(byte[] msg) {
@@ -206,6 +195,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterBasedDefaultConverter() throws Exception {
         test(null, DELIM, new Runnable() {
             @Override public void run() {
@@ -231,6 +221,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelimiterBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
             @Override public Message convert(byte[] msg) {
@@ -268,19 +259,19 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      * @param converter Converter.
      * @param r Runnable..
      */
-    private void test(@Nullable SocketMessageConverter<Message> converter, 
-        @Nullable byte[] delim, 
+    private void test(@Nullable SocketMessageConverter<Message> converter,
+        @Nullable byte[] delim,
         Runnable r,
         boolean oneMessagePerTuple) throws Exception {
         SocketStreamer<Message, Integer, String> sockStmr = null;
 
         Ignite ignite = grid(0);
 
-        IgniteCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         cache.clear();
 
-        try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
@@ -330,7 +321,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
+            ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
             sockStmr.start();
 

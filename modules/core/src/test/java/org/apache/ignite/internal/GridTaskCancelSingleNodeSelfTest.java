@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -39,6 +38,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
@@ -62,6 +62,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImmediateCancellation() throws Exception {
         checkCancellation(0L);
     }
@@ -69,6 +70,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancellation() throws Exception {
         checkCancellation(2000L);
     }
@@ -118,11 +120,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_JOB_STARTED, EVT_JOB_FINISHED, EVT_JOB_CANCELLED, EVT_JOB_REJECTED);
 
-        IgniteCompute comp = grid().compute().withAsync();
-
-        comp.execute(TestTask.class, null);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = grid().compute().executeAsync(TestTask.class, null);
 
         if (timeoutBeforeCancel > 0L)
             Thread.sleep(timeoutBeforeCancel);

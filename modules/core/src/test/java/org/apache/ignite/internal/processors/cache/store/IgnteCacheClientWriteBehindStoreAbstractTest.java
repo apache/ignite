@@ -28,11 +28,20 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Tests that write behind store is updated if client does not have store.
  */
 public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends IgniteCacheAbstractTest {
+    /** */
+    @Before
+    public void beforeCacheStoreListenerRWThroughDisabledTransactionalCacheTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -49,13 +58,15 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteBehindEnabled(true);
         ccfg.setWriteBehindBatchSize(10);
 
-        if (getTestGridName(2).equals(gridName)) {
+        if (getTestIgniteInstanceName(2).equals(igniteInstanceName)) {
             ccfg.setCacheStoreFactory(null);
             ccfg.setWriteThrough(false);
             ccfg.setReadThrough(false);
@@ -66,10 +77,10 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(2).equals(gridName))
+        if (getTestIgniteInstanceName(2).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;
@@ -83,12 +94,13 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientWithoutStore() throws Exception {
         Ignite client = grid(2);
 
         assertTrue(client.configuration().isClientMode());
 
-        IgniteCache<Integer, Integer> cache = client.cache(null);
+        IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
 
         assertNull(cache.getConfiguration(CacheConfiguration.class).getCacheStoreFactory());
 

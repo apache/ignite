@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -32,8 +33,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -41,13 +42,10 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("NullableProblems")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheStoreFactory(null);
 
         return cfg;
     }
@@ -55,6 +53,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadOptimisticReadCommitted() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
     }
@@ -62,6 +61,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadOptimisticRepeatableRead() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
@@ -69,6 +69,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadOptimisticSerializable() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
     }
@@ -76,6 +77,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadPessimisticReadCommitted() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
     }
@@ -83,6 +85,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadPessimisticRepeatableRead() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
     }
@@ -90,6 +93,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     /**
      * @throws IgniteCheckedException If failed
      */
+    @Test
     public void testTxReadPessimisticSerializable() throws IgniteCheckedException {
         checkTransactionalRead(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
     }

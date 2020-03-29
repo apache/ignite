@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.sql.*;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -33,9 +31,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  * Tests for empty cache.
  */
 public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -47,8 +42,8 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = defaultCacheConfiguration();
 
@@ -62,12 +57,6 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
@@ -76,13 +65,6 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -106,6 +88,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectNumber() throws Exception {
         ResultSet rs = stmt.executeQuery("select 1");
 
@@ -124,6 +107,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSelectString() throws Exception {
         ResultSet rs = stmt.executeQuery("select 'str'");
 

@@ -113,17 +113,12 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
         }
 
         switch (writer.state()) {
-            case 8:
+            case 9:
                 if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
-                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -140,16 +135,8 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
             return false;
 
         switch (reader.state()) {
-            case 8:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 9:
-                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -162,7 +149,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 36;
     }
 

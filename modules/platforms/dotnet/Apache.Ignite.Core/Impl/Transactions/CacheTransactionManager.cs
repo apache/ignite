@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Transactions;
     using Apache.Ignite.Core.Transactions;
@@ -81,9 +82,17 @@ namespace Apache.Ignite.Core.Impl.Transactions
             }
         }
 
+        public bool IsInTx()
+        {
+            return _transactions.Tx != null;
+        }
+
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)
         {
+            Debug.Assert(preparingEnlistment != null);
+
             var igniteTx = _transactions.Tx;
 
             if (igniteTx != null && Enlistment.Value != null)
@@ -95,8 +104,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         void IEnlistmentNotification.Commit(Enlistment enlistment)
         {
+            Debug.Assert(enlistment != null);
+
             var igniteTx = _transactions.Tx;
 
             if (igniteTx != null && Enlistment.Value != null)
@@ -114,8 +126,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         void IEnlistmentNotification.Rollback(Enlistment enlistment)
         {
+            Debug.Assert(enlistment != null);
+
             var igniteTx = _transactions.Tx;
 
             if (igniteTx != null && Enlistment.Value != null)
@@ -131,8 +146,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         void IEnlistmentNotification.InDoubt(Enlistment enlistment)
         {
+            Debug.Assert(enlistment != null);
+
             enlistment.Done();
         }
 

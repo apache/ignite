@@ -95,11 +95,6 @@
 
                     <property name="cacheMode" value="PARTITIONED"/>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize">
-                        <util:constant static-field="org.apache.ignite.loadtests.colocation.GridTestConstants.CACHE_INIT_SIZE"/>
-                    </property>
-
                     <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).

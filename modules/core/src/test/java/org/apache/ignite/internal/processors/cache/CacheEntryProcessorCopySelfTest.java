@@ -34,6 +34,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for value copy in entry processor.
@@ -55,8 +56,8 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     private boolean p2pEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeEventTypes(EMPTY_ARR);
 
@@ -68,6 +69,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutableEntryWithP2PEnabled() throws Exception {
         doTestMutableEntry(true);
     }
@@ -75,6 +77,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMutableEntryWithP2PDisabled() throws Exception {
         doTestMutableEntry(false);
     }
@@ -149,7 +152,15 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            CacheObject obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(0).peekVisibleValue();
+            GridCacheAdapter ca = (GridCacheAdapter)((IgniteCacheProxy)cache).internalProxy().delegate();
+
+            GridCacheEntryEx entry = ca.entryEx(0);
+
+            entry.unswap();
+
+            CacheObject obj = entry.peekVisibleValue();
+
+            entry.touch();
 
             int actCnt = cnt.get();
 

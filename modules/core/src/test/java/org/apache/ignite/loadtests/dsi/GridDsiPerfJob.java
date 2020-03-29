@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.dsi;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  *
@@ -48,7 +48,11 @@ import org.jsr166.ConcurrentHashMap8;
 public class GridDsiPerfJob extends ComputeJobAdapter {
     /** */
     private static final ConcurrentMap<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> timers =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
+
+    /** */
+    @AffinityKeyMapped
+    private String affKey;
 
     /** */
     private static final long PRINT_FREQ = 10000;
@@ -71,6 +75,8 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      */
     public GridDsiPerfJob(@Nullable GridDsiMessage msg) {
         super(msg);
+
+        affKey = message().getTerminalId();
     }
 
     /**
@@ -83,7 +89,6 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @return Terminal ID.
      */
-    @AffinityKeyMapped
     @Nullable public String terminalId() {
         GridDsiMessage msg = message();
 
@@ -141,7 +146,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
         if (m == null) {
             ConcurrentMap<String, T3<Long, Long, Long>> old = timers.putIfAbsent(Thread.currentThread(),
-                m = new ConcurrentHashMap8<>());
+                m = new ConcurrentHashMap<>());
 
             if (old != null)
                 m = old;
@@ -336,7 +341,6 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @param key Key.
      * @return Object.
      */
-    @SuppressWarnings("ConstantConditions")
     private <T> Object get(Object key) {
         return ignite.cache(cacheName).get(key);
     }

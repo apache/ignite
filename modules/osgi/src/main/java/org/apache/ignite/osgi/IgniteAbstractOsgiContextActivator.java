@@ -226,7 +226,7 @@ public abstract class IgniteAbstractOsgiContextActivator implements BundleActiva
     private void exportOsgiService(Ignite ignite) {
         Dictionary<String, String> dict = new Hashtable<>();
 
-        // Only add the service property if the grid name != null.
+        // Only add the service property if the Ignite instance name != null.
         if (ignite.name() != null)
             dict.put(OSGI_SERVICE_PROP_IGNITE_NAME, ignite.name());
 

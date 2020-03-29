@@ -27,8 +27,12 @@ import org.jetbrains.annotations.Nullable;
  * Future that delegates to some other future.
  */
 public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
-    /** */
-    private static final long serialVersionUID = 0L;
+    /**
+     *
+     */
+    public GridNioEmbeddedFuture() {
+        super(null);
+    }
 
     /**
      * Callback to notify that future is finished.
@@ -52,16 +56,18 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
 
         if (err != null)
             onDone(err);
-        else delegate.listen(new IgniteInClosure<IgniteInternalFuture<R>>() {
-            @Override public void apply(IgniteInternalFuture<R> t) {
-                try {
-                    onDone(t.get());
+        else {
+            delegate.listen(new IgniteInClosure<IgniteInternalFuture<R>>() {
+                @Override public void apply(IgniteInternalFuture<R> t) {
+                    try {
+                        onDone(t.get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-                }
-            }
-        });
+            });
+        }
     }
 
     /** {@inheritDoc} */

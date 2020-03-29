@@ -36,13 +36,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheAlwaysEvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,12 +55,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private static ThreadLocal<Boolean> client = new ThreadLocal<>();
-
     /** */
     private static final int SRVS = 3;
 
@@ -78,20 +71,12 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     private static final String ATOMIC_CACHE = "atomic";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        Boolean clientMode = client.get();
-
-        client.set(null);
-
-        if (clientMode != null && clientMode)
-            cfg.setClientMode(true);
-        else {
+        if (!cfg.isClientMode()) {
             cfg.setCacheConfiguration(cacheConfiguration(TX_CACHE1, TRANSACTIONAL),
                 cacheConfiguration(TX_CACHE2, TRANSACTIONAL),
                 cacheConfiguration(ATOMIC_CACHE, ATOMIC));
@@ -106,7 +91,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setAtomicityMode(atomicityMode);
@@ -122,15 +107,11 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
         startGridsMultiThreaded(SRVS);
 
-        client.set(true);
-
-        Ignite client1 = startGrid(SRVS);
+        Ignite client1 = startClientGrid(SRVS);
 
         assertTrue(client1.configuration().isClientMode());
 
-        client.set(true);
-
-        Ignite client2 = startGrid(SRVS + 1);
+        Ignite client2 = startClientGrid(SRVS + 1);
 
         assertTrue(client2.configuration().isClientMode());
 
@@ -154,6 +135,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), TX_CACHE1);
         getInsideLockStopPrimary(ignite(SRVS + 1), TX_CACHE1);
@@ -165,6 +147,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideLockStopPrimary() throws Exception {
         getInsideLockStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -174,6 +157,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicGetInsideTxStopPrimary() throws Exception {
         getInsideTxStopPrimary(ignite(SRVS), ATOMIC_CACHE);
 
@@ -183,6 +167,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedPessimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, PESSIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, PESSIMISTIC);
@@ -194,6 +179,7 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedOptimisticStopPrimary() throws Exception {
         getReadCommittedStopPrimary(ignite(SRVS), TX_CACHE1, OPTIMISTIC);
         getReadCommittedStopPrimary(ignite(SRVS + 1), TX_CACHE1, OPTIMISTIC);
@@ -316,9 +302,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private void getInsideTxStopPrimary(Ignite ignite, String cacheName) throws Exception {
-        IgniteCache<Integer, Integer> txCache = ignite.cache(TX_CACHE1);
+        IgniteCache<Integer, Integer> txCache = ignite.cache(TX_CACHE1).withAllowAtomicOpsInTx();
 
-        IgniteCache<Integer, Integer> getCache = ignite.cache(cacheName);
+        IgniteCache<Integer, Integer> getCache = ignite.cache(cacheName).withAllowAtomicOpsInTx();
 
         final int NEW_NODE = SRVS + CLIENTS;
 
@@ -362,9 +348,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2204")
+    @Test
     public void testMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2204");
-
         final AtomicBoolean finished = new AtomicBoolean();
 
         final int NEW_NODE = SRVS + CLIENTS;
@@ -406,9 +392,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
                     Ignite ignite = ignite(node);
 
-                    IgniteCache<Integer, Integer> txCache1 = ignite.cache(TX_CACHE1);
-                    IgniteCache<Integer, Integer> txCache2 = ignite.cache(TX_CACHE2);
-                    IgniteCache<Integer, Integer> atomicCache = ignite.cache(ATOMIC_CACHE);
+                    IgniteCache<Integer, Integer> txCache1 = ignite.cache(TX_CACHE1).withAllowAtomicOpsInTx();
+                    IgniteCache<Integer, Integer> txCache2 = ignite.cache(TX_CACHE2).withAllowAtomicOpsInTx();
+                    IgniteCache<Integer, Integer> atomicCache = ignite.cache(ATOMIC_CACHE).withAllowAtomicOpsInTx();
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

@@ -63,7 +63,7 @@ public class GridNioMessageTracker implements IgniteRunnable {
         // It seems acceptable to have the following logic accounting the aforementioned.
         int cnt = 0;
 
-        for (;;) {
+        for (; ; ) {
             int cur = msgCnt.get();
 
             if (cur == 0)
@@ -90,6 +90,13 @@ public class GridNioMessageTracker implements IgniteRunnable {
                 lock.unlock();
             }
         }
+    }
+
+    /**
+     *
+     */
+    public void onMessageProcessed() {
+        run();
     }
 
     /**

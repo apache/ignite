@@ -28,25 +28,19 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -56,24 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static volatile boolean failed;
-
-    /** */
-    protected boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -92,10 +69,10 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
-        super.afterTestsStopped();
+        ignite(0).destroyCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -129,76 +106,71 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
 
         ignite0.createCache(ccfg);
 
-        try {
-            int key = 0;
+        int key = 0;
 
-            for (Ignite node : G.allGrids()) {
-                if (node.configuration().isClientMode() && ccfg.getNearConfiguration() != null)
-                    node.createNearCache(ccfg.getName(), ccfg.getNearConfiguration());
-            }
+        for (Ignite node : G.allGrids()) {
+            if (node.configuration().isClientMode() && ccfg.getNearConfiguration() != null)
+                node.createNearCache(ccfg.getName(), ccfg.getNearConfiguration());
+        }
 
-            for (Ignite node : G.allGrids()) {
-                log.info("Test for node: " + node.name());
+        for (Ignite node : G.allGrids()) {
+            log.info("Test for node: " + node.name());
 
-                IgniteCache<Object, Object> cache = node.cache(ccfg.getName());
+            IgniteCache<Object, Object> cache = node.cache(ccfg.getName());
 
-                for (int i = 0; i < 50; i++)
-                    checkReadThrough(cache, key++, null, null);
+            for (int i = 0; i < 50; i++)
+                checkReadThrough(cache, key++, null, null);
 
-                Set<Object> keys = new HashSet<>();
+            Set<Object> keys = new HashSet<>();
 
-                for (int i = 0; i < 5; i++)
-                    keys.add(key++);
+            for (int i = 0; i < 5; i++)
+                keys.add(key++);
 
-                checkReadThroughInvokeAll(cache, keys, null, null);
+            checkReadThroughInvokeAll(cache, keys, null, null);
 
-                keys = new HashSet<>();
+            keys = new HashSet<>();
 
-                for (int i = 0; i < 100; i++)
-                    keys.add(key++);
+            for (int i = 0; i < 100; i++)
+                keys.add(key++);
 
-                checkReadThroughInvokeAll(cache, keys, null, null);
+            checkReadThroughInvokeAll(cache, keys, null, null);
 
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                    for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                            log.info("Test tx [concurrency=" + concurrency + ", isolation=" + isolation + ']');
+            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        log.info("Test tx [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-                            for (int i = 0; i < 50; i++)
-                                checkReadThrough(cache, key++, concurrency, isolation);
+                        for (int i = 0; i < 50; i++)
+                            checkReadThrough(cache, key++, concurrency, isolation);
 
-                            keys = new HashSet<>();
+                        keys = new HashSet<>();
 
-                            for (int i = 0; i < 5; i++)
-                                keys.add(key++);
+                        for (int i = 0; i < 5; i++)
+                            keys.add(key++);
 
-                            checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
+                        checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
 
-                            keys = new HashSet<>();
+                        keys = new HashSet<>();
 
-                            for (int i = 0; i < 100; i++)
-                                keys.add(key++);
+                        for (int i = 0; i < 100; i++)
+                            keys.add(key++);
 
-                            checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
-                        }
+                        checkReadThroughInvokeAll(cache, keys, concurrency, isolation);
                     }
+                }
 
-                    for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                            log.info("Test tx2 [concurrency=" + concurrency + ", isolation=" + isolation + ']');
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        log.info("Test tx2 [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-                            for (int i = 0; i < 50; i++)
-                                checkReadThroughGetAndInvoke(cache, key++, concurrency, isolation);
-                        }
+                        for (int i = 0; i < 50; i++)
+                            checkReadThroughGetAndInvoke(cache, key++, concurrency, isolation);
                     }
                 }
             }
+        }
 
-            ignite0.cache(ccfg.getName()).removeAll();
-        }
-        finally {
-            ignite0.destroyCache(ccfg.getName());
-        }
+        ignite0.cache(ccfg.getName()).removeAll();
     }
 
     /**
@@ -322,7 +294,6 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
     /**
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
-     * @param memoryMode Memory mode.
      * @param backups Number of backups.
      * @param nearCache Near cache flag.
      * @return Cache configuration.
@@ -330,10 +301,9 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         int backups,
         boolean nearCache) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
@@ -342,8 +312,6 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setMemoryMode(memoryMode);
 
         if (nearCache)
             ccfg.setNearConfiguration(new NearCacheConfiguration());

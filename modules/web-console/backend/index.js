@@ -17,79 +17,24 @@
 
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
-const http = require('http');
-const https = require('https');
 
-const igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
+const appPath = require('app-module-path');
+appPath.addPath(__dirname);
+appPath.addPath(path.join(__dirname, 'node_modules'));
 
-let injector;
+const { migrate, init } = require('./launch-tools');
 
-try {
-    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'backend', 'injector.js'));
+const injector = require('./injector');
 
-    fs.accessSync(igniteModulesInjector, fs.F_OK);
+injector.log.info = () => {};
+injector.log.debug = () => {};
 
-    injector = require(igniteModulesInjector);
-} catch (ignore) {
-    injector = require(path.join(__dirname, './injector'));
-}
-
-/**
- * Event listener for HTTP server "error" event.
- */
-const _onError = (port, error) => {
-    if (error.syscall !== 'listen')
-        throw error;
-
-    const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
-
-    // Handle specific listen errors with friendly messages.
-    switch (error.code) {
-        case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
-            process.exit(1);
-
-            break;
-        case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
-            process.exit(1);
-
-            break;
-        default:
-            throw error;
-    }
-};
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-const _onListening = (addr) => {
-    const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
-
-    console.log('Start listening on ' + bind);
-};
-
-Promise.all([injector('settings'), injector('app'), injector('agent-manager'), injector('browser-manager')])
-    .then(([settings, app, agentMgr, browserMgr]) => {
-        // Start rest server.
-        const server = settings.server.SSLOptions
-            ? https.createServer(settings.server.SSLOptions) : http.createServer();
-
-        server.listen(settings.server.port);
-        server.on('error', _onError.bind(null, settings.server.port));
-        server.on('listening', _onListening.bind(null, server.address()));
-
-        app.listen(server);
-
-        agentMgr.attach(server);
-        browserMgr.attach(server);
-
-        // Used for automated test.
-        if (process.send)
-            process.send('running');
-    }).catch((err) => {
+injector('mongo')
+    .then((mongo) => migrate(mongo.connection, 'Ignite', path.join(__dirname, 'migrations')))
+    .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
+    .then(init)
+    .catch((err) => {
         console.error(err);
 
         process.exit(1);

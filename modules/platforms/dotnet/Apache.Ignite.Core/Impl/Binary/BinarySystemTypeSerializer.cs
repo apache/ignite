@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public T1 ReadBinary<T1>(BinaryReader reader, Type type, int pos)
+        public T1 ReadBinary<T1>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride)
         {
             return TypeCaster<T1>.Cast(_ctor(reader));
         }

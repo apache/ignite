@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
@@ -49,13 +51,12 @@ import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -87,7 +88,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * {@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi JobStealingFailoverSpi}.
  * Also note that job metrics update should be enabled in order for this SPI
  * to work properly (i.e. {@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsUpdateFrequency() IgniteConfiguration#getMetricsUpdateFrequency()}
- * should be set to {@code 0} or greater value).
+ * should be set to positive value).
  * The responsibility of Job Stealing Failover SPI is to properly route <b>stolen</b>
  * jobs to the nodes that initially requested (<b>stole</b>) these jobs. The
  * SPI maintains a counter of how many times a jobs was stolen and
@@ -185,8 +186,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = true)
-public class JobStealingCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
-    JobStealingCollisionSpiMBean {
+public class JobStealingCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /** Maximum number of attempts to steal job by another node (default is {@code 5}). */
     public static final int DFLT_MAX_STEALING_ATTEMPTS = 5;
 
@@ -253,7 +253,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private volatile int activeJobsThreshold = DFLT_ACTIVE_JOBS_THRESHOLD;
 
     /** Configuration parameter defining waiting job count threshold for stealing to start. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private volatile int waitJobsThreshold = DFLT_WAIT_JOBS_THRESHOLD;
 
     /** Message expire time configuration parameter. */
@@ -282,13 +281,13 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private final AtomicInteger totalStolenJobsNum = new AtomicInteger();
 
     /** Map of sent messages. */
-    private final ConcurrentMap<UUID, MessageInfo> sndMsgMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, MessageInfo> sndMsgMap = new ConcurrentHashMap<>();
 
     /** Map of received messages. */
-    private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap<>();
 
     /** */
-    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque8<>();
+    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque<>();
 
     /** */
     private CollisionExternalListener extLsnr;
@@ -305,66 +304,133 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     /** */
     private Comparator<CollisionJobContext> cmp;
 
-    /** {@inheritDoc} */
+    /**
+     * Sets number of jobs that can be executed in parallel.
+     *
+     * @param activeJobsThreshold Number of jobs that can be executed in parallel.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setActiveJobsThreshold(int activeJobsThreshold) {
+    public JobStealingCollisionSpi setActiveJobsThreshold(int activeJobsThreshold) {
         A.ensure(activeJobsThreshold >= 0, "activeJobsThreshold >= 0");
 
         this.activeJobsThreshold = activeJobsThreshold;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getActiveJobsThreshold() {
+    /**
+     * See {@link #setActiveJobsThreshold(int)}.
+     *
+     * @return Number of jobs that can be executed in parallel.
+     */
+    public int getActiveJobsThreshold() {
         return activeJobsThreshold;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets job count threshold at which this node will
+     * start stealing jobs from other nodes.
+     *
+     * @param waitJobsThreshold Job count threshold.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setWaitJobsThreshold(int waitJobsThreshold) {
+    public JobStealingCollisionSpi setWaitJobsThreshold(int waitJobsThreshold) {
         A.ensure(waitJobsThreshold >= 0, "waitJobsThreshold >= 0");
 
         this.waitJobsThreshold = waitJobsThreshold;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getWaitJobsThreshold() {
+    /**
+     * See {@link #setWaitJobsThreshold(int)}.
+     *
+     * @return Job count threshold.
+     */
+    public int getWaitJobsThreshold() {
         return waitJobsThreshold;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Message expire time configuration parameter. If no response is received
+     * from a busy node to a job stealing message, then implementation will
+     * assume that message never got there, or that remote node does not have
+     * this node included into topology of any of the jobs it has.
+     *
+     * @param msgExpireTime Message expire time.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setMessageExpireTime(long msgExpireTime) {
+    public JobStealingCollisionSpi setMessageExpireTime(long msgExpireTime) {
         A.ensure(msgExpireTime > 0, "messageExpireTime > 0");
 
         this.msgExpireTime = msgExpireTime;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMessageExpireTime() {
+    /**
+     * See {@link #setMessageExpireTime(long)}.
+     *
+     * @return Message expire time.
+     */
+    public long getMessageExpireTime() {
         return msgExpireTime;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets flag indicating whether this node should attempt to steal jobs
+     * from other nodes. If {@code false}, then this node will steal allow
+     * jobs to be stolen from it, but won't attempt to steal any jobs from
+     * other nodes.
+     * <p>
+     * Default value is {@code true}.
+     *
+     * @param isStealingEnabled Flag indicating whether this node should attempt to steal jobs
+     *      from other nodes.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setStealingEnabled(boolean isStealingEnabled) {
+    public JobStealingCollisionSpi setStealingEnabled(boolean isStealingEnabled) {
         this.isStealingEnabled = isStealingEnabled;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isStealingEnabled() {
+    /**
+     * See {@link #setStealingEnabled(boolean)}.
+     *
+     * @return Flag indicating whether this node should attempt to steal jobs
+     *      from other nodes.
+     */
+    public boolean isStealingEnabled() {
         return isStealingEnabled;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets maximum number of attempts to steal job by another node.
+     * If not specified, {@link JobStealingCollisionSpi#DFLT_MAX_STEALING_ATTEMPTS}
+     * value will be used.
+     *
+     * @param maxStealingAttempts Maximum number of attempts to steal job by another node.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setMaximumStealingAttempts(int maxStealingAttempts) {
+    public JobStealingCollisionSpi setMaximumStealingAttempts(int maxStealingAttempts) {
         A.ensure(maxStealingAttempts > 0, "maxStealingAttempts > 0");
 
         this.maxStealingAttempts = maxStealingAttempts;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaximumStealingAttempts() {
+    /**
+     * See {@link #setMaximumStealingAttempts(int)}.
+     *
+     * @return Maximum number of attempts to steal job by another node.
+     */
+    public int getMaximumStealingAttempts() {
         return maxStealingAttempts;
     }
 
@@ -374,46 +440,79 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      * {@link org.apache.ignite.configuration.IgniteConfiguration#getUserAttributes()} methods).
      *
      * @param stealAttrs Node attributes to enable job stealing for.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setStealingAttributes(Map<String, ? extends Serializable> stealAttrs) {
+    public JobStealingCollisionSpi setStealingAttributes(Map<String, ? extends Serializable> stealAttrs) {
         this.stealAttrs = stealAttrs;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, ? extends Serializable> getStealingAttributes() {
+    /**
+     * {@link #setStealingAttributes(Map)}.
+     *
+     * @return Node attributes to enable job stealing for.
+     */
+     public Map<String, ? extends Serializable> getStealingAttributes() {
         return stealAttrs;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentRunningJobsNumber() {
+    /**
+     * Gets number of currently running (not {@code 'held}) jobs.
+     *
+     * @return Number of currently running (not {@code 'held}) jobs.
+     */
+    public int getCurrentRunningJobsNumber() {
         return runningNum;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentHeldJobsNumber() {
+    /**
+     * Gets number of currently {@code 'held'} jobs.
+     *
+     * @return Number of currently {@code 'held'} jobs.
+     */
+    public int getCurrentHeldJobsNumber() {
         return heldNum;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentWaitJobsNumber() {
+    /**
+     * Gets current number of jobs that wait for the execution.
+     *
+     * @return Number of jobs that wait for execution.
+     */
+    public int getCurrentWaitJobsNumber() {
         return waitingNum;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentActiveJobsNumber() {
+    /**
+     * Gets current number of jobs that are being executed.
+     *
+     * @return Number of active jobs.
+     */
+    public int getCurrentActiveJobsNumber() {
         return runningNum + heldNum;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalStolenJobsNumber() {
+    /**
+     * Gets total number of stolen jobs.
+     *
+     * @return Number of stolen jobs.
+     */
+    public int getTotalStolenJobsNumber() {
         return totalStolenJobsNum.get();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentJobsToStealNumber() {
+    /**
+     * Gets current number of jobs to be stolen. This is outstanding
+     * requests number.
+     *
+     * @return Number of jobs to be stolen.
+     */
+    public int getCurrentJobsToStealNumber() {
         return stealReqs.get();
     }
+
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
@@ -428,7 +527,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         assertParameter(activeJobsThreshold >= 0, "activeJobsThreshold >= 0");
         assertParameter(waitJobsThreshold >= 0, "waitJobsThreshold >= 0");
         assertParameter(msgExpireTime > 0, "messageExpireTime > 0");
@@ -445,7 +544,8 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
             log.debug(configInfo("maxStealingAttempts", maxStealingAttempts));
         }
 
-        registerMBean(gridName, this, JobStealingCollisionSpiMBean.class);
+        registerMBean(igniteInstanceName, new JobStealingCollisionSpiMBeanImpl(this),
+            JobStealingCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -470,7 +570,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
-                @SuppressWarnings("fallthrough")
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent;
 
@@ -547,7 +646,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
         spiCtx.addMessageListener(
             msgLsnr = new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     MessageInfo info = rcvMsgMap.get(nodeId);
 
                     if (info == null) {
@@ -698,7 +797,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
                 // requested to be stolen. Note, that we use lose total steal request
                 // counter to prevent excessive iteration over nodes under load.
                 for (Iterator<Entry<UUID, MessageInfo>> iter = rcvMsgMap.entrySet().iterator();
-                     iter.hasNext() && stealReqs.get() > 0;) {
+                    iter.hasNext() && stealReqs.get() > 0;) {
                     Entry<UUID, MessageInfo> entry = iter.next();
 
                     UUID nodeId = entry.getKey();
@@ -998,6 +1097,13 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     }
 
     /** {@inheritDoc} */
+    @Override public JobStealingCollisionSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(JobStealingCollisionSpi.class, this);
     }
@@ -1010,7 +1116,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         private int jobsToSteal;
 
         /** */
-        private long ts = U.currentTimeMillis();
+        private long ts = System.nanoTime();
 
         /**
          * @return Job to steal.
@@ -1027,7 +1133,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         boolean expired() {
             assert Thread.holdsLock(this);
 
-            return jobsToSteal > 0 && U.currentTimeMillis() - ts >= msgExpireTime;
+            return jobsToSteal > 0 && U.millisSinceNanos(ts) >= msgExpireTime;
         }
 
         /**
@@ -1038,7 +1144,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
             this.jobsToSteal = jobsToSteal;
 
-            ts = U.currentTimeMillis();
+            ts = System.nanoTime();
         }
 
         /** {@inheritDoc} */
@@ -1047,4 +1153,99 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         }
     }
 
+    /**
+     * MBean implementation for JobStealingCollisionSpi.
+     */
+    private class JobStealingCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter
+        implements JobStealingCollisionSpiMBean {
+        /** {@inheritDoc} */
+        JobStealingCollisionSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, ? extends Serializable> getStealingAttributes() {
+            return JobStealingCollisionSpi.this.getStealingAttributes();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentRunningJobsNumber() {
+            return JobStealingCollisionSpi.this.getCurrentRunningJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentHeldJobsNumber() {
+            return JobStealingCollisionSpi.this.getCurrentHeldJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentWaitJobsNumber() {
+            return JobStealingCollisionSpi.this.getCurrentWaitJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentActiveJobsNumber() {
+            return JobStealingCollisionSpi.this.getCurrentActiveJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalStolenJobsNumber() {
+            return JobStealingCollisionSpi.this.getTotalStolenJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentJobsToStealNumber() {
+            return JobStealingCollisionSpi.this.getCurrentJobsToStealNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setActiveJobsThreshold(int activeJobsThreshold) {
+            JobStealingCollisionSpi.this.setActiveJobsThreshold(activeJobsThreshold);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getActiveJobsThreshold() {
+            return JobStealingCollisionSpi.this.getActiveJobsThreshold();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setWaitJobsThreshold(int waitJobsThreshold) {
+            JobStealingCollisionSpi.this.setWaitJobsThreshold(waitJobsThreshold);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWaitJobsThreshold() {
+            return JobStealingCollisionSpi.this.getWaitJobsThreshold();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMessageExpireTime(long msgExpireTime) {
+            JobStealingCollisionSpi.this.setMessageExpireTime(msgExpireTime);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMessageExpireTime() {
+            return JobStealingCollisionSpi.this.getMessageExpireTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setStealingEnabled(boolean isStealingEnabled) {
+            JobStealingCollisionSpi.this.setStealingEnabled(isStealingEnabled);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStealingEnabled() {
+            return JobStealingCollisionSpi.this.isStealingEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setMaximumStealingAttempts(int maxStealingAttempts) {
+            JobStealingCollisionSpi.this.setMaximumStealingAttempts(maxStealingAttempts);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaximumStealingAttempts() {
+            return JobStealingCollisionSpi.this.getMaximumStealingAttempts();
+        }
+    }
 }

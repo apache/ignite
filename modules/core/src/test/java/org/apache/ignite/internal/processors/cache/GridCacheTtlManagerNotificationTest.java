@@ -33,12 +33,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,30 +51,23 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     /** Prefix for cache name fir multi caches test. */
     private static final String CACHE_PREFIX = "cache-";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test cache mode. */
     protected CacheMode cacheMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES_CNT + 1];
 
-        ccfgs[0] = createCacheConfiguration(null);
+        ccfgs[0] = createCacheConfiguration(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < CACHES_CNT; i++)
             ccfgs[i + 1] = createCacheConfiguration(CACHE_PREFIX + i);
 
         cfg.setCacheConfiguration(ccfgs);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -86,7 +77,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      */
     private CacheConfiguration createCacheConfiguration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);
@@ -98,6 +89,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThatNotificationWorkAsExpected() throws Exception {
         try (final Ignite g = startGrid(0)) {
             final BlockingArrayQueue<Event> queue = new BlockingArrayQueue<>();
@@ -112,7 +104,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
 
             final String key = "key";
 
-            IgniteCache<Object, Object> cache = g.cache(null);
+            IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
             ExpiryPolicy plc1 = new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100_000));
 
@@ -134,6 +126,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThatNotificationWorkAsExpectedInMultithreadedMode() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(21);
         final AtomicInteger keysRangeGen = new AtomicInteger();
@@ -141,7 +134,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
         final int cnt = 1_000;
 
         try (final Ignite g = startGrid(0)) {
-            final IgniteCache<Object, Object> cache = g.cache(null);
+            final IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 
             g.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
@@ -150,7 +143,6 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                     return true;
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
-
 
             int smallDuration = 2000;
 
@@ -185,6 +177,7 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThatNotificationWorkAsExpectedManyCaches() throws Exception {
         final int smallDuration = 4_000;
 

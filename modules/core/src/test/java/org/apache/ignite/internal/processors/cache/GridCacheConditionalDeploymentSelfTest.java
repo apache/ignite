@@ -22,14 +22,15 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.CO;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,31 +41,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Cache + conditional deployment test.
  */
 public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /**
-     *
-     */
-    static {
-        GridIoMessageFactory.registerCustom(TestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new TestMessage();
-            }
-        });
-    }
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
+        cfg.setPluginProviders(new TestPluginProvider());
 
         return cfg;
     }
@@ -73,8 +56,8 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected CacheConfiguration cacheConfiguration() throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration<?, ?> cacheConfiguration() throws Exception {
+        CacheConfiguration<?, ?> cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -93,7 +76,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
-        ignite0.cache(null).put(1, new TestValue());
+        ignite0.cache(DEFAULT_CACHE_NAME).put(1, new TestValue());
     }
 
     /** {@inheritDoc} */
@@ -104,6 +87,7 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testNoDeploymentInfo() throws Exception {
         GridCacheIoManager ioMgr = cacheIoManager();
 
@@ -121,25 +105,33 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddedDeploymentInfo() throws Exception {
-        GridCacheIoManager ioMgr = cacheIoManager();
+        GridCacheContext<?, ?> ctx = cacheContext();
 
-        TestMessage msg = new TestMessage();
+        if (grid(0).configuration().getMarshaller() instanceof BinaryMarshaller)
+            assertFalse(ctx.deploymentEnabled());
+        else {
+            GridCacheIoManager ioMgr = cacheIoManager();
 
-        assertNull(msg.deployInfo());
+            TestMessage msg = new TestMessage();
 
-        msg.addDepInfo = true;
+            assertNull(msg.deployInfo());
 
-        IgniteUtils.invoke(GridCacheIoManager.class, ioMgr, "onSend", msg, grid(1).cluster().localNode().id());
+            msg.addDepInfo = true;
 
-        assertNotNull(msg.deployInfo());
+            IgniteUtils.invoke(GridCacheIoManager.class, ioMgr, "onSend", msg, grid(1).cluster().localNode().id());
+
+            assertNotNull(msg.deployInfo());
+        }
     }
 
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testAddedDeploymentInfo2() throws Exception {
-        GridCacheContext ctx = cacheContext();
+        GridCacheContext<?, ?> ctx = cacheContext();
 
         if (grid(0).configuration().getMarshaller() instanceof BinaryMarshaller)
             assertFalse(ctx.deploymentEnabled());
@@ -160,10 +152,16 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         }
     }
 
-    protected GridCacheContext cacheContext() {
-        return ((IgniteCacheProxy)grid(0).cache(null)).context();
+    /**
+     * @return Cache context.
+     */
+    protected GridCacheContext<?, ?> cacheContext() {
+        return ((IgniteCacheProxy<?, ?>)grid(0).cache(DEFAULT_CACHE_NAME)).context();
     }
 
+    /**
+     * @return IO manager.
+     */
     protected GridCacheIoManager cacheIoManager() {
         return grid(0).context().cache().context().io();
     }
@@ -173,12 +171,24 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
      */
     public static class TestMessage  extends GridCacheMessage implements GridCacheDeployable {
         /** */
-        public static final byte DIRECT_TYPE = (byte)302;
+        public static final short DIRECT_TYPE = 302;
 
-        @Override public byte directType() {
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
+        /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             return 3;
         }
@@ -191,6 +201,22 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
 
     /** */
     private static class TestValue {
+    }
 
+    /** */
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_PLUGIN";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(TestMessage.DIRECT_TYPE, TestMessage::new);
+                }
+            });
+        }
     }
 }

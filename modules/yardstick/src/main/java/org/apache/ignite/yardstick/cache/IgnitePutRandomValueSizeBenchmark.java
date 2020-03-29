@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 public class IgnitePutRandomValueSizeBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        IgniteCache<Integer, Object> cache = cacheForOperation();
+
         int key = nextRandom(args.range());
         int size = 64 + nextRandom(64);
 
@@ -36,6 +38,6 @@ public class IgnitePutRandomValueSizeBenchmark extends IgniteCacheAbstractBenchm
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return ignite().cache("atomic-offheap");
+        return ignite().cache("atomic");
     }
 }

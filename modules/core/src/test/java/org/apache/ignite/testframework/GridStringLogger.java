@@ -17,25 +17,34 @@
 
 package org.apache.ignite.testframework;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Logger which logs to string buffer.
+ *
+ * @deprecated Use {@link ListeningTestLogger} instead.
  */
+@Deprecated
 public class GridStringLogger implements IgniteLogger {
-    /** */
-    private static final int MAX = 1024 * 11;
+    /** Initial string builder capacity in bytes */
+    private static final int INITIAL = 1024 * 33;
 
-    /** */
-    private static final int CHAR_CNT = 1024 * 10;
+    /** Maximum characters to be kept in string builder */
+    private static final int CHAR_CNT = 1024 * 32;
 
-    /** */
-    private StringBuilder buf = new StringBuilder(MAX);
+    /** Builder to accumulate log messages */
+    private StringBuilder buf = new StringBuilder(INITIAL);
 
     /** */
     private final boolean dbg;
+
+    /** */
+    private volatile int chars = CHAR_CNT;
 
     /** */
     private final IgniteLogger echo;
@@ -64,22 +73,38 @@ public class GridStringLogger implements IgniteLogger {
     }
 
     /**
+     * @param chars History buffer length.
+     */
+    public void logLength(int chars) {
+        this.chars = chars;
+    }
+
+    /**
+     * @return History buffer length.
+     */
+    private int logLength() {
+        return chars;
+    }
+
+    /**
      * @param msg Message to log.
      */
-    private void log(String msg) {
+    private synchronized void log(String msg) {
         buf.append(msg).append(U.nl());
 
         if (echo != null)
             echo.info("[GridStringLogger echo] " + msg);
 
-        if (buf.length() > CHAR_CNT) {
+        int logLength = logLength();
+
+        if (buf.length() > logLength) {
             if (echo != null)
                 echo.warning("Cleaning GridStringLogger history.");
 
-            buf.delete(0, buf.length() - CHAR_CNT);
+            buf.delete(0, buf.length() - logLength);
         }
 
-        assert buf.length() <= CHAR_CNT;
+        assert buf.length() <= logLength;
     }
 
     /** {@inheritDoc} */
@@ -108,11 +133,22 @@ public class GridStringLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
+    @Override public synchronized void warning(String msg, @Nullable Throwable e) {
         log(msg);
 
         if (e != null)
-            log(e.toString());
+            logThrowable(e);
+    }
+
+    /**
+     * @param e Exception.
+     */
+    private void logThrowable(@NotNull Throwable e) {
+        StringWriter writer = new StringWriter();
+
+        e.printStackTrace(new PrintWriter(writer));
+
+        log(writer.toString());
     }
 
     /** {@inheritDoc} */
@@ -121,11 +157,11 @@ public class GridStringLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg, @Nullable Throwable e) {
+    @Override public synchronized void error(String msg, @Nullable Throwable e) {
         log(msg);
 
         if (e != null)
-            log(e.toString());
+            logThrowable(e);
     }
 
     /** {@inheritDoc} */
@@ -156,12 +192,12 @@ public class GridStringLogger implements IgniteLogger {
     /**
      * Resets logger.
      */
-    public void reset() {
+    public synchronized void reset() {
         buf.setLength(0);
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
+    @Override public synchronized String toString() {
         return buf.toString();
     }
 }

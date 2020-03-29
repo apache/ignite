@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Checks starts from Stream.
@@ -35,15 +36,16 @@ public class IgniteStartFromStreamConfigurationTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStartFromStream() throws Exception {
         String cfg = "examples/config/example-cache.xml";
 
         URL cfgLocation = U.resolveIgniteUrl(cfg);
 
         try (Ignite grid = Ignition.start(new FileInputStream(cfgLocation.getFile()))) {
-            grid.cache(null).put("1", "1");
+            grid.cache(DEFAULT_CACHE_NAME).put("1", "1");
 
-            assert grid.cache(null).get("1").equals("1");
+            assert grid.cache(DEFAULT_CACHE_NAME).get("1").equals("1");
 
             IgniteConfiguration icfg = Ignition.loadSpringBean(new FileInputStream(cfgLocation.getFile()), "ignite.cfg");
 

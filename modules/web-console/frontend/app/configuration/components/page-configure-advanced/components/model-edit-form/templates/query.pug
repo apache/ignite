@@ -1,0 +1,362 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'query'
+-var model = 'backupItem'
+-var queryKeyFields = `${model}.queryKeyFields`
+-var queryFields = `${model}.fields`
+-var queryAliases = `${model}.aliases`
+-var queryIndexes = `${model}.indexes`
+
+panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
+    panel-title#query-title Domain model for SQL query
+    panel-description
+        | Domain model properties for fields queries.
+        a.link-success(href='https://apacheignite.readme.io/docs/cache-queries' target='_blank') More info
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+            .content-not-available(
+                ng-if=`${model}.queryMetadata === 'Annotations'`
+                style='margin-top: 10px'
+            )
+                label Not available for annotated types
+
+            .pc-form-grid-col-60(ng-if-start=`${model}.queryMetadata === 'Configuration'`)
+                +form-field__text({
+                    label: 'Table name:',
+                    model: `${model}.tableName`,
+                    name: '"tableName"',
+                    placeholder: 'Enter table name'
+                })
+
+            .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
+                +form-field__text({
+                    label: 'Key field name:',
+                    model: `${model}.keyFieldName`,
+                    name: '"keyFieldName"',
+                    placeholder: 'Enter key field name',
+                    tip: 'Key name.<br/>' +
+                        'Can be used in field list to denote the key as a whole'
+                })
+            .pc-form-grid-col-30(ng-if-end)
+                +form-field__text({
+                    label: 'Value field name:',
+                    model: `${model}.valueFieldName`,
+                    name: '"valueFieldName"',
+                    placeholder: 'Enter value field name',
+                    tip: 'Value name.<br/>' +
+                        'Can be used in field list to denote the entire value'
+                })
+
+            .pc-form-grid-col-60
+                mixin domains-query-fields
+                    .ignite-form-field
+                        +form-field__label({ label: 'Fields:', name: '"fields"' })
+                            +form-field__tooltip({ title: `Collection of name-to-type mappings to be queried, in addition to indexed fields` })
+
+                        -let items = queryFields
+                        list-editable(
+                            ng-model=items
+                            name='queryFields'
+                            ng-change=`$ctrl.onQueryFieldsChange(${model})`
+                        )
+                            list-editable-item-view
+                                | {{$ctrl.Models.fieldProperties.fieldPresentation($item, $ctrl.available)}}
+
+                            list-editable-item-edit
+                                - form = '$parent.form'
+                                .pc-form-grid-row
+                                    .pc-form-grid-col-30
+                                        +form-field__text({
+                                            label: 'Field name:',
+                                            model: '$item.name',
+                                            name: '"name"',
+                                            required: true,
+                                            placeholder: 'Enter field name'
+                                        })(
+                                            ignite-unique=items
+                                            ignite-unique-property='name'
+                                            ignite-auto-focus
+                                        )
+                                            +form-field__error({ error: 'igniteUnique', message: 'Property with such name already exists!' })
+                                    .pc-form-grid-col-30
+                                        +form-field__java-class--typeahead({
+                                            label: 'Field full class name:',
+                                            model: '$item.className',
+                                            name: '"className"',
+                                            options: '$ctrl.queryFieldTypes',
+                                            required: 'true',
+                                            placeholder: 'Enter field full class name'
+                                        })(
+                                            ng-model-options='{allowInvalid: true}'
+                                            extra-valid-java-identifiers='$ctrl.queryFieldTypes'
+                                        )
+                                    .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                                        +form-field__text({
+                                            label: 'Default value:',
+                                            model: '$item.defaultValue',
+                                            name: '"defaultValue"',
+                                            placeholder: 'Enter default value'
+                                        })
+                                    .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.7.0") && $ctrl.Models.fieldProperties.precisionAvailable($item)')
+                                        +form-field__number({
+                                            label: 'Precision:',
+                                            model: '$item.precision',
+                                            name: '"Precision"',
+                                            placeholder: 'Input field precision',
+                                            min: '1',
+                                            tip: 'Precision of field',
+                                            required: '$item.scale'
+                                        })
+                                    .pc-form-grid-col-30(ng-if-end)
+                                        +form-field__number({
+                                            label: 'Scale:',
+                                            model: '$item.scale',
+                                            name: '"Scale"',
+                                            placeholder: 'input field scale',
+                                            disabled: '!$ctrl.Models.fieldProperties.scaleAvailable($item)',
+                                            min: '0',
+                                            max: '{{$item.precision}}',
+                                            tip: 'Scale of field'
+                                        })
+                                    .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                                        +form-field__checkbox({
+                                            label: 'Not NULL',
+                                            model: '$item.notNull',
+                                            name: '"notNull"',
+                                            tip: 'Field must have non-null value'
+                                        })
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$editLast((${items} = ${items} || []).push({}))`
+                                    label-single='field to query'
+                                    label-multiple='fields'
+                                )
+
+                +domains-query-fields
+
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Key fields:',
+                    model: queryKeyFields,
+                    name: '"queryKeyFields"',
+                    multiple: true,
+                    placeholder: 'Select key fields',
+                    placeholderEmpty: 'Configure available fields',
+                    options: `$ctrl.fields('cur', ${queryKeyFields})`,
+                    tip: 'Query fields that belongs to the key.<br/>\
+                     Used to build / modify keys and values during SQL DML operations when no key - value classes are present on cluster nodes.'
+                })
+            .pc-form-grid-col-60
+                mixin domains-query-aliases
+                    .ignite-form-field
+                        +form-field__label({ label: 'Aliases:', name: '"aliases"' })
+                            +form-field__tooltip({ title: `Mapping from full property name in dot notation to an alias that will be used as SQL column name<br />
+                                For example: "parent.name" as "parentName"` })
+
+                        -let items = queryAliases
+
+                        list-editable(ng-model=items name='queryAliases')
+                            list-editable-item-view
+                                | {{ $item.field }} &rarr; {{ $item.alias }}
+
+                            list-editable-item-edit
+                                - form = '$parent.form'
+                                .pc-form-grid-row
+                                    .pc-form-grid-col-30(divider='/')
+                                        +form-field__text({
+                                            label: 'Field name',
+                                            model: '$item.field',
+                                            name: '"field"',
+                                            required: true,
+                                            placeholder: 'Enter field name'
+                                        })(
+                                            ignite-unique=items
+                                            ignite-unique-property='field'
+                                            ignite-auto-focus
+                                        )
+                                            +form-field__error({ error: 'igniteUnique', message: 'Such field already exists!' })
+                                    .pc-form-grid-col-30
+                                        +form-field__text({
+                                            label: 'Field alias',
+                                            model: '$item.alias',
+                                            name: '"alias"',
+                                            required: true,
+                                            placeholder: 'Enter field alias'
+                                        })
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$editLast((${items} = ${items} || []).push({}))`
+                                    label-single='alias to query'
+                                    label-multiple='aliases'
+                                )
+
+                +domains-query-aliases
+
+            .pc-form-grid-col-60(ng-if-end)
+                .ignite-form-field
+                    +form-field__label({ label: 'Indexes:', name: '"indexes"' })
+
+                    list-editable(
+                        ng-model=queryIndexes
+                        ng-model-options='{allowInvalid: true}'
+                        name='queryIndexes'
+                        ui-validate=`{
+                            complete: '$ctrl.Models.queryIndexes.complete($value)',
+                            fieldsExist: '$ctrl.Models.queryIndexes.fieldsExist($value, ${queryFields})',
+                            indexFieldsHaveUniqueNames: '$ctrl.Models.queryIndexes.indexFieldsHaveUniqueNames($value)'
+                        }`
+                        ui-validate-watch=`"[${queryIndexes}, ${queryFields}]"`
+                        ui-validate-watch-object-equality='true'
+                    )
+                        list-editable-item-view(item-name='queryIndex')
+                            div {{ queryIndex.name }} [{{ queryIndex.indexType }}]
+                            div(ng-repeat='field in queryIndex.fields track by field._id')
+                                span {{ field.name }}
+                                span(ng-if='queryIndex.indexType == "SORTED"')
+                                    |  / {{ field.direction ? 'ASC' : 'DESC'}}
+
+                        list-editable-item-edit(item-name='queryIndex')
+                            .pc-form-grid-row
+                                .pc-form-grid-col-30(divider='/')
+                                    +form-field__text({
+                                        label: 'Index name:',
+                                        model: 'queryIndex.name',
+                                        name: '"name"',
+                                        required: true,
+                                        placeholder: 'Enter index name'
+                                    })(
+                                        ignite-unique=queryIndexes
+                                        ignite-unique-property='name'
+                                        ignite-form-field-input-autofocus='true'
+                                    )
+                                        +form-field__error({ error: 'igniteUnique', message: 'Such index already exists!' })
+                                .pc-form-grid-col-30
+                                    +form-field__dropdown({
+                                        label: 'Index type:',
+                                        model: `queryIndex.indexType`,
+                                        name: '"indexType"',
+                                        required: true,
+                                        placeholder: 'Select index type',
+                                        options: '::$ctrl.Models.indexType.values'
+                                    })
+                                .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0")')
+                                    +form-field__dropdown({
+                                        label: 'Inline size:',
+                                        model: `queryIndex.inlineSizeType`,
+                                        name: '"InlineSizeKind"',
+                                        placeholder: '{{::$ctrl.Models.inlineSizeType.default}}',
+                                        options: '{{::$ctrl.Models.inlineSizeTypes}}',
+                                        tip: `Inline size
+                                            <ul>
+                                                <li>Auto - Determine inline size automatically</li>
+                                                <li>Custom - Fixed index inline</li>
+                                                <li>Disabled - Index inline is disabled</li>
+                                            </ul>`
+                                    })(
+                                        ng-change=`$ctrl.Models.inlineSizeType.onChange(queryIndex)`
+                                        ng-model-options='{allowInvalid: true}'
+                                    )
+                                .pc-form-grid-col-60(ng-if='$ctrl.available("2.3.0") && queryIndex.inlineSizeType === 1')
+                                    form-field-size(
+                                        label='Inline size:'
+                                        ng-model=`queryIndex.inlineSize`
+                                        ng-model-options='{allowInvalid: true}'
+                                        name=`InlineSize`
+                                        tip='Index inline size in bytes. Part of indexed value will be placed directly to index pages thus minimizing data page accesses'
+                                        placeholder='Input inline size'
+                                        min=`1`
+                                        size-scale-label='kb'
+                                        size-type='bytes'
+                                        required='true'
+                                    )
+                                        +form-field__error({error: 'min', message: 'Inline size should be greater than 0'})
+                                .pc-form-grid-col-60
+                                    .ignite-form-field
+                                        +form-field__label({ label: 'Index fields:', name: '"indexFields"', required: true })
+
+                                        list-editable(
+                                            ng-model='queryIndex.fields'
+                                            ng-model-options='{allowInvalid: true}'
+                                            name='indexFields'
+                                            ng-required='true'
+                                        )
+                                            list-editable-item-view(item-name='indexField')
+                                                | {{ indexField.name }}
+                                                span(ng-if='queryIndex.indexType === "SORTED"')
+                                                    |  / {{ indexField.direction ? "ASC" : "DESC" }}
+
+                                            list-editable-item-edit(item-name='indexField')
+                                                .pc-form-grid-row
+                                                    .pc-form-grid-col-60
+                                                        +form-field__dropdown({
+                                                            label: 'Index field:',
+                                                            model: 'indexField.name',
+                                                            name: '"indexName"',
+                                                            placeholder: `{{ ${queryFields}.length > 0 ? 'Choose index field' : 'No fields configured' }}`,
+                                                            options: queryFields
+                                                        })(
+                                                            bs-options=`queryField.name as queryField.name for queryField in ${queryFields}`
+                                                            ng-disabled=`${queryFields}.length === 0`
+                                                            ng-model-options='{allowInvalid: true}'
+                                                            ignite-unique='queryIndex.fields'
+                                                            ignite-unique-property='name'
+                                                            ignite-auto-focus
+                                                        )
+                                                            +form-field__error({ error: 'igniteUnique', message: 'Such field already exists!' })
+                                                    .pc-form-grid-col-60(
+                                                        ng-if='queryIndex.indexType === "SORTED"'
+                                                    )
+                                                        +form-field__dropdown({
+                                                            label: 'Sort direction:',
+                                                            model: 'indexField.direction',
+                                                            name: '"indexDirection"',
+                                                            required: true,
+                                                            options: '::$ctrl.Models.indexSortDirection.values'
+                                                        })
+                                            list-editable-no-items
+                                                list-editable-add-item-button(
+                                                    add-item=`$edit($ctrl.Models.addIndexField(queryIndex.fields))`
+                                                    label-single='field to index'
+                                                    label-multiple='fields in index'
+                                                )
+                                        .form-field__errors(
+                                            ng-messages=`$form.indexFields.$error`
+                                            ng-show=`$form.indexFields.$invalid`
+                                        )
+                                            +form-field__error({ error: 'required', message: 'Index fields should be configured' })
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$edit($ctrl.Models.addIndex(${model}))`
+                                label-single='index'
+                                label-multiple='fields'
+                            )
+                    .form-field__errors(
+                        ng-messages=`query.queryIndexes.$error`
+                        ng-show=`query.queryIndexes.$invalid`
+                    )
+                        +form-field__error({ error: 'complete', message: 'Some indexes are incomplete' })
+                        +form-field__error({ error: 'fieldsExist', message: 'Some indexes use unknown fields' })
+                        +form-field__error({ error: 'indexFieldsHaveUniqueNames', message: 'Each query index field name should be unique' })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'domainModelQuery')

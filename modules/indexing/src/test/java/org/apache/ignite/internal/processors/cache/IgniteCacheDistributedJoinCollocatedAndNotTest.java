@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -35,12 +37,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -48,9 +47,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String PERSON_CACHE = "person";
 
@@ -60,20 +56,13 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
     /** */
     private static final String ACCOUNT_CACHE = "acc";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(PersonKey.class.getName(), "affKey");
 
         cfg.setCacheKeyConfiguration(keyCfg);
-
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
@@ -86,6 +75,8 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
             entity.addQueryField("id", Integer.class.getName(), null);
             entity.addQueryField("affKey", Integer.class.getName(), null);
             entity.addQueryField("name", String.class.getName(), null);
+
+            entity.setKeyFields(new HashSet<>(Arrays.asList("id", "affKey")));
 
             ccfg.setQueryEntities(F.asList(entity));
 
@@ -123,8 +114,6 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -134,16 +123,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(2);
     }
 
     /**
@@ -151,11 +131,10 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setBackups(1);
 
@@ -165,6 +144,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin() throws Exception {
         Ignite client = grid(2);
 
@@ -254,6 +234,7 @@ public class IgniteCacheDistributedJoinCollocatedAndNotTest extends GridCommonAb
 
         assertEquals(expSize, res.size());
     }
+
     /**
      *
      */

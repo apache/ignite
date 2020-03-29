@@ -18,12 +18,19 @@
 namespace Apache.Ignite.Core.Cache.Store
 {
     using System;
-    using System.Collections;
+    using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// API for cache persistent storage for read-through and write-through behavior.
-    ///
+    /// <para />
+    /// Generic argument types depend on <see cref="CacheConfiguration.KeepBinaryInStore"/> property.
+    /// When <c>true</c> (default), cache store operates on <see cref="IBinaryObject"/> instances.
+    /// Otherwise, generic arguments should be the same as in corresponding <see cref="ICache{TK, TV}"/>.
+    /// <para />
     /// Persistent store is configured in Ignite's Spring XML configuration file via
     /// <c>CacheConfiguration.setStore()</c> property. If you have an implementation
     /// of cache store in .NET, you should use special Java wrapper which accepts assembly name and
@@ -75,7 +82,9 @@ namespace Apache.Ignite.Core.Cache.Store
     /// </code>
     /// </example>
     /// </summary>
-    public interface ICacheStore
+    /// <typeparam name="TK">Key type.</typeparam>
+    /// <typeparam name="TV">Value type.</typeparam>
+    public interface ICacheStore<TK, TV> : ICacheStore
     {
         /// <summary>
         /// Loads all values from underlying persistent storage. Note that keys are
@@ -92,7 +101,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="act">Action for loaded values.</param>
         /// <param name="args">Optional arguemnts passed to <see cref="ICache{K,V}.LocalLoadCache"/> method.</param>
         /// <exception cref="CacheStoreException" />
-        void LoadCache(Action<object, object> act, params object[] args);
+        void LoadCache(Action<TK, TV> act, params object[] args);
 
         /// <summary>
         /// Loads an object. Application developers should implement this method to customize the loading 
@@ -104,7 +113,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <returns>The value for the entry that is to be stored in the cache 
         /// or <c>null</c> if the object can't be loaded</returns>
         /// <exception cref="CacheStoreException" />
-        object Load(object key);
+        TV Load(TK key);
 
         /// <summary>
         /// Loads multiple objects. Application developers should implement this method to customize 
@@ -114,7 +123,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="keys">Keys identifying the values to be loaded.</param>
         /// <returns>A map of key, values to be stored in the cache.</returns>
         /// <exception cref="CacheStoreException" />
-        IDictionary LoadAll(ICollection keys);
+        IEnumerable<KeyValuePair<TK, TV>> LoadAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Write the specified value under the specified key to the external resource.
@@ -124,7 +133,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="key">Key to write.</param>
         /// <param name="val">Value to write.</param>
         /// <exception cref="CacheStoreException" />
-        void Write(object key, object val);
+        void Write(TK key, TV val);
 
         /// <summary>
         /// Write the specified entries to the external resource. 
@@ -140,7 +149,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// to write for write-through. Upon return the collection must only contain entries 
         /// that were not successfully written. (see partial success above).</param>
         /// <exception cref="CacheStoreException" />
-        void WriteAll(IDictionary entries);
+        void WriteAll(IEnumerable<KeyValuePair<TK, TV>> entries);
 
         /// <summary>
         /// Delete the cache entry from the external resource.
@@ -151,7 +160,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// </summary>
         /// <param name="key">The key that is used for the delete operation.</param>
         /// <exception cref="CacheStoreException" />
-        void Delete(object key);
+        void Delete(TK key);
 
         /// <summary>
         /// Remove data and keys from the external resource for the given collection of keys, if present.
@@ -171,7 +180,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// it contains the keys to delete for write-through. Upon return the collection must only contain 
         /// the keys that were not successfully deleted.</param>
         /// <exception cref="CacheStoreException" />
-        void DeleteAll(ICollection keys);
+        void DeleteAll(IEnumerable<TK> keys);
 
         /// <summary>
         /// Tells store to commit or rollback a transaction depending on the value of the
@@ -180,5 +189,15 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="commit"><c>True</c> if transaction should commit, <c>false</c> for rollback.</param>
         /// <exception cref="CacheStoreException" />
         void SessionEnd(bool commit);
+    }
+
+    /// <summary>
+    /// Non-generic base type for <see cref="ICacheStore{TK,TV}"/>, used only for configuration property.
+    /// Users should implement generic <see cref="ICacheStore{TK,TV}"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface ICacheStore
+    {
+        // No-op.
     }
 }

@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
@@ -107,7 +108,6 @@ public class GridJobExecutionSingleNodeLoadTest {
 
                 for (int i = 0; i < threadCnt; i++)
                     producers.add(new Callable<Object>() {
-                        @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
                         @Override public Object call() throws Exception {
                             while (!finish.get()) {
                                 try {
@@ -129,7 +129,7 @@ public class GridJobExecutionSingleNodeLoadTest {
 
                 // Thread that measures and outputs performance statistics.
                 collector = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @SuppressWarnings({"BusyWait"})
                     @Override public void run() {
                         GridCumulativeAverage avgTasksPerSec = new GridCumulativeAverage();
 
@@ -218,7 +218,7 @@ public class GridJobExecutionSingleNodeLoadTest {
      */
     private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
 

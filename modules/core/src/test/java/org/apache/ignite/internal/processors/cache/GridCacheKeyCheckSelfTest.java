@@ -22,9 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -35,9 +33,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for cache key check.
  */
 public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
@@ -52,14 +47,8 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -84,6 +73,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetTransactional() throws Exception {
         checkGet(TRANSACTIONAL);
     }
@@ -91,6 +81,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAtomic() throws Exception {
         checkGet(ATOMIC);
     }
@@ -98,6 +89,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutTransactional() throws Exception {
         checkPut(TRANSACTIONAL);
     }
@@ -105,6 +97,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAtomic() throws Exception {
         checkPut(ATOMIC);
     }
@@ -112,6 +105,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveTransactional() throws Exception {
         checkRemove(TRANSACTIONAL);
     }
@@ -119,6 +113,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAtomic() throws Exception {
         checkRemove(ATOMIC);
     }
@@ -130,7 +125,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = cache();
 
             cache.get(new IncorrectCacheKey(0));
 
@@ -150,7 +145,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = cache();
 
             cache.put(new IncorrectCacheKey(0), "test_value");
 
@@ -170,7 +165,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = cache();
 
             cache.remove(new IncorrectCacheKey(0));
 
@@ -181,6 +176,13 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
 
             assertTrue(e.getMessage().startsWith("Cache key must override hashCode() and equals() methods"));
         }
+    }
+
+    /** */
+    private IgniteCache<IncorrectCacheKey, String> cache() {
+        grid(0).context().cache().internalCache(DEFAULT_CACHE_NAME).forceKeyCheck();
+
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /**

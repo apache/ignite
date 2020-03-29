@@ -18,6 +18,9 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,6 +58,24 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
+     * Copy constructor.
+     * @param msg Message.
+     */
+    public TcpDiscoveryCustomEventMessage(TcpDiscoveryCustomEventMessage msg) {
+        super(msg);
+
+        this.msgBytes = msg.msgBytes;
+        this.msg = msg.msg;
+    }
+
+    /**
+     * Clear deserialized form of wrapped message.
+     */
+    public void clearMessage() {
+        msg = null;
+    }
+
+    /**
      * @return Serialized message.
      */
     public byte[] messageBytes() {
@@ -78,7 +99,16 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
      */
     @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
         if (msg == null) {
-            msg = U.unmarshal(marsh, msgBytes, ldr);
+            try {
+                msg = U.unmarshal(marsh, msgBytes, ldr);
+            }
+            catch (IgniteCheckedException e) {
+                // Try to resurrect a message in a case of deserialization failure
+                if (e.getCause() instanceof IncompleteDeserializationException)
+                    return new CustomMessageWrapper(((IncompleteDeserializationException)e.getCause()).message());
+
+                throw e;
+            }
 
             assert msg != null;
         }

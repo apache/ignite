@@ -49,6 +49,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -163,7 +164,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
             return res;
         }
 
-        /** {@inheritDoc} */
+        /** */
         public List<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
             return new ArrayList<>(nodes);
         }
@@ -285,8 +286,8 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
@@ -318,6 +319,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         TestEvictionPolicy evictionPlc = new TestEvictionPolicy();
 
         ccfg.setEvictionPolicy(evictionPlc);
+        ccfg.setOnheapCacheEnabled(true);
 
         lifecycleAwares.add(evictionPlc);
 
@@ -364,6 +366,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
+    @Test
     @Override public void testLifecycleAware() throws Exception {
         for (boolean nearEnabled : new boolean[] {true, false}) {
             near = nearEnabled;

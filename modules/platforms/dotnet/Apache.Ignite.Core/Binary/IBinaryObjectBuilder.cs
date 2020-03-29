@@ -46,6 +46,9 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Set object field value. Value can be of any type including other
         /// <see cref="IBinaryObject"/> and other builders.
+        /// <para />
+        /// Value type for metadata is determined as <c>typeof(T)</c>;
+        /// use <see cref="SetField{T}(string,T,Type)"/> overload to override.  
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <param name="val">Field value.</param>
@@ -53,21 +56,22 @@ namespace Apache.Ignite.Core.Binary
         IBinaryObjectBuilder SetField<T>(string fieldName, T val);
 
         /// <summary>
+        /// Set object field value. Value can be of any type including other
+        /// <see cref="IBinaryObject"/> and other builders.
+        /// </summary>
+        /// <param name="fieldName">Field name.</param>
+        /// <param name="val">Field value.</param>
+        /// <param name="valType">Field value type for metadata
+        /// (see also <see cref="IBinaryType.GetFieldTypeName"/>).</param>
+        /// <returns>Current builder instance.</returns>
+        IBinaryObjectBuilder SetField<T>(string fieldName, T val, Type valType);
+
+        /// <summary>
         /// Remove object field.
         /// </summary>
         /// <param name="fieldName">Field name.</param>
         /// <returns>Current builder instance.</returns>
         IBinaryObjectBuilder RemoveField(string fieldName);
-
-        /// <summary>
-        /// Set explicit hash code. If builder creating object from scratch,
-        /// then hash code initially set to 0. If builder is created from
-        /// existing binary object, then hash code of that object is used
-        /// as initial value.
-        /// </summary>
-        /// <param name="hashCode">Hash code.</param>
-        /// <returns>Current builder instance.</returns>
-        IBinaryObjectBuilder SetHashCode(int hashCode);
 
         /// <summary>
         /// Build the object.

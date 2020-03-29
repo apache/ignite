@@ -18,28 +18,37 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Enumeration;
-import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.LevelRangeFilter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests that several grids log to files with correct names.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jCorrectFileNameTest extends TestCase {
+public class GridLog4jCorrectFileNameTest {
     /** Appender */
     private Log4jRollingFileAppender appender;
 
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    /** */
+    @Before
+    public void setUp() {
         Logger root = Logger.getRootLogger();
 
         for (Enumeration appenders = root.getAllAppenders(); appenders.hasMoreElements(); ) {
@@ -52,8 +61,9 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         root.addAppender(appender);
     }
 
-    /** {@inheritDoc} */
-    @Override public void tearDown() {
+    /** */
+    @After
+    public void tearDown() {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(Log4jRollingFileAppender.class.getSimpleName());
 
@@ -66,6 +76,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testLogFilesTwoNodes() throws Exception {
         checkOneNode(0);
         checkOneNode(1);
@@ -97,16 +108,25 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
     /**
      * Creates grid configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Grid configuration.
-     * @throws Exception If error occurred.
      */
-    private static IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    private static IgniteConfiguration getConfiguration(String igniteInstanceName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
         cfg.setGridLogger(new Log4JLogger());
         cfg.setConnectorConfiguration(null);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(false);
+
+        ipFinder.setAddresses(Collections.singleton("127.0.0.1:47500..47502"));
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -115,12 +135,11 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
      * Creates new GridLog4jRollingFileAppender.
      *
      * @return GridLog4jRollingFileAppender.
-     * @throws Exception If error occurred.
      */
-    private static Log4jRollingFileAppender createAppender() throws Exception {
+    private static Log4jRollingFileAppender createAppender() {
         Log4jRollingFileAppender appender = new Log4jRollingFileAppender();
 
-        appender.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
+        appender.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
         appender.setFile("work/log/ignite.log");
         appender.setName(Log4jRollingFileAppender.class.getSimpleName());
 

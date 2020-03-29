@@ -22,10 +22,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -38,9 +41,16 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
         return 4;
     }
 
+    @Override protected void initStoreStrategy() throws IgniteCheckedException {
+        if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            return;
+
+        super.initStoreStrategy();
+    }
+
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
@@ -51,10 +61,11 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInternalKeys() throws Exception {
         assert gridCount() >= 2;
 
-        IgniteCache<InternalKey, Object> jcache = grid(0).cache(null);
+        IgniteCache<InternalKey, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final InternalKey key = new InternalKey(0); // Hangs on the first remote put.
 

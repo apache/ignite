@@ -32,12 +32,20 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cache.store.CacheStoreSessionListenerAbstractSelfTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.junit.Before;
 
 /**
  * Tests for {@link CacheJdbcStoreSessionListener}.
  */
 public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionListenerAbstractSelfTest {
+    /** */
+    @Before
+    public void beforeCacheJdbcStoreSessionListenerSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected Factory<? extends CacheStore<Integer, Integer>> storeFactory() {
         return new Factory<CacheStore<Integer, Integer>>() {

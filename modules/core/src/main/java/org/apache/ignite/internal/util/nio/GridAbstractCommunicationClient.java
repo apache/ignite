@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util.nio;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Implements basic lifecycle for communication clients.
@@ -32,19 +31,14 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     /** Reservations. */
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    /** Metrics listener. */
-    protected final GridNioMetricsListener metricsLsnr;
-
     /** */
     private final int connIdx;
 
     /**
      * @param connIdx Connection index.
-     * @param metricsLsnr Metrics listener.
      */
-    protected GridAbstractCommunicationClient(int connIdx, @Nullable GridNioMetricsListener metricsLsnr) {
+    protected GridAbstractCommunicationClient(int connIdx) {
         this.connIdx = connIdx;
-        this.metricsLsnr = metricsLsnr;
     }
 
     /** {@inheritDoc} */
@@ -59,7 +53,7 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
 
     /** {@inheritDoc} */
     @Override public void forceClose() {
-        closed.set(false);
+        closed.set(true);
     }
 
     /** {@inheritDoc} */

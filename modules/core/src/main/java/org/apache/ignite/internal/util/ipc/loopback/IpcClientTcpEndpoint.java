@@ -22,7 +22,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
+import java.sql.SQLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -85,5 +88,34 @@ public class IpcClientTcpEndpoint implements IpcEndpoint {
     /** {@inheritDoc} */
     @Override public void close() {
         U.closeQuiet(clientSock);
+    }
+
+    /**
+     * Enable/disable socket timeout with specified timeout.
+     *
+     * @param ms the specified timeout, in milliseconds.
+     * @throws SQLException if there is an error in the underlying protocol.
+     */
+    public void timeout(int ms) throws SQLException {
+        try {
+            clientSock.setSoTimeout(ms);
+        }
+        catch (SocketException e) {
+            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
+        }
+    }
+
+    /**
+     * Returns socket timeout.
+     *
+     * @throws SQLException if there is an error in the underlying protocol.
+     */
+    public int timeout() throws SQLException {
+        try {
+            return clientSock.getSoTimeout();
+        }
+        catch (SocketException e) {
+            throw new SQLException("Failed to set connection timeout.", SqlStateCode.INTERNAL_ERROR, e);
+        }
     }
 }

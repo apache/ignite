@@ -40,12 +40,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -55,32 +53,22 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
     public static final int LRU_MAX_SIZE = 10;
 
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int ENTRIES_CNT = 10000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         LruEvictionPolicy evictionPolicy = new LruEvictionPolicy<>();
         evictionPolicy.setMaxSize(LRU_MAX_SIZE);
 
-        CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<String, byte[]> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setEvictSynchronized(false);
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setReadFromBackup(true);
         cacheCfg.setEvictionPolicy(evictionPolicy);
-        cacheCfg.setOffHeapMaxMemory(1024 * 1024 * 1024L);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setStatisticsEnabled(true);
 
         cacheCfg.setWriteThrough(false);
@@ -96,6 +84,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartRebalancing() throws Exception {
         List<IgniteInternalFuture<Object>> futs = new ArrayList<>();
 
@@ -106,7 +95,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
 
             futs.add(GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ig.cache(null).localLoadCache(null);
+                    ig.cache(DEFAULT_CACHE_NAME).localLoadCache(null);
 
                     return null;
                 }
@@ -120,7 +109,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
             for (int i = 0; i < gridCnt; i++) {
                 IgniteEx grid = grid(i);
 
-                final IgniteCache<Object, Object> cache = grid.cache(null);
+                final IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {

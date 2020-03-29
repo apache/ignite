@@ -31,11 +31,11 @@
     </parent>
 
     <artifactId>ignite-yarn</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.9.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <hadoop-yarn.version>2.7.0</hadoop-yarn.version>
+        <hadoop-yarn.version>2.7.7</hadoop-yarn.version>
     </properties>
 
     <dependencies>
@@ -43,12 +43,50 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-yarn-client</artifactId>
             <version>${hadoop-yarn.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop-yarn.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>${commons.collections.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons.codec.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>${commons.beanutils.version}</version>
         </dependency>
 
         <dependency>
@@ -61,17 +99,31 @@
 
     <build>
         <plugins>
-
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
+                <!-- Copy ignite.properties from core module since it is not available as dependency. -->
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                         <id>copy-resources</id>
+                         <phase>validate</phase>
+                         <goals>
+                             <goal>copy-resources</goal>
+                         </goals>
+                         <configuration>
+                             <outputDirectory>src/main/resources</outputDirectory>
+                             <resources>
+                                 <resource>
+                                     <directory>../core/src/main/resources</directory>
+                                     <includes>
+                                         <include>ignite.properties</include>
+                                     </includes>
+                                 </resource>
+                             </resources>
+                         </configuration>
+                    </execution>
+               </executions>
             </plugin>
-
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4.1</version>

@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskCancelledException;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
@@ -51,7 +51,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
     private final IgniteLogger log;
 
     /** */
-    private final HadoopJob job;
+    private final HadoopJobEx job;
 
     /** Task to run. */
     private final HadoopTaskInfo info;
@@ -84,7 +84,7 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
      * @param info Task info.
      * @param nodeId Node id.
      */
-    protected HadoopRunnableTask(IgniteLogger log, HadoopJob job, GridUnsafeMemory mem, HadoopTaskInfo info,
+    protected HadoopRunnableTask(IgniteLogger log, HadoopJobEx job, GridUnsafeMemory mem, HadoopTaskInfo info,
         UUID nodeId) {
         this.nodeId = nodeId;
         this.log = log.getLogger(HadoopRunnableTask.class);
@@ -230,7 +230,6 @@ public abstract class HadoopRunnableTask implements Callable<Void> {
      * @return Task input.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     private HadoopTaskInput createInputInternal(HadoopTaskContext ctx) throws IgniteCheckedException {
         switch (ctx.taskInfo().type()) {
             case SETUP:

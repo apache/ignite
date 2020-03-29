@@ -17,11 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -47,11 +44,11 @@ public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTe
     @GridSpiTestConfig
     public DiscoverySpiDataExchange getDataExchange() {
         return new DiscoverySpiDataExchange() {
-            @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                return Collections.emptyMap();
+            @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                return dataBag;
             }
 
-            @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+            @Override public void onExchange(DiscoveryDataBag dataBag) {
                 // No-op.
             }
         };

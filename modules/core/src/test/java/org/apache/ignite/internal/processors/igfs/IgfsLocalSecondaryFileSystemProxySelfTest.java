@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests for PROXY mode with local FS is configured as a secondary.
@@ -57,6 +59,11 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
     /** */
     private final File fileLinkSrc = new File(FS_WORK_DIR + File.separatorChar + "file");
+
+    /** {@inheritDoc} */
+    @Override protected int nodeCount() {
+        return 3;
+    }
 
     /**
      * Creates secondary filesystems.
@@ -110,6 +117,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testListPathForSymlink() throws Exception {
         if (U.isWindows())
             return;
@@ -132,6 +140,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteSymlinkDir() throws Exception {
         if (U.isWindows())
             return;
@@ -148,6 +157,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSymlinkToFile() throws Exception {
         if (U.isWindows())
             return;
@@ -161,6 +171,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMkdirsInsideSymlink() throws Exception {
         if (U.isWindows())
             return;
@@ -177,6 +188,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUsedSpaceSize() throws Exception {
         final int DIRS_COUNT = 5;
         final int DIRS_MAX_DEEP = 3;
@@ -212,6 +224,81 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         createHierarchy.apply(1, new IgfsPath("/dir"));
 
         assertEquals(totalSize.get(), igfs.metrics().secondarySpaceSize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityMaxLen() throws Exception {
+        awaitPartitionMapExchange();
+
+        long fileSize = 32L * 1024 * 1024;
+
+        IgfsPath filePath = new IgfsPath("/file");
+
+        try (OutputStream os = igfs.create(filePath, true)) {
+            for(int i = 0; i < fileSize / chunk.length; ++i)
+                os.write(chunk);
+        }
+
+        Collection<IgfsBlockLocation> blocks;
+
+        long len = igfs.info(filePath).length();
+        int start = 0;
+
+        // Check default maxLen (maxLen = 0)
+        for (int i = 0; i < igfs.context().data().groupBlockSize() / 1024; i++) {
+            Collection<IgfsBlockLocation> blocks0 =
+                igfs.affinity(filePath, start, len, 0);
+
+            blocks = igfs.affinity(filePath, start, len, Long.MAX_VALUE);
+
+            assertTrue(blocks0.size() > 1);
+            assertEquals(blocks0.size(), blocks.size());
+            assertEquals(F.first(blocks).start(), start);
+            assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
+            assertEquals(blocks0, blocks);
+
+            len -= 1024 * 2;
+            start += 1024;
+        }
+
+        len = igfs.info(filePath).length();
+        start = 0;
+        long maxLen = igfs.context().data().groupBlockSize() * 2;
+
+        // Different cases of start, len and maxLen
+        for (int i = 0; i < igfs.context().data().groupBlockSize() / 1024; i++) {
+            blocks = igfs.affinity(filePath, start, len, maxLen);
+
+            assertEquals(F.first(blocks).start(), start);
+            assertEquals(start + len, F.last(blocks).start() + F.last(blocks).length());
+
+            long totalLen = 0;
+
+            for (IgfsBlockLocation block : blocks) {
+                totalLen += block.length();
+
+                assert block.length() <= maxLen : "block.length() <= maxLen. [block.length=" + block.length()
+                    + ", maxLen=" + maxLen + ']';
+
+                assert block.length() + block.start() <= start + len : "block.length() + block.start() < start + len. [block.length=" + block.length()
+                    + ", block.start()=" + block.start() + ", start=" + start +", len=" + len + ']';
+
+                for (IgfsBlockLocation block0 : blocks)
+                    if (!block0.equals(block))
+                        assert block.start() < block0.start() && block.start() + block.length() <= block0.start() ||
+                            block.start() > block0.start() && block0.start() + block0.length() <= block.start()
+                            : "Blocks cross each other: block0=" +  block + ", block1= " + block0;
+            }
+
+            assert totalLen == len : "Summary length of blocks must be: " + len + " actual: " + totalLen;
+
+            len -= 1024 * 2;
+            start += 1024;
+            maxLen -= igfs.context().data().groupBlockSize() * 2 / 1024;
+        }
     }
 
     /**

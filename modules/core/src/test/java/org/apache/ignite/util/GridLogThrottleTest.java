@@ -18,8 +18,10 @@
 package org.apache.ignite.util;
 
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid log throttle test. To verify correctness, you need to run this test
@@ -28,6 +30,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Utils")
 public class GridLogThrottleTest extends GridCommonAbstractTest {
+    /** */
+    private final GridStringLogger log0 = new GridStringLogger(false, this.log);
+
     /** Constructor. */
     public GridLogThrottleTest() {
         super(false);
@@ -38,78 +43,125 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
      *
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testThrottle() throws Exception {
         LT.throttleTimeout(1000);
 
-        // LOGGED.
-        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        String sep = System.getProperty("line.separator");
 
-        // OMITTED.
-        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        checkErrorWithThrowable("Test exception 1.", "Test msg", true);
+        checkErrorWithThrowable("Test exception 1.", "Test msg", false);
 
-        // OMITTED.
-        LT.error(log, new RuntimeException("Test exception 1."), "Test1");
+        checkErrorWithThrowable("Test exception 2.", "Test msg", true);
 
-        // LOGGED.
-        LT.error(log, new RuntimeException("Test exception 2."), "Test");
+        checkError("Test - without throwable.", true);
+        checkError("Test - without throwable.", false);
+        checkWarn("Test - without throwable.", false);
 
-        // LOGGED.
-        LT.error(log, null, "Test - without throwable.");
+        checkWarn("Test - without throwable 1.", true);
+        checkWarn("Test - without throwable 1.", false);
+        checkWarnWithThrowable("Warn exception", "Test - without throwable 1.", true);
+        checkWarnWithThrowable("Warn exception", "Test - without throwable 1.", false);
 
-        // OMITTED.
-        LT.error(log, null, "Test - without throwable.");
+        Thread.sleep(LT.throttleTimeout() * 2);
+        info("Slept for throttle timeout: " + LT.throttleTimeout() * 2);
 
-        // OMITTED.
-        LT.warn(log, "Test - without throwable.");
+        checkErrorWithThrowable("Test exception 1.", "Test msg", true);
+        checkErrorWithThrowable("Test exception 1.", "Test msg", false);
+        checkErrorWithThrowable("Test exception 1.", "Test msg1", false);
 
-        // LOGGED.
-        LT.warn(log, "Test - without throwable1.");
+        checkErrorWithThrowable("Test exception 2.", "Test msg", true);
 
-        // OMITTED.
-        LT.warn(log, "Test - without throwable1.");
+        checkWarn("Test - without throwable.", true);
+        checkWarn("Test - without throwable.", false);
 
-        Thread.sleep(LT.throttleTimeout());
+        LT.throttleTimeout(200);
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout());
+        Thread.sleep(LT.throttleTimeout() * 2);
+        info("Slept for throttle timeout: " + LT.throttleTimeout() * 2);
 
-        // LOGGED.
-        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        checkInfo("Test info message.", true);
+        checkInfo("Test info message.", false);
 
-        // OMITTED.
-        LT.error(log, new RuntimeException("Test exception 1."), "Test");
+        for (int i = 1; i <= LT.throttleCapacity(); i++)
+            checkInfo("Test info message " + i, true);
 
-        // OMITTED.
-        LT.error(log, new RuntimeException("Test exception 1."), "Test1");
+        checkInfo("Test info message.", true);
+    }
 
-        // LOGGED.
-        LT.error(log, new RuntimeException("Test exception 2."), "Test");
+    /**
+     * @param eMsg Exception message.
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void checkErrorWithThrowable(String eMsg, String msg, boolean logExp) {
+        Exception e = eMsg != null ? new RuntimeException(eMsg) : null;
 
-        // LOGGED.
-        LT.warn(log, "Test - without throwable.");
+        LT.error(log0, e, msg);
 
-        // OMITTED.
-        LT.warn(log, "Test - without throwable.");
+        check(e, msg, logExp);
+    }
 
-        Thread.sleep(LT.throttleTimeout());
+    /**
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void checkError(String msg, boolean logExp) {
+        LT.error(log0, null, msg);
 
-        info("Slept for throttle timeout: " + LT.throttleTimeout());
+        check(null, msg, logExp);
+    }
 
-        //LOGGED.
-        LT.info(log(), "Test info message.");
+    /**
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void checkWarnWithThrowable(String eMsg, String msg, boolean logExp) {
+        Exception e = eMsg != null ? new RuntimeException(eMsg) : null;
 
-        //OMMITED.
-        LT.info(log(), "Test info message.");
+        LT.warn(log0, e, msg, true, false);
 
-        //OMMITED.
-        LT.info(log(), "Test info message.");
+        check(e, msg, logExp);
+    }
 
-        //OMMITED.
-        LT.info(log(), "Test info message.");
+    /**
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void checkWarn(String msg, boolean logExp) {
+        LT.warn(log0, msg);
 
-        //OMMITED.
-        LT.info(log(), "Test info message.");
+        check(null, msg, logExp);
+    }
 
-        //OMMITED.
-        LT.info(log(), "Test info message.");
+    /**
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void checkInfo(String msg, boolean logExp) {
+        LT.info(log0, msg);
+
+        check(null, msg, logExp);
+    }
+
+    /**
+     * @param e Exception.
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void check(Exception e, String msg, boolean logExp) {
+        String sep = System.getProperty("line.separator");
+
+        if (logExp) {
+            String s = msg;
+
+            if (e != null)
+                s += sep + "java.lang.RuntimeException: " + e.getMessage();
+
+            assertTrue(log0.toString().contains(s));
+        } else
+            assertEquals(log0.toString(), "");
+
+        log0.reset();
     }
 }

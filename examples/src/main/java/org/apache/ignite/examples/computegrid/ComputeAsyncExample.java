@@ -56,19 +56,16 @@ public class ComputeAsyncExample {
             // Iterate through all words in the sentence and create runnable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
                 // Execute runnable on some node.
-                compute.run(new IgniteRunnable() {
-                    @Override public void run() {
-                        System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
-                    }
+                compute.run(() -> {
+                    System.out.println();
+                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                 });
 
                 futs.add(compute.future());
             }
 
             // Wait for completion of all futures.
-            for (IgniteFuture<?> fut : futs)
-                fut.get();
+            futs.forEach(IgniteFuture::get);
 
             System.out.println();
             System.out.println(">>> Finished printing words using runnable execution.");

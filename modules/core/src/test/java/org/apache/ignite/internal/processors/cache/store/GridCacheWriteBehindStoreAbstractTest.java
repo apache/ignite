@@ -34,9 +34,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -59,6 +62,12 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         super(true /*start grid. */);
     }
 
+    /** */
+    @Before
+    public void beforeGridCacheWriteBehindStoreAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         store.resetTimestamp();
@@ -79,7 +88,9 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected final IgniteConfiguration getConfiguration() throws Exception {
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         IgniteConfiguration c = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -92,7 +103,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setCacheStoreFactory(singletonFactory(store));
@@ -109,6 +119,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If test fails. */
+    @Test
     public void testWriteThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -174,6 +185,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If test failed. */
+    @Test
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
@@ -266,6 +278,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultithreaded() throws Exception {
         final ConcurrentMap<String, Set<Integer>> perThread = new ConcurrentHashMap<>();
 
@@ -274,7 +287,6 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         final IgniteCache<Integer, String> cache = jcache();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.
                 Set<Integer> set = new HashSet<>();

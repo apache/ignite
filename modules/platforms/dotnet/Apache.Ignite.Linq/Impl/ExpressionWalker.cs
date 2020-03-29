@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -31,6 +33,9 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class ExpressionWalker
     {
+        /** SQL quote */
+        private const string SqlQuote = "\"";
+
         /** Compiled member readers. */
         private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>> MemberReaders =
             new CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>>();
@@ -38,17 +43,17 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause)
+        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause, bool throwWhenNotFound = true)
         {
-            return GetCacheQueryable(fromClause.FromExpression);
+            return GetCacheQueryable(fromClause.FromExpression, throwWhenNotFound);
         }
 
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause)
+        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause, bool throwWhenNotFound = true)
         {
-            return GetCacheQueryable(joinClause.InnerSequence);
+            return GetCacheQueryable(joinClause.InnerSequence, throwWhenNotFound);
         }
 
         /// <summary>
@@ -59,7 +64,7 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
-                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause);
+                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause, throwWhenNotFound);
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
@@ -68,12 +73,12 @@ namespace Apache.Ignite.Linq.Impl
                 var fromSource = srcRefExp.ReferencedQuerySource as IFromClause;
 
                 if (fromSource != null)
-                    return GetCacheQueryable(fromSource);
+                    return GetCacheQueryable(fromSource, throwWhenNotFound);
 
                 var joinSource = srcRefExp.ReferencedQuerySource as JoinClause;
 
                 if (joinSource != null)
-                    return GetCacheQueryable(joinSource);
+                    return GetCacheQueryable(joinSource, throwWhenNotFound);
 
                 throw new NotSupportedException("Unexpected query source: " + srcRefExp.ReferencedQuerySource);
             }
@@ -109,6 +114,39 @@ namespace Apache.Ignite.Linq.Impl
 
             if (throwWhenNotFound)
                 throw new NotSupportedException("Unexpected query source: " + expression);
+
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to find QuerySourceReferenceExpression
+        /// </summary>
+        public static QuerySourceReferenceExpression GetQuerySourceReference(Expression expression,
+            // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
+            bool throwWhenNotFound = true)
+        {
+            var reference = expression as QuerySourceReferenceExpression;
+            if (reference != null)
+            {
+                return reference;
+            }
+
+            var unary = expression as UnaryExpression;
+            if (unary != null)
+            {
+                return GetQuerySourceReference(unary.Operand, false);
+            }
+
+            var binary = expression as BinaryExpression;
+            if (binary != null)
+            {
+                return GetQuerySourceReference(binary.Left, false) ?? GetQuerySourceReference(binary.Right, false);
+            }
+
+            if (throwWhenNotFound)
+            {
+                throw new NotSupportedException("Unexpected query source: " + expression);
+            }
 
             return null;
         }
@@ -151,6 +189,44 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Gets the values from IEnumerable expression
+        /// </summary>
+        public static IEnumerable<object> EvaluateEnumerableValues(Expression fromExpression)
+        {
+            IEnumerable result;
+            switch (fromExpression.NodeType)
+            {
+                case ExpressionType.MemberAccess:
+                    var memberExpression = (MemberExpression)fromExpression;
+                    result = EvaluateExpression<IEnumerable>(memberExpression);
+                    break;
+                case ExpressionType.ListInit:
+                    var listInitExpression = (ListInitExpression)fromExpression;
+                    result = listInitExpression.Initializers
+                        .SelectMany(init => init.Arguments)
+                        .Select(EvaluateExpression<object>);
+                    break;
+                case ExpressionType.NewArrayInit:
+                    var newArrayExpression = (NewArrayExpression)fromExpression;
+                    result = newArrayExpression.Expressions
+                        .Select(EvaluateExpression<object>);
+                    break;
+                case ExpressionType.Parameter:
+                    // This should happen only when 'IEnumerable.Contains' is called on parameter of compiled query
+                    throw new NotSupportedException("'Contains' clause on compiled query parameter is not supported.");
+                default:
+                    result = Expression.Lambda(fromExpression).Compile().DynamicInvoke() as IEnumerable;
+                    break;
+            }
+
+            result = result ?? Enumerable.Empty<object>();
+
+            return result
+                .Cast<object>()
+                .ToArray();
+        }
+
+        /// <summary>
         /// Compiles the member reader.
         /// </summary>
         private static Func<object, object> CompileMemberReader(MemberExpression memberExpr)
@@ -176,7 +252,59 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryable != null);
 
-            return string.Format("\"{0}\".{1}", queryable.CacheConfiguration.Name, queryable.TableName);
+            var cacheCfg = queryable.CacheConfiguration;
+
+            var tableName = queryable.TableName;
+            if (cacheCfg.SqlEscapeAll)
+            {
+                tableName = string.Format("{0}{1}{0}", SqlQuote, tableName);
+            }
+
+            var schemaName = NormalizeSchemaName(cacheCfg.Name, cacheCfg.SqlSchema);
+
+            return string.Format("{0}.{1}", schemaName, tableName);
+        }
+
+        /// <summary>
+        /// Normalizes SQL schema name, see
+        /// <c>org.apache.ignite.internal.processors.query.QueryUtils#normalizeSchemaName</c>
+        /// </summary>
+        private static string NormalizeSchemaName(string cacheName, string schemaName)
+        {
+            if (schemaName == null)
+            {
+                // If schema name is not set explicitly, we will use escaped cache name. The reason is that cache name
+                // could contain weird characters, such as underscores, dots or non-Latin stuff, which are invalid from
+                // SQL syntax perspective. We do not want node to fail on startup due to this.
+                return string.Format("{0}{1}{0}", SqlQuote, cacheName);
+            }
+
+            if (schemaName.StartsWith(SqlQuote, StringComparison.Ordinal)
+                && schemaName.EndsWith(SqlQuote, StringComparison.Ordinal))
+            {
+                return schemaName;
+            }
+
+            return NormalizeObjectName(schemaName, false);
+        }
+
+        /// <summary>
+        /// Normalizes SQL object name, see
+        /// <c>org.apache.ignite.internal.processors.query.QueryUtils#normalizeObjectName</c>
+        /// </summary>
+        private static string NormalizeObjectName(string name, bool replace)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            if (replace)
+            {
+                name = name.Replace('.', '_').Replace('$', '_');
+            }
+
+            return name.ToUpperInvariant();
         }
     }
 }

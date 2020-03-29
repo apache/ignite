@@ -59,6 +59,12 @@ public interface GridDeploymentStore {
     @Nullable public GridDeployment getDeployment(GridDeploymentMetadata meta);
 
     /**
+     * @param meta Deployment meatdata.
+     * @return Grid deployment instance if it was finded in cache, {@code null} otherwise.
+     */
+    @Nullable public GridDeployment searchDeploymentCache(GridDeploymentMetadata meta);
+
+    /**
      * Gets class loader based on ID.
      *
      *

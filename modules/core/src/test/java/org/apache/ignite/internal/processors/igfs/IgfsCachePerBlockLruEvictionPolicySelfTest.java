@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,7 +55,7 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Tests for IGFS per-block LR eviction policy.
  */
-@SuppressWarnings({"ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"ConstantConditions"})
 public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstractTest {
     /** Primary IGFS name. */
     private static final String IGFS_PRIMARY = "igfs-primary";
@@ -98,8 +99,6 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private void startPrimary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_PRIMARY);
         igfsCfg.setBlockSize(512);
         igfsCfg.setDefaultMode(DUAL_SYNC);
@@ -115,7 +114,6 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -124,27 +122,29 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
         evictPlc = new IgfsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
+        dataCacheCfg.setOnheapCacheEnabled(true);
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
         dataCacheCfg.setBackups(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-primary");
+        cfg.setIgniteInstanceName("grid-primary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -155,7 +155,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
         igfsPrimary = (IgfsImpl)g.fileSystem(IGFS_PRIMARY);
 
         dataCache = igfsPrimary.context().kernalContext().cache().internalCache(
-            igfsPrimary.context().configuration().getDataCacheName());
+            igfsPrimary.context().configuration().getDataCacheConfiguration().getName());
     }
 
     /**
@@ -166,8 +166,6 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     private void startSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_SECONDARY);
         igfsCfg.setBlockSize(512);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -175,7 +173,6 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -185,22 +182,23 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-secondary");
+        cfg.setIgniteInstanceName("grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -215,7 +213,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
     @Override protected void afterTest() throws Exception {
         try {
             // Cleanup.
-            igfsPrimary.format();
+            igfsPrimary.clear();
 
             while (!dataCache.isEmpty())
                 U.sleep(100);
@@ -246,6 +244,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFilePrimary() throws Exception {
         start();
 
@@ -270,6 +269,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDual() throws Exception {
         start();
 
@@ -300,6 +300,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFileDualExclusion() throws Exception {
         start();
 
@@ -327,6 +328,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDifferentExcludeSettings() throws Exception {
         start();
 
@@ -354,6 +356,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockCountEviction() throws Exception {
         start();
 
@@ -389,6 +392,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDataSizeEviction() throws Exception {
         start();
 

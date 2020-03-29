@@ -60,7 +60,6 @@ namespace Apache.Ignite.Core.Events
                 case 6: return new CheckpointEvent(reader);
                 case 7: return new DiscoveryEvent(reader);
                 case 8: return new JobEvent(reader);
-                case 9: return new SwapSpaceEvent(reader);
                 case 10: return new TaskEvent(reader);
             }
 

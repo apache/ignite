@@ -21,16 +21,18 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.CO;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -40,39 +42,22 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Send message test.
  */
 public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Sample count. */
     private static final int SAMPLE_CNT = 1;
 
     /** */
-    private static final byte DIRECT_TYPE = (byte)210;
+    private static final short DIRECT_TYPE = -127;
 
     /** */
-    private int bufSize;
-
-    static {
-        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new TestMessage();
-            }
-        });
-    }
+    private static final short DIRECT_TYPE_OVER_BYTE = 1000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(discoSpi);
+        c.setPluginProviders(new TestPluginProvider());
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-        commSpi.setConnectionBufferSize(bufSize);
 
         c.setCommunicationSpi(commSpi);
 
@@ -82,11 +67,12 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendMessage() throws Exception {
         try {
             startGridsMultiThreaded(2);
 
-            doSend();
+            doSend(new TestMessage(), TestMessage.class);
         }
         finally {
             stopAllGrids();
@@ -96,13 +82,12 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testSendMessageWithBuffer() throws Exception {
-        bufSize = 8192;
-
+    @Test
+    public void testSendMessageOverByteId() throws Exception {
         try {
             startGridsMultiThreaded(2);
 
-            doSend();
+            doSend(new TestOverByteIdMessage(), TestOverByteIdMessage.class);
         }
         finally {
             stopAllGrids();
@@ -112,24 +97,43 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    private void doSend() throws Exception {
-        GridIoManager mgr0 = ((IgniteKernal)grid(0)).context().io();
-        GridIoManager mgr1 = ((IgniteKernal)grid(1)).context().io();
+    @Test
+    public void testSendMessageWithBuffer() throws Exception {
+        try {
+            startGridsMultiThreaded(2);
+
+            doSend(new TestMessage(), TestMessage.class);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param msg Message to send.
+     * @param msgCls Message class to check the received message.
+     *
+     * @throws Exception If failed.
+     */
+    private void doSend(Message msg, final Class<?> msgCls) throws Exception {
+        GridIoManager mgr0 = grid(0).context().io();
+        GridIoManager mgr1 = grid(1).context().io();
 
         String topic = "test-topic";
 
         final CountDownLatch latch = new CountDownLatch(SAMPLE_CNT);
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
-                latch.countDown();
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msgCls.isInstance(msg))
+                    latch.countDown();
             }
         });
 
         long time = System.nanoTime();
 
         for (int i = 1; i <= SAMPLE_CNT; i++) {
-            mgr0.send(grid(1).localNode(), topic, new TestMessage(), GridIoPolicy.PUBLIC_POOL);
+            mgr0.sendToCustomTopic(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
             if (i % 500 == 0)
                 info("Sent messages count: " + i);
@@ -150,7 +154,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
-            return writer.writeByte(null, directType());
+            if (!writer.writeHeader(directType(), (byte)0))
+                return false;
+
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -164,13 +171,64 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             return 0;
+        }
+    }
+
+    /** */
+    private static class TestOverByteIdMessage implements Message {
+        /** {@inheritDoc} */
+        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+            writer.setBuffer(buf);
+
+            if (!writer.writeHeader(directType(), (byte)0))
+                return false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            return DIRECT_TYPE_OVER_BYTE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte fieldsCount() {
+            return 0;
+        }
+    }
+
+    /** */
+    public static class TestPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TEST_PLUGIN";
+        }
+
+        /** {@inheritDoc} */
+        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+            registry.registerExtension(MessageFactory.class, new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(DIRECT_TYPE, TestMessage::new);
+                    factory.register(DIRECT_TYPE_OVER_BYTE, TestOverByteIdMessage::new);
+                }
+            });
         }
     }
 }

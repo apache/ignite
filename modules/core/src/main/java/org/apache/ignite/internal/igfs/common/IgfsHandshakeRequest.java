@@ -25,9 +25,6 @@ import static org.apache.ignite.internal.igfs.common.IgfsIpcCommand.HANDSHAKE;
  * Handshake request.
  */
 public class IgfsHandshakeRequest extends IgfsMessage {
-    /** Expected Grid name. */
-    private String gridName;
-
     /** Expected IGFS name. */
     private String igfsName;
 
@@ -42,20 +39,6 @@ public class IgfsHandshakeRequest extends IgfsMessage {
     /** {@inheritDoc} */
     @Override public void command(IgfsIpcCommand cmd) {
         // No-op.
-    }
-
-    /**
-     * @return Grid name.
-     */
-    public String gridName() {
-        return gridName;
-    }
-
-    /**
-     * @param gridName Grid name.
-     */
-    public void gridName(String gridName) {
-        this.gridName = gridName;
     }
 
     /**

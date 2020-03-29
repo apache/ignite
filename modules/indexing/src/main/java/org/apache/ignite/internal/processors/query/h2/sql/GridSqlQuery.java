@@ -138,7 +138,7 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
     /**
      * @return If this is a simple query with no conditions, expressions, sorting, etc...
      */
-    public abstract boolean simpleQuery();
+    public abstract boolean skipMergeTable();
 
     /**
      * @param buff Statement builder.
@@ -187,5 +187,14 @@ public abstract class GridSqlQuery extends GridSqlStatement implements GridSqlAs
 
         if (offset != null)
             buff.append(" OFFSET ").append(StringUtils.unEnclose(offset.getSQL()));
+    }
+
+    /**
+     * Whether offset or limit exists.
+     *
+     * @return {@code true} If we have OFFSET LIMIT.
+     */
+    public boolean hasOffsetLimit() {
+        return limit() != null || offset() != null;
     }
 }

@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,26 +43,20 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    final private static AtomicInteger cnt = new AtomicInteger();
-
-    /** */
-    private volatile boolean isClient = false;
+    private static final AtomicInteger cnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicMode());
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setBackups(1);
+        ccfg.setBackups(2);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if (isClient)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -82,6 +77,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectServer() throws Exception {
         testReconnect(false);
     }
@@ -89,6 +85,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClient() throws Exception {
         testReconnect(true);
     }
@@ -128,14 +125,10 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
             }
         });
 
-        isClient = true;
+        Ignite client = startClientGrid(1);
 
-        Ignite client = startGrid(1);
-
-        isClient = false;
-
-        IgniteCache<Object, Object> cache1 = srv1.cache(null);
-        IgniteCache<Object, Object> clCache = client.cache(null);
+        IgniteCache<Object, Object> cache1 = srv1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> clCache = client.cache(DEFAULT_CACHE_NAME);
 
         putAndCheck(clCache, 0); // 0 remote listeners.
 
@@ -173,13 +166,9 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         stopGrid(1); // Client node.
 
-        isClient = true;
+        client = startClientGrid(4);
 
-        client = startGrid(4);
-
-        isClient = false;
-
-        clCache = client.cache(null);
+        clCache = client.cache(DEFAULT_CACHE_NAME);
 
         putAndCheck(clCache, 2); // 2 remote listeners.
 

@@ -77,8 +77,7 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
                             for (Map.Entry<String, AtomicLong> e : nextValMap.entrySet()) {
                                 String key = e.getKey();
 
-                                asyncCache.get(key);
-                                Set set = asyncCache.<Set>future().get(timeout);
+                                Set set = cache.getAsync(key).get(timeout);
 
                                 if (set == null || e.getValue() == null || !Objects.equals(e.getValue().get(), (long)set.size()))
                                     badCacheEntries.put(key, set);
@@ -102,8 +101,7 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
                                 for (int k2 = 0; k2 < range; k2++) {
                                     String key2 = "key-" + k2;
 
-                                    asyncCache.get(key2);
-                                    Object val = asyncCache.future().get(timeout);
+                                    Object val = cache.getAsync(key2).get(timeout);
 
                                     if (val != null)
                                         println("Cache Entry [key=" + key2 + ", val=" + val + "]");
@@ -116,8 +114,7 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
 
                             println("Clearing all data.");
 
-                            asyncCache.removeAll();
-                            asyncCache.future().get(timeout);
+                            cache.removeAllAsync().get(timeout);
 
                             nextValMap.clear();
 
@@ -166,8 +163,7 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
             if (nextAtomicVal != null)
                 nextVal = nextAtomicVal.incrementAndGet();
 
-            asyncCache.invoke(key, new AddInSetEntryProcessor(), nextVal);
-            asyncCache.future().get(args.cacheOperationTimeoutMillis());
+            cache.invokeAsync(key, new AddInSetEntryProcessor(), nextVal).get(args.cacheOperationTimeoutMillis());
         }
         finally {
             rwl.readLock().unlock();

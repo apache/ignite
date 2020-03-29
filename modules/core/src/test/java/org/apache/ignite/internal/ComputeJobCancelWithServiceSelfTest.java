@@ -21,39 +21,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test cancellation of a job that depends on service.
  */
 public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -62,20 +45,15 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobCancel() throws Exception {
         Ignite server = startGrid("server");
 
         server.services().deployNodeSingleton("my-service", new MyService());
 
-        Ignition.setClientMode(true);
+        Ignite client = startClientGrid("client");
 
-        Ignite client = startGrid("client");
-
-        IgniteCompute compute = client.compute().withAsync();
-
-        compute.execute(new MyTask(), null);
-
-        ComputeTaskFuture<Integer> fut = compute.future();
+        ComputeTaskFuture<Integer> fut = client.compute().executeAsync(new MyTask(), null);
 
         Thread.sleep(3000);
 
@@ -122,8 +100,7 @@ public class ComputeJobCancelWithServiceSelfTest extends GridCommonAbstractTest 
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override
-                public Object execute() throws IgniteException {
+                @Override public Object execute() throws IgniteException {
                     MyService svc = ignite.services().service("my-service");
 
                     while (!isCancelled()) {

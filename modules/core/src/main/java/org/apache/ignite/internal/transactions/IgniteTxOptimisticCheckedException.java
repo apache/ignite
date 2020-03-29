@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.transactions;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Exception thrown whenever grid transactions fail optimistically.
  */
-public class IgniteTxOptimisticCheckedException extends IgniteCheckedException {
+public class IgniteTxOptimisticCheckedException extends TransactionCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 

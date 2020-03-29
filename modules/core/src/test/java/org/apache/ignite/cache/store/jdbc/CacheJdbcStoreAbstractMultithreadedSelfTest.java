@@ -32,7 +32,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.store.jdbc.model.Gender;
 import org.apache.ignite.cache.store.jdbc.model.Organization;
 import org.apache.ignite.cache.store.jdbc.model.OrganizationKey;
@@ -43,12 +42,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.support.GenericApplicationContext;
@@ -65,13 +62,10 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
     extends GridCommonAbstractTest {
     /** Default config with mapping. */
-    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-type-metadata.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/ignite-jdbc-type.xml";
 
     /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
-
-    /** IP finder. */
-    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Number of transactions. */
     private static final int TX_CNT = 200;
@@ -85,6 +79,40 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         store = store();
+
+        URL cfgUrl;
+
+        try {
+            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
+        }
+        catch (MalformedURLException ignore) {
+            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
+        }
+
+        if (cfgUrl == null)
+            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
+
+        try {
+            GenericApplicationContext springCtx = new GenericApplicationContext();
+
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
+
+            springCtx.refresh();
+
+            Collection<JdbcType> types = new ArrayList<>(springCtx.getBeansOfType(JdbcType.class).values());
+
+            store.setTypes(types.toArray(new JdbcType[types.size()]));
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
+                    "[springUrl=" + cfgUrl + ']', e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                    cfgUrl + ", err=" + e.getMessage() + ']', e);
+        }
+
     }
 
     /** {@inheritDoc} */
@@ -125,14 +153,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     protected abstract T store() throws Exception;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setCacheConfiguration(cacheConfiguration());
 
@@ -148,43 +170,10 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(ATOMIC);
-        cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
 
-        URL cfgUrl;
-
-        try {
-            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
-        }
-        catch (MalformedURLException ignore) {
-            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
-        }
-
-        if (cfgUrl == null)
-            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
-
-        try {
-            GenericApplicationContext springCtx = new GenericApplicationContext();
-
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
-
-            springCtx.refresh();
-
-            Collection<CacheTypeMetadata> tp = new ArrayList<>(springCtx.getBeansOfType(CacheTypeMetadata.class).values());
-
-            cc.setTypeMetadata(tp);
-        }
-        catch (BeansException e) {
-            if (X.hasCause(e, ClassNotFoundException.class))
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
-                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + cfgUrl + ']', e);
-            else
-                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    cfgUrl + ", err=" + e.getMessage() + ']', e);
-        }
-
         cc.setCacheStoreFactory(singletonFactory(store));
+
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -195,6 +184,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPut() throws Exception {
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -243,6 +233,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPutAll() throws Exception {
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
@@ -285,6 +276,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedExplicitTx() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();

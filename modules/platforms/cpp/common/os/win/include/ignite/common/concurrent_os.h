@@ -18,25 +18,28 @@
 #ifndef _IGNITE_COMMON_CONCURRENT_OS
 #define _IGNITE_COMMON_CONCURRENT_OS
 
-#include <map>
 #include <stdint.h>
+
+#include <cassert>
+#include <map>
+
 #include <windows.h>
 
 #include "ignite/common/common.h"
-
 namespace ignite
 {
     namespace common
     {
-        namespace concurrent 
+        namespace concurrent
         {
             /**
-             * Static class to manage memory visibility semantics. 
+             * Static class to manage memory visibility semantics.
              */
-            class IGNITE_IMPORT_EXPORT Memory {
+            class IGNITE_IMPORT_EXPORT Memory
+            {
             public:
                 /**
-                 * Full fence. 
+                 * Full fence.
                  */
                 static void Fence();
             };
@@ -44,7 +47,9 @@ namespace ignite
             /**
              * Critical section.
              */
-            class IGNITE_IMPORT_EXPORT CriticalSection {
+            class IGNITE_IMPORT_EXPORT CriticalSection
+            {
+                friend class ConditionVariable;
             public:
                 /**
                  * Constructor.
@@ -52,7 +57,7 @@ namespace ignite
                 CriticalSection();
 
                 /**
-                 * Destructor. 
+                 * Destructor.
                  */
                 ~CriticalSection();
 
@@ -67,16 +72,56 @@ namespace ignite
                 void Leave();
             private:
                 /** Handle. */
-                CRITICAL_SECTION* hnd;
+                CRITICAL_SECTION hnd;
 
                 IGNITE_NO_COPY_ASSIGNMENT(CriticalSection)
+            };
+
+            class IGNITE_IMPORT_EXPORT ReadWriteLock
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ReadWriteLock();
+
+                /**
+                 * Destructor.
+                 */
+                ~ReadWriteLock();
+
+                /**
+                 * Lock in exclusive mode.
+                 */
+                void LockExclusive();
+
+                /**
+                 * Release in exclusive mode.
+                 */
+                void ReleaseExclusive();
+
+                /**
+                 * Lock in shared mode.
+                 */
+                void LockShared();
+
+                /**
+                 * Release in shared mode.
+                 */
+                void ReleaseShared();
+
+            private:
+                /** Lock. */
+                SRWLOCK lock;
+
+                IGNITE_NO_COPY_ASSIGNMENT(ReadWriteLock)
             };
 
             /**
              * Special latch with count = 1.
              */
             class IGNITE_IMPORT_EXPORT SingleLatch
-            {                
+            {
             public:
                 /**
                  * Constructor.
@@ -99,7 +144,7 @@ namespace ignite
                 void Await();
             private:
                 /** Handle. */
-                void* hnd;
+                HANDLE hnd;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SingleLatch)
             };
@@ -107,7 +152,7 @@ namespace ignite
             /**
              * Primitives for atomic access.
              */
-            class IGNITE_IMPORT_EXPORT Atomics
+            class Atomics
             {
             public:
                 /**
@@ -129,7 +174,7 @@ namespace ignite
                  * @return Value which were observed during CAS attempt.
                  */
                 static int32_t CompareAndSet32Val(int32_t* ptr, int32_t expVal, int32_t newVal);
-                
+
                 /**
                  * Increment 32-bit integer and return new value.
                  *
@@ -165,7 +210,7 @@ namespace ignite
                  * @return Value which were observed during CAS attempt.
                  */
                 static int64_t CompareAndSet64Val(int64_t* ptr, int64_t expVal, int64_t newVal);
-                
+
                 /**
                  * Increment 64-bit integer and return new value.
                  *
@@ -214,7 +259,7 @@ namespace ignite
                 {
                     // No-op.
                 }
-                
+
                 ~ThreadLocalTypedEntry()
                 {
                     // No-op.
@@ -231,7 +276,7 @@ namespace ignite
                 }
             private:
                 /** Value. */
-                T val; 
+                T val;
             };
 
             /**
@@ -277,11 +322,11 @@ namespace ignite
 
                     if (winVal)
                     {
-                        std::map<int32_t, ThreadLocalEntry*>* map = 
+                        std::map<int32_t, ThreadLocalEntry*>* map =
                             static_cast<std::map<int32_t, ThreadLocalEntry*>*>(winVal);
 
                         ThreadLocalTypedEntry<T>* entry = static_cast<ThreadLocalTypedEntry<T>*>((*map)[idx]);
-                        
+
                         if (entry)
                             return entry->Get();
                     }
@@ -302,7 +347,7 @@ namespace ignite
 
                     if (winVal)
                     {
-                        std::map<int32_t, ThreadLocalEntry*>* map = 
+                        std::map<int32_t, ThreadLocalEntry*>* map =
                             static_cast<std::map<int32_t, ThreadLocalEntry*>*>(winVal);
 
                         ThreadLocalEntry* appVal = (*map)[idx];
@@ -397,7 +442,155 @@ namespace ignite
 
             private:
                 /** Index. */
-                int32_t idx; 
+                int32_t idx;
+            };
+
+            /**
+             * Cross-platform wrapper for Condition Variable synchronization
+             * primitive concept.
+             */
+            class ConditionVariable
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ConditionVariable()
+                {
+                    InitializeConditionVariable(&cond);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ConditionVariable()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified.
+                 *
+                 * @param cs Critical section in which to wait.
+                 */
+                void Wait(CriticalSection& cs)
+                {
+                    SleepConditionVariableCS(&cond, &cs.hnd, INFINITE);
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified for specified time.
+                 *
+                 * @param cs Critical section in which to wait.
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been notified and false in case of timeout.
+                 */
+                bool WaitFor(CriticalSection& cs, int32_t msTimeout)
+                {
+                    BOOL notified = SleepConditionVariableCS(&cond, &cs.hnd, msTimeout);
+
+                    return notified != FALSE;
+                }
+
+                /**
+                 * Notify single thread waiting for the condition variable.
+                 */
+                void NotifyOne()
+                {
+                    WakeConditionVariable(&cond);
+                }
+
+                /**
+                 * Notify all threads that are waiting on the variable.
+                 */
+                void NotifyAll()
+                {
+                    WakeAllConditionVariable(&cond);
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ConditionVariable);
+
+                /** OS-specific type. */
+                CONDITION_VARIABLE cond;
+            };
+
+            /**
+             * Manually triggered event.
+             * Once triggered it stays in passing state until manually reset.
+             */
+            class ManualEvent
+            {
+            public:
+                /**
+                 * Constructs manual event.
+                 * Initial state is untriggered.
+                 */
+                ManualEvent()
+                {
+                    handle = CreateEvent(NULL, TRUE, FALSE, NULL);
+
+                    assert(handle != NULL);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ManualEvent()
+                {
+                    CloseHandle(handle);
+                }
+
+                /**
+                 * Sets event into triggered state.
+                 */
+                void Set()
+                {
+                    BOOL success = SetEvent(handle);
+
+                    assert(success);
+                }
+
+                /**
+                 * Resets event into non-triggered state.
+                 */
+                void Reset()
+                {
+                    BOOL success = ResetEvent(handle);
+
+                    assert(success);
+                }
+
+                /**
+                 * Wait for event to be triggered.
+                 */
+                void Wait()
+                {
+                    DWORD res = WaitForSingleObject(handle, INFINITE);
+
+                    assert(res == WAIT_OBJECT_0);
+                }
+
+                /**
+                 * Wait for event to be triggered for specified time.
+                 *
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been triggered and false in case of timeout.
+                 */
+                bool WaitFor(int32_t msTimeout)
+                {
+                    DWORD res = WaitForSingleObject(handle, static_cast<DWORD>(msTimeout));
+
+                    assert(res == WAIT_OBJECT_0 || res == WAIT_TIMEOUT);
+
+                    return res == WAIT_OBJECT_0;
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ManualEvent);
+
+                /** Event handle. */
+                HANDLE handle;
             };
         }
     }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.ExecutorService;
@@ -28,8 +30,15 @@ import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.GridKernalGatewayImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.LongJVMPauseDetector;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -39,15 +48,22 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     /**
      * @param log Logger to use in context config.
      */
-    public GridTestKernalContext(IgniteLogger log) throws IgniteCheckedException {
+    public GridTestKernalContext(IgniteLogger log) {
         this(log, new IgniteConfiguration());
+
+        try {
+            add(new IgnitePluginProcessor(this, config(), Collections.<PluginProvider>emptyList()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IllegalStateException("Must not fail for empty plugins list.", e);
+        }
     }
 
     /**
      * @param log Logger to use in context config.
      * @param cfg Configuration to use in Test
      */
-    public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) throws IgniteCheckedException {
+    public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) {
         super(new GridLoggerProxy(log, null, null, null),
                 new IgniteKernal(null),
                 cfg,
@@ -64,12 +80,32 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                U.allPluginProviders()
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+                    Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
+                null,
+                null,
+                null,
+                new LongJVMPauseDetector(log)
         );
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
+        GridTestUtils.setFieldValue(grid(), "ctx", this);
 
         config().setGridLogger(log);
+
+        if (cfg.getMetricExporterSpi() == null || cfg.getMetricExporterSpi().length == 0)
+            cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+
+        add(new GridMetricManager(this));
+        add(new GridResourceProcessor(this));
+        add(new GridInternalSubscriptionProcessor(this));
     }
 
     /**
@@ -98,11 +134,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridTestKernalContext.class, this, super.toString());
-    }
-
     /**
      * Sets system executor service.
      *
@@ -112,7 +143,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         this.sysExecSvc = sysExecSvc;
     }
 
-
     /**
      * Sets executor service.
      *
@@ -120,5 +150,10 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public void setExecutorService(ExecutorService execSvc){
         this.execSvc = execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridTestKernalContext.class, this, super.toString());
     }
 }

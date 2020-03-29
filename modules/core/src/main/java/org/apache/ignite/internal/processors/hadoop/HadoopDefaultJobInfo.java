@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +52,9 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     /** User name. */
     private String user;
 
+    /** Credentials. */
+    private byte[] credentials;
+
     /**
      * Default constructor required by {@link Externalizable}.
      */
@@ -68,12 +72,13 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
      * @param props All other properties of the job.
      */
     public HadoopDefaultJobInfo(String jobName, String user, boolean hasCombiner, int numReduces,
-        Map<String, String> props) {
+        Map<String, String> props, byte[] credentials) {
         this.jobName = jobName;
         this.user = user;
         this.hasCombiner = hasCombiner;
         this.numReduces = numReduces;
         this.props = props;
+        this.credentials = credentials;
     }
 
     /** {@inheritDoc} */
@@ -82,12 +87,12 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
+    @Override public HadoopJobEx createJob(Class<? extends HadoopJobEx> jobCls, HadoopJobId jobId, IgniteLogger log,
         @Nullable String[] libNames, HadoopHelper helper) throws IgniteCheckedException {
         assert jobCls != null;
 
         try {
-            Constructor<? extends HadoopJob> constructor = jobCls.getConstructor(HadoopJobId.class,
+            Constructor<? extends HadoopJobEx> constructor = jobCls.getConstructor(HadoopJobId.class,
                 HadoopDefaultJobInfo.class, IgniteLogger.class, String[].class, HadoopHelper.class);
 
             return constructor.newInstance(jobId, this, log, libNames, helper);
@@ -126,6 +131,11 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public byte[] credentials() {
+        return credentials;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, jobName);
         U.writeString(out, user);
@@ -133,7 +143,9 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
         out.writeBoolean(hasCombiner);
         out.writeInt(numReduces);
 
-        U.writeStringMap(out, props);
+        IgfsUtils.writeStringMap(out, props);
+
+        U.writeByteArray(out, credentials);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +156,9 @@ public class HadoopDefaultJobInfo implements HadoopJobInfo, Externalizable {
         hasCombiner = in.readBoolean();
         numReduces = in.readInt();
 
-        props = U.readStringMap(in);
+        props = IgfsUtils.readStringMap(in);
+
+        credentials = U.readByteArray(in);
     }
 
     /**

@@ -19,26 +19,42 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+
 module.exports = {
-    implements: 'middlewares:api',
-    factory: () => {
-        return (req, res, next) => {
-            res.api = {
-                error(err) {
-                    // TODO: removed code from error
-                    res.status(err.httpCode || err.code || 500).send(err.message);
-                },
-                ok(data) {
-                    res.status(200).json(data);
-                },
-                serverError(err) {
-                    err.httpCode = 500;
+    implements: 'middlewares:api'
+};
 
-                    res.api.error(err);
-                }
-            };
+module.exports.factory = () => {
+    return (req, res, next) => {
+        // Set headers to avoid API caching in browser (esp. IE)
+        res.header('Cache-Control', 'must-revalidate');
+        res.header('Expires', '-1');
+        res.header('Last-Modified', new Date().toUTCString());
 
-            next();
+        res.api = {
+            error(err) {
+                if (_.includes(['MongoError', 'MongooseError'], err.name))
+                    return res.status(500).send(err.message);
+
+                if (_.isObject(err.data))
+                    return res.status(err.httpCode || err.code || 500).json(err.data);
+
+                res.status(err.httpCode || err.code || 500).send(err.message);
+            },
+
+            ok(data) {
+                if (_.isNil(data))
+                    return res.sendStatus(404);
+
+                res.status(200).json(data);
+            },
+
+            done() {
+                res.sendStatus(200);
+            }
         };
-    }
+
+        next();
+    };
 };

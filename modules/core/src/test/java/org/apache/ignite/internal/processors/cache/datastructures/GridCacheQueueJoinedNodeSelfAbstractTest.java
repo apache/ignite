@@ -33,9 +33,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test that joining node is able to take items from queue.
@@ -44,9 +43,6 @@ import org.jetbrains.annotations.Nullable;
 public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 3;
-
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int ITEMS_CNT = 300;
@@ -59,6 +55,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTakeFromJoined() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
@@ -70,11 +67,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
         PutJob putJob = new PutJob(queueName);
 
-        IgniteCompute comp = compute(grid(0).cluster().forLocal()).withAsync();
+        IgniteCompute comp = compute(grid(0).cluster().forLocal());
 
-        comp.run(putJob);
-
-        IgniteFuture<?> fut = comp.future();
+        IgniteFuture<?> fut = comp.runAsync(putJob);
 
         Collection<IgniteFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
@@ -89,11 +84,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
             jobs.add(job);
 
-            comp = compute(grid(i).cluster().forLocal()).withAsync();
+            comp = compute(grid(i).cluster().forLocal());
 
-            comp.call(job);
-
-            futs.add(comp.future());
+            futs.add(comp.callAsync(job));
 
             itemsLeft -= cnt;
         }

@@ -17,10 +17,17 @@
 
 package org.apache.ignite.testframework;
 
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -30,9 +37,15 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivilegedAction;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -51,26 +65,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -79,10 +90,12 @@ import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -93,34 +106,111 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for tests.
  */
-@SuppressWarnings({"UnusedCatchParameter"})
 public final class GridTestUtils {
     /** Default busy wait sleep interval in milliseconds.  */
     public static final long DFLT_BUSYWAIT_SLEEP_INTERVAL = 200;
 
     /** */
+    public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+
+    /** */
+    static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+
+    /**
+     * Hook object intervenes to discovery message handling
+     * and thus allows to make assertions or other actions like skipping certain discovery messages.
+     */
+    public static class DiscoveryHook {
+        /**
+         * @param msg Message.
+         */
+        public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        }
+
+        /**
+         * @param ignite Ignite.
+         */
+        public void ignite(IgniteEx ignite) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Injects {@link DiscoveryHook} into handling logic.
+     */
+    public static final class DiscoverySpiListenerWrapper implements DiscoverySpiListener {
+        /** */
+        private final DiscoverySpiListener delegate;
+
+        /** */
+        private final DiscoveryHook hook;
+
+        /**
+         * @param delegate Delegate.
+         * @param hook Hook.
+         */
+        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
+            this.hook = hook;
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
+            hook.handleDiscoveryMessage(spiCustomMsg);
+
+            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+            delegate.onLocalNodeInitialized(locNode);
+        }
+
+        /**
+         * @param delegate Delegate.
+         * @param discoveryHook Discovery hook.
+         */
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
+            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
+        }
+    }
+
+    /** Test parameters scale factor util. */
+    public static final class SF extends ScaleFactorUtil {
+
+    }
+
+    /** */
     private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> mcastPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> discoPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> discoPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> commPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> commPorts = new HashMap<>();
 
     /** */
     private static int[] addr;
@@ -216,6 +306,86 @@ public final class GridTestUtils {
 //    }
 
     /**
+     * Checks that string {@param str} doesn't contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if contains.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param substr Substring.
+     */
+    public static void assertNotContains(@Nullable IgniteLogger log, String str, String substr) {
+        try {
+            assertFalse(str.contains(substr));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param substr Substring.
+     */
+    public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
+        try {
+            assertTrue(str != null && str.contains(substr));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("String does not contain substring: '%s':", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that collection {@param col} contains element {@param elem}. Logs collection, element
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param col Collection.
+     * @param elem Element.
+     */
+    public static <C extends Collection<T>, T> void assertContains(@Nullable IgniteLogger log, C col, T elem) {
+        try {
+            assertTrue(col.contains(elem));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("Collection does not contain: '%s':", elem));
+            U.warn(log, "Collection:");
+            U.warn(log, col);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that collection {@param col} doesn't contains element {@param str}. Logs collection, element
+     * and throws {@link java.lang.AssertionError}, if contains.
+     *
+     * @param log Logger (optional).
+     * @param col Collection.
+     * @param elem Element.
+     */
+    public static <C extends Collection<T>, T> void assertNotContains(@Nullable IgniteLogger log, C col, T elem) {
+        try {
+            assertFalse(col.contains(elem));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("Collection contain element: '%s' but shouldn't:", elem));
+            U.warn(log, "Collection:");
+            U.warn(log, col);
+
+            throw e;
+        }
+    }
+
+    /**
      * Checks whether callable throws expected exception or not.
      *
      * @param log Logger (optional).
@@ -234,7 +404,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            if (cls != e.getClass()) {
+            if (cls != e.getClass() && !cls.isAssignableFrom(e.getClass())) {
                 if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
                     e = e.getCause();
                 else {
@@ -285,8 +455,9 @@ public final class GridTestUtils {
             Throwable t = e;
 
             while (t != null) {
-                if (cls == t.getClass() && (msg == null || (t.getMessage() != null || t.getMessage().contains(msg)))) {
-                    log.info("Caught expected exception: " + t.getMessage());
+                if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
+                    if (log != null && log.isInfoEnabled())
+                        log.info("Caught expected exception: " + t.getMessage());
 
                     return t;
                 }
@@ -342,6 +513,24 @@ public final class GridTestUtils {
      * Checks whether callable throws exception, which is itself of a specified
      * class, or has a cause of the specified class.
      *
+     * @param runnable Runnable.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    @Nullable public static Throwable assertThrowsWithCause(Runnable runnable, Class<? extends Throwable> cls) {
+        return assertThrowsWithCause(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                runnable.run();
+
+                return 0;
+            }
+        }, cls);
+    }
+
+    /**
+     * Checks whether callable throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
      * @param call Callable.
      * @param cls Expected class.
      * @return Thrown throwable.
@@ -361,6 +550,68 @@ public final class GridTestUtils {
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks whether closure throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param call Closure.
+     * @param p Parameter passed to closure.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    public static <P> Throwable assertThrowsWithCause(IgniteInClosure<P> call, P p, Class<? extends Throwable> cls) {
+        assert call != null;
+        assert cls != null;
+
+        try {
+            call.apply(p);
+        }
+        catch (Throwable e) {
+            if (!X.hasCause(e, cls))
+                fail("Exception is neither of a specified class, nor has a cause of the specified class: " + cls, e);
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Asserts that the specified runnable completes within the specified timeout.
+     *
+     * @param msg Assertion message in case of timeout.
+     * @param timeout Timeout.
+     * @param timeUnit Timeout {@link TimeUnit}.
+     * @param runnable {@link Runnable} to check.
+     * @throws Exception In case of any exception distinct from {@link TimeoutException}.
+     */
+    public static void assertTimeout(String msg, long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
+        ExecutorService executorSvc = Executors.newSingleThreadExecutor();
+        Future<?> fut = executorSvc.submit(runnable);
+
+        try {
+            fut.get(timeout, timeUnit);
+        }
+        catch (TimeoutException ignored) {
+            fail(msg, null);
+        }
+        finally {
+            executorSvc.shutdownNow();
+        }
+    }
+
+    /**
+     * Asserts that the specified runnable completes within the specified timeout.
+     *
+     * @param timeout Timeout.
+     * @param timeUnit Timeout {@link TimeUnit}.
+     * @param runnable {@link Runnable} to check.
+     * @throws Exception In case of any exception distinct from {@link TimeoutException}.
+     */
+    public static void assertTimeout(long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
+        assertTimeout("Timeout occurred.", timeout, timeUnit, runnable);
     }
 
     /**
@@ -407,7 +658,6 @@ public final class GridTestUtils {
      * @param it Input iterable of elements.
      * @param ps Array of predicates (by number of elements in iterable).
      */
-    @SuppressWarnings("ConstantConditions")
     public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
         Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
         Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();
@@ -447,7 +697,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast port.
      */
-    public static synchronized int getNextMulticastPort(Class<? extends Test> cls) {
+    public static synchronized int getNextMulticastPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = mcastPorts.get(cls);
 
         if (portRet != null)
@@ -494,7 +744,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next communication port.
      */
-    public static synchronized int getNextCommPort(Class<? extends Test> cls) {
+    public static synchronized int getNextCommPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = commPorts.get(cls);
 
         if (portRet != null)
@@ -521,7 +771,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next discovery port.
      */
-    public static synchronized int getNextDiscoPort(Class<? extends Test> cls) {
+    public static synchronized int getNextDiscoPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = discoPorts.get(cls);
 
         if (portRet != null)
@@ -538,6 +788,23 @@ public final class GridTestUtils {
         discoPorts.put(cls, portRet);
 
         return portRet;
+    }
+
+    /**
+     * @return Free communication port number on localhost.
+     * @throws IOException If unable to find a free port.
+     */
+    public static int getFreeCommPort() throws IOException {
+        for (int port = default_comm_port; port < max_comm_port; port++) {
+            try (ServerSocket sock = new ServerSocket(port)) {
+                return sock.getLocalPort();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+        }
+
+        throw new IOException("Unable to find a free communication port.");
     }
 
     /**
@@ -658,44 +925,40 @@ public final class GridTestUtils {
      * @param threadName Thread names.
      * @return Future for the run. Future returns execution time in milliseconds.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
 
-        // Future that supports cancel() operation.
-        GridFutureAdapter<Long> cancelFut = new GridFutureAdapter<Long>() {
-            @Override public boolean cancel() {
-                if (onCancelled()) {
-                    threadFactory.interruptAllThreads();
+        IgniteInternalFuture<Long> runFut = runAsync(() -> runMultiThreaded(calls, threadFactory));
 
-                    onCancelled();
+        GridFutureAdapter<Long> resFut = new GridFutureAdapter<Long>() {
+            @Override public boolean cancel() throws IgniteCheckedException {
+                super.cancel();
 
-                    return true;
-                }
+                if (isDone())
+                    return false;
 
-                return false;
+                runFut.cancel();
+
+                threadFactory.interruptAllThreads();
+
+                return onCancelled();
             }
         };
 
-        // Async execution future (doesn't support cancel()).
-        IgniteInternalFuture<Long> runFut = runAsync(new Callable<Long>() {
-            @Override public Long call() throws Exception {
-                return runMultiThreaded(calls, threadFactory);
+        runFut.listen(fut -> {
+            try {
+                resFut.onDone(fut.get());
+            }
+            catch (IgniteFutureCancelledCheckedException e) {
+                resFut.onCancelled();
+            }
+            catch (Throwable e) {
+                resFut.onDone(e);
             }
         });
 
-        // Compound future, that adds cancel() support to execution future.
-        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>(F.sumLongReducer());
-
-        compFut.add(cancelFut);
-        compFut.add(runFut);
-
-        compFut.markInitialized();
-
-        cancelFut.onDone();
-
-        return compFut;
+        return resFut;
     }
 
     /**
@@ -740,8 +1003,15 @@ public final class GridTestUtils {
         }
 
         // Wait threads finish their job.
-        for (Thread t : threads)
-            t.join();
+        try {
+            for (Thread t : threads)
+                t.join();
+        } catch (InterruptedException e) {
+            for (Thread t : threads)
+                t.interrupt();
+
+            throw e;
+        }
 
         time = System.currentTimeMillis() - time;
 
@@ -752,14 +1022,37 @@ public final class GridTestUtils {
     }
 
     /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static IgniteInternalFuture runAsync(final Runnable task) {
+        return runAsync(task,"async-runnable-runner");
+    }
+
+    /**
+     * Runs runnable task asyncronously.
+     *
+     * @param task Runnable.
+     * @return Future with task result.
+     */
+    public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+        return runAsync(() -> {
+            task.run();
+
+            return null;
+        }, threadName);
+    }
+
+    /**
      * Runs callable task asyncronously.
      *
      * @param task Callable.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
-        return runAsync(task, "async-runner");
+        return runAsync(task, "async-callable-runner");
     }
 
     /**
@@ -769,7 +1062,6 @@ public final class GridTestUtils {
      * @param threadName Thread name.
      * @return Future with task result.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task, String threadName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
@@ -781,25 +1073,37 @@ public final class GridTestUtils {
                 @Override public boolean cancel() throws IgniteCheckedException {
                     super.cancel();
 
+                    if (isDone())
+                        return false;
+
                     thrFactory.interruptAllThreads();
 
-                    onCancelled();
+                    try {
+                        get();
 
-                    return true;
+                        return false;
+                    }
+                    catch (IgniteFutureCancelledCheckedException e) {
+                        return true;
+                    }
+                    catch (IgniteCheckedException e) {
+                        return false;
+                    }
                 }
             };
 
-            thrFactory.newThread(new Runnable() {
-                @Override public void run() {
-                    try {
-                        // Execute task.
-                        T res = task.call();
+            thrFactory.newThread(() -> {
+                try {
+                    // Execute task.
+                    T res = task.call();
 
-                        fut.onDone(res);
-                    }
-                    catch (Throwable e) {
-                        fut.onDone(e);
-                    }
+                    fut.onDone(res);
+                }
+                catch (InterruptedException e) {
+                    fut.onCancelled();
+                }
+                catch (Throwable e) {
+                    fut.onDone(e);
                 }
             }).start();
 
@@ -808,6 +1112,31 @@ public final class GridTestUtils {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Wait for all passed futures to complete even if they fail.
+     *
+     * @param futs Futures.
+     * @throws AssertionError Suppresses underlying exceptions if some futures failed.
+     */
+    public static void waitForAllFutures(IgniteInternalFuture<?>... futs) {
+        AssertionError err = null;
+
+        for (IgniteInternalFuture<?> fut : futs) {
+            try {
+                fut.get();
+            }
+            catch (Throwable t) {
+                if (err == null)
+                    err = new AssertionError("One or several futures threw the exception.");
+
+                err.addSuppressed(t);
+            }
+        }
+
+        if (err != null)
+            throw err;
     }
 
     /**
@@ -951,7 +1280,6 @@ public final class GridTestUtils {
      * @param ignite Grid to stop.
      * @param log Logger.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     public static void close(Ignite ignite, IgniteLogger log) {
         if (ignite != null)
             try {
@@ -966,16 +1294,15 @@ public final class GridTestUtils {
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
-    @SuppressWarnings({"CatchGenericClass"})
-    public static void stopGrid(String gridName, IgniteLogger log) {
+    public static void stopGrid(String igniteInstanceName, IgniteLogger log) {
         try {
-            G.stop(gridName, false);
+            G.stop(igniteInstanceName, false);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to stop grid: " + gridName, e);
+            U.error(log, "Failed to stop grid: " + igniteInstanceName, e);
         }
     }
 
@@ -1021,7 +1348,7 @@ public final class GridTestUtils {
      * @return Cache context.
      */
     public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
-        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context();
     }
 
     /**
@@ -1061,7 +1388,7 @@ public final class GridTestUtils {
                     Collection<ClusterNode> nodes = top.nodes(p, AffinityTopologyVersion.NONE);
 
                     if (nodes.size() > backups + 1) {
-                        LT.warn(log, "Partition map was not updated yet (will wait) [grid=" + g.name() +
+                        LT.warn(log, "Partition map was not updated yet (will wait) [igniteInstanceName=" + g.name() +
                             ", p=" + p + ", nodes=" + F.nodeIds(nodes) + ']');
 
                         wait = true;
@@ -1105,33 +1432,12 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
 
         try {
-            // Resolve inner field.
-            Field field = cls.getDeclaredField(fieldName);
-
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
-
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
-
-                    obj = field.get(obj);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-                }
-            }
-
-            return (T)obj;
+            return (T)findField(cls, obj, fieldName);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to get object field [obj=" + obj +
@@ -1148,7 +1454,6 @@ public final class GridTestUtils {
      * @return Field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, String... fieldNames) throws IgniteException {
         assert obj != null;
         assert fieldNames != null;
@@ -1159,25 +1464,7 @@ public final class GridTestUtils {
                 Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
                 try {
-                    // Resolve inner field.
-                    Field field = cls.getDeclaredField(fieldName);
-
-                    synchronized (field) {
-                        // Backup accessible field state.
-                        boolean accessible = field.isAccessible();
-
-                        try {
-                            if (!accessible)
-                                field.setAccessible(true);
-
-                            obj = field.get(obj);
-                        }
-                        finally {
-                            // Recover accessible field state.
-                            if (!accessible)
-                                field.setAccessible(false);
-                        }
-                    }
+                    obj = findField(cls, obj, fieldName);
                 }
                 catch (NoSuchFieldException e) {
                     // Resolve inner class, if not an inner field.
@@ -1197,6 +1484,85 @@ public final class GridTestUtils {
             throw new IgniteException("Failed to get object field [obj=" + obj +
                 ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
         }
+    }
+
+    /**
+     * Get object field value via reflection(including superclass).
+     *
+     * @param obj Object or class to get field value from.
+     * @param fieldNames Field names to get value for: obj->field1->field2->...->fieldN.
+     * @param <T> Expected field class.
+     * @return Field value.
+     * @throws IgniteException In case of error.
+     */
+    public static <T> T getFieldValueHierarchy(Object obj, String... fieldNames) throws IgniteException {
+        assert obj != null;
+        assert fieldNames != null;
+        assert fieldNames.length >= 1;
+
+        try {
+            for (String fieldName : fieldNames) {
+                Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+
+                while (cls != null) {
+                    try {
+                        obj = findField(cls, obj, fieldName);
+
+                        break;
+                    }
+                    catch (NoSuchFieldException e) {
+                        cls = cls.getSuperclass();
+                    }
+                }
+            }
+
+            return (T)obj;
+        }
+        catch (IllegalAccessException e) {
+            throw new IgniteException("Failed to get object field [obj=" + obj +
+                ", fieldNames=" + Arrays.toString(fieldNames) + ']', e);
+        }
+    }
+
+    /**
+     * @param cls Class for searching.
+     * @param obj Target object.
+     * @param fieldName Field name for search.
+     * @return Field from object if it was found.
+     */
+    private static Object findField(Class<?> cls, Object obj,
+        String fieldName) throws NoSuchFieldException, IllegalAccessException {
+        // Resolve inner field.
+        Field field = cls.getDeclaredField(fieldName);
+
+        boolean accessible = field.isAccessible();
+
+        if (!accessible)
+            field.setAccessible(true);
+
+        return field.get(obj);
+    }
+
+    /**
+     * Change static final fields.
+     * @param field Need to be changed.
+     * @param newVal New value.
+     * @throws Exception If failed.
+     */
+    public static void setFieldValue(Field field, Object newVal) throws Exception {
+        field.setAccessible(true);
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+
+        AccessController.doPrivileged(new PrivilegedAction() {
+            @Override
+            public Object run() {
+                modifiersField.setAccessible(true);
+                return null;
+            }
+        });
+
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(null, newVal);
     }
 
     /**
@@ -1222,7 +1588,6 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
         assert fieldName != null;
@@ -1232,22 +1597,12 @@ public final class GridTestUtils {
 
             Field field = cls.getDeclaredField(fieldName);
 
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
+            boolean accessible = field.isAccessible();
 
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
+            if (!accessible)
+                field.setAccessible(true);
 
-                    field.set(obj, val);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-                }
-            }
+            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1263,46 +1618,28 @@ public final class GridTestUtils {
      * @param val New field value.
      * @throws IgniteException In case of error.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
         assert fieldName != null;
 
         try {
             Field field = cls.getDeclaredField(fieldName);
 
-            synchronized (field) {
-                // Backup accessible field state.
-                boolean accessible = field.isAccessible();
+            boolean accessible = field.isAccessible();
 
-                boolean isFinal = (field.getModifiers() & Modifier.FINAL) > 0;
+            if (!accessible)
+                field.setAccessible(true);
 
-                Field modifiersField = null;
+            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
 
-                if (isFinal)
-                    modifiersField = Field.class.getDeclaredField("modifiers");
+            if (isFinal) {
+                Field modifiersField = Field.class.getDeclaredField("modifiers");
 
-                try {
-                    if (!accessible)
-                        field.setAccessible(true);
+                modifiersField.setAccessible(true);
 
-                    if (isFinal) {
-                        modifiersField.setAccessible(true);
-                        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-                    }
-
-                    field.set(obj, val);
-                }
-                finally {
-                    // Recover accessible field state.
-                    if (!accessible)
-                        field.setAccessible(false);
-
-                    if (isFinal) {
-                        modifiersField.setInt(field, field.getModifiers() | Modifier.FINAL);
-                        modifiersField.setAccessible(false);
-                    }
-                }
+                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
             }
+
+            field.set(obj, val);
         }
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
@@ -1318,53 +1655,48 @@ public final class GridTestUtils {
      * @return Method invocation result.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Nullable public static <T> T invoke(Object obj, String mtd, Object... params) throws Exception {
-        // We cannot resolve method by parameter classes due to some of parameters can be null.
-        // Search correct method among all methods collection.
-        for (Method m : obj.getClass().getDeclaredMethods()) {
-            // Filter methods by name.
-            if (!m.getName().equals(mtd))
-                continue;
+        Class<?> cls = obj.getClass();
 
-            if (!areCompatible(params, m.getParameterTypes()))
-                continue;
+        do {
+            // We cannot resolve method by parameter classes due to some of parameters can be null.
+            // Search correct method among all methods collection.
+            for (Method m : cls.getDeclaredMethods()) {
+                // Filter methods by name.
+                if (!m.getName().equals(mtd))
+                    continue;
 
-            try {
-                synchronized (m) {
-                    // Backup accessible field state.
+                if (!areCompatible(params, m.getParameterTypes()))
+                    continue;
+
+                try {
                     boolean accessible = m.isAccessible();
 
-                    try {
-                        if (!accessible)
-                            m.setAccessible(true);
+                    if (!accessible)
+                        m.setAccessible(true);
 
-                        return (T)m.invoke(obj, params);
-                    }
-                    finally {
-                        // Recover accessible field state.
-                        if (!accessible)
-                            m.setAccessible(false);
-                    }
+                    return (T)m.invoke(obj, params);
+                }
+                catch (IllegalAccessException e) {
+                    throw new RuntimeException("Failed to access method" +
+                        " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
+                }
+                catch (InvocationTargetException e) {
+                    Throwable cause = e.getCause();
+
+                    if (cause instanceof Error)
+                        throw (Error) cause;
+
+                    if (cause instanceof Exception)
+                        throw (Exception) cause;
+
+                    throw new RuntimeException("Failed to invoke method)" +
+                        " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
                 }
             }
-            catch (IllegalAccessException e) {
-                throw new RuntimeException("Failed to access method" +
-                    " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
-            }
-            catch (InvocationTargetException e) {
-                Throwable cause = e.getCause();
 
-                if (cause instanceof Error)
-                    throw (Error) cause;
-
-                if (cause instanceof Exception)
-                    throw (Exception) cause;
-
-                throw new RuntimeException("Failed to invoke method)" +
-                    " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']', e);
-            }
-        }
+            cls = cls.getSuperclass();
+        } while (cls != Object.class);
 
         throw new RuntimeException("Failed to find method" +
             " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']');
@@ -1445,6 +1777,26 @@ public final class GridTestUtils {
     }
 
     /**
+     * Reads resource into byte array.
+     *
+     * @param classLoader Classloader.
+     * @param resourceName Resource name.
+     * @return Content of resorce in byte array.
+     * @throws IOException If failed.
+     */
+    public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
+        try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
+            assertNotNull("Resource is missing: " + resourceName , is);
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                U.copy(is, baos);
+
+                return baos.toByteArray();
+            }
+        }
+    }
+
+    /**
      * Sleeps and increments an integer.
      * <p>
      * Allows for loops like the following:
@@ -1503,7 +1855,7 @@ public final class GridTestUtils {
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        char[] storePass = GridTestProperties.getProperty("ssl.keystore.password").toCharArray();
+        char[] storePass = keyStorePassword().toCharArray();
 
         KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
 
@@ -1530,13 +1882,12 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
 
         return factory;
     }
-
 
     /**
      * Creates test-purposed SSL context factory from test key store with disabled trust manager.
@@ -1548,11 +1899,38 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
-        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
         return factory;
+    }
+
+    /**
+     * Creates test-purposed SSL context factory from specified key store and trust store.
+     *
+     * @param keyStore Key store name.
+     * @param trustStore Trust store name.
+     * @return SSL context factory used in test.
+     */
+    public static Factory<SSLContext> sslTrustedFactory(String keyStore, String trustStore) {
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreFilePath(keyStorePath(keyStore));
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
+        factory.setTrustStoreFilePath(keyStorePath(trustStore));
+        factory.setTrustStorePassword(keyStorePassword().toCharArray());
+
+        return factory;
+    }
+
+    public static String keyStorePassword() {
+        return GridTestProperties.getProperty("ssl.keystore.password");
+    }
+
+    @NotNull public static String keyStorePath(String keyStore) {
+        return U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + keyStore + ".path")).getAbsolutePath();
     }
 
     /**
@@ -1729,128 +2107,284 @@ public final class GridTestUtils {
     }
 
     /**
-     * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     * Adds test class to the list only if it's not in {@code ignoredTests} set.
      *
-     * @param suite TestSuite where to place the test.
+     * @param suite List where to place the test class.
      * @param test Test.
-     * @param ignoredTests Tests to ignore.
+     * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(TestSuite suite, Class test, Set<Class> ignoredTests) {
+    public static void addTestIfNeeded(@NotNull final List<Class<?>> suite, @NotNull final Class<?> test,
+        @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTestSuite(test);
+        suite.add(test);
     }
 
     /**
-     * Sets cache configuration parameters according to test memory mode.
+     * Generate random alphabetical string.
      *
-     * @param cfg Ignite configuration.
-     * @param ccfg Cache configuration.
-     * @param testMode Test memory mode.
-     * @param maxHeapCnt Maximum number of entries in heap (used if test mode involves eviction from heap).
-     * @param maxOffheapSize Maximum offheap memory size (used if test mode involves eviction from offheap to swap).
+     * @param rnd Random object.
+     * @param maxLen Maximal length of string.
+     * @return Random string object.
      */
-    public static void setMemoryMode(IgniteConfiguration cfg, CacheConfiguration ccfg,
-        TestMemoryMode testMode,
-        int maxHeapCnt,
-        long maxOffheapSize) {
-        assert testMode != null;
-        assert ccfg != null;
-
-        CacheMemoryMode memMode;
-        boolean swap = false;
-        boolean evictionPlc = false;
-        long offheapMaxMem = -1L;
-
-        switch (testMode) {
-            case HEAP: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                swap = false;
-
-                break;
-            }
-
-            case SWAP: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                evictionPlc = true;
-                swap = true;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED: {
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_TIERED_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.OFFHEAP_TIERED;
-                offheapMaxMem = maxOffheapSize;
-                swap = true;
-
-                break;
-            }
-
-            case OFFHEAP_EVICT: {
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                evictionPlc = true;
-                offheapMaxMem = 0;
-
-                break;
-            }
-
-            case OFFHEAP_EVICT_SWAP: {
-                assert maxOffheapSize > 0 : maxOffheapSize;
-
-                memMode = CacheMemoryMode.ONHEAP_TIERED;
-                swap = true;
-                evictionPlc = true;
-                offheapMaxMem = maxOffheapSize;
-
-                break;
-            }
-
-            default:
-                throw new IllegalArgumentException("Invalid mode: " + testMode);
-        }
-
-        ccfg.setMemoryMode(memMode);
-        ccfg.setSwapEnabled(swap);
-
-        if (swap && cfg != null)
-            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-
-        if (evictionPlc) {
-            LruEvictionPolicy plc = new LruEvictionPolicy();
-
-            plc.setMaxSize(maxHeapCnt);
-
-            ccfg.setEvictionPolicy(plc);
-        }
-
-        ccfg.setOffHeapMaxMemory(offheapMaxMem);
+    public static String randomString(Random rnd, int maxLen) {
+        return randomString(rnd, 0, maxLen);
     }
 
     /**
+     * Generate random alphabetical string.
      *
+     * @param rnd Random object.
+     * @param minLen Minimum length of string.
+     * @param maxLen Maximal length of string.
+     * @return Random string object.
      */
-    public enum TestMemoryMode {
-        /** Heap only. */
-        HEAP,
-        /** Evict from heap to swap with eviction policy. */
-        SWAP,
-        /** Always evict to offheap, no swap. */
-        OFFHEAP_TIERED,
-        /** Always evict to offheap + evict from offheap to swap when max offheap memory limit is reached. */
-        OFFHEAP_TIERED_SWAP,
-        /** Evict to offheap with eviction policy, no swap. */
-        OFFHEAP_EVICT,
-        /** Evict to offheap with eviction policy + evict from offheap to swap when max offheap memory limit is reached. */
-        OFFHEAP_EVICT_SWAP,
+    public static String randomString(Random rnd, int minLen, int maxLen) {
+        assert minLen >= 0 : "minLen >= 0";
+        assert maxLen >= minLen : "maxLen >= minLen";
+
+        int len = maxLen == minLen ? minLen : minLen + rnd.nextInt(maxLen - minLen);
+
+        StringBuilder b = new StringBuilder(len);
+
+        for (int i = 0; i < len; i++)
+            b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
+
+        return b.toString();
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
+     */
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0), null);
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
+     */
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0), mergedEvts);
+    }
+
+    /**
+     * Checks that {@code state} is active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertActive(ClusterState state) {
+        assertTrue(state + " isn't active state", ClusterState.active(state));
+    }
+
+    /**
+     * Checks that {@code state} isn't active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertInactive(ClusterState state) {
+        assertFalse(state + " isn't inactive state", ClusterState.active(state));
+    }
+
+    /** Test parameters scale factor util. */
+    private static class ScaleFactorUtil {
+        /** Test speed scale factor property name. */
+        private static final String TEST_SCALE_FACTOR_PROPERTY = "TEST_SCALE_FACTOR";
+
+        /** Min test scale factor value. */
+        private static final double MIN_TEST_SCALE_FACTOR_VALUE = 0.1;
+
+        /** Max test scale factor value. */
+        private static final double MAX_TEST_SCALE_FACTOR_VALUE = 1.0;
+
+        /** Test speed scale factor. */
+        private static final double TEST_SCALE_FACTOR_VALUE = readScaleFactor();
+
+        /** */
+        private static double readScaleFactor() {
+            double scaleFactor = Double.parseDouble(System.getProperty(TEST_SCALE_FACTOR_PROPERTY, "1.0"));
+
+            scaleFactor = Math.max(scaleFactor, MIN_TEST_SCALE_FACTOR_VALUE);
+            scaleFactor = Math.min(scaleFactor, MAX_TEST_SCALE_FACTOR_VALUE);
+
+            return scaleFactor;
+        }
+
+        /** */
+        public static int apply(int val) {
+            return (int)Math.round(TEST_SCALE_FACTOR_VALUE * val);
+        }
+
+        /** */
+        public static int apply(int val, int lowerBound, int upperBound) {
+            return applyUB(applyLB(val, lowerBound), upperBound);
+        }
+
+        /** Apply scale factor with lower bound */
+        public static int applyLB(int val, int lowerBound) {
+            return Math.max(apply(val), lowerBound);
+        }
+
+        /** Apply scale factor with upper bound */
+        public static int applyUB(int val, int upperBound) {
+            return Math.min(apply(val), upperBound);
+        }
+    }
+
+    /**
+     * @param node Node to connect to.
+     * @param params Connection parameters.
+     * @return Thin JDBC connection to specified node.
+     */
+    public static Connection connect(IgniteEx node, String params) throws SQLException {
+        Collection<GridPortRecord> recs = node.context().ports().records();
+
+        GridPortRecord cliLsnrRec = null;
+
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
+
+                break;
+            }
+        }
+
+        assertNotNull(cliLsnrRec);
+
+        String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
+
+        if (!F.isEmpty(params))
+            connStr += "/?" + params;
+
+        return DriverManager.getConnection(connStr);
+    }
+
+    /**
+     * Removes idle_verify log files created in tests.
+     */
+    public static void cleanIdleVerifyLogFiles() {
+        File dir = new File(".");
+
+        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
+            f.delete();
+    }
+
+    public static class SqlTestFunctions {
+        /** Sleep milliseconds. */
+        public static volatile long sleepMs;
+
+        /** Fail flag. */
+        public static volatile boolean fail;
+
+        /**
+         * Do sleep {@code sleepMs} milliseconds
+         *
+         * @return amount of milliseconds to sleep
+         */
+        @QuerySqlFunction
+        @SuppressWarnings("BusyWait")
+        public static long sleep() {
+            long end = System.currentTimeMillis() + sleepMs;
+
+            long remainTime =sleepMs;
+
+            do {
+                try {
+                    Thread.sleep(remainTime);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op
+                }
+            }
+            while ((remainTime = end - System.currentTimeMillis()) > 0);
+
+            return sleepMs;
+        }
+
+        /**
+         * Function do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return in case of {@code fail} is false return 0, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static int can_fail() {
+            if (fail)
+                throw new IllegalArgumentException();
+            else
+                return 0;
+        }
+
+        /**
+         * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static long sleep_and_can_fail() {
+            long sleep = sleep();
+
+            can_fail();
+
+            return sleep;
+        }
+    }
+
+    /**
+     * Runnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface RunnableX extends Runnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * IgniteRunnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface IgniteRunnableX extends IgniteRunnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * @param runnableX Runnable with exception.
+     */
+    public static void suppressException(RunnableX runnableX) {
+        runnableX.run();
     }
 }

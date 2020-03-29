@@ -34,6 +34,7 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Collision job context test.
@@ -47,14 +48,14 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         assert ignite != null;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCollisionSpi(new TestCollisionSpi());
 
@@ -64,8 +65,9 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testCollisionJobContext() throws Exception {
-        G.ignite(getTestGridName()).compute().execute(new GridTestTask(), "some-arg");
+        G.ignite(getTestIgniteInstanceName()).compute().execute(new GridTestTask(), "some-arg");
     }
 
     /** */
@@ -84,7 +86,6 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
             assert waitJobs != null;
             assert activeJobs != null;
 
-
             for (CollisionJobContext job : waitJobs) {
                 assert job.getJob() != null;
                 assert job.getJobContext() != null;
@@ -97,7 +98,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 

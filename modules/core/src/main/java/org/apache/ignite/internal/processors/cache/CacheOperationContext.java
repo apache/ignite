@@ -20,14 +20,22 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
 
 /**
  * Cache operation context.
  */
 public class CacheOperationContext implements Serializable {
+    /** */
+    //TODO IGNITE-8801 remove this and set default as `false`.
+    public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
+        IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, true);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,11 +47,20 @@ public class CacheOperationContext implements Serializable {
     @GridToStringInclude
     private final boolean noRetries;
 
+    /** */
+    private final boolean recovery;
+
+    /** Read-repair flag. */
+    private final boolean readRepair;
+
     /** Client ID which operates over this projection. */
     private final UUID subjId;
 
     /** Keep binary flag. */
     private final boolean keepBinary;
+
+    /** Allow atomic cache in transaction. */
+    private final boolean allowAtomicOpsInTx;
 
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
@@ -56,16 +73,14 @@ public class CacheOperationContext implements Serializable {
      */
     public CacheOperationContext() {
         skipStore = false;
-
         subjId = null;
-
         keepBinary = false;
-
         expiryPlc = null;
-
         noRetries = false;
-
+        recovery = false;
+        readRepair = false;
         dataCenterId = null;
+        allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
     }
 
     /**
@@ -74,6 +89,7 @@ public class CacheOperationContext implements Serializable {
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
+     * @param readRepair Read-repair flag.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -81,18 +97,20 @@ public class CacheOperationContext implements Serializable {
         boolean keepBinary,
         @Nullable ExpiryPolicy expiryPlc,
         boolean noRetries,
-        @Nullable Byte dataCenterId) {
+        @Nullable Byte dataCenterId,
+        boolean recovery,
+        boolean readRepair,
+        boolean allowAtomicOpsInTx
+    ) {
         this.skipStore = skipStore;
-
         this.subjId = subjId;
-
         this.keepBinary = keepBinary;
-
         this.expiryPlc = expiryPlc;
-
         this.noRetries = noRetries;
-
         this.dataCenterId = dataCenterId;
+        this.recovery = recovery;
+        this.readRepair = readRepair;
+        this.allowAtomicOpsInTx = allowAtomicOpsInTx;
     }
 
     /**
@@ -121,7 +139,10 @@ public class CacheOperationContext implements Serializable {
             true,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
     }
 
     /**
@@ -136,7 +157,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * Gets data center ID.
      *
-     * @return Client ID.
+     * @return Datacenter ID.
      */
     @Nullable public Byte dataCenterId() {
         return dataCenterId;
@@ -155,7 +176,10 @@ public class CacheOperationContext implements Serializable {
             keepBinary,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
     }
 
     /**
@@ -178,7 +202,10 @@ public class CacheOperationContext implements Serializable {
             keepBinary,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
     }
 
     /**
@@ -198,10 +225,13 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            true,
+            keepBinary,
             plc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
     }
 
     /**
@@ -215,7 +245,75 @@ public class CacheOperationContext implements Serializable {
             keepBinary,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
+    }
+
+    /**
+     * @param dataCenterId Data center id.
+     * @return Operation context.
+     */
+    public CacheOperationContext setDataCenterId(byte dataCenterId) {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
+    }
+
+    /**
+     * @param recovery Recovery flag.
+     * @return New instance of CacheOperationContext with recovery flag.
+     */
+    public CacheOperationContext setRecovery(boolean recovery) {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
+    }
+
+    /**
+     * @param readRepair Read Repair flag.
+     * @return New instance of CacheOperationContext with Read Repair flag.
+     */
+    public CacheOperationContext setReadRepair(boolean readRepair) {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepair,
+            allowAtomicOpsInTx);
+    }
+
+    /**
+     * @return Partition recover flag.
+     */
+    public boolean recovery() {
+        return recovery;
+    }
+
+    /**
+     * @return Read Repair flag.
+     */
+    public boolean readRepair() {
+        return readRepair;
     }
 
     /**
@@ -223,6 +321,29 @@ public class CacheOperationContext implements Serializable {
      */
     public boolean noRetries() {
         return noRetries;
+    }
+
+    /**
+     * @return Operation context.
+     */
+    public CacheOperationContext setAllowAtomicOpsInTx() {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery,
+            readRepair,
+            true);
+    }
+
+    /**
+     * @return Allow in transactions flag.
+     */
+    public boolean allowedAtomicOpsInTx() {
+        return allowAtomicOpsInTx;
     }
 
     /** {@inheritDoc} */

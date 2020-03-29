@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import org.junit.Ignore;
+
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 
 /**
  * IGFS Hadoop file system IPC shmem self test in DUAL_ASYNC mode.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-5691")
 public class IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest
     extends IgniteHadoopFileSystemShmemAbstractSelfTest {
     /**
@@ -29,5 +32,10 @@ public class IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest
      */
     public IgniteHadoopFileSystemShmemExternalDualAsyncSelfTest() {
         super(DUAL_ASYNC, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() {
+        // No-op.
     }
 }

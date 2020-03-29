@@ -30,18 +30,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SRV_CNT = 4;
 
@@ -49,13 +44,8 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     private static final int NODES = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        if (getTestGridName(SRV_CNT).equals(gridName))
-            cfg.setClientMode(true);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
@@ -63,17 +53,11 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(NODES);
+        startGridsMultiThreaded(NODES - 1);
+        startClientGrid(SRV_CNT);
     }
 
     /**
@@ -82,7 +66,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, TestValue> cacheConfiguration(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
@@ -95,6 +79,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedTransactional() throws Exception {
         checkInvokeBinaryObject(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -102,6 +87,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedTransactional() throws Exception {
         checkInvokeBinaryObject(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -109,6 +95,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedAtomic() throws Exception {
         checkInvokeBinaryObject(CacheMode.PARTITIONED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -116,6 +103,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedAtomic() throws Exception {
         checkInvokeBinaryObject(CacheMode.REPLICATED, CacheAtomicityMode.TRANSACTIONAL);
     }
@@ -152,7 +140,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
             }
 
             for (int g = 0; g < NODES; g++) {
-                IgniteCache<Integer, TestValue> nodeCache = ignite(g).cache(null);
+                IgniteCache<Integer, TestValue> nodeCache = ignite(g).cache(DEFAULT_CACHE_NAME);
                 IgniteCache<Integer, BinaryObject> nodeBinaryCache = nodeCache.withKeepBinary();
 
                 for (int i = 0; i < 100; i++) {
@@ -172,7 +160,7 @@ public class IgniteCacheBinaryEntryProcessorSelfTest extends GridCommonAbstractT
             }
         }
         finally {
-            client.destroyCache(null);
+            client.destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 

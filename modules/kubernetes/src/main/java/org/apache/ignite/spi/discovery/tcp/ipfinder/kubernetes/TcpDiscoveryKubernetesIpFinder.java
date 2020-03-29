@@ -17,7 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
+import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
@@ -30,21 +40,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * IP finder for automatic lookup of Ignite nodes running in Kubernetes environment. All Ignite nodes have to deployed
@@ -70,6 +65,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  *      <li>The Kubernetes service namespace for IP addresses lookup (see {@link #setNamespace(String)}</li>
  *      <li>The host name of the Kubernetes API server (see {@link #setMasterUrl(String)})</li>
  *      <li>Path to the service token (see {@link #setAccountToken(String)}</li>
+ *      <li>To include not-ready pods (see {@link #includeNotReadyAddresses(boolean)}</li>
  * </ul>
  * <p>
  * Both {@link #registerAddresses(Collection)} and {@link #unregisterAddresses(Collection)} have no effect.
@@ -92,15 +88,17 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /** Trust manager. */
     private TrustManager[] trustAll = new TrustManager[] {
         new X509TrustManager() {
-            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-            public X509Certificate[] getAcceptedIssuers() { return null; }
+            @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+
+            @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+
+            @Override public X509Certificate[] getAcceptedIssuers() { return null; }
         }
     };
 
     /** Host verifier. */
     private HostnameVerifier trustAllHosts = new HostnameVerifier() {
-        public boolean verify(String hostname, SSLSession session) {
+        @Override public boolean verify(String hostname, SSLSession session) {
             return true;
         }
     };
@@ -122,6 +120,9 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
     /** SSL context */
     private SSLContext ctx;
+
+    /** Whether addresses of pods in not-ready state should be included. */
+    private boolean includeNotReadyAddresses;
 
     /**
      * Creates an instance of Kubernetes IP finder.
@@ -152,19 +153,12 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
             Endpoints endpoints = mapper.readValue(conn.getInputStream(), Endpoints.class);
 
-            if (endpoints != null) {
-                if (endpoints.subsets != null && !endpoints.subsets.isEmpty()) {
-                    for (Subset subset : endpoints.subsets) {
+            if (endpoints != null && endpoints.subsets != null && !endpoints.subsets.isEmpty()) {
+                for (Subset subset : endpoints.subsets) {
+                    addrs.addAll(parseAddresses(subset.addresses));
 
-                        if (subset.addresses != null && !subset.addresses.isEmpty()) {
-                            for (Address address : subset.addresses) {
-                                addrs.add(new InetSocketAddress(address.ip, 0));
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Added an address to the list: " + address.ip);
-                            }
-                        }
-                    }
+                    if (includeNotReadyAddresses)
+                        addrs.addAll(parseAddresses(subset.notReadyAddresses));
                 }
             }
         }
@@ -172,6 +166,19 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
             throw new IgniteSpiException("Failed to retrieve Ignite pods IP addresses.", e);
         }
 
+        return addrs;
+    }
+
+    private Collection<InetSocketAddress> parseAddresses(List<Address> addresses) {
+        Collection<InetSocketAddress> addrs = new ArrayList<>();
+        if (addresses != null && !addresses.isEmpty()) {
+            for (Address address : addresses) {
+                addrs.add(new InetSocketAddress(address.ip, 0));
+
+                if (log.isDebugEnabled())
+                    log.debug("Added an address to the list: " + address.ip);
+            }
+        }
         return addrs;
     }
 
@@ -224,6 +231,15 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
      */
     public void setAccountToken(String accountToken) {
         this.accountToken = accountToken;
+    }
+
+    /**
+     * Determines whether addresses of not-ready pods should be included. Default is false.
+     *
+     * @param includeNotReadyAddresses Flag to include not-ready pods.
+     */
+    public void includeNotReadyAddresses(boolean includeNotReadyAddresses) {
+        this.includeNotReadyAddresses = includeNotReadyAddresses;
     }
 
     /**
@@ -304,6 +320,9 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     private static class Subset {
         /** */
         public List<Address> addresses;
+
+        /** */
+        public List<Address> notReadyAddresses;
     }
 
     /**

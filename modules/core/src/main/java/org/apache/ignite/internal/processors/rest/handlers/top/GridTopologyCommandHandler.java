@@ -27,20 +27,18 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientCacheMode;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -52,12 +50,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NODE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.TOPOLOGY;
@@ -96,6 +97,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         boolean mtr = req0.includeMetrics();
         boolean attr = req0.includeAttributes();
+        boolean caches = req0.includeCaches();
 
         switch (req.command()) {
             case TOPOLOGY: {
@@ -106,7 +108,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     new ArrayList<>(allNodes.size());
 
                 for (ClusterNode node : allNodes)
-                    top.add(createNodeBean(node, mtr, attr));
+                    top.add(createNodeBean(node, mtr, attr, caches));
 
                 res.setResponse(top);
 
@@ -142,7 +144,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                     });
 
                 if (node != null)
-                    res.setResponse(createNodeBean(node, mtr, attr));
+                    res.setResponse(createNodeBean(node, mtr, attr, caches));
                 else
                     res.setResponse(null);
 
@@ -195,14 +197,15 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
-     * Creates node bean out of grid node. Notice that cache attribute is handled separately.
+     * Creates node bean out of cluster node. Notice that cache attribute is handled separately.
      *
-     * @param node Grid node.
-     * @param mtr {@code true} to add metrics.
-     * @param attr {@code true} to add attributes.
+     * @param node Cluster node.
+     * @param mtr Whether to include node metrics.
+     * @param attr Whether to include node attributes.
+     * @param caches Whether to include node caches.
      * @return Grid Node bean.
      */
-    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr) {
+    private GridClientNodeBean createNodeBean(ClusterNode node, boolean mtr, boolean attr, boolean caches) {
         assert node != null;
 
         GridClientNodeBean nodeBean = new GridClientNodeBean();
@@ -210,20 +213,21 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setNodeId(node.id());
         nodeBean.setConsistentId(node.consistentId());
         nodeBean.setTcpPort(attribute(node, ATTR_REST_TCP_PORT, 0));
+        nodeBean.setOrder(node.order());
 
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
-        GridCacheProcessor cacheProc = ctx.cache();
+        if (caches) {
+            Map<String, CacheConfiguration> nodeCaches = ctx.discovery().nodePublicCaches(node);
 
-        Map<String, CacheMode> nodeCaches = ctx.discovery().nodeCaches(node);
+            Collection<GridClientCacheBean> cacheBeans = new ArrayList<>(nodeCaches.size());
 
-        Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
+            for (CacheConfiguration ccfg : nodeCaches.values())
+                cacheBeans.add(createCacheBean(ccfg));
 
-        for (String cacheName : nodeCaches.keySet())
-            caches.add(createCacheBean(cacheProc.cacheConfiguration(cacheName)));
-
-        nodeBean.setCaches(caches);
+            nodeBean.setCaches(cacheBeans);
+        }
 
         if (mtr) {
             ClusterMetrics metrics = node.metrics();
@@ -289,8 +293,10 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
             attrs.remove(ATTR_CACHE);
             attrs.remove(ATTR_TX_CONFIG);
-            attrs.remove(ATTR_SECURITY_SUBJECT);
+            attrs.remove(ATTR_SECURITY_SUBJECT_V2);
             attrs.remove(ATTR_SECURITY_CREDENTIALS);
+            attrs.remove(ATTR_BINARY_CONFIGURATION);
+            attrs.remove(ATTR_NODE_CONSISTENT_ID);
 
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();
@@ -305,7 +311,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
                 if (e.getValue() != null) {
                   if (e.getValue().getClass().isEnum() || e.getValue() instanceof InetAddress)
                       e.setValue(e.getValue().toString());
-                  else if (e.getValue().getClass().isArray())
+                  else if (e.getValue().getClass().isArray() && !ATTR_IGNITE_FEATURES.equals(e.getKey()))
                       i.remove();
                 }
             }
@@ -343,7 +349,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
      *
      * @param protoCls Protocol class.
      * @param def Default value if such class is not registered.
-     * @return Registered port for the protocol class or {@code def}ault value if such class is not registered.
+     * @return Registered port for the protocol class or {@code default value if such class is not registered.
      */
     private int getRegisteredPort(Class<? extends GridRestProtocol> protoCls, int def) {
         for (GridPortRecord r : ctx.ports().records()) {

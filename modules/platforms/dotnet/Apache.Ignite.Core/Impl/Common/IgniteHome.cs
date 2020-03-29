@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.IO;
     using System.Reflection;
@@ -27,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// IgniteHome resolver.
     /// </summary>
-    internal static class IgniteHome
+    public static class IgniteHome
     {
         /** Environment variable: IGNITE_HOME. */
         internal const string EnvIgniteHome = "IGNITE_HOME";
@@ -35,11 +36,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Calculate Ignite home.
         /// </summary>
-        /// <param name="cfg">Configuration.</param>
+        /// <param name="igniteHome">Optional known home.</param>
         /// <param name="log">The log.</param>
-        public static string Resolve(IgniteConfiguration cfg, ILogger log = null)
+        public static string Resolve(string igniteHome = null, ILogger log = null)
         {
-            var home = cfg == null ? null : cfg.IgniteHome;
+            var home = igniteHome;
 
             if (string.IsNullOrWhiteSpace(home))
             {
@@ -57,7 +58,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             if (log != null)
-                log.Debug("IgniteHome resolved to '{0}'", home);
+            {
+                log.Debug("IGNITE_HOME resolved to: {0}", home);
+            }
 
             return home;
         }
@@ -71,18 +74,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         private static string Resolve(ILogger log)
         {
-            var probeDirs = new[]
-            {
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-                Directory.GetCurrentDirectory()
-            };
-
-            if (log != null)
-                log.Debug("Attempting to resolve IgniteHome in the assembly directory " +
-                          "'{0}' and current directory '{1}'...", probeDirs[0], probeDirs[1]);
-
-
-            foreach (var probeDir in probeDirs.Where(x => !string.IsNullOrEmpty(x)))
+            foreach (var probeDir in GetProbeDirectories().Where(x => !string.IsNullOrEmpty(x)))
             {
                 if (log != null)
                     log.Debug("Probing IgniteHome in '{0}'...", probeDir);
@@ -102,19 +94,62 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Gets directories to probe for Ignite Home.
+        /// </summary>
+        private static IEnumerable<string> GetProbeDirectories()
+        {
+            var entryAsm = Assembly.GetEntryAssembly();
+            if (entryAsm != null)
+            {
+                yield return Path.GetDirectoryName(entryAsm.Location);
+            }
+
+            var executingAsmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            if (!string.IsNullOrWhiteSpace(executingAsmPath))
+            {
+                yield return executingAsmPath;
+
+                // NuGet home - for LINQPad.
+                yield return Path.Combine(executingAsmPath, "..", "..", "build", "output");
+            }
+
+            yield return Directory.GetCurrentDirectory();
+        }
+
+        /// <summary>
         /// Determines whether specified dir looks like a Ignite home.
         /// </summary>
         /// <param name="dir">Directory.</param>
         /// <returns>Value indicating whether specified dir looks like a Ignite home.</returns>
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
-            return dir.Exists &&
-                   (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
-                    dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
-                   || // NuGet home
-                   (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
-                    (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
-                     dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any()));
+            try
+            {
+                if (!dir.Exists)
+                {
+                    return false;
+                }
+
+                // Binary release or NuGet home:
+                var libs = Path.Combine(dir.FullName, "libs");
+
+                if (Directory.Exists(libs) &&
+                    Directory.EnumerateFiles(libs, "ignite-core-*.jar", SearchOption.TopDirectoryOnly).Any())
+                {
+                    return true;
+                }
+
+                // Source release home:
+                var javaSrc = Path.Combine(dir.FullName,
+                    "modules", "core", "src", "main", "java", "org", "apache", "ignite");
+
+                return Directory.Exists(javaSrc);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
         }
     }
 }

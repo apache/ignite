@@ -60,6 +60,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public ICompute WithNoResultCache()
+        {
+            _compute.WithNoResultCache();
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
         public ICompute WithTimeout(long timeout)
         {
             _compute.WithTimeout(timeout);
@@ -73,6 +81,14 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.WithKeepBinary();
 
             return this;
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithExecutor(string executorName)
+        {
+            var computeImpl = _compute.WithExecutor(executorName);
+
+            return new Compute(computeImpl);
         }
 
         /** <inheritDoc /> */
@@ -196,12 +212,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public TJobRes AffinityCall<TJobRes>(string cacheName, object affinityKey, IComputeFunc<TJobRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return _compute.AffinityCall(cacheName, affinityKey, clo).Get();
         }
 
         /** <inheritDoc /> */
         public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return _compute.AffinityCall(cacheName, affinityKey, clo).Task;
         }
 
@@ -209,6 +229,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo, 
             CancellationToken cancellationToken)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return GetTaskIfAlreadyCancelled<TRes>(cancellationToken) ??
                 _compute.AffinityCall(cacheName, affinityKey, clo).GetTask(cancellationToken);
         }
@@ -341,12 +363,16 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** <inheritDoc /> */
         public void AffinityRun(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             _compute.AffinityRun(cacheName, affinityKey, action).Get();
         }
 
         /** <inheritDoc /> */
         public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return _compute.AffinityRun(cacheName, affinityKey, action).Task;
         }
 
@@ -354,6 +380,8 @@ namespace Apache.Ignite.Core.Impl.Compute
         public Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action, 
             CancellationToken cancellationToken)
         {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
             return GetTaskIfAlreadyCancelled<object>(cancellationToken) ??
                 _compute.AffinityRun(cacheName, affinityKey, action).GetTask(cancellationToken);
         }
@@ -448,6 +476,23 @@ namespace Apache.Ignite.Core.Impl.Compute
                 return CancelledTask<T>.Instance;
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether specified exception should result in a job failover.
+        /// </summary>
+        internal static bool IsFailoverException(Exception err)
+        {
+            while (err != null)
+            {
+                if (err is ComputeExecutionRejectedException || err is ClusterTopologyException ||
+                    err is ComputeJobFailoverException)
+                    return true;
+
+                err = err.InnerException;
+            }
+
+            return false;
         }
     }
 }

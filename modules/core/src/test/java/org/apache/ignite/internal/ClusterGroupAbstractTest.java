@@ -33,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -43,6 +42,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -54,10 +54,9 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 
@@ -66,9 +65,6 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
  */
 @SuppressWarnings("deprecation")
 public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest implements Externalizable {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Waiting timeout. */
     private static final int WAIT_TIMEOUT = 30000;
 
@@ -119,10 +115,12 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
@@ -185,6 +183,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * Test for projection on not existing node IDs.
      */
+    @Test
     public void testInvalidProjection() {
         Collection<UUID> ids = new HashSet<>();
 
@@ -199,6 +198,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testProjection() throws Exception {
         assert prj != null;
 
@@ -218,6 +218,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRemoteNodes() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
@@ -248,6 +249,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testRemoteProjection() throws Exception {
         Collection<UUID> remoteNodeIds = remoteNodeIds();
 
@@ -278,6 +280,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 
@@ -356,11 +359,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void run1(AtomicInteger cnt) throws Exception {
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.broadcast(runJob);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<Void> fut = compute(prj).broadcastAsync(runJob);
 
         waitForExecution(fut);
 
@@ -378,11 +377,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private void run2(AtomicInteger cnt) throws Exception {
         Collection<IgniteRunnable> jobs = F.asList(runJob);
 
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.run(jobs);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<Void> fut = compute(prj).runAsync(jobs);
 
         waitForExecution(fut);
 
@@ -398,11 +393,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void call1(AtomicInteger cnt) throws Exception {
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.broadcast(calJob);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<Collection<String>> fut = compute(prj).broadcastAsync(calJob);
 
         waitForExecution(fut);
 
@@ -418,13 +409,9 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void call2(AtomicInteger cnt) throws Exception {
-        IgniteCompute comp = compute(prj).withAsync();
-
         Collection<IgniteCallable<String>> jobs = F.asList(calJob);
 
-        comp.call(jobs);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<Collection<String>> fut = compute(prj).callAsync(jobs);
 
         waitForExecution(fut);
 
@@ -440,11 +427,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void call3(AtomicInteger cnt) throws Exception {
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.apply(clrJob, (String) null);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<String> fut = compute(prj).applyAsync(clrJob, (String) null);
 
         waitForExecution(fut);
 
@@ -462,11 +445,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private void call4(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.apply(clrJob, args);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<Collection<String>> fut = compute(prj).applyAsync(clrJob, args);
 
         waitForExecution(fut);
 
@@ -482,11 +461,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If failed.
      */
     private void call5(AtomicInteger cnt) throws Exception {
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.broadcast(new TestClosure(), "arg");
-
-        ComputeTaskFuture<Collection<String>> fut = comp.future();
+        IgniteFuture<Collection<String>> fut = compute(prj).broadcastAsync(new TestClosure(), "arg");
 
         waitForExecution(fut);
 
@@ -509,11 +484,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private void forkjoin1(AtomicInteger cnt) throws Exception {
         Collection<String> args = F.asList("a", "b", "c");
 
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.apply(clrJob, args, rdc);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture fut = compute(prj).applyAsync(clrJob, args, rdc);
 
         waitForExecution(fut);
 
@@ -531,11 +502,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private void forkjoin2(AtomicInteger cnt) throws Exception {
         Collection<IgniteCallable<String>> jobs = F.asList(calJob);
 
-        IgniteCompute comp = compute(prj).withAsync();
-
-        comp.call(jobs, rdc);
-
-        ComputeTaskFuture fut = comp.future();
+        IgniteFuture<Object> fut = compute(prj).callAsync(jobs, rdc);
 
         waitForExecution(fut);
 
@@ -676,26 +643,22 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
      * @throws Exception If test failed.
      */
     private void checkActiveFutures() throws Exception {
-        IgniteCompute comp = compute(prj).withAsync();
-
-        assertEquals(0, comp.activeTaskFutures().size());
+        assertEquals(0, compute(prj).activeTaskFutures().size());
 
         cnt.set(0);
 
-        Collection<ComputeTaskFuture<Object>> futsList = new ArrayList<>();
+        Collection<IgniteFuture<Object>> futsList = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
-            comp.call(new TestWaitCallable<>());
-
-            ComputeTaskFuture<Object> fut = comp.future();
+            IgniteFuture<Object> fut = compute(prj).callAsync(new TestWaitCallable<>());
 
             assertFalse(fut.isDone());
 
-            Map<IgniteUuid, ComputeTaskFuture<Object>> futs = comp.activeTaskFutures();
+            Map<IgniteUuid, ComputeTaskFuture<Object>> futs = compute(prj).activeTaskFutures();
 
             assertEquals(i + 1, futs.size());
 
-            assertTrue(futs.containsKey(fut.getTaskSession().getId()));
+            assertTrue(futs.containsKey(((ComputeTaskFuture)fut).getTaskSession().getId()));
 
             futsList.add(fut);
         }
@@ -706,10 +669,10 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
             mux.notifyAll();
         }
 
-        for (ComputeTaskFuture<Object> fut : futsList)
+        for (IgniteFuture<Object> fut : futsList)
             fut.get();
 
-        assertEquals(0, comp.activeTaskFutures().size());
+        assertEquals(0, compute(prj).activeTaskFutures().size());
     }
 
     /**

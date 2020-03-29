@@ -17,29 +17,29 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Compact job description.
+ * Extended job description.
  */
-public interface HadoopJobInfo extends Serializable {
+public interface HadoopJobInfo {
     /**
      * Gets optional configuration property for the job.
      *
      * @param name Property name.
      * @return Value or {@code null} if none.
      */
-    @Nullable public String property(String name);
+    @Nullable String property(String name);
 
     /**
      * Checks whether job has combiner.
      *
      * @return {@code true} If job has combiner.
      */
-    public boolean hasCombiner();
+    boolean hasCombiner();
 
     /**
      * Checks whether job has reducer.
@@ -47,11 +47,37 @@ public interface HadoopJobInfo extends Serializable {
      *
      * @return Number of reducer.
      */
-    public boolean hasReducer();
+    boolean hasReducer();
+
+    /**
+     * @return Number of reducers configured for job.
+     */
+    int reducers();
+
+    /**
+     * Gets job name.
+     *
+     * @return Job name.
+     */
+    String jobName();
+
+    /**
+     * Gets user name.
+     *
+     * @return User name.
+     */
+    String user();
+
+    /**
+     * Gets credentials.
+     *
+     * @return Credentials.
+     */
+    byte[] credentials();
 
     /**
      * Creates new job instance for the given ID.
-     * {@link HadoopJobInfo} is reusable for multiple jobs while {@link HadoopJob} is for one job execution.
+     * {@link HadoopJobInfo} is reusable for multiple jobs while {@link HadoopJobEx} is for one job execution.
      * This method will be called once for the same ID on one node, though it can be called on the same host
      * multiple times from different processes (in case of multiple nodes on the same host or external execution).
      *
@@ -63,26 +89,7 @@ public interface HadoopJobInfo extends Serializable {
      * @return Job.
      * @throws IgniteCheckedException If failed.
      */
-    public HadoopJob createJob(Class<? extends HadoopJob> jobCls,
+    public HadoopJobEx createJob(Class<? extends HadoopJobEx> jobCls,
         HadoopJobId jobId, IgniteLogger log, @Nullable String[] libNames, HadoopHelper helper)
             throws IgniteCheckedException;
-
-    /**
-     * @return Number of reducers configured for job.
-     */
-    public int reducers();
-
-    /**
-     * Gets job name.
-     *
-     * @return Job name.
-     */
-    public String jobName();
-
-    /**
-     * Gets user name.
-     *
-     * @return User name.
-     */
-    public String user();
 }

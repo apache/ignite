@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -57,8 +58,8 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -66,8 +67,8 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setReadThrough(false);
 
@@ -86,6 +87,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoReadThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

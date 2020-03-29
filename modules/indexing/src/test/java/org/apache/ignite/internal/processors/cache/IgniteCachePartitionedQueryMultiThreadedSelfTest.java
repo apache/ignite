@@ -40,11 +40,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -59,23 +57,14 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     /** Number of test grids (nodes). Should not be less than 2. */
     private static final int GRID_CNT = 3;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Don't start grid by default. */
     public IgniteCachePartitionedQueryMultiThreadedSelfTest() {
         super(false);
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -103,17 +92,12 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll();
+            grid(i).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -128,6 +112,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLuceneAndSqlMultithreaded() throws Exception {
         // ---------- Test parameters ---------- //
         int luceneThreads = 10;
@@ -140,7 +125,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         final PersonObj p3 = new PersonObj("Mike", 1800, "Bachelor");
         final PersonObj p4 = new PersonObj("Bob", 1900, "Bachelor");
 
-        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(null);
+        final IgniteCache<UUID, PersonObj> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);

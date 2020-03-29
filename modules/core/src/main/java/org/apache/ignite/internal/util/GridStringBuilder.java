@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Optimized string builder with better API.
@@ -274,6 +275,17 @@ public class GridStringBuilder implements Serializable {
     }
 
     /**
+     * Adds a platform-dependent newline to this buffer.
+     *
+     * @return This buffer for chaining method calls.
+     */
+    public GridStringBuilder nl() {
+        impl.append(U.nl());
+
+        return this;
+    }
+
+    /**
      *
      * @param start Start position to replace from.
      * @param end End position.
@@ -444,6 +456,25 @@ public class GridStringBuilder implements Serializable {
     }
 
     /**
+     * Appends given long value as a hex string to this string builder.
+     *
+     * @param val Value to append.
+     * @return This builder for chaining method calls.
+     */
+    public GridStringBuilder appendHex(int val) {
+        String hex = Integer.toHexString(val);
+
+        int len = hex.length();
+
+        for (int i = 0; i < 8 - len; i++)
+            a('0');
+
+        a(hex);
+
+        return this;
+    }
+
+    /**
      *
      * @param s Stream to write to.
      * @throws IOException Thrown in case of any IO errors.
@@ -463,7 +494,7 @@ public class GridStringBuilder implements Serializable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return impl.toString();
     }
 }

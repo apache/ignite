@@ -52,8 +52,8 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     private static final long TEST_TIME = 60_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -77,8 +77,8 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
@@ -95,6 +95,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailover() throws Exception {
         testPutAllFailover(Test.PUT_ALL);
     }
@@ -102,6 +103,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailoverPessimisticTx() throws Exception {
         if (atomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
@@ -112,6 +114,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailoverAsync() throws Exception {
         testPutAllFailover(Test.PUT_ALL_ASYNC);
     }
@@ -125,26 +128,10 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
 
-        IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                Thread.currentThread().setName("restart-thread");
-
-                while (!finished.get() && System.currentTimeMillis() < endTime) {
-                    startGrid(NODE_CNT);
-
-                    U.sleep(500);
-
-                    stopGrid(NODE_CNT);
-                }
-
-                return null;
-            }
-        });
+        IgniteInternalFuture<Object> restartFut = createAndRunConcurrentAction(finished, endTime);
 
         try {
-            IgniteCache<TestKey, TestValue> cache0 = ignite(0).cache(null);
-
-            final IgniteCache<TestKey, TestValue> cache = test == Test.PUT_ALL_ASYNC ? cache0.withAsync() : cache0;
+            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -184,9 +171,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                     for (int k = 0; k < 100; k++)
                                         map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                    cache.putAll(map);
-
-                                    IgniteFuture<?> fut = cache.future();
+                                    IgniteFuture<?> fut = cache.putAllAsync(map);
 
                                     assertNotNull(fut);
 
@@ -237,6 +222,25 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         finally {
             finished.set(true);
         }
+    }
+
+    /** */
+    protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean finished, final long endTime) {
+        return GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Thread.currentThread().setName("restart-thread");
+
+                while (!finished.get() && System.currentTimeMillis() < endTime) {
+                    startGrid(NODE_CNT);
+
+                    U.sleep(500);
+
+                    stopGrid(NODE_CNT);
+                }
+
+                return null;
+            }
+        });
     }
 
     /**

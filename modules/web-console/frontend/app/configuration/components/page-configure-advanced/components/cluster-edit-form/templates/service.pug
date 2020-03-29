@@ -1,0 +1,114 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'serviceConfiguration'
+-var model = '$ctrl.clonedCluster.serviceConfigurations'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Service configuration
+    panel-description
+        | Service Grid allows for deployments of arbitrary user-defined services on the cluster.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6
+            mixin clusters-service-configurations
+                .ignite-form-field(ng-init='serviceConfigurationsTbl={type: "serviceConfigurations", model: "serviceConfigurations", focusId: "kind", ui: "failover-table"}')
+                    +form-field__label({ label: 'Service configurations:', name: '"serviceConfigurations"' })
+
+                    -let items = model
+
+                    list-editable.pc-list-editable-with-form-grid(ng-model=items name='serviceConfigurations')
+                        list-editable-item-edit.pc-form-grid-row
+                            .pc-form-grid-col-60
+                                +form-field__text({
+                                    label: 'Name:',
+                                    model: '$item.name',
+                                    name: '"serviceName"',
+                                    required: true,
+                                    placeholder: 'Input service name'
+                                })(
+                                    ui-validate=`{
+                                        uniqueName: '$ctrl.Clusters.serviceConfigurations.serviceConfiguration.name.customValidators.uniqueName($item, ${items})'
+                                    }`
+                                    ui-validate-watch=`"${items}"`
+                                    ui-validate-watch-object-equality='true'
+                                    ng-model-options='{allowInvalid: true}'
+                                )
+                                    +form-field__error({ error: 'uniqueName', message: 'Service with that name is already configured' })
+                            .pc-form-grid-col-60
+                                +form-field__java-class({
+                                    label: 'Service class',
+                                    model: '$item.service',
+                                    name: '"serviceService"',
+                                    required: 'true',
+                                    tip: 'Service implementation class name'
+                                })
+                            .pc-form-grid-col-60
+                                +form-field__number({
+                                    label: 'Max per node count:',
+                                    model: '$item.maxPerNodeCount',
+                                    name: '"ServiceMaxPerNodeCount"',
+                                    placeholder: 'Unlimited',
+                                    min: '0',
+                                    tip: 'Maximum number of deployed service instances on each node.<br/>\
+                                          Zero for unlimited'
+                                })
+                            .pc-form-grid-col-60
+                                +form-field__number({
+                                    label: 'Total count:',
+                                    model: '$item.totalCount',
+                                    name: '"serviceTotalCount"',
+                                    placeholder: 'Unlimited',
+                                    min: '0',
+                                    tip: 'Total number of deployed service instances in the cluster.<br/>\
+                                        Zero for unlimited'
+                                })
+                            .pc-form-grid-col-60
+                                +form-field__dropdown({
+                                    label: 'Cache:',
+                                    model: '$item.cache',
+                                    name: '"serviceCache"',
+                                    placeholder: 'Key-affinity not used',
+                                    placeholderEmpty: 'No caches configured for current cluster',
+                                    options: '$ctrl.servicesCachesMenu',
+                                    tip: 'Cache name used for key-to-node affinity calculation'
+                                })(
+                                    pc-is-in-collection='$ctrl.clonedCluster.caches'
+                                )
+                                    +form-field__error({ error: 'isInCollection', message: `Cluster doesn't have such a cache` })
+                            .pc-form-grid-col-60
+                                +form-field__text({
+                                    label: 'Affinity key:',
+                                    model: '$item.affinityKey',
+                                    name: '"serviceAffinityKey"',
+                                    placeholder: 'Input affinity key',
+                                    tip: 'Affinity key used for key-to-node affinity calculation'
+                                })
+
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addServiceConfiguration($ctrl.clonedCluster)`
+                                label-single='service configuration'
+                                label-multiple='service configurations'
+                            )
+
+            +clusters-service-configurations
+
+        .pca-form-column-6
+            +preview-xml-java('$ctrl.clonedCluster', 'clusterServiceConfiguration', '$ctrl.caches')

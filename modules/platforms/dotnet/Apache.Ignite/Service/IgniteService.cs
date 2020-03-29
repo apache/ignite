@@ -32,7 +32,7 @@ namespace Apache.Ignite.Service
     /// <summary>
     /// Ignite windows service.
     /// </summary>
-    internal class IgniteService : ServiceBase, ILifecycleBean
+    internal class IgniteService : ServiceBase, ILifecycleHandler
     {
         /** Service name. */
         public const string SvcName = "Apache Ignite.NET";
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Service
             Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
 
         /** Service description. */
-        public const string SvcDesc = "Apache Ignite.NET Service.";
+        public const string SvcDesc = "Apache Ignite.NET Service";
 
         /** Current executable name. */
         private static readonly string ExeName =
@@ -66,11 +66,11 @@ namespace Apache.Ignite.Service
             _cfg = cfg;
 
             // Subscribe to lifecycle events
-            var beans = _cfg.LifecycleBeans ?? new List<ILifecycleBean>();
+            var beans = _cfg.LifecycleHandlers ?? new List<ILifecycleHandler>();
 
             beans.Add(this);
 
-            _cfg.LifecycleBeans = beans;
+            _cfg.LifecycleHandlers = beans;
         }
 
         /** <inheritDoc /> */
@@ -143,6 +143,14 @@ namespace Apache.Ignite.Service
         }
 
         /// <summary>
+        /// Runs the service.
+        /// </summary>
+        internal static void Run(IgniteConfiguration cfg)
+        {
+            ServiceBase.Run(new IgniteService(cfg));
+        }
+
+        /// <summary>
         /// Native service installation.
         /// </summary>
         /// <param name="args">Arguments.</param>
@@ -152,7 +160,16 @@ namespace Apache.Ignite.Service
             var argString = new StringBuilder(IgniteRunner.Svc);
 
             foreach (var arg in args)
-                argString.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
+            {
+                var val = arg.Item2;
+
+                if (val.Contains(' '))
+                {
+                    val = '"' + val + '"';
+                }
+
+                argString.Append(" ").AppendFormat("-{0}={1}", arg.Item1, val);
+            }
 
             IgniteServiceInstaller.Args = argString.ToString();
 

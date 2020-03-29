@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.client.suite;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteClientFailuresTest;
+import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
+import org.apache.ignite.internal.client.ClientSslParametersTest;
 import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslAuthenticationSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
@@ -48,7 +50,12 @@ import org.apache.ignite.internal.client.router.TcpSslRouterSelfTest;
 import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
+import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
@@ -56,97 +63,113 @@ import org.apache.ignite.internal.processors.rest.RestMemcacheProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTest;
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
+import org.apache.ignite.internal.processors.rest.TcpRestUnmarshalVulnerabilityTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolGetAllAsArrayTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringAtomicDatastructuresSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite includes all test that concern REST processors.
  */
-public class IgniteClientTestSuite extends TestSuite {
-    /**
-     * @return Suite that contains all tests for REST.
-     */
-    public static TestSuite suite() {
-        TestSuite suite = new IgniteTestSuite("Ignite Clients Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    RouterFactorySelfTest.class,
 
-        suite.addTestSuite(RouterFactorySelfTest.class);
+    // Parser standalone test.
+    TcpRestParserSelfTest.class,
 
-        // Parser standalone test.
-        suite.addTestSuite(TcpRestParserSelfTest.class);
+    // Test memcache protocol with custom test client.
+    RestMemcacheProtocolSelfTest.class,
 
-        // Test memcache protocol with custom test client.
-        suite.addTestSuite(RestMemcacheProtocolSelfTest.class);
+    // Test custom binary protocol with test client.
+    RestBinaryProtocolSelfTest.class,
+    TcpRestUnmarshalVulnerabilityTest.class,
 
-        // Test custom binary protocol with test client.
-        suite.addTestSuite(RestBinaryProtocolSelfTest.class);
+    // Test jetty rest processor
+    JettyRestProcessorSignedSelfTest.class,
+    JettyRestProcessorUnsignedSelfTest.class,
+    JettyRestProcessorAuthenticationWithCredsSelfTest.class,
+    JettyRestProcessorAuthenticationWithTokenSelfTest.class,
+    JettyRestProcessorGetAllAsArrayTest.class,
+    JettyRestProcessorBaselineSelfTest.class,
 
-        // Test jetty rest processor
-        suite.addTestSuite(JettyRestProcessorSignedSelfTest.class);
-        suite.addTestSuite(JettyRestProcessorUnsignedSelfTest.class);
+    // Test TCP rest processor with original memcache client.
+    ClientMemcachedProtocolSelfTest.class,
 
-        // Test TCP rest processor with original memcache client.
-        suite.addTestSuite(ClientMemcachedProtocolSelfTest.class);
+    // Test TCP rest processor with original REDIS client.
+    RedisProtocolStringSelfTest.class,
+    RedisProtocolGetAllAsArrayTest.class,
+    RedisProtocolConnectSelfTest.class,
+    RedisProtocolServerSelfTest.class,
+    RedisProtocolStringAtomicDatastructuresSelfTest.class,
 
-        // Test TCP rest processor with original REDIS client.
-        suite.addTestSuite(RedisProtocolSelfTest.class);
+    RestProcessorStartSelfTest.class,
 
-        suite.addTestSuite(RestProcessorStartSelfTest.class);
+    // Test cache flag conversion.
+    ClientCacheFlagsCodecTest.class,
 
-        // Test cache flag conversion.
-        suite.addTestSuite(ClientCacheFlagsCodecTest.class);
+    // Test multi-start.
+    RestProcessorMultiStartSelfTest.class,
 
-        // Test multi-start.
-        suite.addTestSuite(RestProcessorMultiStartSelfTest.class);
+    // Test clients.
+    ClientDataImplSelfTest.class,
+    ClientComputeImplSelfTest.class,
+    ClientTcpSelfTest.class,
+    ClientTcpDirectSelfTest.class,
+    ClientTcpSslSelfTest.class,
+    ClientTcpSslDirectSelfTest.class,
 
-        // Test clients.
-        suite.addTestSuite(ClientDataImplSelfTest.class);
-        suite.addTestSuite(ClientComputeImplSelfTest.class);
-        suite.addTestSuite(ClientTcpSelfTest.class);
-        suite.addTestSuite(ClientTcpDirectSelfTest.class);
-        suite.addTestSuite(ClientTcpSslSelfTest.class);
-        suite.addTestSuite(ClientTcpSslDirectSelfTest.class);
+    // Test client with many nodes.
+    ClientTcpMultiNodeSelfTest.class,
+    ClientTcpDirectMultiNodeSelfTest.class,
+    ClientTcpSslMultiNodeSelfTest.class,
+    ClientTcpSslDirectMultiNodeSelfTest.class,
+    ClientTcpUnreachableMultiNodeSelfTest.class,
+    ClientPreferDirectSelfTest.class,
 
-        // Test client with many nodes.
-        suite.addTestSuite(ClientTcpMultiNodeSelfTest.class);
-        suite.addTestSuite(ClientTcpDirectMultiNodeSelfTest.class);
-        suite.addTestSuite(ClientTcpSslMultiNodeSelfTest.class);
-        suite.addTestSuite(ClientTcpSslDirectMultiNodeSelfTest.class);
-        suite.addTestSuite(ClientTcpUnreachableMultiNodeSelfTest.class);
-        suite.addTestSuite(ClientPreferDirectSelfTest.class);
+    // Test client with many nodes and in multithreaded scenarios
+    ClientTcpMultiThreadedSelfTest.class,
+    ClientTcpSslMultiThreadedSelfTest.class,
 
-        // Test client with many nodes and in multithreaded scenarios
-        suite.addTestSuite(ClientTcpMultiThreadedSelfTest.class);
-        suite.addTestSuite(ClientTcpSslMultiThreadedSelfTest.class);
+    // Test client authentication.
+    ClientTcpSslAuthenticationSelfTest.class,
 
-        // Test client authentication.
-        suite.addTestSuite(ClientTcpSslAuthenticationSelfTest.class);
+    ClientTcpConnectivitySelfTest.class,
+    ClientReconnectionSelfTest.class,
 
-        suite.addTestSuite(ClientTcpConnectivitySelfTest.class);
-        suite.addTestSuite(ClientReconnectionSelfTest.class);
+    // Rest task command handler test.
+    TaskCommandHandlerSelfTest.class,
+    ChangeStateCommandHandlerTest.class,
+    TaskEventSubjectIdSelfTest.class,
 
-        // Rest task command handler test.
-        suite.addTestSuite(TaskCommandHandlerSelfTest.class);
+    // Default cache only test.
+    ClientDefaultCacheSelfTest.class,
 
-        // Default cache only test.
-        suite.addTestSuite(ClientDefaultCacheSelfTest.class);
+    ClientFutureAdapterSelfTest.class,
+    ClientPropertiesConfigurationSelfTest.class,
+    ClientConsistentHashSelfTest.class,
+    ClientJavaHasherSelfTest.class,
 
-        suite.addTestSuite(ClientFutureAdapterSelfTest.class);
-        suite.addTestSuite(ClientPropertiesConfigurationSelfTest.class);
-        suite.addTestSuite(ClientConsistentHashSelfTest.class);
-        suite.addTestSuite(ClientJavaHasherSelfTest.class);
+    ClientByteUtilsTest.class,
 
-        suite.addTestSuite(ClientByteUtilsTest.class);
+    // Router tests.
+    TcpRouterSelfTest.class,
+    TcpSslRouterSelfTest.class,
+    TcpRouterMultiNodeSelfTest.class,
 
-        // Router tests.
-        suite.addTestSuite(TcpRouterSelfTest.class);
-        suite.addTestSuite(TcpSslRouterSelfTest.class);
-        suite.addTestSuite(TcpRouterMultiNodeSelfTest.class);
+    ClientFailedInitSelfTest.class,
 
-        suite.addTestSuite(ClientFailedInitSelfTest.class);
+    ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class,
 
-        suite.addTestSuite(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class);
+    // SSL params.
+    ClientSslParametersTest.class,
 
-        return suite;
-    }
+    IgniteClientFailuresTest.class
+})
+public class IgniteClientTestSuite {
 }

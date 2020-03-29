@@ -21,21 +21,22 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Full API services test.
@@ -43,6 +44,9 @@ import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest
 public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Test service name. */
     private static final String SERVICE_NAME = "testService";
+
+    /** Timeout to wait finish of a service's deployment. */
+    private static final long DEPLOYMENT_WAIT_TIMEOUT = 10_000L;
 
     /** Test service name. */
     private static final String CACHE_NAME = "testCache";
@@ -54,12 +58,20 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     private static int cntr;
 
     /** Callable factories. */
-    @SuppressWarnings("unchecked")
     private static final Factory[] serviceFactories = new Factory[] {
         Parameters.factory(TestServiceImpl.class),
         Parameters.factory(TestServiceImplExternalizable.class),
-        Parameters.factory(TestServiceImplBinarylizable.class)
     };
+
+    /** */
+    private static boolean isEventDrivenServiceProcessorEnabled;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        isEventDrivenServiceProcessorEnabled = grid(0).context().service() instanceof IgniteServiceProcessor;
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
@@ -69,8 +81,8 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             return super.expectedClient(testGridName);
 
         // Use two client nodes if grid index 5 or greater.
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(CLIENT_NODE_IDX_2).equals(testGridName);
+        return getTestIgniteInstanceName(CLIENT_NODE_IDX).equals(testGridName)
+            || getTestIgniteInstanceName(CLIENT_NODE_IDX_2).equals(testGridName);
     }
 
     /**
@@ -78,10 +90,13 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
-            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployNodeSingleton(svcName, (Service)svc);
+
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -91,10 +106,13 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterSingletonDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
-            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployClusterSingleton(svcName, (Service)svc);
+
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -104,12 +122,19 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11883")
+    @Test
     public void testKeyAffinityDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) {
                 IgniteCache<Object, Object> cache = grid(testedNodeIdx).getOrCreateCache(CACHE_NAME);
 
-                services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), "1");
+                try {
+                    services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), primaryKey(cache));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
         }));
     }
@@ -119,10 +144,13 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
-            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployMultiple(svcName, (Service)svc, 0, 1);
+
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -132,9 +160,10 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploy() throws Exception {
         runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
-            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployClusterSingleton(svcName, (Service)svc);
 
                 ServiceConfiguration cfg = new ServiceConfiguration();
@@ -150,6 +179,8 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
                 cfg.setNodeFilter(services.clusterGroup().predicate());
 
                 services.deploy(cfg);
+
+                waitForServiceDeploymentIfNeeded(services, svcName);
             }
         }));
     }
@@ -191,8 +222,9 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param services Services.
          * @param svcName Service name.
          * @param svc Service.
+         * @throws Exception In case of an error.
          */
-        void run(IgniteServices services, String svcName, TestService svc);
+        void run(IgniteServices services, String svcName, TestService svc) throws Exception;
     }
 
     /**
@@ -204,46 +236,73 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      * @throws Exception If failed.
      */
     protected void testService(TestService svc, boolean sticky, DeployClosure deployC) throws Exception {
+        IgniteServices services;
         IgniteEx ignite = testedGrid();
 
-        IgniteServices services = ignite.services();
+        services = ignite.services();
 
-        Object expected = value(++cntr);
+        try {
+            Object expected = value(++cntr);
 
-        // Put value for testing Service instance serialization.
-        svc.setValue(expected);
+            // Put value for testing Service instance serialization.
+            svc.setValue(expected);
 
-        deployC.run(services, SERVICE_NAME, svc);
+            deployC.run(services, SERVICE_NAME, svc);
 
-        // Expect correct value from local instance.
-        assertEquals(expected, svc.getValue());
+            // Expect correct value from local instance.
+            assertEquals(expected, svc.getValue());
 
-        // Use stickiness to make sure data will be fetched from the same instance.
-        TestService proxy = services.serviceProxy(SERVICE_NAME, TestService.class, sticky);
+            // Use stickiness to make sure data will be fetched from the same instance.
+            TestService proxy = services.serviceProxy(SERVICE_NAME, TestService.class, sticky);
 
-        // Expect that correct value is returned from deployed instance.
-        assertEquals(expected, proxy.getValue());
-
-        expected = value(++cntr);
-
-        // Change value.
-        proxy.setValue(expected);
-
-        // Expect correct value after being read back.
-        int r = 1000;
-
-        while(r-- > 0)
+            // Expect that correct value is returned from deployed instance.
             assertEquals(expected, proxy.getValue());
 
-        assertEquals("Expected 1 deployed service", 1, services.serviceDescriptors().size());
+            expected = value(++cntr);
 
-        // Randomize stop method invocation
-        boolean tmp = ThreadLocalRandom.current().nextBoolean();
+            // Change value.
+            proxy.setValue(expected);
 
-        if (tmp)
-            services.cancelAll();
-        else
-            services.cancel(SERVICE_NAME);
+            // Expect correct value after being read back.
+            int r = 1000;
+
+            while (r-- > 0)
+                assertEquals(expected, proxy.getValue());
+
+            assertEquals("Expected 1 deployed service", 1, services.serviceDescriptors().size());
+        }
+        finally {
+            // Randomize stop method invocation
+            boolean tmp = ThreadLocalRandom.current().nextBoolean();
+
+            if (tmp)
+                services.cancelAll();
+            else
+                services.cancel(SERVICE_NAME);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean isCompatible() throws Exception {
+        switch (dataMode) {
+            case SERIALIZABLE:
+            case CUSTOM_SERIALIZABLE:
+            case EXTERNALIZABLE:
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param services Ignite services.
+     * @param srvcName Service name to wait.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    private void waitForServiceDeploymentIfNeeded(IgniteServices services,
+        String srvcName) throws IgniteInterruptedCheckedException {
+        if (!isEventDrivenServiceProcessorEnabled)
+            GridTestUtils.waitForCondition(() -> services.service(srvcName) != null, DEPLOYMENT_WAIT_TIMEOUT);
     }
 
     /**
@@ -265,7 +324,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * Implementation for {@link TestService}
      */
-    public static class TestServiceImpl implements Service, TestService, Serializable {
+    public static class TestServiceImpl implements Service, TestService {
         /** Test value. */
         protected Object val;
 
@@ -297,7 +356,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /** {@inheritDoc} */
-        public void setValue(Object val) {
+        @Override public void setValue(Object val) {
             this.val = val;
         }
     }
@@ -322,29 +381,6 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             val = in.readObject();
-        }
-    }
-
-    /**
-     * Echo service, binarylizable object
-     */
-    @SuppressWarnings({"PublicInnerClass"})
-    public static class TestServiceImplBinarylizable extends TestServiceImpl implements Binarylizable {
-        /**
-         * Default constructor.
-         */
-        public TestServiceImplBinarylizable() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeObject("arg", val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            val = reader.readObject("arg");
         }
     }
 }

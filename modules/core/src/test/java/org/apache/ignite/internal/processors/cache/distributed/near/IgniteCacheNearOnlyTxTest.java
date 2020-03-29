@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -31,7 +29,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -42,6 +43,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
+    /** */
+    @Before
+    public void beforeIgniteCacheNearOnlyTxTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
@@ -63,10 +70,10 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(1).equals(gridName)) {
+        if (getTestIgniteInstanceName(1).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
@@ -78,49 +85,45 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyPutMultithreaded() throws Exception {
         final Ignite ignite1 = ignite(1);
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final Integer key = 1;
 
         final AtomicInteger idx = new AtomicInteger();
 
-        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(null);
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
-
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
+        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
-            futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+            GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
                     int val = idx.getAndIncrement();
 
-                    IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < 100; i++)
                         cache.put(key, val);
 
                     return null;
                 }
-            }, 5, "put-thread"));
+            }, 5, "put-thread").get();
 
             assertEquals(cache0.localPeek(key), cache1.localPeek(key));
         }
-
-        for (IgniteInternalFuture<?> fut : futs)
-            fut.get();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTx() throws Exception {
         txMultithreaded(true);
     }
@@ -128,6 +131,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         txMultithreaded(false);
     }
@@ -141,21 +145,21 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final AtomicInteger idx = new AtomicInteger();
 
         final Integer key = 1;
 
-        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(null);
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                     IgniteTransactions txs = ignite1.transactions();
 
@@ -182,18 +186,19 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentTx() throws Exception {
         final Ignite ignite1 = ignite(1);
 
         assertTrue(ignite1.configuration().isClientMode());
 
-        ignite1.createNearCache(null, new NearCacheConfiguration<>());
+        ignite1.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         final Integer key = 1;
 
         IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < 100; i++)
                     cache.put(key, 1);
@@ -204,7 +209,7 @@ public class IgniteCacheNearOnlyTxTest extends IgniteCacheAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                IgniteCache<Integer, Integer> cache = ignite1.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
 
                 IgniteTransactions txs = ignite1.transactions();
 

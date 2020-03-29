@@ -18,12 +18,11 @@
 package org.apache.loadtests.direct.singlesplit;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.loadtest.GridLoadTestStatistics;
+import org.apache.ignite.loadtests.GridLoadTestStatistics;
 import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -32,6 +31,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.log4j.Level;
+import org.junit.Test;
 
 /**
  * Single split load test.
@@ -44,7 +44,6 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -82,8 +81,9 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
      *
      * @throws Exception If task execution failed.
      */
+    @Test
     public void testLoad() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
@@ -104,11 +104,8 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
                     try {
                         int levels = 20;
 
-                        IgniteCompute comp = ignite.compute().withAsync();
-
-                        comp.execute(new SingleSplitTestTask(), levels);
-
-                        ComputeTaskFuture<Integer> fut = comp.future();
+                        ComputeTaskFuture<Integer> fut = ignite.compute().executeAsync(
+                            new SingleSplitTestTask(), levels);
 
                         int res = fut.get();
 

@@ -90,8 +90,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         8/*sent bytes count*/ +
         4/*received messages count*/ +
         8/*received bytes count*/ +
-        4/*outbound messages queue size*/ + 
-        4/*total nodes*/;
+        4/*outbound messages queue size*/ +
+        4/*total nodes*/ +
+        8/*total jobs execution time*/ +
+        8/*current PME time*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -252,6 +254,12 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private int totalNodes = -1;
 
+    /** */
+    private long totalJobsExecTime = -1;
+
+    /** */
+    private long currentPmeDuration = -1;
+
     /**
      * Create empty snapshot.
      */
@@ -288,6 +296,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         totalRejectedJobs = 0;
         totalCancelledJobs = 0;
         totalExecutedJobs = 0;
+        totalJobsExecTime = 0;
         maxJobWaitTime = 0;
         avgJobWaitTime = 0;
         maxJobExecTime = 0;
@@ -324,6 +333,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         outMesQueueSize = 0;
         heapTotal = 0;
         totalNodes = nodes.size();
+        currentPmeDuration = 0;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -334,6 +344,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             maxActiveJobs = max(maxActiveJobs, m.getCurrentActiveJobs());
             avgActiveJobs += m.getCurrentActiveJobs();
             totalExecutedJobs += m.getTotalExecutedJobs();
+            totalJobsExecTime += m.getTotalJobsExecutionTime();
 
             totalExecTasks += m.getTotalExecutedTasks();
 
@@ -347,7 +358,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             maxRejectedJobs = max(maxRejectedJobs, m.getCurrentRejectedJobs());
             avgRejectedJobs += m.getCurrentRejectedJobs();
 
-            curWaitingJobs += m.getCurrentJobWaitTime();
+            curWaitingJobs += m.getCurrentWaitingJobs();
             maxWaitingJobs = max(maxWaitingJobs, m.getCurrentWaitingJobs());
             avgWaitingJobs += m.getCurrentWaitingJobs();
 
@@ -357,7 +368,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             curJobWaitTime = min(curJobWaitTime, m.getCurrentJobWaitTime());
             maxJobWaitTime = max(maxJobWaitTime, m.getCurrentJobWaitTime());
-            avgJobWaitTime += m.getCurrentJobWaitTime();
+            avgJobWaitTime += m.getAverageJobWaitTime();
 
             daemonThreadCnt += m.getCurrentDaemonThreadCount();
 
@@ -399,6 +410,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             outMesQueueSize += m.getOutboundMessagesQueueSize();
 
             avgLoad += m.getCurrentCpuLoad();
+
+            currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
         }
 
         curJobExecTime /= size;
@@ -648,6 +661,20 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      */
     public void setTotalExecutedJobs(int totalExecutedJobs) {
         this.totalExecutedJobs = totalExecutedJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalJobsExecutionTime() {
+        return totalJobsExecTime;
+    }
+
+    /**
+     * Sets total jobs execution time.
+     *
+     * @param totalJobsExecTime Total jobs execution time.
+     */
+    public void setTotalJobsExecutionTime(long totalJobsExecTime) {
+        this.totalJobsExecTime = totalJobsExecTime;
     }
 
     /** {@inheritDoc} */
@@ -940,6 +967,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return totalNodes;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getCurrentPmeDuration() {
+        return currentPmeDuration;
+    }
+
     /**
      * Sets available processors.
      *
@@ -1175,6 +1207,15 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
+     * Sets execution duration for current partition map exchange.
+     *
+     * @param currentPmeDuration Execution duration for current partition map exchange.
+     */
+    public void setCurrentPmeDuration(long currentPmeDuration) {
+        this.currentPmeDuration = currentPmeDuration;
+    }
+
+    /**
      * @param neighborhood Cluster neighborhood.
      * @return CPU count.
      */
@@ -1325,6 +1366,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putLong(metrics.getReceivedBytesCount());
         buf.putInt(metrics.getOutboundMessagesQueueSize());
         buf.putInt(metrics.getTotalNodes());
+        buf.putLong(metrics.getTotalJobsExecutionTime());
+        buf.putLong(metrics.getCurrentPmeDuration());
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1342,7 +1385,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     public static ClusterMetrics deserialize(byte[] data, int off) {
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        ByteBuffer buf = ByteBuffer.wrap(data, off, METRICS_SIZE);
+        int bufSize = min(METRICS_SIZE, data.length - off);
+
+        ByteBuffer buf = ByteBuffer.wrap(data, off, bufSize);
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 
@@ -1398,6 +1443,17 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         metrics.setReceivedBytesCount(buf.getLong());
         metrics.setOutboundMessagesQueueSize(buf.getInt());
         metrics.setTotalNodes(buf.getInt());
+
+        // For compatibility with metrics serialized by old ignite versions.
+        if (buf.remaining() >= 8)
+            metrics.setTotalJobsExecutionTime(buf.getLong());
+        else
+            metrics.setTotalJobsExecutionTime(0);
+
+        if (buf.remaining() >= 8)
+            metrics.setCurrentPmeDuration(buf.getLong());
+        else
+            metrics.setCurrentPmeDuration(0);
 
         return metrics;
     }

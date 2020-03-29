@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -31,28 +32,27 @@ public class IgniteCacheP2pUnmarshallingNearErrorTest extends IgniteCacheP2pUnma
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cfg.isClientMode() == null || !cfg.isClientMode()) {
-            cfg.getCacheConfiguration()[0].setEvictMaxOverflowRatio(0);
-            cfg.getCacheConfiguration()[0].setEvictSynchronized(true);
-            cfg.getCacheConfiguration()[0].setEvictSynchronizedKeyBufferSize(1);
             cfg.getCacheConfiguration()[0].setEvictionPolicy(new FifoEvictionPolicy(1));
+            cfg.getCacheConfiguration()[0].setOnheapCacheEnabled(true);
         }
 
         return cfg;
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() throws InterruptedException {
-        //GridCacheEvictionRequest unmarshalling failed test
-        readCnt.set(5); //2 for each put
+        //GridCacheEvictionRequest unmarshalling failed test.
+        readCnt.set(5); //2 for each put.
 
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
-        //Eviction request unmarshalling failed but ioManager does not hangs up.
+        // Eviction request unmarshalling failed but ioManager does not hangs up.
 
         // Wait for eviction complete.
         Thread.sleep(1000);

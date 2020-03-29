@@ -47,14 +47,23 @@ public class IgniteSqlQueryDistributedJoinBenchmark extends IgniteCacheAbstractB
 
         println(cfg, "Populating query data...");
 
-        long start = System.nanoTime();
-
         range = args.range();
 
         if (range <= 0)
             throw new IllegalArgumentException();
 
-        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cache.getName())) {
+        println(cfg, "Populating join query data [orgCnt=" + range +
+            ", personCnt=" + range +
+            ", broadcastJoin=" + broadcast + "]");
+
+        loadCachesData();
+
+        executeQueryJoin(0, broadcast, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void loadCacheData(String cacheName) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
             for (int orgId = 0; orgId < range; orgId++) {
                 dataLdr.addData(orgId, new Organization(orgId, "org" + orgId));
 
@@ -73,13 +82,6 @@ public class IgniteSqlQueryDistributedJoinBenchmark extends IgniteCacheAbstractB
 
             dataLdr.close();
         }
-
-        println(cfg, "Finished populating join query [orgCnt=" + range +
-            ", personCnt=" + range +
-            ", broadcastJoin=" + broadcast +
-            ", time=" + ((System.nanoTime() - start) / 1_000_000) + "ms]");
-
-        executeQueryJoin(0, broadcast, true);
     }
 
     /**
@@ -140,6 +142,8 @@ public class IgniteSqlQueryDistributedJoinBenchmark extends IgniteCacheAbstractB
         qry = new SqlFieldsQuery(planOnly ? ("explain " + sql) : sql);
         qry.setDistributedJoins(true);
         qry.setArgs(orgId);
+
+        IgniteCache<Integer, Object> cache = cacheForOperation(true);
 
         if (planOnly) {
             String plan = (String)cache.query(qry).getAll().get(0).get(0);

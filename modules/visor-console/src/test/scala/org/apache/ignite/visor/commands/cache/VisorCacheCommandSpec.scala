@@ -17,25 +17,35 @@
 
 package org.apache.ignite.visor.commands.cache
 
+import java.lang.{Integer => JavaInt}
+import java.util.{Collections, List => JavaList}
+
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.CacheAtomicityMode._
 import org.apache.ignite.cache.CacheMode._
 import org.apache.ignite.cache.query.SqlQuery
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration._
+import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.spi.discovery.tcp._
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm._
-
-import java.lang.{Integer => JavaInt}
-import org.jetbrains.annotations._
-
+import org.apache.ignite.util.AttributeNodeFilter
 import org.apache.ignite.visor._
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
+import org.apache.ignite.visor.visor.executeMulti
+import org.jetbrains.annotations._
+
+import scala.collection.JavaConversions._
 
 /**
  * Unit test for 'events' command.
  */
-class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
+class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(2) {
+    /** */
+    val CACHE_NAME = "replicated"
+
+    /** */
+    val FILTER_ATTRIBUTE_NAME = "NAME"
 
     /** IP finder. */
     val ipFinder = new TcpDiscoveryVmIpFinder(true)
@@ -44,12 +54,14 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): CacheConfiguration[Object, Object] = {
+    def cacheConfig(@NotNull name: String): CacheConfiguration[Object, Object] = {
         val cfg = new CacheConfiguration[Object, Object]
 
+        cfg.setName(name)
         cfg.setCacheMode(REPLICATED)
         cfg.setAtomicityMode(TRANSACTIONAL)
-        cfg.setName(name)
+
+        cfg.setNodeFilter(new AttributeNodeFilter(FILTER_ATTRIBUTE_NAME, "node-1"))
 
         val arr = Seq(classOf[JavaInt], classOf[Foo]).toArray
 
@@ -61,22 +73,21 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     /**
      * Creates grid configuration for provided grid host.
      *
-     * @param name Grid name.
+     * @param name Ignite instance name.
      * @return Grid configuration.
      */
-    override def config(name: String): IgniteConfiguration =
-    {
-        val cfg = new IgniteConfiguration
+    override def config(name: String): IgniteConfiguration = {
+        val cfg = super.config(name)
 
-        cfg.setGridName(name)
         cfg.setLocalHost("127.0.0.1")
-        cfg.setCacheConfiguration(cacheConfig("replicated"))
+        cfg.setCacheConfiguration(cacheConfig(CACHE_NAME))
 
         val discoSpi = new TcpDiscoverySpi()
 
         discoSpi.setIpFinder(ipFinder)
 
         cfg.setDiscoverySpi(discoSpi)
+        cfg.setUserAttributes(Collections.singletonMap(FILTER_ATTRIBUTE_NAME, name))
 
         cfg
     }
@@ -125,6 +136,21 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
 
         it("should display correct information for all caches") {
             visor cache "-a"
+        }
+
+        it("should scan cache") {
+            visor cache "-c=replicated -scan"
+        }
+
+        it("should get metrics for nodes available by cache node filter") {
+            val caches: JavaList[String] = Collections.singletonList(CACHE_NAME)
+
+            val arg = new VisorCacheMetricsCollectorTaskArg(false, caches)
+
+            val metrics = executeMulti(classOf[VisorCacheMetricsCollectorTask], arg).toList
+
+            assert(metrics.size == 1)
+            assert(metrics.head.getNodes.size() == 1)
         }
     }
 }

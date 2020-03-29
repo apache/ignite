@@ -30,13 +30,10 @@ import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -46,9 +43,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests cache in-place modification logic with iterative value increment.
  */
 public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of nodes to test on. */
     private static final int GRID_CNT = 4;
 
@@ -59,25 +53,18 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     private AtomicReferenceArray<Ignite> grids;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(ATOMIC);
-        cache.setAtomicWriteOrderMode(PRIMARY);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
         cache.setRebalanceMode(SYNC);
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -104,6 +91,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrement() throws Exception {
         testIncrement(false);
     }
@@ -111,6 +99,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementRestart() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -172,7 +161,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                 ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            IgniteCache<String, TestObject> cache = ignite.<String, TestObject>cache(null).withNoRetries();
+            IgniteCache<String, TestObject> cache = ignite.<String, TestObject>cache(DEFAULT_CACHE_NAME).withNoRetries();
 
             assertNotNull(cache);
 

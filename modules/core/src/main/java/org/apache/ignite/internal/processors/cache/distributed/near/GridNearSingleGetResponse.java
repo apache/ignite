@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class GridNearSingleGetResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -115,7 +115,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+        return topVer != null ? topVer : super.topologyVersion();
     }
 
     /**
@@ -206,32 +206,32 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeMessage("res", res))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeMessage("topVer", topVer))
+            case 8:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -252,7 +252,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -260,7 +260,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -268,7 +268,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
@@ -276,7 +276,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 res = reader.readMessage("res");
 
                 if (!reader.isLastRead())
@@ -284,8 +284,8 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
 
                 reader.incrementState();
 
-            case 7:
-                topVer = reader.readMessage("topVer");
+            case 8:
+                topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -303,13 +303,13 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 117;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

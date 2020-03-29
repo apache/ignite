@@ -25,22 +25,15 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests various cache operations with indexing enabled.
  */
 public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstractTest {
-    /** */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Load data into cache
      *
@@ -58,12 +51,10 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -71,11 +62,6 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -87,17 +73,14 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
     }
 
     /**
-     * @param onHeapRowCacheSize on heap row cache size.
      * @param indexedTypes indexed types for cache.
      * @return Cache configuration.
      */
-    protected CacheConfiguration<Object, Object> cacheConfiguration(int onHeapRowCacheSize, Class<?>[] indexedTypes) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+    protected CacheConfiguration<Object, Object> cacheConfiguration(Class<?>[] indexedTypes) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setMemoryMode(OFFHEAP_TIERED);
-        ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
         ccfg.setIndexedTypes(indexedTypes);
 
         return ccfg;

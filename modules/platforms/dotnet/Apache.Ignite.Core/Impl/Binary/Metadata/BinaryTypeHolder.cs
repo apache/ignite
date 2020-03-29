@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
-    using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
 
     /// <summary>
     /// Metadata for particular type.
@@ -37,6 +37,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Enum flag. */
         private readonly bool _isEnum;
 
+        /** Marshaller. */
+        private readonly Marshaller _marshaller;
+
         /** Collection of know field IDs. */
         private volatile HashSet<int> _ids;
 
@@ -46,7 +49,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Saved flag (set if type metadata was saved at least once). */
         private volatile bool _saved;
 
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -54,28 +56,39 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="typeName">Type name.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName, bool isEnum)
+        /// <param name="marshaller">The marshaller.</param>
+        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName, bool isEnum,
+            Marshaller marshaller)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
+            _marshaller = marshaller;
         }
 
         /// <summary>
-        /// Get saved flag.
+        /// Gets saved flag.
         /// </summary>
-        /// <returns>True if type metadata was saved at least once.</returns>
-        public bool Saved()
+        /// <value>True if type metadata was saved at least once.</value>
+        public bool IsSaved
         {
-            return _saved;
+            get { return _saved; }
+        }
+
+        /// <summary>
+        /// Gets the cached binary type metadata.
+        /// </summary>
+        public BinaryType BinaryType
+        {
+            get { return _meta; }
         }
 
         /// <summary>
         /// Currently cached field IDs.
         /// </summary>
         /// <returns>Cached field IDs.</returns>
-        public ICollection<int> GetFieldIds()
+        public HashSet<int> GetFieldIds()
         {
             var ids0 = _ids;
 
@@ -100,13 +113,19 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Merge newly sent field metadatas into existing ones.
         /// </summary>
-        /// <param name="newMap">New field metadatas map.</param>
-        public void Merge(IDictionary<int, Tuple<string, int>> newMap)
+        /// <param name="meta">Binary type to merge.</param>
+        public void Merge(BinaryType meta)
         {
+            Debug.Assert(meta != null);
+            
             _saved = true;
 
-            if (newMap == null || newMap.Count == 0)
+            var fieldsMap = meta.GetFieldsMap();
+
+            if (fieldsMap.Count == 0)
+            {
                 return;
+            }
 
             lock (this)
             {
@@ -116,23 +135,58 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
                 var newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
 
-                IDictionary<string, int> newFields = meta0 != null ?
-                    new Dictionary<string, int>(meta0.GetFieldsMap()) : new Dictionary<string, int>(newMap.Count);
+                IDictionary<string, BinaryField> newFields = meta0 != null 
+                    ? new Dictionary<string, BinaryField>(meta0.GetFieldsMap()) 
+                    : new Dictionary<string, BinaryField>(fieldsMap.Count);
 
                 // 2. Add new fields.
-                foreach (KeyValuePair<int, Tuple<string, int>> newEntry in newMap)
+                foreach (var fieldMeta in fieldsMap)
                 {
-                    if (!newIds.Contains(newEntry.Key))
-                        newIds.Add(newEntry.Key);
+                    var fieldId = fieldMeta.Value.FieldId;
 
-                    if (!newFields.ContainsKey(newEntry.Value.Item1))
-                        newFields[newEntry.Value.Item1] = newEntry.Value.Item2;
+                    newIds.Add(fieldId);
+                    newFields[fieldMeta.Key] = fieldMeta.Value;
                 }
+                
+                // 3. Merge schema.
+                var schema = MergeSchemas(meta0, meta); 
 
-                // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
-                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName, _isEnum);
+                // 4. Assign new meta. Order is important here: meta must be assigned before field IDs.
+                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName, _isEnum, 
+                    meta.EnumValuesMap, _marshaller, schema);
+                
                 _ids = newIds;
             }
+        }
+
+        /// <summary>
+        /// Merges schemas from two binary types.
+        /// </summary>
+        private static BinaryObjectSchema MergeSchemas(BinaryType a, BinaryType b)
+        {
+            if (a == null || a.Schema == null)
+            {
+                return b.Schema;
+            }
+
+            if (b == null || b.Schema == null)
+            {
+                return a.Schema;
+            }
+
+            var res = new BinaryObjectSchema();
+            
+            foreach (var schema in a.Schema.GetAll())
+            {
+                res.Add(schema.Key, schema.Value);
+            }
+            
+            foreach (var schema in b.Schema.GetAll())
+            {
+                res.Add(schema.Key, schema.Value);
+            }
+
+            return res;
         }
     }
 }

@@ -75,7 +75,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
     @MXBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
-    /*
+    /**
      * Gets number of currently running (not {@code 'held}) jobs.
      *
      * @return Number of currently running (not {@code 'held}) jobs.

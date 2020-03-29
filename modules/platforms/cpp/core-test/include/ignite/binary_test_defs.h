@@ -27,14 +27,14 @@ namespace ignite_test
 {
     namespace core
     {
-        namespace binary 
+        namespace binary
         {
             class BinaryDummy
             {
                 // No-op.
             };
 
-            class BinaryInner 
+            class BinaryInner
             {
             public:
                 BinaryInner();
@@ -49,6 +49,8 @@ namespace ignite_test
             class BinaryOuter
             {
             public:
+                BinaryOuter();
+
                 BinaryOuter(int32_t valIn, int32_t valOut);
 
                 BinaryInner GetInner() const;
@@ -74,13 +76,34 @@ namespace ignite_test
                 BinaryFields(int32_t val1, int32_t val2, int32_t rawVal1, int32_t rawVal2) :
                     val1(val1), val2(val2), rawVal1(rawVal1), rawVal2(rawVal2)
                 {
-                    // No-op.   
+                    // No-op.
                 }
 
                 friend bool operator==(const BinaryFields& one, const BinaryFields& two)
                 {
-                    return one.val1 == two.val1 && one.val2 == two.val2 && 
-                        one.rawVal1 == two.rawVal1 &&one.rawVal2 == two.rawVal2;
+                    return one.val1 == two.val1 && one.val2 == two.val2 &&
+                        one.rawVal1 == two.rawVal1 && one.rawVal2 == two.rawVal2;
+                }
+            };
+
+            struct PureRaw
+            {
+                std::string val1;
+                int32_t val2;
+
+                PureRaw() : val1(), val2()
+                {
+                    // No-op.
+                }
+
+                PureRaw(std::string val1, int32_t val2) : val1(val1), val2(val2)
+                {
+                    // No-op.
+                }
+
+                friend bool operator==(const PureRaw& one, const PureRaw& two)
+                {
+                    return one.val1 == two.val1 && one.val2 == two.val2;
                 }
             };
 
@@ -101,6 +124,32 @@ namespace ignite_test
                 {
                     return 0;
                 }
+
+                virtual BinaryIdResolver* Clone() const
+                {
+                    return new DummyIdResolver();
+                }
+            };
+
+            struct TestEnum
+            {
+                enum Type
+                {
+                    TEST_ZERO,
+
+                    TEST_NON_ZERO,
+
+                    TEST_NEGATIVE_42 = -42,
+
+                    TEST_SOME_BIG = 1241267,
+                };
+            };
+
+            struct TypeWithEnumField
+            {
+                int32_t i32Field;
+                TestEnum::Type enumField;
+                std::string strField;
             };
         }
     }
@@ -113,208 +162,107 @@ namespace ignite
         namespace gt = ignite_test::core::binary;
 
         template<>
-        struct BinaryType<gt::BinaryDummy>
+        struct BinaryType<gt::BinaryDummy> : BinaryTypeDefaultAll<gt::BinaryDummy>
         {
-            /** <inheritdoc /> */
-            int32_t GetTypeId()
+            static void GetTypeName(std::string& dst)
             {
-                return GetBinaryStringHashCode("BinaryDummy");
+                dst = "BinaryDummy";
             }
 
-            /** <inheritdoc /> */
-            std::string GetTypeName()
-            {
-                return "BinaryDummy";
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetHashCode(const gt::BinaryInner& obj)
-            {
-                return obj.GetValue();
-            }
-
-            /** <inheritdoc /> */
-            bool IsNull(const gt::BinaryInner& obj)
-            {
-                return obj.GetValue() == 0;
-            }
-
-            /** <inheritdoc /> */
-            gt::BinaryInner GetNull()
-            {
-                return gt::BinaryInner(0);
-            }
-
-            /** <inheritdoc /> */
-            void Write(BinaryWriter& writer, const gt::BinaryDummy& obj)
+            static void Write(BinaryWriter& writer, const gt::BinaryDummy& obj)
             {
                 // No-op.
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryDummy Read(BinaryReader& reader)
+            static void Read(BinaryReader&, gt::BinaryDummy& dst)
             {
-                return gt::BinaryDummy();
+                dst = gt::BinaryDummy();
             }
         };
 
-        template<> 
-        struct BinaryType<gt::BinaryInner>
+        template<>
+        struct BinaryType<gt::BinaryInner> : BinaryTypeDefaultHashing<gt::BinaryInner>
         {
-            /** <inheritdoc /> */
-            int32_t GetTypeId() 
-            { 
-                return GetBinaryStringHashCode("BinaryInner"); 
-            }
-
-            /** <inheritdoc /> */
-            std::string GetTypeName()
+            static void GetTypeName(std::string& dst)
             {
-                return "BinaryInner";
+                dst = "BinaryInner";
             }
 
-            /** <inheritdoc /> */
-            int32_t GetFieldId(const char* name) 
-            { 
-                return GetBinaryStringHashCode(name); 
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetHashCode(const gt::BinaryInner& obj)
-            {
-                return obj.GetValue();
-            }
-
-            /** <inheritdoc /> */
-            bool IsNull(const gt::BinaryInner& obj)
+            static bool IsNull(const gt::BinaryInner& obj)
             {
                 return obj.GetValue() == 0;
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryInner GetNull()
+            static void GetNull(gt::BinaryInner& dst)
             {
-                return gt::BinaryInner(0);
+                dst = gt::BinaryInner(0);
             }
 
-            /** <inheritdoc /> */
-            void Write(BinaryWriter& writer, const gt::BinaryInner& obj)
+            static void Write(BinaryWriter& writer, const gt::BinaryInner& obj)
             {
                 writer.WriteInt32("val", obj.GetValue());
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryInner Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, gt::BinaryInner& dst)
             {
                 int val = reader.ReadInt32("val");
 
-                return gt::BinaryInner(val);
+                dst = gt::BinaryInner(val);
             }
         };
 
         template<>
-        struct BinaryType<gt::BinaryOuter>
+        struct BinaryType<gt::BinaryOuter> : BinaryTypeDefaultHashing<gt::BinaryOuter>
         {
-            /** <inheritdoc /> */
-            int32_t GetTypeId()
+            static void GetTypeName(std::string& dst)
             {
-                return GetBinaryStringHashCode("BinaryOuter");
+                dst = "BinaryOuter";
             }
 
-            /** <inheritdoc /> */
-            std::string GetTypeName()
-            {
-                return "BinaryOuter";
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetHashCode(const gt::BinaryOuter& obj)
-            {
-                return obj.GetValue() + obj.GetInner().GetValue();
-            }
-
-            /** <inheritdoc /> */
-            bool IsNull(const gt::BinaryOuter& obj)
+            static bool IsNull(const gt::BinaryOuter& obj)
             {
                 return obj.GetValue() == 0 && obj.GetInner().GetValue();
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryOuter GetNull()
+            static void GetNull(gt::BinaryOuter& dst)
             {
-                return gt::BinaryOuter(0, 0);
+                dst = gt::BinaryOuter(0, 0);
             }
 
-            /** <inheritdoc /> */
-            void Write(BinaryWriter& writer, const gt::BinaryOuter& obj)
+            static void Write(BinaryWriter& writer, const gt::BinaryOuter& obj)
             {
                 writer.WriteObject("inner", obj.GetInner());
-                writer.WriteInt32("val", obj.GetValue());                
+                writer.WriteInt32("val", obj.GetValue());
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryOuter Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, gt::BinaryOuter& dst)
             {
                 gt::BinaryInner inner = reader.ReadObject<gt::BinaryInner>("inner");
                 int val = reader.ReadInt32("val");
 
-                return gt::BinaryOuter(inner.GetValue(), val);
+                dst = gt::BinaryOuter(inner.GetValue(), val);
             }
         };
 
         template<>
-        struct BinaryType<gt::BinaryFields>
+        struct BinaryType<gt::BinaryFields> : BinaryTypeDefaultHashing<gt::BinaryFields>
         {
-            /** <inheritdoc /> */
-            int32_t GetTypeId()
+            static void GetTypeName(std::string& dst)
             {
-                return GetBinaryStringHashCode("BinaryFields");
+                dst = "BinaryFields";
             }
 
-            /** <inheritdoc /> */
-            std::string GetTypeName()
-            {
-                return "BinaryFields";
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            /** <inheritdoc /> */
-            int32_t GetHashCode(const gt::BinaryFields& obj)
-            {
-                return obj.val1 + obj.val2 + obj.rawVal1 + obj.rawVal2;
-            }
-
-            /** <inheritdoc /> */
-            bool IsNull(const gt::BinaryFields& obj)
+            static bool IsNull(const gt::BinaryFields& obj)
             {
                 return false;
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryFields GetNull()
+            static void GetNull(gt::BinaryFields&)
             {
                 throw std::runtime_error("Must not be called.");
             }
 
-            /** <inheritdoc /> */
-            void Write(BinaryWriter& writer, const gt::BinaryFields& obj)
+            static void Write(BinaryWriter& writer, const gt::BinaryFields& obj)
             {
                 writer.WriteInt32("val1", obj.val1);
                 writer.WriteInt32("val2", obj.val2);
@@ -325,8 +273,7 @@ namespace ignite
                 rawWriter.WriteInt32(obj.rawVal2);
             }
 
-            /** <inheritdoc /> */
-            gt::BinaryFields Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, gt::BinaryFields& dst)
             {
                 int32_t val1 = reader.ReadInt32("val1");
                 int32_t val2 = reader.ReadInt32("val2");
@@ -336,7 +283,79 @@ namespace ignite
                 int32_t rawVal1 = rawReader.ReadInt32();
                 int32_t rawVal2 = rawReader.ReadInt32();
 
-                return gt::BinaryFields(val1, val2, rawVal1, rawVal2);
+                dst = gt::BinaryFields(val1, val2, rawVal1, rawVal2);
+            }
+        };
+
+        template<>
+        struct BinaryType<gt::PureRaw> : BinaryTypeDefaultHashing<gt::PureRaw>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "PureRaw";
+            }
+
+            static bool IsNull(const gt::PureRaw& obj)
+            {
+                return false;
+            }
+
+            static void GetNull(gt::PureRaw&)
+            {
+                throw std::runtime_error("Must not be called.");
+            }
+
+            static void Write(BinaryWriter& writer, const gt::PureRaw& obj)
+            {
+                BinaryRawWriter rawWriter = writer.RawWriter();
+
+                rawWriter.WriteString(obj.val1);
+                rawWriter.WriteInt32(obj.val2);
+            }
+
+            static void Read(BinaryReader& reader, gt::PureRaw& dst)
+            {
+                BinaryRawReader rawReader = reader.RawReader();
+
+                dst.val1 = rawReader.ReadString();
+                dst.val2 = rawReader.ReadInt32();
+            }
+        };
+
+        template<>
+        struct BinaryEnum<gt::TestEnum::Type> : BinaryEnumDefaultAll<gt::TestEnum::Type>
+        {
+            /**
+             * Get binary object type name.
+             *
+             * @param dst Output type name.
+             */
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "TestEnum";
+            }
+        };
+
+        template<>
+        struct BinaryType<gt::TypeWithEnumField> : BinaryTypeDefaultAll<gt::TypeWithEnumField>
+        {
+            static void GetTypeName(std::string& dst)
+            {
+                dst = "TypeWithEnumField";
+            }
+
+            static void Write(BinaryWriter& writer, const gt::TypeWithEnumField& obj)
+            {
+                writer.WriteInt32("i32Field", obj.i32Field);
+                writer.WriteEnum("enumField", obj.enumField);
+                writer.WriteString("strField", obj.strField);
+            }
+
+            static void Read(BinaryReader& reader, gt::TypeWithEnumField& dst)
+            {
+                dst.i32Field = reader.ReadInt32("i32Field");
+                dst.enumField = reader.ReadEnum<gt::TestEnum::Type>("enumField");
+                dst.strField = reader.ReadString("strField");
             }
         };
     }

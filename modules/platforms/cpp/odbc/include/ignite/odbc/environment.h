@@ -18,6 +18,8 @@
 #ifndef _IGNITE_ODBC_ENVIRONMENT
 #define _IGNITE_ODBC_ENVIRONMENT
 
+#include <set>
+
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
@@ -32,6 +34,9 @@ namespace ignite
         class Environment : public diagnostic::DiagnosableAdapter
         {
         public:
+            /** Connection set type. */
+            typedef std::set<Connection*> ConnectionSet;
+
             /**
              * Constructor.
              */
@@ -48,6 +53,13 @@ namespace ignite
              * @return Pointer to valid instance on success or NULL on failure.
              */
             Connection* CreateConnection();
+
+            /**
+             * Deregister connection.
+             *
+             * @param conn Connection to deregister.
+             */
+            void DeregisterConnection(Connection* conn);
 
             /**
              * Perform transaction commit on all the associated connections.
@@ -86,7 +98,7 @@ namespace ignite
              * @return Pointer to valid instance on success or NULL on failure.
              * @return Operation result.
              */
-            SqlResult InternalCreateConnection(Connection*& connection);
+            SqlResult::Type InternalCreateConnection(Connection*& connection);
 
             /**
              * Perform transaction commit on all the associated connections.
@@ -94,7 +106,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalTransactionCommit();
+            SqlResult::Type InternalTransactionCommit();
 
             /**
              * Perform transaction rollback on all the associated connections.
@@ -102,7 +114,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult InternalTransactionRollback();
+            SqlResult::Type InternalTransactionRollback();
 
             /**
              * Set attribute.
@@ -113,7 +125,7 @@ namespace ignite
              * @param len Value length if the attribute is of string type.
              * @return Operation result.
              */
-            SqlResult InternalSetAttribute(int32_t attr, void* value, int32_t len);
+            SqlResult::Type InternalSetAttribute(int32_t attr, void* value, int32_t len);
 
             /**
              * Get attribute.
@@ -123,7 +135,10 @@ namespace ignite
              * @param buffer Buffer to put value to.
              * @return Operation result.
              */
-            SqlResult InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer);
+            SqlResult::Type InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer);
+
+            /** Assotiated connections. */
+            ConnectionSet connections;
 
             /** ODBC version. */
             int32_t odbcVersion;

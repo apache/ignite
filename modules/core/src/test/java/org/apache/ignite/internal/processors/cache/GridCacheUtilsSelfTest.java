@@ -35,6 +35,7 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Grid cache utils test.
@@ -74,7 +75,6 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
          * @param obj Object.
          * @return {@code False}.
          */
-        @SuppressWarnings("CovariantEquals")
         @Override public boolean equals(Object obj) {
             return false;
         }
@@ -118,7 +118,7 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Test
     public void testCacheKeyValidation() throws IgniteCheckedException {
         CU.validateCacheKey("key");
 
@@ -142,10 +142,6 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectBuilderImpl binBuilder = new BinaryObjectBuilderImpl(binaryContext(),
             EqualsAndHashCode.class.getName());
-
-        assertThrowsForInvalidKey(binBuilder.build());
-
-        binBuilder.hashCode(0xFE12);
 
         BinaryObject binObj = binBuilder.build();
 

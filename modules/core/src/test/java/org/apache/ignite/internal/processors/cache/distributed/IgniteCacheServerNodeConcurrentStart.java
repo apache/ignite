@@ -21,9 +21,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -34,34 +33,30 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  */
 public class IgniteCacheServerNodeConcurrentStart extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int ITERATIONS = 2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinderCleanFrequency(getTestTimeout() * 2);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg1.setName("cache-1");
         ccfg1.setCacheMode(REPLICATED);
         ccfg1.setRebalanceMode(SYNC);
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration ccfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg2.setName("cache-2");
         ccfg2.setCacheMode(PARTITIONED);
         ccfg2.setRebalanceMode(SYNC);
         ccfg2.setBackups(2);
 
-        CacheConfiguration ccfg3 = new CacheConfiguration();
+        CacheConfiguration ccfg3 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg3.setName("cache-3");
         ccfg3.setCacheMode(PARTITIONED);
@@ -81,6 +76,7 @@ public class IgniteCacheServerNodeConcurrentStart extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         for (int i = 0; i < ITERATIONS; i++) {
             log.info("Iteration: " + i);

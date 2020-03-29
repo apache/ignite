@@ -26,10 +26,13 @@ public class QueryCancelledException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Error message. */
+    public static final String ERR_MSG = "The query was cancelled while executing.";
+
     /**
      * Default constructor.
      */
     public QueryCancelledException() {
-        super("The query was cancelled while executing.");
+        super(ERR_MSG);
     }
 }

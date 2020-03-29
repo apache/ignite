@@ -26,13 +26,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -49,36 +50,21 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     /** Regular cache. */
     private static IgniteCache<Integer, Object> cache;
 
-    /** Offheap cache. */
-    private static IgniteCache<Integer, Object> cacheOffheap;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
-        CacheConfiguration cc1 = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cc1.setName(CACHE_REGULAR);
-        cc1.setAtomicityMode(TRANSACTIONAL);
-        cc1.setCacheMode(LOCAL);
-        cc1.setWriteSynchronizationMode(FULL_SYNC);
-        cc1.setSwapEnabled(true);
-        cc1.setEvictSynchronized(false);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setCacheMode(LOCAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheConfiguration cc2 = new CacheConfiguration();
-
-        cc2.setName(CACHE_OFFHEAP);
-        cc2.setAtomicityMode(TRANSACTIONAL);
-        cc2.setCacheMode(LOCAL);
-        cc2.setWriteSynchronizationMode(FULL_SYNC);
-        cc2.setMemoryMode(OFFHEAP_VALUES);
-        cc2.setOffHeapMaxMemory(100 * 1024 * 1024);
-
-        c.setCacheConfiguration(cc1, cc2);
-
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        c.setCacheConfiguration(ccfg);
 
         return c;
     }
@@ -87,17 +73,18 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid(1);
 
-        cache = ignite.cache(CACHE_REGULAR);
-        cacheOffheap = ignite.cache(CACHE_OFFHEAP);
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
+    }
+    /** */
+
+    @Before
+    public void beforeGridCacheLocalByteArrayValuesSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cache = null;
-        cacheOffheap = null;
-
         ignite = null;
     }
 
@@ -106,6 +93,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         testTransaction(cache, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -115,26 +103,9 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMixed() throws Exception {
         testTransactionMixed(cache, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPessimisticOffheap() throws Exception {
-        testTransaction(cacheOffheap, PESSIMISTIC, KEY_1, wrap(1));
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPessimisticOffheapMixed() throws Exception {
-        testTransactionMixed(cacheOffheap, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
@@ -142,6 +113,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         testTransaction(cache, OPTIMISTIC, KEY_1, wrap(1));
     }
@@ -151,26 +123,9 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed(cache, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testOptimisticOffheap() throws Exception {
-        testTransaction(cacheOffheap, OPTIMISTIC, KEY_1, wrap(1));
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testOptimisticOffheapMixed() throws Exception {
-        testTransactionMixed(cacheOffheap, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
@@ -179,8 +134,10 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testSwap() throws Exception {
-        assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
+        // TODO GG-11148.
+        // assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
         Object val2 = 2;

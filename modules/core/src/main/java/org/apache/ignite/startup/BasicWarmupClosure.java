@@ -37,8 +37,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.NullLogger;
@@ -81,6 +83,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
     private int discoveryPort = 27000;
 
     /** Methods to warmup. */
+    @GridToStringInclude
     private String[] warmupMethods = {"put", "putx", "get", "remove", "removex", "putIfAbsent", "replace"};
 
     /**
@@ -225,7 +228,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
                 cfg0.setGridLogger(new NullLogger());
 
-                cfg0.setGridName("ignite-warmup-grid-" + i);
+                cfg0.setIgniteInstanceName("ignite-warmup-grid-" + i);
 
                 ignites.add(Ignition.start(cfg0));
             }
@@ -413,9 +416,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
         return
             F.eq(ccfg0.getCacheMode(), ccfg1.getCacheMode()) &&
             F.eq(ccfg0.getBackups(), ccfg1.getBackups()) &&
-            F.eq(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode()) &&
-            F.eq(ccfg0.getAtomicWriteOrderMode(), ccfg1.getAtomicWriteOrderMode()) &&
-            F.eq(ccfg0.getMemoryMode(), ccfg1.getMemoryMode());
+            F.eq(ccfg0.getAtomicityMode(), ccfg1.getAtomicityMode());
     }
 
     /**
@@ -568,5 +569,10 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
         @Override protected void operation(int key) throws Exception {
             cache.replace(key, key, key);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BasicWarmupClosure.class, this);
     }
 }

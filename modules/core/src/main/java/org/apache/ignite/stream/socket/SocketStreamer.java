@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.nio.GridBufferedParser;
 import org.apache.ignite.internal.util.nio.GridDelimitedParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamTupleExtractor;
 import org.jetbrains.annotations.Nullable;
@@ -217,17 +219,19 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
     /**
      * Converts message to Java object using Jdk marshaller.
      */
-    private static class DefaultConverter<T> implements SocketMessageConverter<T> {
+    private class DefaultConverter<T> implements SocketMessageConverter<T> {
         /** Marshaller. */
         private final Marshaller marsh;
 
         /**
          * Constructor.
          *
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          */
-        private DefaultConverter(@Nullable String gridName) {
-            marsh = MarshallerUtils.jdkMarshaller(gridName);
+        private DefaultConverter(@Nullable String igniteInstanceName) {
+            marsh = new JdkMarshaller(((IgniteKernal)ignite).context().marshallerContext().classNameFilter());
+
+            MarshallerUtils.setNodeName(marsh, igniteInstanceName);
         }
 
         /** {@inheritDoc} */

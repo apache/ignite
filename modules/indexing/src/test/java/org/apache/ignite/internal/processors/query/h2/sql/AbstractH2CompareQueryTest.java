@@ -25,6 +25,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,62 +35,36 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Abstract test framework to compare query results from h2 database instance and mixed ignite caches (replicated and partitioned)
- * which have the same data models and data content.
+ * Abstract test framework to compare query results from h2 database instance and mixed ignite caches (replicated and
+ * partitioned) which have the same data models and data content.
  */
-public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest {
+public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static Ignite ignite;
 
     /** */
     protected static final int SRVS = 4;
-
-    /** Partitioned cache. */
-    protected static IgniteCache pCache;
-
-    /** Replicated cache. */
-    protected static IgniteCache rCache;
 
     /** H2 db connection. */
     protected static Connection conn;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
-
-        c.setMarshaller(new OptimizedMarshaller(true));
-
-        c.setCacheConfiguration(cacheConfigurations());
+        c.setMarshaller(new BinaryMarshaller());
 
         return c;
-    }
-
-    /**
-     * @return Cache configurations.
-     */
-    protected CacheConfiguration[] cacheConfigurations() {
-        return new CacheConfiguration[] {
-            createCache("part", CacheMode.PARTITIONED),
-            createCache("repl", CacheMode.REPLICATED)};
     }
 
     /**
@@ -97,36 +72,34 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      *
      * @param name Cache name.
      * @param mode Cache mode.
+     * @param clsK Key class.
+     * @param clsV Value class.
      * @return Cache configuration.
      */
-    private CacheConfiguration createCache(String name, CacheMode mode) {
+    protected CacheConfiguration cacheConfiguration(String name, CacheMode mode, Class<?> clsK, Class<?> clsV) {
         CacheConfiguration<?,?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        setIndexedTypes(cc, mode);
+        cc.setQueryEntities(Collections.singleton(new QueryEntity(clsK, clsV)));
 
         return cc;
     }
 
     /**
-     * @param cc Cache configuration.
-     * @param mode Cache Mode.
+     * Creates caches instances.
      */
-    protected abstract void setIndexedTypes(CacheConfiguration<?, ?> cc, CacheMode mode) ;
+    protected abstract void createCaches();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        Ignite ignite = startGrids(SRVS);
+        ignite = startGrids(SRVS);
 
-        pCache = ignite.cache("part");
-
-        rCache = ignite.cache("repl");
+        createCaches();
 
         awaitPartitionMapExchange();
 
@@ -141,19 +114,18 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         Statement st = conn.createStatement();
 
         st.execute("DROP ALL OBJECTS");
 
         conn.close();
 
-        stopAllGrids();
+        ignite = null;
     }
 
     /**
      * Populate cache and h2 database with test data.
+     *
      * @throws SQLException If failed.
      */
     protected abstract void initCacheAndDbData() throws Exception;
@@ -170,12 +142,8 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * @return Statement.
      */
     protected Statement initializeH2Schema() throws SQLException {
-        Statement st = conn.createStatement();
-
-        st.execute("CREATE SCHEMA \"part\"");
-        st.execute("CREATE SCHEMA \"repl\"");
-
-        return st;
+        // All logic is moved to child classes.
+        return conn.createStatement();
     }
 
     /**
@@ -198,19 +166,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Execute given sql query on h2 database and on partitioned ignite cache and compare results.
-     *
-     * @param sql SQL query.
-     * @param args SQL arguments.
-     * then results will compare as ordered queries.
-     * @return Result set after SQL query execution.
-     * @throws SQLException If exception.
-     */
-    protected final List<List<?>> compareQueryRes0(String sql, @Nullable Object... args) throws SQLException {
-        return compareQueryRes0(pCache, sql, args, Ordering.RANDOM);
-    }
-
-    /**
      * Execute given sql query on h2 database and on ignite cache and compare results.
      * Expected that results are not ordered.
      *
@@ -221,7 +176,8 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * @return Result set after SQL query execution.
      * @throws SQLException If exception.
      */
-    protected final List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object... args) throws SQLException {
+    protected final List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object... args)
+        throws SQLException {
         return compareQueryRes0(cache, sql, args, Ordering.RANDOM);
     }
 
@@ -229,14 +185,16 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * Execute given sql query on h2 database and on partitioned ignite cache and compare results.
      * Expected that results are ordered.
      *
+     * @param cache Cache.
      * @param sql SQL query.
      * @param args SQL arguments.
      * then results will compare as ordered queries.
      * @return Result set after SQL query execution.
      * @throws SQLException If exception.
      */
-    protected final List<List<?>> compareOrderedQueryRes0(String sql, @Nullable Object... args) throws SQLException {
-        return compareQueryRes0(pCache, sql, args, Ordering.ORDERED);
+    protected final List<List<?>> compareOrderedQueryRes0(IgniteCache cache, String sql, @Nullable Object... args)
+        throws SQLException {
+        return compareQueryRes0(cache, sql, args, Ordering.ORDERED);
     }
 
     /**
@@ -250,7 +208,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
      * @return Result set after SQL query execution.
      * @throws SQLException If exception.
      */
-    @SuppressWarnings("unchecked")
     protected static List<List<?>> compareQueryRes0(IgniteCache cache, String sql, @Nullable Object[] args,
         Ordering ordering) throws SQLException {
         return compareQueryRes0(cache, sql, false, args, ordering);

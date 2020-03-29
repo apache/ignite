@@ -24,10 +24,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -35,9 +33,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Cache iterator performance test.
  */
 public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Large entry count. */
     private static final int LARGE_ENTRY_CNT = 100000;
 
@@ -45,14 +40,8 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     private static final int SMALL_ENTRY_CNT = 10000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -106,8 +95,9 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSmall() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < SMALL_ENTRY_CNT; i++)
             cache.put(i, i);
@@ -135,8 +125,9 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLarge() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             cache.put(i, i);
@@ -164,8 +155,9 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFiltered() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             cache.put(i, i);

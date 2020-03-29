@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,10 +111,16 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final Collection<UUID> top;
 
     /** */
+    private final IgnitePredicate<ClusterNode> topPred;
+
+    /** */
     private final UUID subjId;
 
     /** */
     private final IgniteFutureImpl mapFut;
+
+    /** */
+    private final String execName;
 
     /**
      * @param taskNodeId Task node ID.
@@ -121,6 +129,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param taskClsName Task class name.
      * @param sesId Task session ID.
      * @param top Topology.
+     * @param topPred Topology predicate.
      * @param startTime Task execution start time.
      * @param endTime Task execution end time.
      * @param siblings Collection of siblings.
@@ -129,6 +138,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * @param fullSup Session full support enabled flag.
      * @param internal Internal task flag.
      * @param subjId Subject ID.
+     * @param execName Custom executor name.
      */
     public GridTaskSessionImpl(
         UUID taskNodeId,
@@ -137,6 +147,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         String taskClsName,
         IgniteUuid sesId,
         @Nullable Collection<UUID> top,
+        @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
         Collection<ComputeJobSibling> siblings,
@@ -144,7 +155,8 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         GridKernalContext ctx,
         boolean fullSup,
         boolean internal,
-        UUID subjId) {
+        UUID subjId,
+        @Nullable String execName) {
         assert taskNodeId != null;
         assert taskName != null;
         assert sesId != null;
@@ -154,6 +166,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.taskName = taskName;
         this.dep = dep;
         this.top = top;
+        this.topPred = topPred;
 
         // Note that class name might be null here if task was not explicitly
         // deployed.
@@ -173,6 +186,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.fullSup = fullSup;
         this.internal = internal;
         this.subjId = subjId;
+        this.execName = execName;
 
         mapFut = new IgniteFutureImpl(new GridFutureAdapter());
     }
@@ -271,7 +285,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V waitForAttribute(K key, long timeout) throws InterruptedException {
         A.notNull(key, "key");
 
@@ -280,7 +293,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -289,11 +302,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
-        synchronized (mux) {
-            while (!closed && (attrs == null || !attrs.containsKey(key)) && now < end) {
-                mux.wait(end - now);
+        timeout = end - now;
 
-                now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
+
+        synchronized (mux) {
+            long passedMillis = 0L;
+
+            while (!closed && (attrs == null || !attrs.containsKey(key)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -312,7 +331,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -321,13 +340,19 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
+        timeout = end - now;
+
+        long startNanos = System.nanoTime();
+
         synchronized (mux) {
             boolean isFound = false;
 
-            while (!closed && !(isFound = isAttributeSet(key, val)) && now < end) {
-                mux.wait(end - now);
+            long passedMillis = 0L;
 
-                now = U.currentTimeMillis();
+            while (!closed && !(isFound = isAttributeSet(key, val)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -350,7 +375,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -359,11 +384,17 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
-        synchronized (mux) {
-            while (!closed && (attrs == null || !attrs.keySet().containsAll(keys)) && now < end) {
-                mux.wait(end - now);
+        timeout = end - now;
 
-                now = U.currentTimeMillis();
+        long startNanos = System.nanoTime();
+
+        synchronized (mux) {
+            long passedMillis = 0L;
+
+            while (!closed && (attrs == null || !attrs.keySet().containsAll(keys)) && passedMillis < timeout) {
+                mux.wait(timeout - passedMillis);
+
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -391,7 +422,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (timeout == 0)
             timeout = Long.MAX_VALUE;
 
-        long now = U.currentTimeMillis();
+        long now = System.currentTimeMillis();
 
         // Prevent overflow.
         long end = now + timeout < 0 ? Long.MAX_VALUE : now + timeout;
@@ -400,18 +431,24 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (end > endTime)
             end = endTime;
 
+        timeout = end - now;
+
+        long startNanos = System.nanoTime();
+
         synchronized (mux) {
             boolean isFound = false;
 
-            while (!closed && now < end) {
+            long passedMillis = 0L;
+
+            while (!closed && passedMillis < timeout) {
                 isFound = this.attrs != null && this.attrs.entrySet().containsAll(attrs.entrySet());
 
                 if (isFound)
                     break;
 
-                mux.wait(end - now);
+                mux.wait(timeout - passedMillis);
 
-                now = U.currentTimeMillis();
+                passedMillis = U.millisSinceNanos(startNanos);
             }
 
             if (closed)
@@ -535,7 +572,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V getAttribute(K key) {
         A.notNull(key, "key");
 
@@ -713,7 +749,6 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T loadCheckpoint(String key) {
         return loadCheckpoint0(this, key);
     }
@@ -766,8 +801,18 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         return ctx.checkpoint().removeCheckpoint(ses, key);
     }
 
+    /**
+     * @return Topology predicate.
+     */
+    @Nullable public IgnitePredicate<ClusterNode> getTopologyPredicate() {
+        return topPred;
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<UUID> getTopology() {
+        if (topPred != null)
+           return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
+
         return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
     }
 
@@ -871,6 +916,13 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public boolean isInternal() {
         return internal;
+    }
+
+    /**
+     * @return Custom executor name.
+     */
+    @Nullable public String executorName() {
+        return execName;
     }
 
     /** {@inheritDoc} */

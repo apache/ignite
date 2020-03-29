@@ -75,7 +75,6 @@ import org.jetbrains.annotations.Nullable;
  * @see JobEvent
  * @see CacheEvent
  * @see CacheRebalancingEvent
- * @see SwapSpaceEvent
  * @see CheckpointEvent
  * @see DeploymentEvent
  * @see DiscoveryEvent

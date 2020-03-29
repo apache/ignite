@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
+import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -28,20 +28,33 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Cache metrics test.
@@ -49,6 +62,63 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int KEY_CNT = 500;
+
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
+        configuration.setMetricsUpdateFrequency(2000);
+        return configuration;
+    }
+
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration configuration = super.cacheConfiguration(igniteInstanceName);
+        configuration.setStatisticsEnabled(true);
+        return configuration;
+    }
+
+    /** Entry processor, performing removal. */
+    private final CacheEntryProcessor<Integer, Integer, Object> removingProcessor =
+        new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override
+            public Object process(
+                    MutableEntry<Integer, Integer> entry,
+                    Object... arguments
+            ) throws EntryProcessorException {
+
+                entry.remove();
+
+                return null;
+            }
+        };
+
+    /** Entry processor, performing reading. */
+    private final CacheEntryProcessor<Integer, Integer, Object> readingProcessor =
+        new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override
+            public Object process(
+                    MutableEntry<Integer, Integer> entry,
+                    Object... arguments
+            ) throws EntryProcessorException {
+
+                entry.getValue();
+
+                return null;
+            }
+        };
+
+    /** Entry processor, performing updating. */
+    private final CacheEntryProcessor<Integer, Integer, Object> updatingProcessor =
+        new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override
+            public Object process(
+                    MutableEntry<Integer, Integer> entry,
+                    Object... arguments
+            ) throws EntryProcessorException {
+
+                entry.setValue(1);
+
+                return null;
+            }
+        };
 
     /** {@inheritDoc} */
     @Override protected boolean swapEnabled() {
@@ -89,15 +159,15 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(null).removeAll();
+            g.cache(DEFAULT_CACHE_NAME).removeAll();
 
-            assert g.cache(null).localSize() == 0;
+            assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
         }
 
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(null).localMxBean().clear();
+            g.cache(DEFAULT_CACHE_NAME).localMxBean().clear();
 
             g.transactions().resetMetrics();
         }
@@ -110,26 +180,72 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(null).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
+            cache.enableStatistics(true);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetMetricsDisable() throws Exception {
         // Disable statistics.
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.cache(null).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(false);
+            IgniteCache cache = g.cache(DEFAULT_CACHE_NAME);
+
+            cache.enableStatistics(false);
         }
 
-        IgniteCache<Object, Object> jcache = grid(0).cache(null);
+        IgniteCache<Object, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         // Write to cache.
         for (int i = 0; i < KEY_CNT; i++)
             jcache.put(i, i);
+
+        // Invoke update on cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
+                @Override
+                public Object process(MutableEntry<Object, Object> entry,
+                                      Object... arguments) throws EntryProcessorException {
+
+                    Object key = entry.getKey();
+
+                    entry.setValue(key);
+
+                    return null;
+                }
+            });
+
+        // Read-only invoke on cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
+                @Override
+                public Object process(MutableEntry<Object, Object> entry,
+                                      Object... arguments) throws EntryProcessorException {
+
+                    entry.getKey();
+
+                    return null;
+                }
+            });
+
+        // Remove invoke on cache.
+        for (int i = 0; i < KEY_CNT; i++)
+            jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
+                @Override
+                public Object process(MutableEntry<Object, Object> entry,
+                                      Object... arguments) throws EntryProcessorException {
+
+                    entry.remove();
+
+                    return null;
+                }
+            });
 
         // Get from cache.
         for (int i = 0; i < KEY_CNT; i++)
@@ -141,7 +257,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // Assert that statistics is clear.
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetrics m = grid(i).cache(null).localMetrics();
+            CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
             assertEquals(m.getCacheGets(), 0);
             assertEquals(m.getCachePuts(), 0);
@@ -153,14 +269,23 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             assertEquals(m.getAveragePutTime(), 0f);
             assertEquals(m.getAverageTxCommitTime(), 0f);
             assertEquals(m.getAverageTxRollbackTime(), 0f);
+
+            assertEquals(m.getEntryProcessorPuts(), 0);
+            assertEquals(m.getEntryProcessorRemovals(), 0);
+            assertEquals(m.getEntryProcessorReadOnlyInvocations(), 0);
+            assertEquals(m.getEntryProcessorMinInvocationTime(), 0f);
+            assertEquals(m.getEntryProcessorMaxInvocationTime(), 0f);
+            assertEquals(m.getEntryProcessorAverageInvocationTime(), 0f);
+            assertEquals(m.getEntryProcessorInvocations(), 0);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetMetricsSnapshot() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertNotSame("Method metrics() should return snapshot.", cache.localMetrics(), cache.localMetrics());
     }
@@ -168,23 +293,17 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndRemoveAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
-        for (int i = 0; i < KEY_CNT; i++) {
-            cacheAsync.getAndRemove(i);
-
-            IgniteFuture<Object> fut = cacheAsync.future();
-
-            fut.get();
-        }
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.getAndRemoveAsync(i).get();
 
         assert cache.localMetrics().getAverageRemoveTime() > 0;
     }
@@ -192,9 +311,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAsyncValAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Integer key = 0;
 
@@ -210,9 +329,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.put(key, key);
 
-        cacheAsync.remove(key, key);
-
-        IgniteFuture<Boolean> fut = cacheAsync.future();
+        IgniteFuture<Boolean> fut = cache.removeAsync(key, key);
 
         assertTrue(fut.get());
 
@@ -222,13 +339,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAvgTime() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put(i, i);
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.remove(i);
@@ -239,33 +357,34 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAllAvgTime() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
         cache.put(2, 2);
         cache.put(3, 3);
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
-        Set<Integer> keys = new HashSet<>(4, 1);
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
         keys.add(3);
 
         cache.removeAll(keys);
 
-        float averageRemoveTime = cache.localMetrics().getAverageRemoveTime();
+        float averageRmvTime = cache.localMetrics().getAverageRemoveTime();
 
-        assert averageRemoveTime >= 0;
+        assert averageRmvTime >= 0;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAllAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Set<Integer> keys = new LinkedHashSet<>();
 
@@ -280,11 +399,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }
 
-        assertEquals(cache.localMetrics().getAverageRemoveTime(), 0.0, 0.0);
+        assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
-        cacheAsync.removeAll(keys);
-
-        IgniteFuture<?> fut = cacheAsync.future();
+        IgniteFuture<?> fut = cache.removeAllAsync(keys);
 
         fut.get();
 
@@ -295,8 +412,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAvgTime() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
 
@@ -316,8 +434,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAvgTime() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
@@ -340,9 +459,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAllAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
@@ -357,9 +476,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         keys.add(2);
         keys.add(3);
 
-        cacheAsync.getAll(keys);
-
-        IgniteFuture<Map<Object, Object>> fut = cacheAsync.future();
+        IgniteFuture<Map<Object, Object>> fut = cache.getAllAsync(keys);
 
         fut.get();
 
@@ -371,8 +488,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAvgTime() throws Exception {
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
         assertEquals(0, cache.localMetrics().getCachePuts());
@@ -388,16 +506,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
         assertEquals(0, cache.localMetrics().getCachePuts());
 
-        cacheAsync.put(1, 1);
-
-        cacheAsync.future().get();
+        cache.putAsync(1, 1).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -407,9 +523,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Integer key = null;
 
@@ -424,11 +540,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
         assertEquals(0.0, cache.localMetrics().getAverageGetTime(), 0.0);
 
-        cacheAsync.getAndPut(key, key);
-
-        IgniteFuture<?> fut = cacheAsync.future();
-
-        fut.get();
+        cache.getAndPutAsync(key, key).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -439,9 +551,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsentAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Integer key = null;
 
@@ -455,11 +567,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
 
-        cacheAsync.putIfAbsent(key, key);
-
-        IgniteFuture<Boolean> fut = cacheAsync.future();
-
-        fut.get();
+        cache.putIfAbsentAsync(key, key).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -469,9 +577,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndPutIfAbsentAsyncAvgTime() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
-        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Integer key = null;
 
@@ -485,11 +593,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.localMetrics().getAveragePutTime());
 
-        cacheAsync.getAndPutIfAbsent(key, key);
-
-        IgniteFuture<?> fut = cacheAsync.future();
-
-        fut.get();
+        cache.getAndPutIfAbsentAsync(key, key).get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -499,8 +603,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllAvgTime() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
         assertEquals(0, cache.localMetrics().getCachePuts());
@@ -519,11 +624,35 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(values.size(), cache.localMetrics().getCachePuts());
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testPutAllAsyncAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
+        assertEquals(0, cache.localMetrics().getCachePuts());
+
+        Map<Integer, Integer> values = new HashMap<>();
+
+        values.put(1, 1);
+        values.put(2, 2);
+        values.put(3, 3);
+
+        IgniteFuture<Void> fut = cache.putAllAsync(values);
+
+        fut.get();
+
+        assertTrue(waitForCondition(() -> cache.localMetrics().getAveragePutTime() > 0, 30_000));
+
+        assertEquals(values.size(), cache.localMetrics().getCachePuts());
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutsReads() throws Exception {
-        IgniteCache<Integer, Integer> cache0 = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         int keyCnt = keyCount();
 
@@ -542,7 +671,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             info("Puts: " + cache0.localMetrics().getCachePuts());
 
             for (int j = 0; j < gridCount(); j++) {
-                IgniteCache<Integer, Integer> cache = grid(j).cache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).cache(DEFAULT_CACHE_NAME);
 
                 int cacheWrites = (int)cache.localMetrics().getCachePuts();
 
@@ -561,7 +690,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         int misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetrics m = grid(i).cache(null).localMetrics();
+            CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
             puts += m.getCachePuts();
             reads += m.getCacheGets();
@@ -580,8 +709,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMissHitPercentage() throws Exception {
-        IgniteCache<Integer, Integer> cache0 = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final int keyCnt = keyCount();
 
@@ -592,7 +722,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             info("Puts: " + cache0.localMetrics().getCachePuts());
 
             for (int j = 0; j < gridCount(); j++) {
-                IgniteCache<Integer, Integer> cache = grid(j).cache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).cache(DEFAULT_CACHE_NAME);
 
                 long cacheWrites = cache.localMetrics().getCachePuts();
 
@@ -604,7 +734,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // Check metrics for the whole cache.
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetrics m = grid(i).cache(null).localMetrics();
+            CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
             assertEquals(m.getCacheHits() * 100f / m.getCacheGets(), m.getCacheHitPercentage(), 0.1f);
             assertEquals(m.getCacheMisses() * 100f / m.getCacheGets(), m.getCacheMissPercentage(), 0.1f);
@@ -614,8 +744,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMisses() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         int keyCnt = keyCount();
 
@@ -639,7 +770,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         long misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetrics m = grid(i).cache(null).localMetrics();
+            CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
             puts += m.getCachePuts();
             reads += m.getCacheGets();
@@ -656,13 +787,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMissesOnEmptyCache() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assertEquals("Expected 0 read", 0, cache.localMetrics().getCacheGets());
         assertEquals("Expected 0 miss", 0, cache.localMetrics().getCacheMisses());
 
-        Integer key =  null;
+        Integer key = null;
 
         for (int i = 0; i < 1000; i++) {
             if (affinity(cache).isPrimary(grid(0).localNode(), i)) {
@@ -694,8 +826,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoves() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
 
@@ -706,35 +839,62 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     }
 
     /**
+     * Test {@link CacheMetrics#getSize()} and {@link CacheMetrics#getCacheSize()} work equally.
+     *
      * @throws Exception If failed.
      */
-    public void testManualEvictions() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+    @Test
+    public void testCacheSizeWorksAsSize() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
-            return;
+        cache.clear();
 
-        cache.put(1, 1);
+        awaitMetricsUpdate(1);
 
-        cache.localEvict(Collections.singleton(1));
+        assertEquals(0, cache.metrics().getCacheSize());
 
-        assertEquals(0L, cache.localMetrics().getCacheRemovals());
-        assertEquals(1L, cache.localMetrics().getCacheEvictions());
+        for (int i = 0; i < KEY_CNT; i++)
+            cache.put(i, i);
+
+        awaitMetricsUpdate(1);
+
+        assertEquals(KEY_CNT, cache.metrics().getCacheSize());
+
+        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
+
+        for (int i = 0; i < KEY_CNT / 2; i++)
+            cache.remove(i, i);
+
+        awaitMetricsUpdate(1);
+
+        assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
+
+        assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
+
+        cache.removeAll();
+
+        awaitMetricsUpdate(1);
+
+        assertEquals(0, cache.metrics().getCacheSize());
+
+        assertEquals(0, cache.localMetrics().getCacheSize());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxEvictions() throws Exception {
-        if (grid(0).cache(null).getConfiguration(CacheConfiguration.class).getAtomicityMode() != CacheAtomicityMode.ATOMIC)
+        if (grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getAtomicityMode() != CacheAtomicityMode.ATOMIC)
             checkTtl(true);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonTxEvictions() throws Exception {
-        if (grid(0).cache(null).getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
+        if (grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
             checkTtl(false);
     }
 
@@ -747,13 +907,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final Integer key = primaryKeys(jcache(0), 1, 0).get(0);
 
         c.put(key, 1);
 
-        GridCacheAdapter<Object, Object> c0 = ((IgniteKernal)grid(0)).internalCache();
+        GridCacheAdapter<Object, Object> c0 = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
         if (c0.isNear())
             c0 = c0.context().near().dht();
@@ -765,20 +925,20 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());
 
-        long startTime = System.currentTimeMillis();
+        long startTime = U.currentTimeMillis();
 
         if (inTx) {
             // Rollback transaction for the first time.
             Transaction tx = grid(0).transactions().txStart();
 
             try {
-                grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
+                grid(0).cache(DEFAULT_CACHE_NAME).withExpiryPolicy(expiry).put(key, 1);
             }
             finally {
                 tx.rollback();
             }
 
-            entry = ((IgniteKernal)grid(0)).internalCache().entryEx(key);
+            entry = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).entryEx(key);
 
             assertEquals(0, entry.ttl());
             assertEquals(0, entry.expireTime());
@@ -788,7 +948,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         Transaction tx = inTx ? grid(0).transactions().txStart() : null;
 
         try {
-            grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
+            grid(0).cache(DEFAULT_CACHE_NAME).withExpiryPolicy(expiry).put(key, 1);
         }
         finally {
             if (tx != null)
@@ -798,17 +958,17 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                c0 = ((IgniteKernal)grid(i)).internalCache();
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                c0 = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
 
-                assert curEntry.expireTime() > startTime;
+                assertTrue(curEntry.expireTime() >= startTime);
 
                 expireTimes[i] = curEntry.expireTime();
             }
@@ -820,7 +980,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         tx = inTx ? grid(0).transactions().txStart() : null;
 
         try {
-            grid(0).cache(null).withExpiryPolicy(expiry).put(key, 2);
+            grid(0).cache(DEFAULT_CACHE_NAME).withExpiryPolicy(expiry).put(key, 2);
         }
         finally {
             if (tx != null)
@@ -828,17 +988,17 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                c0 = ((IgniteKernal)grid(i)).internalCache();
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                c0 = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
 
-                assert curEntry.expireTime() > startTime;
+                assertTrue(curEntry.expireTime() >= startTime);
 
                 expireTimes[i] = curEntry.expireTime();
             }
@@ -850,7 +1010,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         tx = inTx ? grid(0).transactions().txStart() : null;
 
         try {
-            grid(0).cache(null).withExpiryPolicy(expiry).put(key, 3);
+            grid(0).cache(DEFAULT_CACHE_NAME).withExpiryPolicy(expiry).put(key, 3);
         }
         finally {
             if (tx != null)
@@ -858,17 +1018,17 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                c0 = ((IgniteKernal)grid(i)).internalCache();
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                c0 = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
 
-                assert curEntry.expireTime() > startTime;
+                assertTrue(curEntry.expireTime() >= startTime);
 
                 expireTimes[i] = curEntry.expireTime();
             }
@@ -892,15 +1052,16 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         log.info("Put 4 done");
 
         for (int i = 0; i < gridCount(); i++) {
-            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                c0 = ((IgniteKernal)grid(i)).internalCache();
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                c0 = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
 
                 if (c0.isNear())
                     c0 = c0.context().near().dht();
 
-                GridCacheEntryEx curEntry = c0.peekEx(key);
+                GridCacheEntryEx curEntry = c0.entryEx(key);
 
-                assertEquals(ttl, curEntry.ttl());
+                curEntry.unswap();
+
                 assertEquals(expireTimes[i], curEntry.expireTime());
             }
         }
@@ -908,8 +1069,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Avoid reloading from store.
         storeStgy.removeFromStore(key);
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
+        assertTrue(waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
                 try {
                     if (c.get(key) != null)
@@ -919,7 +1079,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                     GridCacheAdapter c0 = cacheFromCtx(c);
 
                     if (!c0.context().deferredDelete()) {
-                        GridCacheEntryEx e0 = c0.peekEx(key);
+                        GridCacheEntryEx e0 = c0.entryEx(key);
 
                         return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
                     }
@@ -932,7 +1092,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         }, Math.min(ttl * 10, getTestTimeout())));
 
-        c0 = ((IgniteKernal)grid(0)).internalCache();
+        c0 = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME);
 
         if (c0.isNear())
             c0 = c0.context().near().dht();
@@ -940,7 +1100,403 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Ensure that old TTL and expire time are not longer "visible".
         entry = c0.entryEx(key);
 
-        assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvocationRemovesOnEmptyCache() throws IgniteCheckedException {
+        testInvocationRemoves(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvocationRemoves() throws IgniteCheckedException {
+        testInvocationRemoves(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void testInvocationRemoves(boolean emptyCache) throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        final Integer key = primaryKey(cache0);
+
+        if (emptyCache)
+            cache0.remove(key);
+        else
+            cache0.put(key, 0);
+
+        cache0.invoke(key, removingProcessor);
+
+        assertEquals(1, cache0.localMetrics().getEntryProcessorRemovals());
+
+//        if (emptyCache) {
+//            assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
+//
+//            assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
+//            assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+//        }
+//        else {
+//            assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
+//
+//            assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
+//            assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+//        }
+//
+//        for (int i = 1; i < gridCount(); i++) {
+//            Ignite ignite = ignite(i);
+//
+//            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+//
+//            if (affinity(cache).isPrimaryOrBackup(ignite.cluster().localNode(), key))
+//                assertEquals(1, cache.localMetrics().getEntryProcessorRemovals());
+//        }
+//
+//        assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testUpdateInvocationsOnEmptyCache() throws IgniteCheckedException {
+        testUpdateInvocations(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testUpdateInvocations() throws IgniteCheckedException {
+        testUpdateInvocations(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void testUpdateInvocations(final boolean emptyCache) throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        final Integer key = primaryKey(jcache(0));
+
+        if (emptyCache)
+            cache0.remove(key);
+        else
+            cache0.put(key, 0);
+
+        cache0.invoke(key, updatingProcessor);
+
+        assertEquals(1, cache0.localMetrics().getEntryProcessorPuts());
+
+        if (emptyCache) {
+            assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
+
+            assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+        }
+        else {
+            assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
+
+            assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+        }
+
+        for (int i = 1; i < gridCount(); i++) {
+            Ignite ignite = ignite(i);
+
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(cache).isPrimaryOrBackup(ignite.cluster().localNode(), key))
+                assertEquals(1, cache.localMetrics().getEntryProcessorPuts());
+        }
+
+        assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testReadOnlyInvocationsOnEmptyCache() throws IgniteCheckedException {
+        testReadOnlyInvocations(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testReadOnlyInvocations() throws IgniteCheckedException {
+        testReadOnlyInvocations(false);
+    }
+
+    /**
+     * @param emptyCache Empty cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void testReadOnlyInvocations(final boolean emptyCache) throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        final Integer key = primaryKey(jcache(0));
+
+        if (emptyCache)
+            cache0.remove(key);
+        else
+            cache0.put(key, 0);
+
+        cache0.invoke(key, readingProcessor);
+
+        assertEquals(1, cache0.localMetrics().getEntryProcessorReadOnlyInvocations());
+
+        if (emptyCache) {
+            assertEquals(1, cache0.localMetrics().getEntryProcessorMisses());
+
+            assertEquals(100f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            assertEquals(0f, cache0.localMetrics().getEntryProcessorHitPercentage());
+        }
+        else {
+            assertEquals(1, cache0.localMetrics().getEntryProcessorHits());
+
+            assertEquals(0f, cache0.localMetrics().getEntryProcessorMissPercentage());
+            assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
+        }
+
+        for (int i = 1; i < gridCount(); i++)
+            assertEquals(0, jcache(i).localMetrics().getEntryProcessorReadOnlyInvocations());
+
+        assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAvgTime() throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        float averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
+
+        assertEquals(0.0, averageTime, 0.001f);
+
+        final Integer key = primaryKey(cache0);
+
+        cache0.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override
+            public Object process(MutableEntry<Integer, Integer> entry,
+                                  Object... arguments) throws EntryProcessorException {
+
+                entry.setValue(1);
+
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new EntryProcessorException(e);
+                }
+
+                return null;
+            }
+        });
+
+        averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
+
+        assertTrue(averageTime > 0.0);
+
+        float maxTime = cache0.localMetrics().getEntryProcessorMaxInvocationTime();
+        float minTime = cache0.localMetrics().getEntryProcessorMinInvocationTime();
+
+        assertTrue(maxTime > 0.0);
+        assertEquals(maxTime, minTime, 0.001f);
+
+        cache0.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
+            @Override
+            public Object process(MutableEntry<Integer, Integer> entry,
+                                  Object... arguments) throws EntryProcessorException {
+
+                entry.setValue(1);
+
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    throw new EntryProcessorException(e);
+                }
+
+                return null;
+            }
+        });
+
+        maxTime = cache0.localMetrics().getEntryProcessorMaxInvocationTime();
+        minTime = cache0.localMetrics().getEntryProcessorMinInvocationTime();
+        averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
+
+        assertTrue(maxTime > averageTime && averageTime > minTime);
+        assertEquals(2, cache0.localMetrics().getEntryProcessorInvocations());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAsyncAvgTime() throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+
+        final Integer key = primaryKey(cache);
+
+        cache.invokeAsync(key, updatingProcessor).get();
+
+        U.sleep(100);
+
+        assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAllAvgTime() throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+
+        cache.invokeAll(ImmutableMap.of(0, updatingProcessor,
+            1, readingProcessor,
+            2, removingProcessor));
+
+        U.sleep(100);
+
+        assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAllAsyncAvgTime() throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+
+        Map<Integer, EntryProcessorResult<Object>> invokeFut = cache.invokeAllAsync(
+                ImmutableMap.of(0, updatingProcessor,
+                        1, readingProcessor,
+                        2, removingProcessor)).get();
+
+        U.sleep(100);
+
+        assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAllMultipleKeysAvgTime() throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        Set<Integer> keys = new TreeSet<>();
+        keys.add(1);
+        keys.add(2);
+
+        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+
+        cache.invokeAll(keys, updatingProcessor);
+
+        U.sleep(100);
+
+        assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testInvokeAllAsyncMultipleKeysAvgTime() throws IgniteCheckedException {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        Set<Integer> keys = new TreeSet<>();
+        keys.add(1);
+        keys.add(2);
+
+        assertEquals(0.0, cache.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+
+        cache.invokeAllAsync(keys, updatingProcessor).get();
+
+        U.sleep(100);
+
+        assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /** */
+    @Test
+    public void testGetTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("GetTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.get(1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testPutTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("PutTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testRemoveTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("RemoveTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.remove(1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /**
+     * @param name Metric name to find.
+     * @return Metric.
+     */
+    protected  <M extends Metric> M metric(String name) {
+        IgniteEx grid = grid(0);
+
+        boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();
+
+        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
+
+        M m = mreg.findMetric(name);
+
+        assertNotNull(m);
+
+        return m;
     }
 }

@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.stream.StreamReceiver;
@@ -31,12 +32,14 @@ import org.apache.ignite.stream.StreamReceiver;
  */
 public class DataStreamProcessorBinarySelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         cfg.setMarshaller(marsh);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

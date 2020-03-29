@@ -112,10 +112,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Sets path.
      *
      * @param path Shared path.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setPath(String path) {
+    public TcpDiscoverySharedFsIpFinder setPath(String path) {
         this.path = path;
+
+        return this;
     }
 
     /**
@@ -183,29 +186,24 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         Collection<InetSocketAddress> addrs = new LinkedList<>();
 
-        for (String fileName : folder.list())
-            if (!".svn".equals(fileName)) {
-                InetSocketAddress addr = null;
+        for (String fileName : folder.list()) {
+            StringTokenizer st = new StringTokenizer(fileName, DELIM);
 
-                StringTokenizer st = new StringTokenizer(fileName, DELIM);
+            if (st.countTokens() != 2)
+                continue;
 
-                if (st.countTokens() == 2) {
-                    String addrStr = st.nextToken();
-                    String portStr = st.nextToken();
+            String addrStr = st.nextToken();
+            String portStr = st.nextToken();
 
-                    try {
-                        int port = Integer.parseInt(portStr);
+            try {
+                int port = Integer.parseInt(portStr);
 
-                        addr = new InetSocketAddress(denormalizeAddress(addrStr), port);
-                    }
-                    catch (IllegalArgumentException e) {
-                        U.error(log, "Failed to parse file entry: " + fileName, e);
-                    }
-                }
-
-                if (addr != null)
-                    addrs.add(addr);
+                addrs.add(new InetSocketAddress(denormalizeAddress(addrStr), port));
             }
+            catch (IllegalArgumentException e) {
+                U.error(log, "Failed to parse file entry: " + fileName, e);
+            }
+        }
 
         return Collections.unmodifiableCollection(addrs);
     }
@@ -274,7 +272,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         SB sb = new SB();
 
-        sb.a(normalizeAddress(addr.getAddress().getHostAddress()))
+        // There is no need to normalize hostname as DNS name specification doesn't allow ':' and '_' chars.
+        sb.a(addr.isUnresolved() ? addr.getHostName() : normalizeAddress(addr.getAddress().getHostAddress()))
             .a(DELIM)
             .a(addr.getPort());
 
@@ -299,6 +298,13 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
      */
     private String denormalizeAddress(String hostAddress) {
         return hostAddress.replaceAll(COLON_SUBST, COLON_DELIM);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoverySharedFsIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

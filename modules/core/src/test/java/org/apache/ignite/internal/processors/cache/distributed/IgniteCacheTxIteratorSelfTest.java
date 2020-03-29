@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -29,12 +28,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.MvccFeatureChecker.Feature;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import javax.cache.Cache;
+import org.junit.Test;
 
 /**
  *
@@ -44,8 +46,8 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "testCache";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         final TransactionConfiguration txCfg = new TransactionConfiguration();
 
@@ -62,7 +64,6 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     private CacheConfiguration<String, TestClass> cacheConfiguration(
         CacheMode mode,
         CacheAtomicityMode atomMode,
-        CacheMemoryMode memMode,
         boolean nearEnabled,
         boolean useEvictPlc
     ) {
@@ -70,15 +71,14 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(atomMode);
         ccfg.setCacheMode(mode);
-        ccfg.setMemoryMode(memMode);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         if (nearEnabled)
             ccfg.setNearConfiguration(new NearCacheConfiguration<String, TestClass>());
 
-        if (memMode == CacheMemoryMode.ONHEAP_TIERED && useEvictPlc) {
-            ccfg.setOffHeapMaxMemory(10 * 1024 * 1024);
+        if (useEvictPlc) {
             ccfg.setEvictionPolicy(new FifoEvictionPolicy(50));
+            ccfg.setOnheapCacheEnabled(true);
         }
 
         return ccfg;
@@ -87,6 +87,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testModesSingleNode() throws Exception {
         checkModes(1);
     }
@@ -94,6 +95,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testModesMultiNode() throws Exception {
         checkModes(3);
     }
@@ -107,17 +109,14 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         try {
             for (CacheMode mode : CacheMode.values()) {
                 for (CacheAtomicityMode atomMode : CacheAtomicityMode.values()) {
-                    for (CacheMemoryMode memMode : CacheMemoryMode.values()) {
-                        if (mode == CacheMode.PARTITIONED) {
-                            // Near cache makes sense only for partitioned cache.
-                            checkTxCache(CacheMode.PARTITIONED, atomMode, memMode, true, false);
-                        }
-
-                        if (memMode == CacheMemoryMode.ONHEAP_TIERED)
-                            checkTxCache(mode, atomMode, CacheMemoryMode.ONHEAP_TIERED, false, true);
-
-                        checkTxCache(mode, atomMode, memMode, false, false);
+                    if (mode == CacheMode.PARTITIONED) {
+                        // Near cache makes sense only for partitioned cache.
+                        checkTxCache(CacheMode.PARTITIONED, atomMode, true, false);
                     }
+
+                    checkTxCache(mode, atomMode, false, true);
+
+                    checkTxCache(mode, atomMode, false, false);
                 }
             }
         }
@@ -132,23 +131,28 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
     private void checkTxCache(
         CacheMode mode,
         CacheAtomicityMode atomMode,
-        CacheMemoryMode memMode,
         boolean nearEnabled,
         boolean useEvicPlc
     ) throws Exception {
+        if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
+            if (!MvccFeatureChecker.isSupported(mode) ||
+                (nearEnabled && !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) ||
+                (useEvicPlc && !MvccFeatureChecker.isSupported(Feature.EVICTION)))
+                return; // Nothing to do. Mode is not supported.
+        }
+
         final Ignite ignite = grid(0);
 
         final CacheConfiguration<String, TestClass> ccfg = cacheConfiguration(
             mode,
             atomMode,
-            memMode,
             nearEnabled,
             useEvicPlc);
 
-        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg);
+        final IgniteCache<String, TestClass> cache = ignite.createCache(ccfg).withAllowAtomicOpsInTx();
 
-        info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", memMode=" + memMode +
-            ", near=" + nearEnabled + ']');
+        info("Checking cache [mode=" + mode + ", atomMode=" + atomMode + ", near=" + nearEnabled +
+            ", evict=" + useEvicPlc + ']');
 
         try {
             for (int i = 0; i < 30; i++) {
@@ -161,6 +165,10 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
                 for (TransactionIsolation iso : TransactionIsolation.values()) {
                     for (TransactionConcurrency con : TransactionConcurrency.values()) {
+                        if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT &&
+                            !MvccFeatureChecker.isSupported(con, iso))
+                            continue; // Mode not supported.
+
                         try (Transaction transaction = ignite.transactions().txStart(con, iso)) {
                             assertEquals(val, cache.get(key));
 
@@ -208,13 +216,12 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
             this.data = data;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             final TestClass testCls = (TestClass)o;
 
@@ -222,19 +229,13 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
 
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public int hashCode() {
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
             return data != null ? data.hashCode() : 0;
         }
 
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return S.toString(TestClass.class, this);
         }
     }

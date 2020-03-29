@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Job tries to get cache during topology change.
@@ -41,9 +42,15 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 5 * 60_000;
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyChange() throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -99,7 +106,7 @@ public class CacheGetFromJobTest extends GridCacheAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            IgniteCache cache = ignite.cache(null);
+            IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache);
 

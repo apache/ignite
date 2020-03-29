@@ -39,6 +39,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Test for local Ignite instance processing during serialization/deserialization.
@@ -48,10 +49,10 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache_name";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName != null && gridName.startsWith("binary"))
+        if (igniteInstanceName != null && igniteInstanceName.startsWith("binary"))
             cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
@@ -63,6 +64,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         checkPutGet(new SimpleTestObject("one"), null);
     }
@@ -70,6 +72,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSerializable() throws Exception {
         checkPutGet(new SerializableTestObject("test"), null);
     }
@@ -77,6 +80,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetExternalizable() throws Exception {
         checkPutGet(new ExternalizableTestObject("test"), null);
     }
@@ -84,6 +88,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetBinarylizable() throws Exception {
         checkPutGet(new BinarylizableTestObject("test"), "binaryIgnite");
     }
@@ -91,13 +96,12 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkPutGet(final TestObject obj, final String gridName) throws Exception {
-
+    private void checkPutGet(final TestObject obj, final String igniteInstanceName) throws Exception {
 
         // Run async to emulate user thread.
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try (final Ignite ignite = startGrid(gridName)) {
+                try (final Ignite ignite = startGrid(igniteInstanceName)) {
                     if (ignite.configuration().getMarshaller() instanceof AbstractNodeNameAwareMarshaller) {
                         final IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache(CACHE_NAME);
 

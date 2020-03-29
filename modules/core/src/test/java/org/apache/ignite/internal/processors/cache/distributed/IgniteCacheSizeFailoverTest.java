@@ -26,11 +26,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,18 +38,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
@@ -73,6 +66,7 @@ public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         startGrids(2);
 
@@ -84,7 +78,7 @@ public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 int idx = cntr.getAndIncrement() % 2;
 
-                IgniteCache<Object, Object> cache = ignite(idx).cache(null);
+                IgniteCache<Object, Object> cache = ignite(idx).cache(DEFAULT_CACHE_NAME);
 
                 long cntr = 0;
 
@@ -105,7 +99,7 @@ public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
 
                 Ignite node = startGrid(3);
 
-                IgniteCache<Object, Object> cache = node.cache(null);
+                IgniteCache<Object, Object> cache = node.cache(DEFAULT_CACHE_NAME);
 
                 for (int j = 0; j < 100; j++)
                     assertTrue(cache.size() >= 0);

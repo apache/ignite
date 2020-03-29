@@ -333,10 +333,6 @@ public class IgniteSourceTask extends SourceTask {
         /** */
         UNLOCKED(EventType.EVT_CACHE_OBJECT_UNLOCKED),
         /** */
-        SWAPPED(EventType.EVT_CACHE_OBJECT_SWAPPED),
-        /** */
-        UNSWAPPED(EventType.EVT_CACHE_OBJECT_UNSWAPPED),
-        /** */
         EXPIRED(EventType.EVT_CACHE_OBJECT_EXPIRED);
 
         /** Internal Ignite event id. */

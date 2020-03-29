@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -41,8 +42,8 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
     private static final String CACHE_NAME = "test";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPublicThreadPoolSize(1);
 
@@ -113,6 +114,7 @@ public class PublicThreadpoolStarvationTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheSizeOnPublicThreadpoolStarvation() throws Exception {
         grid(0).compute().run(new IgniteRunnable() {
             @Override public void run() {

@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for {@link TcpDiscoverySpi} and {@link TcpCommunicationSpi}.
@@ -75,8 +76,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     private boolean ipFinderUseLocPorts;
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         if (ipFinderUseLocPorts)
@@ -89,20 +89,20 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         final int locPort;
         final int commLocPort;
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             locPort = locPort1;
             commLocPort = commLocPort1;
         }
-        else if (getTestGridName(1).equals(gridName)) {
+        else if (getTestIgniteInstanceName(1).equals(igniteInstanceName)) {
             locPort = locPort2;
             commLocPort = commLocPort2;
         }
         else
-            throw new IllegalArgumentException("Unknown grid name");
+            throw new IllegalArgumentException("Unknown Ignite instance name");
 
         spi.setIpFinder(ipFinder);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         spi.setLocalPort(locPort);
         spi.setLocalPortRange(1);
@@ -141,6 +141,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testCustomResolver() throws Exception {
         final Map<InetSocketAddress, Collection<InetSocketAddress>> map = new HashMap<>();
 
@@ -161,6 +162,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverMapPorts() throws Exception {
         Map<String, String> map = new HashMap<>();
 
@@ -177,6 +179,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverMapAddress() throws Exception {
         Map<String, String> map = new HashMap<>();
 
@@ -192,6 +195,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicResolverErrors() throws Exception {
         GridTestUtils.assertThrows(
             log,
@@ -339,7 +343,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private void doTestForward() throws Exception {
         InetAddress locHost = InetAddress.getByName("127.0.0.1");
 

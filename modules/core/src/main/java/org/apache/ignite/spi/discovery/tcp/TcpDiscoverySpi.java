@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -40,7 +41,9 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
@@ -51,8 +54,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridComponent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -72,19 +81,23 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -95,9 +108,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -133,7 +153,6 @@ import org.jetbrains.annotations.Nullable;
  * configuration parameters may be used. As an example, for stable low-latency networks the following more aggressive
  * settings are recommended (which allows failure detection time ~200ms):
  * <ul>
- * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)}) - 100ms</li>
  * <li>Socket timeout (see {@link #setSocketTimeout(long)}) - 200ms</li>
  * <li>Message acknowledgement timeout (see {@link #setAckTimeout(long)}) - 50ms</li>
  * </ul>
@@ -161,8 +180,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>Local port to bind to (see {@link #setLocalPort(int)})</li>
  * <li>Local port range to try binding to if previous ports are in use
  *      (see {@link #setLocalPortRange(int)})</li>
- * <li>Heartbeat frequency (see {@link #setHeartbeatFrequency(long)})</li>
- * <li>Max missed heartbeats (see {@link #setMaxMissedHeartbeats(int)})</li>
  * <li>Number of times node tries to (re)establish connection to another node
  *      (see {@link #setReconnectCount(int)})</li>
  * <li>Network timeout (see {@link #setNetworkTimeout(long)})</li>
@@ -213,20 +230,11 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  * @see DiscoverySpi
  */
-@SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
-public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, TcpDiscoverySpiMBean {
-    /** Failure detection timeout feature major version. */
-    final static byte FAILURE_DETECTION_MAJOR_VER = 1;
-
-    /** Failure detection timeout feature minor version. */
-    final static byte FAILURE_DETECTION_MINOR_VER = 4;
-
-    /** Failure detection timeout feature maintainance version. */
-    final static byte FAILURE_DETECTION_MAINT_VER = 1;
-
+@DiscoverySpiMutableCustomMessageSupport(true)
+public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
     /** Node attribute that is mapped to node's external addresses (value is <tt>disc.tcp.ext-addrs</tt>). */
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
@@ -244,9 +252,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** Default value for thread priority (value is <tt>10</tt>). */
     public static final int DFLT_THREAD_PRI = 10;
-
-    /** Default heartbeat messages issuing frequency (value is <tt>2000ms</tt>). */
-    public static final long DFLT_HEARTBEAT_FREQ = 2000;
 
     /** Default size of topology snapshots history. */
     public static final int DFLT_TOP_HISTORY_SIZE = 1000;
@@ -266,11 +271,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** Default reconnect attempts count (value is <tt>10</tt>). */
     public static final int DFLT_RECONNECT_CNT = 10;
 
-    /** Default max heartbeats count node can miss without initiating status check (value is <tt>1</tt>). */
-    public static final int DFLT_MAX_MISSED_HEARTBEATS = 1;
-
-    /** Default max heartbeats count node can miss without failing client node (value is <tt>5</tt>). */
-    public static final int DFLT_MAX_MISSED_CLIENT_HEARTBEATS = 5;
+    /** Default delay between attempts to connect to the cluster in milliseconds (value is <tt>2000</tt>). */
+    public static final long DFLT_RECONNECT_DELAY = 2000;
 
     /** Default IP finder clean frequency in milliseconds (value is <tt>60,000ms</tt>). */
     public static final long DFLT_IP_FINDER_CLEAN_FREQ = 60 * 1000;
@@ -280,6 +282,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
+
+    /** Default SO_LINGER to set for socket, 0 means enabled with 0 timeout. */
+    public static final int DFLT_SO_LINGER = 5;
+
+    /** Default connection recovery timeout in ms. */
+    public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
+
+    /** Ssl message pattern for StreamCorruptedException. */
+    private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
     /** Local address. */
     protected String locAddr;
@@ -300,17 +311,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
 
     /** Join timeout. */
-    @SuppressWarnings("RedundantFieldInitialization")
     protected long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** Thread priority for all threads started by SPI. */
     protected int threadPri = DFLT_THREAD_PRI;
 
-    /** Heartbeat messages issuing frequency. */
-    protected long hbFreq = DFLT_HEARTBEAT_FREQ;
+    /** Metrics update messages issuing frequency. */
+    protected long metricsUpdateFreq;
 
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
+
+    /** Default connection recovery timeout in ms. */
+    protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
     protected volatile DiscoverySpiListener lsnr;
@@ -343,7 +356,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    private final Marshaller marsh = new JdkMarshaller();
+    private Marshaller marsh;
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -355,24 +368,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected int locPortRange = DFLT_PORT_RANGE;
 
     /** Reconnect attempts count. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
 
+    /** Delay between attempts to connect to the cluster. */
+    private long reconDelay = DFLT_RECONNECT_DELAY;
+
     /** Statistics print frequency. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "RedundantFieldInitialization"})
     protected long statsPrintFreq = DFLT_STATS_PRINT_FREQ;
 
     /** Maximum message acknowledgement timeout. */
     private long maxAckTimeout = DFLT_MAX_ACK_TIMEOUT;
 
-    /** Max heartbeats count node can miss without initiating status check. */
-    protected int maxMissedHbs = DFLT_MAX_MISSED_HEARTBEATS;
-
-    /** Max heartbeats count node can miss without failing client node. */
-    protected int maxMissedClientHbs = DFLT_MAX_MISSED_CLIENT_HEARTBEATS;
+    /** Default SO_LINGER to use for socket. Set negative to disable, non-negative to enable, default is {@DFLT_SO_LINGER }. */
+    private int soLinger = DFLT_SO_LINGER;
 
     /** IP finder clean frequency. */
-    @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     protected long ipFinderCleanFreq = DFLT_IP_FINDER_CLEAN_FREQ;
 
     /** Node authenticator. */
@@ -383,6 +393,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** SSL socket factory. */
     protected SSLSocketFactory sslSockFactory;
+
+    /** SSL enable/disable flag. */
+    protected boolean sslEnable;
 
     /** Context initialization latch. */
     @GridToStringExclude
@@ -410,31 +423,69 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     private boolean clientReconnectDisabled;
 
     /** */
+    private Serializable consistentId;
+
+    /** Local node addresses. */
+    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
+
+    /** */
     protected IgniteSpiContext spiCtx;
 
-    /** {@inheritDoc} */
-    @Override public String getSpiState() {
+    /** */
+    private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** For test purposes. */
+    private boolean skipAddrsRandomization = false;
+
+    /**
+     * Gets current SPI state.
+     *
+     * @return Current SPI state.
+     */
+    public String getSpiState() {
         return impl.getSpiState();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMessageWorkerQueueSize() {
+    /**
+     * Gets message worker queue current size.
+     *
+     * @return Message worker queue current size.
+     */
+    public int getMessageWorkerQueueSize() {
         return impl.getMessageWorkerQueueSize();
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public UUID getCoordinator() {
+    /**
+     * Gets current coordinator.
+     *
+     * @return Gets current coordinator.
+     */
+    public UUID getCoordinator() {
         return impl.getCoordinator();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
+        // Return empty nodes for resolving compatibility until implementation started.
+        if (impl == null)
+            return Collections.emptyList();
+
         return impl.getRemoteNodes();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public ClusterNode getNode(UUID nodeId) {
         return impl.getNode(nodeId);
+    }
+
+    /**
+     * @param id Id.
+     */
+    public ClusterNode getNode0(UUID id) {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).getNode0(id);
+
+        return getNode(id);
     }
 
     /** {@inheritDoc} */
@@ -454,6 +505,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+        IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
+
+        if (internalLsnr != null) {
+            if (!internalLsnr.beforeSendCustomEvent(this, log, msg))
+                return;
+        }
+
         impl.sendCustomEvent(msg);
     }
 
@@ -462,8 +520,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         impl.failNode(nodeId, warning);
     }
 
-    /** {@inheritDoc} */
-    @Override public void dumpDebugInfo() {
+    /**
+     * Dumps debug info using configured logger.
+     */
+    public void dumpDebugInfo() {
         impl.dumpDebugInfo(log);
     }
 
@@ -480,7 +540,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * of {@link IgniteConfiguration#isClientMode()}
      *
      * @return forceServerMode flag.
+     * @deprecated Will be removed at 3.0.
      */
+    @Deprecated
     public boolean isForceServerMode() {
         return forceSrvMode;
     }
@@ -493,8 +555,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *
      * @param forceSrvMode forceServerMode flag.
      * @return {@code this} for chaining.
+     * @deprecated Will be removed at 3.0.
      */
     @IgniteSpiConfiguration(optional = true)
+    @Deprecated
     public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
         this.forceSrvMode = forceSrvMode;
 
@@ -537,6 +601,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         if (ignite != null) {
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
+
+            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
+                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
+            else
+                marsh = new JdkMarshaller();
         }
     }
 
@@ -589,8 +658,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return addrRslvr;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getReconnectCount() {
+    /**
+     * Gets number of connection attempts.
+     *
+     * @return Number of connection attempts.
+     */
+    public int getReconnectCount() {
         return reconCnt;
     }
 
@@ -617,8 +690,37 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMaxAckTimeout() {
+    /**
+     * Gets the amount of time in milliseconds that node waits before retrying to (re)connect to the cluster.
+     *
+     * @return Delay between attempts to connect to the cluster in milliseconds.
+     */
+    public long getReconnectDelay() {
+        return reconDelay;
+    }
+
+    /**
+     * Sets the amount of time in milliseconds that node waits before retrying to (re)connect to the cluster.
+     * <p>
+     * If not specified, default is {@link #DFLT_RECONNECT_DELAY}.
+     *
+     * @param reconDelay Delay between attempts to connect to the cluster in milliseconds.
+     *
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setReconnectDelay(int reconDelay) {
+        this.reconDelay = reconDelay;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum message acknowledgement timeout.
+     *
+     * @return Maximum message acknowledgement timeout.
+     */
+    public long getMaxAckTimeout() {
         return maxAckTimeout;
     }
 
@@ -648,8 +750,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getLocalPort() {
+    /**
+     * Gets local TCP port SPI listens to.
+     *
+     * @return Local port range.
+     */
+    public int getLocalPort() {
         TcpDiscoveryNode locNode0 = locNode;
 
         return locNode0 != null ? locNode0.discoveryPort() : 0;
@@ -672,8 +778,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getLocalPortRange() {
+    /**
+     * Gets local TCP port range.
+     *
+     * @return Local port range.
+     */
+    public int getLocalPortRange() {
         return locPortRange;
     }
 
@@ -698,50 +808,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getMaxMissedHeartbeats() {
-        return maxMissedHbs;
-    }
-
     /**
-     * Sets max heartbeats count node can miss without initiating status check.
-     * <p>
-     * If not provided, default value is {@link #DFLT_MAX_MISSED_HEARTBEATS}.
-     * <p>
-     * Affected server nodes only.
+     * Gets statistics print frequency.
      *
-     * @param maxMissedHbs Max missed heartbeats.
-     * @return {@code this} for chaining.
+     * @return Statistics print frequency in milliseconds.
      */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setMaxMissedHeartbeats(int maxMissedHbs) {
-        this.maxMissedHbs = maxMissedHbs;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMaxMissedClientHeartbeats() {
-        return maxMissedClientHbs;
-    }
-
-    /**
-     * Sets max heartbeats count node can miss without failing client node.
-     * <p>
-     * If not provided, default value is {@link #DFLT_MAX_MISSED_CLIENT_HEARTBEATS}.
-     *
-     * @param maxMissedClientHbs Max missed client heartbeats.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setMaxMissedClientHeartbeats(int maxMissedClientHbs) {
-        this.maxMissedClientHbs = maxMissedClientHbs;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getStatisticsPrintFrequency() {
+    public long getStatisticsPrintFrequency() {
         return statsPrintFreq;
     }
 
@@ -764,8 +836,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getIpFinderCleanFrequency() {
+    /**
+     * Gets IP finder clean frequency.
+     *
+     * @return IP finder clean frequency.
+     */
+    public long getIpFinderCleanFrequency() {
         return ipFinderCleanFreq;
     }
 
@@ -857,6 +933,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * Sets SO_LINGER to use for all created sockets.
+     * <p>
+     * If not specified, default is {@link #DFLT_SO_LINGER}
+     * </p>
+    */
+    @IgniteSpiConfiguration(optional = true)
+    public void setSoLinger(int soLinger) {
+        this.soLinger = soLinger;
+    }
+
+    /**
      * Sets maximum network timeout to use for network operations.
      * <p>
      * If not specified, default is {@link #DFLT_NETWORK_TIMEOUT}.
@@ -871,8 +958,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getJoinTimeout() {
+    /**
+     * Gets join timeout.
+     *
+     * @return Join timeout.
+     */
+    public long getJoinTimeout() {
         return joinTimeout;
     }
 
@@ -914,22 +1005,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
-     * Sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
-     * in configurable time interval to other nodes to notify them about its state.
-     * <p>
-     * If not provided, default value is {@link #DFLT_HEARTBEAT_FREQ}.
-     *
-     * @param hbFreq Heartbeat frequency in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setHeartbeatFrequency(long hbFreq) {
-        this.hbFreq = hbFreq;
-
-        return this;
-    }
-
-    /**
      * @return Size of topology snapshots history.
      */
     public long getTopHistorySize() {
@@ -958,6 +1033,54 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return this;
     }
 
+    /**
+     * Gets timeout that defines how long server node would try to recovery connection.<br>
+     * See {@link #setConnectionRecoveryTimeout(long)} for details.
+     *
+     * @return Timeout that defines how long server node would try to recovery connection.
+     */
+    public long getConnectionRecoveryTimeout() {
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * @return Connection recovery timeout that is not greater than failureDetectionTimeout if enabled.
+     */
+    long getEffectiveConnectionRecoveryTimeout() {
+        if (failureDetectionTimeoutEnabled() && failureDetectionTimeout() < connRecoveryTimeout)
+            return failureDetectionTimeout();
+
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * Sets timeout that defines how long server node would try to recovery connection.
+     * <p>In case local node has temporary connectivity issues with part of the cluster,
+     * it may sequentially fail nodes one-by-one till successfully connect to one that
+     * has a fine connection with.
+     * This leads to fail of big number of nodes.
+     * </p>
+     * <p>
+     *     To overcome that issue, local node will do a sequential connection tries to next
+     *     nodes. But if new next node has connection to previous it forces local node to
+     *     retry connect to previous. These tries will last till timeout will not
+     *     finished. When timeout is over, but no success in connecting to nodes it will
+     *     segment itself.
+     * </p>
+     * <p>
+     *     Cannot be greater than {@link #failureDetectionTimeout()}.
+     * </p>
+     * <p>
+     *     Default is {@link #DFLT_CONNECTION_RECOVERY_TIMEOUT}.
+     * </p>
+     *
+     * @param connRecoveryTimeout Timeout that defines how long server node would try to recovery connection.
+     * {@code 0} means node will not recheck failed nodes.
+     */
+    public void setConnectionRecoveryTimeout(long connRecoveryTimeout) {
+        this.connRecoveryTimeout = connRecoveryTimeout;
+    }
+
     /** {@inheritDoc} */
     @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
         assert locNodeAttrs == null;
@@ -973,19 +1096,68 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * Gets ID of the local node.
+     *
+     * @return ID of the local node.
+     */
+    public UUID getLocalNodeId() {
+        return ignite.cluster().localNode().id();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
+        if (consistentId == null) {
+            initializeImpl();
+
+            initAddresses();
+
+            IgniteConfiguration cfg = ignite.configuration();
+
+            final Serializable cfgId = cfg.getConsistentId();
+
+            if (cfgId == null) {
+                if (cfg.isClientMode() == Boolean.TRUE)
+                    consistentId = cfg.getNodeId();
+                else {
+                    List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+
+                    Collections.sort(sortedAddrs);
+
+                    if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                        consistentId = U.consistentId(sortedAddrs);
+                    else
+                        consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                }
+            }
+            else
+                consistentId = cfgId;
+        }
+
+        return consistentId;
+    }
+
+    /**
+     *
+     */
+    private void initAddresses() {
+        if (addrs == null) {
+            try {
+                addrs = U.resolveLocalAddresses(locHost);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
+                    e);
+            }
+        }
+    }
+
+    /**
      * @param srvPort Server port.
      * @param addExtAddrAttr If {@code true} adds {@link #ATTR_EXT_ADDRS} attribute.
      */
     protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
         // Init local node.
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
-
-        try {
-            addrs = U.resolveLocalAddresses(locHost);
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
-        }
+        initAddresses();
 
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
@@ -994,7 +1166,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             srvPort,
             metricsProvider,
             locNodeVer,
-            ignite.configuration().getConsistentId());
+            consistentId());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1014,6 +1186,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         locNode.setAttributes(locNodeAttrs);
         locNode.local(true);
 
+        DiscoverySpiListener lsnr = this.lsnr;
+
+        if (lsnr != null)
+            lsnr.onLocalNodeInitialized(locNode);
+
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
     }
@@ -1023,7 +1200,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return {@link LinkedHashSet} of internal and external addresses of provided node.
      *      Internal addresses placed before external addresses.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node) {
         LinkedHashSet<InetSocketAddress> res = new LinkedHashSet<>(node.socketAddresses());
 
@@ -1042,7 +1218,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *      Internal addresses placed before external addresses.
      *      Internal addresses will be sorted with {@code inetAddressesComparator(sameHost)}.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     LinkedHashSet<InetSocketAddress> getNodeAddresses(TcpDiscoveryNode node, boolean sameHost) {
         List<InetSocketAddress> addrs = U.arrayList(node.socketAddresses());
 
@@ -1070,93 +1245,179 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         return F.<Object>asList(ipFinder);
     }
 
-    /** {@inheritDoc} */
-    @Override public long getSocketTimeout() {
+    /**
+     * Gets socket timeout.
+     *
+     * @return Socket timeout.
+     */
+    public long getSocketTimeout() {
         return sockTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getAckTimeout() {
+    /**
+     * Gets effective or resulting socket timeout with considering failure detection timeout
+     *
+     * @param srvrOperation {@code True} if socket connect to server node,
+     *     {@code False} if socket connect to client node.
+     * @return Resulting socket timeout.
+     */
+    public long getEffectiveSocketTimeout(boolean srvrOperation) {
+        if (failureDetectionTimeoutEnabled())
+            return srvrOperation ? failureDetectionTimeout() : clientFailureDetectionTimeout();
+        else
+            return sockTimeout;
+    }
+
+    /**
+     * Gets message acknowledgement timeout.
+     *
+     * @return Message acknowledgement timeout.
+     */
+    public long getAckTimeout() {
         return ackTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNetworkTimeout() {
+    /**
+     * Gets SO_LINGER timeout for socket.
+     *
+     * @return SO_LINGER timeout for socket.
+     */
+    public int getSoLinger() {
+        return soLinger;
+    }
+
+    /**
+     * Gets network timeout.
+     *
+     * @return Network timeout.
+     */
+    public long getNetworkTimeout() {
         return netTimeout;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getThreadPriority() {
+    /**
+     * Gets thread priority. All threads within SPI will be started with it.
+     *
+     * @return Thread priority.
+     */
+    public int getThreadPriority() {
         return threadPri;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getHeartbeatFrequency() {
-        return hbFreq;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getIpFinderFormatted() {
+    /**
+     * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
+     *
+     * @return IPFinder (string representation).
+     */
+    public String getIpFinderFormatted() {
         return ipFinder.toString();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNodesJoined() {
+    /**
+     * Gets joined nodes count.
+     *
+     * @return Nodes joined count.
+     */
+    public long getNodesJoined() {
         return stats.joinedNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNodesLeft() {
+    /**
+     * Gets left nodes count.
+     *
+     * @return Left nodes count.
+     */
+    public long getNodesLeft() {
         return stats.leftNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getNodesFailed() {
+    /**
+     * Gets failed nodes count.
+     *
+     * @return Failed nodes count.
+     */
+    public long getNodesFailed() {
         return stats.failedNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getPendingMessagesRegistered() {
+    /**
+     * Gets pending messages registered count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesRegistered() {
         return stats.pendingMessagesRegistered();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getPendingMessagesDiscarded() {
+    /**
+     * Gets pending messages discarded count.
+     *
+     * @return Pending messages registered count.
+     */
+    public long getPendingMessagesDiscarded() {
         return stats.pendingMessagesDiscarded();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getAvgMessageProcessingTime() {
+    /**
+     * Gets avg message processing time.
+     *
+     * @return Avg message processing time.
+     */
+    public long getAvgMessageProcessingTime() {
         return stats.avgMessageProcessingTime();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMaxMessageProcessingTime() {
+    /**
+     * Gets max message processing time.
+     *
+     * @return Max message processing time.
+     */
+    public long getMaxMessageProcessingTime() {
         return stats.maxMessageProcessingTime();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalReceivedMessages() {
+    /**
+     * Gets total received messages count.
+     *
+     * @return Total received messages count.
+     */
+    public int getTotalReceivedMessages() {
         return stats.totalReceivedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, Integer> getReceivedMessages() {
+    /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Integer> getReceivedMessages() {
         return stats.receivedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public int getTotalProcessedMessages() {
+    /**
+     * Gets total processed messages count.
+     *
+     * @return Total processed messages count.
+     */
+    public int getTotalProcessedMessages() {
         return stats.totalProcessedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public Map<String, Integer> getProcessedMessages() {
+    /**
+     * Gets processed messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    public Map<String, Integer> getProcessedMessages() {
         return stats.processedMessages();
     }
 
-    /** {@inheritDoc} */
-    @Override public long getCoordinatorSinceTimestamp() {
+    /**
+     * Gets time local node has been coordinator since.
+     *
+     * @return Time local node is coordinator since.
+     */
+    public long getCoordinatorSinceTimestamp() {
         return stats.coordinatorSinceTimestamp();
     }
 
@@ -1218,17 +1479,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange) {
+    @Override public void setDataExchange(DiscoverySpiDataExchange exchange) {
         this.exchange = exchange;
-
-        return this;
     }
 
     /** {@inheritDoc} */
-    @Override public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
+    @Override public void setMetricsProvider(DiscoveryMetricsProvider metricsProvider) {
         this.metricsProvider = metricsProvider;
-
-        return this;
     }
 
     /** {@inheritDoc} */
@@ -1277,18 +1534,25 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         assert remAddr != null;
 
-        InetSocketAddress resolved = remAddr.isUnresolved() ?
-            new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
+        try {
+            InetSocketAddress resolved = remAddr.isUnresolved() ?
+                new InetSocketAddress(InetAddress.getByName(remAddr.getHostName()), remAddr.getPort()) : remAddr;
 
-        InetAddress addr = resolved.getAddress();
+            InetAddress addr = resolved.getAddress();
 
-        assert addr != null;
+            assert addr != null;
 
-        sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
+            sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-        writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+            writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-        return sock;
+            return sock;
+        } catch (IOException | IgniteSpiOperationTimeoutException e) {
+            if (sock != null)
+                U.closeQuiet(sock);
+
+            throw e;
+        }
     }
 
     /**
@@ -1298,18 +1562,27 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @throws IOException If failed.
      */
     Socket createSocket() throws IOException {
-        Socket sock;
+        Socket sock = null;
 
-        if (isSslEnabled())
-            sock = sslSockFactory.createSocket();
-        else
-            sock = new Socket();
+        try {
+            if (isSslEnabled())
+                sock = sslSockFactory.createSocket();
+            else
+                sock = new Socket();
 
-        sock.bind(new InetSocketAddress(locHost, 0));
+            sock.bind(new InetSocketAddress(locHost, 0));
 
-        sock.setTcpNoDelay(true);
+            sock.setTcpNoDelay(true);
 
-        return sock;
+            sock.setSoLinger(getSoLinger() >= 0, getSoLinger());
+
+            return sock;
+        } catch (IOException e) {
+            if (sock != null)
+                U.closeQuiet(sock);
+
+            throw e;
+        }
     }
 
     /**
@@ -1372,6 +1645,32 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * @param msg Message.
+     */
+    @TestOnly
+    protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+        // No-op, intended for usage in tests.
+    }
+
+    /**
+     * @param node Target node.
+     * @param sock Socket.
+     * @param out Stream to write to.
+     * @param msg Message.
+     * @param timeout Timeout.
+     * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    protected void writeToSocket(
+        ClusterNode node,
+        Socket sock,
+        OutputStream out,
+        TcpDiscoveryAbstractMessage msg,
+        long timeout) throws IOException, IgniteCheckedException {
+        writeToSocket(sock, out, msg, timeout);
+    }
+
+    /**
      * Writes message to the socket.
      *
      * @param sock Socket.
@@ -1386,6 +1685,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
+        if (internalLsnr != null) {
+            if (msg instanceof TcpDiscoveryJoinRequestMessage)
+                internalLsnr.beforeJoin(locNode, log);
+
+            if (msg instanceof TcpDiscoveryClientReconnectMessage)
+                internalLsnr.beforeReconnect(locNode, log);
+        }
+
         assert sock != null;
         assert msg != null;
         assert out != null;
@@ -1489,8 +1796,25 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
-                    "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
+                    "long GC pauses on remote node) [curTimeout=" + timeout +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
+            StreamCorruptedException streamCorruptedCause = X.cause(e, StreamCorruptedException.class);
+
+            if (streamCorruptedCause != null) {
+                // Lets check StreamCorruptedException for SSL Alert message
+                // Sample SSL Alert message: 15:03:03:00:02:02:0a
+                // 15 = Alert
+                // 03:03 = SSL version
+                // 00:02 = payload length
+                // 02:0a = critical (02) / unexpected message (0a)
+                // So, check message for "invalid stream header: 150X0X00"
+
+                String msg = streamCorruptedCause.getMessage();
+
+                if (msg != null && sslMsgPattern.matcher(msg).matches())
+                    streamCorruptedCause.initCause(new SSLException("Detected SSL alert in StreamCorruptedException"));
+            }
             throw e;
         }
         finally {
@@ -1530,8 +1854,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         catch (SocketTimeoutException e) {
             LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
-                "configuration property). Will retry to send message with increased timeout. " +
-                "Current timeout: " + timeout + '.');
+                "configuration property). Will retry to send message with increased timeout " +
+                "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
+                ", rmtPort=" + sock.getPort() + ']');
 
             stats.onAckTimeout();
 
@@ -1570,11 +1895,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to get registered addresses from IP finder on start " +
-                    "(retrying every 2000 ms).");
+                    "(retrying every " + getReconnectDelay() + "ms; change 'reconnectDelay' to configure " +
+                    "the frequency of retries).");
             }
 
             try {
-                U.sleep(2000);
+                U.sleep(getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -1599,7 +1925,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             }
         }
 
-        if (!res.isEmpty())
+        if (!res.isEmpty() && !skipAddrsRandomization)
             Collections.shuffle(res);
 
         return res;
@@ -1637,9 +1963,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected IgniteSpiException duplicateIdError(TcpDiscoveryDuplicateIdMessage msg) {
         assert msg != null;
 
-        return new IgniteSpiException("Local node has the same ID as existing node in topology " +
-            "(fix configuration and restart local node) [localNode=" + locNode +
-            ", existingNode=" + msg.node() + ']');
+        StringBuilder errorMsgBldr = new StringBuilder()
+            .append("Node with the same ID was found in node IDs history ")
+            .append("or existing node in topology has the same ID ")
+            .append("(fix configuration and restart local node) [localNode=")
+            .append(locNode)
+            .append(", existingNode=")
+            .append(msg.node() == null ? msg.nodeId() : msg.node())
+            .append(']');
+
+        return new IgniteSpiException(errorMsgBldr.toString());
     }
 
     /**
@@ -1684,70 +2017,97 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
-     * @param nodeId Node ID.
-     * @return Marshalled exchange data.
+     * @param dataPacket Data packet.
      */
-    protected Map<Integer, byte[]> collectExchangeData(UUID nodeId) {
+    DiscoveryDataPacket collectExchangeData(DiscoveryDataPacket dataPacket) {
         if (locNode.isDaemon())
-            return Collections.emptyMap();
+            return dataPacket;
 
-        Map<Integer, Serializable> data = exchange.collect(nodeId);
+        assert dataPacket != null;
+        assert dataPacket.joiningNodeId() != null;
 
-        assert data != null;
+        //create data bag, pass it to exchange.collect
+        DiscoveryDataBag dataBag = dataPacket.bagForDataCollection();
 
-        Map<Integer, byte[]> data0 = U.newHashMap(data.size());
+        exchange.collect(dataBag);
 
-        for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
-            try {
-                byte[] bytes = U.marshal(marshaller(), entry.getValue());
+        //marshall collected bag into packet, return packet
+        if (dataPacket.joiningNodeId().equals(locNode.id()))
+            dataPacket.marshalJoiningNodeData(
+                dataBag,
+                marshaller(),
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                ignite.configuration().getNetworkCompressionLevel(),
+                log);
+        else
+            dataPacket.marshalGridNodeData(
+                dataBag,
+                locNode.id(),
+                marshaller(),
+                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION),
+                ignite.configuration().getNetworkCompressionLevel(),
+                log);
 
-                data0.put(entry.getKey(), bytes);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to marshal discovery data " +
-                    "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
-            }
-        }
-
-        return data0;
+        return dataPacket;
     }
 
     /**
-     * @param joiningNodeID Joining node ID.
-     * @param nodeId Remote node ID for which data is provided.
-     * @param data Collection of marshalled discovery data objects from different components.
+     * @param dataPacket object holding discovery data collected during discovery process.
      * @param clsLdr Class loader.
      */
-    protected void onExchange(UUID joiningNodeID,
-        UUID nodeId,
-        Map<Integer, byte[]> data,
-        ClassLoader clsLdr)
-    {
+    protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
         if (locNode.isDaemon())
             return;
 
-        Map<Integer, Serializable> data0 = U.newHashMap(data.size());
+        assert dataPacket != null;
+        assert dataPacket.joiningNodeId() != null;
 
-        for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
+        DiscoveryDataBag dataBag;
+
+        if (dataPacket.joiningNodeId().equals(locNode.id())) {
             try {
-                Serializable compData = U.unmarshal(marshaller(), entry.getValue(), clsLdr);
-
-                data0.put(entry.getKey(), compData);
+                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
             }
             catch (IgniteCheckedException e) {
-                if (GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC.ordinal() == entry.getKey() &&
-                    X.hasCause(e, ClassNotFoundException.class) && locNode.isClient())
-                    U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
-                else
-                    U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
+                if (ignite() instanceof IgniteEx) {
+                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
+
+                    failure.process(new FailureContext(CRITICAL_ERROR, e));
+                }
+
+                throw new IgniteException(e);
             }
         }
+        else {
+            dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
 
-        exchange.onExchange(joiningNodeID, nodeId, data0);
+            //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
+            //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.
+            if (!allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION) && dataPacket.isJoiningDataZipped())
+                dataPacket.unzipData(log);
+        }
+
+        exchange.onExchange(dataBag);
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        initializeImpl();
+
+        registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
+
+        impl.spiStart(igniteInstanceName);
+    }
+
+    /**
+     *
+     */
+    private void initializeImpl() {
+        if (impl != null)
+            return;
+
+        sslEnable = ignite().configuration().getSslContextFactory() != null;
+
         initFailureDetectionTimeout();
 
         if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
@@ -1771,6 +2131,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             impl = new ServerImpl(this);
         }
 
+        metricsUpdateFreq = ignite.configuration().getMetricsUpdateFrequency();
+
         if (!failureDetectionTimeoutEnabled()) {
             assertParameter(sockTimeout > 0, "sockTimeout > 0");
             assertParameter(ackTimeout > 0, "ackTimeout > 0");
@@ -1780,14 +2142,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         assertParameter(netTimeout > 0, "networkTimeout > 0");
         assertParameter(ipFinder != null, "ipFinder != null");
-        assertParameter(hbFreq > 0, "heartbeatFreq > 0");
+        assertParameter(metricsUpdateFreq > 0, "metricsUpdateFreq > 0" +
+            " (inited from igniteConfiguration.metricsUpdateFrequency)");
 
         assertParameter(ipFinderCleanFreq > 0, "ipFinderCleanFreq > 0");
         assertParameter(locPort > 1023, "localPort > 1023");
         assertParameter(locPortRange >= 0, "localPortRange >= 0");
         assertParameter(locPort + locPortRange <= 0xffff, "locPort + locPortRange <= 0xffff");
-        assertParameter(maxMissedHbs > 0, "maxMissedHeartbeats > 0");
-        assertParameter(maxMissedClientHbs > 0, "maxMissedClientHeartbeats > 0");
         assertParameter(threadPri > 0, "threadPri > 0");
         assertParameter(statsPrintFreq >= 0, "statsPrintFreq >= 0");
 
@@ -1832,16 +2193,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             log.debug(configInfo("ipFinder", ipFinder));
             log.debug(configInfo("ipFinderCleanFreq", ipFinderCleanFreq));
-            log.debug(configInfo("heartbeatFreq", hbFreq));
-            log.debug(configInfo("maxMissedHeartbeats", maxMissedHbs));
+            log.debug(configInfo("metricsUpdateFreq", metricsUpdateFreq));
             log.debug(configInfo("statsPrintFreq", statsPrintFreq));
         }
 
         // Warn on odd network timeout.
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
-
-        registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
 
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
             TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
@@ -1851,8 +2209,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
-
-        impl.spiStart(gridName);
     }
 
     /** {@inheritDoc} */
@@ -1888,15 +2244,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *
      */
     void printStopInfo() {
-        if (log.isDebugEnabled())
-            log.debug(stopInfo());
-    }
+        IgniteLogger log = this.log;
 
-    /**
-     * @return Ignite instance.
-     */
-    Ignite ignite() {
-        return ignite;
+        if (log != null && log.isDebugEnabled())
+            log.debug(stopInfo());
     }
 
     /**
@@ -1935,14 +2286,47 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @return {@code True} if ssl enabled.
      */
     boolean isSslEnabled() {
-        return ignite().configuration().getSslContextFactory() != null;
+        return sslEnable;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clientReconnect() throws IgniteSpiException {
+        impl.reconnect();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean allNodesSupport(IgniteFeatures feature) {
+        if (impl == null)
+            return false;
+
+        return impl.allNodesSupport(feature);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean knownNode(UUID nodeId) {
+        return getNode0(nodeId) != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clientReconnectSupported() {
+        return !clientReconnectDisabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean supportsCommunicationFailureResolve() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
+        throw new UnsupportedOperationException();
     }
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
     public int clientWorkerCount() {
-        return ((ServerImpl)impl).clientMsgWorkers.size();
+        return ((ServerImpl)impl).clientWorkersCount();
     }
 
     /**
@@ -1957,6 +2341,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     public void addSendMessageListener(IgniteInClosure<TcpDiscoveryAbstractMessage> lsnr) {
         sndMsgLsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr) {
+        this.internalLsnr = lsnr;
     }
 
     /**
@@ -1996,7 +2385,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * <p>
      * This method is intended for test purposes only.
      */
-    protected void simulateNodeFailure() {
+    @Override public void simulateNodeFailure() {
         impl.simulateNodeFailure();
     }
 
@@ -2008,12 +2397,32 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * Checks whether local node is coordinator. Nodes that are leaving or failed
+     * (but are still in topology) are removed from search.
+     *
+     * @return {@code true} if local node is coordinator.
+     */
+    public boolean isLocalNodeCoordinator() {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).isLocalNodeCoordinator();
+
+        return false;
+    }
+
+    /**
      * @return Marshaller.
      */
     protected Marshaller marshaller() {
-        MarshallerUtils.setNodeName(marsh, gridName);
+        MarshallerUtils.setNodeName(marsh, igniteInstanceName);
 
         return marsh;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoverySpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -2064,9 +2473,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                    "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                    "failureDetectionTimeout=" + failureDetectionTimeout() + ']' :
-                    "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout + ']'));
+                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
+                        "failureDetectionTimeout=" + failureDetectionTimeout() :
+                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
+                    ", sockTimeout=" + sockTimeout + ']');
 
                 stats.onSocketTimeout();
             }
@@ -2085,6 +2496,210 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SocketTimeoutObject.class, this);
+        }
+    }
+
+    /**
+     * MBean implementation for TcpDiscoverySpiMBean.
+     */
+    private class TcpDiscoverySpiMBeanImpl extends IgniteSpiMBeanAdapter implements TcpDiscoverySpiMBean {
+        /** {@inheritDoc} */
+        TcpDiscoverySpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSpiState() {
+            return impl.getSpiState();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMessageWorkerQueueSize() {
+            return impl.getMessageWorkerQueueSize();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public UUID getCoordinator() {
+            return impl.getCoordinator();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String getCoordinatorNodeFormatted() {
+            return String.valueOf(impl.getNode(impl.getCoordinator()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLocalNodeFormatted() {
+            return String.valueOf(getLocalNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void excludeNode(String nodeId) {
+            UUID node;
+
+            try {
+                node = UUID.fromString(nodeId);
+            }
+            catch (IllegalArgumentException e) {
+                U.error(log, "Failed to parse node ID: " + nodeId, e);
+
+                return;
+            }
+
+            String msg = "Node excluded, node=" + nodeId + "using JMX interface, initiator=" + getLocalNodeId();
+
+            impl.failNode(node, msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dumpDebugInfo() {
+            impl.dumpDebugInfo(log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSocketTimeout() {
+            return TcpDiscoverySpi.this.getSocketTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxAckTimeout() {
+            return TcpDiscoverySpi.this.getMaxAckTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getAckTimeout() {
+            return TcpDiscoverySpi.this.getAckTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNetworkTimeout() {
+            return TcpDiscoverySpi.this.getNetworkTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getJoinTimeout() {
+            return TcpDiscoverySpi.this.getJoinTimeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPort() {
+            return TcpDiscoverySpi.this.getLocalPort();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getLocalPortRange() {
+            return TcpDiscoverySpi.this.getLocalPortRange();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getIpFinderCleanFrequency() {
+            return TcpDiscoverySpi.this.getIpFinderCleanFrequency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getThreadPriority() {
+            return TcpDiscoverySpi.this.getThreadPriority();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getStatisticsPrintFrequency() {
+            return TcpDiscoverySpi.this.getStatisticsPrintFrequency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getIpFinderFormatted() {
+            return TcpDiscoverySpi.this.getIpFinderFormatted();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReconnectCount() {
+            return TcpDiscoverySpi.this.getReconnectCount();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getConnectionCheckInterval() {
+            return impl.connectionCheckInterval();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClientMode() {
+            return TcpDiscoverySpi.this.isClientMode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesJoined() {
+            return TcpDiscoverySpi.this.getNodesJoined();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesLeft() {
+            return TcpDiscoverySpi.this.getNodesLeft();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesFailed() {
+            return TcpDiscoverySpi.this.getNodesFailed();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPendingMessagesRegistered() {
+            return TcpDiscoverySpi.this.getPendingMessagesRegistered();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPendingMessagesDiscarded() {
+            return stats.pendingMessagesDiscarded();
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getAvgMessageProcessingTime() {
+            return TcpDiscoverySpi.this.getAvgMessageProcessingTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getMaxMessageProcessingTime() {
+            return TcpDiscoverySpi.this.getMaxMessageProcessingTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalReceivedMessages() {
+            return TcpDiscoverySpi.this.getTotalReceivedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Integer> getReceivedMessages() {
+            return TcpDiscoverySpi.this.getReceivedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getTotalProcessedMessages() {
+            return TcpDiscoverySpi.this.getTotalProcessedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<String, Integer> getProcessedMessages() {
+            return TcpDiscoverySpi.this.getProcessedMessages();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCoordinatorSinceTimestamp() {
+            return TcpDiscoverySpi.this.getCoordinatorSinceTimestamp();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void checkRingLatency(int maxHops) {
+            TcpDiscoverySpi.this.impl.checkRingLatency(maxHops);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCurrentTopologyVersion() {
+            return impl.getCurrentTopologyVersion();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void dumpRingStructure() {
+            impl.dumpRingStructure(log);
         }
     }
 }

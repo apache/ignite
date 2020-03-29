@@ -30,9 +30,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests distributed SQL query cancel related scenarios.
@@ -40,9 +39,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_COUNT = 3;
-
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache size. */
     public static final int CACHE_SIZE = 10_000;
@@ -61,18 +57,13 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        spi.setIpFinder(IP_FINDER);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, String.class);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -85,10 +76,11 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** */
+    @Test
     public void testQueryCancelsOnGridShutdown() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
 
-            IgniteCache<Object, Object> cache = client.cache(null);
+            IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());
 
@@ -117,7 +109,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
                     }
 
                     for (Ignite g : G.allGrids())
-                        if (!g.configuration().getDiscoverySpi().isClientMode())
+                        if (!g.configuration().isClientMode())
                             stopGrid(g.name(), true);
                 }
             }, 1);
@@ -138,10 +130,11 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** */
+    @Test
     public void testQueryResponseFailCode() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
 
-            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             cfg.setSqlFunctionClasses(Functions.class);
             cfg.setIndexedTypes(Integer.class, Integer.class);
             cfg.setName("test");
@@ -158,7 +151,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
                 fail();
             }
             catch (Exception e) {
-                assertTrue(e.getCause() instanceof CacheException);
+                assertTrue(e instanceof CacheException);
             }
         }
     }

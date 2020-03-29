@@ -17,76 +17,200 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.h2.message.DbException;
+import org.h2.result.SearchRow;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Row descriptor.
  */
-public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<GridH2KeyValueRowOffheap> {
+public class GridH2RowDescriptor {
+    /** Non existent column. */
+    public static final int COL_NOT_EXISTS = -1;
+
+    /** Table descriptor. */
+    private final H2TableDescriptor tbl;
+
+    /** */
+    private final GridQueryTypeDescriptor type;
+
+    /** */
+    private volatile String[] fields;
+
+    /** */
+    private volatile int[] fieldTypes;
+
+    /** */
+    private final int keyType;
+
+    /** */
+    private final int valType;
+
+    /** */
+    private volatile GridQueryProperty[] props;
+
+    /** Id of user-defined key column */
+    private volatile int keyAliasColId;
+
+    /** Id of user-defined value column */
+    private volatile int valAliasColId;
+
+    /**
+     * Constructor.
+     *
+     * @param tbl Table.
+     * @param type Type descriptor.
+     */
+    public GridH2RowDescriptor(H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
+        assert type != null;
+
+        this.tbl = tbl;
+        this.type = type;
+
+        keyType = DataType.getTypeFromClass(type.keyClass());
+        valType = DataType.getTypeFromClass(type.valueClass());
+
+        refreshMetadataFromTypeDescriptor();
+    }
+
+    /**
+     * Gets table descriptor.
+     *
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor(){
+        return tbl;
+    }
+
+    /**
+     * Update metadata of this row descriptor according to current state of type descriptor.
+     */
+    @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
+    public final void refreshMetadataFromTypeDescriptor() {
+
+        Map<String, Class<?>> allFields = new LinkedHashMap<>(type.fields());
+
+        fields = allFields.keySet().toArray(new String[allFields.size()]);
+
+        fieldTypes = new int[fields.length];
+
+        Class[] classes = allFields.values().toArray(new Class[fields.length]);
+
+        for (int i = 0; i < fieldTypes.length; i++)
+            fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
+
+        props = new GridQueryProperty[fields.length];
+
+        for (int i = 0; i < fields.length; i++) {
+            GridQueryProperty p = type.property(fields[i]);
+
+            assert p != null : fields[i];
+
+            props[i] = p;
+        }
+
+        List<String> fieldsList = Arrays.asList(fields);
+
+        keyAliasColId = (type.keyFieldName() != null) ?
+            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : COL_NOT_EXISTS;
+
+        valAliasColId = (type.valueFieldName() != null) ?
+            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
+    }
+
     /**
      * Gets indexing.
      *
      * @return indexing.
      */
-    public IgniteH2Indexing indexing();
+    public IgniteH2Indexing indexing() {
+        return tbl.indexing();
+    }
 
     /**
      * Gets type descriptor.
      *
      * @return Type descriptor.
      */
-    public GridQueryTypeDescriptor type();
+    public GridQueryTypeDescriptor type() {
+        return type;
+    }
+
+    /**
+     * Gets cache context info for this row descriptor.
+     *
+     * @return Cache context info.
+     */
+    public GridCacheContextInfo<?, ?> cacheInfo() {
+        return tbl.cacheInfo();
+    }
 
     /**
      * Gets cache context for this row descriptor.
      *
      * @return Cache context.
      */
-    public GridCacheContext<?, ?> context();
+    @Nullable public GridCacheContext<?, ?> context() {
+        return tbl.cache();
+    }
 
     /**
-     * @return Cache configuration.
-     */
-    public CacheConfiguration configuration();
-
-    /**
-     * Creates new row.
+     * Create new row for update operation.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param expirationTime Expiration time in millis.
+     * @param dataRow Data row.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
-        throws IgniteCheckedException;
+    public H2CacheRow createRow(CacheDataRow dataRow) throws IgniteCheckedException {
+        H2CacheRow row;
+
+        try {
+            row = new H2CacheRow(this, dataRow);
+        }
+        catch (ClassCastException e) {
+            throw new IgniteCheckedException("Failed to convert key to SQL type. " +
+                "Please make sure that you always store each value type with the same key type " +
+                "or configure key type as common super class for all actual keys for this value type.", e);
+        }
+
+        return row;
+    }
 
     /**
-     * @param key Cache key.
-     * @return Value.
-     * @throws IgniteCheckedException If failed.
+     * @return Key type.
      */
-    public Object readFromSwap(Object key) throws IgniteCheckedException;
+    public int keyType() {
+        return keyType;
+    }
 
     /**
      * @return Value type.
      */
-    public int valueType();
+    public int valueType() {
+        return valType;
+    }
 
     /**
      * @return Total fields count.
      */
-    public int fieldsCount();
+    public int fieldsCount() {
+        return fields.length;
+    }
 
     /**
      * Gets value type for column index.
@@ -94,7 +218,9 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param col Column index.
      * @return Value type.
      */
-    public int fieldType(int col);
+    public int fieldType(int col) {
+        return fieldTypes[col];
+    }
 
     /**
      * Gets column value by column index.
@@ -104,7 +230,14 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param col Column index.
      * @return  Column value.
      */
-    public Object columnValue(Object key, Object val, int col);
+    public Object columnValue(Object key, Object val, int col) {
+        try {
+            return props[col].value(key, val);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+    }
 
     /**
      * Gets column value by column index.
@@ -114,7 +247,14 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param colVal Value to set to column.
      * @param col Column index.
      */
-    public void setColumnValue(Object key, Object val, Object colVal, int col);
+    public void setColumnValue(Object key, Object val, Object colVal, int col) {
+        try {
+            props[col].setValue(key, val, colVal);
+        }
+        catch (IgniteCheckedException e) {
+            throw DbException.convert(e);
+        }
+    }
 
     /**
      * Determine whether a column corresponds to a property of key or to one of value.
@@ -122,45 +262,160 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @param col Column index.
      * @return {@code true} if given column corresponds to a key property, {@code false} otherwise
      */
-    public boolean isColumnKeyProperty(int col);
+    public boolean isColumnKeyProperty(int col) {
+        return props[col].key();
+    }
 
     /**
-     * @return Unsafe memory.
-     */
-    public GridUnsafeMemory memory();
-
-    /**
-     * @param row Deserialized offheap row to cache in heap.
-     */
-    public void cache(GridH2KeyValueRowOffheap row);
-
-    /**
-     * @param ptr Offheap pointer to remove from cache.
-     */
-    public void uncache(long ptr);
-
-    /**
-     * @return Guard.
-     */
-    public GridUnsafeGuard guard();
-
-    /**
-     * Wraps object to respective {@link Value}.
+     * Checks if provided column id matches key column or key alias.
      *
-     * @param o Object.
-     * @param type Value type.
-     * @return Value.
-     * @throws IgniteCheckedException If failed.
+     * @param colId Column id.
+     * @return Result.
      */
-    public Value wrap(Object o, int type) throws IgniteCheckedException;
+    public boolean isKeyColumn(int colId) {
+        assert colId >= 0;
+        return colId == QueryUtils.KEY_COL || colId == keyAliasColId;
+    }
 
     /**
-     * @return {@code True} if should check swap value before offheap.
+     * Checks if provided column id matches key alias column.
+     *
+     * @param colId Column id.
+     * @return Result.
      */
-    public boolean preferSwapValue();
+    public boolean isKeyAliasColumn(int colId) {
+        assert colId >= 0;
+        return colId == keyAliasColId;
+    }
 
     /**
-     * @return {@code True} if index should support snapshots.
+     * Checks if provided column id matches value column or alias.
+     *
+     * @param colId Column id.
+     * @return Result.
      */
-    public boolean snapshotableIndex();
+    public boolean isValueColumn(int colId) {
+        assert colId >= 0;
+        return colId == QueryUtils.VAL_COL || colId == valAliasColId;
+    }
+
+    /**
+     * Checks if provided column id matches value alias column.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    public boolean isValueAliasColumn(int colId) {
+        assert colId >= 0;
+        return colId == valAliasColId;
+    }
+
+    /**
+     * Checks if provided column id matches key, key alias,
+     * value, value alias or version column.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    @SuppressWarnings("RedundantIfStatement")
+    public boolean isKeyValueOrVersionColumn(int colId) {
+        assert colId >= 0;
+
+        if (colId < QueryUtils.DEFAULT_COLUMNS_COUNT)
+            return true;
+
+        if (colId == keyAliasColId)
+            return true;
+
+        if (colId == valAliasColId)
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Checks if provided index condition is allowed for key column or key alias column.
+     *
+     * @param masks Array containing Index Condition masks for each column.
+     * @param mask Index Condition to check.
+     * @return Result.
+     */
+    @SuppressWarnings("IfMayBeConditional")
+    public boolean checkKeyIndexCondition(int masks[], int mask) {
+        assert masks != null;
+        assert masks.length > 0;
+
+        if (keyAliasColId < 0)
+            return (masks[QueryUtils.KEY_COL] & mask) != 0;
+        else
+            return (masks[QueryUtils.KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
+    }
+
+    /**
+     * Clones provided row and copies values of alias key and val columns
+     * into respective key and val positions.
+     *
+     * @param row Source row.
+     * @return Result.
+     */
+    public SearchRow prepareProxyIndexRow(SearchRow row) {
+        if (row == null)
+            return null;
+
+        Value[] data = new Value[row.getColumnCount()];
+
+        for (int idx = 0; idx < data.length; idx++)
+            data[idx] = row.getValue(idx);
+
+        copyAliasColumnData(data, QueryUtils.KEY_COL, keyAliasColId);
+        copyAliasColumnData(data, QueryUtils.VAL_COL, valAliasColId);
+
+        return H2PlainRowFactory.create(data);
+    }
+
+    /**
+     * Copies data between original and alias columns
+     *
+     * @param data Array of values.
+     * @param colId Original column id.
+     * @param aliasColId Alias column id.
+     */
+    private void copyAliasColumnData(Value[] data, int colId, int aliasColId) {
+        if (aliasColId <= 0)
+            return;
+
+        if (data[aliasColId] == null && data[colId] != null)
+            data[aliasColId] = data[colId];
+
+        if (data[colId] == null && data[aliasColId] != null)
+            data[colId] = data[aliasColId];
+    }
+
+    /**
+     * Gets alternative column id that may substitute the given column id.
+     *
+     * For alias column returns original one.
+     * For original column returns its alias.
+     *
+     * Otherwise, returns the given column id.
+     *
+     * @param colId Column id.
+     * @return Result.
+     */
+    public int getAlternativeColumnId(int colId) {
+        if (keyAliasColId > 0) {
+            if (colId == QueryUtils.KEY_COL)
+                return keyAliasColId;
+            else if (colId == keyAliasColId)
+                return QueryUtils.KEY_COL;
+        }
+        if (valAliasColId > 0) {
+            if (colId == QueryUtils.VAL_COL)
+                return valAliasColId;
+            else if (colId == valAliasColId)
+                return QueryUtils.VAL_COL;
+        }
+
+        return colId;
+    }
 }

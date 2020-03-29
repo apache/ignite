@@ -60,6 +60,9 @@ public class GridClientNodeBean implements Externalizable {
     /** Node caches. */
     private Collection<GridClientCacheBean> caches;
 
+    /** Node order within grid topology. */
+    private long order;
+
     /**
      * Gets node ID.
      *
@@ -200,6 +203,24 @@ public class GridClientNodeBean implements Externalizable {
         this.tcpPort = tcpPort;
     }
 
+    /**
+     * Node order within grid topology.
+     *
+     * @return Node startup order.
+     */
+    public long getOrder() {
+        return order;
+    }
+
+    /**
+     * Set node order within grid topology
+     *
+     * @param order Node order within grid topology
+     */
+    public void setOrder(long order) {
+        this.order = order;
+    }
+
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return nodeId != null ? nodeId.hashCode() : 0;
@@ -250,8 +271,10 @@ public class GridClientNodeBean implements Externalizable {
 
         U.writeUuid(out, nodeId);
 
-        out.writeObject(consistentId);
+        out.writeObject(String.valueOf(consistentId));
         out.writeObject(metrics);
+
+        out.writeLong(order);
     }
 
     /** {@inheritDoc} */
@@ -287,6 +310,8 @@ public class GridClientNodeBean implements Externalizable {
 
         consistentId = in.readObject();
         metrics = (GridClientNodeMetricsBean)in.readObject();
+
+        order = in.readLong();
     }
 
     /** {@inheritDoc} */

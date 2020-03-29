@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -25,7 +36,9 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,18 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.UUID;
-
-import static java.nio.charset.StandardCharsets.*;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary object implementation.
@@ -73,7 +75,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private boolean detachAllowed;
 
     /** */
-    @GridDirectTransient
     private int part = -1;
 
     /**
@@ -134,8 +135,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
+    @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         Object obj0 = obj;
 
         if (obj0 == null || (cpy && needCopy(ctx)))
@@ -145,7 +145,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (detached())
             return array();
 
@@ -159,6 +159,26 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
+        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(length()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int putValue(long addr) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), arr, start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, arr, start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        return CacheObjectAdapter.objectPutSize(length());
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         if (detached())
             return this;
@@ -167,12 +187,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(CacheObjectContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.processor()).binaryContext();
+    @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        CacheObjectBinaryProcessorImpl binaryProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
+
+        this.ctx = binaryProc.binaryContext();
+
+        binaryProc.waitMetadataWriteIfNeeded(typeId());
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -184,7 +208,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * @return Detached binary object.
      */
-    public BinaryObject detach() {
+    public BinaryObjectImpl detach() {
         if (!detachAllowed || detached())
             return this;
 
@@ -282,13 +306,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldId);
     }
@@ -331,7 +353,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F fieldByOrder(int order) {
         if (order == BinarySchema.ORDER_NOT_FOUND)
             return null;
@@ -430,6 +451,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
             }
 
+            case GridBinaryMarshaller.TIME: {
+                long time = BinaryPrimitives.readLong(arr, fieldPos + 1);
+
+                val = new Time(time);
+
+                break;
+            }
+
             case GridBinaryMarshaller.UUID: {
                 long most = BinaryPrimitives.readLong(arr, fieldPos + 1);
                 long least = BinaryPrimitives.readLong(arr, fieldPos + 1 + 8);
@@ -445,13 +474,15 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
                 byte[] data = BinaryPrimitives.readByteArray(arr, fieldPos + 9, dataLen);
 
+                boolean negative = data[0] < 0;
+
+                if (negative)
+                    data[0] &= 0x7F;
+
                 BigInteger intVal = new BigInteger(data);
 
-                if (scale < 0) {
-                    scale &= 0x7FFFFFFF;
-
+                if (negative)
                     intVal = intVal.negate();
-                }
 
                 val = new BigDecimal(intVal, scale);
 
@@ -473,7 +504,122 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @Override public boolean writeFieldByOrder(int order, ByteBuffer buf) {
+        // Calculate field position.
+        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+
+        int fieldPos;
+
+        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
+        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
+        else
+            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
+
+        // Read header and try performing fast lookup for well-known types (the most common types go first).
+        byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
+
+        int totalLen;
+
+        switch (hdr) {
+            case GridBinaryMarshaller.NULL:
+                totalLen = 1;
+
+                break;
+
+            case GridBinaryMarshaller.INT:
+            case GridBinaryMarshaller.FLOAT:
+                totalLen = 5;
+
+                break;
+
+            case GridBinaryMarshaller.LONG:
+            case GridBinaryMarshaller.DOUBLE:
+            case GridBinaryMarshaller.DATE:
+            case GridBinaryMarshaller.TIME:
+                totalLen = 9;
+
+                break;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                totalLen = 2;
+
+                break;
+
+            case GridBinaryMarshaller.SHORT:
+                totalLen = 3;
+
+                break;
+
+            case GridBinaryMarshaller.BYTE:
+                totalLen = 2;
+
+                break;
+
+            case GridBinaryMarshaller.CHAR:
+                totalLen = 3;
+
+                break;
+
+            case GridBinaryMarshaller.STRING: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                totalLen = dataLen + 5;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                totalLen = 13;
+
+                break;
+
+            case GridBinaryMarshaller.UUID:
+                totalLen = 17;
+
+                break;
+
+            case GridBinaryMarshaller.DECIMAL: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
+
+                totalLen = dataLen + 9;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.OBJ:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + GridBinaryMarshaller.TOTAL_LEN_POS);
+
+                break;
+
+            case GridBinaryMarshaller.OPTM_MARSH:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                break;
+
+            default:
+                throw new UnsupportedOperationException("Failed to write field of the given type " +
+                    "(field type is not supported): " + hdr);
+
+        }
+
+        if (buf.remaining() < totalLen)
+            return false;
+
+        buf.put(arr, fieldPos, totalLen);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
         return (F)reader(rCtx, false).unmarshalField(fieldName);
     }
@@ -484,7 +630,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
         Object obj0 = obj;
 
@@ -575,6 +720,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 writer.incrementState();
 
             case 1:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
                 if (!writer.writeInt("start", detachAllowed ? 0 : start))
                     return false;
 
@@ -602,6 +753,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 reader.incrementState();
 
             case 1:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
                 start = reader.readInt("start");
 
                 if (!reader.isLastRead())
@@ -611,11 +770,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         }
 
-        return true;
+        return reader.afterMessageRead(BinaryObjectImpl.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 113;
     }
 
@@ -630,9 +789,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param coCtx CacheObjectContext.
      * @return Object.
      */
-    private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
-        BinaryReaderExImpl reader = reader(null,
-            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
+    private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
+        BinaryReaderExImpl reader = reader(null, coCtx != null ?
+            coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
 
         Object obj0 = reader.deserialize();
 
@@ -650,8 +809,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param ctx Context.
      * @return {@code True} need to copy value returned to user.
      */
-    private boolean needCopy(CacheObjectContext ctx) {
-        return ctx.copyOnGet() && obj != null && !ctx.processor().immutable(obj);
+    private boolean needCopy(CacheObjectValueContext ctx) {
+        return ctx.copyOnGet() && obj != null && !ctx.kernalContext().cacheObjects().immutable(obj);
     }
 
     /**
@@ -662,7 +821,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
+        boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
@@ -682,6 +842,72 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
+    }
+
+    /**
+     * Compare two objects for DML operation.
+     *
+     * @param first First.
+     * @param second Second.
+     * @return Comparison result.
+     */
+    @SuppressWarnings("unchecked")
+    public static int compareForDml(Object first, Object second) {
+        boolean firstBinary = first instanceof BinaryObjectImpl;
+        boolean secondBinary = second instanceof BinaryObjectImpl;
+
+        if (firstBinary) {
+            if (secondBinary)
+                return compareForDml0((BinaryObjectImpl)first, (BinaryObjectImpl)second);
+            else
+                return 1; // Go to the right part.
+        }
+        else {
+            if (secondBinary)
+                return -1; // Go to the left part.
+            else
+                return ((Comparable)first).compareTo(second);
+        }
+    }
+
+    /**
+     * Internal DML comparison routine.
+     *
+     * @param first First item.
+     * @param second Second item.
+     * @return Comparison result.
+     */
+    private static int compareForDml0(BinaryObjectImpl first, BinaryObjectImpl second) {
+        int res = Integer.compare(first.typeId(), second.typeId());
+
+        if (res == 0) {
+            res = Integer.compare(first.hashCode(), second.hashCode());
+
+            if (res == 0) {
+                // Pessimistic case: need to perform binary comparison.
+                int firstDataStart = first.dataStartOffset();
+                int secondDataStart = second.dataStartOffset();
+
+                int firstLen = first.footerStartOffset() - firstDataStart;
+                int secondLen = second.footerStartOffset() - secondDataStart;
+
+                res = Integer.compare(firstLen, secondLen);
+
+                if (res == 0) {
+                    for (int i = 0; i < firstLen; i++) {
+                        byte firstByte = first.arr[firstDataStart + i];
+                        byte secondByte = second.arr[secondDataStart + i];
+
+                        res = Byte.compare(firstByte, secondByte);
+
+                        if (res != 0)
+                            break;
+                    }
+                }
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

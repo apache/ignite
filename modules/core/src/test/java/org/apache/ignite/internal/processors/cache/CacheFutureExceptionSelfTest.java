@@ -30,10 +30,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -42,25 +41,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static volatile boolean fail;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
-
-        if (gridName.equals(getTestGridName(1)))
-            cfg.setClientMode(true);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
     }
@@ -73,10 +60,11 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncCacheFuture() throws Exception {
         startGrid(0);
 
-        startGrid(1);
+        startClientGrid(1);
 
         testGet(false, false);
 
@@ -93,6 +81,11 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testGet(boolean nearCache, boolean cpyOnRead) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (!MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+                return;
+        }
+
         fail = false;
 
         Ignite srv = grid(0);
@@ -101,7 +94,7 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         final String cacheName = nearCache ? ("NEAR-CACHE-" + cpyOnRead) : ("CACHE-" + cpyOnRead);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCopyOnRead(cpyOnRead);
 
@@ -114,15 +107,11 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> clientCache = nearCache ? client.createNearCache(cacheName,
             new NearCacheConfiguration<>()) : client.cache(cacheName);
 
-        IgniteCache<Object, Object> asyncCache = clientCache.withAsync();
-
         fail = true;
-
-        asyncCache.get("key");
 
         final CountDownLatch futLatch = new CountDownLatch(1);
 
-        asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
+        clientCache.getAsync("key").listen(new IgniteInClosure<IgniteFuture<Object>>() {
             @Override public void apply(IgniteFuture<Object> fut) {
                 assertTrue(fut.isDone());
 
@@ -148,12 +137,12 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * Test class.
      */
     private static class NotSerializableClass implements Serializable {
-        /** {@inheritDoc}*/
+        /** */
         private void writeObject(ObjectOutputStream out) throws IOException {
             out.writeObject(this);
         }
 
-        /** {@inheritDoc}*/
+        /** */
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             if (fail)
                 throw new RuntimeException("Deserialization failed.");

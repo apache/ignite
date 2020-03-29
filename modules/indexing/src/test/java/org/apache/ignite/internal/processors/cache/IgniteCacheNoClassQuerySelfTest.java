@@ -20,18 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -41,36 +37,16 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    protected Ignite ignite;
-
-    /**
-     * @return Atomicity mode.
-     */
-    protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /**
-     * @return Distribution.
-     */
-    protected NearCacheConfiguration nearCacheConfiguration() {
-        return new NearCacheConfiguration();
-    }
-
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @SuppressWarnings({"deprecation"})
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
+        ((TcpDiscoverySpi)c.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        c.setMarshaller(new OptimizedMarshaller());
+        c.setMarshaller(new JdkMarshaller());
 
         cc.setName("cache");
 
@@ -111,12 +87,18 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoClass() throws Exception {
         try {
             startGrid();
+
+            fail();
         }
         catch (Exception e) {
             assertTrue(e.getMessage().contains("default marshaller"));
+        }
+        finally {
+            stopAllGrids();
         }
     }
 }

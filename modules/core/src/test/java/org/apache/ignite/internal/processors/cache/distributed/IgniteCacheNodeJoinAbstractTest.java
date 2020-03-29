@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -46,8 +47,8 @@ public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setReadFromBackup(false); // Force remote 'get'.
 
@@ -57,6 +58,7 @@ public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -111,6 +113,7 @@ public abstract class IgniteCacheNodeJoinAbstractTest extends IgniteCacheAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQuery() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache(0);
 

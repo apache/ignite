@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.h2.command.ddl.CreateTableData;
@@ -39,9 +41,9 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
+import org.h2.table.TableType;
 import org.h2.value.Value;
 import org.h2.value.ValueInt;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Meta table.
@@ -58,7 +60,7 @@ public class GridH2MetaTable extends TableBase {
 
     /** */
     private final Set<Session> fakeExclusiveSet = Collections.newSetFromMap(
-        new ConcurrentHashMap8<Session,Boolean>());
+        new ConcurrentHashMap<Session,Boolean>());
 
     /**
      * @param data Data.
@@ -78,15 +80,15 @@ public class GridH2MetaTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public Row getTemplateRow() {
-        return new MetaRow();
+        return new H2PlainRow(4);
     }
 
     /** {@inheritDoc} */
     @Override public SearchRow getTemplateSimpleRow(boolean singleColumn) {
         if (singleColumn)
-            return GridH2RowFactory.create((Value)null);
+            return H2PlainRowFactory.create((Value)null);
 
-        return new MetaRow();
+        return new H2PlainRow(4);
     }
 
     /** {@inheritDoc} */
@@ -145,8 +147,8 @@ public class GridH2MetaTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTableType() {
-        return SYSTEM_TABLE;
+    @Override public TableType getTableType() {
+        return TableType.SYSTEM_TABLE;
     }
 
     /** {@inheritDoc} */
@@ -215,81 +217,11 @@ public class GridH2MetaTable extends TableBase {
     }
 
     /**
-     * Get value row.
-     */
-    private static class MetaRow extends GridH2Row {
-        /** */
-        private Value v0;
-
-        /** */
-        private Value v1;
-
-        /** */
-        private Value v2;
-
-        /** */
-        private Value v3;
-
-        /** {@inheritDoc} */
-        @Override public int getColumnCount() {
-            return 4;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Value getValue(int idx) {
-            switch (idx) {
-                case 0:
-                    return v0;
-
-                case 1:
-                    return v1;
-
-                case 2:
-                    return v2;
-
-                case 3:
-                    return v3;
-
-                default:
-                    throw new IllegalStateException("Index: " + idx);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setValue(int idx, Value v) {
-            switch (idx) {
-                case 0:
-                    v0 = v;
-
-                    break;
-
-                case 1:
-                    v1 = v;
-
-                    break;
-
-                case 2:
-                    v2 = v;
-
-                    break;
-
-                case 3:
-                    v3 = v;
-
-                    break;
-
-                default:
-                    throw new IllegalStateException("Index: " + idx);
-            }
-        }
-    }
-
-    /**
      * Met index.
      */
     private static class MetaIndex extends BaseIndex {
         /** */
-        private final ConcurrentMap<ValueInt, GridH2Row> rows = new ConcurrentHashMap8<>();
+        private final ConcurrentMap<ValueInt, Row> rows = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Override public void checkRename() {
@@ -315,7 +247,7 @@ public class GridH2MetaTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public void add(Session session, Row row) {
-            rows.put(id(row), (GridH2Row)row);
+            rows.put(id(row), row);
         }
 
         /** {@inheritDoc} */
@@ -333,7 +265,7 @@ public class GridH2MetaTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public double getCost(Session session, int[] masks, TableFilter[] filters,
-            int filter, SortOrder sortOrder) {
+            int filter, SortOrder sortOrder, HashSet<Column> cols) {
             if ((masks[ID] & IndexCondition.EQUALITY) == IndexCondition.EQUALITY)
                 return 1;
 

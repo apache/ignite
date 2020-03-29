@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * Versioned entry abstract test.
@@ -45,7 +46,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        Cache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0 ; i < ENTRIES_NUM; i++)
             cache.put(i, "value_" + i);
@@ -54,77 +55,54 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvoke() throws Exception {
-        Cache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        final AtomicInteger invoked = new AtomicInteger();
-
-        cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
-                throws EntryProcessorException {
-
-                invoked.incrementAndGet();
-
+        assertNotNull(cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
+            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
                 CacheEntry<Integer, String> verEntry = entry.unwrap(CacheEntry.class);
 
                 checkVersionedEntry(verEntry);
 
-                return entry;
+                return verEntry.version();
             }
-        });
-
-        assert invoked.get() > 0;
+        }));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInvokeAll() throws Exception {
-        Cache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         Set<Integer> keys = new HashSet<>();
 
         for (int i = 0; i < ENTRIES_NUM; i++)
             keys.add(i);
 
-        final AtomicInteger invoked = new AtomicInteger();
-
-        cache.invokeAll(keys, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
-                throws EntryProcessorException {
-
-                invoked.incrementAndGet();
-
+        Map<Integer, EntryProcessorResult<Object>> res = cache.invokeAll(keys, new EntryProcessor<Integer, String, Object>() {
+            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
                 CacheEntry<Integer, String> verEntry = entry.unwrap(CacheEntry.class);
 
                 checkVersionedEntry(verEntry);
 
-                return null;
+                return verEntry.version();
             }
         });
 
-        assert invoked.get() > 0;
+        assertEquals(ENTRIES_NUM, res.size());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testRandomEntry() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
-
-        for (int i = 0; i < 5; i++)
-            checkVersionedEntry(cache.randomEntry().unwrap(CacheEntry.class));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testLocalPeek() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Iterable<Cache.Entry<Integer, String>> entries = offheapTiered(cache) ?
-            cache.localEntries(CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localEntries(CachePeekMode.ONHEAP);
+        Iterable<Cache.Entry<Integer, String>> entries = cache.localEntries();
 
         for (Cache.Entry<Integer, String> entry : entries)
             checkVersionedEntry(entry.unwrap(CacheEntry.class));
@@ -133,8 +111,9 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionComparision() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         CacheEntry<String, Integer> ver1 = cache.invoke(100,
             new EntryProcessor<Integer, String, CacheEntry<String, Integer>>() {
@@ -155,7 +134,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
             });
 
         assert ver1.version().compareTo(ver2.version()) < 0;
-        assert ver1.updateTime() <= ver2.updateTime();
     }
 
     /**
@@ -165,7 +143,6 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
         assertNotNull(entry);
 
         assertNotNull(entry.version());
-        assert entry.updateTime() > 0;
 
         assertNotNull(entry.getKey());
         assertNotNull(entry.getValue());

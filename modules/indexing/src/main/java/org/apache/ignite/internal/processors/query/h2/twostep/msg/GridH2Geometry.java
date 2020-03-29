@@ -34,7 +34,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
     /** */
     private static final Method GEOMETRY_FROM_BYTES;
 
-    /**
+    /*
      * Initialize field.
      */
     static {
@@ -126,7 +126,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -21;
     }
 

@@ -35,29 +35,24 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  */
 public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static Connection conn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
-
-        CacheConfiguration<Integer, A> ccfga = new CacheConfiguration<>();
+        CacheConfiguration<Integer, A> ccfga = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfga.setName("a");
         ccfga.setSqlSchema("A");
@@ -66,7 +61,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfga.setCacheMode(CacheMode.PARTITIONED);
         ccfga.setIndexedTypes(Integer.class, A.class);
 
-        CacheConfiguration<Integer, B> ccfgb = new CacheConfiguration<>();
+        CacheConfiguration<Integer, B> ccfgb = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfgb.setName("b");
         ccfgb.setSqlSchema("B");
@@ -75,7 +70,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         ccfgb.setCacheMode(CacheMode.PARTITIONED);
         ccfgb.setIndexedTypes(Integer.class, B.class);
 
-        CacheConfiguration<Integer, C> ccfgc = new CacheConfiguration<>();
+        CacheConfiguration<Integer, C> ccfgc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfgc.setName("c");
         ccfgc.setSqlSchema("C");
@@ -200,6 +195,7 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoins() throws Exception {
         Ignite ignite = ignite(0);
 
@@ -223,10 +219,40 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
+    public void testManyTables() {
+        Ignite ignite = ignite(0);
+
+        queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
+            "CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100))"), true);
+        queryProcessor(ignite).querySqlFields(new SqlFieldsQuery(
+            "INSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma')"), true);
+
+        SqlFieldsQuery selectQuery = new SqlFieldsQuery(
+            "SELECT P1.NAME " +
+            "FROM PERSON P1 " +
+            "JOIN PERSON P2 ON P1.ID = P2.ID " +
+            "JOIN PERSON P3 ON P1.ID = P3.ID " +
+            "JOIN PERSON P4 ON P1.ID = P4.ID " +
+            "JOIN PERSON P5 ON P1.ID = P5.ID " +
+            "JOIN PERSON P6 ON P1.ID = P6.ID " +
+            "JOIN PERSON P7 ON P1.ID = P7.ID " +
+            "JOIN PERSON P8 ON P1.ID = P8.ID " +
+            "ORDER BY P1.NAME")
+            .setDistributedJoins(true).setEnforceJoinOrder(false);
+        List<List<?>> res = queryProcessor(ignite).querySqlFields(selectQuery, true).getAll();
+
+        assertEquals(3, res.size());
+        assertThat(res.get(0).get(0), is("Ann"));
+        assertThat(res.get(1).get(0), is("Ed"));
+        assertThat(res.get(2).get(0), is("Emma"));
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         U.closeQuiet(conn);
-        stopAllGrids();
+
+        conn = null;
     }
 
     /**
@@ -234,12 +260,15 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
      */
     public static class X {
         /** */
+        @QuerySqlField(index = true)
         public long a;
 
         /** */
+        @QuerySqlField(index = true)
         public long b;
 
         /** */
+        @QuerySqlField(index = true)
         public long c;
 
         /**
@@ -254,19 +283,16 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         }
 
         /** */
-        @QuerySqlField(index = true)
         public long getA() {
             return a;
         }
 
         /** */
-        @QuerySqlField(index = true)
         public long getB() {
             return b;
         }
 
         /** */
-        @QuerySqlField(index = true)
         public long getC() {
             return c;
         }

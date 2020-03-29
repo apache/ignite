@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
     /// Non-generic binary filter wrapper.
@@ -60,6 +61,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             _invoker = invoker;
             _marsh = marsh;
             _keepBinary = keepBinary;
+
+            InjectResources();
         }
 
         /// <summary>
@@ -79,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_pred));
+            writer0.WriteObjectDetached(_pred);
             
             writer0.WriteBoolean(_keepBinary);
         }
@@ -97,6 +100,16 @@ namespace Apache.Ignite.Core.Impl.Cache
             _marsh = reader.Marshaller;
 
             _invoker = GetInvoker(_pred);
+
+            InjectResources();
+        }
+
+        /// <summary>
+        /// Injects the resources.
+        /// </summary>
+        private void InjectResources()
+        {
+            ResourceProcessor.Inject(_pred, _marsh.Ignite);
         }
 
         /// <summary>

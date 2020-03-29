@@ -27,11 +27,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -41,20 +39,15 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setRebalanceMode(SYNC);
@@ -75,6 +68,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentReadWrite() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -104,7 +98,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
             dataBytes.put(i, ignite.configuration().getMarshaller().marshal(obj));
         }
 
-        ignite.cache(null).putAll(data);
+        ignite.cache(DEFAULT_CACHE_NAME).putAll(data);
 
         stopGrid(0);
 
@@ -119,7 +113,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
 
                     Ignite ignite = startGrid(node);
 
-                    IgniteCache<Object, Object> cache = ignite.cache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     for (Map.Entry<Integer, byte[]> e : dataBytes.entrySet()) {
                         Object obj = ignite.configuration().getMarshaller().unmarshal(e.getValue(), null);
@@ -127,7 +121,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
                         cache.put(e.getKey(), obj);
                     }
 
-                    ignite.cache(null).getAll(dataBytes.keySet());
+                    ignite.cache(DEFAULT_CACHE_NAME).getAll(dataBytes.keySet());
 
                     return null;
                 }

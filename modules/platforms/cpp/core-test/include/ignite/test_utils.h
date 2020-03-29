@@ -20,8 +20,21 @@
 
 #include "ignite/ignition.h"
 
+#define MUTE_TEST_FOR_TEAMCITY \
+    if (jetbrains::teamcity::underTeamcity()) \
+    { \
+        BOOST_TEST_MESSAGE("Muted on TeamCity because of periodical non-critical failures"); \
+        BOOST_CHECK(jetbrains::teamcity::underTeamcity()); \
+        return; \
+    }
+
 namespace ignite_test
 {
+    enum
+    {
+        TEST_ERROR = 424242
+    };
+
     /**
      * Initialize configuration for a node.
      *
@@ -58,6 +71,32 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
+
+    /**
+     * Check if the error is generic.
+     *
+     * @param err Error.
+     * @return True if the error is generic.
+     */
+    bool IsGenericError(const ignite::IgniteError& err);
+
+    /**
+     * Check if the error is generic.
+     *
+     * @param err Error.
+     * @return True if the error is generic.
+     */
+    bool IsTestError(const ignite::IgniteError& err);
+
+    /**
+     * Make test error.
+     *
+     * @return Test error.
+     */
+    inline ignite::IgniteError MakeTestError()
+    {
+        return ignite::IgniteError(TEST_ERROR, "Test error");
+    }
 }
 
 #endif // _IGNITE_CORE_TEST_TEST_UTILS

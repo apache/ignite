@@ -31,12 +31,10 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -44,9 +42,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests affinity and affinity mapper P2P loading.
  */
 public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityMapper";
 
@@ -79,23 +74,15 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setDeploymentMode(depMode);
 
-        if (gridName.endsWith("1"))
+        if (igniteInstanceName.endsWith("1"))
             c.setCacheConfiguration(); // Empty cache configuration.
         else {
-            assert gridName.endsWith("2") || gridName.endsWith("3");
+            assert igniteInstanceName.endsWith("2") || igniteInstanceName.endsWith("3");
 
             CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -108,7 +95,8 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
                 .newInstance());
 
             c.setCacheConfiguration(cc);
-            c.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, gridName.endsWith("2") ? 0 : 1));
+            c.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR,
+                igniteInstanceName.endsWith("2") ? 0 : 1));
         }
 
         return c;
@@ -119,6 +107,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -130,6 +119,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -141,6 +131,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -152,6 +143,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -176,13 +168,13 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
             //Key 0 is mapped to partition 0, first node.
             //Key 1 is mapped to partition 1, second node.
             //key 2 is mapped to partition 0, first node because mapper substitutes key 2 with affinity key 0.
-            Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(null).mapKeysToNodes(F.asList(0));
+            Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList(0));
 
             assertNotNull(map);
             assertEquals("Invalid map size: " + map.size(), 1, map.size());
             assertEquals(F.first(map.keySet()), first);
 
-            ClusterNode n1 = g1.affinity(null).mapKeyToNode(1);
+            ClusterNode n1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1);
 
             assertNotNull(n1);
 
@@ -191,7 +183,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
             assertNotNull(id1);
             assertEquals(second.id(), id1);
 
-            ClusterNode n2 = g1.affinity(null).mapKeyToNode(2);
+            ClusterNode n2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(2);
 
             assertNotNull(n2);
 

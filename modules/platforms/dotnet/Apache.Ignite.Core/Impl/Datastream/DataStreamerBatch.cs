@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (prev != null)
                 Thread.MemoryBarrier(); // Prevent "prev" field escape.
 
-            _fut.Task.ContinueWith(x => ParentsCompleted());
+            _fut.Task.ContWith(x => ParentsCompleted());
         }
 
         /// <summary>
@@ -221,8 +221,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     foreach (KeyValuePair<TK, TV> item in entries)
                     {
-                        writer.Write(item.Key);
-                        writer.Write(item.Value);
+                        writer.WriteObjectDetached(item.Key);
+                        writer.WriteObjectDetached(item.Value);
                     }
 
                     continue;
@@ -232,8 +232,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 DataStreamerEntry<TK, TV> entry = val as DataStreamerEntry<TK, TV>;
 
                 if (entry != null) {
-                    writer.Write(entry.Key);
-                    writer.Write(entry.Value);
+                    writer.WriteObjectDetached(entry.Key);
+                    writer.WriteObjectDetached(entry.Value);
 
                     continue;
                 }
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 if (rmvEntry != null)
                 {
-                    writer.Write(rmvEntry.Key);
+                    writer.WriteObjectDetached(rmvEntry.Key);
                     writer.Write<object>(null);
                 }
             }

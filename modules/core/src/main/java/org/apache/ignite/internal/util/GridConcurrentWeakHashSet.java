@@ -208,7 +208,6 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ToArrayCallWithZeroLengthArrayArgument"})
     @Override public Object[] toArray() {
         return toArray(EMPTY_ARR);
     }
@@ -263,7 +262,6 @@ public class GridConcurrentWeakHashSet<E> implements Set<E> {
             }
 
             /** {@inheritDoc} */
-            @SuppressWarnings({"IteratorNextCanNotThrowNoSuchElementException"})
             @Override public E next() {
                 if (elem == null) {
                     if (!hasNext())

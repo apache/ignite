@@ -47,6 +47,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -89,6 +90,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
     /** Key used to distinguish session deployment.  */
     private static final Object KEY_SES = new Object();
+
+    /** Key to designate a set of stores that share current session.  */
+    private static final Object KEY_SES_STORES = new Object();
 
     /** */
     @CacheStoreSessionResource
@@ -201,7 +205,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys0);
+
+                    writer.writeInt(keys0.size());
+
+                    for (Object o : keys0)
+                        writer.writeObject(o);
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
@@ -220,7 +228,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, final @Nullable Object... args) {
+    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable final Object... args) {
         try {
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
@@ -262,7 +270,6 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"NullableProblems", "unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
         try {
@@ -311,7 +318,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys);
+
+                    writer.writeInt(keys.size());
+
+                    for (Object o : keys)
+                        writer.writeObject(o);
                 }
             }, null);
         }
@@ -329,6 +340,23 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeBoolean(commit);
+
+                    // When multiple stores (caches) participate in a single transaction,
+                    // they share a single session, but sessionEnd is called on each store.
+                    // Same thing happens on platform side: session is shared; each store must be notified,
+                    // then session should be closed.
+                    Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+                    assert stores != null;
+
+                    stores.remove(ptr);
+                    boolean last = stores.isEmpty();
+
+                    writer.writeBoolean(last);
+
+                    if (last) {
+                        // Session object has been released on platform side, remove marker.
+                        ses.properties().remove(KEY_SES);
+                    }
                 }
             }, null);
         }
@@ -371,7 +399,14 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             out.synchronize();
 
-            ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+            try {
+                ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+            }
+            catch (IgniteException e) {
+                // throw a IgniteCheckedException to correctly finish
+                // CacheAffinitySharedManager.processClientCacheStartRequests()
+                throw new IgniteCheckedException("Could not create .NET CacheStore", e);
+            }
         }
     }
 
@@ -406,6 +441,16 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             ses.properties().put(KEY_SES, sesPtr);
         }
+
+        // Keep track of all stores that use current session (cross-cache tx uses single session for all caches).
+        Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+
+        if (stores == null) {
+            stores = new HashSet<>();
+            ses.properties().put(KEY_SES_STORES, stores);
+        }
+
+        stores.add(ptr);
 
         return sesPtr;
     }

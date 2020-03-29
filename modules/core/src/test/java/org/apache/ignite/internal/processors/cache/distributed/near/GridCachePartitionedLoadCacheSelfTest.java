@@ -26,11 +26,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -39,9 +38,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Load cache test.
  */
 public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Grids count. */
     private static final int GRID_CNT = 3;
 
@@ -49,9 +45,14 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     private static final int PUT_CNT = 100;
 
     /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -65,18 +66,13 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
         cfg.setCacheConfiguration(ccfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCache() throws Exception {
         loadCache(false);
     }
@@ -84,6 +80,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalLoadCacheAsync() throws Exception {
         loadCache(true);
     }
@@ -98,17 +95,12 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             IgniteCache<Integer, String> cache = jcache(0);
 
-            if (async) {
-                IgniteCache<Integer, String> asyncCache = cache.withAsync();
-
-                asyncCache.localLoadCache(null, PUT_CNT);
-
-                asyncCache.future().get();
-            }
+            if (async)
+                cache.localLoadCacheAsync(null, PUT_CNT).get();
             else
                 cache.localLoadCache(null, PUT_CNT);
 
-            Affinity<Integer> aff = grid(0).affinity(null);
+            Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
             int[] parts = aff.allPartitions(grid(0).localNode());
 

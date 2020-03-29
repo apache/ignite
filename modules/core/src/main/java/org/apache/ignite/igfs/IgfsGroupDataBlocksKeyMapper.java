@@ -18,9 +18,10 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
+import org.apache.ignite.internal.processors.igfs.IgfsBaseBlockKey;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * {@code IGFS} class providing ability to group file's data blocks together on one node.
@@ -84,15 +85,17 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
 
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        if (key != null && IgfsBlockKey.class.equals(key.getClass())) {
-            IgfsBlockKey blockKey = (IgfsBlockKey)key;
+        if (key instanceof IgfsBaseBlockKey) {
+            IgfsBaseBlockKey blockKey = (IgfsBaseBlockKey)key;
 
-            if (blockKey.affinityKey() != null)
-                return blockKey.affinityKey();
+            IgniteUuid affKey = blockKey.affinityKey();
 
-            long grpId = blockKey.getBlockId() / grpSize;
+            if (affKey != null)
+                return affKey;
 
-            return blockKey.getFileId().hashCode() + (int)(grpId ^ (grpId >>> 32));
+            long grpId = blockKey.blockId() / grpSize;
+
+            return blockKey.fileHash() + (int)(grpId ^ (grpId >>> 32));
         }
 
         return super.affinityKey(key);
@@ -121,9 +124,12 @@ public class IgfsGroupDataBlocksKeyMapper extends GridCacheDefaultAffinityKeyMap
      * Set group size. See {@link #getGroupSize()} for more information.
      *
      * @param grpSize Group size.
+     * @return {@code this} for chaining.
      */
-    public void setGroupSize(int grpSize) {
+    public IgfsGroupDataBlocksKeyMapper setGroupSize(int grpSize) {
         this.grpSize = grpSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */

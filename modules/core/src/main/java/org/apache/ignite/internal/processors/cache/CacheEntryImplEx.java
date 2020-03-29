@@ -57,7 +57,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion version() {
+    @Override public GridCacheVersion version() {
         if (ver == GET_ENTRY_INVALID_VER_AFTER_GET) {
             throw new IgniteException("Impossible to get entry version after " +
                 "get() inside OPTIMISTIC REPEATABLE_READ transaction. Use only getEntry() or getEntries() inside " +
@@ -67,11 +67,6 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
             throw new IgniteException("Impossible to get version for entry updated in transaction.");
 
         return ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long updateTime() {
-        return ver.globalTime();
     }
 
     /** {@inheritDoc} */
@@ -89,15 +84,14 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         String res = "CacheEntry [key=" + getKey() +
             ", val=" + getValue();
 
         if (ver != null && ver != GET_ENTRY_INVALID_VER_AFTER_GET && ver != GET_ENTRY_INVALID_VER_UPDATED) {
             res += ", topVer=" + ver.topologyVersion() +
                 ", nodeOrder=" + ver.nodeOrder() +
-                ", order=" + ver.order() +
-                ", updateTime=" + ver.globalTime();
+                ", order=" + ver.order();
         }
         else
             res += ", ver=n/a";

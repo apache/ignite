@@ -25,11 +25,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Binary builder test.
  */
-@SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest extends BinaryObjectBuilderDefaultMappersSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 

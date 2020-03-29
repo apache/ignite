@@ -29,7 +29,7 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
-        grid = StartNode("queries-test.xml");
+        grid = StartPlatformNode("queries-test.xml", "NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -47,7 +47,7 @@ namespace ignite
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache";
+        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -106,6 +106,10 @@ namespace ignite
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     template<>
@@ -125,21 +129,21 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request, const int64_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request, const SQLBIGINT& expected)
     {
-        CheckSingleResultNum0<int64_t>(request, expected, SQL_C_SBIGINT);
+        CheckSingleResultNum0<SQLBIGINT>(request, expected, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request, const int32_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request, const SQLINTEGER& expected)
     {
-        CheckSingleResultNum0<int32_t>(request, expected, SQL_C_SLONG);
+        CheckSingleResultNum0<SQLINTEGER>(request, expected, SQL_C_SLONG);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request, const int16_t& expected)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request, const SQLSMALLINT& expected)
     {
-        CheckSingleResultNum0<int16_t>(request, expected, SQL_C_SSHORT);
+        CheckSingleResultNum0<SQLSMALLINT>(request, expected, SQL_C_SSHORT);
     }
 
     template<>
@@ -205,21 +209,21 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int64_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLBIGINT>(const char* request)
     {
-        CheckSingleResultNum0<int64_t>(request, SQL_C_SBIGINT);
+        CheckSingleResultNum0<SQLBIGINT>(request, SQL_C_SBIGINT);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int32_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLINTEGER>(const char* request)
     {
-        CheckSingleResultNum0<int32_t>(request, SQL_C_SLONG);
+        CheckSingleResultNum0<SQLINTEGER>(request, SQL_C_SLONG);
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<int16_t>(const char* request)
+    void SqlTestSuiteFixture::CheckSingleResult<SQLSMALLINT>(const char* request)
     {
-        CheckSingleResultNum0<int16_t>(request, SQL_C_SSHORT);
+        CheckSingleResultNum0<SQLSMALLINT>(request, SQL_C_SSHORT);
     }
 
     template<>
@@ -258,6 +262,14 @@ namespace ignite
         SQL_TIMESTAMP_STRUCT res;
 
         CheckSingleResult0(request, SQL_C_TIMESTAMP, &res, 0, 0);
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
     }
 
     template<>
@@ -300,18 +312,6 @@ namespace ignite
     }
 
     template<>
-    void SqlTestSuiteFixture::CheckSingleResult<SQL_TIME_STRUCT>(const char* request, const SQL_TIME_STRUCT& expected)
-    {
-        SQL_TIME_STRUCT res;
-
-        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
-
-        BOOST_REQUIRE_EQUAL(res.hour, expected.hour);
-        BOOST_REQUIRE_EQUAL(res.minute, expected.minute);
-        BOOST_REQUIRE_EQUAL(res.second, expected.second);
-    }
-
-    template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected)
     {
         SQL_TIMESTAMP_STRUCT res;
@@ -323,5 +323,18 @@ namespace ignite
 
         BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
         BOOST_REQUIRE_EQUAL(actual.GetSecondFraction(), expected.GetSecondFraction());
+    }
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request, const Time& expected)
+    {
+        SQL_TIME_STRUCT res;
+
+        CheckSingleResult0(request, SQL_C_TIME, &res, 0, 0);
+
+        using ignite::impl::binary::BinaryUtils;
+        Time actual = common::MakeTimeGmt(res.hour, res.minute, res.second);
+
+        BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
     }
 }

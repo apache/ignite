@@ -72,6 +72,83 @@ public interface CacheMetrics {
     public long getCachePuts();
 
     /**
+     * The total number of cache invocations, caused update.
+     *
+     * @return The number of invocation updates.
+     */
+    public long getEntryProcessorPuts();
+
+    /**
+     * The total number of cache invocations, caused removal.
+     *
+     * @return The number of invocation removals.
+     */
+    public long getEntryProcessorRemovals();
+
+    /**
+     * The total number of cache invocations, caused no updates.
+     *
+     * @return The number of read-only invocations.
+     */
+    public long getEntryProcessorReadOnlyInvocations();
+
+    /**
+     * The total number of cache invocations.
+     *
+     * @return The number of cache invocations.
+     */
+    public long getEntryProcessorInvocations();
+
+    /**
+     * The total number of invocations on keys, which exist in cache.
+     *
+     * @return The number of cache invocation hits.
+     */
+    public long getEntryProcessorHits();
+
+    /**
+     * The percentage of invocations on keys, which exist in cache.
+     *
+     * @return The percentage of successful invocation hits.
+     */
+    public float getEntryProcessorHitPercentage();
+
+    /**
+     * The total number of invocations on keys, which don't exist in cache.
+     *
+     * @return The number of cache invocation misses.
+     */
+    public long getEntryProcessorMisses();
+
+    /**
+     * The percentage of invocations on keys, which don't exist in cache.
+     *
+     * @return The percentage of invocation misses.
+     */
+    public float getEntryProcessorMissPercentage();
+
+    /**
+     * The mean time to execute cache invokes.
+     *
+     * @return The time in µs.
+     */
+    public float getEntryProcessorAverageInvocationTime();
+
+    /**
+     * So far, the minimum time to execute cache invokes.
+     *
+     * @return The time in µs.
+     */
+    public float getEntryProcessorMinInvocationTime();
+
+    /**
+     * So far, the maximum time to execute cache invokes.
+     *
+     * @return The time in µs.
+     */
+    public float getEntryProcessorMaxInvocationTime();
+
+    /**
      * The total number of removals from the cache. This does not include evictions,
      * where the cache itself initiates the removal to make space.
      *
@@ -109,7 +186,6 @@ public interface CacheMetrics {
      */
     public float getAverageRemoveTime();
 
-
     /**
      * The mean time to execute tx commit.
      *
@@ -144,13 +220,6 @@ public interface CacheMetrics {
      * @return Cache name.
      */
     public String name();
-
-    /**
-     * Gets number of entries that was swapped to disk.
-     *
-     * @return Number of entries that was swapped to disk.
-     */
-    public long getOverflowSize();
 
     /**
      * The total number of get requests to the off-heap memory.
@@ -209,6 +278,14 @@ public interface CacheMetrics {
     public float getOffHeapMissPercentage();
 
     /**
+     * Gets the number of cache entries in heap memory, including entries held by active transactions, entries in
+     * onheap cache and near entries.
+     *
+     * @return Number of entries in heap memory.
+     */
+    public long getHeapEntriesCount();
+
+    /**
      * Gets number of entries stored in off-heap memory.
      *
      * @return Number of entries stored in off-heap memory.
@@ -237,87 +314,30 @@ public interface CacheMetrics {
     public long getOffHeapAllocatedSize();
 
     /**
-     * Gets off-heap memory maximum size.
-     *
-     * @return Off-heap memory maximum size.
-     */
-    public long getOffHeapMaxSize();
-
-    /**
-     * The total number of get requests to the swap.
-     *
-     * @return The number of gets.
-     */
-    public long getSwapGets();
-
-    /**
-     * The total number of put requests to the swap.
-     *
-     * @return The number of puts.
-     */
-    public long getSwapPuts();
-
-    /**
-     * The total number of removals from the swap.
-     *
-     * @return The number of removals.
-     */
-    public long getSwapRemovals();
-
-    /**
-     * The number of get requests that were satisfied by the swap.
-     *
-     * @return The swap hits number.
-     */
-    public long getSwapHits();
-
-    /**
-     * A miss is a get request that is not satisfied by swap.
-     *
-     * @return The swap misses number.
-     */
-    public long getSwapMisses();
-
-    /**
-     * Gets number of entries stored in swap.
-     *
-     * @return Number of entries stored in swap.
-     */
-    public long getSwapEntriesCount();
-
-    /**
-     * Gets size of swap.
-     *
-     * @return Size of swap.
-     */
-    public long getSwapSize();
-
-    /**
-     * Gets the percentage of hits on swap.
-     *
-     * @return The percentage of hits on swap.
-     */
-    public float getSwapHitPercentage();
-
-    /**
-     * Gets the percentage of misses on swap.
-     *
-     * @return The percentage of misses on swap.
-     */
-    public float getSwapMissPercentage();
-
-    /**
      * Gets number of non-{@code null} values in the cache.
+     * Note this method will always return {@code 0}
      *
      * @return Number of non-{@code null} values in the cache.
+     * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
+    @Deprecated
     public int getSize();
 
     /**
+     * Cache size.
+     *
+     * @return Cache size.
+     */
+    public long getCacheSize();
+
+    /**
      * Gets number of keys in the cache, possibly with {@code null} values.
+     * Note this method will always return {@code 0}
      *
      * @return Number of keys in the cache.
+     * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
+    @Deprecated
     public int getKeySize();
 
     /**
@@ -332,6 +352,7 @@ public interface CacheMetrics {
      *
      * @return Current size of evict queue.
      */
+    @Deprecated
     public int getDhtEvictQueueCurrentSize();
 
     /**
@@ -353,6 +374,7 @@ public interface CacheMetrics {
      *
      * @return Committed transaction queue size.
      */
+    @Deprecated
     public int getTxCommitQueueSize();
 
     /**
@@ -360,6 +382,7 @@ public interface CacheMetrics {
      *
      * @return Prepared transaction queue size.
      */
+    @Deprecated
     public int getTxPrepareQueueSize();
 
     /**
@@ -367,6 +390,7 @@ public interface CacheMetrics {
      *
      * @return Start version counts map size.
      */
+    @Deprecated
     public int getTxStartVersionCountsSize();
 
     /**
@@ -402,6 +426,7 @@ public interface CacheMetrics {
      *
      * @return Committed DHT transaction queue size.
      */
+    @Deprecated
     public int getTxDhtCommitQueueSize();
 
     /**
@@ -409,6 +434,7 @@ public interface CacheMetrics {
      *
      * @return Prepared DHT transaction queue size.
      */
+    @Deprecated
     public int getTxDhtPrepareQueueSize();
 
     /**
@@ -416,6 +442,7 @@ public interface CacheMetrics {
      *
      * @return DHT start version counts map size.
      */
+    @Deprecated
     public int getTxDhtStartVersionCountsSize();
 
     /**
@@ -551,6 +578,76 @@ public interface CacheMetrics {
     public boolean isStoreByValue();
 
     /**
+     * @return Total number of partitions on current node.
+     */
+    public int getTotalPartitionsCount();
+
+    /**
+     * @return Number of currently rebalancing partitions on current node.
+     */
+    public int getRebalancingPartitionsCount();
+
+    /**
+     * @return Number of already rebalanced keys.
+     */
+    public long getRebalancedKeys();
+
+    /**
+     * @return Number estimated to rebalance keys.
+     */
+    public long getEstimatedRebalancingKeys();
+
+    /**
+     * @return Estimated number of keys to be rebalanced on current node.
+     */
+    public long getKeysToRebalanceLeft();
+
+    /**
+     * @return Estimated rebalancing speed in keys.
+     */
+    public long getRebalancingKeysRate();
+
+    /**
+     * @return Estimated rebalancing speed in bytes.
+     */
+    public long getRebalancingBytesRate();
+
+    /**
+     * This method is deprecated and will be deleted in future major release.
+     *
+     * Use {@link #getEstimatedRebalancingFinishTime()} instead.
+     *
+     * @return Estimated rebalancing finished time.
+     */
+    @Deprecated
+    public long estimateRebalancingFinishTime();
+
+    /**
+     * This method is deprecated and will be deleted in future major release.
+     *
+     * Use {@link #getRebalancingStartTime()} instead.
+     *
+     * @return Rebalancing start time.
+     */
+    @Deprecated
+    public long rebalancingStartTime();
+
+    /**
+     * @return Estimated rebalancing finish time.
+     */
+    public long getEstimatedRebalancingFinishTime();
+
+    /**
+     * @return Rebalancing start time.
+     */
+    public long getRebalancingStartTime();
+
+    /**
+     * @return Number of partitions need to be cleared before actual rebalance start.
+     */
+    public long getRebalanceClearingPartitionsLeft();
+
+    /**
      * Checks whether statistics collection is enabled in this cache.
      * <p>
      * The default value is {@code false}.
@@ -591,4 +688,18 @@ public interface CacheMetrics {
      * @see CacheWriter
      */
     public boolean isWriteThrough();
+
+    /**
+     * Checks whether cache topology is valid for read operations.
+     *
+     * @return {@code true} when cache topology is valid for reading.
+     */
+    public boolean isValidForReading();
+
+    /**
+     * Checks whether cache topology is valid for write operations.
+     *
+     * @return {@code true} when cache topology is valid for writing.
+     */
+    public boolean isValidForWriting();
 }

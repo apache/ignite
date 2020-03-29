@@ -34,7 +34,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * SQL query stress test.
@@ -151,14 +151,14 @@ public class FetchingQueryCursorStressTest {
     private static IgniteConfiguration config(int idx, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-" + idx);
+        cfg.setIgniteInstanceName("grid-" + idx);
         cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, Person.class);
-        cfg.setMarshaller(new OptimizedMarshaller());
+        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -214,7 +214,6 @@ public class FetchingQueryCursorStressTest {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override public void run() {
             System.out.println("Executor started: " + Thread.currentThread().getName());
 
@@ -250,7 +249,6 @@ public class FetchingQueryCursorStressTest {
      */
     private static class ThroughputPrinter implements Runnable {
         /** {@inheritDoc} */
-        @SuppressWarnings("InfiniteLoopStatement")
         @Override public void run() {
             while (error.get()==null) {
                 long before = CNT.get();

@@ -1,0 +1,105 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+web-console-sidebar-navigation {
+    display: flex;
+    flex-direction: column;
+    padding-top: 14px;
+
+    nav {
+        display: flex;
+        flex-direction: column;
+        list-style-type: none;
+
+        &>li {
+            display: flex;
+        }
+    }
+
+    .web-console-sidebar-navigation__link-icon {
+        width: 20px;
+        height: auto;
+    }
+
+    .web-console-sidebar-navigation__link-narrow {
+        height: var(--width-narrow);
+        width: var(--width-narrow);
+        color: var(--inactive-link-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        &:hover, &:focus {
+            color: var(--active-link-color);
+
+        }
+
+        &.web-console-sidebar-navigation__link-active {
+            color: var(--active-link-color);
+            position: relative;
+
+            &:after {
+                content: '';
+                display: block;
+                width: 2px;
+                // Line can't be outside of scrollable container
+                right: 0;
+                top: 0;
+                bottom: 0;
+                position: absolute;
+                background: var(--active-link-color);
+            }
+        }
+        .web-console-sidebar-navigation__link-content {
+            display: none;
+        }
+    }
+
+    li:first-of-type > .web-console-sidebar-navigation__link-wide {
+        margin-top: 18px;        
+    }
+
+    .web-console-sidebar-navigation__link-wide {
+        color: #393939;
+        text-decoration: none !important;
+        line-height: 19px;
+        font-size: 16px;
+        padding: 10px 28px 11px;
+        width: var(--width-wide);
+        display: inline-flex;
+        align-items: center;
+
+        &:hover, &:focus {
+            color: var(--active-link-color);
+
+            .web-console-sidebar-navigation__link-icon {
+                color: inherit;
+            }
+        }
+        &.web-console-sidebar-navigation__link-active {
+            color: white;
+            background: var(--active-link-color);
+
+            .web-console-sidebar-navigation__link-icon {
+                color: inherit;
+            }
+        }
+        .web-console-sidebar-navigation__link-icon {
+            margin-right: 12px;
+        }
+    }
+}

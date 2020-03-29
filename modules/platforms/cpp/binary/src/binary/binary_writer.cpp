@@ -139,6 +139,16 @@ namespace ignite
             impl->WriteTimestampArray(fieldName, val, len);
         }
 
+        void BinaryWriter::WriteTime(const char* fieldName, const Time& val)
+        {
+            impl->WriteTime(fieldName, val);
+        }
+
+        void BinaryWriter::WriteTimeArray(const char* fieldName, const Time* val, const int32_t len)
+        {
+            impl->WriteTimeArray(fieldName, val, len);
+        }
+
         void BinaryWriter::WriteString(const char* fieldName, const char* val)
         {
             if (val)
@@ -157,6 +167,11 @@ namespace ignite
             int32_t id = impl->WriteStringArray(fieldName);
 
             return BinaryStringArrayWriter(impl, id);
+        }
+
+        void BinaryWriter::WriteBinaryEnum(const char* fieldName, BinaryEnumEntry entry)
+        {
+            impl->WriteBinaryEnum(fieldName, entry);
         }
 
         void BinaryWriter::WriteNull(const char* fieldName)

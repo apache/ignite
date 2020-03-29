@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System;
     using NUnit.Framework;
 
     /// <summary>
@@ -28,41 +27,16 @@ namespace Apache.Ignite.Core.Tests
         /** Environment variable: JAVA_HOME. */
         private const string EnvJavaHome = "JAVA_HOME";
 
-        /** Backed up value. */
-        private string _javaHomeBackup;
-
-        /// <summary>
-        /// Fixture set up.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void FixtureSetUp()
-        {
-            _javaHomeBackup = Environment.GetEnvironmentVariable(EnvJavaHome);
-
-            Environment.SetEnvironmentVariable(EnvJavaHome, null);
-        }
-
-        /// <summary>
-        /// Fixture tear down.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
-        {
-            Environment.SetEnvironmentVariable(EnvJavaHome, _javaHomeBackup);
-        }
-
         /// <summary>
         /// Tests the detection.
         /// </summary>
         [Test]
         public void TestDetection([Values(null, "c:\\invalid111")] string javaHome)
         {
-            Environment.SetEnvironmentVariable(EnvJavaHome, javaHome);
-
+            using (EnvVar.Set(EnvJavaHome, javaHome))
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 Assert.IsNotNull(ignite);
-                Console.WriteLine("Detected JVM dll path: " + ignite.GetConfiguration().JvmDllPath);
             }
         }
     }

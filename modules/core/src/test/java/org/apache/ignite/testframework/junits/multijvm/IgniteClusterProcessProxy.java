@@ -26,16 +26,20 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,7 +73,7 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName) {
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, @Nullable String metaCacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -104,25 +108,27 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteException {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(File file, boolean restart, int timeout,
         int maxConn) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart,
+        int timeout, int maxConn) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(Collection<Map<String, Object>> hosts,
         @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
+        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts,
+        boolean restart, int timeout, int maxConn) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -152,7 +158,37 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCluster withAsync() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enableWal(String cacheName) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal(String cacheName) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled(String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -222,17 +258,17 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(String cacheName) {
+    @Override public ClusterGroup forCacheNodes(@NotNull String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forDataNodes(String cacheName) {
+    @Override public ClusterGroup forDataNodes(@NotNull String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forClientNodes(String cacheName) {
+    @Override public ClusterGroup forClientNodes(@NotNull String cacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -303,6 +339,66 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(long topVer) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBaselineAutoAdjustEnabled() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public long baselineAutoAdjustTimeout() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterState state() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState) throws IgniteException {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

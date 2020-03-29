@@ -15,13 +15,17 @@
  * limitations under the License.
  */
 
-export default ['duration', [() => {
+export default () => {
     /**
-     * @param {Number} t Time in ms.
+     * @param {number} t Time in ms.
+     * @param {string} dflt Default value.
      */
-    return (t) => {
+    const filter = (t, dflt = '0') => {
         if (t === 9223372036854775807)
             return 'Infinite';
+
+        if (t <= 0)
+            return dflt;
 
         const a = (i, suffix) => i && i !== '00' ? i + suffix + ' ' : '';
 
@@ -34,8 +38,10 @@ export default ['duration', [() => {
         const h = Math.floor((t - d * cd) / ch);
         const m = Math.floor((t - d * cd - h * ch) / cm);
         const s = Math.floor((t - d * cd - h * ch - m * cm) / cs);
-        const ms = t % 1000;
+        const ms = Math.round(t % 1000);
 
-        return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t < cm ? ms + 'ms' : '');
+        return a(d, 'd') + a(h, 'h') + a(m, 'm') + a(s, 's') + (t < 1000 || (t < cm && ms !== 0) ? ms + 'ms' : '');
     };
-}]];
+
+    return filter;
+};

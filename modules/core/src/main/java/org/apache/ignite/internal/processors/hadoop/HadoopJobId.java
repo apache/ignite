@@ -79,13 +79,13 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("nodeId", nodeId))
+                if (!writer.writeInt("jobId", jobId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("localId", jobId))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
                 writer.incrementState();
@@ -104,7 +104,7 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
 
         switch (reader.state()) {
             case 0:
-                nodeId = reader.readUuid("nodeId");
+                jobId = reader.readInt("jobId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -112,7 +112,7 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
                 reader.incrementState();
 
             case 1:
-                jobId = reader.readInt("jobId");
+                nodeId = reader.readUuid("nodeId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -125,7 +125,7 @@ public class HadoopJobId implements Message, GridCacheInternal, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -39;
     }
 

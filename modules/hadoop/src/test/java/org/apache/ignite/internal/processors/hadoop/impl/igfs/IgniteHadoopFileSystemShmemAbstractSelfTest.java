@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
@@ -46,11 +47,11 @@ public abstract class IgniteHadoopFileSystemShmemAbstractSelfTest extends Ignite
     }
 
     /** {@inheritDoc} */
-    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String igniteInstanceName) {
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
         endpointCfg.setType(IgfsIpcEndpointType.SHMEM);
-        endpointCfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+        endpointCfg.setPort(DFLT_IPC_PORT + getTestIgniteInstanceIndex(igniteInstanceName));
 
         return endpointCfg;
     }
@@ -61,7 +62,7 @@ public abstract class IgniteHadoopFileSystemShmemAbstractSelfTest extends Ignite
      *
      * @throws Exception If error occurred.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testOutOfResources() throws Exception {
         final Collection<IpcEndpoint> eps = new LinkedList<>();
 

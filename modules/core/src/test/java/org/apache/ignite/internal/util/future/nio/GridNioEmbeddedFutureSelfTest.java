@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.future.nio;
 import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -30,9 +31,10 @@ public class GridNioEmbeddedFutureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNioEmbeddedFuture() throws Exception {
         // Original future.
-        final GridNioFutureImpl<Integer> origFut = new GridNioFutureImpl<>();
+        final GridNioFutureImpl<Integer> origFut = new GridNioFutureImpl<>(null);
 
         // Embedded future to test.
         final GridNioEmbeddedFuture<Integer> embFut = new GridNioEmbeddedFuture<>();

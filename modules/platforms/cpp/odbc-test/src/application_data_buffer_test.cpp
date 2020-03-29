@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <ignite/odbc/system/odbc_constants.h>
 
 #include <boost/test/unit_test.hpp>
@@ -44,9 +40,8 @@ BOOST_AUTO_TEST_CASE(TestPutIntToString)
 {
     char buffer[1024];
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer), &reslen);
 
     appBuf.PutInt8(12);
     BOOST_CHECK(!strcmp(buffer, "12"));
@@ -77,9 +72,8 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToString)
 {
     char buffer[1024];
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer), &reslen);
 
     appBuf.PutFloat(12.42f);
     BOOST_CHECK(!strcmp(buffer, "12.42"));
@@ -102,9 +96,8 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 {
     char buffer[1024];
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer), &reslen);
 
     ignite::Guid guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL);
 
@@ -114,29 +107,18 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
     BOOST_CHECK(reslen == strlen("1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
 }
 
-BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
-{
-    char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
-    SqlLen reslen = sizeof(buffer) - 1;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
-
-    ignite::Guid guid = appBuf.GetGuid();
-
-    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL));
-}
-
 BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 {
     char buffer[1024];
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer), &reslen);
 
     uint8_t binary[] = { 0x21, 0x84, 0xF4, 0xDC, 0x01, 0x00, 0xFF, 0xF0 };
 
-    appBuf.PutBinaryData(binary, sizeof(binary));
+    int32_t written = 0;
+
+    appBuf.PutBinaryData(binary, sizeof(binary), written);
 
     BOOST_CHECK(!strcmp(buffer, "2184f4dc0100fff0"));
     BOOST_CHECK(reslen == strlen("2184f4dc0100fff0"));
@@ -146,9 +128,8 @@ BOOST_AUTO_TEST_CASE(TestPutStringToString)
 {
     char buffer[1024];
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer), &reslen);
 
     std::string testString("Test string");
 
@@ -162,9 +143,8 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 {
     wchar_t buffer[1024];
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_WCHAR, buffer, sizeof(buffer), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_WCHAR, buffer, sizeof(buffer), &reslen);
 
     std::string testString("Test string");
 
@@ -174,11 +154,10 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
 
 BOOST_AUTO_TEST_CASE(TestPutStringToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutString("424242424");
     BOOST_CHECK(numBuf == 424242424L);
@@ -191,9 +170,8 @@ BOOST_AUTO_TEST_CASE(TestPutStringToTiny)
 {
     int8_t numBuf;
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutString("12");
     BOOST_CHECK(numBuf == 12);
@@ -206,9 +184,8 @@ BOOST_AUTO_TEST_CASE(TestPutStringToFloat)
 {
     float numBuf;
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_FLOAT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutString("12.21");
     BOOST_CHECK_CLOSE_FRACTION(numBuf, 12.21, FLOAT_PRECISION);
@@ -221,9 +198,8 @@ BOOST_AUTO_TEST_CASE(TestPutIntToFloat)
 {
     float numBuf;
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_FLOAT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutInt8(5);
     BOOST_CHECK_CLOSE_FRACTION(numBuf, 5.0, FLOAT_PRECISION);
@@ -248,9 +224,8 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
 {
     short numBuf;
     SqlLen reslen = 0;
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen);
 
     appBuf.PutDouble(5.42);
     BOOST_CHECK(numBuf == 5);
@@ -270,7 +245,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
     double numBuf;
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, sizeof(numBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_DOUBLE, &numBuf, sizeof(numBuf), &reslen);
 
     common::Decimal decimal;
 
@@ -296,10 +271,10 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 {
-    long numBuf;
+    SQLINTEGER numBuf;
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen);
 
     common::Decimal decimal;
 
@@ -326,7 +301,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
     char strBuf[64];
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     common::Decimal decimal;
 
@@ -353,7 +328,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     SQL_NUMERIC_STRUCT buf;
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_NUMERIC, &buf, sizeof(buf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_NUMERIC, &buf, sizeof(buf), &reslen);
 
     common::Decimal decimal;
 
@@ -404,7 +379,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
     char strBuf[64] = { 0 };
     SqlLen reslen = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
 
     Date date = common::MakeDateGmt(1999, 2, 22);
 
@@ -413,29 +388,12 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
     BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("1999-02-22"));
 }
 
-BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
-{
-    char strBuf[64] = { 0 };
-    SqlLen reslen = 0;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
-
-    Timestamp date = common::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
-
-    appBuf.PutTimestamp(date);
-
-    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
-}
-
 BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 {
     SQL_DATE_STRUCT buf = { 0 };
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TDATE, &buf, sizeof(buf), &reslen);
 
     Date date = common::MakeDateGmt(1984, 5, 27);
 
@@ -446,58 +404,13 @@ BOOST_AUTO_TEST_CASE(TestPutDateToDate)
     BOOST_CHECK_EQUAL(27, buf.day);
 }
 
-BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
-{
-    SQL_DATE_STRUCT buf = { 0 };
-    SqlLen reslen = sizeof(buf);
-
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
-
-    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
-
-    appBuf.PutTimestamp(ts);
-
-    BOOST_CHECK_EQUAL(2004, buf.year);
-    BOOST_CHECK_EQUAL(8, buf.month);
-    BOOST_CHECK_EQUAL(14, buf.day);
-}
-
-BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
-{
-    SQL_TIMESTAMP_STRUCT buf = { 0 };
-    SqlLen reslen = sizeof(buf);
-
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
-
-    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
-
-    appBuf.PutTimestamp(ts);
-
-    BOOST_CHECK_EQUAL(2004, buf.year);
-    BOOST_CHECK_EQUAL(8, buf.month);
-    BOOST_CHECK_EQUAL(14, buf.day);
-    BOOST_CHECK_EQUAL(6, buf.hour);
-    BOOST_CHECK_EQUAL(34, buf.minute);
-    BOOST_CHECK_EQUAL(51, buf.second);
-    BOOST_CHECK_EQUAL(573948623, buf.fraction);
-}
-
 BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
 {
     SQL_TIMESTAMP_STRUCT buf = { 0 };
 
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIMESTAMP, &buf, sizeof(buf), &reslen);
 
     Date date = common::MakeDateGmt(1984, 5, 27);
 
@@ -512,13 +425,120 @@ BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
     BOOST_CHECK_EQUAL(0, buf.fraction);
 }
 
+BOOST_AUTO_TEST_CASE(TestPutTimeToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
+
+    Time time = common::MakeTimeGmt(7, 15, 0);
+
+    appBuf.PutTime(time);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("07:15:00"));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimeToTime)
+{
+    SQL_TIME_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIME, &buf, sizeof(buf), &reslen);
+
+    Time time = common::MakeTimeGmt(23, 51, 1);
+
+    appBuf.PutTime(time);
+
+    BOOST_CHECK_EQUAL(23, buf.hour);
+    BOOST_CHECK_EQUAL(51, buf.minute);
+    BOOST_CHECK_EQUAL(1, buf.second);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &strBuf, sizeof(strBuf), &reslen);
+
+    Timestamp date = common::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
+
+    appBuf.PutTimestamp(date);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TDATE, &buf, sizeof(buf), &reslen);
+
+    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
+
+    appBuf.PutTimestamp(ts);
+
+    BOOST_CHECK_EQUAL(2004, buf.year);
+    BOOST_CHECK_EQUAL(8, buf.month);
+    BOOST_CHECK_EQUAL(14, buf.day);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToTime)
+{
+    SQL_TIME_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIME, &buf, sizeof(buf), &reslen);
+
+    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
+
+    appBuf.PutTimestamp(ts);
+
+    BOOST_CHECK_EQUAL(6, buf.hour);
+    BOOST_CHECK_EQUAL(34, buf.minute);
+    BOOST_CHECK_EQUAL(51, buf.second);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIMESTAMP, &buf, sizeof(buf), &reslen);
+
+    Timestamp ts = common::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
+
+    appBuf.PutTimestamp(ts);
+
+    BOOST_CHECK_EQUAL(2004, buf.year);
+    BOOST_CHECK_EQUAL(8, buf.month);
+    BOOST_CHECK_EQUAL(14, buf.day);
+    BOOST_CHECK_EQUAL(6, buf.hour);
+    BOOST_CHECK_EQUAL(34, buf.minute);
+    BOOST_CHECK_EQUAL(51, buf.second);
+    BOOST_CHECK_EQUAL(573948623, buf.fraction);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
+{
+    char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
+    SqlLen reslen = sizeof(buffer) - 1;
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, buffer, sizeof(buffer) - 1, &reslen);
+
+    ignite::Guid guid = appBuf.GetGuid();
+
+    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL));
+}
+
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 {
     long numBuf = 42;
     SqlLen reslen = sizeof(numBuf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_SIGNED_LONG, &numBuf, reslen, &reslen);
 
     std::string res = appBuf.GetString(32);
 
@@ -535,9 +555,8 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromDouble)
 {
     double numBuf = 43.36;
     SqlLen reslen = sizeof(numBuf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_DOUBLE, &numBuf, reslen, &reslen);
 
     std::string res = appBuf.GetString(32);
 
@@ -554,9 +573,8 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromString)
 {
     char buf[] = "Some data 32d2d5hs";
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf, reslen, &reslen);
 
     std::string res = appBuf.GetString(reslen);
 
@@ -567,9 +585,8 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromUshort)
 {
     unsigned short numBuf = 7162;
     SqlLen reslen = sizeof(numBuf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT, &numBuf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_UNSIGNED_SHORT, &numBuf, reslen, &reslen);
 
     float resFloat = appBuf.GetFloat();
 
@@ -584,9 +601,8 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromString)
 {
     char buf[] = "28.562";
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf, reslen, &reslen);
 
     float resFloat = appBuf.GetFloat();
 
@@ -601,9 +617,8 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromFloat)
 {
     float buf = 207.49f;
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_FLOAT, &buf, reslen, &reslen);
 
     float resFloat = appBuf.GetFloat();
 
@@ -618,9 +633,8 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromDouble)
 {
     double buf = 893.162;
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_DOUBLE, &buf, reslen, &reslen);
 
     float resFloat = appBuf.GetFloat();
 
@@ -635,9 +649,8 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromString)
 {
     char buf[] = "39";
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf, reslen, &reslen);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -660,9 +673,8 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromFloat)
 {
     float buf = -107.49f;
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_FLOAT, &buf, reslen, &reslen);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -685,9 +697,8 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromDouble)
 {
     double buf = 42.97f;
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_DOUBLE, &buf, reslen, &reslen);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -710,9 +721,8 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromBigint)
 {
     uint64_t buf = 19;
     SqlLen reslen = sizeof(buf);
-    int* offset = 0;
 
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT, &buf, reslen, &reslen, &offset);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_UNSIGNED_BIGINT, &buf, reslen, &reslen);
 
     int64_t resInt64 = appBuf.GetInt64();
 
@@ -744,22 +754,19 @@ BOOST_AUTO_TEST_CASE(TestGetIntWithOffset)
         { 42, sizeof(uint64_t) }
     };
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT, &buf[0].val, sizeof(buf[0].val), &buf[0].reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_UNSIGNED_BIGINT, &buf[0].val, sizeof(buf[0].val), &buf[0].reslen);
 
     int64_t val = appBuf.GetInt64();
 
     BOOST_CHECK(val == 12);
 
-    offset += sizeof(TestStruct);
+    appBuf.SetByteOffset(sizeof(TestStruct));
 
     val = appBuf.GetInt64();
 
     BOOST_CHECK(val == 42);
 
-    offsetPtr = 0;
+    appBuf.SetByteOffset(0);
 
     val = appBuf.GetInt64();
 
@@ -778,11 +785,8 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
         { "", 0 },
         { "", 0 }
     };
-
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0].val, sizeof(buf[0].val), &buf[0].reslen, &offsetPtr);
+    
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf[0].val, sizeof(buf[0].val), &buf[0].reslen);
 
     appBuf.PutString("Hello Ignite!");
 
@@ -792,7 +796,7 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
     BOOST_CHECK(res == "Hello Ignite!");
     BOOST_CHECK(res.size() == strlen("Hello Ignite!"));
 
-    offset += sizeof(TestStruct);
+    appBuf.SetByteOffset(sizeof(TestStruct));
 
     appBuf.PutString("Hello with offset!");
 
@@ -813,11 +817,8 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
 {
     char buf[] = "1999-02-22";
     SqlLen reslen = sizeof(buf);
-
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+    
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf[0], sizeof(buf), &reslen);
 
     Date date = appBuf.GetDate();
 
@@ -835,15 +836,36 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
     BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetTimeFromString)
+{
+    char buf[] = "17:5:59";
+    SqlLen reslen = sizeof(buf);
+
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf[0], sizeof(buf), &reslen);
+
+    Time time = appBuf.GetTime();
+
+    tm tmTime;
+
+    bool success = common::TimeToCTm(time, tmTime);
+
+    BOOST_REQUIRE(success);
+
+    BOOST_CHECK_EQUAL(1970, tmTime.tm_year + 1900);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mday);
+    BOOST_CHECK_EQUAL(17, tmTime.tm_hour);
+    BOOST_CHECK_EQUAL(5, tmTime.tm_min);
+    BOOST_CHECK_EQUAL(59, tmTime.tm_sec);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
 {
     char buf[] = "2018-11-01 17:45:59";
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_CHAR, &buf[0], sizeof(buf), &reslen);
 
     Timestamp date = appBuf.GetTimestamp();
 
@@ -871,10 +893,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
 
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TDATE, &buf, sizeof(buf), &reslen);
 
     Date date = appBuf.GetDate();
 
@@ -902,10 +921,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
 
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TDATE, &buf, sizeof(buf), &reslen);
 
     Timestamp ts = appBuf.GetTimestamp();
 
@@ -923,6 +939,34 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
     BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetTimestampFromTime)
+{
+    SQL_TIME_STRUCT buf = { 0 };
+
+    buf.hour = 6;
+    buf.minute = 34;
+    buf.second = 51;
+
+    SqlLen reslen = sizeof(buf);
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIME, &buf, sizeof(buf), &reslen);
+
+    Time time = appBuf.GetTime();
+
+    tm tmTime;
+
+    bool success = common::TimeToCTm(time, tmTime);
+
+    BOOST_REQUIRE(success);
+
+    BOOST_CHECK_EQUAL(1970, tmTime.tm_year + 1900);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mday);
+    BOOST_CHECK_EQUAL(6, tmTime.tm_hour);
+    BOOST_CHECK_EQUAL(34, tmTime.tm_min);
+    BOOST_CHECK_EQUAL(51, tmTime.tm_sec);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 {
     SQL_TIMESTAMP_STRUCT buf = { 0 };
@@ -937,10 +981,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIMESTAMP, &buf, sizeof(buf), &reslen);
 
     Timestamp ts = appBuf.GetTimestamp();
 
@@ -973,10 +1014,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
 
     SqlLen reslen = sizeof(buf);
 
-    int offset = 0;
-    int* offsetPtr = &offset;
-
-    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIMESTAMP, &buf, sizeof(buf), &reslen);
 
     Date date = appBuf.GetDate();
 
@@ -992,6 +1030,38 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
     BOOST_CHECK_EQUAL(6, tmDate.tm_hour);
     BOOST_CHECK_EQUAL(34, tmDate.tm_min);
     BOOST_CHECK_EQUAL(51, tmDate.tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetTimeFromTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    buf.year = 2004;
+    buf.month = 8;
+    buf.day = 14;
+    buf.hour = 6;
+    buf.minute = 34;
+    buf.second = 51;
+    buf.fraction = 573948623;
+
+    SqlLen reslen = sizeof(buf);
+
+    ApplicationDataBuffer appBuf(OdbcNativeType::AI_TTIMESTAMP, &buf, sizeof(buf), &reslen);
+
+    Time time = appBuf.GetTime();
+
+    tm tmTime;
+
+    bool success = common::TimeToCTm(time, tmTime);
+
+    BOOST_REQUIRE(success);
+
+    BOOST_CHECK_EQUAL(1970, tmTime.tm_year + 1900);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmTime.tm_mday);
+    BOOST_CHECK_EQUAL(6, tmTime.tm_hour);
+    BOOST_CHECK_EQUAL(34, tmTime.tm_min);
+    BOOST_CHECK_EQUAL(51, tmTime.tm_sec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

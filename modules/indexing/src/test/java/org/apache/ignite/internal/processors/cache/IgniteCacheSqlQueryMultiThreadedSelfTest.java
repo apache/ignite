@@ -33,11 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -46,20 +44,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration();
+        CacheConfiguration<?,?> ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setNearConfiguration(null);
@@ -83,18 +72,12 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQuery() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.clear();
 
@@ -124,8 +107,9 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
      * Test put and parallel query.
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPut() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.clear();
 

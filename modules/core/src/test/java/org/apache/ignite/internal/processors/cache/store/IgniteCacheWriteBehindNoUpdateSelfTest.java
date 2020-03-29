@@ -39,6 +39,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -55,15 +56,10 @@ public class IgniteCacheWriteBehindNoUpdateSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        CacheConfiguration<String, Long> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<String, Long> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -88,6 +84,7 @@ public class IgniteCacheWriteBehindNoUpdateSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorNoUpdate() throws Exception {
         IgniteCache<Object, Object> cache = ignite(0).cache(THROTTLES_CACHE_NAME);
 

@@ -28,7 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -43,10 +45,10 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     private static final String QUERY = "select a._val, b._val from String a, String b";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, String.class);
         ccfg.setCacheMode(LOCAL);
 
@@ -67,14 +69,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
         super.afterTest();
 
         for (Ignite g : G.allGrids())
-            g.cache(null).removeAll();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+            g.cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /**
@@ -99,6 +94,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /**
      * Tests cancellation.
      */
+    @Test
     public void testQueryCancel() {
         testQuery(false, 1, TimeUnit.SECONDS);
     }
@@ -106,6 +102,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /**
      * Tests cancellation with zero timeout.
      */
+    @Test
     public void testQueryCancelZeroTimeout() {
         testQuery(false, 1, TimeUnit.MILLISECONDS);
     }
@@ -113,6 +110,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     /**
      * Tests timeout.
      */
+    @Test
     public void testQueryTimeout() {
         testQuery(true, 1, TimeUnit.SECONDS);
     }
@@ -123,7 +121,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
     private void testQuery(boolean timeout, int timeoutUnits, TimeUnit timeUnit) {
         Ignite ignite = grid(0);
 
-        IgniteCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         loadCache(cache);
 
@@ -150,7 +148,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             fail("Expecting timeout");
         }
         catch (Exception e) {
-            assertTrue("Must throw correct exception", e.getCause() instanceof QueryCancelledException);
+            assertNotNull("Must throw correct exception", X.cause(e, QueryCancelledException.class));
         }
 
         // Test must exit gracefully.

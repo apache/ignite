@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests node stop while it is being accessed from EntryProcessor.
@@ -33,20 +34,14 @@ public class IgniteConcurrentEntryProcessorAccessStopTest extends GridCommonAbst
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Tests concurrent instance shutdown.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentAccess() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         Ignite ignite = grid();
 

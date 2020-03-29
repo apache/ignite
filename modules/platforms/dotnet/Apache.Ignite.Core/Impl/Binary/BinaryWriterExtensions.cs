@@ -18,6 +18,11 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Writer extensions.
@@ -27,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the nullable boolean.
         /// </summary>
-        public static void WriteBooleanNullable(this BinaryWriter writer, bool? value)
+        public static void WriteBooleanNullable(this IBinaryRawWriter writer, bool? value)
         {
             if (value != null)
             {
@@ -39,9 +44,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Writes the nullable boolean.
+        /// Writes the nullable int.
         /// </summary>
-        public static void WriteIntNullable(this BinaryWriter writer, int? value)
+        public static void WriteIntNullable(this IBinaryRawWriter writer, int? value)
         {
             if (value != null)
             {
@@ -53,9 +58,23 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Writes the nullable long.
+        /// </summary>
+        public static void WriteLongNullable(this IBinaryRawWriter writer, long? value)
+        {
+            if (value != null)
+            {
+                writer.WriteBoolean(true);
+                writer.WriteLong(value.Value);
+            }
+            else
+                writer.WriteBoolean(false);
+        }
+
+        /// <summary>
         /// Writes the timespan.
         /// </summary>
-        public static void WriteTimeSpanAsLong(this BinaryWriter writer, TimeSpan value)
+        public static void WriteTimeSpanAsLong(this IBinaryRawWriter writer, TimeSpan value)
         {
             writer.WriteLong((long) value.TotalMilliseconds);
         }
@@ -63,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the nullable boolean.
         /// </summary>
-        public static void WriteTimeSpanAsLongNullable(this BinaryWriter writer, TimeSpan? value)
+        public static void WriteTimeSpanAsLongNullable(this IBinaryRawWriter writer, TimeSpan? value)
         {
             if (value != null)
             {
@@ -74,5 +93,166 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writer.WriteBoolean(false);
         }
 
+        /// <summary>
+        /// Write collection.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The same writer for chaining.</returns>
+        private static void WriteCollection<T1, T2>(this BinaryWriter writer, ICollection<T1> vals, 
+            Func<T1, T2> selector)
+        {
+            writer.WriteInt(vals.Count);
+
+            if (selector == null)
+            {
+                foreach (var val in vals)
+                    writer.WriteObjectDetached(val);
+            }
+            else
+            {
+                foreach (var val in vals)
+                    writer.WriteObjectDetached(selector(val));
+            }
+        }
+
+        /// <summary>
+        /// Write enumerable.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <returns>The same writer for chaining.</returns>
+        public static void WriteEnumerable<T>(this BinaryWriter writer, IEnumerable<T> vals)
+        {
+            WriteEnumerable<T, T>(writer, vals, null);
+        }
+
+        /// <summary>
+        /// Write enumerable.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        /// <param name="selector">A transform function to apply to each element.</param>
+        /// <returns>The same writer for chaining.</returns>
+        public static void WriteEnumerable<T1, T2>(this BinaryWriter writer, IEnumerable<T1> vals, 
+            Func<T1, T2> selector)
+        {
+            var col = vals as ICollection<T1>;
+
+            if (col != null)
+            {
+                WriteCollection(writer, col, selector);
+                return;
+            }
+
+            var stream = writer.Stream;
+
+            var pos = stream.Position;
+
+            stream.Seek(4, SeekOrigin.Current);
+
+            var size = 0;
+
+            if (selector == null)
+            {
+                foreach (var val in vals)
+                {
+                    writer.WriteObjectDetached(val);
+
+                    size++;
+                }
+            }
+            else
+            {
+                foreach (var val in vals)
+                {
+                    writer.WriteObjectDetached(selector(val));
+
+                    size++;
+                }
+            }
+
+            stream.WriteInt(pos, size);
+        }
+
+        /// <summary>
+        /// Write dictionary.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="vals">Values.</param>
+        public static void WriteDictionary<T1, T2>(this BinaryWriter writer, IEnumerable<KeyValuePair<T1, T2>> vals)
+        {
+            var pos = writer.Stream.Position;
+            writer.WriteInt(0);  // Reserve count.
+
+            int cnt = 0;
+
+            foreach (var pair in vals)
+            {
+                writer.WriteObjectDetached(pair.Key);
+                writer.WriteObjectDetached(pair.Value);
+
+                cnt++;
+            }
+
+            writer.Stream.WriteInt(pos, cnt);
+        }
+
+        /// <summary>
+        /// Writes the collection of write-aware items.
+        /// </summary>
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection)
+            where T : IBinaryRawWriteAware<TWriter> where TWriter: IBinaryRawWriter
+        {
+            Debug.Assert(writer != null);
+
+            if (collection != null)
+            {
+                writer.WriteInt(collection.Count);
+
+                foreach (var x in collection)
+                {
+                    if (x == null)
+                    {
+                        throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
+                    }
+
+                    x.Write(writer);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
+
+        /// <summary>
+        /// Writes the collection of write-aware-ex items.
+        /// </summary>
+        public static void WriteCollectionRaw<T, TWriter>(this TWriter writer, ICollection<T> collection,
+            ClientProtocolVersion srvVer) where T : IBinaryRawWriteAwareEx<TWriter> where TWriter: IBinaryRawWriter
+        {
+            Debug.Assert(writer != null);
+
+            if (collection != null)
+            {
+                writer.WriteInt(collection.Count);
+
+                foreach (var x in collection)
+                {
+                    if (x == null)
+                    {
+                        throw new ArgumentNullException(string.Format("{0} can not be null", typeof(T).Name));
+                    }
+
+                    x.Write(writer, srvVer);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
+        }
     }
 }

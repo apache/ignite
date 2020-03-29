@@ -23,10 +23,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.zeromq.ZMQ;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -44,9 +47,17 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Topic name for PUB-SUB. */
     private final byte[] TOPIC = "0mq".getBytes();
 
+    /** If pub-sub envelopes are used. */
+    private static boolean multipart_pubsub;
+
     /** Constructor. */
     public IgniteZeroMqStreamerTest() {
         super(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
     /** {@inheritDoc} */
@@ -59,16 +70,12 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         grid().getOrCreateCache(defaultCacheConfiguration());
     }
 
-    /** {@inheritDoc} */
-    @Override public void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception Test exception.
      */
+    @Test
     public void testZeroMqPairSocket() throws Exception {
-        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
                 dataStreamer, 1, ZeroMqTypeSocket.PAIR, ADDR, null);) {
                 executeStreamer(streamer, ZMQ.PAIR, null);
@@ -79,8 +86,23 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
+    @Test
+    public void testZeroMqSubSocketMultipart() throws Exception {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteZeroMqStreamer streamer = newStreamerInstance(
+                dataStreamer, 3, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
+                multipart_pubsub = true;
+                executeStreamer(streamer, ZMQ.PUB, TOPIC);
+            }
+        }
+    }
+
+    /**
+     * @throws Exception Test exception.
+     */
+    @Test
     public void testZeroMqSubSocket() throws Exception {
-        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
                 dataStreamer, 3, ZeroMqTypeSocket.SUB, ADDR, TOPIC);) {
                 executeStreamer(streamer, ZMQ.PUB, TOPIC);
@@ -91,8 +113,9 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Test exception.
      */
+    @Test
     public void testZeroMqPullSocket() throws Exception {
-        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             try (IgniteZeroMqStreamer streamer = newStreamerInstance(
                 dataStreamer, 4, ZeroMqTypeSocket.PULL, ADDR, null);) {
                 executeStreamer(streamer, ZMQ.PUSH, null);
@@ -113,7 +136,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         byte[] topic) throws Exception {
         streamer.setSingleTupleExtractor(new ZeroMqStringSingleTupleExtractor());
 
-        IgniteCache<Integer, String> cache = grid().cache(null);
+        IgniteCache<Integer, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         CacheListener listener = subscribeToPutEvents();
 
@@ -135,7 +158,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         String cachedValue = cache.get(testId);
 
         // ZeroMQ message successfully put to cache.
-        assertTrue(cachedValue != null && cachedValue.equals(String.valueOf(testId)));
+        assertTrue(cachedValue != null && cachedValue.endsWith(String.valueOf(testId)));
 
         assertTrue(cache.size() == CACHE_ENTRY_COUNT);
 
@@ -178,7 +201,11 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
             for (int i = 0; i < CACHE_ENTRY_COUNT; i++) {
                 if (ZMQ.PUB == clientSocket)
                     socket.sendMore(topic);
-                socket.send(String.valueOf(i).getBytes("UTF-8"));
+
+                if (ZMQ.PUB == clientSocket && multipart_pubsub)
+                    socket.send((topic + " " + String.valueOf(i)).getBytes("UTF-8"));
+                else
+                    socket.send(String.valueOf(i).getBytes("UTF-8"));
             }
         }
     }
@@ -192,7 +219,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         // Listen to cache PUT events and expect as many as messages as test data items.
         CacheListener listener = new CacheListener();
 
-        ignite.events(ignite.cluster().forCacheNodes(null)).localListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).localListen(listener, EVT_CACHE_OBJECT_PUT);
 
         return listener;
     }
@@ -203,7 +230,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     private void unsubscribeToPutEvents(CacheListener listener) {
         Ignite ignite = grid();
 
-        ignite.events(ignite.cluster().forCacheNodes(null)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
+        ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).stopLocalListen(listener, EVT_CACHE_OBJECT_PUT);
     }
 
     /**

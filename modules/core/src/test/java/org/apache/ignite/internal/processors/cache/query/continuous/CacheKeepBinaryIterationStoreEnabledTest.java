@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
@@ -37,10 +38,9 @@ public class CacheKeepBinaryIterationStoreEnabledTest extends CacheKeepBinaryIte
     @Override protected CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         int backups,
-        CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode) {
+        CacheAtomicityMode atomicityMode) {
         CacheConfiguration<Object, Object> ccfg =
-            super.cacheConfiguration(cacheMode, backups, atomicityMode, memoryMode);
+            super.cacheConfiguration(cacheMode, backups, atomicityMode);
 
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -50,6 +50,20 @@ public class CacheKeepBinaryIterationStoreEnabledTest extends CacheKeepBinaryIte
         ccfg.setLoadPreviousValue(true);
 
         return ccfg;
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
+    @Override public void testMvccTxOnHeap() throws Exception {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582")
+    @Test
+    @Override public void testMvccTxOnHeapLocalEntries() throws Exception {
+        // No-op
     }
 
     /**

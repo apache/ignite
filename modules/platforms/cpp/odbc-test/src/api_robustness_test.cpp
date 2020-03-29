@@ -22,12 +22,10 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#include <cstdio>
+
 #include <vector>
 #include <string>
-
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
 
 #include <boost/test/unit_test.hpp>
 
@@ -37,6 +35,7 @@
 
 #include "test_type.h"
 #include "test_utils.h"
+#include "odbc_test_suite.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -51,82 +50,20 @@ using ignite::impl::binary::BinaryUtils;
 /**
  * Test setup fixture.
  */
-struct ApiRobustnessTestSuiteFixture
+struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
 {
-    void Prepare()
-    {
-        // Allocate an environment handle
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-        BOOST_REQUIRE(env != NULL);
-
-        // We want ODBC 3 support
-        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-        // Allocate a connection handle
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-        BOOST_REQUIRE(dbc != NULL);
-    }
-
-    /**
-     * Establish connection to node.
-     *
-     * @param connectStr Connection string.
-     */
-    void Connect(const std::string& connectStr)
-    {
-        Prepare();
-
-        // Connect string
-        std::vector<SQLCHAR> connectStr0;
-
-        connectStr0.reserve(connectStr.size() + 1);
-        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
-
-        SQLCHAR outstr[ODBC_BUFFER_SIZE];
-        SQLSMALLINT outstrlen;
-
-        // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-        ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-
-        BOOST_REQUIRE(stmt != NULL);
-    }
-
-    void Disconnect()
-    {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
-
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
-
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartNode("queries-test-noodbc.xml", name);
+        return StartPlatformNode("queries-test.xml", name);
     }
 
     /**
      * Constructor.
      */
     ApiRobustnessTestSuiteFixture() :
-        testCache(0),
-        env(NULL),
-        dbc(NULL),
-        stmt(NULL)
+        testCache(0)
     {
-        grid = StartNode("queries-test.xml", "NodeMain");
+        grid = StartAdditionalNode("NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
     }
@@ -138,9 +75,7 @@ struct ApiRobustnessTestSuiteFixture
      */
     void CheckFetchScrollUnsupportedOrientation(SQLUSMALLINT orientation)
     {
-        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache");
-
-        SQLRETURN ret;
+        Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
         const int64_t recordsNum = 100;
 
@@ -156,7 +91,7 @@ struct ApiRobustnessTestSuiteFixture
         int32_t i32Field = -1;
 
         // Binding column.
-        ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &i32Field, 0, 0);
+        SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &i32Field, 0, 0);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -181,39 +116,12 @@ struct ApiRobustnessTestSuiteFixture
         CheckSQLStatementDiagnosticError("HY106");
     }
 
-    void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
-    {
-        SQLCHAR state[ODBC_BUFFER_SIZE];
-        SQLINTEGER nativeError = 0;
-        SQLCHAR message[ODBC_BUFFER_SIZE];
-        SQLSMALLINT messageLen = 0;
-
-        SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
-
-        const std::string sqlState = reinterpret_cast<char*>(state);
-        BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
-        BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
-        BOOST_REQUIRE(messageLen > 0);
-    }
-
-    void CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
-    }
-
-    void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
-    }
-
     /**
      * Destructor.
      */
-    ~ApiRobustnessTestSuiteFixture()
+    virtual ~ApiRobustnessTestSuiteFixture()
     {
-        Disconnect();
-
-        Ignition::StopAll(true);
+        // No-op.
     }
 
     /** Node started during the test. */
@@ -221,15 +129,6 @@ struct ApiRobustnessTestSuiteFixture
 
     /** Test cache instance. */
     Cache<int64_t, TestType> testCache;
-
-    /** ODBC Environment. */
-    SQLHENV env;
-
-    /** ODBC Connect. */
-    SQLHDBC dbc;
-
-    /** ODBC Statement. */
-    SQLHSTMT stmt;
 };
 
 SQLSMALLINT unsupportedC[] = {
@@ -253,7 +152,6 @@ SQLSMALLINT unsupportedSql[] = {
         SQL_WLONGVARCHAR,
         SQL_REAL,
         SQL_NUMERIC,
-        SQL_TYPE_TIME,
         SQL_INTERVAL_MONTH,
         SQL_INTERVAL_YEAR,
         SQL_INTERVAL_YEAR_TO_MONTH,
@@ -278,7 +176,7 @@ BOOST_AUTO_TEST_CASE(TestSQLDriverConnect)
 
     Prepare();
 
-    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache";
+    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache";
 
     SQLCHAR outStr[ODBC_BUFFER_SIZE];
     SQLSMALLINT outStrLen;
@@ -317,12 +215,12 @@ BOOST_AUTO_TEST_CASE(TestSQLConnect)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR buffer[ODBC_BUFFER_SIZE];
     SQLSMALLINT resLen = 0;
 
-    // Everyting is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLGetInfo(dbc, SQL_DRIVER_NAME, buffer, ODBC_BUFFER_SIZE, &resLen);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
@@ -348,11 +246,11 @@ BOOST_AUTO_TEST_CASE(TestSQLPrepare)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
-    // Everyting is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLPrepare(stmt, sql, sizeof(sql));
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -380,11 +278,11 @@ BOOST_AUTO_TEST_CASE(TestSQLExecDirect)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
-    // Everyting is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLExecDirect(stmt, sql, sizeof(sql));
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -421,7 +319,7 @@ BOOST_AUTO_TEST_CASE(TestSQLExtendedFetch)
         testCache.Put(i, obj);
     }
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
@@ -432,7 +330,7 @@ BOOST_AUTO_TEST_CASE(TestSQLExtendedFetch)
     SQLULEN rowCount;
     SQLUSMALLINT rowStatus[16];
 
-    // Everyting is ok.
+    // Everything is ok.
     ret = SQLExtendedFetch(stmt, SQL_FETCH_NEXT, 0, &rowCount, rowStatus);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -461,7 +359,7 @@ BOOST_AUTO_TEST_CASE(TestSQLNumResultCols)
         testCache.Put(i, obj);
     }
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
@@ -471,7 +369,7 @@ BOOST_AUTO_TEST_CASE(TestSQLNumResultCols)
 
     SQLSMALLINT columnCount;
 
-    // Everyting is ok.
+    // Everything is ok.
     ret = SQLNumResultCols(stmt, &columnCount);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -485,14 +383,14 @@ BOOST_AUTO_TEST_CASE(TestSQLTables)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR catalogName[] = "";
     SQLCHAR schemaName[] = "";
     SQLCHAR tableName[] = "";
     SQLCHAR tableType[] = "";
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLTables(stmt, catalogName, sizeof(catalogName), schemaName,
         sizeof(schemaName), tableName, sizeof(tableName), tableType, sizeof(tableType));
 
@@ -513,14 +411,14 @@ BOOST_AUTO_TEST_CASE(TestSQLColumns)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR catalogName[] = "";
     SQLCHAR schemaName[] = "";
     SQLCHAR tableName[] = "";
     SQLCHAR columnName[] = "";
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLColumns(stmt, catalogName, sizeof(catalogName), schemaName,
         sizeof(schemaName), tableName, sizeof(tableName), columnName, sizeof(columnName));
 
@@ -541,18 +439,18 @@ BOOST_AUTO_TEST_CASE(TestSQLBindCol)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLINTEGER ind1;
     SQLLEN len1 = 0;
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &ind1, sizeof(ind1), &len1);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
     //Unsupported data types
-    for(int i = 0; i < sizeof(unsupportedC)/sizeof(unsupportedC[0]); ++i)
+    for (size_t i = 0; i < sizeof(unsupportedC)/sizeof(unsupportedC[0]); ++i)
     {
         ret = SQLBindCol(stmt, 1, unsupportedC[i], &ind1, sizeof(ind1), &len1);
         BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
@@ -582,12 +480,12 @@ BOOST_AUTO_TEST_CASE(TestSQLBindParameter)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLINTEGER ind1;
     SQLLEN len1 = 0;
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT,
         SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
 
@@ -601,15 +499,15 @@ BOOST_AUTO_TEST_CASE(TestSQLBindParameter)
     SQLBindParameter(stmt, 2, SQL_PARAM_INPUT_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, sizeof(ind1), &len1);
     CheckSQLStatementDiagnosticError("HY105");
 
-
     //Unsupported data types
-    for(int i = 0; i < sizeof(unsupportedSql)/sizeof(unsupportedSql[0]); ++i)
+    for (size_t i = 0; i < sizeof(unsupportedSql)/sizeof(unsupportedSql[0]); ++i)
     {
-        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, unsupportedSql[i], 100, 100, &ind1, sizeof(ind1), &len1);
+        ret = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG,
+            unsupportedSql[i], 100, 100, &ind1, sizeof(ind1), &len1);
+
         BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
         CheckSQLStatementDiagnosticError("HYC00");
     }
-
 
     // Size is null.
     SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 100, 100, &ind1, 0, &len1);
@@ -629,13 +527,13 @@ BOOST_AUTO_TEST_CASE(TestSQLNativeSql)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
     SQLCHAR buffer[ODBC_BUFFER_SIZE];
     SQLINTEGER resLen = 0;
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLNativeSql(dbc, sql, sizeof(sql), buffer, sizeof(buffer), &resLen);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -664,7 +562,7 @@ BOOST_AUTO_TEST_CASE(TestSQLColAttribute)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
@@ -676,12 +574,12 @@ BOOST_AUTO_TEST_CASE(TestSQLColAttribute)
     SQLSMALLINT resLen = 0;
     SQLLEN numericAttr = 0;
 
-    // Everithing is ok. Character attribute.
+    // Everything is ok. Character attribute.
     ret = SQLColAttribute(stmt, 1, SQL_COLUMN_TABLE_NAME, buffer, sizeof(buffer), &resLen, &numericAttr);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
-    // Everithing is ok. Numeric attribute.
+    // Everything is ok. Numeric attribute.
     ret = SQLColAttribute(stmt, 1, SQL_DESC_COUNT, buffer, sizeof(buffer), &resLen, &numericAttr);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -704,7 +602,7 @@ BOOST_AUTO_TEST_CASE(TestSQLDescribeCol)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
@@ -719,7 +617,7 @@ BOOST_AUTO_TEST_CASE(TestSQLDescribeCol)
     SQLSMALLINT decimalDigits = 0;
     SQLSMALLINT nullable = 0;
 
-    // Everithing is ok.
+    // Everything is ok.
     ret = SQLDescribeCol(stmt, 1, columnName, sizeof(columnName),
         &columnNameLen, &dataType, &columnSize, &decimalDigits, &nullable);
 
@@ -740,7 +638,7 @@ BOOST_AUTO_TEST_CASE(TestSQLRowCount)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
@@ -750,7 +648,7 @@ BOOST_AUTO_TEST_CASE(TestSQLRowCount)
 
     SQLLEN rows = 0;
 
-    // Everithing is ok.
+    // Everything is ok.
     ret = SQLRowCount(stmt, &rows);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -763,13 +661,13 @@ BOOST_AUTO_TEST_CASE(TestSQLForeignKeys)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR catalogName[] = "";
     SQLCHAR schemaName[] = "cache";
     SQLCHAR tableName[] = "TestType";
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLForeignKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName),
         tableName, sizeof(tableName), catalogName, sizeof(catalogName),
         schemaName, sizeof(schemaName), tableName, sizeof(tableName));
@@ -848,12 +746,12 @@ BOOST_AUTO_TEST_CASE(TestSQLGetStmtAttr)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR buffer[ODBC_BUFFER_SIZE];
     SQLINTEGER resLen = 0;
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLGetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, buffer, sizeof(buffer), &resLen);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -869,11 +767,11 @@ BOOST_AUTO_TEST_CASE(TestSQLSetStmtAttr)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLULEN val = 1;
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_ROW_ARRAY_SIZE, reinterpret_cast<SQLPOINTER>(val), sizeof(val));
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -888,13 +786,13 @@ BOOST_AUTO_TEST_CASE(TestSQLPrimaryKeys)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR catalogName[] = "";
     SQLCHAR schemaName[] = "cache";
     SQLCHAR tableName[] = "TestType";
 
-    // Everithing is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLPrimaryKeys(stmt, catalogName, sizeof(catalogName), schemaName, sizeof(schemaName),
         tableName, sizeof(tableName));
 
@@ -914,18 +812,42 @@ BOOST_AUTO_TEST_CASE(TestSQLNumParams)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
-    // Everyting is ok.
+    // Everything is ok.
     SQLRETURN ret = SQLPrepare(stmt, sql, sizeof(sql));
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
 
     SQLSMALLINT params;
 
-    // Everithing is ok.
+    // Everything is ok.
+    ret = SQLNumParams(stmt, &params);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLNumParams(stmt, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestSQLNumParamsEscaped)
+{
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLCHAR sql[] = "SELECT {fn NOW()}";
+
+    // Everything is ok.
+    SQLRETURN ret = SQLPrepare(stmt, sql, sizeof(sql));
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    SQLSMALLINT params;
+
+    // Everything is ok.
     ret = SQLNumParams(stmt, &params);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
@@ -938,7 +860,7 @@ BOOST_AUTO_TEST_CASE(TestSQLGetDiagField)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     // Should fail.
     SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
@@ -948,7 +870,7 @@ BOOST_AUTO_TEST_CASE(TestSQLGetDiagField)
     SQLCHAR buffer[ODBC_BUFFER_SIZE];
     SQLSMALLINT resLen = 0;
 
-    // Everithing is ok
+    // Everything is ok
     ret = SQLGetDiagField(SQL_HANDLE_STMT, stmt, 1, SQL_DIAG_MESSAGE_TEXT, buffer, sizeof(buffer), &resLen);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
@@ -961,26 +883,31 @@ BOOST_AUTO_TEST_CASE(TestSQLGetDiagField)
 
 BOOST_AUTO_TEST_CASE(TestSQLGetDiagRec)
 {
-    // There are no checks because we do not really care what is the result of these
-    // calls as long as they do not cause segmentation fault.
-
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
-
-    // Should fail.
-    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
-
-    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR state[ODBC_BUFFER_SIZE];
     SQLINTEGER nativeError = 0;
     SQLCHAR message[ODBC_BUFFER_SIZE];
     SQLSMALLINT messageLen = 0;
 
-    // Everithing is ok
-    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, sizeof(message), &messageLen);
+    // Generating error.
+    SQLRETURN ret = SQLGetTypeInfo(stmt, SQL_INTERVAL_MONTH);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
+    // Everything is ok.
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, sizeof(message), &messageLen);
     BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
 
+    // Should return error.
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, -1, &messageLen);
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    // Should return message length.
+    ret = SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, message, 1, &messageLen);
+    BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS_WITH_INFO);
+
+    // There are no checks because we do not really care what is the result of these
+    // calls as long as they do not cause segmentation fault.
     SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, 0, &nativeError, message, sizeof(message), &messageLen);
     SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, 0, message, sizeof(message), &messageLen);
     SQLGetDiagRec(SQL_HANDLE_STMT, stmt, 1, state, &nativeError, 0, sizeof(message), &messageLen);
@@ -1003,7 +930,7 @@ BOOST_AUTO_TEST_CASE(TestSQLGetData)
         testCache.Put(i, obj);
     }
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR sql[] = "SELECT strField FROM TestType";
 
@@ -1047,7 +974,7 @@ BOOST_AUTO_TEST_CASE(TestSQLGetEnvAttr)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR buffer[ODBC_BUFFER_SIZE];
     SQLINTEGER resLen = 0;
@@ -1068,7 +995,7 @@ BOOST_AUTO_TEST_CASE(TestSQLSpecialColumns)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR catalogName[] = "";
     SQLCHAR schemaName[] = "cache";
@@ -1137,7 +1064,7 @@ BOOST_AUTO_TEST_CASE(TestSQLError)
     // There are no checks because we do not really care what is the result of these
     // calls as long as they do not cause segmentation fault.
 
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLCHAR state[6] = { 0 };
     SQLINTEGER nativeCode = 0;
@@ -1179,18 +1106,35 @@ BOOST_AUTO_TEST_CASE(TestSQLError)
 
 BOOST_AUTO_TEST_CASE(TestSQLDiagnosticRecords)
 {
-    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;cache=cache");
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
     SQLHANDLE hnd;
-    SQLRETURN ret;
 
-    ret = SQLAllocHandle(SQL_HANDLE_DESC, dbc, &hnd);
+    SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_DESC, dbc, &hnd);
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     CheckSQLConnectionDiagnosticError("IM001");
 
     ret = SQLFreeStmt(stmt, 4);
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     CheckSQLStatementDiagnosticError("HY092");
+}
+
+BOOST_AUTO_TEST_CASE(TestManyFds)
+{
+    enum { FDS_NUM = 2000 };
+
+    std::FILE* fds[FDS_NUM];
+
+    for (int i = 0; i < FDS_NUM; ++i)
+        fds[i] = tmpfile();
+
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    for (int i = 0; i < FDS_NUM; ++i)
+    {
+        if (fds[i])
+            fclose(fds[i]);
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

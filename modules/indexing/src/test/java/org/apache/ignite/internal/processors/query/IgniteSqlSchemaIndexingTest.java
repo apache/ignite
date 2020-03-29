@@ -30,32 +30,22 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Tests {@link IgniteH2Indexing} support {@link CacheConfiguration#setSqlSchema(String)} configuration.
  */
 @SuppressWarnings("unchecked")
-public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
+public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -63,15 +53,16 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.
+     * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned) {
-        return new CacheConfiguration()
+    private static CacheConfiguration cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
-            .setIndexedTypes(Integer.class, Fact.class);
+            .setIndexedTypes(idxTypes);
     }
 
     /** {@inheritDoc} */
@@ -84,16 +75,19 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
     public void testCaseSensitive() throws Exception {
         //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
-        //https://issues.apache.org/jira/browse/IGNITE-1094
-
+        //TODO IGNITE-1094
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true)
+                final CacheConfiguration cfg = cacheConfig("InSensitiveCache", true, Integer.class, Integer.class)
                     .setSqlSchema("InsensitiveCache");
-                final CacheConfiguration collisionCfg = cacheConfig("InsensitiveCache", true)
+
+                final CacheConfiguration collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Integer.class)
                     .setSqlSchema("Insensitivecache");
+
                 IgniteConfiguration icfg = new IgniteConfiguration()
                     .setLocalHost("127.0.0.1")
                     .setCacheConfiguration(cfg, collisionCfg);
@@ -102,7 +96,36 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, "Cache already registered: ");
+        }, IgniteException.class, "Duplicate index name");
+    }
+
+    /**
+     * Test collision of table names in different caches, sharing a single SQL schema.
+     *
+     * @throws Exception If failed.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
+    public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
+        //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
+        //TODO: IGNITE-1094
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                final CacheConfiguration cfg = cacheConfig("cache1", true, Integer.class, Fact.class)
+                    .setSqlSchema("TEST_SCHEMA");
+
+                final CacheConfiguration collisionCfg = cacheConfig("cache2", true, Integer.class, Fact.class)
+                    .setSqlSchema("TEST_SCHEMA");
+
+                IgniteConfiguration icfg = new IgniteConfiguration()
+                    .setLocalHost("127.0.0.1")
+                    .setCacheConfiguration(cfg, collisionCfg);
+
+                Ignition.start(icfg);
+
+                return null;
+            }
+        }, IgniteException.class, "Failed to register query type");
     }
 
     /**
@@ -110,18 +133,18 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUnregistration() throws Exception {
         startGridsMultiThreaded(3, true);
 
-        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true)
+        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("Insensitive_Cache", true, Integer.class, Fact.class)
             .setSqlSchema("Insensitive_Cache");
-        final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true)
+        final CacheConfiguration<Integer, Fact> collisionCfg = cacheConfig("InsensitiveCache", true, Integer.class, Fact.class)
             .setSqlSchema("Insensitive_Cache");
 
         IgniteCache<Integer, Fact> cache = ignite(0).createCache(cfg);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name " +
-            "from InSENSitive_Cache.Fact f");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select f.id, f.name from InSENSitive_Cache.Fact f");
 
         cache.put(1, new Fact(1, "cacheInsensitive"));
 
@@ -149,20 +172,23 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSchemaEscapeAll() throws Exception {
         startGridsMultiThreaded(3, true);
 
-        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true)
+        final CacheConfiguration<Integer, Fact> cfg = cacheConfig("simpleSchema", true, Integer.class, Fact.class)
             .setSqlSchema("SchemaName1")
             .setSqlEscapeAll(true);
 
-        final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true)
+        final CacheConfiguration<Integer, Fact> cfgEsc = cacheConfig("escapedSchema", true, Integer.class, Fact.class)
             .setSqlSchema("\"SchemaName2\"")
             .setSqlEscapeAll(true);
 
-        escapeCheckSchemaName(ignite(0).createCache(cfg), log, cfg.getSqlSchema());
+        escapeCheckSchemaName(ignite(0).createCache(cfg), log, cfg.getSqlSchema(), false,
+            "Table \"FACT\" not found");
 
-        escapeCheckSchemaName(ignite(0).createCache(cfgEsc), log, "SchemaName2");
+        escapeCheckSchemaName(ignite(0).createCache(cfgEsc), log, "SchemaName2", true,
+            "Schema \"SCHEMANAME2\" not found");
 
         ignite(0).destroyCache(cfg.getName());
         ignite(0).destroyCache(cfgEsc.getName());
@@ -172,9 +198,12 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      * Executes query with and without escaped schema name.
      * @param cache cache for querying
      * @param log logger for assertThrows
-     * @param schemaName - schema name without quotes for testing
+     * @param schemaName Schema name without quotes for testing
+     * @param caseSensitive Whether schema name is case sensitive.
+     * @param msg Expected error message.
      */
-    private static void escapeCheckSchemaName(final IgniteCache<Integer, Fact> cache, IgniteLogger log, String schemaName) {
+    private static void escapeCheckSchemaName(final IgniteCache<Integer, Fact> cache, IgniteLogger log,
+        String schemaName, boolean caseSensitive, String msg) {
         final SqlFieldsQuery qryWrong = new SqlFieldsQuery("select f.id, f.name " +
             "from " + schemaName.toUpperCase() + ".Fact f");
 
@@ -183,12 +212,16 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 cache.query(qryWrong);
+
                 return null;
             }
-        }, CacheException.class, "Failed to parse query");
+        }, CacheException.class, msg);
+
+        if (caseSensitive)
+            schemaName = "\"" + schemaName + "\"";
 
         SqlFieldsQuery qryCorrect = new SqlFieldsQuery("select f.\"id\", f.\"name\" " +
-            "from \""+schemaName+"\".\"Fact\" f");
+            "from "+  schemaName + ".\"Fact\" f");
 
         for ( List<?> row : cache.query(qryCorrect)) {
             assertEquals(2, row.size());
@@ -197,7 +230,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
         }
     }
 
-    // TODO add tests with dynamic cache unregistration, after resolve of https://issues.apache.org/jira/browse/IGNITE-1094
+    // TODO add tests with dynamic cache unregistration - IGNITE-1094 resolved
 
     /** Test class as query entity */
     private static class Fact {

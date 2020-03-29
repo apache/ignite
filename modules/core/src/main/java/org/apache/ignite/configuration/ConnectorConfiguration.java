@@ -22,6 +22,8 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,6 +71,7 @@ public class ConnectorConfiguration {
     private String jettyPath;
 
     /** REST secret key. */
+    @GridToStringExclude
     private String secretKey;
 
     /** TCP host. */
@@ -169,9 +172,12 @@ public class ConnectorConfiguration {
      * accessing Ignite APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
+     * @return {@code this} for chaining.
      */
-    public void setJettyPath(String jettyPath) {
+    public ConnectorConfiguration setJettyPath(String jettyPath) {
         this.jettyPath = jettyPath;
+
+        return this;
     }
 
     /**
@@ -195,9 +201,12 @@ public class ConnectorConfiguration {
      * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @param secretKey REST secret key.
+     * @return {@code this} for chaining.
      */
-    public void setSecretKey(@Nullable String secretKey) {
+    public ConnectorConfiguration setSecretKey(@Nullable String secretKey) {
         this.secretKey = secretKey;
+
+        return this;
     }
 
     /**
@@ -231,9 +240,12 @@ public class ConnectorConfiguration {
      * Sets host for TCP binary protocol server.
      *
      * @param host TCP host.
+     * @return {@code this} for chaining.
      */
-    public void setHost(String host) {
+    public ConnectorConfiguration setHost(String host) {
         this.host = host;
+
+        return this;
     }
 
     /**
@@ -251,9 +263,12 @@ public class ConnectorConfiguration {
      * Sets port for TCP binary protocol server.
      *
      * @param port TCP port.
+     * @return {@code this} for chaining.
      */
-    public void setPort(int port) {
+    public ConnectorConfiguration setPort(int port) {
         this.port = port;
+
+        return this;
     }
 
     /**
@@ -274,9 +289,12 @@ public class ConnectorConfiguration {
      *
      * @param noDelay {@code True} if option should be enabled.
      * @see #isNoDelay()
+     * @return {@code this} for chaining.
      */
-    public void setNoDelay(boolean noDelay) {
+    public ConnectorConfiguration setNoDelay(boolean noDelay) {
         this.noDelay = noDelay;
+
+        return this;
     }
 
     /**
@@ -296,9 +314,12 @@ public class ConnectorConfiguration {
      *
      * @param directBuf {@code True} if option should be enabled.
      * @see #isDirectBuffer()
+     * @return {@code this} for chaining.
      */
-    public void setDirectBuffer(boolean directBuf) {
+    public ConnectorConfiguration setDirectBuffer(boolean directBuf) {
         this.directBuf = directBuf;
+
+        return this;
     }
 
     /**
@@ -315,28 +336,34 @@ public class ConnectorConfiguration {
      *
      * @param sndBufSize Send buffer size.
      * @see #getSendBufferSize()
+     * @return {@code this} for chaining.
      */
-    public void setSendBufferSize(int sndBufSize) {
+    public ConnectorConfiguration setSendBufferSize(int sndBufSize) {
         this.sndBufSize = sndBufSize;
+
+        return this;
     }
 
     /**
-     * Gets REST TCP server receive buffer size.
+     * Gets REST TCP server receive buffer size in bytes.
      *
-     * @return REST TCP server receive buffer size (0 for default).
+     * @return REST TCP server receive buffer size in bytes(0 for default).
      */
     public int getReceiveBufferSize() {
         return rcvBufSize;
     }
 
     /**
-     * Sets REST TCP server receive buffer size.
+     * Sets REST TCP server receive buffer size in bytes.
      *
-     * @param rcvBufSize Receive buffer size.
+     * @param rcvBufSize Receive buffer size in bytes.
      * @see #getReceiveBufferSize()
+     * @return {@code this} for chaining.
      */
-    public void setReceiveBufferSize(int rcvBufSize) {
+    public ConnectorConfiguration setReceiveBufferSize(int rcvBufSize) {
         this.rcvBufSize = rcvBufSize;
+
+        return this;
     }
 
     /**
@@ -354,9 +381,12 @@ public class ConnectorConfiguration {
      *
      * @param sndQueueLimit REST TCP server send queue limit (0 for unlimited).
      * @see #getSendQueueLimit()
+     * @return {@code this} for chaining.
      */
-    public void setSendQueueLimit(int sndQueueLimit) {
+    public ConnectorConfiguration setSendQueueLimit(int sndQueueLimit) {
         this.sndQueueLimit = sndQueueLimit;
+
+        return this;
     }
 
     /**
@@ -374,9 +404,12 @@ public class ConnectorConfiguration {
      *
      * @param selectorCnt Number of selector threads for REST TCP server.
      * @see #getSelectorCount()
+     * @return {@code this} for chaining.
      */
-    public void setSelectorCount(int selectorCnt) {
+    public ConnectorConfiguration setSelectorCount(int selectorCnt) {
         this.selectorCnt = selectorCnt;
+
+        return this;
     }
 
     /**
@@ -396,9 +429,12 @@ public class ConnectorConfiguration {
      *
      * @param idleTimeout Idle timeout in milliseconds.
      * @see #getIdleTimeout()
+     * @return {@code this} for chaining.
      */
-    public void setIdleTimeout(long idleTimeout) {
+    public ConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
     }
 
     /**
@@ -420,9 +456,12 @@ public class ConnectorConfiguration {
      * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
      * @param sslEnabled {@code True} if SSL should be enabled.
+     * @return {@code this} for chaining.
      */
-    public void setSslEnabled(boolean sslEnabled) {
+    public ConnectorConfiguration setSslEnabled(boolean sslEnabled) {
         this.sslEnabled = sslEnabled;
+
+        return this;
     }
 
     /**
@@ -439,9 +478,12 @@ public class ConnectorConfiguration {
      * Sets flag indicating whether or not SSL client authentication is required.
      *
      * @param sslClientAuth Whether or not client authentication is required.
+     * @return {@code this} for chaining.
      */
-    public void setSslClientAuth(boolean sslClientAuth) {
+    public ConnectorConfiguration setSslClientAuth(boolean sslClientAuth) {
         this.sslClientAuth = sslClientAuth;
+
+        return this;
     }
 
     /**
@@ -463,10 +505,13 @@ public class ConnectorConfiguration {
      *
      * @param sslCtxFactory Instance of {@link GridSslContextFactory}
      * @deprecated Use {@link #setSslFactory(Factory)} instead.
+     * @return {@code this} for chaining.
      */
     @Deprecated
-    public void setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+    public ConnectorConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+
+        return this;
     }
 
     /**
@@ -485,9 +530,12 @@ public class ConnectorConfiguration {
      * {@link #setSslEnabled(boolean)} is set to {@code true}.
      *
      * @param sslFactory Instance of {@link Factory}
+     * @return {@code this} for chaining.
      */
-    public void setSslFactory(Factory<SSLContext> sslFactory) {
+    public ConnectorConfiguration setSslFactory(Factory<SSLContext> sslFactory) {
         this.sslFactory = sslFactory;
+
+        return this;
     }
 
     /**
@@ -506,9 +554,12 @@ public class ConnectorConfiguration {
      * Sets number of ports to try if configured one is in use.
      *
      * @param portRange Port range.
+     * @return {@code this} for chaining.
      */
-    public void setPortRange(int portRange) {
+    public ConnectorConfiguration setPortRange(int portRange) {
         this.portRange = portRange;
+
+        return this;
     }
 
     /**
@@ -527,9 +578,12 @@ public class ConnectorConfiguration {
      *
      * @param threadPoolSize Thread pool size to use for processing of client messages.
      * @see #getThreadPoolSize()
+     * @return {@code this} for chaining.
      */
-    public void setThreadPoolSize(int threadPoolSize) {
+    public ConnectorConfiguration setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
+
+        return this;
     }
 
     /**
@@ -559,9 +613,12 @@ public class ConnectorConfiguration {
      * access them from java code directly.
      *
      * @param interceptor Interceptor.
+     * @return {@code this} for chaining.
      */
-    public void setMessageInterceptor(ConnectorMessageInterceptor interceptor) {
+    public ConnectorConfiguration setMessageInterceptor(ConnectorMessageInterceptor interceptor) {
         msgInterceptor = interceptor;
+
+        return this;
     }
 
     /**
@@ -569,9 +626,12 @@ public class ConnectorConfiguration {
      *
      * @param idleQryCurTimeout Idle query cursors timeout in milliseconds.
      * @see #getIdleQueryCursorTimeout()
+     * @return {@code this} for chaining.
      */
-    public void setIdleQueryCursorTimeout(long idleQryCurTimeout) {
+    public ConnectorConfiguration setIdleQueryCursorTimeout(long idleQryCurTimeout) {
         this.idleQryCurTimeout = idleQryCurTimeout;
+
+        return this;
     }
 
     /**
@@ -592,9 +652,12 @@ public class ConnectorConfiguration {
      *
      * @param idleQryCurCheckFreq Idle query check frequency in milliseconds.
      * @see #getIdleQueryCursorCheckFrequency()
+     * @return {@code this} for chaining.
      */
-    public void setIdleQueryCursorCheckFrequency(long idleQryCurCheckFreq) {
+    public ConnectorConfiguration setIdleQueryCursorCheckFrequency(long idleQryCurCheckFreq) {
         this.idleQryCurCheckFreq = idleQryCurCheckFreq;
+
+        return this;
     }
 
     /**
@@ -607,5 +670,10 @@ public class ConnectorConfiguration {
      */
     public long getIdleQueryCursorCheckFrequency() {
         return idleQryCurCheckFreq;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ConnectorConfiguration.class, this);
     }
 }

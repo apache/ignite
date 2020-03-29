@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl;
 
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
+import org.junit.Test;
 
 /**
  * Test of error resiliency after an error in a map-reduce job execution.
@@ -33,6 +34,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError0_Runtime() throws Exception {
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Runtime);
     }
@@ -42,6 +44,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError0_IOException() throws Exception {
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.IOException);
     }
@@ -51,6 +54,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError0_Error() throws Exception {
         doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Error);
     }
@@ -60,22 +64,27 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError7_Runtime() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Runtime);
     }
+
     /**
      * Tests recovery.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError7_IOException() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.IOException);
     }
+
     /**
      * Tests recovery.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRecoveryAfterAnError7_Error() throws Exception {
         doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Error);
     }

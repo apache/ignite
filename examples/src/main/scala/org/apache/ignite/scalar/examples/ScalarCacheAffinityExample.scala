@@ -88,7 +88,7 @@ object ScalarCacheAffinityExample extends App {
         val keys = (0 until KEY_CNT).toSeq
 
         // Map all keys to nodes.
-        val mappings = ignite$.cluster().mapKeysToNodes(NAME, keys)
+        val mappings = ignite$.affinity(NAME).mapKeysToNodes(keys)
 
         mappings.foreach(mapping => {
             val node = mapping._1

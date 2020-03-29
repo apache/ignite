@@ -39,7 +39,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             
             // ReSharper disable once UnusedVariable
             var proc = new IgniteProcess(
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(springConfigUrl),
                 "-J-ea",
                 "-J-Xcheck:jni",
@@ -47,15 +46,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                 "-J-Xmx512m",
                 "-J-DIGNITE_QUIET=false"
                 );
+            Assert.IsTrue(proc.Alive);
 
-            _grid = Ignition.Start(new IgniteConfiguration
+            _grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = springConfigUrl
             });
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
         }
 
         /// <summary>
@@ -75,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestClearCache()
         {
-            _grid.GetCache<object, object>(null).Clear();
+            _grid.GetCache<object, object>("default").Clear();
         }
     }
 }

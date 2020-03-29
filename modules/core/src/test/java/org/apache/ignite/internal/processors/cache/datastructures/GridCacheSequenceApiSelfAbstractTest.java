@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,12 +32,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -76,10 +78,10 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);
@@ -90,7 +92,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    protected AtomicConfiguration atomicConfiguration() {
+    @Override protected AtomicConfiguration atomicConfiguration() {
         AtomicConfiguration atomicCfg = super.atomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
@@ -124,31 +126,27 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        try {
-            // Remove mandatory sequences from cache.
-            for (String seqName : seqNames) {
-                IgniteAtomicSequence seq = grid().atomicSequence(seqName, 0, false);
+        // Remove mandatory sequences from cache.
+        for (String seqName : seqNames) {
+            IgniteAtomicSequence seq = grid().atomicSequence(seqName, 0, false);
 
-                assertNotNull(seq);
+            assertNotNull(seq);
 
-                seq.close();
+            seq.close();
 
-                assertNull(grid().atomicSequence(seqName, 0, false));
-            }
-        }
-        finally {
-            super.afterTestsStopped();
+            assertNull(grid().atomicSequence(seqName, 0, false));
         }
     }
 
     /** {@inheritDoc} */
-    protected IgniteEx grid() {
+    @Override protected IgniteEx grid() {
         return grid(0);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareSequence() throws Exception {
         // Random sequence names.
         String locSeqName1 = UUID.randomUUID().toString();
@@ -173,6 +171,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddWrongValue() throws Exception {
         for (IgniteAtomicSequence seq : seqArr) {
             try {
@@ -198,6 +197,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndIncrement() throws Exception {
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -211,6 +211,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrementAndGet() throws Exception {
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -224,6 +225,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddAndGet() throws Exception {
         for (int i = 1; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -237,6 +239,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndAdd() throws Exception {
         for (int i = 1; i < MAX_LOOPS_NUM; i++) {
             for (IgniteAtomicSequence seq : seqArr)
@@ -250,6 +253,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAndAddInTx() throws Exception {
         try (Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
@@ -265,6 +269,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceIntegrity0() throws Exception {
         // Random sequence names.
         String locSeqName1 = UUID.randomUUID().toString();
@@ -298,6 +303,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSequenceIntegrity1() throws Exception {
         sequenceIntegrity(1, 0);
         sequenceIntegrity(7, -1500);
@@ -307,6 +313,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiThreadedSequenceIntegrity() throws Exception {
         multiThreadedSequenceIntegrity(1, 0);
         multiThreadedSequenceIntegrity(7, -1500);
@@ -316,6 +323,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
         String locSeqName = UUID.randomUUID().toString();
 
@@ -338,26 +346,86 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheSets() throws Exception {
         // Make new atomic sequence in cache.
         IgniteAtomicSequence seq = grid().atomicSequence(UUID.randomUUID().toString(), 0, true);
 
         seq.incrementAndGet();
 
-        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
+        final String cacheName = DataStructuresProcessor.ATOMICS_CACHE_NAME + "@default-ds-group";
+
+        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(cacheName);
 
         assertNotNull(cache);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid().cache(GridCacheUtils.ATOMICS_CACHE_NAME);
+                grid().cache(cacheName);
 
                 return null;
             }
         }, IllegalStateException.class, null);
 
         for (String seqName : seqNames)
-            assert null != cache.get(new GridCacheInternalKeyImpl(seqName));
+            assert null != cache.get(new GridCacheInternalKeyImpl(seqName, "default-ds-group"));
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        AtomicConfiguration cfg = new AtomicConfiguration().setGroupName("grp1");
+
+        IgniteAtomicSequence seq1 = ignite.atomicSequence("seq1", 1, true);
+        IgniteAtomicSequence seq2 = ignite.atomicSequence("seq2", 2, true);
+        IgniteAtomicSequence seq3 = ignite.atomicSequence("seq3", cfg, 3, true);
+        IgniteAtomicSequence seq4 = ignite.atomicSequence("seq4", cfg, 4, true);
+
+        assertNull(ignite.atomicSequence("seq1", cfg, 1, false));
+        assertNull(ignite.atomicSequence("seq2", cfg, 1, false));
+        assertNull(ignite.atomicSequence("seq3", 1, false));
+        assertNull(ignite.atomicSequence("seq4", 1, false));
+
+        assertEquals(11, seq1.addAndGet(10));
+        assertEquals(12, seq2.addAndGet(10));
+        assertEquals(13, seq3.addAndGet(10));
+        assertEquals(14, seq4.addAndGet(10));
+
+        seq2.close();
+        seq4.close();
+
+        assertTrue(seq2.removed());
+        assertTrue(seq4.removed());
+
+        assertNull(ignite.atomicSequence("seq2", 2, false));
+        assertNull(ignite.atomicSequence("seq4", cfg, 4, false));
+
+        assertFalse(seq1.removed());
+        assertFalse(seq3.removed());
+
+        assertNotNull(ignite.atomicSequence("seq1", 1, false));
+        assertNotNull(ignite.atomicSequence("seq3", cfg, 3, false));
+    }
+
+    /**
+     * Tests that reserveSize value from explicit configuration takes preference.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSequenceReserveSizeFromExplicitConfiguration() throws Exception {
+        Ignite ignite = grid(0);
+
+        IgniteAtomicSequence seq = ignite.atomicSequence("seq",
+            new AtomicConfiguration().setAtomicSequenceReserveSize(BATCH_SIZE + 1), 0, true);
+
+        assertEquals(BATCH_SIZE + 1, seq.batchSize());
     }
 
     /**
@@ -520,7 +588,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
             assert !resSet.contains(val) : "Element already in set : " + val;
 
             resSet.add(val);
-
 
             if (i % 100 == 0)
                 info("Finished iteration 2: " + i);

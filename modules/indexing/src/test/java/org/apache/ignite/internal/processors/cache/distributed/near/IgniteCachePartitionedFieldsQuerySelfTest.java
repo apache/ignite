@@ -27,7 +27,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
-import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -53,8 +53,9 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cache(@Nullable String name, boolean primitives) {
-        CacheConfiguration cc = super.cache(name, primitives);
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cc = super.cacheConfiguration();
 
         cc.setNearConfiguration(nearConfiguration());
 
@@ -62,21 +63,34 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocalQuery() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache( null);
+        doTestLocalQuery(intCache, new SqlFieldsQuery("select _key, _val from Integer"));
+    }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testLocalQueryNoOpCache() throws Exception {
+        doTestLocalQuery(noOpCache, new SqlFieldsQuery("select _key, _val from \"Integer-Integer\".Integer"));
+    }
+
+    /**
+     * Execute given query locally and check results.
+     * @param cache Cache to run query on.
+     * @param fldsQry Query.
+     */
+    private void doTestLocalQuery(IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws InterruptedException {
         awaitPartitionMapExchange(true, true, null);
 
-        int expected = 0;
+        int exp = 0;
 
-        for(Cache.Entry e: cache.localEntries(CachePeekMode.PRIMARY)){
+        for(Cache.Entry e: intCache.localEntries(CachePeekMode.PRIMARY)){
             if(e.getValue() instanceof Integer)
-                expected++;
+                exp++;
         }
 
-        QueryCursor<List<?>> qry = cache
-            .query(new SqlFieldsQuery("select _key, _val from Integer").setLocal(true));
+        QueryCursor<List<?>> qry = cache.query(fldsQry.setLocal(true));
 
-        assertEquals(expected, qry.getAll().size());
+        assertEquals(exp, qry.getAll().size());
     }
 }

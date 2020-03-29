@@ -94,6 +94,14 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             out.synchronize();
 
             ptr = platformCtx.gateway().serviceInit(mem.pointer());
+
+            PlatformInputStream in = mem.input();
+
+            in.synchronize();
+
+            BinaryRawReaderEx reader = platformCtx.reader(in);
+
+            PlatformUtils.readInvocationResult(platformCtx, reader);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -212,7 +220,6 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /**
      * @param ignite Ignite instance.
      */
-    @SuppressWarnings("UnusedDeclaration")
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
         // Ignite instance can be null here because service processor invokes "cleanup" on resource manager.

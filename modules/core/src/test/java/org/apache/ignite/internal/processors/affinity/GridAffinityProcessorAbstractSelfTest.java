@@ -28,10 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -46,22 +45,14 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Flag to start grid with cache. */
     private boolean withCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setForceServerMode(true);
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (withCache) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -73,8 +64,6 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
 
             cfg.setCacheConfiguration(cacheCfg);
         }
-        else
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -87,24 +76,18 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     protected abstract AffinityFunction affinityFunction();
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT >= 1;
 
-        withCache = false;
+        withCache = true;
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
 
-        withCache = true;
+        withCache = false;
 
         for (int i = NODES_CNT; i < 2 * NODES_CNT; i++)
-            startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+            startClientGrid(i);
     }
 
     /**
@@ -112,7 +95,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
-    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
+    @Test
     public void testAffinityProcessor() throws Exception {
         Random rnd = new Random();
 
@@ -164,6 +147,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testPerformance() throws Exception {
         IgniteKernal grid = (IgniteKernal)grid(0);
         GridAffinityProcessor aff = grid.context().affinity();
@@ -180,7 +164,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         int iterations = 10000000;
 
         for (int i = 0; i < iterations; i++)
-            aff.mapKeyToNode(null, keys);
+            aff.mapKeyToNode(DEFAULT_CACHE_NAME, keys);
 
         long diff = System.currentTimeMillis() - start;
 

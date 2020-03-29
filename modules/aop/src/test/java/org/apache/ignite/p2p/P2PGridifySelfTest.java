@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -39,8 +40,8 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
     private DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Override P2P configuration to exclude Task and Job classes
         cfg.setPeerClassLoadingLocalClassPathExclude(GridP2PTestTask.class.getName(), GridP2PTestJob.class.getName());
@@ -93,7 +94,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @return The same value as parameter has.
      */
     @Gridify(taskName = "org.apache.ignite.p2p.GridP2PTestTask",
-        gridName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+        igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public int executeGridify(int res) {
         return res;
     }
@@ -129,7 +130,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @param res Result.
      * @return The same value as parameter has.
      */
-    @Gridify(gridName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
+    @Gridify(igniteInstanceName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public Integer executeGridifyResource(int res) {
         String path = "org/apache/ignite/p2p/p2p.properties";
 
@@ -174,6 +175,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.PRIVATE);
     }
@@ -183,6 +185,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.ISOLATED);
     }
@@ -192,6 +195,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.CONTINUOUS);
     }
@@ -201,6 +205,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTestBothNodesDeploy(DeploymentMode.SHARED);
     }
@@ -210,6 +215,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourcePrivateMode() throws Exception {
         processTestGridifyResource(DeploymentMode.PRIVATE);
     }
@@ -219,6 +225,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourceIsolatedMode() throws Exception {
         processTestGridifyResource(DeploymentMode.ISOLATED);
     }
@@ -228,6 +235,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourceContinuousMode() throws Exception {
         processTestGridifyResource(DeploymentMode.CONTINUOUS);
     }
@@ -237,6 +245,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testResourceSharedMode() throws Exception {
         processTestGridifyResource(DeploymentMode.SHARED);
     }

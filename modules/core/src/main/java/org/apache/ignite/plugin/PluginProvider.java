@@ -28,11 +28,14 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Pluggable Ignite component.
  * <p>
- * Ignite plugins are loaded using JDK {@link ServiceLoader}.
+ * Ignite plugins can be loaded using JDK {@link ServiceLoader} or set up explicitly via
+ * {@link IgniteConfiguration#setPluginProviders(PluginProvider[])}.
  * First method called to initialize plugin is {@link PluginProvider#initExtensions(PluginContext, ExtensionRegistry)}.
- * If plugin requires configuration it can be set in {@link IgniteConfiguration} using
+ * If {@link ServiceLoader} approach of plugin loading is chosen, fully-qualified {@link PluginProvider} class name is
+ * used as the service type. And required plugin configuration in this case can be set up via
  * {@link IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)}.
  *
+ * @see IgniteConfiguration#setPluginProviders(PluginProvider[])
  * @see IgniteConfiguration#setPluginConfigurations(PluginConfiguration...)
  * @see PluginContext
  */
@@ -63,7 +66,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param ctx Plugin context.
      * @param registry Extension registry.
      */
-    public void initExtensions(PluginContext ctx, ExtensionRegistry registry);
+    public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException;
 
     /**
      * Creates Ignite component.
@@ -73,6 +76,14 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @return Ignite component or {@code null} if component is not supported.
      */
     @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
+
+    /**
+     * Creates cache plugin provider.
+     *
+     * @return Cache plugin provider class.
+     * @param ctx Plugin context.
+     */
+    public CachePluginProvider createCacheProvider(CachePluginContext ctx);
 
     /**
      * Starts grid component.
@@ -133,6 +144,22 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *
      * @param node Joining node.
      * @throws PluginValidationException If cluster-wide plugin validation failed.
+     *
+     * @deprecated Use {@link #validateNewNode(ClusterNode, Serializable)} instead.
      */
+    @Deprecated
     public void validateNewNode(ClusterNode node) throws PluginValidationException;
+
+    /**
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
+     * @param node Joining node.
+     * @param data Discovery data object or {@code null} if nothing was
+     * sent for this component.
+     * @throws PluginValidationException If cluster-wide plugin validation failed.
+     */
+    public default void validateNewNode(ClusterNode node, Serializable data)  {
+        validateNewNode(node);
+    }
 }

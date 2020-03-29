@@ -26,13 +26,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAlwaysEvictionPolicy;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -58,12 +56,9 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     /** Number of transactions per thread. */
     private static final int TX_CNT = 500;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -77,9 +72,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         plc.setMaxMemorySize(1000);
 
         cc.setEvictionPolicy(plc);
-        cc.setSwapEnabled(false);
+        cc.setOnheapCacheEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setEvictSynchronized(false);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
@@ -87,12 +81,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         return c;
     }
@@ -104,21 +92,16 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         if (GRID_CNT > 0)
-            grid(0).cache(null).removeAll();
+            grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).clear();
+            grid(i).cache(DEFAULT_CACHE_NAME).clear();
 
-            assert grid(i).cache(null).localSize() == 0;
+            assert grid(i).cache(DEFAULT_CACHE_NAME).localSize() == 0;
         }
     }
 
@@ -127,6 +110,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         doTest(PESSIMISTIC, READ_COMMITTED);
     }
@@ -136,6 +120,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         doTest(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -145,6 +130,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         doTest(PESSIMISTIC, SERIALIZABLE);
     }
@@ -154,6 +140,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         doTest(OPTIMISTIC, READ_COMMITTED);
     }
@@ -163,6 +150,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         doTest(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -172,6 +160,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         doTest(OPTIMISTIC, SERIALIZABLE);
     }
@@ -181,15 +170,13 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope", "PointlessBooleanExpression"})
     private void doTest(final TransactionConcurrency concurrency, final TransactionIsolation isolation)
         throws Exception {
         final AtomicInteger cntr = new AtomicInteger();
 
         multithreaded(new CAX() {
-            @SuppressWarnings({"BusyWait"})
             @Override public void applyx() {
-                IgniteCache<Integer, Integer> c = grid(0).cache(null);
+                IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();

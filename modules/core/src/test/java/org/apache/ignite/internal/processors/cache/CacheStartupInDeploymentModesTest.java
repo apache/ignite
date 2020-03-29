@@ -24,8 +24,8 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test verifies that it's possible to start caches in Isolated and Private mode when BinaryMarshaller is used.
@@ -44,17 +44,17 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     private Marshaller marshaller;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(marshaller);
         cfg.setDeploymentMode(deploymentMode);
 
-        CacheConfiguration cacheCfg1 = new CacheConfiguration();
+        CacheConfiguration cacheCfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg1.setCacheMode(CacheMode.REPLICATED);
         cacheCfg1.setName(REPLICATED_CACHE);
 
-        CacheConfiguration cacheCfg2 = new CacheConfiguration();
+        CacheConfiguration cacheCfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cacheCfg2.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg2.setName(PARTITIONED_CACHE);
 
@@ -73,26 +73,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
-    public void testFailedInIsolatedMode() throws Exception {
-        deploymentMode = DeploymentMode.ISOLATED;
-        marshaller = new OptimizedMarshaller();
-
-        doCheckFailed();
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    public void testFailedInPrivateMode() throws Exception {
-        deploymentMode = DeploymentMode.PRIVATE;
-        marshaller = new OptimizedMarshaller();
-
-        doCheckFailed();
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
+    @Test
     public void testStartedInIsolatedMode() throws Exception {
         deploymentMode = DeploymentMode.ISOLATED;
         marshaller = new BinaryMarshaller();
@@ -103,6 +84,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testStartedInPrivateMode() throws Exception {
         deploymentMode = DeploymentMode.PRIVATE;
         marshaller = new BinaryMarshaller();
@@ -130,22 +112,6 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
         IgniteCache pCache = ignite(0).cache(PARTITIONED_CACHE);
 
         checkPutCache(pCache);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doCheckFailed() throws Exception {
-        try {
-            startGridsMultiThreaded(2);
-        }
-        catch (Exception e) {
-            assert e.getMessage().contains("Cache can be started in PRIVATE or ISOLATED deployment mode only ");
-
-            return;
-        }
-
-        fail("Unexpected start of the caches!");
     }
 
     /**
@@ -224,6 +190,5 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
                 ", name='" + name + '\'' +
                 '}';
         }
-
     }
 }

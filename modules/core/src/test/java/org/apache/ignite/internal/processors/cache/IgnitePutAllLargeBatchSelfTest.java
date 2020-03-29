@@ -30,10 +30,12 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -53,19 +55,28 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     private int backups = 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Test cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -79,6 +90,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticOneBackupPartitioned() throws Exception {
         backups = 1;
 
@@ -88,6 +100,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticOneBackupNear() throws Exception {
         backups = 1;
 
@@ -97,6 +110,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticOneBackupPartitioned() throws Exception {
         backups = 1;
 
@@ -106,6 +120,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticOneBackupNear() throws Exception {
         backups = 1;
 
@@ -115,6 +130,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticTwoBackupsPartitioned() throws Exception {
         backups = 2;
 
@@ -124,6 +140,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllPessimisticTwoBackupsNear() throws Exception {
         backups = 2;
 
@@ -133,6 +150,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticTwoBackupsPartitioned() throws Exception {
         backups = 2;
 
@@ -142,6 +160,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOptimisticTwoBackupsNear() throws Exception {
         backups = 2;
 
@@ -159,7 +178,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         try {
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             int keyCnt = 200;
 
@@ -169,7 +188,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             // Create readers if near cache is enabled.
             for (int g = 1; g < 2; g++) {
                 for (int i = 30; i < 70; i++)
-                    ((IgniteKernal)grid(g)).getCache(null).get(i);
+                    ((IgniteKernal)grid(g)).getCache(DEFAULT_CACHE_NAME).get(i);
             }
 
             info(">>> Starting test tx.");
@@ -191,7 +210,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             for (int g = 0; g < GRID_CNT; g++) {
                 IgniteKernal k = (IgniteKernal)grid(g);
 
-                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache();
+                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
                 assertEquals(0, cacheAdapter.context().tm().idMapSize());
 
@@ -218,12 +237,12 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
             }
 
             for (int g = 0; g < GRID_CNT; g++) {
-                IgniteCache<Object, Object> checkCache =grid(g).cache(null);
+                IgniteCache<Object, Object> checkCache =grid(g).cache(DEFAULT_CACHE_NAME);
 
                 ClusterNode checkNode = grid(g).localNode();
 
                 for (int i = 0; i < keyCnt; i++) {
-                    if (grid(g).affinity(null).isPrimaryOrBackup(checkNode, i))
+                    if (grid(g).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(checkNode, i))
                         assertEquals(i * i, checkCache.localPeek(i, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
                 }
             }
@@ -236,6 +255,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValuePartitionedOneBackup() throws Exception {
         backups = 1;
         nearEnabled = false;
@@ -246,6 +266,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValuePartitionedTwoBackups() throws Exception {
         backups = 2;
         nearEnabled = false;
@@ -256,6 +277,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValueNearOneBackup() throws Exception {
         backups = 1;
         nearEnabled = true;
@@ -266,6 +288,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreviousValueNearTwoBackups() throws Exception {
         backups = 2;
         nearEnabled = true;
@@ -284,7 +307,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
         try {
             Map<Integer, Integer> checkMap = new HashMap<>();
 
-            IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int r = 0; r < 3; r++) {
                 for (int i = 0; i < 10; i++) {

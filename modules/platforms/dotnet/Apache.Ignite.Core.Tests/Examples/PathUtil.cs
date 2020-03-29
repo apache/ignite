@@ -28,19 +28,19 @@ namespace Apache.Ignite.Core.Tests.Examples
         public const string DevPrefix = "modules\\";
 
         /** */
-        public static readonly string IgniteHome = Impl.Common.IgniteHome.Resolve(null);
+        public static readonly string IgniteHome = Core.Impl.Common.IgniteHome.Resolve();
 
         /// <summary>
         /// Examples source code path.
         /// </summary>
         public static readonly string ExamplesSourcePath =
-            Path.Combine(IgniteHome, @"modules\platforms\dotnet\examples");
+            Path.Combine(IgniteHome, "modules", "platforms", "dotnet", "examples");
 
         /// <summary>
         /// Examples application configuration path.
         /// </summary>
         public static readonly string ExamplesAppConfigPath =
-            Path.Combine(ExamplesSourcePath, @"Apache.Ignite.Examples\App.config");
+            Path.Combine(ExamplesSourcePath, "Apache.Ignite.Examples", "App.config");
 
         /// <summary>
         /// Gets the full configuration path.

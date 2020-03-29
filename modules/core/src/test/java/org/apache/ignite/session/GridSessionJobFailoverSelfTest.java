@@ -36,6 +36,8 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Job failover test.
@@ -50,8 +52,8 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setFailoverSpi(new AlwaysFailoverSpi());
 
@@ -61,7 +63,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testFailoverJobSession() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
@@ -93,7 +95,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
         private boolean jobFailed;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
             for (int i = 0; i < 10; i++) {

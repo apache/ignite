@@ -110,8 +110,13 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(_svc.ObjProp);
 
             prx.ObjProp = new TestClass {Prop = "prop2"};
-            Assert.AreEqual("prop2", ((TestClass)prx.ObjProp).Prop);
-            Assert.AreEqual("prop2", ((TestClass)_svc.ObjProp).Prop);
+
+            var propVal = KeepBinary
+                ? ((IBinaryObject) prx.ObjProp).Deserialize<TestClass>().Prop
+                : ((TestClass) prx.ObjProp).Prop;
+
+            Assert.AreEqual("prop2", propVal);
+            Assert.AreEqual("prop2", ((TestClass) _svc.ObjProp).Prop);
         }
 
         /// <summary>
@@ -127,9 +132,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("VoidMethod", _svc.InvokeResult);
 
             prx.VoidMethod(10);
-            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
-
-            prx.VoidMethod(10, "string");
             Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
             prx.VoidMethod(10, "string", "arg");
@@ -149,7 +151,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("ObjectMethod", prx.ObjectMethod());
             Assert.AreEqual("ObjectMethod987", prx.ObjectMethod(987));
-            Assert.AreEqual("ObjectMethod987str123", prx.ObjectMethod(987, "str123"));
             Assert.AreEqual("ObjectMethod987str123TestClass", prx.ObjectMethod(987, "str123", new TestClass()));
             Assert.AreEqual("ObjectMethod987str123TestClass34arg5arg6",
                 prx.ObjectMethod(987, "str123", new TestClass(), 3, 4, "arg5", "arg6"));
@@ -185,16 +186,28 @@ namespace Apache.Ignite.Core.Tests.Services
                             "can't resolve ambiguity.", ex.Message);
         }
 
+        /// <summary>
+        /// Tests the exception.
+        /// </summary>
         [Test]
         public void TestException()
         {
             var prx = GetProxy();
 
             var err = Assert.Throws<ServiceInvocationException>(prx.ExceptionMethod);
-            Assert.AreEqual("Expected exception", err.InnerException.Message);
 
-            var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
-            Assert.IsTrue(ex.ToString().Contains("+CustomException"));
+            if (KeepBinary)
+            {
+                Assert.IsNotNull(err.BinaryCause);
+                Assert.AreEqual("Expected exception", err.BinaryCause.Deserialize<Exception>().Message);
+            }
+            else
+            {
+                Assert.IsNotNull(err.InnerException);
+                Assert.AreEqual("Expected exception", err.InnerException.Message);
+            }
+
+            Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
         }
 
         [Test]
@@ -243,11 +256,11 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Creates the proxy.
         /// </summary>
-        protected T GetProxy<T>()
+        private T GetProxy<T>()
         {
             _svc = new TestIgniteService(Binary);
 
-            var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
+            var prx = ServiceProxyFactory<T>.CreateProxy(InvokeProxyMethod);
 
             Assert.IsFalse(ReferenceEquals(_svc, prx));
 
@@ -270,7 +283,8 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
-                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args, Platform.DotNet);
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method.Name, 
+                    method, args, Platform.DotNet);
 
                 inStream.SynchronizeOutput();
 
@@ -301,7 +315,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestIgniteServiceProperties
+        public interface ITestIgniteServiceProperties
         {
             /** */
             int IntProp { get; set; }
@@ -316,7 +330,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface to check ambiguity handling.
         /// </summary>
-        protected interface ITestIgniteServiceAmbiguity
+        public interface ITestIgniteServiceAmbiguity
         {
             /** */
             int AmbiguousMethod(int arg);
@@ -325,7 +339,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestIgniteService : ITestIgniteServiceProperties
+        public interface ITestIgniteService : ITestIgniteServiceProperties
         {
             /** */
             void VoidMethod();
@@ -376,7 +390,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface. Does not derive from actual interface, but has all the same method signatures.
         /// </summary>
-        protected interface ITestIgniteServiceProxyInterface
+        public interface ITestIgniteServiceProxyInterface
         {
             /** */
             int IntProp { get; set; }
@@ -394,10 +408,10 @@ namespace Apache.Ignite.Core.Tests.Services
             void VoidMethod(int arg);
 
             /** */
-            void VoidMethod(int arg, string arg1, object arg2 = null);
+            void VoidMethod(int arg, string arg1, object arg2);
 
             /** */
-            void VoidMethod(int arg, string arg1, object arg2 = null, params object[] args);
+            void VoidMethod(int arg, string arg1, object arg2, params object[] args);
 
             /** */
             object ObjectMethod();
@@ -406,10 +420,10 @@ namespace Apache.Ignite.Core.Tests.Services
             object ObjectMethod(int arg);
 
             /** */
-            object ObjectMethod(int arg, string arg1, object arg2 = null);
+            object ObjectMethod(int arg, string arg1, object arg2);
 
             /** */
-            object ObjectMethod(int arg, string arg1, object arg2 = null, params object[] args);
+            object ObjectMethod(int arg, string arg1, object arg2, params object[] args);
 
             /** */
             void ExceptionMethod();
@@ -556,6 +570,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
+                // ReSharper disable once NonReadonlyMemberInGetHashCode
                 return IntProp.GetHashCode();
             }
 
@@ -591,9 +606,19 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Custom non-serializable exception.
         /// </summary>
-        private class CustomException : Exception
+        private class CustomException : Exception, IBinarizable
         {
-            
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
+            }
         }
 
         /// <summary>
@@ -629,7 +654,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Binarizable object for method argument/result.
         /// </summary>
-        protected class TestBinarizableClass : IBinarizable
+        public class TestBinarizableClass : IBinarizable
         {
             /** */
             public string Prop { get; set; }

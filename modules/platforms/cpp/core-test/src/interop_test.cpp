@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignition.h"
@@ -89,7 +85,11 @@ BOOST_AUTO_TEST_CASE(StringUtfInvalidCodePoint)
 
 BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 {
+#ifdef IGNITE_TESTS_32
+    Ignite ignite = ignite_test::StartNode("cache-test-32.xml");
+#else
     Ignite ignite = ignite_test::StartNode("cache-test.xml");
+#endif
 
     Cache<std::string, std::string> cache = ignite.CreateCache<std::string, std::string>("Test");
 
@@ -109,17 +109,6 @@ BOOST_AUTO_TEST_CASE(StringUtfValid4ByteCodePoint)
 
     // This is a valid UTF-8 code point. Should be supported in default mode.
     BOOST_CHECK_EQUAL(initialValue, cachedValue);
-
-    Ignition::StopAll(false);
-}
-
-BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)
-{
-    IgniteConfiguration cfg;
-
-    ignite_test::InitConfig(cfg, "invalid.xml");
-
-    BOOST_CHECK_THROW(Ignition::Start(cfg), IgniteError);
 
     Ignition::StopAll(false);
 }

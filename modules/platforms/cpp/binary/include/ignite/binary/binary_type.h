@@ -18,7 +18,7 @@
 /**
  * @file
  * Declares ignite::binary::BinaryType class template and helping macros
- * to declare binary type specialisation for user types.
+ * to declare binary type specialization for user types.
  */
 
 #ifndef _IGNITE_BINARY_BINARY_TYPE
@@ -28,7 +28,7 @@
 
 #include <ignite/common/common.h>
 
-#include <ignite/ignite_error.h>
+#include <ignite/impl/binary/binary_type_impl.h>
 
 /**
  * @def IGNITE_BINARY_TYPE_START(T)
@@ -51,7 +51,7 @@ struct BinaryType<T> \
  * Implementation of GetTypeId() which returns predefined constant.
  */
 #define IGNITE_BINARY_GET_TYPE_ID_AS_CONST(id) \
-int32_t GetTypeId() \
+static int32_t GetTypeId() \
 { \
     return id; \
 }
@@ -61,7 +61,7 @@ int32_t GetTypeId() \
  * Implementation of GetTypeId() which returns hash of passed type name.
  */
 #define IGNITE_BINARY_GET_TYPE_ID_AS_HASH(typeName) \
-int32_t GetTypeId() \
+static int32_t GetTypeId() \
 { \
     return GetBinaryStringHashCode(#typeName); \
 }
@@ -71,9 +71,9 @@ int32_t GetTypeId() \
  * Implementation of GetTypeName() which returns type name as is.
  */
 #define IGNITE_BINARY_GET_TYPE_NAME_AS_IS(typeName) \
-std::string GetTypeName() \
+static void GetTypeName(std::string& dst) \
 { \
-    return #typeName; \
+    dst = #typeName; \
 }
 
 /**
@@ -81,19 +81,9 @@ std::string GetTypeName() \
  * Default implementation of GetFieldId() function which returns Java-way hash code of the string.
  */
 #define IGNITE_BINARY_GET_FIELD_ID_AS_HASH \
-int32_t GetFieldId(const char* name) \
+static int32_t GetFieldId(const char* name) \
 { \
     return GetBinaryStringHashCode(name); \
-}
-
-/**
- * @def IGNITE_BINARY_GET_HASH_CODE_ZERO(T)
- * Implementation of GetHashCode() function which always returns 0.
- */
-#define IGNITE_BINARY_GET_HASH_CODE_ZERO(T) \
-int32_t GetHashCode(const T& obj) \
-{ \
-    return 0; \
 }
 
 /**
@@ -101,7 +91,7 @@ int32_t GetHashCode(const T& obj) \
  * Implementation of IsNull() function which always returns false.
  */
 #define IGNITE_BINARY_IS_NULL_FALSE(T) \
-bool IsNull(const T& obj) \
+static bool IsNull(const T&) \
 { \
     return false; \
 }
@@ -111,19 +101,19 @@ bool IsNull(const T& obj) \
  * Implementation of IsNull() function which return true if passed object is null pointer.
  */
 #define IGNITE_BINARY_IS_NULL_IF_NULLPTR(T) \
-bool IsNull(const T& obj) \
+static bool IsNull(const T& obj) \
 { \
     return obj; \
 }
 
 /**
  * @def IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T)
- * Implementation of GetNull() function which returns an instance created with defult constructor.
+ * Implementation of GetNull() function which returns an instance created with default constructor.
  */
 #define IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(T) \
-T GetNull() \
+static void GetNull(T& dst) \
 { \
-    return T(); \
+    dst = T(); \
 }
 
 /**
@@ -131,10 +121,11 @@ T GetNull() \
  * Implementation of GetNull() function which returns NULL pointer.
  */
 #define IGNITE_BINARY_GET_NULL_NULLPTR(T) \
-T GetNull() \
+static void GetNull(T& dst) \
 { \
-    return NULL; \
+    dst = 0; \
 }
+
 
 namespace ignite
 {
@@ -155,26 +146,25 @@ namespace ignite
          * Binary type structure. Defines a set of functions required for type to be serialized and deserialized.
          */
         template<typename T>
-        struct IGNITE_IMPORT_EXPORT BinaryType
+        struct IGNITE_IMPORT_EXPORT BinaryType { };
+
+        /**
+         * Default implementations of BinaryType hashing functions.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultHashing
         {
             /**
              * Get binary object type ID.
              *
              * @return Type ID.
              */
-            int32_t GetTypeId()
+            static int32_t GetTypeId()
             {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetTypeId function is not defined for binary type.");
-            }
+                std::string typeName;
+                BinaryType<T>::GetTypeName(typeName);
 
-            /**
-             * Get binary object type name.
-             *
-             * @return Type name.
-             */
-            std::string GetTypeName() 
-            {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetTypeName function is not defined for binary type.");
+                return GetBinaryStringHashCode(typeName.c_str());
             }
 
             /**
@@ -183,9 +173,85 @@ namespace ignite
              * @param name Field name.
              * @return Field ID.
              */
-            int32_t GetFieldId(const char* name)
+            static int32_t GetFieldId(const char* name)
             {
                 return GetBinaryStringHashCode(name);
+            }
+        };
+
+        /**
+         * Default implementations of BinaryType methods for non-null type.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeNonNullableType
+        {
+            /**
+             * Check whether passed binary object should be interpreted as NULL.
+             *
+             * @return True if binary object should be interpreted as NULL.
+             */
+            static bool IsNull(const T&)
+            {
+                return false;
+            }
+
+            /**
+             * Get NULL value for the given binary type.
+             *
+             * @param dst Null value for the type.
+             */
+            static void GetNull(T& dst)
+            {
+                dst = T();
+            }
+        };
+
+        /**
+         * Default implementations of BinaryType hashing functions and non-null type behaviour.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultAll :
+            BinaryTypeDefaultHashing<T>,
+            BinaryTypeNonNullableType<T> { };
+
+        /**
+         * BinaryType template specialization for pointers.
+         */
+        template <typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryType<T*>
+        {
+            /** Actual type. */
+            typedef BinaryType<T> BinaryTypeDereferenced;
+
+            /**
+             * Get binary object type ID.
+             *
+             * @return Type ID.
+             */
+            static int32_t GetTypeId()
+            {
+                return BinaryTypeDereferenced::GetTypeId();
+            }
+
+            /**
+             * Get binary object type name.
+             *
+             * @param dst Output type name.
+             */
+            static void GetTypeName(std::string& dst)
+            {
+                BinaryTypeDereferenced::GetTypeName(dst);
+            }
+
+            /**
+             * Get binary object field ID.
+             *
+             * @param name Field name.
+             * @return Field ID.
+             */
+            static int32_t GetFieldId(const char* name)
+            {
+                return BinaryTypeDereferenced::GetFieldId(name);
             }
 
             /**
@@ -194,20 +260,22 @@ namespace ignite
              * @param writer Writer.
              * @param obj Object.
              */
-            void Write(BinaryWriter& writer, const T& obj)
+            static void Write(BinaryWriter& writer, T* const& obj)
             {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "Write function is not defined for binary type.");
+                BinaryTypeDereferenced::Write(writer, *obj);
             }
 
             /**
              * Read binary object.
              *
              * @param reader Reader.
-             * @return Object.
+             * @param dst Output object.
              */
-            T Read(BinaryReader& reader)
+            static void Read(BinaryReader& reader, T*& dst)
             {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "Read function is not defined for binary type.");
+                dst = new T();
+
+                BinaryTypeDereferenced::Read(reader, *dst);
             }
 
             /**
@@ -216,76 +284,19 @@ namespace ignite
              * @param obj Binary object to test.
              * @return True if binary object should be interpreted as NULL.
              */
-            bool IsNull(const T& obj)
+            static bool IsNull(T* const& obj)
             {
-                return false;
+                return !obj || BinaryTypeDereferenced::IsNull(*obj);
             }
 
             /**
              * Get NULL value for the given binary type.
              *
-             * @return NULL value.
+             * @param dst NULL value for the type.
              */
-            T GetNull()
+            static void GetNull(T*& dst)
             {
-                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_BINARY, "GetNull function is not defined for binary type.");
-            }
-        };
-
-        /**
-         * Templated binary type specification for pointers.
-         */
-        template <typename T>
-        struct IGNITE_IMPORT_EXPORT BinaryType<T*>
-        {
-            /** Actual type. */
-            BinaryType<T> typ;
-
-            /**
-             * Constructor.
-             */
-            BinaryType()
-            {
-                typ = BinaryType<T>();
-            }
-
-            int32_t GetTypeId()
-            {
-                return typ.GetTypeId();
-            }
-
-            std::string GetTypeName()
-            {
-                return typ.GetTypeName();
-            }
-
-            int32_t GetFieldId(const char* name)
-            {
-                return typ.GetFieldId(name);
-            }
-
-            void Write(BinaryWriter& writer, T* const& obj)
-            {
-                typ.Write(writer, *obj);
-            }
-
-            T* Read(BinaryReader& reader)
-            {
-                T* res = new T();
-
-                *res = typ.Read(reader);
-
-                return res;
-            }
-
-            bool IsNull(T* const& obj)
-            {
-                return !obj || typ.IsNull(*obj);
-            }
-
-            T* GetNull()
-            {
-                return NULL;
+                dst = 0;
             }
         };
     }

@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -40,23 +51,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -67,15 +65,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests for {@link IgfsProcessor}.
  */
 public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
-    /** Test IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "replicated";
-
-    /** Data cache name. */
-    public static final String DATA_CACHE_NAME = "data";
-
     /** Random numbers generator. */
     protected final SecureRandom rnd = new SecureRandom();
 
@@ -98,7 +87,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         assert cfgs.length == 1;
 
-        metaCacheName = cfgs[0].getMetaCacheName();
+        metaCacheName = cfgs[0].getMetaCacheConfiguration().getName();
 
         metaCache = ((IgniteKernal)grid).internalCache(metaCacheName);
     }
@@ -107,7 +96,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        igfs.format();
+        igfs.clear();
     }
 
     /** {@inheritDoc} */
@@ -116,26 +105,13 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME));
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration("meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration("data"));
         igfsCfg.setName("igfs");
 
         cfg.setFileSystemConfiguration(igfsCfg);
@@ -143,13 +119,13 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    /** */
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 
-        if (META_CACHE_NAME.equals(cacheName))
+        if ("meta".equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
@@ -176,6 +152,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testigfsEnabled() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(igfsName());
 
@@ -187,6 +164,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateProperties() throws Exception {
         IgfsPath p = path("/tmp/my");
 
@@ -220,6 +198,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreate() throws Exception {
         IgfsPath path = path("/file");
 
@@ -230,7 +209,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
             for (int i = 0; i < nodesCount(); i++) {
                 IgfsEntryInfo fileInfo =
-                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
+                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
@@ -246,6 +225,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testMakeListDeleteDirs() throws Exception {
         assertListDir("/");
 
@@ -304,6 +284,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testMakeListDeleteDirsMultithreaded() throws Exception {
         assertListDir("/");
 
@@ -354,6 +335,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBasicOps() throws Exception {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
@@ -434,6 +416,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSize() throws Exception {
         IgfsPath dir1 = path("/dir1");
         IgfsPath subDir1 = path("/dir1/subdir1");
@@ -480,6 +463,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testRename() throws Exception {
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
@@ -602,7 +586,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assertEquals(text, read("/b"));
 
         // Cleanup.
-        igfs.format();
+        igfs.clear();
 
         assertTrue(F.isEmpty(igfs.listPaths(root)));
     }
@@ -627,6 +611,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateOpenAppend() throws Exception {
         // Error - path points to root directory.
         assertCreateFails("/", false);
@@ -687,8 +672,12 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testDeleteCacheConsistency() throws Exception {
         IgfsPath path = new IgfsPath("/someFile");
+
+        String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();
+        String dataCacheName = grid(0).igfsx("igfs").configuration().getDataCacheConfiguration().getName();
 
         try (IgfsOutputStream out = igfs.create(path, true)) {
             out.write(new byte[10 * 1024 * 1024]);
@@ -696,8 +685,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
-        GridCacheAdapter<IgniteUuid, IgfsEntryInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
-        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(DATA_CACHE_NAME);
+        GridCacheAdapter<IgniteUuid, IgfsEntryInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(metaCacheName);
+        GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(dataCacheName);
 
         IgfsEntryInfo info = metaCache.get(fileId);
 
@@ -743,21 +732,25 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData1() throws Exception {
         checkCreateAppendLongData(123, 1024, 100);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData2() throws Exception {
         checkCreateAppendLongData(123 + 1024, 1024, 100);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData3() throws Exception {
         checkCreateAppendLongData(123, 1024, 1000);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateAppendLongData4() throws Exception {
         checkCreateAppendLongData(123 + 1024, 1024, 1000);
     }
@@ -767,6 +760,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatNonEmpty() throws Exception {
         String dirPath = "/A/B/C";
 
@@ -776,7 +770,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         create(filePath, false, "Some text.");
 
-        igfs.format();
+        igfs.clear();
 
         assert !igfs.exists(path(dirPath));
         assert !igfs.exists(path(filePath));
@@ -785,7 +779,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             @Override public boolean apply() {
                 int metaSize = 0;
 
-                for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
+                for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheConfiguration().getName())
+                    .keySet()) {
                     if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
                         metaSize++;
                 }
@@ -800,8 +795,9 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testFormatEmpty() throws Exception {
-        igfs.format();
+        igfs.clear();
     }
 
     /**

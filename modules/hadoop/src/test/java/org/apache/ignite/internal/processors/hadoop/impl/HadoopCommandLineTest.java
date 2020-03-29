@@ -38,7 +38,7 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -46,14 +46,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test of integration with Hadoop client via command line interface.
  */
 public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /** IGFS instance. */
-    private IgfsEx igfs;
+    private static IgfsEx igfs;
 
     /** */
     private static final String igfsName = "igfs";
@@ -145,10 +146,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    /** */
+    private void beforeHadoopCommandLineTest() throws Exception {
         hiveHome = IgniteSystemProperties.getString("HIVE_HOME");
 
         assertFalse("HIVE_HOME hasn't been set.", F.isEmpty(hiveHome));
@@ -212,15 +211,15 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         return path != null ? path : U.resolveIgnitePath("config/hadoop/" + name);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
+    /** */
+    private void afterHadoopCommandLineTest() {
         U.delete(testWorkDir);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        beforeHadoopCommandLineTest();
+
         String cfgPath = "config/hadoop/default-config.xml";
 
         IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> tup = IgnitionEx.loadConfiguration(cfgPath);
@@ -233,8 +232,10 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTest() {
         stopAllGrids(true);
+
+        afterHadoopCommandLineTest();
     }
 
     /**
@@ -245,19 +246,39 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     private ProcessBuilder createProcessBuilder() {
         String sep = ":";
 
-        String ggClsPath = HadoopJob.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String ggClsPath = HadoopJobEx.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
+            HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 
         ProcessBuilder res = new ProcessBuilder();
 
         res.environment().put("HADOOP_HOME", hadoopHome);
         res.environment().put("HADOOP_CLASSPATH", ggClsPath);
         res.environment().put("HADOOP_CONF_DIR", testWorkDir.getAbsolutePath());
+        res.environment().put("HADOOP_OPTS", filteredJvmArgs());
 
         res.redirectErrorStream(true);
 
         return res;
+    }
+
+    /**
+     * Creates list of JVM arguments to be used to start hadoop process.
+     *
+     * @return JVM arguments.
+     */
+    private String filteredJvmArgs() {
+        StringBuilder filteredJvmArgs = new StringBuilder();
+
+        filteredJvmArgs.append("-ea");
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("--add-opens") || arg.startsWith("--add-exports") || arg.startsWith("--add-modules") ||
+                arg.startsWith("--patch-module") || arg.startsWith("--add-reads") ||
+                arg.startsWith("-XX:+IgnoreUnrecognizedVMOptions"))
+                filteredJvmArgs.append(' ').append(arg);
+        }
+
+        return filteredJvmArgs.toString();
     }
 
     /**
@@ -336,6 +357,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hadoop command line integration.
      */
+    @Test
     public void testHadoopCommandLine() throws Exception {
         assertEquals(0, executeHadoopCmd("fs", "-ls", "/"));
 
@@ -412,6 +434,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     /**
      * Tests Hive integration.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
+    @Test
     public void testHiveCommandLine() throws Exception {
         assertEquals(0, executeHiveQuery(
             "create table table_a (" +

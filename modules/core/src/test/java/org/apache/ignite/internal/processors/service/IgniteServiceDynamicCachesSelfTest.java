@@ -21,16 +21,15 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -39,35 +38,15 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
 
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(GRID_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployCalledAfterCacheStart() throws Exception {
         String cacheName = "cache";
 
@@ -83,7 +62,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
             final String svcName = "myService";
 
-            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, "key");
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, primaryKey(ig.cache(cacheName)));
 
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
@@ -113,23 +92,48 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDeployCalledBeforeCacheStart() throws Exception {
         String cacheName = "cache";
 
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
         ccfg.setBackups(1);
 
-        Ignite ig = ignite(0);
+        IgniteEx ig = grid(0);
 
         final IgniteServices svcs = ig.services();
 
         final String svcName = "myService";
 
-        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, "key");
-
-        assert svcs.service(svcName) == null;
-
         ig.createCache(ccfg);
+
+        Object key = primaryKey(ig.cache(cacheName));
+
+        ig.destroyCache(cacheName);
+
+        awaitPartitionMapExchange();
+
+        if (ig.context().service() instanceof GridServiceProcessor) {
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+
+            assertNull(svcs.service(svcName));
+
+            ig.createCache(ccfg);
+        }
+        else if (ig.context().service() instanceof IgniteServiceProcessor) {
+            GridTestUtils.assertThrowsWithCause(() -> {
+                svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+
+                return null;
+            }, ServiceDeploymentException.class);
+
+            ig.createCache(ccfg);
+
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
+        }
+        else
+            fail("Unexpected service implementation.");
 
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {
@@ -139,6 +143,8 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
             }, 10 * 1000);
 
             assertTrue("Service was not deployed", res);
+
+            info("stopping cache: " + cacheName);
 
             ig.destroyCache(cacheName);
 

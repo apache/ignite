@@ -20,17 +20,17 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -41,18 +41,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private static final String EXPECTED_MSG = "Cannot start/stop cache within lock or transaction.";
+    private static final String EXPECTED_MSG = "Cannot start/stop cache within lock or transaction";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
@@ -86,22 +81,20 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCache() throws Exception {
         final Ignite ignite = grid(0);
 
         final String key = "key";
         final String val = "val";
 
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -118,14 +111,17 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartConfigurationCache() throws Exception {
         final Ignite ignite = grid(0);
 
         final String key = "key";
         final String val = "val";
 
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -142,14 +138,17 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartConfigurationCacheWithNear() throws Exception {
         final Ignite ignite = grid(0);
 
         final String key = "key";
         final String val = "val";
 
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -166,14 +165,17 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCache() throws Exception {
         final Ignite ignite = grid(0);
 
         final String key = "key";
         final String val = "val";
 
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -190,14 +192,17 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateCacheConfiguration() throws Exception {
         final Ignite ignite = grid(0);
 
         final String key = "key";
         final String val = "val";
 
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -214,18 +219,21 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopCache() throws Exception {
         final Ignite ignite = grid(0);
 
         final String key = "key";
         final String val = "val";
 
+        IgniteCache<String, String> cache = ignite.cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+
         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)){
-            ignite.cache(null).put(key, val);
+            cache.put(key, val);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
 
                     return null;
                 }
@@ -238,15 +246,18 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockCache() throws Exception {
         if (atomicityMode() != TRANSACTIONAL)
             return;
+
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         final Ignite ignite = grid(0);
 
         final String key = "key";
 
-        Lock lock = ignite.cache(null).lock(key);
+        Lock lock = ignite.cache(DEFAULT_CACHE_NAME).lock(key);
 
         lock.lock();
 

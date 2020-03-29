@@ -24,10 +24,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  */
 public class IgniteCachePartitionedQueryP2PDisabledSelfTest extends IgniteCachePartitionedQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setPeerClassLoadingEnabled(true);
+        c.setPeerClassLoadingEnabled(false);
 
         return c;
     }

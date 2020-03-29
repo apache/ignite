@@ -37,7 +37,6 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import junit.framework.Assert;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -66,12 +65,11 @@ import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -84,9 +82,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("deprecation")
 public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -136,11 +131,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         exec = Executors.newCachedThreadPool();
 
@@ -163,7 +153,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
                 cacheStore.map.clear();
         }
 
-        grid().cache(null).clear();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
         grid().cache(CACHE_NAME).clear();
 
         INTERCEPTED_OBJECTS.clear();
@@ -219,8 +209,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(HOST);
 
@@ -238,13 +228,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration("replicated"),
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
         clientCfg.setMessageInterceptor(new ConnectorMessageInterceptor() {
@@ -266,9 +250,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        // Specify swap SPI, otherwise test fails on windows.
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         return cfg;
     }
 
@@ -278,10 +259,10 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    private  static CacheConfiguration cacheConfiguration(@Nullable final String cacheName) throws Exception {
+    private  static CacheConfiguration cacheConfiguration(@NotNull final String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setCacheMode(cacheName == null || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
+        cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
             REPLICATED : PARTITIONED);
         cfg.setName(cacheName);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -302,8 +283,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setWriteThrough(true);
         cfg.setReadThrough(true);
         cfg.setLoadPreviousValue(true);
-
-        cfg.setSwapEnabled(true);
 
         if (cfg.getCacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -356,6 +335,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectable() throws Exception {
         GridClient client = client();
 
@@ -369,6 +349,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNoAsyncExceptions() throws Exception {
         GridClient client = client();
 
@@ -414,6 +395,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGracefulShutdown() throws Exception {
         GridClientCompute compute = client.compute();
 
@@ -432,6 +414,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testForceShutdown() throws Exception {
         GridClientCompute compute = client.compute();
 
@@ -455,6 +438,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testShutdown() throws Exception {
         GridClient c = client();
 
@@ -493,9 +477,11 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertEquals(0, failed);
     }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecute() throws Exception {
         String taskName = getTaskName();
         Object taskArg = getTaskArgument();
@@ -509,6 +495,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopology() throws Exception {
         GridClientCompute compute = client.compute();
 
@@ -655,7 +642,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         private final TestTask delegate = new TestTask();
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
@@ -693,7 +679,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         private final SleepTestTask delegate = new SleepTestTask();
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             try {
                 JsonNode json = JSON_MAPPER.readTree(arg);

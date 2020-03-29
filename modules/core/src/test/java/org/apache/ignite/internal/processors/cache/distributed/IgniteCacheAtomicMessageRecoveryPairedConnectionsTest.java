@@ -28,8 +28,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
  */
 public class IgniteCacheAtomicMessageRecoveryPairedConnectionsTest extends IgniteCacheAtomicMessageRecoveryTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 

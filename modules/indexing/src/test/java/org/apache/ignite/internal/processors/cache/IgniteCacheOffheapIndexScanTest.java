@@ -21,16 +21,13 @@ import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -39,26 +36,15 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static IgniteCache<Integer, Object> cache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(LOCAL);
-        cacheCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
-        cacheCfg.setSqlOnheapRowCacheSize(256);
         cacheCfg.setIndexedTypes(
             Integer.class, Person.class
         );
@@ -72,17 +58,20 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(1, false);
 
-        cache = grid(0).cache(null);
+        cache = grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        super.afterTestsStopped();
+
+        cache = null;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryPlan() throws Exception {
         for (int i = 0 ; i < 1000; i++)
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i % 100));

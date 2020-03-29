@@ -33,11 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -49,36 +47,27 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid count. */
     private static final int GRID_CNT = 4;
 
     /** Key range. */
-    private static final int RANGE = 100_000;
+    private static final int RANGE = 10_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());
@@ -105,10 +94,11 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxConsistency() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
 
-        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(null);
+        IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < RANGE; i++) {
             ldr.addData(i, 0);
@@ -145,7 +135,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
         Random rnd = new Random();
 
         // Make some iterations with 1-3 keys transactions.
-        for (int i = 0; i < 50_000; i++) {
+        for (int i = 0; i < RANGE; i++) {
             int idx = i % GRID_CNT;
 
             if (i > 0 && i % 1000 == 0)
@@ -154,7 +144,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 IgniteKernal grid = (IgniteKernal)grid(idx);
 
-                IgniteCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -192,18 +182,18 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
 
-                IgniteCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.cache(DEFAULT_CACHE_NAME);
 
-                if (grid.affinity(null).isPrimaryOrBackup(grid.localNode(), k)) {
+                if (grid.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {
-                        val = cache.localPeek(k, CachePeekMode.ONHEAP);
+                        val = cache.localPeek(k, CachePeekMode.ALL);
 
                         assertNotNull("Failed to peek value for key: " + k, val);
                     }
                     else
                         assertEquals("Failed to find value in cache [primary=" +
-                            grid.affinity(null).isPrimary(grid.localNode(), k) + ']',
-                            val, cache.localPeek(k, CachePeekMode.ONHEAP));
+                            grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), k) + ']',
+                            val, cache.localPeek(k, CachePeekMode.ALL));
                 }
             }
         }

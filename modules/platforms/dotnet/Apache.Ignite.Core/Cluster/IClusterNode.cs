@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Interface representing a single cluster node. Use <see cref="GetAttribute{T}"/> or
@@ -33,7 +34,7 @@ namespace Apache.Ignite.Core.Cluster
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IClusterNode
+    public interface IClusterNode : IBaselineNode
     {
         /// <summary>
         /// Globally unique node ID. A new ID is generated every time a node restarts.
@@ -66,6 +67,7 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <returns>All node attributes.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        [Obsolete("Use Attributes property.")]
         IDictionary<string, object> GetAttributes();
 
         /// <summary>
@@ -118,6 +120,11 @@ namespace Apache.Ignite.Core.Cluster
         /// <c>true</c> if this node is a client node, <c>false otherwise.</c>.
         /// </value>
         bool IsClient { get; }
+
+        /// <summary>
+        /// Gets an Ignite node version.
+        /// </summary>
+        IgniteProductVersion Version { get; }
 
         /// <summary>
         /// Gets metrics snapshot for this node. Note that node metrics are constantly updated

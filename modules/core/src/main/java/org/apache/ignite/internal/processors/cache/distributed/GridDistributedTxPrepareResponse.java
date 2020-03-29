@@ -51,6 +51,12 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     @GridDirectTransient
     private IgniteTxState txState;
 
+    /** */
+    private int part;
+
+    /** */
+    protected byte flags;
+
     /**
      * Empty constructor (required by {@link Externalizable}).
      */
@@ -59,22 +65,52 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /**
-     * @param xid Transaction ID.
+     * @param part Partition.
+     * @param xid Lock or transaction ID.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, boolean addDepInfo) {
+    public GridDistributedTxPrepareResponse(int part, GridCacheVersion xid, boolean addDepInfo) {
         super(xid, 0, addDepInfo);
+
+        this.part = part;
     }
 
     /**
-     * @param xid Lock ID.
+     * @param part Partition.
+     * @param xid Lock or transaction ID.
      * @param err Error.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, Throwable err, boolean addDepInfo) {
+    public GridDistributedTxPrepareResponse(int part, GridCacheVersion xid, Throwable err, boolean addDepInfo) {
         super(xid, 0, addDepInfo);
 
+        this.part = part;
         this.err = err;
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    protected final void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reags flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    protected final boolean isFlag(int mask) {
+        return (flags & mask) != 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return part;
     }
 
     /** {@inheritDoc} */
@@ -106,8 +142,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         this.txState = txState;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txPrepareMessageLogger();
@@ -144,8 +178,20 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         }
 
         switch (writer.state()) {
-            case 7:
+            case 8:
                 if (!writer.writeByteArray("errBytes", errBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
@@ -166,8 +212,24 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
             return false;
 
         switch (reader.state()) {
-            case 7:
+            case 8:
                 errBytes = reader.readByteArray("errBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                part = reader.readInt("part");
 
                 if (!reader.isLastRead())
                     return false;
@@ -180,13 +242,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 26;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 11;
     }
 
     /** {@inheritDoc} */

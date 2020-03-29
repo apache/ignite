@@ -137,7 +137,6 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> V getAttribute(K key) {
         A.notNull(key, "key");
 

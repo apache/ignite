@@ -132,8 +132,9 @@ public interface PlatformContext {
      *
      * @param writer Writer.
      * @param typeId Type ID.
+     * @param includeSchemas Whether to include binary object schemas into the result.
      */
-    public void writeMetadata(BinaryRawWriterEx writer, int typeId);
+    public void writeMetadata(BinaryRawWriterEx writer, int typeId, boolean includeSchemas);
 
     /**
      * Write all available metadata.

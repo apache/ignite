@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * </li>
  * </ul>
 */
-@SuppressWarnings("NullableProblems")
 public class GridClientPartitionAffinity implements GridClientDataAffinity, GridClientTopologyListener {
     /**
      * This resolver is used to provide alternate hash ID, other than node ID.
@@ -143,9 +142,12 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
      * Sets total number of partitions.
      *
      * @param parts Total number of partitions.
+     * @return {@code this} for chaining.
      */
-    public void setPartitions(int parts) {
+    public GridClientPartitionAffinity setPartitions(int parts) {
         this.parts = parts;
+
+        return this;
     }
 
     /**
@@ -175,9 +177,12 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
      * repartitioning.
      *
      * @param hashIdRslvr Hash ID resolver.
+     * @return {@code this} for chaining.
      */
-    public void setHashIdResolver(HashIdResolver hashIdRslvr) {
+    public GridClientPartitionAffinity setHashIdResolver(HashIdResolver hashIdRslvr) {
         this.hashIdRslvr = hashIdRslvr;
+
+        return this;
     }
 
     /**
@@ -201,9 +206,12 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
      * Note that {@code excludeNeighbors} parameter is ignored if {@code backupFilter} is set.
      *
      * @param backupFilter Optional backup filter.
+     * @return {@code this} for chaining.
      */
-    public void setBackupFilter(GridClientPredicate<UUID> backupFilter) {
+    public GridClientPartitionAffinity setBackupFilter(GridClientPredicate<UUID> backupFilter) {
         this.backupFilter = backupFilter;
+
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -239,7 +247,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         return lookup.get(nodeInfo);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private int partition(Object key) {
         return Math.abs(key.hashCode() % getPartitions());
     }

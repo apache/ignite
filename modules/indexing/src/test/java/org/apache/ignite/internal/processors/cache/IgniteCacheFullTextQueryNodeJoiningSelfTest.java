@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -31,36 +32,33 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-2229
  * Tests cache in-place modification logic with iterative value increment.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-2229")
 public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of nodes to test on. */
     private static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setCacheMode(PARTITIONED);
         cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setBackups(1);
+        cache.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         QueryEntity qryEntity = new QueryEntity();
 
@@ -79,17 +77,11 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -104,6 +96,7 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFullTextQueryNodeJoin() throws Exception {
         for (int r = 0; r < 5; r++) {
             startGrids(GRID_CNT);
@@ -112,16 +105,16 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
                 for (int i = 0; i < 1000; i++) {
                     IndexedEntity entity = new IndexedEntity("indexed " + i);
 
-                    grid(0).cache(null).put(new AffinityKey<>(i, i), entity);
+                    grid(0).cache(DEFAULT_CACHE_NAME).put(new AffinityKey<>(i, i), entity);
                 }
 
                 Ignite started = startGrid(GRID_CNT);
 
                 for (int i = 0; i < 100; i++) {
-                    QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(null)
+                    QueryCursor<Cache.Entry<AffinityKey<Integer>, IndexedEntity>> res = started.cache(DEFAULT_CACHE_NAME)
                         .query(new TextQuery<AffinityKey<Integer>, IndexedEntity>(IndexedEntity.class, "indexed"));
 
-                    assertEquals(1000, res.getAll().size());
+                    assertEquals("Failed iteration: " + i, 1000, res.getAll().size());
                 }
             }
             finally {

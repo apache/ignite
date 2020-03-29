@@ -19,9 +19,31 @@
 @import "./bootstrap-custom";
 @import "./variables";
 @import "~roboto-font/css/fonts.css";
-@import "./../../app/directives/information/information.scss";
 @import "./blocks/error";
 @import "./form-field";
+
+:root {
+    --sans-serif-font: Roboto;
+    --serif-font: Roboto_slab;
+}
+
+body {
+    overflow-y: scroll !important;
+}
+
+.flex-full-height {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
+.container--responsive {
+    padding: 0 30px;
+
+    .gridster-wrapper {
+        margin: -20px !important;
+    }
+}
 
 hr {
     margin: 20px 0;
@@ -37,25 +59,6 @@ hr {
     outline: none;
 }
 
-.navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
-    position: absolute;
-    left: 0;
-    text-align: center;
-}
-
-.navbar-brand {
-    padding: 5px 0;
-    margin: 10px 0;
-}
-
-.modal.center .modal-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateX(-50%) translateY(-50%);
-    transform: translateX(-50%) translateY(-50%);
-}
-
 .border-left {
     box-shadow: 1px 0 0 0 $gray-lighter inset;
 }
@@ -64,22 +67,14 @@ hr {
     box-shadow: 1px 0 0 0 $gray-lighter;
 }
 
-.theme-line header {
-    background-color: $ignite-background-color;
-}
-
 .theme-line .docs-header h1 {
     color: $ignite-header-color;
     margin-top: 0;
     font-size: 22px;
 }
 
-.theme-line .footer {
-    text-align: center;
-}
-
 .table.table-vertical-middle tbody > tr > td {
-  vertical-align: middle;
+    vertical-align: middle;
 }
 
 .table .ui-grid-settings {
@@ -87,56 +82,7 @@ hr {
     padding-right: 10px;
 }
 
-ul.navbar-nav, .sidebar-nav {
-    li.active > a {
-        color: $link-color;
-    }
 
-    li.active > a:not(.dropdown-toggle) {
-        cursor: default;
-        pointer-events: none;
-    }
-}
-
-.theme-line .sidebar-nav {
-    padding-bottom: 30px;
-
-    ul {
-        padding: 0;
-        list-style: none;
-        margin: 3px 0 0;
-
-        li {
-            line-height: $input-height;
-
-            a {
-                font-size: 18px;
-                color: $ignite-header-color;
-                position: relative;
-                white-space: nowrap;
-                overflow: hidden;
-                -o-text-overflow: ellipsis;
-                text-overflow: ellipsis;
-
-                span.fa-stack {
-                    margin-right: 5px;
-                    font-size: 12px;
-                    height: 26px;
-                }
-            }
-
-            a:hover { color: $link-hover-color; }
-
-            a.active {
-                color: $link-color;
-            }
-        }
-    }
-}
-
-.theme-line .sidebar-nav ul li a:hover {
-    text-decoration: none;
-}
 
 .theme-line .select {
     li a.active {
@@ -160,17 +106,12 @@ ul.navbar-nav, .sidebar-nav {
     color: $input-color-placeholder;
 }
 
-.theme-line .summary-pojo-list > ul.dropdown-menu {
-    width: 100%;
-    max-width: none;
-}
-
 .tooltip {
-  word-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .theme-line ul.dropdown-menu {
-    min-width: 120px;
+    min-width: 0;
     max-width: 280px;
     max-height: 20em;
     overflow: auto;
@@ -256,9 +197,6 @@ ul.navbar-nav, .sidebar-nav {
     }
 }
 
-.theme-line .border-left .sidebar-nav {
-    padding-left: 15px;
-}
 
 .theme-line .suggest {
     padding: 5px;
@@ -266,49 +204,25 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 12px;
 }
 
-.theme-line header {
-    border-bottom: 8px solid $ignite-border-bottom-color;
-
-    p {
-        color: $ignite-header-color;
-    }
-}
-
-.header .nav.navbar-nav.pull-right > li > a {
-    padding-right: 0;
-}
-
-.header .title {
-    margin: 20px 0 5px 0;
-    padding: 0 15px;
-
-    font-size: 1.4em;
-}
-
-.header .nav.navbar-nav .not-link {
-    padding: 15px;
-    display: inline-block;
-}
-
 .nav > li {
     > a {
-        color: $navbar-default-link-color
-    }
-    > a:hover {
-        color: $link-hover-color
-    }
-    > a.active {
-        color: $link-color
-    }
-}
+        color: $navbar-default-link-color;
 
-.theme-line header .navbar-nav a {
-    line-height: 25px;
-    font-size: 18px;
-}
+        &:hover,
+        &:focus {
+            color: $link-hover-color;
+        }
 
-.theme-line .section-right {
-    padding-left: 30px;
+        &.active {
+            color: $link-color;
+        }
+    }
+
+    &.disabled > a {
+        label:hover, label:focus, i:hover, i:focus {
+            cursor: default;
+        }
+    }
 }
 
 .body-overlap .main-content {
@@ -324,6 +238,7 @@ ul.navbar-nav, .sidebar-nav {
 
 body {
     font-weight: 400;
+    background-color: $ignite-new-background-color;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -331,128 +246,83 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 10px;
 }
 
-.container-footer {
-    margin-top: 20px;
-    margin-bottom: 20px;
-
-    p {
-        font-size: 12px;
-        margin-bottom: 0;
-    }
-}
-
 /* Modal */
-.modal {
-    display: block;
-    overflow: hidden;
-}
-
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    float: none;
-}
-
-.modal-header {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-// Close icon
-.modal-header .close {
-    margin-right: -2px;
-}
-
-// Modal icon
-.modal-header h4 > i.fa {
-    cursor: default;
-    float: left;
-    line-height: $modal-title-line-height;
-}
-
-.modal .modal-dialog {
-    width: 650px;
-}
-
-.modal .modal-content {
-    background-color: $gray-lighter;
-
-    .input-tip {
-        padding-top: 1px;
-    }
-}
-
-.modal .modal-content .modal-header {
-    background-color: $ignite-background-color;
-    text-align: center;
-    color: $ignite-header-color;
-    padding: 15px 25px 15px 15px;
-}
-
-.modal .modal-content .modal-header h4 {
-    font-size: 22px;
-}
-
-.modal .modal-content .modal-footer {
-    margin-top: 0;
-}
-
-.modal-footer {
-    label {
-        float: left;
-        margin: 0;
-    }
-
-    .btn:last-child {
-        margin-right: 0;
-    }
-
-    .checkbox {
-        margin: 0;
-    }
-}
-
 .login-header {
     margin-top: 0;
     margin-bottom: 20px;
     font-size: 2em;
 }
 
-.login-footer {
-    @extend .modal-footer;
+body {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
 
-    padding-left: 0;
-    padding-right: 0;
+:root {
+    --page-side-padding: 30px;
+}
 
-    .btn {
-        margin-right: 0;
+.wrapper {
+    --header-height: 62px;
+
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto var(--header-height) 1fr;
+    grid-template-areas: 'notifications notifications' 'header header' 'sidebar content';
+
+    permanent-notifications {
+        grid-area: notifications;
+    }
+
+    web-console-header {
+        grid-area: header;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transform: translateZ(1px);
+    }
+
+    web-console-sidebar {
+        grid-area: sidebar;
+        transform: translateZ(1px);
+    }
+
+    &>.content {
+        grid-area: content;
+        padding-left: var(--page-side-padding);
+        padding-right: var(--page-side-padding);
+        padding-bottom: var(--page-side-padding);
+        display: flex;
+        flex-direction: column;
+
+        &>ui-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+    }
+
+    &.wrapper-public {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto var(--header-height) 1fr auto;
+        grid-template-areas: 'notifications' 'header' 'content' 'footer';
     }
 }
 
-.modal-body {
-    margin-left: 20px;
-    margin-right: 20px;
-}
+.public-page {
+    margin-left: auto;
+    margin-right: auto;
+    flex: 1 0 auto;
+    width: 100%;
+    max-width: 530px;
 
-.modal-body-with-scroll {
-    max-height: 420px;
-    overflow-y: auto;
-    margin: 0;
-}
-
-.greedy {
-    min-height: 100%;
-    height: #{"calc(100vh - 270px)"};
-}
-
-.signin-greedy {
-    height: #{"calc(100vh - 300px)"};
-}
-
-@media (min-width: 768px) {
-    .navbar-nav > li > a {
-        padding: 0 15px;
+    .public-page__title {
+        font-size: 38px;
+        font-weight: 300;
+        margin: 30px 0 30px;
     }
 }
 
@@ -479,6 +349,10 @@ h1, h2, h3, h4, h5, h6 {
         line-height: 20px !important;
         vertical-align: middle;
     }
+}
+
+.use-cache {
+    display: flex;
 }
 
 .group-section {
@@ -557,7 +431,6 @@ i.btn {
 h1,
 h2,
 h3 {
-    user-select: none;
     font-weight: normal;
     /* Makes the vertical size of the text the same for all fonts. */
     line-height: 1;
@@ -652,14 +525,6 @@ button.form-control {
     .sql-editor {
         padding: 5px 0;
 
-        .ace_cursor {
-            opacity: 1;
-        }
-
-        .ace_hidden-cursors {
-            opacity: 1;
-        }
-
         .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
             padding-right: 5px;
         }
@@ -676,73 +541,44 @@ button.form-control {
         line-height: 65px;
     }
 
-    .empty-caches {
-        text-align: center;
-        color: $ignite-placeholder-color;
-        height: 55px;
-        line-height: 55px;
-    }
-
     .panel-collapse {
         border-top: 1px solid $ignite-border-color;
     }
 
+    .btn-ignite-group {
+        padding: 0;
+        border: none;
+        margin-right: 0;
+        background: transparent;
+    }
+
     .sql-controls {
-        position: relative;
-        top: -1px;
+        display: flex;
+        justify-content: space-between;
         border-top: 1px solid #ddd;
 
-        padding: 10px 10px;
+        & > div {
+            display: flex;
+            padding: 10px;
+            align-items: flex-start;
 
-        input[type="checkbox"] {
-            line-height: 20px;
-            margin-right: 5px;
-        }
-
-        label {
-            line-height: 28px;
-            vertical-align: middle;
-        }
-
-        .btn {
-            line-height: 20px;
-        }
-
-        .ignite-form-field {
-            margin-right: 10px;
-
-            .ignite-form-field__label {
-                float: left;
-                width: auto;
-                margin-right: 5px;
-                line-height: 28px;
+            &:nth-child(2) {
+                flex: 1;
+                justify-content: flex-end;
             }
 
-            .ignite-form-field__label + div {
-                display: block;
-                float: none;
-                width: auto;
+            &:last-child {
+                flex-direction: column;
+                flex-basis: 25%;
             }
         }
 
-        .tipLabel .btn {
-            float: right;
+        button + button {
+            margin-left: 20px;
         }
 
-        .pull-right {
-            margin-left: 10px;
-
-            .ignite-form-field {
-                margin-right: -24px;
-
-                label {
-                    margin-left: 5px;
-                }
-            }
-        }
-
-        .col-sm-3 + .tipLabel {
-            margin-left: 0;
+        .form-field--inline + .form-field--inline {
+            margin-left: 20px;
         }
     }
 
@@ -752,8 +588,7 @@ button.form-control {
         .error {
             padding: 10px 10px;
 
-            text-align: center;
-            color: $brand-primary;
+            text-align: left;
         }
 
         .empty {
@@ -790,23 +625,27 @@ button.form-control {
 
             padding: 5px 10px;
         }
+
+        grid-column-selector {
+            margin-right: 5px;
+
+            .btn-ignite {
+                padding: 5px 0;
+                box-shadow: none !important;
+
+                .fa {
+                    font-size: 14px;
+                }
+            }
+        }
     }
 }
 
 .theme-line .panel-heading {
-    padding: 5px 10px;
     margin: 0;
     cursor: pointer;
     font-size: $font-size-large;
     line-height: 24px;
-
-    label {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        max-width: calc(100% - 85px);
-        cursor: pointer;
-    }
 
     .btn-group {
         vertical-align: top;
@@ -855,10 +694,6 @@ button.form-control {
 
 .theme-line .panel-body {
     padding: 20px;
-}
-
-.theme-line .main-content a.customize {
-    margin-left: 5px;
 }
 
 .theme-line .panel-collapse {
@@ -1006,10 +841,6 @@ button.form-control {
 
 .admin-summary {
     padding-bottom: 10px;
-}
-
-.import-domain-model-wizard-page {
-    margin: 15px;
 }
 
 .scrollable-y {
@@ -1229,6 +1060,10 @@ button.form-control {
 
 .popover-content {
     padding: 5px;
+
+    button {
+        margin-left: 5px;
+    }
 }
 
 .popover:focus {
@@ -1250,7 +1085,28 @@ button.form-control {
     position: absolute;
     z-index: 1030;
     min-width: 305px;
-    max-width: 450px;
+    max-width: 335px;
+
+    treecontrol li {
+        line-height: 16px;
+    }
+
+    treeitem ul {
+        margin-top: -2px;
+        margin-bottom: 2px;
+    }
+
+    .node-display {
+        position: relative;
+        top: 0;
+
+        max-width: 280px;
+
+        text-overflow: ellipsis;
+        line-height: 16px;
+
+        overflow: hidden;
+    }
 
     .popover-title {
         color: black;
@@ -1305,46 +1161,10 @@ button.form-control {
     }
 }
 
-.theme-line .popover.summary-project-structure {
-    @extend .popover.settings;
-
-    z-index: 1030;
-    min-width: 305px;
-
-    .popover-title {
-        color: black;
-
-        line-height: 27px;
-
-        padding: 3px 5px 3px 10px;
-
-        white-space: nowrap;
-        overflow: hidden;
-        -o-text-overflow: ellipsis;
-        text-overflow: ellipsis;
-
-        .close {
-            float: right;
-            top: 0;
-            right: 0;
-            position: relative;
-            margin-left: 10px;
-            line-height: 27px;
-        }
-    }
-
-    > .popover-content {
-        overflow: auto;
-
-        white-space: nowrap;
-
-        min-height: 300px;
-        max-height: 300px;
-    }
-}
-
-.theme-line .popover.validation-error {
-    max-width: 400px;
+.popover.validation-error {
+    white-space: pre-wrap;
+    width: auto !important;
+    max-width: 400px !important;
     color: $brand-primary;
     background: white;
     border: 1px solid $brand-primary;
@@ -1428,16 +1248,16 @@ label {
 }
 
 .fa-chevron-circle-down {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
 .fa-chevron-circle-right {
-    color: $brand-primary;
+    color: $ignite-brand-success;
     margin-right: 5px;
 }
 
-label.required:after {
+.required:after {
     color: $brand-primary;
     content: ' *';
     display: inline;
@@ -1479,19 +1299,6 @@ label.required:after {
     }
 }
 
-.summary-tabs {
-    margin-top: 0.65em;
-}
-
-.summary-tab {
-    img {
-        margin-right: 5px;
-        height: 16px;
-        width: 16px;
-        float: left;
-    }
-}
-
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -1520,11 +1327,6 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
 .theme-line .nav-tabs > li > a {
     padding: 5px 5px;
     color: $ignite-header-color;
-}
-
-.viewedUser {
-    text-align: center;
-    background-color: $brand-warning;
 }
 
 a {
@@ -1622,16 +1424,21 @@ th[st-sort] {
     padding: 10px 10px 10px 20px;
 }
 
+// Hack to solve an issue where scrollbars aren't visible in Safari.
+// Safari seems to clip part of the scrollbar element. By giving the
+// element a background, we're telling Safari that it *really* needs to
+// paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
+.ace_scrollbar-inner {
+    background-color: #FFF;
+    opacity: 0.01;
+
+    .ace_dark & {
+        background-color: #000;
+    }
+}
+
 .ace_content {
     padding-left: 5px;
-}
-
-.ace_hidden-cursors {
-    opacity: 0;
-}
-
-.ace_cursor {
-    opacity: 0;
 }
 
 .ace_editor {
@@ -1710,6 +1517,7 @@ th[st-sort] {
 
 .preview-panel {
     min-height: 28px;
+    position: relative;
 
     margin-left: 20px;
 
@@ -1723,7 +1531,7 @@ th[st-sort] {
     top: -10px;
     right: 20px;
     position: absolute;
-    z-index: 900;
+    z-index: 2;
 
     a {
         color: $input-color-placeholder;
@@ -1742,7 +1550,7 @@ th[st-sort] {
 }
 
 .preview-content-empty {
-    color: $input-color-placeholder;
+    color: #757575;
     display: table;
     width: 100%;
     height: 26px;
@@ -1850,6 +1658,66 @@ th[st-sort] {
     }
 }
 
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+.am-fade-and-scale {
+    animation-duration: 0.3s;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: backwards;
+
+    &.ng-enter, &.am-fade-and-scale-add, &.ng-hide-remove, &.ng-move {
+        animation-name: fadeAndScaleIn;
+    }
+
+    &.ng-leave, &.am-fade-and-scale-remove, &.ng-hide, &.ng-move {
+        animation-name: fadeAndScaleOut;
+    }
+
+    &.ng-enter {
+        visibility: hidden;
+        animation-name: fadeAndScaleIn;
+        animation-play-state: paused;
+
+        &.ng-enter-active {
+            visibility: visible;
+            animation-play-state: running;
+        }
+    }
+
+    &.ng-leave {
+        animation-name: fadeAndScaleOut;
+        animation-play-state: paused;
+
+        &.ng-leave-active {
+            animation-play-state: running;
+        }
+    }
+
+
+}
+
+@keyframes fadeAndScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeAndScaleOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+}
+
 .panel-tip-container {
     display: inline-block;
 }
@@ -1875,7 +1743,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }
@@ -1991,7 +1859,20 @@ treecontrol.tree-classic {
 }
 
 .getting-started {
+    min-height: 240px;
     margin: 15px 15px 300px;
+
+    ul {
+        line-height: 20px;
+    }
+
+    [class*="col-"] {
+        align-self: flex-start !important;
+    }
+
+    .align-center {
+        justify-content: center !important;
+    }
 }
 
 .getting-started-demo {
@@ -2096,74 +1977,9 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.summary-tabs {
-    .nav-tabs > li:first-child,
-    .nav-tabs > li:first-child.active {
-        & > a,
-        & > a:focus,
-        & > a:hover {
-            border-left: none;
-            border-top-left-radius: 0;
-        }
-    }
-}
-
-.ribbon-wrapper {
-    width: 150px;
-    height: 150px;
-    position: absolute;
-    overflow: hidden;
-    top: 0;
-    z-index: 1001;
-    pointer-events: none;
-}
-
-.ribbon-wrapper.right {
-    right: 0;
-}
-
-.ribbon {
-    position: absolute;
-    top: 42px;
-    width: 200px;
-    padding: 1px 0;
-    color: $btn-primary-color;
-    background: $btn-primary-border;
-
-    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-
-    right: -42px;
-    -moz-transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    -o-transform: rotate(45deg);
-    -ms-transform: rotate(45deg);
-    transform: rotate(45deg);
-
-    > label {
-        display: block;
-        padding: 1px 0;
-        height: 24px;
-        line-height: 18px;
-
-        text-align: center;
-        text-decoration: none;
-        font-family: $font-family-sans-serif;
-        font-size: 20px;
-        font-weight: 500;
-
-        border: 1px solid rgba(255,255,255,0.3);
-
-        -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
-        text-shadow: 0 0 10px rgba(0,0,0,0.31);
-    }
-}
-
-html,body,.splash-screen {
+html, body {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
 }
 
 .splash {
@@ -2191,10 +2007,10 @@ html,body,.splash-screen {
 }
 
 .splash:before {
-  content: '';
-  display: inline-block;
-  height: 100%;
-  vertical-align: middle;
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
 }
 
 .spinner {
@@ -2266,14 +2082,6 @@ html,body,.splash-screen {
     }
 }
 
-.domains-import-dialog {
-    .modal-body {
-        height: 325px;
-        margin: 0;
-        padding: 0;
-    }
-}
-
 // Fix for incorrect tooltip placement after fast show|hide.
 .tooltip.ng-leave {
     transition: none !important; /* Disable transitions. */
@@ -2300,65 +2108,64 @@ html,body,.splash-screen {
     }
 }
 
-.admin-page {
-    .panel-heading {
-        border-bottom: 0;
-        padding-bottom: 0;
+.center-container {
+    position: absolute !important;
+}
 
-        cursor: default;
+// Fix for injecting svg icon into BS btn
+.btn--with-icon {
+    display: flex;
+    align-items: center;
 
-        i {
-            margin-top: 2px;
-            margin-right: 10px;
-        }
-
-        label {
-            cursor: default;
-            line-height: 28px;
-        }
-
-        sub {
-            bottom: 0;
-        }
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-filter-select {
-        width: calc(100% - 10px);
-    }
-
-    .ui-grid-cell-contents > i {
-        line-height: $line-height-base;
+    span {
+        margin-left: 5px;
     }
 }
 
-.datepicker.dropdown-menu {
-    width: 250px;
-    height: 270px;
+header.header-with-selector {
+    margin: 40px 0 30px;
 
-    button {
-        outline: none;
-        border: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+
+    h1 {
+        min-height: 36px;
+        margin: 0;
+        margin-right: 8px;
+
+        font-size: 24px;
+        line-height: 36px;
     }
 
-    tbody {
-        height: 180px;
-    }
+    div {
+        display: flex;
+        align-items: center;
 
-    tbody button {
-        padding: 6px;
-    }
+        &:nth-child(2) {
+            .btn-ignite {
+                margin-left: 20px;
+            }
 
-    &.datepicker-mode-1, &.datepicker-mode-2 {
-        tbody button {
-            height: 65px;
+            .btn-ignite-group {
+                .btn-ignite {
+                    margin-left: 0;
+                }
+            }
+
+            .btn-ignite + .btn-ignite-group {
+                position: relative;
+                margin-left: 20px;
+
+                button {
+                    margin-left: 0;
+                }
+
+                ul.dropdown-menu {
+                    min-width: 100%;
+                }
+            }
         }
     }
 }

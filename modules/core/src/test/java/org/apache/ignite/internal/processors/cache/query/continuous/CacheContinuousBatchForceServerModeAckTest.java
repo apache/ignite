@@ -19,61 +19,27 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.io.Serializable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
  * Continuous queries tests.
  */
 public class CacheContinuousBatchForceServerModeAckTest extends CacheContinuousBatchAckTest implements Serializable {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith(CLIENT)) {
+        if (igniteInstanceName.endsWith(CLIENT)) {
             cfg.setClientMode(true);
 
             FailedTcpCommunicationSpi spi = new FailedTcpCommunicationSpi(true, false);
 
             cfg.setCommunicationSpi(spi);
-
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-            disco.setForceServerMode(true);
-
-            disco.setIpFinder(IP_FINDER);
-
-            cfg.setDiscoverySpi(disco);
         }
-        else if (gridName.endsWith(SERVER2)) {
+        else if (igniteInstanceName.endsWith(SERVER2))
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, true));
 
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-            disco.setIpFinder(IP_FINDER);
-
-            cfg.setDiscoverySpi(disco);
-        }
-        else {
+        else
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, false));
-
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-            disco.setIpFinder(IP_FINDER);
-
-            cfg.setDiscoverySpi(disco);
-        }
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }

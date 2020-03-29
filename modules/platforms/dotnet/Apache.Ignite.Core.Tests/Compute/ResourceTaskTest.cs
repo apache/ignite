@@ -15,12 +15,19 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable UnassignedField.Global
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
@@ -97,12 +104,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(GetServerCount(), res);
         }
 
-        /** <inheritdoc /> */
-        protected override ICollection<Type> GetBinaryTypes()
-        {
-            return new[] {typeof(InjectionJobBinarizable)};
-        }
-
         /// <summary>
         /// Injection task.
         /// </summary>
@@ -158,9 +159,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Binarizable job.
         /// </summary>
-        public class InjectionJobBinarizable : InjectionJob
+        public class InjectionJobBinarizable : InjectionJob, IBinarizable
         {
-            // No-op.
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                // No-op.
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                // No-op.
+            }
         }
 
         /// <summary>
@@ -182,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
-            public InjectionJob(SerializationInfo info, StreamingContext context) : base(info, context)
+            protected InjectionJob(SerializationInfo info, StreamingContext context) : base(info, context)
             {
                 // No-op.
             }
@@ -255,24 +264,6 @@ namespace Apache.Ignite.Core.Tests.Compute
                 StaticGrid2 = grid;
             }
 
-            /// <summary>
-            ///
-            /// </summary>
-            public InjectionClosure()
-            {
-                // No-op.
-            }
-
-            /// <summary>
-            ///
-            /// </summary>
-            /// <param name="info"></param>
-            /// <param name="context"></param>
-            public InjectionClosure(SerializationInfo info, StreamingContext context)
-            {
-                // No-op.
-            }
-
             /** */
             [InstanceResource]
             private readonly IIgnite _grid1 = null;
@@ -343,12 +334,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.IsTrue(_mthdGrid1 == _grid1);
                 Assert.IsTrue(_mthdGrid2 == _grid1);
-            }
-
-            /** <inheritDoc /> */
-            public void GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                // No-op.
             }
 
             /** <inheritDoc /> */
@@ -450,7 +435,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// <summary>
             ///
             /// </summary>
-            public Injectee()
+            protected Injectee()
             {
                 // No-op.
             }
@@ -460,7 +445,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
-            public Injectee(SerializationInfo info, StreamingContext context)
+            protected Injectee(SerializationInfo info, StreamingContext context)
             {
                 // No-op.
             }
@@ -586,24 +571,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Serializable]
         public class NoResultCacheJob : IComputeJob<int>
         {
-            /// <summary>
-            ///
-            /// </summary>
-            public NoResultCacheJob()
-            {
-                // No-op.
-            }
-
-            /// <summary>
-            ///
-            /// </summary>
-            /// <param name="info"></param>
-            /// <param name="context"></param>
-            public NoResultCacheJob(SerializationInfo info, StreamingContext context)
-            {
-                // No-op.
-            }
-
             /** <inheritDoc /> */
             public int Execute()
             {

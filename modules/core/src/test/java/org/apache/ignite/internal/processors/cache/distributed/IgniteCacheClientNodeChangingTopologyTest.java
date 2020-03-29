@@ -42,9 +42,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -81,18 +83,15 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -108,36 +107,32 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private CacheConfiguration ccfg;
-
-    /** */
-    private boolean client;
 
     /** */
     private volatile CyclicBarrier updateBarrier;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
-
-        cfg.setClientMode(client);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(commSpi);
-
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
     }
 
     /** {@inheritDoc} */
@@ -150,61 +145,40 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicPutAllClockMode() throws Exception {
-        atomicPut(CLOCK, true, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testAtomicPutAllPrimaryMode() throws Exception {
-        atomicPut(PRIMARY, true, null);
+        atomicPut(true, null);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicPutAllNearEnabledClockMode() throws Exception {
-        atomicPut(CLOCK, true, new NearCacheConfiguration());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testAtomicPutAllNearEnabledPrimaryMode() throws Exception {
-        atomicPut(PRIMARY, true, new NearCacheConfiguration());
+        atomicPut(true, new NearCacheConfiguration());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicPutClockMode() throws Exception {
-        atomicPut(CLOCK, false, null);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testAtomicPutPrimaryMode() throws Exception {
-        atomicPut(PRIMARY, false, null);
+        atomicPut(false, null);
     }
 
     /**
-     * @param writeOrder Write order.
      * @param putAll If {@code true} executes putAll.
      * @param nearCfg Near cache configuration.
      * @throws Exception If failed.
      */
-    private void atomicPut(CacheAtomicWriteOrderMode writeOrder,
-        final boolean putAll,
+    private void atomicPut(final boolean putAll,
         @Nullable NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setRebalanceMode(SYNC);
 
         IgniteEx ignite0 = startGrid(0);
@@ -212,11 +186,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ccfg.setNearConfiguration(nearCfg);
 
-        client = true;
-
         ccfg.setNearConfiguration(null);
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
@@ -233,9 +205,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
-
-        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -251,8 +221,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         });
 
         assertFalse(putFut.isDone());
-
-        client = false;
 
         IgniteEx ignite3 = startGrid(3);
 
@@ -289,8 +257,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertFalse(putFut.isDone());
 
-        client = false;
-
         startGrid(3);
 
         log.info("Stop block2.");
@@ -315,38 +281,28 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicNoRemapClockMode() throws Exception {
-        atomicNoRemap(CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testAtomicNoRemapPrimaryMode() throws Exception {
-        atomicNoRemap(PRIMARY);
+        atomicNoRemap();
     }
 
     /**
-     * @param writeOrder Write order.
      * @throws Exception If failed.
      */
-    private void atomicNoRemap(CacheAtomicWriteOrderMode writeOrder) throws Exception {
-        ccfg = new CacheConfiguration();
+    private void atomicNoRemap() throws Exception {
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setRebalanceMode(SYNC);
 
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
         IgniteEx ignite2 = startGrid(2);
 
-        client = true;
-
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -354,9 +310,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final Map<Integer, Integer> map = new HashMap<>();
 
-        map.put(primaryKey(ignite0.cache(null)), 0);
-        map.put(primaryKey(ignite1.cache(null)), 1);
-        map.put(primaryKey(ignite2.cache(null)), 2);
+        map.put(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), 0);
+        map.put(primaryKey(ignite1.cache(DEFAULT_CACHE_NAME)), 1);
+        map.put(primaryKey(ignite2.cache(DEFAULT_CACHE_NAME)), 2);
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
@@ -367,9 +323,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearAtomicFullUpdateRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
-
-        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
+        final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -381,7 +335,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        IgniteEx ignite4 = startGrid(4);
+        IgniteEx ignite4 = startClientGrid(4);
 
         assertTrue(ignite4.configuration().isClientMode());
 
@@ -401,12 +355,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertEquals(3, msgs.size());
 
-        for (Object msg : msgs)
-            assertTrue(((GridNearAtomicFullUpdateRequest)msg).clientRequest());
-
-        map.put(primaryKey(ignite0.cache(null)), 3);
-        map.put(primaryKey(ignite1.cache(null)), 4);
-        map.put(primaryKey(ignite2.cache(null)), 5);
+        map.put(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), 3);
+        map.put(primaryKey(ignite1.cache(DEFAULT_CACHE_NAME)), 4);
+        map.put(primaryKey(ignite2.cache(DEFAULT_CACHE_NAME)), 5);
 
         cache.putAll(map);
 
@@ -416,39 +367,29 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicGetAndPutClockMode() throws Exception {
-        atomicGetAndPut(CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testAtomicGetAndPutPrimaryMode() throws Exception {
-        atomicGetAndPut(PRIMARY);
+        atomicGetAndPut();
     }
 
     /**
-     * @param writeOrder Write order.
      * @throws Exception If failed.
      */
-    private void atomicGetAndPut(CacheAtomicWriteOrderMode writeOrder) throws Exception {
-        ccfg = new CacheConfiguration();
+    private void atomicGetAndPut() throws Exception {
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(writeOrder);
         ccfg.setRebalanceMode(SYNC);
 
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        client = true;
+        ignite0.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
-        ignite0.cache(null).put(0, 0);
-
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
@@ -462,9 +403,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicFullUpdateRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
-
-        assertEquals(writeOrder, cache.getConfiguration(CacheConfiguration.class).getAtomicWriteOrderMode());
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<Integer> putFut = GridTestUtils.runAsync(new Callable<Integer>() {
             @Override public Integer call() throws Exception {
@@ -475,8 +414,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         });
 
         assertFalse(putFut.isDone());
-
-        client = false;
 
         startGrid(3);
 
@@ -494,8 +431,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxPutAll() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -506,9 +444,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        client = true;
-
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
@@ -522,7 +458,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearTxPrepareRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearTxPrepareRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -535,8 +471,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         });
 
         assertFalse(putFut.isDone());
-
-        client = false;
 
         startGrid(3);
 
@@ -557,9 +491,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkData(map, null, cache, 4);
     }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx() throws Exception {
         pessimisticTx(null);
     }
@@ -567,6 +503,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxNearEnabled() throws Exception {
         pessimisticTx(new NearCacheConfiguration());
     }
@@ -576,7 +513,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void pessimisticTx(NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -590,9 +527,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        final Ignite ignite2 = startGrid(2);
+        final Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
@@ -608,7 +543,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearLockRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -625,8 +560,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         });
 
         assertFalse(putFut.isDone());
-
-        client = false;
 
         IgniteEx ignite3 = startGrid(3);
 
@@ -704,7 +637,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private IgniteBiTuple<Integer, Integer> findKeys(Ignite ignite, ClusterNode...nodes) {
         ClusterNode newNode = new TcpDiscoveryNode();
 
-        GridTestUtils.setFieldValue(newNode, "consistentId", getTestGridName(4));
+        GridTestUtils.setFieldValue(newNode, "consistentId", getTestIgniteInstanceName(4));
         GridTestUtils.setFieldValue(newNode, "id", UUID.randomUUID());
 
         List<ClusterNode> topNodes = new ArrayList<>();
@@ -723,17 +656,17 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             new AffinityTopologyVersion(topVer + 1),
             1);
 
-        AffinityFunction affFunc = ignite.cache(null).getConfiguration(CacheConfiguration.class).getAffinity();
+        AffinityFunction affFunc = ignite.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getAffinity();
 
         List<List<ClusterNode>> newAff = affFunc.assignPartitions(ctx);
 
-        List<List<ClusterNode>> curAff = ((IgniteKernal)ignite).context().cache().internalCache(null).context().
+        List<List<ClusterNode>> curAff = ((IgniteKernal)ignite).context().cache().internalCache(DEFAULT_CACHE_NAME).context().
             affinity().assignments(new AffinityTopologyVersion(topVer));
 
         Integer key1 = null;
         Integer key2 = null;
 
-        Affinity<Integer> aff = ignite.affinity(null);
+        Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < curAff.size(); i++) {
             if (key1 == null) {
@@ -785,8 +718,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTx2() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -800,15 +734,14 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        final Ignite ignite3 = startGrid(3);
+        final Ignite ignite3 = startClientGrid(3);
 
         assertTrue(ignite3.configuration().isClientMode());
 
         AffinityTopologyVersion topVer1 = new AffinityTopologyVersion(4, 0);
 
-        assertEquals(topVer1, ignite0.context().cache().internalCache(null).context().topology().topologyVersion());
+        assertEquals(topVer1,
+            ignite0.context().cache().internalCache(DEFAULT_CACHE_NAME).context().topology().readyTopologyVersion());
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
@@ -822,7 +755,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
         spi.blockMessages(GridNearLockRequest.class, ignite2.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -839,8 +772,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        client = false;
-
         IgniteEx ignite4 = startGrid(4);
 
         int minorVer = ignite4.configuration().isLateAffinityAssignment() ? 1 : 0;
@@ -849,9 +780,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ignite0.context().cache().context().exchange().affinityReadyFuture(topVer2).get();
 
-        assertEquals(topVer2, ignite0.context().cache().internalCache(null).context().topology().topologyVersion());
+        assertEquals(topVer2, ignite0.context().cache().internalCache(DEFAULT_CACHE_NAME).context().topology().readyTopologyVersion());
 
-        GridCacheAffinityManager aff = ignite0.context().cache().internalCache(null).context().affinity();
+        GridCacheAffinityManager aff = ignite0.context().cache().internalCache(DEFAULT_CACHE_NAME).context().affinity();
 
         List<ClusterNode> nodes1 = aff.nodesByKey(key1, topVer1);
         List<ClusterNode> nodes2 = aff.nodesByKey(key1, topVer2);
@@ -877,6 +808,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxNearEnabledNoRemap() throws Exception {
         pessimisticTxNoRemap(new NearCacheConfiguration());
     }
@@ -884,6 +816,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxNoRemap() throws Exception {
         pessimisticTxNoRemap(null);
     }
@@ -893,7 +826,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void pessimisticTxNoRemap(@Nullable NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -906,9 +839,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         IgniteEx ignite1 = startGrid(1);
         IgniteEx ignite2 = startGrid(2);
 
-        client = true;
-
-        final Ignite ignite3 = startGrid(3);
+        final Ignite ignite3 = startClientGrid(3);
 
         assertTrue(ignite3.configuration().isClientMode());
 
@@ -917,7 +848,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
         for (int i = 0; i < 100; i++)
-            primaryCache(i, null).put(i, -1);
+            primaryCache(i, DEFAULT_CACHE_NAME).put(i, -1);
 
         final Map<Integer, Integer> map = new HashMap<>();
 
@@ -930,7 +861,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearLockRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -947,7 +878,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        IgniteEx ignite4 = startGrid(4);
+        IgniteEx ignite4 = startClientGrid(4);
 
         assertTrue(ignite4.configuration().isClientMode());
 
@@ -980,8 +911,87 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     }
 
     /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration testPessimisticTx3Cfg() {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setRebalanceMode(SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        return ccfg;
+    }
+
+    /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testPessimisticTx3() throws Exception {
+        for (int iter = 0; iter < 5; iter++) {
+            info("Iteration: " + iter);
+
+            ccfg = testPessimisticTx3Cfg();
+
+            IgniteEx ignite0 = startGrid(0);
+
+            Map<Integer, Integer> map = new HashMap<>();
+
+            final IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < 10000; i++) {
+                cache0.put(i, i);
+                map.put(i, i + 1);
+            }
+
+            ccfg = testPessimisticTx3Cfg();
+
+            final Ignite ignite3 = startClientGrid(3);
+
+            final IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
+
+            TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
+            spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
+
+            IgniteInternalFuture putFut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Thread.currentThread().setName("put-thread");
+
+                    try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.putAll(map);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            });
+
+            spi.waitForBlocked();
+
+            ccfg = testPessimisticTx3Cfg();
+
+            startGrid(1);
+
+            // Want provoke case when client req is processed when target partition is RENTING,
+            // there is no easy way to do it, so just try sleep.
+            U.sleep(ThreadLocalRandom.current().nextInt(1000) + 100);
+
+            spi.stopBlock();
+
+            putFut.get();
+
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testOptimisticSerializableTx() throws Exception {
         optimisticSerializableTx(null);
     }
@@ -989,6 +999,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTxNearEnabled() throws Exception {
         optimisticSerializableTx(new NearCacheConfiguration());
     }
@@ -998,7 +1009,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void optimisticSerializableTx(NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1012,9 +1023,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        final Ignite ignite2 = startGrid(2);
+        final Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
@@ -1030,7 +1039,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearTxPrepareRequest.class);
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1047,8 +1056,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         });
 
         assertFalse(putFut.isDone());
-
-        client = false;
 
         IgniteEx ignite3 = startGrid(3);
 
@@ -1134,6 +1141,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLock() throws Exception {
         lock(null);
     }
@@ -1141,6 +1149,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockNearEnabled() throws Exception {
         lock(new NearCacheConfiguration());
     }
@@ -1150,7 +1159,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     private void lock(NearCacheConfiguration nearCfg) throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1164,9 +1173,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        final Ignite ignite2 = startGrid(2);
+        final Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
@@ -1180,7 +1187,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearLockRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearLockRequest.class, ignite1.localNode().id());
 
-        final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch lockedLatch = new CountDownLatch(1);
 
@@ -1206,8 +1213,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
         });
 
-        client = false;
-
         startGrid(3);
 
         log.info("Stop block.");
@@ -1218,7 +1223,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertTrue(lockedLatch.await(3000, TimeUnit.MILLISECONDS));
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         for (Integer key : keys) {
             Lock lock = cache0.lock(key);
@@ -1243,7 +1248,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             }
 
             private boolean unlocked(Ignite ignite) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 for (Integer key : keys) {
                     if (cache.isLocalLocked(key, false)) {
@@ -1271,8 +1276,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxMessageClientFirstFlag() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1286,9 +1292,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         assertTrue(ignite3.configuration().isClientMode());
 
@@ -1296,9 +1300,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi.record(GridNearLockRequest.class);
 
-        IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Integer> aff = ignite0.affinity(null);
+        Affinity<Integer> aff = ignite0.affinity(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer key1 = findKey(aff, 1);
@@ -1316,10 +1320,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         Map<Integer, Integer> map = new LinkedHashMap<>();
 
-        map.put(primaryKey(ignite0.cache(null)), 4);
-        map.put(primaryKey(ignite1.cache(null)), 5);
-        map.put(primaryKey(ignite2.cache(null)), 6);
-        map.put(primaryKeys(ignite0.cache(null), 1, 10_000).get(0), 7);
+        map.put(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), 4);
+        map.put(primaryKey(ignite1.cache(DEFAULT_CACHE_NAME)), 5);
+        map.put(primaryKey(ignite2.cache(DEFAULT_CACHE_NAME)), 6);
+        map.put(primaryKeys(ignite0.cache(DEFAULT_CACHE_NAME), 1, 10_000).get(0), 7);
 
         try (Transaction tx = ignite3.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.putAll(map);
@@ -1335,9 +1339,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         spi0.record(GridNearLockRequest.class);
 
-        List<Integer> keys = primaryKeys(ignite1.cache(null), 3, 0);
+        List<Integer> keys = primaryKeys(ignite1.cache(DEFAULT_CACHE_NAME), 3, 0);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache0.put(keys.get(0), 0);
@@ -1371,8 +1375,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticTxMessageClientFirstFlag() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1386,19 +1391,17 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         awaitPartitionMapExchange();
 
-        client = true;
-
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         assertTrue(ignite3.configuration().isClientMode());
 
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
-        IgniteCache<Integer, Integer> cache = ignite3.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite3.cache(DEFAULT_CACHE_NAME);
 
-        List<Integer> keys0 = primaryKeys(ignite0.cache(null), 2, 0);
-        List<Integer> keys1 = primaryKeys(ignite1.cache(null), 2, 0);
-        List<Integer> keys2 = primaryKeys(ignite2.cache(null), 2, 0);
+        List<Integer> keys0 = primaryKeys(ignite0.cache(DEFAULT_CACHE_NAME), 2, 0);
+        List<Integer> keys1 = primaryKeys(ignite1.cache(DEFAULT_CACHE_NAME), 2, 0);
+        List<Integer> keys2 = primaryKeys(ignite2.cache(DEFAULT_CACHE_NAME), 2, 0);
 
         LinkedHashMap<Integer, Integer> map = new LinkedHashMap<>();
 
@@ -1430,7 +1433,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         checkData(map, null, cache, 4);
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)ignite0.configuration().getCommunicationSpi();
 
@@ -1466,8 +1469,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockRemoveAfterClientFailed() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1478,13 +1482,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        client = true;
-
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         final Integer key = 0;
 
@@ -1494,11 +1496,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ignite2.close();
 
-        IgniteCache<Integer, Integer> cache0 = ignite0.cache(null);
+        IgniteCache<Integer, Integer> cache0 = ignite0.cache(DEFAULT_CACHE_NAME);
 
         assertFalse(cache0.isLocalLocked(key, false));
 
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        IgniteCache<Integer, Integer> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         assertFalse(cache1.isLocalLocked(key, false));
 
@@ -1508,11 +1510,11 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         lock1.unlock();
 
-        ignite2 = startGrid(2);
+        ignite2 = startClientGrid(2);
 
         assertTrue(ignite2.configuration().isClientMode());
 
-        cache2 = ignite2.cache(null);
+        cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
         lock2 = cache2.lock(0);
 
@@ -1524,8 +1526,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockFromClientBlocksExchange() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1536,11 +1539,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         startGrid(0);
         startGrid(1);
 
-        client = true;
+        Ignite ignite2 = startClientGrid(2);
 
-        Ignite ignite2 = startGrid(2);
-
-        IgniteCache<Integer, Integer> cache = ignite2.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite2.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(0);
 
@@ -1548,8 +1549,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                client = false;
-
                 startGrid(3);
 
                 return null;
@@ -1602,7 +1601,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     {
         final List<Ignite> nodes = G.allGrids();
 
-        final Affinity<Integer> aff = nodes.get(0).affinity(null);
+        final Affinity<Integer> aff = nodes.get(0).affinity(DEFAULT_CACHE_NAME);
 
         assertEquals(expNodes, nodes.size());
 
@@ -1622,7 +1621,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                         Object val = null;
 
                         for (Ignite node : nodes) {
-                            IgniteCache<Integer, Integer> cache = node.cache(null);
+                            IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
                             boolean affNode = aff.isPrimaryOrBackup(node.cluster().localNode(), key);
 
@@ -1634,38 +1633,45 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                                 else
                                     assertNotNull("Unexpected value for " + node.name(), val0);
 
-                                GridCacheAdapter cache0 = ((IgniteKernal)node).internalCache(null);
+                                GridCacheAdapter cache0 = ((IgniteKernal)node).internalCache(DEFAULT_CACHE_NAME);
 
                                 if (affNode && cache0.isNear())
                                     cache0 = ((GridNearCacheAdapter)cache0).dht();
 
-                                GridCacheEntryEx entry = cache0.peekEx(key);
+                                GridCacheEntryEx entry = cache0.entryEx(key);
 
-                                assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
+                                try {
+                                    entry.unswap(true);
 
-                                GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
-                                    ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
+                                    assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
 
-                                assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);
+                                    GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
+                                        ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
 
-                                if (ver == null) {
-                                    ver = ver0;
-                                    val = val0;
+                                    assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);
+
+                                    if (ver == null) {
+                                        ver = ver0;
+                                        val = val0;
+                                    }
+                                    else {
+                                        assertEquals("Version check failed [node=" + node.name() +
+                                            ", key=" + key +
+                                            ", affNode=" + affNode +
+                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
+                                            ver0,
+                                            ver);
+
+                                        assertEquals("Value check failed [node=" + node.name() +
+                                            ", key=" + key +
+                                            ", affNode=" + affNode +
+                                            ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
+                                            val0,
+                                            val);
+                                    }
                                 }
-                                else {
-                                    assertEquals("Version check failed [node=" + node.name() +
-                                        ", key=" + key +
-                                        ", affNode=" + affNode +
-                                        ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
-                                        ver0,
-                                        ver);
-
-                                    assertEquals("Value check failed [node=" + node.name() +
-                                        ", key=" + key +
-                                        ", affNode=" + affNode +
-                                        ", primary=" + aff.isPrimary(node.cluster().localNode(), key) + ']',
-                                        val0,
-                                        val);
+                                finally {
+                                    entry.touch();
                                 }
                             }
                             else
@@ -1692,62 +1698,55 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicPrimaryPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
-        multinode(PRIMARY, TestType.PUT_ALL);
+        multinode(ATOMIC, TestType.PUT_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicClockPutAllMultinode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1685");
-
-        multinode(CLOCK, TestType.PUT_ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testOptimisticTxPutAllMultinode() throws Exception {
-        multinode(null, TestType.OPTIMISTIC_TX);
+        multinode(TRANSACTIONAL, TestType.OPTIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializableTxPutAllMultinode() throws Exception {
-        multinode(null, TestType.OPTIMISTIC_SERIALIZABLE_TX);
+        multinode(TRANSACTIONAL, TestType.OPTIMISTIC_SERIALIZABLE_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticTxPutAllMultinode() throws Exception {
-        multinode(null, TestType.PESSIMISTIC_TX);
+        multinode(TRANSACTIONAL, TestType.PESSIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLockAllMultinode() throws Exception {
-        multinode(null, TestType.LOCK);
+        multinode(TRANSACTIONAL, TestType.LOCK);
     }
 
     /**
-     * @param atomicWriteOrder Write order if test atomic cache.
+     * @param atomicityMode Atomicity mode cache.
      * @param testType Test type.
      * @throws Exception If failed.
      */
-    private void multinode(final CacheAtomicWriteOrderMode atomicWriteOrder, final TestType testType)
+    private void multinode(CacheAtomicityMode atomicityMode, final TestType testType)
         throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setAtomicityMode(atomicWriteOrder != null ? ATOMIC : TRANSACTIONAL);
-        ccfg.setAtomicWriteOrderMode(atomicWriteOrder);
+        ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
 
@@ -1760,10 +1759,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final List<Ignite> clients = new ArrayList<>();
 
-        client = true;
-
         for (int i = 0; i < CLIENT_CNT; i++) {
-            Ignite ignite = startGrid(SRV_CNT + i);
+            Ignite ignite = startClientGrid(SRV_CNT + i);
 
             assertTrue(ignite.configuration().isClientMode());
 
@@ -1776,7 +1773,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         final int THREADS = CLIENT_CNT * 3;
 
-        final ConcurrentHashSet<Integer> putKeys = new ConcurrentHashSet<>();
+        final GridConcurrentHashSet<Integer> putKeys = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<?> fut;
 
@@ -1791,7 +1788,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                     Thread.currentThread().setName("update-thread-" + ignite.name());
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     boolean useTx = testType == TestType.OPTIMISTIC_TX ||
                         testType == TestType.OPTIMISTIC_SERIALIZABLE_TX ||
@@ -1870,11 +1867,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 if (restartClient) {
                     log.info("Start client node.");
 
-                    client = true;
+                    IgniteEx ignite = startClientGrid(SRV_CNT + CLIENT_CNT);
 
-                    IgniteEx ignite = startGrid(SRV_CNT + CLIENT_CNT);
-
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     assertNotNull(cache);
                 }
@@ -1921,8 +1916,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 else {
                     log.info("Start server node: " + idx);
 
-                    client = false;
-
                     startGrid(idx);
                 }
 
@@ -1961,14 +1954,15 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         fut.get(30_000);
 
         if (testType != TestType.LOCK)
-            checkData(null, putKeys, grid(SRV_CNT).cache(null), SRV_CNT + CLIENT_CNT);
+            checkData(null, putKeys, grid(SRV_CNT).cache(DEFAULT_CACHE_NAME), SRV_CNT + CLIENT_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServersLeaveOnStart() throws Exception {
-        ccfg = new CacheConfiguration();
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
@@ -1978,8 +1972,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         Ignite ignite0 = startGrid(0);
 
-        client = true;
-
         final AtomicInteger nodeIdx = new AtomicInteger(2);
 
         final int CLIENTS = 10;
@@ -1988,7 +1980,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             @Override public Void call() throws Exception {
                 int idx = nodeIdx.getAndIncrement();
 
-                startGrid(idx);
+                startClientGrid(idx);
 
                 return null;
             }
@@ -2004,8 +1996,6 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             assertEquals(CLIENTS, ignite.cluster().nodes().size());
         }
 
-        client = false;
-
         startGrid(0);
         startGrid(1);
 
@@ -2014,7 +2004,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         for (int i = 0; i < CLIENTS; i++) {
             Ignite ignite = grid(i + 2);
 
-            IgniteCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             cache.put(i, i);
 
@@ -2055,10 +2045,12 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
-                        log.info("Block message [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
-                            ", msg=" + msg0 + ']');
+                        log.info("Block message [node=" +
+                            node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) + ", msg=" + msg0 + ']');
 
                         blockedMsgs.add(new T2<>(node, (GridIoMessage)msg));
+
+                        notifyAll();
 
                         return;
                     }
@@ -2118,13 +2110,24 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                     ClusterNode node = msg.get1();
 
-                    log.info("Send blocked message: [node=" + node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME) +
+                    log.info("Send blocked message: [node=" +
+                        node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME) +
                         ", msg=" + msg.get2().message() + ']');
 
                     super.sendMessage(msg.get1(), msg.get2());
                 }
 
                 blockedMsgs.clear();
+            }
+        }
+
+        /**
+         * @throws InterruptedException If interrupted.
+         */
+        public void waitForBlocked() throws InterruptedException {
+            synchronized (this) {
+                while (blockedMsgs.isEmpty())
+                    wait();
             }
         }
     }

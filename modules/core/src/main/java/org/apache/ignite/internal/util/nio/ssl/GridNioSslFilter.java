@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
@@ -68,9 +69,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Allocate direct buffer or heap buffer. */
     private boolean directBuf;
 
-    /** Whether SSLEngine should use client mode. */
-    private boolean clientMode;
-
     /** Whether direct mode is used. */
     private boolean directMode;
 
@@ -92,14 +90,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /**
-     * @param clientMode Flag indicating whether SSLEngine should use client mode..
-     */
-    public void clientMode(boolean clientMode) {
-        this.clientMode = clientMode;
-    }
-
-    /**
-     *
      * @param directMode Flag indicating whether direct mode is used.
      */
     public void directMode(boolean directMode) {
@@ -161,7 +151,13 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
 
         if (sslMeta == null) {
-            engine = sslCtx.createSSLEngine();
+            try {
+                engine = sslCtx.createSSLEngine();
+            } catch (IllegalArgumentException e) {
+                throw new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
+            }
+
+            boolean clientMode = !ses.accepted();
 
             engine.setUseClientMode(clientMode);
 
@@ -178,6 +174,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 engine.setEnabledProtocols(enabledProtos);
 
             sslMeta = new GridSslMeta();
+
+            sslMeta.sslEngine(engine);
 
             ses.addMeta(SSL_META.ordinal(), sslMeta);
 
@@ -219,13 +217,16 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
-        GridNioSslHandler hnd = sslHandler(ses);
-
         try {
             GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
             if (fut != null)
                 fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed)."));
+
+            if (ses.meta(SSL_META.ordinal()) == null)
+                return;
+
+            GridNioSslHandler hnd = sslHandler(ses);
 
             hnd.shutdown();
         }
@@ -285,10 +286,11 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     @Override public GridNioFuture<?> onSessionWrite(
         GridNioSession ses,
         Object msg,
-        boolean fut
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
         if (directMode)
-            return proceedSessionWrite(ses, msg, fut);
+            return proceedSessionWrite(ses, msg, fut, ackC);
 
         ByteBuffer input = checkMessage(ses, msg);
 
@@ -307,13 +309,13 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             if (hnd.isHandshakeFinished()) {
                 hnd.encrypt(input);
 
-                return hnd.writeNetBuffer();
+                return hnd.writeNetBuffer(ackC);
             }
             else {
                 if (log.isDebugEnabled())
                     log.debug("Write request received during handshake, scheduling deferred write: " + ses);
 
-                return hnd.deferredWrite(input);
+                return hnd.deferredWrite(input, ackC);
             }
         }
         catch (SSLException e) {
@@ -382,15 +384,15 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      *
      * @param ses Session to shutdown.
      * @param hnd SSL handler.
-     * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
+     * @throws GridNioException If failed to forward requests to filter chain.
      */
     private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
         throws IgniteCheckedException {
         try {
             hnd.closeOutbound();
 
-            hnd.writeNetBuffer();
+            hnd.writeNetBuffer(null);
         }
         catch (SSLException e) {
             U.warn(log, "Failed to shutdown SSL session gracefully (will force close) [ex=" + e + ", ses=" + ses + ']');
@@ -441,7 +443,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     private ByteBuffer checkMessage(GridNioSession ses, Object msg) throws GridNioException {
         if (!(msg instanceof ByteBuffer))
             throw new GridNioException("Invalid object type received (is SSL filter correctly placed in filter " +
-                "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() +  ']');
+                "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() + ']');
 
         return (ByteBuffer)msg;
     }

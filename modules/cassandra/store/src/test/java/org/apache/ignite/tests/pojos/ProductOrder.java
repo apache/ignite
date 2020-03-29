@@ -17,8 +17,6 @@
 
 package org.apache.ignite.tests.pojos;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -91,7 +89,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField(index = true)
     public long getId() {
         return id;
     }
@@ -102,7 +99,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField(index = true)
     public long getProductId() {
         return productId;
     }
@@ -113,7 +109,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public Date getDate() {
         return date;
     }
@@ -124,7 +119,6 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public int getAmount() {
         return amount;
     }
@@ -135,13 +129,11 @@ public class ProductOrder {
     }
 
     /** */
-    @QuerySqlField
     public float getPrice() {
         return price;
     }
 
     /** */
-    @QuerySqlField
     public String getDayMillisecond() {
         return FORMAT.format(date);
     }

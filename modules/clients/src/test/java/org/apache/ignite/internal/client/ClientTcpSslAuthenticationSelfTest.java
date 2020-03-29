@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests
@@ -62,8 +63,8 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.setLocalHost(getTestResources().getLocalHost());
 
@@ -112,6 +113,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerAuthenticated() throws Exception {
         checkServerAuthenticatedByClient(false);
     }
@@ -119,6 +121,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNotAuthenticatedByClient() throws Exception {
         try {
             checkServerAuthenticatedByClient(true);
@@ -131,6 +134,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientAuthenticated() throws Exception {
         checkClientAuthenticatedByServer(false);
     }
@@ -138,6 +142,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientNotAuthenticated() throws Exception {
         try {
             checkServerAuthenticatedByClient(true);

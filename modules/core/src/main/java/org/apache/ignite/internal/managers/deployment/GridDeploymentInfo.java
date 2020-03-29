@@ -49,6 +49,7 @@ public interface GridDeploymentInfo {
     /**
      * @return Local deployment ownership flag.
      */
+    @Deprecated
     public boolean localDeploymentOwner();
 
     /**

@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -74,7 +75,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  */
 public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Default object's content. */
-    private final static ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
+    private static final ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
 
     /** Grid logger. */
     @LoggerResource
@@ -198,10 +199,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      * For details refer to Google Cloud Platform API reference.
      *
      * @param projectName Project name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setProjectName(String projectName) {
+    public TcpDiscoveryGoogleStorageIpFinder setProjectName(String projectName) {
         this.projectName = projectName;
+
+        return this;
     }
 
     /**
@@ -211,10 +215,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      * perform this operation.
      *
      * @param bucketName Bucket name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setBucketName(String bucketName) {
+    public TcpDiscoveryGoogleStorageIpFinder setBucketName(String bucketName) {
         this.bucketName = bucketName;
+
+        return this;
     }
 
 
@@ -226,10 +233,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      *     Service Account Authentication</a>.
      *
      * @param p12FileName Private key file full path.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setServiceAccountP12FilePath(String p12FileName) {
+    public TcpDiscoveryGoogleStorageIpFinder setServiceAccountP12FilePath(String p12FileName) {
         this.srvcAccountP12FilePath = p12FileName;
+
+        return this;
     }
 
     /**
@@ -240,10 +250,13 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      *     Service Account Authentication</a>.
      *
      * @param id Service account ID.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setServiceAccountId(String id) {
+    public TcpDiscoveryGoogleStorageIpFinder setServiceAccountId(String id) {
         this.srvcAccountId = id;
+
+        return this;
     }
 
     /**
@@ -402,5 +415,17 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
         catch (Exception e) {
             throw new IgniteSpiException("Failed to remove the bucket: " + bucketName, e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryGoogleStorageIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TcpDiscoveryGoogleStorageIpFinder.class, this);
     }
 }

@@ -19,23 +19,18 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicOffHeapCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedOffHeapCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOffHeapCacheEntry;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
+import org.junit.Test;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -55,11 +50,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(1);
     }
@@ -71,7 +61,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
     /**
      * @param gridName Grid name.
-     * @param memoryMode Memory mode.
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.
      * @param cacheName Cache name.
@@ -79,7 +68,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private CacheConfiguration cacheConfiguration(String gridName,
-        CacheMemoryMode memoryMode,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         String cacheName)
@@ -89,8 +77,10 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
         cfg.setCacheMode(cacheMode);
         cfg.setAtomicityMode(atomicityMode);
-        cfg.setMemoryMode(memoryMode);
         cfg.setName(cacheName);
+
+        if (atomicityMode == TRANSACTIONAL_SNAPSHOT && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+            cfg.setNearConfiguration(null);
 
         return cfg;
     }
@@ -98,63 +88,44 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheMapEntry() throws Exception {
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, LOCAL, GridLocalCacheEntry.class);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, LOCAL, GridLocalCacheEntry.class);
 
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, PARTITIONED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, PARTITIONED, GridNearCacheEntry.class);
+        checkCacheMapEntry(ATOMIC, REPLICATED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, PARTITIONED, GridNearOffHeapCacheEntry.class);
+        checkCacheMapEntry(TRANSACTIONAL, REPLICATED, GridDhtCacheEntry.class);
 
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, PARTITIONED, GridNearOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, ATOMIC, REPLICATED, GridDhtAtomicCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, ATOMIC, REPLICATED, GridDhtAtomicOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, ATOMIC, REPLICATED, GridDhtAtomicOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(ONHEAP_TIERED, TRANSACTIONAL, REPLICATED, GridDhtColocatedCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_TIERED, TRANSACTIONAL, REPLICATED, GridDhtColocatedOffHeapCacheEntry.class);
-
-        checkCacheMapEntry(OFFHEAP_VALUES, TRANSACTIONAL, REPLICATED, GridDhtColocatedOffHeapCacheEntry.class);
+        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, REPLICATED, GridDhtCacheEntry.class);
     }
 
     /**
-     * @param memoryMode Cache memory mode.
      * @param atomicityMode Cache atomicity mode.
      * @param cacheMode Cache mode.
      * @param entryCls Class of cache map entry.
      * @throws Exception If failed.
      */
-    private void checkCacheMapEntry(CacheMemoryMode memoryMode,
-        CacheAtomicityMode atomicityMode,
+    private void checkCacheMapEntry(CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
         Class<?> entryCls)
         throws Exception
     {
-        log.info("Test cache [memMode=" + memoryMode +
-            ", atomicityMode=" + atomicityMode +
-            ", cacheMode=" + cacheMode + ']');
+        log.info("Test cache [atomicityMode=" + atomicityMode + ", cacheMode=" + cacheMode + ']');
 
         CacheConfiguration cfg = cacheConfiguration(grid(0).name(),
-            memoryMode,
             atomicityMode,
             cacheMode,
             "Cache");
@@ -164,7 +135,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
         try {
             GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(0)).internalCache(jcache.getName());
 
-            Integer key = primaryKey(grid(0).cache(null));
+            Integer key = primaryKey(grid(0).cache(DEFAULT_CACHE_NAME));
 
             cache.put(key, "val");
 
@@ -174,7 +145,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
             assertNotNull(entry);
 
-            assertEquals(entry.getClass(), entryCls);
+            assertEquals(entryCls, entry.getClass());
         }
         finally {
             jcache.destroy();

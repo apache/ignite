@@ -53,12 +53,12 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -79,9 +79,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Cache store. */
     private static TestStore store = new TestStore();
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid counter. */
     private AtomicInteger cntr = new AtomicInteger(0);
 
@@ -98,17 +95,22 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         super(false /* don't start grid. */);
     }
 
+    /** */
+    @Before
+    public void beforeGridCacheNearMultiNodeSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-        spi.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-        cfg.setDiscoverySpi(spi);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -152,13 +154,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
@@ -171,7 +166,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             jcache(i).removeAll();
@@ -200,9 +194,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Dht cache.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"unchecked"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -210,7 +204,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @return Affinity.
      */
     private Affinity<Object> affinity(int idx) {
-        return grid(idx).affinity(null);
+        return grid(idx).affinity(DEFAULT_CACHE_NAME);
     }
 
     /** @param cnt Count. */
@@ -255,6 +249,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /**  Test mappings. */
+    @Test
     public void testMappings() {
         mapDebug = false;
 
@@ -315,6 +310,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReadThroughAndPut() throws Exception {
         Integer key = 100000;
 
@@ -330,14 +326,15 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             backup = grid(0);
         }
 
-        assertEquals(String.valueOf(key), backup.cache(null).get(key));
+        assertEquals(String.valueOf(key), backup.cache(DEFAULT_CACHE_NAME).get(key));
 
-        primary.cache(null).put(key, "a");
+        primary.cache(DEFAULT_CACHE_NAME).put(key, "a");
 
-        assertEquals("a", backup.cache(null).get(key));
+        assertEquals("a", backup.cache(DEFAULT_CACHE_NAME).get(key));
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReadThrough() throws Exception {
         ClusterNode loc = grid(0).localNode();
 
@@ -370,7 +367,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
-            String s = dhtCache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+            String s = dhtCache.localPeek(key, null);
 
             assert s != null : "Value is null for key: " + key;
             assertEquals(s, Integer.toString(key));
@@ -383,6 +380,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testOptimisticWriteThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -401,7 +399,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 GridDhtCacheEntry entry = (GridDhtCacheEntry)dht(primaryGrid(2)).peekEx(2);
 
                 if (entry != null)
-                    assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
+                    assertNull("Unexpected entry: " + entry, entry.rawGet());
 
                 assertNotNull(localPeek(dht(primaryGrid(3)), 3));
 
@@ -417,8 +415,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("3", s);
         }
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
+        assertEquals("3", near.localPeek(3));
 
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
@@ -428,12 +426,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNoTransactionSinglePutx() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
         near.put(2, "2");
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
         assertEquals("2", near.get(2));
 
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
@@ -445,6 +444,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNoTransactionSinglePut() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -456,7 +456,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNotNull(s);
         assertEquals("3", s);
 
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("3", near.localPeek(3));
         assertEquals("3", near.get(3));
 
         Ignite primaryIgnite = primaryGrid(3);
@@ -487,6 +487,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNoTransactionWriteThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -497,8 +498,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertNotNull(s);
         assertEquals("3", s);
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
+        assertEquals("3", near.localPeek(3));
 
         assertEquals("2", near.get(2));
         assertEquals("3", near.get(3));
@@ -516,6 +517,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
+    @Test
     public void testPessimisticWriteThrough() throws Exception {
         IgniteCache<Integer, String> near = jcache(0);
 
@@ -530,7 +532,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("2", near.get(2));
                 assertEquals("3", near.get(3));
 
-                assertNotNull(dht(primaryGrid(3)).localPeek(3, new CachePeekMode[] {CachePeekMode.ONHEAP}, null));
+                assertNotNull(dht(primaryGrid(3)).localPeek(3, null));
 
                 tx.commit();
             }
@@ -544,8 +546,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("3", s);
         }
 
-        assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-        assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(2));
+        assertEquals("3", near.localPeek(3));
 
         assertEquals("2", localPeek(dht(primaryGrid(2)), 2));
         assertEquals("3", localPeek(dht(primaryGrid(3)), 3));
@@ -555,6 +557,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testConcurrentOps() throws Exception {
         // Don't create missing values.
         store.create(false);
@@ -567,16 +570,16 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         assertFalse(near.putIfAbsent(key, "1"));
         assertEquals("1", near.getAndPutIfAbsent(key, "2"));
 
-        assertEquals("1", near.localPeek(key, CachePeekMode.ONHEAP));
+        assertEquals("1", near.localPeek(key));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
 
         assertEquals("1", near.getAndReplace(key, "2"));
-        assertEquals("2", near.localPeek(key, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(key));
 
         assertTrue(near.replace(key, "2"));
 
-        assertEquals("2", near.localPeek(key, CachePeekMode.ONHEAP));
+        assertEquals("2", near.localPeek(key));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
         assertEquals(1, near.localSize(CachePeekMode.ALL));
 
@@ -586,11 +589,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBackupsLocalAffinity() throws Exception {
         checkBackupConsistency(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBackupsRemoteAffinity() throws Exception {
         checkBackupConsistency(1);
     }
@@ -617,11 +622,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockLocalAffinity() throws Exception {
         checkSingleLock(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testSingleLockRemoteAffinity() throws Exception {
         checkSingleLock(1);
     }
@@ -655,7 +662,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         String val = Integer.toString(key);
 
-        Collection<ClusterNode> affNodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
+        Collection<ClusterNode> affNodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
         info("Affinity for key [nodeId=" + U.nodeIds(affNodes) + ", key=" + key + ']');
 
@@ -695,7 +702,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertNotNull(nearEntry2);
             assertTrue("Invalid near entry [hash=" + nearEntry2, nearEntry2.valid(topVer));
 
-            assertEquals(val, cache.localPeek(key, CachePeekMode.ONHEAP));
+            assertEquals(val, cache.localPeek(key));
             assertEquals(val, dhtPeek(0, key));
             assertEquals(val, dhtPeek(1, key));
 
@@ -714,7 +721,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals(val, cache.get(key));
             assertEquals(val, cache.getAndRemove(key));
 
-            assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
+            assertNull(cache.localPeek(key));
             assertNull(localPeek(dht(primaryGrid(key)), key));
 
             assertTrue(cache.isLocalLocked(key, false));
@@ -732,11 +739,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Throwable If failed. */
+    @Test
     public void testSingleLockReentryLocalAffinity() throws Throwable {
         checkSingleLockReentry(2);
     }
 
     /** @throws Throwable If failed. */
+    @Test
     public void testSingleLockReentryRemoteAffinity() throws Throwable {
         checkSingleLockReentry(1);
     }
@@ -760,7 +769,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         try {
             near.put(key, val);
 
-            assertEquals(val, near.localPeek(key, CachePeekMode.ONHEAP));
+            assertEquals(val, near.localPeek(key));
             assertEquals(val, localPeek(dht(primaryGrid(key)), key));
 
             assertTrue(near.isLocalLocked(key, false));
@@ -772,7 +781,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals(val, near.get(key));
                 assertEquals(val, near.getAndRemove(key));
 
-                assertNull(near.localPeek(key, CachePeekMode.ONHEAP));
+                assertNull(near.localPeek(key));
                 assertNull(localPeek(dht(primaryGrid(key)), key));
 
                 assertTrue(near.isLocalLocked(key, false));
@@ -799,11 +808,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetLocalAffinity() throws Exception {
         checkTransactionSingleGet(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemoteAffinity() throws Exception {
         checkTransactionSingleGet(1);
     }
@@ -845,11 +856,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemoveLocalAffinity() throws Exception {
         checkTransactionSingleGetRemove(2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTransactionSingleGetRemoveRemoteAffinity() throws Exception {
         checkTransactionSingleGetRemove(1);
     }

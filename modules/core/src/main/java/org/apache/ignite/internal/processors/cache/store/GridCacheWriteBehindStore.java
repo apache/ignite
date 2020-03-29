@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.integration.CacheWriterException;
@@ -43,12 +46,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static javax.cache.Cache.Entry;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.includeSensitive;
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
@@ -65,6 +71,8 @@ import static javax.cache.Cache.Entry;
  * <p/>
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
+ * <p/>
+ * {@link GridCacheWriteBehindStore} doesn't support concurrent modifications of the same key.
  */
 public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, LifecycleAware {
     /** Default write cache initial capacity. */
@@ -91,35 +99,35 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /** Count of worker threads performing underlying store updates. */
     private int flushThreadCnt = CacheConfiguration.DFLT_WRITE_FROM_BEHIND_FLUSH_THREAD_CNT;
 
+    /** Is flush threads count power of two flag. */
+    private boolean flushThreadCntIsPowerOfTwo;
+
     /** Cache flush frequency. All pending operations will be performed in not less then this value ms. */
     private long cacheFlushFreq = CacheConfiguration.DFLT_WRITE_BEHIND_FLUSH_FREQUENCY;
 
     /** Maximum batch size for put and remove operations */
     private int batchSize = CacheConfiguration.DFLT_WRITE_BEHIND_BATCH_SIZE;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Cache name. */
-    private String cacheName;
+    private final String cacheName;
 
     /** Underlying store. */
-    private CacheStore<K, V> store;
+    private final CacheStore<K, V> store;
 
     /** Write cache. */
     private ConcurrentLinkedHashMap<K, StatefulValue<K, V>> writeCache;
 
     /** Flusher threads. */
-    private GridWorker[] flushThreads;
+    private Flusher[] flushThreads;
+
+    /** Write coalescing. */
+    private boolean writeCoalescing = CacheConfiguration.DFLT_WRITE_BEHIND_COALESCING;
 
     /** Atomic flag indicating store shutdown. */
     private AtomicBoolean stopping = new AtomicBoolean(true);
-
-    /** Flush lock. */
-    private Lock flushLock = new ReentrantLock();
-
-    /** Condition to determine records available for flush. */
-    private Condition canFlush = flushLock.newCondition();
 
     /** Variable for counting total cache overflows. */
     private AtomicInteger cacheTotalOverflowCntr = new AtomicInteger();
@@ -131,28 +139,34 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     private AtomicInteger retryEntriesCnt = new AtomicInteger();
 
     /** Log. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Store manager. */
-    private CacheStoreManager storeMgr;
+    private final CacheStoreManager storeMgr;
+
+    /** Flush lock. */
+    private final Lock flushLock = new ReentrantLock();
+
+    /** Condition to determine records available for flush. */
+    private Condition canFlush = flushLock.newCondition();
 
     /**
      * Creates a write-behind cache store for the given store.
      *
      * @param storeMgr Store manager.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param cacheName Cache name.
      * @param log Grid logger.
      * @param store {@code GridCacheStore} that need to be wrapped.
      */
     public GridCacheWriteBehindStore(
         CacheStoreManager storeMgr,
-        String gridName,
+        String igniteInstanceName,
         String cacheName,
         IgniteLogger log,
         CacheStore<K, V> store) {
         this.storeMgr = storeMgr;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.cacheName = cacheName;
         this.log = log;
         this.store = store;
@@ -193,7 +207,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * <p/>
      * If this value is {@code 0}, then flush is performed only on time-elapsing basis. However,
      * when this value is {@code 0}, the cache critical size is set to
-     * {@link CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}
+     * {@link CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}.
      *
      * @return Buffer size that triggers flush procedure.
      */
@@ -208,6 +222,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     public void setFlushThreadCount(int flushThreadCnt) {
         this.flushThreadCnt = flushThreadCnt;
+        this.flushThreadCntIsPowerOfTwo = (flushThreadCnt & (flushThreadCnt - 1)) == 0;
     }
 
     /**
@@ -217,6 +232,24 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     public int getWriteBehindFlushThreadCount() {
         return flushThreadCnt;
+    }
+
+    /**
+     * Sets the write coalescing flag.
+     *
+     * @param writeCoalescing Write coalescing flag.
+     */
+    public void setWriteCoalescing(boolean writeCoalescing) {
+        this.writeCoalescing = writeCoalescing;
+    }
+
+    /**
+     * Gets the write coalescing flag.
+     *
+     * @return Write coalescing flag.
+     */
+    public boolean getWriteCoalescing() {
+        return writeCoalescing;
     }
 
     /**
@@ -266,7 +299,16 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @return Total count of entries in cache store internal buffer.
      */
     public int getWriteBehindBufferSize() {
-        return writeCache.sizex();
+        if (writeCoalescing)
+            return writeCache.sizex();
+        else {
+            int size = 0;
+
+            for (Flusher f : flushThreads)
+                size += f.size();
+
+            return size;
+        }
     }
 
     /**
@@ -292,14 +334,15 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             if (cacheCriticalSize == 0)
                 cacheCriticalSize = CacheConfiguration.DFLT_WRITE_BEHIND_CRITICAL_SIZE;
 
-            flushThreads = new GridWorker[flushThreadCnt];
+            flushThreads = new GridCacheWriteBehindStore.Flusher[flushThreadCnt];
 
-            writeCache = new ConcurrentLinkedHashMap<>(initCap, 0.75f, concurLvl);
+            if (writeCoalescing)
+                writeCache = new ConcurrentLinkedHashMap<>(initCap, 0.75f, concurLvl);
 
             for (int i = 0; i < flushThreads.length; i++) {
-                flushThreads[i] = new Flusher(gridName, "flusher-" + i, log);
+                flushThreads[i] = new Flusher(igniteInstanceName, "flusher-" + i, log);
 
-                new IgniteThread(flushThreads[i]).start();
+                flushThreads[i].start();
             }
         }
     }
@@ -344,7 +387,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             if (log.isDebugEnabled())
                 log.debug("Stopping write-behind store for cache '" + cacheName + '\'');
 
-            wakeUp();
+            for (Flusher f : flushThreads) {
+                if (!f.isEmpty())
+                    f.wakeUp();
+            }
 
             boolean graceful = true;
 
@@ -352,7 +398,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 graceful &= U.join(worker, log);
 
             if (!graceful)
-                log.warning("Shutdown was aborted");
+                log.warning("Write behind store shutdown was aborted.");
         }
     }
 
@@ -361,7 +407,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @throws IgniteCheckedException If failed.
      */
     public void forceFlush() throws IgniteCheckedException {
-        wakeUp();
+        for (Flusher f : flushThreads) {
+            if (!f.isEmpty())
+                f.wakeUp();
+        }
     }
 
     /** {@inheritDoc} */
@@ -372,34 +421,58 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /** {@inheritDoc} */
     @Override public Map<K, V> loadAll(Iterable<? extends K> keys) {
         if (log.isDebugEnabled())
-            log.debug("Store load all [keys=" + keys + ']');
+            log.debug(S.toString("Store load all",
+                "keys", keys, true));
 
         Map<K, V> loaded = new HashMap<>();
 
-        Collection<K> remaining = new LinkedList<>();
+        Collection<K> remaining = null;
 
         for (K key : keys) {
-            StatefulValue<K, V> val = writeCache.get(key);
+            StatefulValue<K, V> val;
+
+            if (writeCoalescing)
+                val = writeCache.get(key);
+            else
+                val = flusher(key).flusherWriteMap.get(key);
 
             if (val != null) {
                 val.readLock().lock();
 
                 try {
-                    if (val.operation() == StoreOperation.PUT)
-                        loaded.put(key, val.entry().getValue());
+                    StoreOperation op;
+
+                    V value;
+
+                    if (writeCoalescing && val.nextOperation() != null) {
+                        op = val.nextOperation();
+
+                        value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                    } else {
+                        op = val.operation();
+
+                        value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                    }
+
+                    if (op == StoreOperation.PUT)
+                        loaded.put(key, value);
                     else
-                        assert val.operation() == StoreOperation.RMV : val.operation();
+                        assert op == StoreOperation.RMV : op;
                 }
                 finally {
                     val.readLock().unlock();
                 }
             }
-            else
+            else {
+                if (remaining == null)
+                    remaining = new ArrayList<>();
+
                 remaining.add(key);
+            }
         }
 
         // For items that were not found in queue.
-        if (!remaining.isEmpty()) {
+        if (remaining != null && !remaining.isEmpty()) {
             Map<K, V> loaded0 = store.loadAll(remaining);
 
             if (loaded0 != null)
@@ -412,17 +485,37 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /** {@inheritDoc} */
     @Override public V load(K key) {
         if (log.isDebugEnabled())
-            log.debug("Store load [key=" + key + ']');
+            log.debug(S.toString("Store load",
+                "key", key, true));
 
-        StatefulValue<K, V> val = writeCache.get(key);
+        StatefulValue<K, V> val;
+
+        if (writeCoalescing)
+            val = writeCache.get(key);
+        else
+            val = flusher(key).flusherWriteMap.get(key);
 
         if (val != null) {
             val.readLock().lock();
 
             try {
-                switch (val.operation()) {
+                StoreOperation op;
+
+                V value;
+
+                if (writeCoalescing && val.nextOperation() != null) {
+                    op = val.nextOperation();
+
+                    value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                } else {
+                    op = val.operation();
+
+                    value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                }
+
+                switch (op) {
                     case PUT:
-                        return val.entry().getValue();
+                        return value;
 
                     case RMV:
                         return null;
@@ -449,7 +542,9 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     @Override public void write(Entry<? extends K, ? extends V> entry) {
         try {
             if (log.isDebugEnabled())
-                log.debug("Store put [key=" + entry.getKey() + ", val=" + entry.getValue() + ']');
+                log.debug(S.toString("Store put",
+                    "key", entry.getKey(), true,
+                    "val", entry.getValue(), true));
 
             updateCache(entry.getKey(), entry, StoreOperation.PUT);
         }
@@ -465,11 +560,11 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void delete(Object key) {
         try {
             if (log.isDebugEnabled())
-                log.debug("Store remove [key=" + key + ']');
+                log.debug(S.toString("Store remove",
+                    "key", key, true));
 
             updateCache((K)key, null, StoreOperation.RMV);
         }
@@ -493,7 +588,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @param key Key for which update is performed.
      * @param val New value, may be null for remove operation.
-     * @param operation Updated value status
+     * @param operation Updated value status.
      * @throws IgniteInterruptedCheckedException If interrupted while waiting for value to be flushed.
      */
     private void updateCache(K key,
@@ -502,17 +597,39 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         throws IgniteInterruptedCheckedException {
         StatefulValue<K, V> newVal = new StatefulValue<>(val, operation);
 
+        if (writeCoalescing)
+            putToWriteCache(key, newVal);
+        else
+            flusher(key).putToFlusherWriteCache(key, newVal);
+    }
+
+    /**
+     * Performs flush-consistent writeCache update for the given key.
+     *
+     * @param key Key for which update is performed.
+     * @param newVal stateful value to put
+     * @throws IgniteInterruptedCheckedException If interrupted while waiting for value to be flushed.
+     */
+    private void putToWriteCache(
+        K key,
+        StatefulValue<K, V> newVal)
+        throws IgniteInterruptedCheckedException {
         StatefulValue<K, V> prev;
+
+        assert writeCoalescing : "Unexpected write coalescing.";
 
         while ((prev = writeCache.putIfAbsent(key, newVal)) != null) {
             prev.writeLock().lock();
 
             try {
-                if (prev.status() == ValueStatus.PENDING) {
-                    // Flush process in progress, try again.
-                    prev.waitForFlush();
+                if (prev.status() == ValueStatus.PENDING || prev.status() == ValueStatus.PENDING_AND_UPDATED) {
+                    // Flush process in progress, save next value and update the status.
 
-                    continue;
+                    prev.setNext(newVal.val, newVal.storeOperation);
+
+                    prev.status(ValueStatus.PENDING_AND_UPDATED);
+
+                    break;
                 }
                 else if (prev.status() == ValueStatus.FLUSHED)
                     // This entry was deleted from map before we acquired the lock.
@@ -523,7 +640,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                 assert prev.status() == ValueStatus.NEW || prev.status() == ValueStatus.RETRY;
 
-                prev.update(val, operation, ValueStatus.NEW);
+                prev.update(newVal.val, newVal.operation(), ValueStatus.NEW);
 
                 break;
             }
@@ -533,11 +650,30 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         // Now check the map size
-        if (writeCache.sizex() > cacheCriticalSize)
+        int cacheSize = getWriteBehindBufferSize();
+
+        if (cacheSize > cacheCriticalSize)
             // Perform single store update in the same thread.
             flushSingleValue();
-        else if (cacheMaxSize > 0 && writeCache.sizex() > cacheMaxSize)
+        else if (cacheMaxSize > 0 && cacheSize > cacheMaxSize)
             wakeUp();
+    }
+
+    /**
+     * Return flusher by by key.
+     *
+     * @param key Key for search.
+     * @return flusher.
+     */
+    private Flusher flusher(K key) {
+        int h, idx;
+
+        if (flushThreadCntIsPowerOfTwo)
+            idx = ((h = key.hashCode()) ^ (h >>> 16)) & (flushThreadCnt - 1);
+        else
+            idx = ((h = key.hashCode()) ^ (h >>> 16)) % flushThreadCnt;
+
+        return flushThreads[idx];
     }
 
     /**
@@ -549,7 +685,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         cacheOverflowCntr.incrementAndGet();
 
         try {
-            Map<K, StatefulValue<K, V>> batch = null;
+            Map<K, StatefulValue<K, V>> batch;
 
             for (Map.Entry<K, StatefulValue<K, V>> e : writeCache.entrySet()) {
                 StatefulValue<K, V> val = e.getValue();
@@ -577,7 +713,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
 
                 if (!batch.isEmpty()) {
-                    applyBatch(batch, false);
+                    applyBatch(batch, false, null);
 
                     cacheTotalOverflowCntr.incrementAndGet();
 
@@ -595,9 +731,12 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @param valMap Batch map.
      * @param initSes {@code True} if need to initialize session.
+     * @param flusher Flusher, assotiated with all keys in batch (have sense in write coalescing = false mode)
+     * @return {@code True} if batch was successfully applied, {@code False} otherwise.
      */
-    private void applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes) {
+    private boolean applyBatch(Map<K, StatefulValue<K, V>> valMap, boolean initSes, Flusher flusher) {
         assert valMap.size() <= batchSize;
+        assert !valMap.isEmpty();
 
         StoreOperation operation = null;
 
@@ -605,31 +744,60 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         Map<K, Entry<? extends K, ? extends V>> batch = U.newLinkedHashMap(valMap.size());
 
         for (Map.Entry<K, StatefulValue<K, V>> e : valMap.entrySet()) {
-            if (operation == null)
-                operation = e.getValue().operation();
+            StatefulValue<K, V> val = e.getValue();
 
-            assert operation == e.getValue().operation();
+            val.readLock().lock();
 
-            assert e.getValue().status() == ValueStatus.PENDING;
+            try {
+                if (operation == null)
+                    operation = val.operation();
 
-            batch.put(e.getKey(), e.getValue().entry());
+                assert operation == val.operation();
+
+                assert val.status() == ValueStatus.PENDING || val.status() == ValueStatus.PENDING_AND_UPDATED;
+
+                batch.put(e.getKey(), val.entry());
+            } finally {
+                val.readLock().unlock();
+            }
         }
 
-        if (updateStore(operation, batch, initSes)) {
+        boolean result = updateStore(operation, batch, initSes, flusher);
+
+        if (result) {
             for (Map.Entry<K, StatefulValue<K, V>> e : valMap.entrySet()) {
                 StatefulValue<K, V> val = e.getValue();
 
                 val.writeLock().lock();
 
                 try {
-                    val.status(ValueStatus.FLUSHED);
+                    if (writeCoalescing) {
+                        if (val.status() == ValueStatus.PENDING_AND_UPDATED) {
+                            val.update(val.nextEntry(), val.nextOperation(), ValueStatus.NEW);
 
-                    StatefulValue<K, V> prev = writeCache.remove(e.getKey());
+                            val.setNext(null, null);
+                        }
+                        else {
+                            val.status(ValueStatus.FLUSHED);
 
-                    // Additional check to ensure consistency.
-                    assert prev == val : "Map value for key " + e.getKey() + " was updated during flush";
+                            StatefulValue<K, V> prev = writeCache.remove(e.getKey());
 
-                    val.signalFlushed();
+                            // Additional check to ensure consistency.
+                            assert prev == val : "Map value for key " + e.getKey() + " was updated during flush";
+                        }
+
+                        val.signalFlushed();
+                    }
+                    else {
+                        val.status(ValueStatus.FLUSHED);
+
+                        Flusher f = flusher(e.getKey());
+
+                        // Can remove using equal because if map contains another similar value it has different state.
+                        f.flusherWriteMap.remove(e.getKey(), e.getValue());
+
+                        val.signalFlushed();
+                    }
                 }
                 finally {
                     val.writeLock().unlock();
@@ -642,9 +810,16 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 val.writeLock().lock();
 
                 try {
-                    val.status(ValueStatus.RETRY);
+                    if (val.status() == ValueStatus.PENDING_AND_UPDATED) {
+                        val.update(val.nextEntry(), val.nextOperation(), ValueStatus.NEW);
 
-                    retryEntriesCnt.incrementAndGet();
+                        val.setNext(null, null);
+                    }
+                    else {
+                        val.status(ValueStatus.RETRY);
+
+                        retryEntriesCnt.incrementAndGet();
+                    }
 
                     val.signalFlushed();
                 }
@@ -653,6 +828,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
             }
         }
+
+        return result;
     }
 
     /**
@@ -666,16 +843,25 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @param operation Status indicating operation that should be performed.
      * @param vals Key-Value map.
      * @param initSes {@code True} if need to initialize session.
+     * @param flusher Flusher, assotiated with vals keys (in writeCoalescing=false mode)
      * @return {@code true} if value may be deleted from the write cache,
      *         {@code false} otherwise
      */
-    private boolean updateStore(StoreOperation operation,
+    private boolean updateStore(
+        StoreOperation operation,
         Map<K, Entry<? extends K, ? extends  V>> vals,
-        boolean initSes) {
-
+        boolean initSes,
+        Flusher flusher
+    ) {
         try {
-            if (initSes && storeMgr != null)
-                storeMgr.writeBehindSessionInit();
+            if (storeMgr != null) {
+                if (initSes)
+                    storeMgr.writeBehindSessionInit();
+                else
+                    // Back-pressure mechanism is running.
+                    // Cache store session must be initialized by storeMgr.
+                    storeMgr.writeBehindCacheStoreSessionListenerStart();
+            }
 
             boolean threwEx = true;
 
@@ -705,15 +891,23 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             }
         }
         catch (Exception e) {
-            LT.error(log, e, "Unable to update underlying store: " + store);
+            LT.warn(log, e, "Unable to update underlying store: " + store, false, false);
 
-            if (writeCache.sizex() > cacheCriticalSize || stopping.get()) {
+            boolean overflow;
+
+            if (writeCoalescing)
+                overflow = writeCache.sizex() > cacheCriticalSize || stopping.get();
+            else
+                overflow = flusher.isOverflowed() || stopping.get();
+
+            if (overflow) {
                 for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
-                    log.warning("Failed to update store (value will be lost as current buffer size is greater " +
-                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [key=" +
-                        entry.getKey() + ", val=" + val + ", op=" + operation + "]");
+                    log.error("Failed to update store (value will be lost as current buffer size is greater " +
+                        "than 'cacheCriticalSize' or node has been stopped before store was repaired) [" +
+                        (includeSensitive() ? "key=" + entry.getKey() + ", val=" + val + ", " : "") +
+                        "op=" + operation + "]");
                 }
 
                 return true;
@@ -738,29 +932,163 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     }
 
     /**
-     * Thread that performs time-based flushing of written values to the underlying storage.
+     * Thread that performs time/size-based flushing of written values to the underlying storage.
      */
     private class Flusher extends GridWorker {
+        /** Queue to flush. */
+        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
+
+        /** Flusher write map. */
+        private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
+
+        /** Critical size of flusher local queue. */
+        private final int flusherCacheCriticalSize;
+
+        /** Flusher parked flag. */
+        private volatile boolean parked;
+
+        /** Flusher thread. */
+        protected Thread thread;
+
+        /** Cache flushing frequence in nanos. */
+        protected long cacheFlushFreqNanos = cacheFlushFreq * 1000 * 1000;
+
+        /** Writer lock. */
+        private final Lock flusherWriterLock = new ReentrantLock();
+
+        /** Confition to determine available space for flush. */
+        private Condition flusherWriterCanWrite = flusherWriterLock.newCondition();
+
         /** {@inheritDoc */
-        protected Flusher(String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected Flusher(String igniteInstanceName,
+            String name,
+            IgniteLogger log) {
+            super(igniteInstanceName, name, log);
+
+            flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+
+            assert flusherCacheCriticalSize > batchSize;
+
+            if (writeCoalescing) {
+                queue = null;
+                flusherWriteMap = null;
+            }
+            else {
+                queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+                flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
+            }
+        }
+
+        /** Start flusher thread */
+        protected void start() {
+            thread = new IgniteThread(this);
+            thread.start();
+        }
+
+        /**
+         * Performs flush-consistent flusher writeCache update for the given key.
+         *
+         * @param key Key for which update is performed.
+         * @param newVal stateful value to put
+         * @throws IgniteInterruptedCheckedException If interrupted while waiting for value to be flushed.
+         */
+        private void putToFlusherWriteCache(
+            K key,
+            StatefulValue<K, V> newVal
+        ) throws IgniteInterruptedCheckedException {
+            assert !writeCoalescing : "Unexpected write coalescing.";
+
+            if (queue.sizex() > flusherCacheCriticalSize) {
+                while (queue.sizex() > flusherCacheCriticalSize) {
+                    wakeUp();
+
+                    flusherWriterLock.lock();
+
+                    try {
+                        // Wait for free space in flusher queue
+                        while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
+                            if (cacheFlushFreq > 0)
+                                flusherWriterCanWrite.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
+                            else
+                                flusherWriterCanWrite.await();
+                        }
+
+                        cacheTotalOverflowCntr.incrementAndGet();
+                    }
+                    catch (InterruptedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Caught interrupted exception: " + e);
+
+                        Thread.currentThread().interrupt();
+                    }
+                    finally {
+                        flusherWriterLock.unlock();
+                    }
+                }
+
+                cacheTotalOverflowCntr.incrementAndGet();
+            }
+
+            queue.add(F.t(key, newVal));
+
+            flusherWriteMap.put(key, newVal);
+        }
+
+        /**
+         * Get overflowed flag.
+         *
+         * @return {@code True} if write behind flusher is overflowed,
+         *         {@code False} otherwise.
+         */
+        public boolean isOverflowed() {
+            if (writeCoalescing)
+                return writeCache.sizex() > cacheCriticalSize;
+            else
+                return queue.sizex() > flusherCacheCriticalSize;
+        }
+
+        /**
+         * Get write behind flusher size.
+         *
+         * @return Flusher write behind size.
+         */
+        public int size() {
+            return writeCoalescing ? writeCache.sizex() : queue.sizex();
+        }
+
+        /**
+         * Test if write behind flusher is empty
+         *
+         * @return {@code True} if write behind flusher is empty, {@code False} otherwise
+         */
+        public boolean isEmpty() {
+            return writeCoalescing ? writeCache.isEmpty() : queue.isEmpty();
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!stopping.get() || writeCache.sizex() > 0) {
-                awaitOperationsAvailable();
+            if (writeCoalescing) {
+                while (!stopping.get() || writeCache.sizex() > 0) {
+                    awaitOperationsAvailableCoalescing();
 
-                flushCache(writeCache.entrySet().iterator());
+                    flushCacheCoalescing();
+                }
+            }
+            else {
+                while (!stopping.get() || queue.sizex() > 0) {
+                    awaitOperationsAvailableNonCoalescing();
+
+                    flushCacheNonCoalescing();
+                }
             }
         }
 
         /**
-         * This method awaits until enough elements in map are available or given timeout is over.
+         * This method awaits until enough elements in flusher queue are available or given timeout is over.
          *
          * @throws InterruptedException If awaiting was interrupted.
          */
-        private void awaitOperationsAvailable() throws InterruptedException {
+        private void awaitOperationsAvailableCoalescing() throws InterruptedException {
             flushLock.lock();
 
             try {
@@ -780,74 +1108,220 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
+         * This method awaits until enough elements in flusher queue are available or given timeout is over.
+         *
+         * @throws InterruptedException If awaiting was interrupted.
+         */
+        private void awaitOperationsAvailableNonCoalescing() throws InterruptedException {
+            if (queue.sizex() >= batchSize)
+                return;
+
+            parked = true;
+
+            try {
+                for (;;) {
+                    if (queue.sizex() >= batchSize)
+                        return;
+
+                    if (cacheFlushFreq > 0)
+                        LockSupport.parkNanos(cacheFlushFreqNanos);
+                    else
+                        LockSupport.park();
+
+                    if (queue.sizex() > 0)
+                        return;
+
+                    if (Thread.interrupted())
+                        throw new InterruptedException();
+
+                    if (stopping.get())
+                        return;
+                }
+            }
+            finally {
+                parked = false;
+            }
+        }
+
+        /**
+         * Wake up flusher thread.
+         */
+        public void wakeUp() {
+            if (parked)
+                LockSupport.unpark(thread);
+        }
+
+        /**
          * Removes values from the write cache and performs corresponding operation
          * on the underlying store.
-         *
-         * @param it Iterator for write cache.
          */
-        private void flushCache(Iterator<Map.Entry<K,StatefulValue<K, V>>> it) {
-            StoreOperation operation = null;
+        private void flushCacheCoalescing() {
+            StoreOperation prevOperation = null;
 
-            Map<K, StatefulValue<K, V>> batch = null;
-            Map<K, StatefulValue<K, V>> pending  = U.newLinkedHashMap(batchSize);
+            Map<K, StatefulValue<K, V>> pending = U.newLinkedHashMap(batchSize);
+            Iterator<Map.Entry<K, StatefulValue<K, V>>> it = writeCache.entrySet().iterator();
 
             while (it.hasNext()) {
                 Map.Entry<K, StatefulValue<K, V>> e = it.next();
-
                 StatefulValue<K, V> val = e.getValue();
 
-                val.writeLock().lock();
+                if (!val.writeLock().tryLock()) // TODO: stripe write maps to avoid lock contention.
+                    continue;
 
                 try {
-                    ValueStatus status = val.status();
+                    BatchingResult addRes = tryAddStatefulValue(pending, prevOperation, e.getKey(), val);
 
-                    if (acquired(status))
-                        // Another thread is helping us, continue to the next entry.
-                        continue;
+                    switch (addRes) {
+                        case NEW_BATCH:
+                            // No need to test first value in batch
+                            val.status(ValueStatus.PENDING);
 
-                    if (status == ValueStatus.RETRY)
-                        retryEntriesCnt.decrementAndGet();
+                            val.writeLock().unlock();
 
-                    assert retryEntriesCnt.get() >= 0;
+                            applyBatch(pending, true, null);
 
-                    val.status(ValueStatus.PENDING);
+                            pending = U.newLinkedHashMap(batchSize);
 
-                    // We scan for the next operation and apply batch on operation change. Null means new batch.
-                    if (operation == null)
-                        operation = val.operation();
+                            pending.put(e.getKey(), val);
 
-                    if (operation != val.operation()) {
-                        // Operation is changed, so we need to perform a batch.
-                        batch = pending;
-                        pending = U.newLinkedHashMap(batchSize);
+                            prevOperation = val.operation();
 
-                        operation = val.operation();
+                            break;
 
-                        pending.put(e.getKey(), val);
-                    }
-                    else
-                        pending.put(e.getKey(), val);
+                        case ADDED:
+                            prevOperation = val.operation();
 
-                    if (pending.size() == batchSize) {
-                        batch = pending;
-                        pending = U.newLinkedHashMap(batchSize);
+                            break;
 
-                        operation = null;
+                        default:
+                            assert addRes == BatchingResult.SKIPPED : "Unexpected result: " + addRes;
                     }
                 }
                 finally {
-                    val.writeLock().unlock();
-                }
-
-                if (batch != null && !batch.isEmpty()) {
-                    applyBatch(batch, true);
-                    batch = null;
+                    if (val.writeLock().isHeldByCurrentThread())
+                        val.writeLock().unlock();
                 }
             }
 
             // Process the remainder.
             if (!pending.isEmpty())
-                applyBatch(pending, true);
+                applyBatch(pending, true, null);
+        }
+
+        /**
+         * Removes values from the flusher write queue and performs corresponding operation
+         * on the underlying store.
+         */
+        private void flushCacheNonCoalescing() {
+            StoreOperation prevOperation;
+            Map<K, StatefulValue<K, V>> pending;
+            IgniteBiTuple<K, StatefulValue<K, V>> tuple;
+            boolean applied;
+
+            while(!queue.isEmpty()) {
+                pending = U.newLinkedHashMap(batchSize);
+                prevOperation = null;
+                boolean needNewBatch = false;
+
+                // Collect batch
+                while (!needNewBatch && (tuple = queue.peek()) != null) {
+                    BatchingResult addRes = tryAddStatefulValue(pending, prevOperation, tuple.getKey(),
+                        tuple.getValue());
+
+                    switch (addRes) {
+                        case ADDED:
+                            prevOperation = tuple.getValue().operation();
+                            queue.poll();
+
+                            break;
+
+                        case SKIPPED:
+                            assert false : "Unexpected result: " + addRes;
+
+                            break;
+
+                        case NEW_BATCH:
+                            needNewBatch = true;
+                            prevOperation = null;
+
+                            break;
+
+                        default:
+                            assert false : "Unexpected result: " + addRes;
+                    }
+                }
+
+                // Process collected batch
+                applied = applyBatch(pending, true, this);
+
+                if (applied) {
+                    // Wake up awaiting writers
+                    flusherWriterLock.lock();
+
+                    try {
+                        flusherWriterCanWrite.signalAll();
+                    }
+                    finally {
+                        flusherWriterLock.unlock();
+                    }
+                }
+                else {
+                    // Return values to queue
+                    ArrayList<Map.Entry<K, StatefulValue<K,V>>> pendingList = new ArrayList(pending.entrySet());
+
+                    for (int i = pendingList.size() - 1; i >= 0; i--)
+                        queue.addFirst(F.t(pendingList.get(i).getKey(), pendingList.get(i).getValue()));
+                }
+            }
+        }
+
+        /**
+         * Trying to add key and statefull value pairs into pending map.
+         *
+         * @param pending Map to populate.
+         * @param key Key to add.
+         * @param val Stateful value to add.
+         * @return {@code BatchingResult.ADDED} if pair was sucessfully added,
+         *     {@code BatchingResult.SKIPPED} if pair cannot be processed by this thread,
+         *     {@code BatchingResult.NEW_BATCH} if pair require new batch (pending map) to be added.
+         */
+        public BatchingResult tryAddStatefulValue(
+            Map<K, StatefulValue<K, V>> pending,
+            StoreOperation prevOperation,
+            K key,
+            StatefulValue<K, V> val
+        ) {
+            ValueStatus status = val.status();
+
+            assert !(pending.isEmpty() && prevOperation != null) : "prev operation cannot be " + prevOperation
+                + " if prev map is empty!";
+
+            if (acquired(status))
+                // Another thread is helping us, continue to the next entry.
+                return BatchingResult.SKIPPED;
+
+            if (!writeCoalescing && pending.containsKey(key))
+                return BatchingResult.NEW_BATCH;
+
+            if (status == ValueStatus.RETRY)
+                retryEntriesCnt.decrementAndGet();
+
+            assert retryEntriesCnt.get() >= 0;
+
+            if (pending.size() == batchSize)
+                return BatchingResult.NEW_BATCH;
+
+            // We scan for the next operation and apply batch on operation change. Null means new batch.
+            if (prevOperation != val.operation() && prevOperation != null)
+                // Operation is changed, so we need to perform a batch.
+                return BatchingResult.NEW_BATCH;
+            else {
+                val.status(ValueStatus.PENDING);
+
+                pending.put(key, val);
+
+                return BatchingResult.ADDED;
+            }
         }
     }
 
@@ -858,6 +1332,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     Map<K, StatefulValue<K, V>> writeCache() {
         return writeCache;
+    }
+
+    /**
+     * For test purposes only.
+     *
+     * @return Flusher maps for the underlying store operations.
+     */
+    Map<K, StatefulValue<K,V>>[] flusherMaps() {
+        Map<K, StatefulValue<K,V>>[] result = new Map[flushThreadCnt];
+
+        for (int i=0; i < flushThreadCnt; i++)
+            result[i] = flushThreads[i].flusherWriteMap;
+
+        return result;
     }
 
     /**
@@ -881,11 +1369,31 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         /** Value is captured by flusher and store operation is performed at the moment. */
         PENDING,
 
+        /**
+         * Value is captured by flusher and store operation is performed at the moment.
+         * New update for the key was stored and waiting for previous store operation.
+         */
+        PENDING_AND_UPDATED,
+
         /** Store operation has failed and it will be re-tried at the next flush. */
         RETRY,
 
         /** Store operation succeeded and this value will be removed by flusher. */
         FLUSHED,
+    }
+
+    /**
+     * Enumeration that represents possible result of "add to batch" operation.
+     */
+    private enum BatchingResult {
+        /** Added to batch */
+        ADDED,
+
+        /** Skipped. */
+        SKIPPED,
+
+        /** Need new batch. */
+        NEW_BATCH
     }
 
     /**
@@ -895,12 +1403,13 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * @return {@code true} if status indicates any pending or complete store update operation.
      */
     private boolean acquired(ValueStatus status) {
-        return status == ValueStatus.PENDING || status == ValueStatus.FLUSHED;
+        return status == ValueStatus.PENDING || status == ValueStatus.FLUSHED || status == ValueStatus.PENDING_AND_UPDATED;
     }
 
     /**
      * A state-value-operation trio.
      *
+     * @param <K> Key type.
      * @param <V> Value type.
      */
     private static class StatefulValue<K, V> extends ReentrantReadWriteLock {
@@ -911,8 +1420,15 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         @GridToStringInclude(sensitive = true)
         private Entry<? extends K, ? extends V> val;
 
+        /** Next value that waiting for a previous store operation. */
+        @GridToStringInclude(sensitive = true)
+        private Entry<? extends K, ? extends V> nextVal;
+
         /** Store operation. */
         private StoreOperation storeOperation;
+
+        /** Next store operation. */
+        private StoreOperation nextStoreOperation;
 
         /** Value status. */
         private ValueStatus valStatus;
@@ -935,6 +1451,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
+         * @return Next stored value.
+         */
+        private Entry<? extends K, ? extends V> nextEntry() {
+            return nextVal;
+        }
+
+        /**
+         * @return Store operation.
+         */
+        private StoreOperation nextOperation() {
+            return nextStoreOperation;
+        }
+
+        /**
          * @return Stored value.
          */
         private Entry<? extends K, ? extends V> entry() {
@@ -949,7 +1479,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
-         * @return Value status
+         * @return Value status.
          */
         private ValueStatus status() {
             return valStatus;
@@ -980,7 +1510,19 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
-         * Awaits a signal on flush condition
+         * Added next value that waiting for a previous store operation.
+         *
+         * @param val Value.
+         * @param storeOperation Store operation.
+         */
+        private void setNext(@Nullable Entry<? extends K, ? extends V> val,
+            StoreOperation storeOperation) {
+            this.nextVal = val;
+            this.nextStoreOperation = storeOperation;
+        }
+
+        /**
+         * Awaits a signal on flush condition.
          *
          * @throws IgniteInterruptedCheckedException If thread was interrupted.
          */

@@ -18,13 +18,16 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
-import java.util.UUID;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,7 +52,6 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void start() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
@@ -60,7 +62,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         plugin.onIgniteStart();
     }
 
@@ -81,23 +83,44 @@ public class GridPluginComponent implements GridComponent {
 
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
-        return null;
+        return DiscoveryDataExchangeType.PLUGIN;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
-        return null;
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node,
+        JoiningNodeDiscoveryData discoData) {
         try {
-            plugin.validateNewNode(node);
+            Map<String, Serializable> map = (Map<String, Serializable>)discoData.joiningNodeData();
+
+            if (map != null)
+                plugin.validateNewNode(node, map.get(plugin.name()));
+            else
+                plugin.validateNewNode(node, null);
 
             return null;
         }

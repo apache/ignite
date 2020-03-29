@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +38,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -70,10 +74,14 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         commSpi.setSlowClientQueueLimit(50);
         commSpi.setIdleConnectionTimeout(300_000);
 
-        if (getTestGridName(CLIENT_IDX).equals(gridName))
-            cfg.setClientMode(true);
-        else {
+        if (!getTestIgniteInstanceName(CLIENT_IDX).equals(gridName)) {
             CacheConfiguration ccfg = defaultCacheConfiguration();
+
+            ccfg.setAtomicityMode(atomicityMode());
+
+            // TODO IGNITE-9530 Remove this clause.
+            if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+                ccfg.setNearConfiguration(null);
 
             cfg.setCacheConfiguration(ccfg);
         }
@@ -82,21 +90,29 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Transaction snapshot.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
+    }
+
+    /**
      * Test client reconnect to alive grid.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         try {
-            startGrids(2);
+            startGrid(0);
 
-            IgniteEx client = grid(CLIENT_IDX);
+            final IgniteEx client = startClientGrid(CLIENT_IDX);
 
             client.events().localListen(new DisconnectListener(), EventType.EVT_CLIENT_NODE_DISCONNECTED);
 
             client.events().localListen(new ReconnectListener(), EventType.EVT_CLIENT_NODE_RECONNECTED);
 
-            IgniteCache cache = client.cache(null);
+            IgniteCache cache = client.cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery qry = new ContinuousQuery();
 
@@ -112,11 +128,19 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
             skipRead(client, true);
 
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    assertTrue(disconLatch.await(10_000, TimeUnit.MILLISECONDS));
+
+                    skipRead(client, false);
+
+                    return null;
+                }
+            });
+
             putSomeKeys(1_000);
 
-            assertTrue(disconLatch.await(10_000, TimeUnit.MILLISECONDS));
-
-            skipRead(client, false);
+            fut.get();
 
             assertTrue(reconLatch.await(10_000, TimeUnit.MILLISECONDS));
 
@@ -129,7 +153,6 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
-
     }
 
     /**
@@ -179,7 +202,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     private void putSomeKeys(int cnt) {
         IgniteEx ignite = grid(0);
 
-        IgniteCache<Object, Object> srvCache = ignite.cache(null);
+        IgniteCache<Object, Object> srvCache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             srvCache.put(0, i);

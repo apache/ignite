@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Ensures that system properties required by Visor are always passed to node attributes.
@@ -44,8 +45,8 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
     private String[] inclProps;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeProperties(inclProps);
 
@@ -82,6 +83,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncludeNull() throws Exception {
         inclProps = null;
 
@@ -94,6 +96,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
+    @Test
     public void testIncludeEmpty() throws Exception {
         inclProps = new String[] {};
 
@@ -105,6 +108,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIncludeNonEmpty() throws Exception {
         inclProps = new String[] {"prop1", "prop2"};
 

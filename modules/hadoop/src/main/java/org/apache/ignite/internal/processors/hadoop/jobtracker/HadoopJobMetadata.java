@@ -24,11 +24,11 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCountersImpl;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
@@ -308,7 +308,7 @@ public class HadoopJobMetadata implements Externalizable {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopJobMetadata.class, this, "pendingMaps", pendingSplits.size(),
             "pendingReduces", pendingReducers.size(), "failCause", failCause == null ? null :
                 failCause.getClass().getName());

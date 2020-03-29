@@ -28,10 +28,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test transaction with wrong marshalling.
  */
 public class GridCacheReplicatedMarshallerTxTest extends GridCacheMarshallerTxAbstractTest {
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         // Default cache configuration.
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();

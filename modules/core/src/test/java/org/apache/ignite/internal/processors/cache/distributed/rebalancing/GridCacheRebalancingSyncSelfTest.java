@@ -21,42 +21,48 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -66,10 +72,10 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
  */
 public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final int TEST_SIZE = SF.applyLB(100_000, 10_000);
 
     /** */
-    private static final int TEST_SIZE = 100_000;
+    private static final long TOPOLOGY_STILLNESS_TIME = SF.applyLB(30_000, 5_000);
 
     /** partitioned cache name. */
     protected static final String CACHE_NAME_DHT_PARTITIONED = "cacheP";
@@ -92,30 +98,29 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean concurrentStartFinished3;
 
-    /** */
-    private volatile boolean record;
-
-    /** */
-    private final ConcurrentHashMap<Class, AtomicInteger> map = new ConcurrentHashMap<>();
+    /**
+     * Time in milliseconds of last received {@link GridDhtPartitionsSingleMessage}
+     * or {@link GridDhtPartitionsFullMessage} using {@link CollectingCommunicationSpi}.
+     */
+    private static volatile long lastPartMsgTime;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
-        ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
+        if (MvccFeatureChecker.forcedMvcc()) {
+            iCfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setMaxSize(400L * 1024 * 1024)
+                ));
+        }
 
-        TcpCommunicationSpi commSpi = new CountingCommunicationSpi();
-
-        commSpi.setLocalPort(GridTestUtils.getNextCommPort(getClass()));
+        TcpCommunicationSpi commSpi = new CollectingCommunicationSpi();
         commSpi.setTcpNoDelay(true);
 
         iCfg.setCommunicationSpi(commSpi);
 
-        if (getTestGridName(10).equals(gridName))
-            iCfg.setClientMode(true);
-
-        CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cachePCfg.setName(CACHE_NAME_DHT_PARTITIONED);
         cachePCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -124,35 +129,42 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         cachePCfg.setRebalanceBatchSize(1);
         cachePCfg.setRebalanceBatchesPrefetchCount(1);
         cachePCfg.setRebalanceOrder(2);
+        cachePCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
-        CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cachePCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cachePCfg2.setName(CACHE_NAME_DHT_PARTITIONED_2);
         cachePCfg2.setCacheMode(CacheMode.PARTITIONED);
         cachePCfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         cachePCfg2.setBackups(1);
         cachePCfg2.setRebalanceOrder(2);
-        //cachePCfg2.setRebalanceDelay(5000);//Known issue, possible deadlock in case of low priority cache rebalancing delayed.
+        cachePCfg2.setRebalanceDelay(SF.applyLB(5000, 500));
+        cachePCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cachePCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
-        CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg.setName(CACHE_NAME_DHT_REPLICATED);
         cacheRCfg.setCacheMode(CacheMode.REPLICATED);
         cacheRCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheRCfg.setRebalanceBatchSize(1);
         cacheRCfg.setRebalanceBatchesPrefetchCount(Integer.MAX_VALUE);
-        ((TcpCommunicationSpi)iCfg.getCommunicationSpi()).setSharedMemoryPort(-1);//Shmem fail fix for Integer.MAX_VALUE.
+        cacheRCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
-        CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> cacheRCfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheRCfg2.setName(CACHE_NAME_DHT_REPLICATED_2);
         cacheRCfg2.setCacheMode(CacheMode.REPLICATED);
         cacheRCfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheRCfg2.setRebalanceOrder(4);
+        cacheRCfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheRCfg2.setAffinity(new RendezvousAffinityFunction().setPartitions(32));
 
         iCfg.setCacheConfiguration(cachePCfg, cachePCfg2, cacheRCfg, cacheRCfg2);
 
-        iCfg.setRebalanceThreadPoolSize(2);
+        iCfg.setRebalanceThreadPoolSize(3);
 
         return iCfg;
     }
@@ -176,12 +188,16 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      * @param iter Iteration.
      */
     protected void generateData(Ignite ignite, String name, int from, int iter) {
-        for (int i = from; i < from + TEST_SIZE; i++) {
-            if ((i + 1) % (TEST_SIZE / 10) == 0)
-                log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
-                    ", iteration=" + iter + ", cache=" + name + "]");
+        try (IgniteDataStreamer<Integer, Integer> dataStreamer = ignite.dataStreamer(name)) {
+            dataStreamer.allowOverwrite(true);
 
-            ignite.cache(name).put(i, i + name.hashCode() + iter);
+            for (int i = from; i < from + TEST_SIZE; i++) {
+                if ((i + 1) % (TEST_SIZE / 10) == 0)
+                    log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
+                        ", iteration=" + iter + ", cache=" + name + "]");
+
+                dataStreamer.addData(i, i + name.hashCode() + iter);
+            }
         }
     }
 
@@ -191,26 +207,46 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      * @param iter Iteration.
      */
     protected void checkData(Ignite ignite, int from, int iter) {
-        checkData(ignite, CACHE_NAME_DHT_PARTITIONED, from, iter);
-        checkData(ignite, CACHE_NAME_DHT_PARTITIONED_2, from, iter);
-        checkData(ignite, CACHE_NAME_DHT_REPLICATED, from, iter);
-        checkData(ignite, CACHE_NAME_DHT_REPLICATED_2, from, iter);
+        checkData(ignite, CACHE_NAME_DHT_PARTITIONED, from, iter, true);
+        checkData(ignite, CACHE_NAME_DHT_PARTITIONED_2, from, iter, true);
+        checkData(ignite, CACHE_NAME_DHT_REPLICATED, from, iter, true);
+        checkData(ignite, CACHE_NAME_DHT_REPLICATED_2, from, iter, true);
     }
 
     /**
      * @param ignite Ignite.
+     * @param name Cache name.
      * @param from Start from key.
      * @param iter Iteration.
-     * @param name Cache name.
+     * @param scan If true then "scan" query will be used instead of "get" in a loop. Should be "false" when run in
+     *      parallel with other operations. Otherwise should be "true", because it's much faster in such situations.
      */
-    protected void checkData(Ignite ignite, String name, int from, int iter) {
-        for (int i = from; i < from + TEST_SIZE; i++) {
-            if ((i + 1) % (TEST_SIZE / 10) == 0)
-                log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
-                    ", iteration=" + iter + ", cache=" + name + "]");
+    protected void checkData(Ignite ignite, String name, int from, int iter, boolean scan) {
+        IgniteCache<Integer, Integer> cache = ignite.cache(name);
 
-            assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
-                ignite.cache(name).get(i), i + name.hashCode() + iter);
+        if (scan) {
+            AtomicInteger cnt = new AtomicInteger();
+
+            cache.query(new ScanQuery<Integer, Integer>((k, v) -> k >= from && k < from + TEST_SIZE)).forEach(entry -> {
+                if (cnt.incrementAndGet() % (TEST_SIZE / 10) == 0)
+                    log.info("<" + name + "> Checked " + cnt.get() * 100 / TEST_SIZE + "% entries. [count=" +
+                        TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
+
+                assertEquals("Value does not match [key=" + entry.getKey() + ", cache=" + name + ']',
+                    entry.getKey() + name.hashCode() + iter, entry.getValue().intValue());
+            });
+
+            assertEquals(TEST_SIZE, cnt.get());
+        }
+        else {
+            for (int i = from; i < from + TEST_SIZE; i++) {
+                if ((i + 1) % (TEST_SIZE / 10) == 0)
+                    log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" +
+                        TEST_SIZE + ", iteration=" + iter + ", cache=" + name + "]");
+
+                assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
+                    cache.get(i).intValue(), i + name.hashCode() + iter);
+            }
         }
     }
 
@@ -224,6 +260,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleRebalancing() throws Exception {
         IgniteKernal ignite = (IgniteKernal)startGrid(0);
 
@@ -235,47 +272,35 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        int waitMinorVer = ignite.configuration().isLateAffinityAssignment() ? 1 : 0;
-
-        waitForRebalancing(0, 2, waitMinorVer);
-        waitForRebalancing(1, 2, waitMinorVer);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         stopGrid(0);
 
-        waitForRebalancing(1, 3);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         startGrid(2);
 
-        waitForRebalancing(1, 4, waitMinorVer);
-        waitForRebalancing(2, 4, waitMinorVer);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         stopGrid(2);
 
-        waitForRebalancing(1, 5);
-
-        awaitPartitionMapExchange(true, true, null);
+        awaitPartitionMapExchange(true, true, null, true);
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         long spend = (System.currentTimeMillis() - start) / 1000;
 
@@ -287,6 +312,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
 
@@ -320,7 +346,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         Thread t2 = new Thread() {
             @Override public void run() {
                 while (!concurrentStartFinished)
-                    checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0);
+                    checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0, false);
             }
         };
 
@@ -334,12 +360,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(4);
 
-        waitForRebalancing(3, 6);
-        waitForRebalancing(4, 6);
+        awaitPartitionMapExchange(true, true, null);
 
         concurrentStartFinished = true;
-
-        awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
@@ -354,7 +377,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     protected void checkSupplyContextMapIsEmpty() throws Exception {
         for (Ignite g : G.allGrids()) {
             for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {
@@ -397,8 +419,16 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     List<GridDhtLocalPartition> locs = top.localPartitions();
 
                     for (GridDhtLocalPartition loc : locs) {
-                        assertTrue("Wrong partition state, should be OWNING [state=" + loc.state() + "]",
-                            loc.state() == GridDhtPartitionState.OWNING);
+                        GridDhtPartitionState actl = loc.state();
+
+                        boolean res = GridDhtPartitionState.OWNING.equals(actl);
+
+                        if (!res)
+                            printPartitionState(c);
+
+                        assertTrue("Wrong local partition state part=" +
+                            loc.id() + ", should be OWNING [state=" + actl +
+                            "], node=" + g0.name() + " cache=" + c.getName(), res);
 
                         Collection<ClusterNode> affNodes =
                             g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(loc.id());
@@ -415,12 +445,14 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
                         GridDhtPartitionTopology remoteTop = remoteDht.topology();
 
-                        GridDhtPartitionMap2 pMap = remoteTop.partitionMap(true).get(((IgniteKernal)g).getLocalNodeId());
+                        GridDhtPartitionMap pMap = remoteTop.partitionMap(true).get(((IgniteKernal)g).getLocalNodeId());
 
                         assertEquals(pMap.size(), locs.size());
 
                         for (Map.Entry entry : pMap.entrySet()) {
-                            assertTrue("Wrong partition state, should be OWNING [state=" + entry.getValue() + "]",
+                            assertTrue("Wrong remote partition state part=" + entry.getKey() +
+                                    ", should be OWNING [state=" + entry.getValue() + "], node="
+                                    + remote.name() + " cache=" + c.getName(),
                                 entry.getValue() == GridDhtPartitionState.OWNING);
                         }
 
@@ -430,30 +462,34 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+
+        log.info("checkPartitionMapExchangeFinished finished");
     }
 
     /**
+     * Method checks for {@link GridDhtPartitionsSingleMessage} or {@link GridDhtPartitionsFullMessage}
+     * not received within {@code TOPOLOGY_STILLNESS_TIME} bound.
+     *
      * @throws Exception If failed.
      */
-    protected void checkPartitionMapMessagesAbsent() throws Exception {
-        map.clear();
+    protected void awaitPartitionMessagesAbsent() throws Exception {
+        log.info("Checking GridDhtPartitions*Message absent (it will take up to " +
+            TOPOLOGY_STILLNESS_TIME + " ms) ... ");
 
-        record = true;
+        // Start waiting new messages from current point of time.
+        lastPartMsgTime = U.currentTimeMillis();
 
-        log.info("Checking GridDhtPartitions*Message absent (it will take 30 SECONDS) ... ");
-
-        U.sleep(30_000);
-
-        record = false;
-
-        AtomicInteger iF = map.get(GridDhtPartitionsFullMessage.class);
-        AtomicInteger iS = map.get(GridDhtPartitionsSingleMessage.class);
-
-        Integer fullMap = iF != null ? iF.get() : null;
-        Integer singleMap = iS != null ? iS.get() : null;
-
-        assertTrue("Unexpected full map messages: " + fullMap, fullMap == null || fullMap.equals(1)); // 1 message can be sent right after all checks passed.
-        assertNull("Unexpected single map messages", singleMap);
+        assertTrue("Should not have partition Single or Full messages within bound " +
+                TOPOLOGY_STILLNESS_TIME + " ms.",
+            GridTestUtils.waitForCondition(
+                new GridAbsPredicateX() {
+                    @Override public boolean applyx() {
+                        return lastPartMsgTime + TOPOLOGY_STILLNESS_TIME < U.currentTimeMillis();
+                    }
+                },
+                2 * TOPOLOGY_STILLNESS_TIME // 30 sec to gain stable topology and 30 sec of silence.
+            )
+        );
     }
 
     /** {@inheritDoc} */
@@ -464,6 +500,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexRebalancing() throws Exception {
         final Ignite ignite = startGrid(0);
 
@@ -486,18 +523,15 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     while (!concurrentStartFinished2)
                         U.sleep(10);
 
-                    waitForRebalancing(0, 5, 0);
-                    waitForRebalancing(1, 5, 0);
-                    waitForRebalancing(2, 5, 0);
-                    waitForRebalancing(3, 5, 0);
-                    waitForRebalancing(4, 5, 0);
+                    awaitPartitionMapExchange();
 
                     //New cache should start rebalancing.
-                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>();
+                    CacheConfiguration<Integer, Integer> cacheRCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
                     cacheRCfg.setName(CACHE_NAME_DHT_PARTITIONED + "_NEW");
                     cacheRCfg.setCacheMode(CacheMode.PARTITIONED);
                     cacheRCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+                    cacheRCfg.setRebalanceBatchesPrefetchCount(1);
 
                     grid(0).getOrCreateCache(cacheRCfg);
 
@@ -542,12 +576,6 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         t2.join();
         t3.join();
 
-        waitForRebalancing(0, 5, 1);
-        waitForRebalancing(1, 5, 1);
-        waitForRebalancing(2, 5, 1);
-        waitForRebalancing(3, 5, 1);
-        waitForRebalancing(4, 5, 1);
-
         awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
@@ -567,20 +595,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        waitForRebalancing(0, 6);
-        waitForRebalancing(2, 6);
-        waitForRebalancing(3, 6);
-        waitForRebalancing(4, 6);
-
         awaitPartitionMapExchange(true, true, null);
 
         checkSupplyContextMapIsEmpty();
 
         stopGrid(0);
-
-        waitForRebalancing(2, 7);
-        waitForRebalancing(3, 7);
-        waitForRebalancing(4, 7);
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -588,14 +607,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(2);
 
-        waitForRebalancing(3, 8);
-        waitForRebalancing(4, 8);
-
         awaitPartitionMapExchange(true, true, null);
 
         checkPartitionMapExchangeFinished();
 
-        checkPartitionMapMessagesAbsent();
+        awaitPartitionMessagesAbsent();
 
         checkSupplyContextMapIsEmpty();
 
@@ -603,7 +619,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         stopGrid(3);
 
-        waitForRebalancing(4, 9);
+        awaitPartitionMapExchange();
 
         checkSupplyContextMapIsEmpty();
 
@@ -624,36 +640,31 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class CountingCommunicationSpi extends TcpCommunicationSpi {
+    private static class CollectingCommunicationSpi extends TcpCommunicationSpi {
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
         /** {@inheritDoc} */
         @Override public void sendMessage(final ClusterNode node, final Message msg,
             final IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
 
-            recordMessage(msg0);
+            if (msg0 instanceof GridDhtPartitionsSingleMessage ||
+                msg0 instanceof GridDhtPartitionsFullMessage) {
+                lastPartMsgTime = U.currentTimeMillis();
+
+                log.info("Last seen time of GridDhtPartitionsSingleMessage or GridDhtPartitionsFullMessage updated " +
+                    "[lastPartMsgTime=" + lastPartMsgTime +
+                    ", node=" + node.id() + ']');
+            }
 
             super.sendMessage(node, msg, ackC);
         }
+    }
 
-        /**
-         * @param msg Message.
-         */
-        private void recordMessage(Object msg) {
-            if (record) {
-                Class id = msg.getClass();
-
-                AtomicInteger ai = map.get(id);
-
-                if (ai == null) {
-                    ai = new AtomicInteger();
-
-                    AtomicInteger oldAi = map.putIfAbsent(id, ai);
-
-                    (oldAi != null ? oldAi : ai).incrementAndGet();
-                }
-                else
-                    ai.incrementAndGet();
-            }
-        }
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 2;
     }
 }

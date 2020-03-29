@@ -21,14 +21,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Atomic long value.
  */
-public final class GridCacheAtomicLongValue implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheAtomicLongValue extends AtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -50,6 +49,11 @@ public final class GridCacheAtomicLongValue implements GridCacheInternal, Extern
      */
     public GridCacheAtomicLongValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.ATOMIC_LONG;
     }
 
     /**

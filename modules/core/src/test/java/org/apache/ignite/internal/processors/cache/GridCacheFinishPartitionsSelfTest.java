@@ -34,7 +34,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -56,6 +59,12 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
         return GRID_CNT;
     }
 
+    /** */
+    @Before
+    public void beforeGridCacheFinishPartitionsSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         grid = (IgniteKernal)grid(0);
@@ -67,8 +76,8 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -85,13 +94,14 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxFinishPartitions() throws Exception {
         String key = "key";
         String val = "value";
 
-        IgniteCache<String, String> cache = grid.cache(null);
+        IgniteCache<String, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
-        int keyPart = grid.<String, String>internalCache().context().affinity().partition(key);
+        int keyPart = grid.<String, String>internalCache(DEFAULT_CACHE_NAME).context().affinity().partition(key);
 
         cache.put(key, val);
 
@@ -132,7 +142,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 if (barrier.await() == 0)
                     start.set(System.currentTimeMillis());
 
-                IgniteCache<String, String> cache = grid(0).cache(null);
+                IgniteCache<String, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
                 Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -167,10 +177,11 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishPartitions() throws Exception {
         String key = "key";
 
-        int keyPart = grid.internalCache().context().affinity().partition(key);
+        int keyPart = grid.internalCache(DEFAULT_CACHE_NAME).context().affinity().partition(key);
 
         // Wait for tx-enlisted partition.
         long waitTime = runLock(key, keyPart, F.asList(keyPart));
@@ -193,15 +204,16 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishKeys() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).cache(null);
+        IgniteCache<String, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";
 
             cache.get(key);
 
-            GridCacheAdapter<String, Integer> internal = grid.internalCache();
+            GridCacheAdapter<String, Integer> internal = grid.internalCache(DEFAULT_CACHE_NAME);
 
             KeyCacheObject cacheKey = internal.context().toCacheKeyObject(key);
 
@@ -226,6 +238,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMvccFinishPartitionsContinuousLockAcquireRelease() throws Exception {
         int key = 1;
 
@@ -235,7 +248,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteCache<Integer, String> cache = grid.cache(null);
+        IgniteCache<Integer, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(key);
 
@@ -293,7 +306,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteCache<String, String> cache = grid.cache(null);
+        IgniteCache<String, String> cache = grid.cache(DEFAULT_CACHE_NAME);
 
         Lock lock = cache.lock(key);
 

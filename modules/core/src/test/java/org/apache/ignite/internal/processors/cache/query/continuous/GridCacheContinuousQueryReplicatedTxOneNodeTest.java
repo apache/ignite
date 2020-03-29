@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,22 +32,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for replicated cache with one node.
  */
-@SuppressWarnings("Duplicates")
 public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -55,13 +50,11 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
+        // TODO IGNITE-9530 Remove this clause.
+        if (atomicMode() == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            cacheCfg.setNearConfiguration(null);
+
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -83,6 +76,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocal() throws Exception {
         if (cacheMode() == CacheMode.REPLICATED)
             doTest(true);
@@ -91,6 +85,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributed() throws Exception {
         doTest(false);
     }
@@ -98,6 +93,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalOneNode() throws Exception {
         doTestOneNode(true);
     }
@@ -105,6 +101,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedOneNode() throws Exception {
         doTestOneNode(false);
     }
@@ -114,7 +111,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTest(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 
@@ -122,8 +119,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
             final CountDownLatch latch = new CountDownLatch(10);
 
             qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
-                @Override
-                public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
                         throws CacheEntryListenerException {
                     for (CacheEntryEvent<? extends String, ? extends Integer> evt : evts) {
                         cnt.incrementAndGet();
@@ -155,7 +151,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTestOneNode(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 
@@ -165,7 +161,14 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
             for (int i = 0; i < 10; i++)
                 cache.put("key" + i, i);
 
-            cache.clear();
+            if (atomicMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+                cache.clear();
+            else { // TODO IGNITE-7952. Remove "else" clause - do cache.clear() instead of iteration.
+                for (Iterator it = cache.iterator(); it.hasNext();) {
+                    it.next();
+                    it.remove();
+                }
+            }
 
             qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
                 @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)

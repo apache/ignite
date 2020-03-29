@@ -30,6 +30,9 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private GridDhtPartitionExchangeId restoreExchId;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -42,6 +45,34 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
      */
     GridDhtPartitionsSingleRequest(GridDhtPartitionExchangeId id) {
         super(id, null);
+    }
+
+    /**
+     * @param msgExchId Exchange ID for message.
+     * @param restoreExchId Initial exchange ID for current exchange.
+     * @return Message.
+     */
+    static GridDhtPartitionsSingleRequest restoreStateRequest(GridDhtPartitionExchangeId msgExchId,
+        GridDhtPartitionExchangeId restoreExchId) {
+        GridDhtPartitionsSingleRequest msg = new GridDhtPartitionsSingleRequest(msgExchId);
+
+        msg.restoreState(true);
+
+        msg.restoreExchId = restoreExchId;
+
+        return msg;
+    }
+
+    /**
+     * @return ID of current exchange on new coordinator.
+     */
+    GridDhtPartitionExchangeId restoreExchangeId() {
+        return restoreExchId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -58,6 +89,15 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
             writer.onHeaderWritten();
         }
 
+        switch (writer.state()) {
+            case 6:
+                if (!writer.writeMessage("restoreExchId", restoreExchId))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
         return true;
     }
 
@@ -71,17 +111,28 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         if (!super.readFrom(buf, reader))
             return false;
 
+        switch (reader.state()) {
+            case 6:
+                restoreExchId = reader.readMessage("restoreExchId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
         return reader.afterMessageRead(GridDhtPartitionsSingleRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 48;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /** {@inheritDoc} */

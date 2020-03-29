@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -38,15 +39,15 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
  */
 public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
 
         deploymentSpi.setUriList(
             Arrays.asList(U.resolveIgniteUrl("modules/extdata/uri/target/resources/").toURI().toString()));
 
-        if (gridName.endsWith("2")) {
+        if (igniteInstanceName.endsWith("2")) {
             // Delay deployment for 2nd grid only.
             Field f = deploymentSpi.getClass().getDeclaredField("delayOnNewOrUpdatedFile");
 
@@ -63,6 +64,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlock() throws Exception {
         try {
             Ignite g = startGrid(1);

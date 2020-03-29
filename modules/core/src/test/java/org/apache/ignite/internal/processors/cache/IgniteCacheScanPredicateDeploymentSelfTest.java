@@ -24,10 +24,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -38,26 +36,17 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test value. */
     protected static final String TEST_PREDICATE = "org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(3).equals(gridName))
+        if (getTestIgniteInstanceName(3).equals(igniteInstanceName))
             cfg.setClassLoader(getExternalClassLoader());
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(null);
 
@@ -87,13 +76,14 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testDeployScanPredicate() throws Exception {
         startGrids(4);
 
         awaitPartitionMapExchange();
 
         try {
-            IgniteCache<Object, Object> cache = grid(3).cache(null);
+            IgniteCache<Object, Object> cache = grid(3).cache(DEFAULT_CACHE_NAME);
 
             // It is important that there are no too many keys.
             for (int i = 0; i < 1; i++)

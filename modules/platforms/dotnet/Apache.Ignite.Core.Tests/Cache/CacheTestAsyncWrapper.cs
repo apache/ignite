@@ -78,6 +78,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public bool IsAllowAtomicOpsInTx
+        {
+            get { return false; }
+        }
+
+        /** <inheritDoc /> */
         public ICache<TK, TV> WithSkipStore()
         {
             return _cache.WithSkipStore().WrapAsync();
@@ -94,11 +100,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             return _cache.WithKeepBinary<TK1, TV1>().WrapAsync();
         }
-        
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithAllowAtomicOpsInTx()
+        {
+            return this;
+        }
+
         /** <inheritDoc /> */
         public void LoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            WaitResult(_cache.LoadCacheAsync(p, args));
+            _cache.LoadCacheAsync(p, args).WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -110,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void LocalLoadCache(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
-            WaitResult(_cache.LocalLoadCacheAsync(p, args));
+            _cache.LocalLoadCacheAsync(p, args).WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -134,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
-            return GetResult(_cache.ContainsKeyAsync(key));
+            return _cache.ContainsKeyAsync(key).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -146,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool ContainsKeys(IEnumerable<TK> keys)
         {
-            return GetResult(_cache.ContainsKeysAsync(keys));
+            return _cache.ContainsKeysAsync(keys).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -177,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TV Get(TK key)
         {
-            return GetResult(_cache.GetAsync(key));
+            return _cache.GetAsync(key).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -199,13 +211,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, TV> GetAll(IEnumerable<TK> keys)
+        public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
-            return GetResult(_cache.GetAllAsync(keys));
+            return _cache.GetAllAsync(keys).GetResult();
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, TV>> GetAllAsync(IEnumerable<TK> keys)
+        public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             return _cache.GetAllAsync(keys);
         }
@@ -213,7 +225,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void Put(TK key, TV val)
         {
-            WaitResult(_cache.PutAsync(key, val));
+            _cache.PutAsync(key, val).WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -225,7 +237,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPut(TK key, TV val)
         {
-            return GetResult(_cache.GetAndPutAsync(key, val));
+            return _cache.GetAndPutAsync(key, val).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -237,7 +249,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndReplace(TK key, TV val)
         {
-            return GetResult(_cache.GetAndReplaceAsync(key, val));
+            return _cache.GetAndReplaceAsync(key, val).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -249,7 +261,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndRemove(TK key)
         {
-            return GetResult(_cache.GetAndRemoveAsync(key));
+            return _cache.GetAndRemoveAsync(key).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -261,7 +273,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool PutIfAbsent(TK key, TV val)
         {
-            return GetResult(_cache.PutIfAbsentAsync(key, val));
+            return _cache.PutIfAbsentAsync(key, val).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -273,7 +285,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public CacheResult<TV> GetAndPutIfAbsent(TK key, TV val)
         {
-            return GetResult(_cache.GetAndPutIfAbsentAsync(key, val));
+            return _cache.GetAndPutIfAbsentAsync(key, val).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -285,7 +297,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool Replace(TK key, TV val)
         {
-            return GetResult(_cache.ReplaceAsync(key, val));
+            return _cache.ReplaceAsync(key, val).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -297,7 +309,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool Replace(TK key, TV oldVal, TV newVal)
         {
-            return GetResult(_cache.ReplaceAsync(key, oldVal, newVal));
+            return _cache.ReplaceAsync(key, oldVal, newVal).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -307,13 +319,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public void PutAll(IDictionary<TK, TV> vals)
+        public void PutAll(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
-            WaitResult(_cache.PutAllAsync(vals));
+            _cache.PutAllAsync(vals).WaitResult();
         }
 
         /** <inheritDoc /> */
-        public Task PutAllAsync(IDictionary<TK, TV> vals)
+        public Task PutAllAsync(IEnumerable<KeyValuePair<TK, TV>> vals)
         {
             return _cache.PutAllAsync(vals);
         }
@@ -327,7 +339,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void Clear()
         {
-            WaitResult(_cache.ClearAsync());
+            _cache.ClearAsync().WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -339,7 +351,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void Clear(TK key)
         {
-            WaitResult(_cache.ClearAsync(key));
+            _cache.ClearAsync(key).WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -351,7 +363,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void ClearAll(IEnumerable<TK> keys)
         {
-            WaitResult(_cache.ClearAllAsync(keys));
+            _cache.ClearAllAsync(keys).WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -375,7 +387,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool Remove(TK key)
         {
-            return GetResult(_cache.RemoveAsync(key));
+            return _cache.RemoveAsync(key).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -387,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public bool Remove(TK key, TV val)
         {
-            return GetResult(_cache.RemoveAsync(key, val));
+            return _cache.RemoveAsync(key, val).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -399,7 +411,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void RemoveAll(IEnumerable<TK> keys)
         {
-            WaitResult(_cache.RemoveAllAsync(keys));
+            Task task = _cache.RemoveAllAsync(keys);
+            task.WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -411,7 +424,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public void RemoveAll()
         {
-            WaitResult(_cache.RemoveAllAsync());
+            Task task = _cache.RemoveAllAsync();
+            task.WaitResult();
         }
 
         /** <inheritDoc /> */
@@ -429,7 +443,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public int GetSize(params CachePeekMode[] modes)
         {
-            return GetResult(_cache.GetSizeAsync(modes));
+            return _cache.GetSizeAsync(modes).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -439,11 +453,41 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public void LocalPromote(IEnumerable<TK> keys)
+        public long GetSizeLong(params CachePeekMode[] modes)
         {
-            _cache.LocalPromote(keys);
+            return _cache.GetSizeLongAsync(modes).GetResult();
         }
-        
+
+        /** <inheritDoc /> */
+        public long GetSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(partition, modes).GetResult();
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(modes);
+        }
+
+        /** <inheritDoc /> */
+        public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+        {
+            return _cache.GetSizeLongAsync(partition, modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(params CachePeekMode[] modes)
+        {
+            return _cache.GetLocalSizeLong(modes);
+        }
+
+        /** <inheritDoc /> */
+        public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
+        {
+            return _cache.GetLocalSizeLong(partition, modes);
+        }
+
         /** <inheritDoc /> */
         public IQueryCursor<ICacheEntry<TK, TV>> Query(QueryBase qry)
         {
@@ -451,6 +495,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public IFieldsQueryCursor Query(SqlFieldsQuery qry)
+        {
+            return _cache.Query(qry);
+        }
+
+        /** <inheritDoc /> */
+        [Obsolete]
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
             return _cache.QueryFields(qry);
@@ -477,7 +528,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /** <inheritDoc /> */
         public TRes Invoke<TArg, TRes>(TK key, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            return GetResult(_cache.InvokeAsync(key, processor, arg));
+            return _cache.InvokeAsync(key, processor, arg).GetResult();
         }
 
         /** <inheritDoc /> */
@@ -487,14 +538,14 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<TK, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
+        public ICollection<ICacheEntryProcessorResult<TK, TRes>> InvokeAll<TArg, TRes>(IEnumerable<TK> keys, 
             ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
-            return GetResult(_cache.InvokeAllAsync(keys, processor, arg));
+            return _cache.InvokeAllAsync(keys, processor, arg).GetResult();
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public Task<ICollection<ICacheEntryProcessorResult<TK, TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             return _cache.InvokeAllAsync(keys, processor, arg);
         }
@@ -536,6 +587,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public void EnableStatistics(bool enabled)
+        {
+            _cache.EnableStatistics(enabled);
+        }
+
+        /** <inheritDoc /> */
+        public void ClearStatistics()
+        {
+            _cache.ClearStatistics();
+        }
+
+        /** <inheritDoc /> */
         public Task Rebalance()
         {
             return _cache.Rebalance();
@@ -545,6 +608,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         public ICache<TK, TV> WithNoRetries()
         {
             return _cache.WithNoRetries();
+        }
+
+        /** <inheritDoc /> */
+        public ICache<TK, TV> WithPartitionRecover()
+        {
+            return _cache.WithPartitionRecover();
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<int> GetLostPartitions()
+        {
+            return _cache.GetLostPartitions();
         }
 
         /** <inheritDoc /> */
@@ -559,35 +634,29 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetEnumerator();
         }
 
-        /// <summary>
-        /// Waits the result of a task, unwraps exceptions.
-        /// </summary>
-        /// <param name="task">The task.</param>
-        private static void WaitResult(Task task)
+        public IQueryMetrics GetQueryMetrics()
         {
-            try
-            {
-                task.Wait();
-            }
-            catch (AggregateException ex)
-            {
-                throw ex.InnerException;
-            }
+            return _cache.GetQueryMetrics();
         }
 
-        /// <summary>
-        /// Gets the result of a task, unwraps exceptions.
-        /// </summary>
-        private static T GetResult<T>(Task<T> task)
+        public void ResetQueryMetrics()
         {
-            try
-            {
-                return task.Result;
-            }
-            catch (Exception ex)
-            {
-                throw ex.InnerException;
-            }
+            _cache.ResetQueryMetrics();
+        }
+
+        public void PreloadPartition(int partition)
+        {
+            _cache.PreloadPartitionAsync(partition).WaitResult();
+        }
+
+        public Task PreloadPartitionAsync(int partition)
+        {
+            return _cache.PreloadPartitionAsync(partition);
+        }
+
+        public bool LocalPreloadPartition(int partition)
+        {
+            return _cache.LocalPreloadPartition(partition);
         }
     }
 

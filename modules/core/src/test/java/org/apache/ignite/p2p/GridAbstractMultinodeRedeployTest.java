@@ -44,8 +44,8 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
     private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
 
@@ -100,7 +100,6 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
      * @return Loaded class.
      * @throws Exception Thrown if any exception occurs.
      */
-    @SuppressWarnings({"unchecked"})
     private Class<? extends ComputeTask<int[], ?>> loadTaskClass() throws Exception {
         return (Class<? extends ComputeTask<int[], ?>>)new GridTestExternalClassLoader(new URL[]{
             new URL(GridTestProperties.getProperty("p2p.uri.cls"))}).loadClass(TASK_NAME);

@@ -24,14 +24,14 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  */
 public class IgniteTxMappingsImpl implements IgniteTxMappings {
     /** */
-    private final Map<UUID, GridDistributedTxMapping> mappings = new ConcurrentHashMap8<>();
+    private final Map<UUID, GridDistributedTxMapping> mappings = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void clear() {
@@ -50,7 +50,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
 
     /** {@inheritDoc} */
     @Override public void put(GridDistributedTxMapping mapping) {
-        mappings.put(mapping.node().id(), mapping);
+        mappings.put(mapping.primary().id(), mapping);
     }
 
     /** {@inheritDoc} */
@@ -61,7 +61,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
     /** {@inheritDoc} */
     @Nullable @Override public GridDistributedTxMapping localMapping() {
         for (GridDistributedTxMapping m : mappings.values()) {
-            if (m.node().isLocal())
+            if (m.primary().isLocal())
                 return m;
         }
 
@@ -86,7 +86,7 @@ public class IgniteTxMappingsImpl implements IgniteTxMappings {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(IgniteTxMappingsImpl.class, this);
     }
 }

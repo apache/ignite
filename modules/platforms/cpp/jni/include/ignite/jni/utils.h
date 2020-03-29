@@ -44,14 +44,14 @@ namespace ignite
         };
 
         /**
-        * Represents global reference to Java object.
-        */
+         * Represents global reference to Java object.
+         */
         class IGNITE_IMPORT_EXPORT JavaGlobalRef
         {
         public:
             /**
-            * Default constructor
-            */
+             * Default constructor
+             */
             JavaGlobalRef() :
                 ctx(0),
                 obj(0)
@@ -60,11 +60,11 @@ namespace ignite
             }
 
             /**
-            * Constructor
-            *
-            * @param ctx JNI context.
-            * @param obj Java object.
-            */
+             * Constructor
+             *
+             * @param ctx JNI context.
+             * @param obj Java object.
+             */
             JavaGlobalRef(java::JniContext& ctx, jobject obj) :
                 ctx(&ctx),
                 obj(ctx.Acquire(obj))
@@ -73,10 +73,10 @@ namespace ignite
             }
 
             /**
-            * Copy constructor
-            *
-            * @param other Other instance.
-            */
+             * Copy constructor
+             *
+             * @param other Other instance.
+             */
             JavaGlobalRef(const JavaGlobalRef& other) :
                 ctx(other.ctx),
                 obj(ctx->Acquire(other.obj))
@@ -85,11 +85,11 @@ namespace ignite
             }
 
             /**
-            * Assignment operator.
-            *
-            * @param other Other instance.
-            * @return *this.
-            */
+             * Assignment operator.
+             *
+             * @param other Other instance.
+             * @return *this.
+             */
             JavaGlobalRef& operator=(const JavaGlobalRef& other)
             {
                 if (this != &other)
@@ -105,8 +105,8 @@ namespace ignite
             }
 
             /**
-            * Destructor.
-            */
+             * Destructor.
+             */
             ~JavaGlobalRef()
             {
                 if (ctx)
@@ -114,10 +114,10 @@ namespace ignite
             }
 
             /**
-            * Get object.
-            *
-            * @return Object.
-            */
+             * Get object.
+             *
+             * @return Object.
+             */
             jobject Get()
             {
                 return obj;
@@ -136,11 +136,10 @@ namespace ignite
          * First search is performed using the passed path argument (is not NULL).
          * Then JRE_HOME is evaluated. Last, JAVA_HOME is evaluated.
          *
-         * @param Explicitly defined path (optional).
-         * @param found Whether library was found.
-         * @return Path to the file.
+         * @param path Explicitly defined path (optional).
+         * @return Path to the file. Empty string if the library was not found.
          */
-        IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string* path, bool* found);
+        IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string& path);
 
         /**
          * Load JVM library into the process.
@@ -151,23 +150,22 @@ namespace ignite
         IGNITE_IMPORT_EXPORT bool LoadJvmLibrary(const std::string& path);
 
         /**
-         * Create Ignite classpath based on user input and home directory.
+         * Helper function to create classpath based on Ignite home directory.
          *
-         * @param usrCp User's classpath.
-         * @param home Ignite home directory.
+         * @param home Home directory; expected to be valid.
+         * @param forceTest Force test classpath.
          * @return Classpath.
          */
-        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home);
+        IGNITE_IMPORT_EXPORT std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest);
 
         /**
          * Create Ignite classpath based on user input and home directory.
          *
          * @param usrCp User's classpath.
          * @param home Ignite home directory.
-         * @param test Whether test classpath must be used.
          * @return Classpath.
          */
-        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool test);
+        IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string& usrCp, const std::string& home);
 
         /**
          * Resolve IGNITE_HOME directory. Resolution is performed in several
@@ -175,15 +173,14 @@ namespace ignite
          * 1) Check for path provided as argument.
          * 2) Check for environment variable.
          * 3) Check for current working directory.
-         * Result of these 3 checks are evaluated based on existence of certain
-         * predefined folders inside possible GG home. If they are found, 
+         * Result of these checks are evaluated based on existence of certain
+         * predefined folders inside possible Ignite home. If they are found,
          * IGNITE_HOME is considered resolved.
          *
          * @param path Optional path to evaluate.
-         * @param found Whether IGNITE_HOME home was found.
-         * @return Resolved GG home.
+         * @return Resolved Ignite home.
          */
-        IGNITE_IMPORT_EXPORT std::string ResolveIgniteHome(const std::string* path, bool* found);
+        IGNITE_IMPORT_EXPORT std::string ResolveIgniteHome(const std::string& path = "");
     }
 }
 

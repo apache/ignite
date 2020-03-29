@@ -45,11 +45,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTest {
     /** */
@@ -70,8 +70,8 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -88,6 +88,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         refreshInitialData();
 
@@ -98,6 +99,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 
@@ -130,7 +132,7 @@ public class GridSessionSetFutureAttributeSelfTest extends GridCommonAbstractTes
      * @throws IgniteCheckedException if failed.
      */
     private void checkTask(int num) throws InterruptedException, IgniteCheckedException {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 

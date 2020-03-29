@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one or more
+  ~  contributor license agreements.  See the NOTICE file distributed with
+  ~  this work for additional information regarding copyright ownership.
+  ~  The ASF licenses this file to You under the Apache License, Version 2.0
+  ~  (the "License"); you may not use this file except in compliance with
+  ~  the License.  You may obtain a copy of the License at
+  ~
+  ~       http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2
+           http://maven.apache.org/xsd/component-1.1.2.xsd">
+    <files>
+        <file>
+            <source>modules/yardstick/pom-standalone.xml</source>
+            <outputDirectory>benchmarks/sources</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
+
+        <file>
+            <source>modules/yardstick/DEVNOTES-standalone.txt</source>
+            <outputDirectory>benchmarks/sources</outputDirectory>
+            <destName>DEVNOTES.txt</destName>
+        </file>
+
+        <file>
+            <source>modules/yardstick/README.txt</source>
+            <outputDirectory>benchmarks</outputDirectory>
+            <destName>README.txt</destName>
+        </file>
+    </files>
+
+    <fileSets>
+        <fileSet>
+            <directory>modules/yardstick/target/assembly/bin</directory>
+            <outputDirectory>benchmarks/bin</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/yardstick/target/assembly/config</directory>
+            <outputDirectory>benchmarks/config</outputDirectory>
+            <includes>
+                <include>benchmark.properties</include>
+                <include>benchmark-remote.properties</include>
+                <include>benchmark-sample.properties</include>
+                <include>benchmark-remote-sample.properties</include>
+                <include>benchmark-multicast.properties</include>
+                <include>ignite-base-config.xml</include>
+                <include>ignite-localhost-config.xml</include>
+                <include>ignite-remote-config.xml</include>
+                <include>ignite-multicast-config.xml</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/yardstick/target/assembly/libs</directory>
+            <outputDirectory>benchmarks/libs</outputDirectory>
+            <excludes>
+                <exclude>junit-*.jar</exclude>
+                <exclude>ignite-apache-license-gen-*.jar</exclude>
+                <exclude>hamcrest-core-*.jar</exclude>
+                <exclude>tools-*.jar</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/yardstick/src</directory>
+            <outputDirectory>benchmarks/sources/src</outputDirectory>
+        </fileSet>
+
+        <fileSet>
+            <directory>modules/yardstick/target/assembly/config</directory>
+            <outputDirectory>benchmarks/sources/config</outputDirectory>
+            <includes>
+                <include>benchmark.properties</include>
+                <include>benchmark-remote.properties</include>
+                <include>benchmark-sample.properties</include>
+                <include>benchmark-remote-sample.properties</include>
+                <include>benchmark-multicast.properties</include>
+                <include>ignite-base-config.xml</include>
+                <include>ignite-localhost-config.xml</include>
+                <include>ignite-remote-config.xml</include>
+                <include>ignite-multicast-config.xml</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</component>

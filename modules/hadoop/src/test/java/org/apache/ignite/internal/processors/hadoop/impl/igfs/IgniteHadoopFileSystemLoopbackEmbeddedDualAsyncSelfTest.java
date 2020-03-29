@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 
 /**
@@ -29,5 +32,12 @@ public class IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest extends
      */
     public IgniteHadoopFileSystemLoopbackEmbeddedDualAsyncSelfTest() {
         super(DUAL_ASYNC, false);
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9919")
+    @Test
+    @Override public void testRenameIfSrcPathIsAlreadyBeingOpenedToRead() throws Exception {
+        super.testRenameIfSrcPathIsAlreadyBeingOpenedToRead();
     }
 }

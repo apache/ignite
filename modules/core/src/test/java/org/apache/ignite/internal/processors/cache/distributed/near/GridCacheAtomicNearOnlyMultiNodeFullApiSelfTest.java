@@ -18,30 +18,24 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.junit.Test;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests NEAR_ONLY cache.
  */
 public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setNearConfiguration(null);
 
@@ -76,12 +70,13 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).removeAll();
+            grid(i).cache(DEFAULT_CACHE_NAME).removeAll();
 
         super.afterTest();
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
         IgniteCache<String, Integer> primary = fullCache();
@@ -117,57 +112,5 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         for (String key : keys)
             assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testEvictExpired() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-1113");
-
-        IgniteCache<String, Integer> cache = jcache();
-
-        final String key = primaryKeysForCache(cache, 1).get(0);
-
-        cache.put(key, 1);
-
-        assertEquals((Integer)1, cache.get(key));
-
-        long ttl = 500;
-
-        grid(0).cache(null).
-            withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl))).put(key, 1);
-
-        boolean wait = waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (int i = 0; i < gridCount(); i++) {
-                    if (peek(jcache(i), key) != null)
-                        return false;
-                }
-
-                return true;
-            }
-        }, ttl + 1000);
-
-        assertTrue("Failed to wait for entry expiration.", wait);
-
-        // Expired entry should not be swapped.
-        cache.localEvict(Collections.singleton(key));
-
-        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-        cache.localPromote(Collections.singleton(key));
-
-        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
-
-        assertTrue(cache.localSize() == 0);
-
-        load(cache, key, true);
-
-        Affinity<String> aff = ignite(0).affinity(null);
-
-        for (int i = 0; i < gridCount(); i++) {
-            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
-                assertEquals((Integer)1, peek(jcache(i), key));
-        }
     }
 }

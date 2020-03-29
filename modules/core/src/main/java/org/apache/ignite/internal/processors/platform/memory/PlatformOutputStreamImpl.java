@@ -209,16 +209,12 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
 
     /** {@inheritDoc} */
     @Override public long rawOffheapPointer() {
-        assert false;
-
-        throw new UnsupportedOperationException("Should not be called.");
+        return data;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasArray() {
-        assert false;
-
-        throw new UnsupportedOperationException("Should not be called.");
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -340,7 +336,7 @@ public class PlatformOutputStreamImpl implements PlatformOutputStream {
     }
 
     /** {@inheritDoc} */
-    public int capacity() {
+    @Override public int capacity() {
         return cap;
     }
 }

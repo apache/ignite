@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Address Resolver test.
@@ -46,8 +47,8 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -59,7 +60,7 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
                 Set<InetSocketAddress> set = new HashSet<>();
 
                 set.add(addr);
-                set.add(gridName.contains("0") ? addr0 : addr1);
+                set.add(igniteInstanceName.contains("0") ? addr0 : addr1);
 
                 return set;
             }
@@ -76,6 +77,7 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void test() throws Exception {
         startGrid(0);
 

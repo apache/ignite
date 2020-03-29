@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -43,8 +44,8 @@ import org.apache.ignite.internal.util.typedef.COX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Marshallers benchmark.
@@ -64,6 +65,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -112,14 +114,11 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGridMarshaller() throws Exception {
         final GridTuple<byte[]> tuple = new GridTuple<>();
 
-        // Test marshaller context.
-        final MarshallerContext marshCtx = new MarshallerContextTestImpl();
-
-        final OptimizedMarshaller marsh = new OptimizedMarshaller();
-        marsh.setContext(marshCtx);
+        final BinaryMarshaller marsh = createStandaloneBinaryMarshaller();
 
         IgniteInClosure<TestObject> writer = new CIX1<TestObject>() {
             @Override public void applyx(TestObject obj) throws IgniteCheckedException {
@@ -139,6 +138,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testByteBuffer() throws Exception {
         final ByteBuffer buf = ByteBuffer.allocate(1024);
 
@@ -164,6 +164,7 @@ public class GridMarshallerPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testKryo() throws Exception {
         final Kryo kryo = new Kryo();
 

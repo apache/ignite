@@ -43,78 +43,72 @@ final class GridDiagnostic {
     }
 
     /**
-     * @param gridName Grid instance name. Can be {@code null}.
+     * @param igniteInstanceName Grid instance name. Can be {@code null}.
      * @param exec Executor service.
      * @param parentLog Parent logger.
      */
-    static void runBackgroundCheck(String gridName, Executor exec, IgniteLogger parentLog) {
+    static void runBackgroundCheck(String igniteInstanceName, Executor exec, IgniteLogger parentLog) {
         assert exec != null;
         assert parentLog != null;
 
         final IgniteLogger log = parentLog.getLogger(GridDiagnostic.class);
 
         try {
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-1", log) {
+            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-1", log) {
                 @Override public void body() {
                     try {
                         InetAddress locHost = U.getLocalHost();
 
                         if (!locHost.isReachable(REACH_TIMEOUT)) {
                             U.warn(log, "Default local host is unreachable. This may lead to delays on " +
-                                "grid network operations. Check your OS network setting to correct it.",
-                                "Default local host is unreachable.");
+                                "grid network operations. Check your OS network setting to correct it.");
                         }
                     }
                     catch (IOException ignore) {
                         U.warn(log, "Failed to perform network diagnostics. It is usually caused by serious " +
-                            "network configuration problem. Check your OS network setting to correct it.",
-                            "Failed to perform network diagnostics.");
+                            "network configuration problem. Check your OS network setting to correct it.");
                     }
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-2", log) {
+            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-2", log) {
                 @Override public void body() {
                     try {
                         InetAddress locHost = U.getLocalHost();
 
                         if (locHost.isLoopbackAddress()) {
                             U.warn(log, "Default local host is a loopback address. This can be a sign of " +
-                                "potential network configuration problem.",
-                                "Default local host is a loopback address.");
+                                "potential network configuration problem.");
                         }
                     }
                     catch (IOException ignore) {
                         U.warn(log, "Failed to perform network diagnostics. It is usually caused by serious " +
-                            "network configuration problem. Check your OS network setting to correct it.",
-                            "Failed to perform network diagnostics.");
+                            "network configuration problem. Check your OS network setting to correct it.");
                     }
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-4", log) {
+            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-4", log) {
                 @Override public void body() {
                     // Sufficiently tested OS.
                     if (!U.isSufficientlyTestedOs()) {
                         U.warn(log, "This operating system has been tested less rigorously: " + U.osString() +
                             ". Our team will appreciate the feedback if you experience any problems running " +
-                            "ignite in this environment.",
-                            "This OS is tested less rigorously: " + U.osString());
+                            "ignite in this environment.");
                     }
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-5", log) {
+            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-5", log) {
                 @Override public void body() {
                     // Fix for GG-1075.
                     if (F.isEmpty(U.allLocalMACs()))
                         U.warn(log, "No live network interfaces detected. If IP-multicast discovery is used - " +
-                            "make sure to add 127.0.0.1 as a local address.",
-                            "No live network interfaces. Add 127.0.0.1 as a local address.");
+                            "make sure to add 127.0.0.1 as a local address.");
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-6", log) {
+            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-6", log) {
                 @Override public void body() {
                     if (System.getProperty("com.sun.management.jmxremote") != null) {
                         String portStr = System.getProperty("com.sun.management.jmxremote.port");
@@ -131,14 +125,14 @@ final class GridDiagnostic {
 
                         U.warn(log, "JMX remote management is enabled but JMX port is either not set or invalid. " +
                             "Check system property 'com.sun.management.jmxremote.port' to make sure it specifies " +
-                            "valid TCP/IP port.", "JMX remote port is invalid - JMX management is off.");
+                            "valid TCP/IP port.");
                     }
                 }
             });
 
-            final long HALF_GB = 512/*MB*/ * 1024 * 1024;
+            final long HALF_GB = 512L/*MB*/ * 1024 * 1024;
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-7", log) {
+            exec.execute(new GridWorker(igniteInstanceName, "grid-diagnostic-7", log) {
                 @Override public void body() {
                     long initBytes = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit();
                     long initMb = initBytes / 1024 / 1024;

@@ -19,21 +19,25 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -42,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Query request.
  */
-public class GridCacheQueryResponse extends GridCacheMessage implements GridCacheDeployable {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -126,10 +130,10 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         if (err != null && errBytes == null)
             errBytes = U.marshal(ctx, err);
 
-        if (metaDataBytes == null)
+        if (metaDataBytes == null && metadata != null)
             metaDataBytes = marshalCollection(metadata, cctx);
 
-        if (dataBytes == null)
+        if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
@@ -155,7 +159,50 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
             metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
 
         if (data == null)
-            data = unmarshalCollection(dataBytes, ctx, ldr);
+            data = unmarshalCollection0(dataBytes, ctx, ldr);
+    }
+
+    /**
+     * @param byteCol Collection to unmarshal.
+     * @param ctx Context.
+     * @param ldr Loader.
+     * @return Unmarshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected <T> List<T> unmarshalCollection0(@Nullable Collection<byte[]> byteCol,
+        GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert ldr != null;
+        assert ctx != null;
+
+        if (byteCol == null)
+            return null;
+
+        List<T> col = new ArrayList<>(byteCol.size());
+
+        Marshaller marsh = ctx.marshaller();
+
+        ClassLoader ldr0 = U.resolveClassLoader(ldr, ctx.gridConfig());
+
+        CacheObjectContext cacheObjCtx = null;
+
+        for (byte[] bytes : byteCol) {
+            Object obj = bytes == null ? null : marsh.<T>unmarshal(bytes, ldr0);
+
+            if (obj instanceof Map.Entry) {
+                Object key = ((Map.Entry)obj).getKey();
+
+                if (key instanceof KeyCacheObject) {
+                    if (cacheObjCtx == null)
+                        cacheObjCtx = ctx.cacheContext(cacheId).cacheObjectContext();
+
+                    ((KeyCacheObject)key).finishUnmarshal(cacheObjCtx, ldr0);
+                }
+            }
+
+            col.add((T)obj);
+        }
+
+        return col;
     }
 
     /** {@inheritDoc} */
@@ -187,7 +234,6 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     /**
      * @param data Query data.
      */
-    @SuppressWarnings("unchecked")
     public void data(Collection<?> data) {
         this.data = (Collection<Object>)data;
     }
@@ -240,37 +286,37 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
         }
 
         switch (writer.state()) {
-            case 3:
+            case 4:
                 if (!writer.writeCollection("dataBytes", dataBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 5:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 6:
                 if (!writer.writeBoolean("fields", fields))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 7:
                 if (!writer.writeBoolean("finished", finished))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 8:
                 if (!writer.writeCollection("metaDataBytes", metaDataBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
+            case 9:
                 if (!writer.writeLong("reqId", reqId))
                     return false;
 
@@ -292,7 +338,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
             return false;
 
         switch (reader.state()) {
-            case 3:
+            case 4:
                 dataBytes = reader.readCollection("dataBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -300,7 +346,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
                 reader.incrementState();
 
-            case 4:
+            case 5:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -308,7 +354,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
                 reader.incrementState();
 
-            case 5:
+            case 6:
                 fields = reader.readBoolean("fields");
 
                 if (!reader.isLastRead())
@@ -316,7 +362,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
                 reader.incrementState();
 
-            case 6:
+            case 7:
                 finished = reader.readBoolean("finished");
 
                 if (!reader.isLastRead())
@@ -324,7 +370,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
                 reader.incrementState();
 
-            case 7:
+            case 8:
                 metaDataBytes = reader.readCollection("metaDataBytes", MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
@@ -332,7 +378,7 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
                 reader.incrementState();
 
-            case 8:
+            case 9:
                 reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
@@ -346,13 +392,13 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 59;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */

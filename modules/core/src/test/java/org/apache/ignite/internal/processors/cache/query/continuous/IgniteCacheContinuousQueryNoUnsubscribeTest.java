@@ -27,34 +27,23 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static AtomicInteger cntr = new AtomicInteger();
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-        cfg.setClientMode(client);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -78,6 +67,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoUnsubscribe() throws Exception {
        checkNoUnsubscribe(false);
     }
@@ -85,6 +75,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoUnsubscribeClient() throws Exception {
         checkNoUnsubscribe(true);
     }
@@ -96,9 +87,7 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
     private void checkNoUnsubscribe(boolean client) throws Exception {
         cntr.set(0);
 
-        this.client = client;
-
-        try (Ignite ignite = startGrid(3)) {
+        try (Ignite ignite = client ? startClientGrid(3) : startGrid(3)) {
             ContinuousQuery qry = new ContinuousQuery();
 
             qry.setLocalListener(new CacheEntryUpdatedListener() {
@@ -111,30 +100,30 @@ public class IgniteCacheContinuousQueryNoUnsubscribeTest extends GridCommonAbstr
 
             qry.setAutoUnsubscribe(false);
 
-            ignite.cache(null).query(qry);
+            ignite.cache(DEFAULT_CACHE_NAME).query(qry);
 
-            ignite.cache(null).put(1, 1);
+            ignite.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             assertEquals(1, cntr.get());
         }
 
-        this.client = false;
-
         try (Ignite newSrv = startGrid(3)) {
-            Integer key = primaryKey(newSrv.cache(null));
+            awaitPartitionMapExchange();
 
-            newSrv.cache(null).put(key, 1);
+            Integer key = primaryKey(newSrv.cache(DEFAULT_CACHE_NAME));
+
+            newSrv.cache(DEFAULT_CACHE_NAME).put(key, 1);
 
             assertEquals(2, cntr.get());
 
             for (int i = 0; i < 10; i++)
-                ignite(0).cache(null).put(i, 1);
+                ignite(0).cache(DEFAULT_CACHE_NAME).put(i, 1);
 
             assertEquals(12, cntr.get());
         }
 
         for (int i = 10; i < 20; i++)
-            ignite(0).cache(null).put(i, 1);
+            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, 1);
 
         assertEquals(22, cntr.get());
     }

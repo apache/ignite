@@ -17,25 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -46,9 +43,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
 public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int NODES_CNT = 3;
 
@@ -68,24 +62,16 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
         return new CacheConfiguration<Integer, Integer>()
             .setAtomicityMode(ATOMIC)
             .setCacheMode(REPLICATED)
-            .setAffinity(new FairAffinityFunction(false, 1))
+            .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setWriteSynchronizationMode(FULL_SYNC)
             .setRebalanceMode(SYNC)
             .setName(CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAllOnChangingTopology() throws Exception {
         List<IgniteInternalFuture> futs = new LinkedList<>();
 
@@ -138,7 +124,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
 
                 log.info("Created cache.");
 
-                Map<Integer, Integer> data = new HashMap<>(CACHE_SIZE);
+                Map<Integer, Integer> data = new TreeMap<>();
 
                 for (int i = 0; i < CACHE_SIZE; i++)
                     data.put(i, i);
@@ -203,7 +189,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
             locSize2 = cache.localSize(PRIMARY, BACKUP);
         }
 
-        assertEquals("Wrong cache size on node [node=" + node.configuration().getGridName() +
+        assertEquals("Wrong cache size on node [node=" + node.configuration().getIgniteInstanceName() +
             ", expected= " + CACHE_SIZE +
             ", actual=" + locSize +
             ", actual2=" + locSize2 + "]",

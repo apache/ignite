@@ -25,8 +25,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -42,19 +44,28 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
     private int backups = 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Test cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -70,6 +81,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         backups = 2;
 
@@ -77,11 +89,11 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
         try {
             for (int i = 0; i < GRID_CNT - 1; i++)
-                grid(i).cache(null).rebalance().get();
+                grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
 
             startGrid(GRID_CNT - 1);
 
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             final int keyCnt = 100;
 
@@ -99,7 +111,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
             for (int g = 0; g < GRID_CNT; g++) {
                 IgniteKernal k = (IgniteKernal)grid(g);
 
-                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache();
+                GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
                 assertEquals(0, cacheAdapter.context().tm().idMapSize());
 

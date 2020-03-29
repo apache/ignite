@@ -33,9 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -44,9 +41,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 @SuppressWarnings("unchecked")
 public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected final Marshaller marsh;
 
@@ -65,21 +59,15 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     /**
      * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
      */
-    private boolean isBinaryMarshaller() {
+    protected boolean isBinaryMarshaller() {
         return marsh instanceof BinaryMarshaller;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -155,11 +143,6 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
             return ignite(0).cache("S2P-bin").withKeepBinary();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.
@@ -167,7 +150,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
      * @return Cache configuration.
      */
     protected static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql) {
-        return new CacheConfiguration()
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)

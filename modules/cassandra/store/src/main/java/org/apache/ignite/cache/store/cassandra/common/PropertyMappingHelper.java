@@ -20,18 +20,17 @@ package org.apache.ignite.cache.store.cassandra.common;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
 import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.ignite.cache.store.cassandra.persistence.PojoFieldAccessor;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 
 /**
@@ -47,8 +46,8 @@ public class PropertyMappingHelper {
         put(String.class, DataType.Name.TEXT);
         put(Integer.class, DataType.Name.INT);
         put(int.class, DataType.Name.INT);
-        put(Short.class, DataType.Name.INT);
-        put(short.class, DataType.Name.INT);
+        put(Short.class, DataType.Name.SMALLINT);
+        put(short.class, DataType.Name.SMALLINT);
         put(Long.class, DataType.Name.BIGINT);
         put(long.class, DataType.Name.BIGINT);
         put(Double.class, DataType.Name.DOUBLE);
@@ -78,77 +77,38 @@ public class PropertyMappingHelper {
     }
 
     /**
-     * Returns property descriptor by class property name.
+     * Returns property accessor by class property name.
      *
-     * @param clazz class from which to get property descriptor.
+     * @param clazz class from which to get property accessor.
      * @param prop name of the property.
      *
-     * @return property descriptor.
+     * @return property accessor.
      */
-    public static PropertyDescriptor getPojoPropertyDescriptor(Class clazz, String prop) {
-        List<PropertyDescriptor> descriptors = getPojoPropertyDescriptors(clazz, false);
-
-        if (descriptors == null || descriptors.isEmpty())
-            throw new IllegalArgumentException("POJO class " + clazz.getName() + " doesn't have '" + prop + "' property");
-
-        for (PropertyDescriptor descriptor : descriptors) {
-            if (descriptor.getName().equals(prop))
-                return descriptor;
-        }
-
-        throw new IllegalArgumentException("POJO class " + clazz.getName() + " doesn't have '" + prop + "' property");
-    }
-
-    /**
-     * Extracts all property descriptors from a class.
-     *
-     * @param clazz class which property descriptors should be extracted.
-     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
-     *
-     * @return list of class property descriptors
-     */
-    public static List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz, boolean primitive) {
-        return getPojoPropertyDescriptors(clazz, null, primitive);
-    }
-
-    /**
-     * Extracts all property descriptors having specific annotation from a class.
-     *
-     * @param clazz class which property descriptors should be extracted.
-     * @param annotation annotation to look for.
-     * @param primitive boolean flag indicating that only property descriptors for primitive properties should be extracted.
-     *
-     * @return list of class property descriptors
-     */
-    public static <T extends Annotation> List<PropertyDescriptor> getPojoPropertyDescriptors(Class clazz,
-        Class<T> annotation, boolean primitive) {
+    public static PojoFieldAccessor getPojoFieldAccessor(Class clazz, String prop) {
         PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(clazz);
 
-        List<PropertyDescriptor> list = new ArrayList<>(descriptors == null ? 1 : descriptors.length);
+        if (descriptors != null) {
+            for (PropertyDescriptor descriptor : descriptors) {
+                if (descriptor.getName().equals(prop)) {
+                    Field field = null;
 
-        if (descriptors == null || descriptors.length == 0)
-            return list;
+                    try {
+                        field = clazz.getDeclaredField(prop);
+                    }
+                    catch (Throwable ignore) {
+                    }
 
-        for (PropertyDescriptor descriptor : descriptors) {
-            if (descriptor.getReadMethod() == null || (primitive && !isPrimitivePropertyDescriptor(descriptor)))
-                continue;
-
-            if (annotation == null || descriptor.getReadMethod().getAnnotation(annotation) != null)
-                list.add(descriptor);
+                    return new PojoFieldAccessor(descriptor, field);
+                }
+            }
         }
 
-        return list;
-    }
-
-    /**
-     * Checks if property descriptor describes primitive property (int, boolean, long and etc.)
-     *
-     * @param desc property descriptor.
-     *
-     * @return {@code true} property is primitive
-     */
-    public static boolean isPrimitivePropertyDescriptor(PropertyDescriptor desc) {
-        return PropertyMappingHelper.JAVA_TO_CASSANDRA_MAPPING.containsKey(desc.getPropertyType());
+        try {
+            return new PojoFieldAccessor(clazz.getDeclaredField(prop));
+        }
+        catch (Throwable e) {
+            throw new IllegalArgumentException("POJO class " + clazz.getName() + " doesn't have '" + prop + "' property");
+        }
     }
 
     /**
@@ -165,30 +125,83 @@ public class PropertyMappingHelper {
         if (String.class.equals(clazz))
             return row.getString(col);
 
-        if (Integer.class.equals(clazz) || int.class.equals(clazz))
+        if (Integer.class.equals(clazz))
+            return row.isNull(col) ? null : row.getInt(col);
+
+        if (int.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "int value used in domain object model");
+            }
+
             return row.getInt(col);
+        }
 
-        if (Short.class.equals(clazz) || short.class.equals(clazz))
-            return (short)row.getInt(col);
+        if (Short.class.equals(clazz))
+            return row.isNull(col) ? null : row.getShort(col);
 
-        if (Long.class.equals(clazz) || long.class.equals(clazz))
+        if (short.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "short value used in domain object model");
+            }
+
+            return row.getShort(col);
+        }
+
+        if (Long.class.equals(clazz))
+            return row.isNull(col) ? null : row.getLong(col);
+
+        if (long.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "long value used in domain object model");
+            }
+
             return row.getLong(col);
+        }
 
-        if (Double.class.equals(clazz) || double.class.equals(clazz))
+        if (Double.class.equals(clazz))
+            return row.isNull(col) ? null : row.getDouble(col);
+
+        if (double.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "double value used in domain object model");
+            }
+
             return row.getDouble(col);
+        }
 
-        if (Boolean.class.equals(clazz) || boolean.class.equals(clazz))
+        if (Boolean.class.equals(clazz))
+            return row.isNull(col) ? null : row.getBool(col);
+
+        if (boolean.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "boolean value used in domain object model");
+            }
+
             return row.getBool(col);
+        }
 
-        if (Float.class.equals(clazz) || float.class.equals(clazz))
+        if (Float.class.equals(clazz))
+            return row.isNull(col) ? null : row.getFloat(col);
+
+        if (float.class.equals(clazz)) {
+            if (row.isNull(col)) {
+                throw new IllegalArgumentException("Can't cast null value from Cassandra table column '" + col +
+                        "' to " + "float value used in domain object model");
+            }
+
             return row.getFloat(col);
+        }
 
         if (ByteBuffer.class.equals(clazz))
             return row.getBytes(col);
 
         if (PropertyMappingHelper.BYTES_ARRAY_CLASS.equals(clazz)) {
             ByteBuffer buf = row.getBytes(col);
-
             return buf == null ? null : buf.array();
         }
 

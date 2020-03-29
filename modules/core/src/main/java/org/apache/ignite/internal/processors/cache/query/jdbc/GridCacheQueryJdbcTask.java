@@ -55,6 +55,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
@@ -80,7 +81,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) {
         try {
             assert arg != null;
 
@@ -106,9 +107,9 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 String cache = (String)args.get("cache");
 
-                Map<? extends ComputeJob, ClusterNode> node = mapToNode(subgrid, args, first, cache);
+                Map<? extends ComputeJob, ClusterNode> node = null;
 
-                if (node == null && cache == null) {
+                if (cache == null) {
                     boolean start = ignite.configuration().isClientMode();
 
                     IgniteCache<?, ?> cache0 =
@@ -117,6 +118,8 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                     if (cache0 != null)
                         node = mapToNode(subgrid, args, first, cache0.getName());
                 }
+                else
+                    node = mapToNode(subgrid, args, first, cache);
 
                 if (node != null)
                     return node;
@@ -268,7 +271,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
                 qry.setPageSize(pageSize);
 
-                QueryCursor<List<?>> cursor = cache.query(qry);
+                QueryCursor<List<?>> cursor = cache.withKeepBinary().query(qry);
 
                 Collection<GridQueryFieldMetadata> meta = ((QueryCursorImpl<List<?>>)cursor).fieldsMeta();
 

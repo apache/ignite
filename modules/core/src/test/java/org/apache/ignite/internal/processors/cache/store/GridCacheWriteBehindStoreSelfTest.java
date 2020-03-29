@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.store;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,17 +30,39 @@ import org.apache.ignite.internal.processors.cache.GridCacheTestStore;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Test;
 
 /**
  * This class provides basic tests for {@link org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore}.
  */
 public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
     /**
-     * Tests correct store shutdown when underlying store fails,
+     * Tests correct store (with write coalescing) shutdown when underlying store fails.
      *
      * @throws Exception If failed.
      */
-    public void testShutdownWithFailure() throws Exception {
+    @Test
+    public void testShutdownWithFailureWithCoalescing() throws Exception {
+        testShutdownWithFailure(true);
+    }
+
+    /**
+     * Tests correct store (without write coalescing) shutdown when underlying store fails.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testShutdownWithFailureWithoutCoalescing() throws Exception {
+        testShutdownWithFailure(false);
+    }
+
+    /**
+     * Tests correct store shutdown when underlying store fails.
+     *
+     * @param writeCoalescing Write coalescing flag.
+     * @throws Exception If failed.
+     */
+    private void testShutdownWithFailure(final boolean writeCoalescing) throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         multithreadedAsync(new Runnable() {
@@ -47,7 +70,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
                 try {
                     delegate.setShouldFail(true);
 
-                    initStore(2);
+                    initStore(2, writeCoalescing);
 
                     try {
                         store.write(new CacheEntryImpl<>(1, "val1"));
@@ -70,10 +93,71 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     }
 
     /**
+     * Simple store (with write coalescing) test.
+     *
      * @throws Exception If failed.
      */
-    public void testSimpleStore() throws Exception {
-        initStore(2);
+    @Test
+    public void testSimpleStoreWithCoalescing() throws Exception {
+        testSimpleStore(true);
+    }
+
+    /**
+     * Simple store (without write coalescing) test.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSimpleStoreWithoutCoalescing() throws Exception {
+        testSimpleStore(false);
+    }
+
+    /**
+     * Checks that write behind cache flush frequency was correctly adjusted to nanos expecting putAllCnt to be
+     * less or equal than elapsed time divided by flush frequency.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSimpleStoreFlushFrequencyWithoutCoalescing() throws Exception {
+        initStore(1, false);
+
+        long writeBehindFlushFreqNanos = FLUSH_FREQUENCY * 1000 * 1000;
+
+        int threshold = store.getWriteBehindStoreBatchSize() / 10;
+
+        try {
+            long start = System.nanoTime();
+
+            for (int i = 0; i < threshold / 2; i++)
+                store.write(new CacheEntryImpl<>(i, "v" + i));
+
+            U.sleep(FLUSH_FREQUENCY + 300);
+
+            for (int i = threshold / 2; i < threshold; i++)
+                store.write(new CacheEntryImpl<>(i, "v" + i));
+
+            long elapsed = System.nanoTime() - start;
+
+            U.sleep(FLUSH_FREQUENCY + 300);
+
+            int expFlushOps = (int)(1 + elapsed / writeBehindFlushFreqNanos);
+
+            assertTrue(delegate.getPutAllCount() <= expFlushOps);
+        }
+        finally {
+            shutdownStore();
+        }
+    }
+
+    /**
+     * Simple store test.
+     *
+     * @param writeCoalescing Write coalescing flag.
+     * @throws Exception If failed.
+     */
+    private void testSimpleStore(boolean writeCoalescing) throws Exception {
+        initStore(2, writeCoalescing);
 
         try {
             store.write(new CacheEntryImpl<>(1, "v1"));
@@ -82,12 +166,15 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             assertEquals("v1", store.load(1));
             assertEquals("v2", store.load(2));
             assertNull(store.load(3));
+            assertEquals(store.loadAll(Arrays.asList(3, 4, 5)).size(), 0);
 
             store.delete(1);
 
             assertNull(store.load(1));
+            assertEquals(store.loadAll(Arrays.asList(1)).size(), 0);
             assertEquals("v2", store.load(2));
             assertNull(store.load(3));
+            assertEquals(store.loadAll(Arrays.asList(3)).size(), 0);
         }
         finally {
             shutdownStore();
@@ -95,14 +182,36 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     }
 
     /**
-     * Check that all values written to the store will be in underlying store after timeout or due to size limits.
+     * Check that all values written to the store with coalescing will be in underlying store after timeout
+     * or due to size limits.
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"NullableProblems"})
-    public void testValuePropagation() throws Exception {
+    @Test
+    public void testValuePropagationWithCoalescing() throws Exception {
+        testValuePropagation(true);
+    }
+
+    /**
+     * Check that all values written to the store without coalescing will be in underlying store after timeout
+     * or due to size limits.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testValuePropagationWithoutCoalescing() throws Exception {
+        testValuePropagation(false);
+    }
+
+    /**
+     * Check that all values written to the store will be in underlying store after timeout or due to size limits.
+     *
+     * @param writeCoalescing Write coalescing flag
+     * @throws Exception If failed.
+     */
+    private void testValuePropagation(boolean writeCoalescing) throws Exception {
         // Need to test size-based write.
-        initStore(1);
+        initStore(1, writeCoalescing);
 
         try {
             for (int i = 0; i < CACHE_SIZE * 2; i++)
@@ -132,12 +241,33 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     }
 
     /**
+     * Tests store with write coalescing behaviour under continuous put of the same key with different values.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testContinuousPutWithCoalescing() throws Exception {
+        testContinuousPut(true);
+    }
+
+    /**
+     * Tests store without write coalescing behaviour under continuous put of the same key with different values.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testContinuousPutWithoutCoalescing() throws Exception {
+        testContinuousPut(false);
+    }
+
+    /**
      * Tests store behaviour under continuous put of the same key with different values.
      *
-     * @throws Exception If failed
+     * @param writeCoalescing Write coalescing flag for cache.
+     * @throws Exception If failed.
      */
-    public void testContinuousPut() throws Exception {
-        initStore(2);
+    private void testContinuousPut(boolean writeCoalescing) throws Exception {
+        initStore(2, writeCoalescing);
 
         try {
             final AtomicBoolean running = new AtomicBoolean(true);
@@ -145,7 +275,6 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             final AtomicInteger actualPutCnt = new AtomicInteger();
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-                @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {
                         while (running.get()) {
@@ -169,17 +298,22 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             }, 1, "put");
 
             U.sleep(FLUSH_FREQUENCY * 2 + 500);
+            running.set(false);
+            U.sleep(FLUSH_FREQUENCY * 2 + 500);
 
             int delegatePutCnt = delegate.getPutAllCount();
-
-            running.set(false);
 
             fut.get();
 
             log().info(">>> [putCnt = " + actualPutCnt.get() + ", delegatePutCnt=" + delegatePutCnt + "]");
 
             assertTrue("No puts were made to the underlying store", delegatePutCnt > 0);
-            assertTrue("Too many puts were made to the underlying store", delegatePutCnt < actualPutCnt.get() / 10);
+            if (store.getWriteCoalescing()) {
+                assertTrue("Too many puts were made to the underlying store", delegatePutCnt < actualPutCnt.get() / 10);
+            }
+            else {
+                assertTrue("Too few puts cnt=" + actualPutCnt.get() + " << storePutCnt=" + delegatePutCnt, delegatePutCnt > actualPutCnt.get() / 2);
+            }
         }
         finally {
             shutdownStore();
@@ -193,19 +327,41 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     }
 
     /**
-     * Tests that all values were put into the store will be written to the underlying store
+     * Tests that all values were put into the store with write coalescing will be written to the underlying store
      * after shutdown is called.
      *
      * @throws Exception If failed.
      */
-    public void testShutdown() throws Exception {
-        initStore(2);
+    @Test
+    public void testShutdownWithCoalescing() throws Exception {
+        testShutdown(true);
+    }
+
+    /**
+     * Tests that all values were put into the store without write coalescing will be written to the underlying store
+     * after shutdown is called.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testShutdownWithoutCoalescing() throws Exception {
+        testShutdown(false);
+    }
+
+    /**
+     * Tests that all values were put into the store will be written to the underlying store
+     * after shutdown is called.
+     *
+     * @param writeCoalescing Write coalescing flag.
+     * @throws Exception If failed.
+     */
+    private void testShutdown(boolean writeCoalescing) throws Exception {
+        initStore(2, writeCoalescing);
 
         try {
             final AtomicBoolean running = new AtomicBoolean(true);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-                @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {
                         while (running.get()) {
@@ -243,14 +399,39 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
     /**
      * Tests that all values will be written to the underlying store
-     * right in the same order as they were put into the store.
+     * right in the same order as they were put into the store with coalescing.
      *
      * @throws Exception If failed.
      */
-    public void testBatchApply() throws Exception {
-        delegate = new GridCacheTestStore(new ConcurrentLinkedHashMap<Integer, String>());
+    @Test
+    public void testBatchApplyWithCoalescing() throws Exception {
+        testBatchApply(true);
+    }
 
-        initStore(1);
+    /**
+     * Tests that all values will be written to the underlying store
+     * right in the same order as they were put into the store without coalescing.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBatchApplyWithoutCoalescing() throws Exception {
+        testBatchApply(false);
+    }
+
+    /**
+     * Tests that all values will be written to the underlying store
+     * right in the same order as they were put into the store.
+     *
+     * @param writeCoalescing Write coalescing flag.
+     * @throws Exception If failed.
+     */
+    private void testBatchApply(boolean writeCoalescing) throws Exception {
+        delegate = new GridCacheTestStore(new ConcurrentLinkedHashMap<Integer, String>() {
+            @Override public void clear() { }
+        });
+
+        initStore(1, writeCoalescing);
 
         List<Integer> intList = new ArrayList<>(CACHE_SIZE);
 

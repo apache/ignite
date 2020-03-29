@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains Ignite Binary Objects API classes.
  */
+
 package org.apache.ignite.binary;

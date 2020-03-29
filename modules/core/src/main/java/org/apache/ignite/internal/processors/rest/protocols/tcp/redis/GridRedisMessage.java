@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
@@ -49,13 +50,19 @@ public class GridRedisMessage implements GridClientMessage {
     private static final int AUX_OFFSET = 2;
 
     /** Request message parts. */
-    private transient final List<String> msgParts;
+    private final transient List<String> msgParts;
 
     /** Response. */
     private ByteBuffer response;
 
     /** Cache name. */
     private String cacheName;
+
+    /** Cache name prefix. */
+    public static final String CACHE_NAME_PREFIX = "redis-ignite-internal-cache";
+
+    /** Default cache name. */
+    public static final String DFLT_CACHE_NAME = CACHE_NAME_PREFIX + "-0";
 
     /**
      * Constructor.
@@ -64,6 +71,8 @@ public class GridRedisMessage implements GridClientMessage {
      */
     public GridRedisMessage(int msgLen) {
         msgParts = new ArrayList<>(msgLen);
+
+        cacheName = DFLT_CACHE_NAME;
     }
 
     /**
@@ -215,5 +224,15 @@ public class GridRedisMessage implements GridClientMessage {
     /** {@inheritDoc} */
     @Override public void sessionToken(byte[] sesTok) {
 
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> userAttributes() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void userAttributes(Map<String, String> userAttrs) {
+        // No-op.
     }
 }

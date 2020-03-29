@@ -19,6 +19,7 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.misc.springbean.SpringBeanExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Test;
 
 /**
  * Spring bean examples self test.
@@ -27,6 +28,7 @@ public class SpringBeanExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpringBeanHelloWorldExample() throws Exception {
         SpringBeanExample.main(EMPTY_ARGS);
     }

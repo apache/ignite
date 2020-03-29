@@ -25,26 +25,20 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest implements Serializable {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Threads number for multi-thread tests. */
     private static final int THREADS = 10;
 
@@ -53,15 +47,6 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
     /** */
     private final String msgStr = "message";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -75,6 +60,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -83,7 +69,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
-        });
+        }, false);
     }
 
     /**
@@ -91,15 +77,16 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAsyncMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        send(ignite1.message().withAsync(), msgStr,  new IgniteBiInClosure<String, Thread> () {
+        send(ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread> () {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
             }
-        });
+        }, true);
     }
 
     /**
@@ -107,6 +94,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendDefaultMode2Nodes() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -116,7 +104,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
             }
-        });
+        }, false);
     }
 
     /**
@@ -124,16 +112,17 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAsyncMode2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
-        sendWith2Nodes(ignite2, ignite1.message().withAsync(), msgStr,  new IgniteBiInClosure<String, Thread> () {
+        sendWith2Nodes(ignite2, ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread> () {
             @Override public  void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
             }
-        });
+        }, true);
     }
 
     /**
@@ -141,6 +130,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
@@ -155,28 +145,11 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     }
 
     /**
-     * Checks that sendOrdered work in thread pool, 1 node in topology.
-     *
-     * @throws Exception If failed.
-     */
-    public void testSendOrderedAsyncMode() throws Exception {
-        Ignite ignite1 = startGrid(1);
-
-        final List<String> msgs = orderedMessages();
-
-        sendOrdered(ignite1.message().withAsync(), msgs, new IgniteBiInClosure< List<String>,  List<Thread>> () {
-            @Override public void apply(List<String> received, List<Thread> threads) {
-                assertFalse(threads.contains(Thread.currentThread()));
-                assertTrue(msgs.equals(received));
-            }
-        });
-    }
-
-    /**
      * Checks that sendOrdered work in thread pool, 2 nodes in topology.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSendOrderedDefaultMode2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
@@ -192,27 +165,9 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     }
 
     /**
-     * Checks that sendOrdered work in thread pool, 2 nodes in topology.
-     *
      * @throws Exception If failed.
      */
-    public void testSendOrderedAsyncMode2Node() throws Exception {
-        Ignite ignite1 = startGrid(1);
-        Ignite ignite2 = startGrid(2);
-
-        final List<String> msgs = orderedMessages();
-
-        sendOrderedWith2Node(ignite2, ignite1.message().withAsync(), msgs, new IgniteBiInClosure<List<String>, List<Thread>>() {
-            @Override public void apply(List<String> received, List<Thread> threads) {
-                assertFalse(threads.contains(Thread.currentThread()));
-                assertTrue(msgs.equals(received));
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testSendOrderedDefaultModeMultiThreads() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -222,30 +177,12 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      * @throws Exception If failed.
      */
-    public void testSendOrderedAsyncModeMultiThreads() throws Exception {
-        Ignite ignite = startGrid(1);
-
-        sendOrderedMultiThreads(ignite.message().withAsync());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testSendOrderedDefaultModeMultiThreadsWith2Node() throws Exception {
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
         sendOrderedMultiThreadsWith2Node(ignite2, ignite1.message());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSendOrderedAsyncModeMultiThreadsWith2Node() throws Exception {
-        Ignite ignite1 = startGrid(1);
-        Ignite ignite2 = startGrid(2);
-
-        sendOrderedMultiThreadsWith2Node(ignite2, ignite1.message().withAsync());
     }
 
     /**
@@ -380,13 +317,15 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      * @param igniteMsg Ignite message.
      * @param msgStr    Message string.
      * @param cls       Callback for compare result.
+     * @param async     Use sendAsync flag.
      * @throws Exception If failed.
      */
     private void sendWith2Nodes(
             final Ignite ignite2,
             final IgniteMessaging igniteMsg,
             final String msgStr,
-            final IgniteBiInClosure<String, Thread>  cls
+            final IgniteBiInClosure<String, Thread>  cls,
+            final boolean async
     ) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -400,7 +339,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
             }
         });
 
-        send(igniteMsg, msgStr, cls);
+        send(igniteMsg, msgStr, cls, async);
 
         latch.await();
     }
@@ -409,12 +348,14 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      * @param igniteMsg Ignite messaging.
      * @param msgStr    Message string.
      * @param cls       Callback for compare result.
+     * @param async     Use sendAsync flag.
      * @throws Exception If failed.
      */
     private void send(
            final IgniteMessaging igniteMsg,
            final String msgStr,
-           final IgniteBiInClosure<String, Thread> cls
+           final IgniteBiInClosure<String, Thread> cls,
+           final boolean async
     ) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -433,7 +374,10 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
             }
         });
 
-        igniteMsg.send(TOPIC, msgStr);
+        if (async)
+            igniteMsg.withAsync().send(TOPIC, msgStr);
+        else
+            igniteMsg.send(TOPIC, msgStr);
 
         latch.await();
 
@@ -517,7 +461,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         final List<String> msgs = Lists.newArrayList();
 
         for (int i = 0; i < 1000; i++)
-            msgs.add(String.valueOf(ThreadLocalRandom8.current().nextInt()));
+            msgs.add(String.valueOf(ThreadLocalRandom.current().nextInt()));
 
         return msgs;
     }

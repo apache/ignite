@@ -39,12 +39,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -54,9 +52,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("unchecked")
 public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "cache";
 
@@ -75,11 +70,6 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         client = client();
     }
@@ -88,13 +78,13 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         client.shutdown();
 
-        grid().cache(null).clear();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
         grid().cache(CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(HOST);
 
@@ -106,13 +96,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CACHE_NAME));
 
         return cfg;
     }
@@ -122,7 +106,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(LOCAL);
@@ -144,9 +128,10 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPut() throws Exception {
-        assertTrue(client.cachePut(null, "key1", "val1"));
-        assertEquals("val1", grid().cache(null).get("key1"));
+        assertTrue(client.cachePut(DEFAULT_CACHE_NAME, "key1", "val1"));
+        assertEquals("val1", grid().cache(DEFAULT_CACHE_NAME).get("key1"));
 
         assertTrue(client.cachePut(CACHE_NAME, "key1", "val1"));
         assertEquals("val1", grid().cache(CACHE_NAME).get("key1"));
@@ -155,10 +140,11 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutAll() throws Exception {
-        client.cachePutAll(null, F.asMap("key1", "val1", "key2", "val2"));
+        client.cachePutAll(DEFAULT_CACHE_NAME, F.asMap("key1", "val1", "key2", "val2"));
 
-        Map<String, String> map = grid().<String, String>cache(null).getAll(F.asSet("key1", "key2"));
+        Map<String, String> map = grid().<String, String>cache(DEFAULT_CACHE_NAME).getAll(F.asSet("key1", "key2"));
 
         assertEquals(2, map.size());
         assertEquals("val1", map.get("key1"));
@@ -176,10 +162,11 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
-        grid().cache(null).put("key", "val");
+        grid().cache(DEFAULT_CACHE_NAME).put("key", "val");
 
-        assertEquals("val", client.cacheGet(null, "key"));
+        assertEquals("val", client.cacheGet(DEFAULT_CACHE_NAME, "key"));
 
         grid().cache(CACHE_NAME).put("key", "val");
 
@@ -189,10 +176,11 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailure() throws Exception {
         IgniteKernal kernal = ((IgniteKernal)grid());
 
-        GridRestProcessor proc = kernal.context().rest();
+        IgniteRestProcessor proc = kernal.context().rest();
 
         // Clearing handlers collection to force failure.
         Field hndField = proc.getClass().getDeclaredField("handlers");
@@ -210,7 +198,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        return client.cacheGet(null, "key");
+                        return client.cacheGet(DEFAULT_CACHE_NAME, "key");
                     }
                 },
                 IgniteCheckedException.class,
@@ -224,14 +212,15 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetAll() throws Exception {
-        IgniteCache<Object, Object> jcacheDflt = grid().cache(null);
+        IgniteCache<Object, Object> jcacheDflt = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> jcacheName = grid().cache(CACHE_NAME);
 
         jcacheDflt.put("key1", "val1");
         jcacheDflt.put("key2", "val2");
 
-        Map<String, String> map = client.cacheGetAll(null, "key1", "key2");
+        Map<String, String> map = client.cacheGetAll(DEFAULT_CACHE_NAME, "key1", "key2");
 
         assertEquals(2, map.size());
         assertEquals("val1", map.get("key1"));
@@ -240,7 +229,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         jcacheDflt.put("key3", "val3");
         jcacheDflt.put("key4", "val4");
 
-        map = client.cacheGetAll(null, "key3", "key4");
+        map = client.cacheGetAll(DEFAULT_CACHE_NAME, "key3", "key4");
 
         assertEquals(2, map.size());
         assertEquals("val3", map.get("key3"));
@@ -268,17 +257,17 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemove() throws Exception {
-        IgniteCache<Object, Object> jcacheDflt = grid().cache(null);
+        IgniteCache<Object, Object> jcacheDflt = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> jcacheName = grid().cache(CACHE_NAME);
 
         jcacheDflt.put("key", "val");
 
-        assertTrue(client.cacheRemove(null, "key"));
-        assertFalse(client.cacheRemove(null, "wrongKey"));
+        assertTrue(client.cacheRemove(DEFAULT_CACHE_NAME, "key"));
+        assertFalse(client.cacheRemove(DEFAULT_CACHE_NAME, "wrongKey"));
 
         assertNull(jcacheDflt.get("key"));
-
 
         jcacheName.put("key", "val");
 
@@ -291,15 +280,16 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoveAll() throws Exception {
-        IgniteCache<Object, Object> jcacheDflt = grid().cache(null);
+        IgniteCache<Object, Object> jcacheDflt = grid().cache(DEFAULT_CACHE_NAME);
 
         jcacheDflt.put("key1", "val1");
         jcacheDflt.put("key2", "val2");
         jcacheDflt.put("key3", "val3");
         jcacheDflt.put("key4", "val4");
 
-        client.cacheRemoveAll(null, "key1", "key2");
+        client.cacheRemoveAll(DEFAULT_CACHE_NAME, "key1", "key2");
 
         assertNull(jcacheDflt.get("key1"));
         assertNull(jcacheDflt.get("key2"));
@@ -324,17 +314,18 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
-        assertFalse(client.cacheReplace(null, "key1", "val1"));
+        assertFalse(client.cacheReplace(DEFAULT_CACHE_NAME, "key1", "val1"));
 
-        IgniteCache<Object, Object> jcacheDflt = grid().cache(null);
+        IgniteCache<Object, Object> jcacheDflt = grid().cache(DEFAULT_CACHE_NAME);
 
         jcacheDflt.put("key1", "val1");
-        assertTrue(client.cacheReplace(null, "key1", "val2"));
+        assertTrue(client.cacheReplace(DEFAULT_CACHE_NAME, "key1", "val2"));
 
-        assertFalse(client.cacheReplace(null, "key2", "val1"));
+        assertFalse(client.cacheReplace(DEFAULT_CACHE_NAME, "key2", "val1"));
         jcacheDflt.put("key2", "val1");
-        assertTrue(client.cacheReplace(null, "key2", "val2"));
+        assertTrue(client.cacheReplace(DEFAULT_CACHE_NAME, "key2", "val2"));
 
         jcacheDflt.clear();
 
@@ -346,33 +337,34 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompareAndSet() throws Exception {
-        assertFalse(client.cacheCompareAndSet(null, "key", null, null));
+        assertFalse(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", null, null));
 
-        IgniteCache<Object, Object> jcache = grid().cache(null);
+        IgniteCache<Object, Object> jcache = grid().cache(DEFAULT_CACHE_NAME);
 
         jcache.put("key", "val");
-        assertTrue(client.cacheCompareAndSet(null, "key", null, null));
+        assertTrue(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", null, null));
         assertNull(jcache.get("key"));
 
-        assertFalse(client.cacheCompareAndSet(null, "key", null, "val"));
+        assertFalse(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", null, "val"));
         jcache.put("key", "val");
-        assertFalse(client.cacheCompareAndSet(null, "key", null, "wrongVal"));
+        assertFalse(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", null, "wrongVal"));
         assertEquals("val", jcache.get("key"));
-        assertTrue(client.cacheCompareAndSet(null, "key", null, "val"));
+        assertTrue(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", null, "val"));
         assertNull(jcache.get("key"));
 
-        assertTrue(client.cacheCompareAndSet(null, "key", "val", null));
+        assertTrue(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", "val", null));
         assertEquals("val", jcache.get("key"));
-        assertFalse(client.cacheCompareAndSet(null, "key", "newVal", null));
+        assertFalse(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", "newVal", null));
         assertEquals("val", jcache.get("key"));
         jcache.remove("key");
 
-        assertFalse(client.cacheCompareAndSet(null, "key", "val1", "val2"));
+        assertFalse(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", "val1", "val2"));
         jcache.put("key", "val2");
-        assertFalse(client.cacheCompareAndSet(null, "key", "val1", "wrongVal"));
+        assertFalse(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", "val1", "wrongVal"));
         assertEquals("val2", jcache.get("key"));
-        assertTrue(client.cacheCompareAndSet(null, "key", "val1", "val2"));
+        assertTrue(client.cacheCompareAndSet(DEFAULT_CACHE_NAME, "key", "val1", "val2"));
         assertEquals("val1", jcache.get("key"));
         jcache.remove("key");
 
@@ -408,8 +400,9 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMetrics() throws Exception {
-        IgniteCache<Object, Object> jcacheDft = grid().cache(null);
+        IgniteCache<Object, Object> jcacheDft = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> jcacheName = grid().cache(CACHE_NAME);
 
         jcacheDft.localMxBean().clear();
@@ -432,7 +425,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         jcacheName.get("key2");
         jcacheName.get("key2");
 
-        Map<String, Long> m = client.cacheMetrics(null);
+        Map<String, Long> m = client.cacheMetrics(DEFAULT_CACHE_NAME);
 
         assertNotNull(m);
         assertEquals(4, m.size());
@@ -450,20 +443,21 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAppend() throws Exception {
-        grid().cache(null).remove("key");
+        grid().cache(DEFAULT_CACHE_NAME).remove("key");
         grid().cache(CACHE_NAME).remove("key");
 
-        assertFalse(client.cacheAppend(null, "key", ".val"));
+        assertFalse(client.cacheAppend(DEFAULT_CACHE_NAME, "key", ".val"));
         assertFalse(client.cacheAppend(CACHE_NAME, "key", ".val"));
 
-        grid().cache(null).put("key", "orig");
+        grid().cache(DEFAULT_CACHE_NAME).put("key", "orig");
         grid().cache(CACHE_NAME).put("key", "orig");
 
-        assertTrue(client.cacheAppend(null, "key", ".val"));
-        assertEquals("orig.val", grid().cache(null).get("key"));
-        assertTrue(client.cacheAppend(null, "key", ".newVal"));
-        assertEquals("orig.val.newVal", grid().cache(null).get("key"));
+        assertTrue(client.cacheAppend(DEFAULT_CACHE_NAME, "key", ".val"));
+        assertEquals("orig.val", grid().cache(DEFAULT_CACHE_NAME).get("key"));
+        assertTrue(client.cacheAppend(DEFAULT_CACHE_NAME, "key", ".newVal"));
+        assertEquals("orig.val.newVal", grid().cache(DEFAULT_CACHE_NAME).get("key"));
 
         assertTrue(client.cacheAppend(CACHE_NAME, "key", ".val"));
         assertEquals("orig.val", grid().cache(CACHE_NAME).get("key"));
@@ -474,20 +468,21 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepend() throws Exception {
-        grid().cache(null).remove("key");
+        grid().cache(DEFAULT_CACHE_NAME).remove("key");
         grid().cache(CACHE_NAME).remove("key");
 
-        assertFalse(client.cachePrepend(null, "key", ".val"));
+        assertFalse(client.cachePrepend(DEFAULT_CACHE_NAME, "key", ".val"));
         assertFalse(client.cachePrepend(CACHE_NAME, "key", ".val"));
 
-        grid().cache(null).put("key", "orig");
+        grid().cache(DEFAULT_CACHE_NAME).put("key", "orig");
         grid().cache(CACHE_NAME).put("key", "orig");
 
-        assertTrue(client.cachePrepend(null, "key", "val."));
-        assertEquals("val.orig", grid().cache(null).get("key"));
-        assertTrue(client.cachePrepend(null, "key", "newVal."));
-        assertEquals("newVal.val.orig", grid().cache(null).get("key"));
+        assertTrue(client.cachePrepend(DEFAULT_CACHE_NAME, "key", "val."));
+        assertEquals("val.orig", grid().cache(DEFAULT_CACHE_NAME).get("key"));
+        assertTrue(client.cachePrepend(DEFAULT_CACHE_NAME, "key", "newVal."));
+        assertEquals("newVal.val.orig", grid().cache(DEFAULT_CACHE_NAME).get("key"));
 
         assertTrue(client.cachePrepend(CACHE_NAME, "key", "val."));
         assertEquals("val.orig", grid().cache(CACHE_NAME).get("key"));
@@ -498,6 +493,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecute() throws Exception {
         GridClientTaskResultBean res = client.execute(TestTask.class.getName(),
             Arrays.asList("executing", 3, "test", 5, "task"));
@@ -509,6 +505,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNode() throws Exception {
         assertNull(client.node(UUID.randomUUID(), false, false));
         assertNull(client.node("wrongHost", false, false));
@@ -553,6 +550,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopology() throws Exception {
         List<GridClientNodeBean> top = client.topology(true, true);
 

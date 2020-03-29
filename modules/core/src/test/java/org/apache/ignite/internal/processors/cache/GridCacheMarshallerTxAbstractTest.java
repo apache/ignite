@@ -22,12 +22,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -54,11 +51,9 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
      */
     private static class GridCacheWrongValue1 {
         private int val1 = 8;
+
         private long val2 = 9;
     }
-
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Constructs a test.
@@ -67,24 +62,12 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         super(true /* start grid. */);
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        return cfg;
-    }
-
     /**
      * JUnit.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValueMarshallerFail() throws Exception {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
@@ -95,7 +78,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
 
         Transaction tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
-            grid().cache(null).put(key, value);
+            grid().cache(DEFAULT_CACHE_NAME).put(key, value);
 
             tx.commit();
         }
@@ -106,11 +89,11 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            assert value.equals(grid().cache(null).get(key));
+            assert value.equals(grid().cache(DEFAULT_CACHE_NAME).get(key));
 
-            grid().cache(null).put(key, newValue);
+            grid().cache(DEFAULT_CACHE_NAME).put(key, newValue);
 
-            grid().cache(null).put(key2, wrongValue);
+            grid().cache(DEFAULT_CACHE_NAME).put(key2, wrongValue);
 
             tx.commit();
         }
@@ -121,7 +104,7 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            String locVal = (String)grid().cache(null).get(key);
+            String locVal = (String)grid().cache(DEFAULT_CACHE_NAME).get(key);
 
             assert locVal != null;
 

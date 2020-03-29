@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.Arrays;
-import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractByteArrayValuesSelfTest;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -40,27 +39,29 @@ import static org.junit.Assert.assertArrayEquals;
  */
 public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extends
     GridCacheAbstractByteArrayValuesSelfTest {
-    /** Grids. */
-    protected static Ignite[] ignites;
+    /** */
+    private static final String CACHE = "cache";
+
+    /** */
+    private static final String MVCC_CACHE = "mvccCache";
 
     /** Regular caches. */
     private static IgniteCache<Integer, Object>[] caches;
 
-    /** Offheap values caches. */
-    private static IgniteCache<Integer, Object>[] cachesOffheap;
-
-    /** Offheap tiered caches. */
-    private static IgniteCache<Integer, Object>[] cachesOffheapTiered;
+    /** Regular caches. */
+    private static IgniteCache<Integer, Object>[] mvccCaches;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        c.setCacheConfiguration(cacheConfiguration(),
-            offheapCacheConfiguration(),
-            offheapTieredCacheConfiguration());
+        CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
+            .setNearConfiguration(null); // TODO IGNITE-7187: remove near cache disabling.
 
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
+        CacheConfiguration ccfg = cacheConfiguration(CACHE);
+
+        c.setCacheConfiguration(ccfg, mvccCfg);
 
         c.setPeerClassLoadingEnabled(peerClassLoading());
 
@@ -80,12 +81,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     }
 
     /**
+     * @param name Cache name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration() {
+    protected CacheConfiguration cacheConfiguration(String name) {
         CacheConfiguration cfg = cacheConfiguration0();
 
-        cfg.setName(CACHE_REGULAR);
+        cfg.setName(name);
 
         return cfg;
     }
@@ -95,69 +97,30 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      */
     protected abstract CacheConfiguration cacheConfiguration0();
 
-    /**
-     * @return Offheap cache configuration.
-     */
-    protected CacheConfiguration offheapCacheConfiguration() {
-        CacheConfiguration cfg = offheapCacheConfiguration0();
-
-        cfg.setName(CACHE_OFFHEAP);
-
-        return cfg;
-    }
-
-    /**
-     * @return Offheap tiered cache configuration.
-     */
-    protected CacheConfiguration offheapTieredCacheConfiguration() {
-        CacheConfiguration cfg = offheapTieredCacheConfiguration0();
-
-        cfg.setName(CACHE_OFFHEAP_TIERED);
-
-        return cfg;
-    }
-
-    /**
-     * @return Internal offheap cache configuration.
-     */
-    protected abstract CacheConfiguration offheapCacheConfiguration0();
-
-    /**
-     * @return Internal offheap cache configuration.
-     */
-    protected abstract CacheConfiguration offheapTieredCacheConfiguration0();
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         int gridCnt = gridCount();
 
         assert gridCnt > 0;
 
-        ignites = new Ignite[gridCnt];
-
         caches = new IgniteCache[gridCnt];
-        cachesOffheap = new IgniteCache[gridCnt];
-        cachesOffheapTiered = new IgniteCache[gridCnt];
+        mvccCaches = new IgniteCache[gridCnt];
+
+        startGridsMultiThreaded(gridCnt);
 
         for (int i = 0; i < gridCnt; i++) {
-            ignites[i] = startGrid(i);
-
-            caches[i] = ignites[i].cache(CACHE_REGULAR);
-            cachesOffheap[i] = ignites[i].cache(CACHE_OFFHEAP);
-            cachesOffheapTiered[i] = ignites[i].cache(CACHE_OFFHEAP_TIERED);
+            caches[i] = grid(i).cache(CACHE);
+            mvccCaches[i] = grid(i).cache(MVCC_CACHE);
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         caches = null;
-        cachesOffheap = null;
-        cachesOffheapTiered = null;
-
-        ignites = null;
+        mvccCaches = null;
     }
 
     /**
@@ -165,6 +128,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimistic() throws Exception {
         testTransaction0(caches, PESSIMISTIC, KEY_1, wrap(1));
     }
@@ -174,44 +138,9 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticMixed() throws Exception {
         testTransactionMixed0(caches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPessimisticOffheap() throws Exception {
-        testTransaction0(cachesOffheap, PESSIMISTIC, KEY_1, wrap(1));
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPessimisticOffheapTiered() throws Exception {
-        testTransaction0(cachesOffheapTiered, PESSIMISTIC, KEY_1, wrap(1));
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPessimisticOffheapMixed() throws Exception {
-        testTransactionMixed0(cachesOffheap, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in PESSIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPessimisticOffheapTieredMixed() throws Exception {
-        testTransactionMixed0(cachesOffheapTiered, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
@@ -219,6 +148,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimistic() throws Exception {
         testTransaction0(caches, OPTIMISTIC, KEY_1, wrap(1));
     }
@@ -228,84 +158,29 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticMixed() throws Exception {
         testTransactionMixed0(caches, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
-     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
+     * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
      *
      * @throws Exception If failed.
      */
-    public void testOptimisticOffheap() throws Exception {
-        testTransaction0(cachesOffheap, OPTIMISTIC, KEY_1, wrap(1));
+    @Test
+    public void testPessimisticMvcc() throws Exception {
+        testTransaction0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1));
     }
 
     /**
-     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
+     * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
      *
      * @throws Exception If failed.
      */
-    public void testOptimisticOffheapTiered() throws Exception {
-        testTransaction0(cachesOffheapTiered, OPTIMISTIC, KEY_1, wrap(1));
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testOptimisticOffheapMixed() throws Exception {
-        testTransactionMixed0(cachesOffheap, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
-    /**
-     * Check whether offheap cache with byte array entry works correctly in OPTIMISTIC transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testOptimisticOffheapTieredMixed() throws Exception {
-        testTransactionMixed0(cachesOffheapTiered, OPTIMISTIC, KEY_1, wrap(1), KEY_2, 1);
-    }
-
-    /**
-     * Test swapping.
-     *
-     * @throws Exception If failed.
-     */
-    public void testSwap() throws Exception {
-        for (IgniteCache<Integer, Object> cache : caches)
-            assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
-
-        byte[] val1 = wrap(1);
-
-        IgniteCache<Integer, Object> primaryCache = null;
-
-        int i = 0;
-
-        for (IgniteCache<Integer, Object> cache : caches) {
-            Ignite ignite = ignites[i++];
-
-            if (affinity(cache).isPrimary(ignite.cluster().localNode(), SWAP_TEST_KEY)) {
-                primaryCache = cache;
-
-                break;
-            }
-        }
-
-        assert primaryCache != null;
-
-        primaryCache.put(SWAP_TEST_KEY, val1);
-
-        assert Arrays.equals(val1, (byte[])primaryCache.get(SWAP_TEST_KEY));
-
-        primaryCache.localEvict(Collections.singleton(SWAP_TEST_KEY));
-
-        assert primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP) == null;
-
-        primaryCache.localPromote(Collections.singleton(SWAP_TEST_KEY));
-
-        assert Arrays.equals(val1, (byte[])primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP));
+    @Test
+    public void testPessimisticMvccMixed() throws Exception {
+        testTransactionMixed0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
 
     /**
@@ -335,6 +210,9 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      */
     private void testTransactionMixed0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc() && !MvccFeatureChecker.isSupported(concurrency, REPEATABLE_READ))
+            return;
+
         for (IgniteCache<Integer, Object> cache : caches) {
             info("Checking cache: " + cache.getName());
 

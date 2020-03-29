@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
@@ -40,7 +41,7 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.client.impl.connection.GridClientTopology;
 import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.client.util.GridClientUtils.applyFilter;
 import static org.apache.ignite.internal.client.util.GridClientUtils.restAvailable;
@@ -56,7 +57,7 @@ public class GridRouterClientImpl implements GridClient {
     private final GridClientConfiguration cliCfg;
 
     /** TCP connection managers. */
-    private final ConcurrentMap<Byte, GridClientConnectionManager> connMgrMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Byte, GridClientConnectionManager> connMgrMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a new TCP client based on the given configuration.
@@ -175,11 +176,6 @@ public class GridRouterClientImpl implements GridClient {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientData data() throws GridClientException {
-        return clientImpl.data();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientData data(String cacheName) throws GridClientException {
         return clientImpl.data(cacheName);
     }
@@ -187,6 +183,11 @@ public class GridRouterClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public GridClientCompute compute() {
         return clientImpl.compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridClientClusterState state() {
+        return clientImpl.state();
     }
 
     /** {@inheritDoc} */
@@ -212,5 +213,10 @@ public class GridRouterClientImpl implements GridClient {
     /** {@inheritDoc} */
     @Override public void close() {
         clientImpl.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void throwLastError() throws GridClientException {
+        clientImpl.throwLastError();
     }
 }

@@ -26,6 +26,7 @@ import java.io.IOException;
  */
 public class LoadWithCorruptedLibFileTestRunner {
     public static final String TMP_DIR_FOR_TEST = System.getProperty("user.home");
+
     public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(IpcSharedMemoryNativeLoader.LIB_NAME);
 
     /**

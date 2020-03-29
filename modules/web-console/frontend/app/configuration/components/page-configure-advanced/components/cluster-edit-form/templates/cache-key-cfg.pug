@@ -1,0 +1,66 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'cacheKeyCfg'
+-var model = '$ctrl.clonedCluster.cacheKeyConfiguration'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Cache key configuration
+    panel-description
+        | Cache key configuration allows to collocate objects in a partitioned cache based on field in cache key without explicit usage of annotations on user classes.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6
+            .ignite-form-field
+                +form-field__label({ label: 'Cache key configuration:', name: '"cacheKeyConfiguration"' })
+
+                list-editable.pc-list-editable-with-form-grid(ng-model=model name='cacheKeyConfiguration')
+                    list-editable-item-edit.pc-form-grid-row
+                        - form = '$parent.form'
+                        .pc-form-grid-col-60
+                            +form-field__java-class({
+                                label: 'Type name:',
+                                model: '$item.typeName',
+                                name: '"cacheKeyTypeName"',
+                                required: 'true',
+                                tip: 'Type name'
+                            })(
+                                ignite-form-field-input-autofocus='true'
+                                ignite-unique=model
+                                ignite-unique-property='typeName'
+                            )
+                                +form-field__error({ error: 'igniteUnique', message: 'Type name should be unique.' })
+                        .pc-form-grid-col-60
+                            +form-field__text({
+                                label: 'Affinity key field name:',
+                                model: '$item.affinityKeyFieldName',
+                                name: '"affinityKeyFieldName"',
+                                placeholder: 'Enter field name',
+                                tip: 'Affinity key field name',
+                                required: true
+                            })
+
+                    list-editable-no-items
+                        list-editable-add-item-button(
+                            add-item=`(${model} = ${model} || []).push({})`
+                            label-single='configuration'
+                            label-multiple='configurations'
+                        )
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterCacheKeyConfiguration')

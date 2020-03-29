@@ -198,7 +198,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <K, V> V getAttribute(K key) {
         return ses.getAttribute(key);
     }
@@ -233,7 +232,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <K, V> V waitForAttribute(K key, long timeout) throws InterruptedException {
         return ses.waitForAttribute(key, timeout);
     }
@@ -271,7 +269,6 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <T> T loadCheckpoint(String key) {
         return ses.loadCheckpoint0(this, key);
     }

@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.resources.LoggerResource;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -51,10 +52,10 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicMode());
@@ -75,6 +76,7 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClient() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -88,7 +90,7 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
 
         qry.setLocalListener(lsnr);
 
-        IgniteCache<Object, Object> clnCache = client.cache(null);
+        IgniteCache<Object, Object> clnCache = client.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<?> cur = clnCache.query(qry);
 
@@ -118,7 +120,11 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClientAndLeftRouter() throws Exception {
+        if (!tcpDiscovery())
+            return;
+
         Ignite client = grid(serverCount());
 
         final Ignite srv = clientRouter(client);
@@ -133,7 +139,7 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
 
         qry.setLocalListener(lsnr);
 
-        IgniteCache<Object, Object> clnCache = client.cache(null);
+        IgniteCache<Object, Object> clnCache = client.cache(DEFAULT_CACHE_NAME);
 
         QueryCursor<?> cur = clnCache.query(qry);
 

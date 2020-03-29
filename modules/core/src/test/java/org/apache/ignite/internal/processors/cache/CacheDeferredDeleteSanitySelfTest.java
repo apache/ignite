@@ -23,9 +23,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -39,14 +42,10 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If fails.
      */
+    @Test
     public void testDeferredDelete() throws Exception {
         testDeferredDelete(LOCAL, ATOMIC, false, false);
         testDeferredDelete(LOCAL, TRANSACTIONAL, false, false);
@@ -69,6 +68,35 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testDeferredDeleteMvcc() throws Exception {
+        testDeferredDelete(PARTITIONED, TRANSACTIONAL_SNAPSHOT, false, true);
+        testDeferredDelete(REPLICATED, TRANSACTIONAL_SNAPSHOT, false, true);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7187")
+    @Test
+    public void testDeferredDeleteMvccNear() throws Exception {
+        testDeferredDelete(PARTITIONED, TRANSACTIONAL_SNAPSHOT, true, false);
+        testDeferredDelete(REPLICATED, TRANSACTIONAL_SNAPSHOT, true, true);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
+    @Test
+    public void testDeferredDeleteMvccLocal() throws Exception {
+        testDeferredDelete(LOCAL, TRANSACTIONAL_SNAPSHOT, false, false);
+        testDeferredDelete(LOCAL, TRANSACTIONAL_SNAPSHOT, true, false);
+    }
+
+    /**
      * @param mode Mode.
      * @param atomicityMode Atomicity mode.
      * @param near Near cache enabled.
@@ -76,7 +104,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private void testDeferredDelete(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near, boolean expVal) {
-        CacheConfiguration ccfg = new CacheConfiguration()
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setCacheMode(mode)
             .setAtomicityMode(atomicityMode);
 
@@ -88,7 +116,7 @@ public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
         try {
             cache = grid(0).getOrCreateCache(ccfg);
 
-            assertEquals(expVal, ((IgniteCacheProxy)grid(0).cache(null)).context().deferredDelete());
+            assertEquals(expVal, ((IgniteCacheProxy)grid(0).cache(DEFAULT_CACHE_NAME)).context().deferredDelete());
         }
         finally {
             if (cache != null)

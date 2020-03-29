@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for dynamic cache start.
@@ -34,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 @SuppressWarnings("unchecked")
 public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     /** */
-    private static final long DURATION = 60_000L;
+    private static final long DURATION = 20_000L;
 
     /** */
     private static final int CACHE_COUNT = 1;
@@ -64,8 +65,8 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -73,14 +74,10 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(nodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryLeaks() throws Exception {
         final Ignite ignite = ignite(0);
 
@@ -91,7 +88,7 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(CACHE_NAMES[idx.getAndIncrement()]);
 
@@ -113,7 +110,6 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
                 cache.put(1, obj);
 
-                weakMap.put(((IgniteCacheProxy)cache).delegate(), Boolean.TRUE);
                 weakMap.put(obj, Boolean.TRUE);
             }
 

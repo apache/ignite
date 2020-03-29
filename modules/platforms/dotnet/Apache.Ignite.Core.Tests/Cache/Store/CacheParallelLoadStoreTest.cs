@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using System;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using NUnit.Framework;
 
@@ -36,15 +35,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public void BeforeTests()
         {
-            Ignition.Start(new IgniteConfiguration
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    Types = new[] {typeof (CacheTestParallelLoadStore.Record).FullName}
-                }
             });
         }
 

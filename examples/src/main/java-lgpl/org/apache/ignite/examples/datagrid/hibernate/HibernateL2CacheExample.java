@@ -31,9 +31,9 @@ import org.apache.ignite.examples.ExamplesUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistryBuilder;
 import org.hibernate.stat.SecondLevelCacheStatistics;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -93,8 +93,6 @@ public class HibernateL2CacheExample {
         Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
     /** Caches' names. */
-    private static final String UPDATE_TIMESTAMPS_CACHE_NAME = "org.hibernate.cache.spi.UpdateTimestampsCache";
-    private static final String STANDART_QUERY_CACHE_NAME = "org.hibernate.cache.internal.StandardQueryCache";
     private static final String USER_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User";
     private static final String USER_POSTS_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User.posts";
     private static final String POST_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.Post";
@@ -117,84 +115,84 @@ public class HibernateL2CacheExample {
             // Auto-close cache at the end of the example.
             try (
                 // Create all required caches.
-                IgniteCache c1 = createCache(UPDATE_TIMESTAMPS_CACHE_NAME, ATOMIC);
-                IgniteCache c2 = createCache(STANDART_QUERY_CACHE_NAME, ATOMIC);
+                IgniteCache c1 = createCache(timestampsCacheName(), ATOMIC);
+                IgniteCache c2 = createCache(queryResultsCacheName(), ATOMIC);
                 IgniteCache c3 = createCache(USER_CACHE_NAME, TRANSACTIONAL);
                 IgniteCache c4 = createCache(USER_POSTS_CACHE_NAME, TRANSACTIONAL);
                 IgniteCache c5 = createCache(POST_CACHE_NAME, TRANSACTIONAL)
             ) {
                 URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
 
-                SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg);
+                try (SessionFactory sesFactory = createHibernateSessionFactory(hibernateCfg)) {
+                    System.out.println();
+                    System.out.println(">>> Creating objects.");
 
-                System.out.println();
-                System.out.println(">>> Creating objects.");
+                    final long userId;
 
-                final long userId;
-
-                Session ses = sesFactory.openSession();
-
-                try {
-                    Transaction tx = ses.beginTransaction();
-
-                    User user = new User("jedi", "Luke", "Skywalker");
-
-                    user.getPosts().add(new Post(user, "Let the Force be with you."));
-
-                    ses.save(user);
-
-                    tx.commit();
-
-                    // Create a user object, store it in DB, and save the database-generated
-                    // object ID. You may try adding more objects in a similar way.
-                    userId = user.getId();
-                }
-                finally {
-                    ses.close();
-                }
-
-                // Output L2 cache and Ignite cache stats. You may notice that
-                // at this point the object is not yet stored in L2 cache, because
-                // the read was not yet performed.
-                printStats(sesFactory);
-
-                System.out.println();
-                System.out.println(">>> Querying object by ID.");
-
-                // Query user by ID several times. First time we get an L2 cache
-                // miss, and the data is queried from DB, but it is then stored
-                // in cache and successive queries hit the cache and return
-                // immediately, no SQL query is made.
-                for (int i = 0; i < 3; i++) {
-                    ses = sesFactory.openSession();
+                    Session ses = sesFactory.openSession();
 
                     try {
                         Transaction tx = ses.beginTransaction();
 
-                        User user = (User)ses.get(User.class, userId);
+                        User user = new User("jedi", "Luke", "Skywalker");
 
-                        System.out.println("User: " + user);
+                        user.getPosts().add(new Post(user, "Let the Force be with you."));
 
-                        for (Post post : user.getPosts())
-                            System.out.println("\tPost: " + post);
+                        ses.save(user);
 
                         tx.commit();
+
+                        // Create a user object, store it in DB, and save the database-generated
+                        // object ID. You may try adding more objects in a similar way.
+                        userId = user.getId();
                     }
                     finally {
                         ses.close();
                     }
-                }
 
-                // Output the stats. We should see 1 miss and 2 hits for
-                // User and Collection object (stored separately in L2 cache).
-                // The Post is loaded with the collection, so it won't imply
-                // a miss.
-                printStats(sesFactory);
+                    // Output L2 cache and Ignite cache stats. You may notice that
+                    // at this point the object is not yet stored in L2 cache, because
+                    // the read was not yet performed.
+                    printStats(sesFactory);
+
+                    System.out.println();
+                    System.out.println(">>> Querying object by ID.");
+
+                    // Query user by ID several times. First time we get an L2 cache
+                    // miss, and the data is queried from DB, but it is then stored
+                    // in cache and successive queries hit the cache and return
+                    // immediately, no SQL query is made.
+                    for (int i = 0; i < 3; i++) {
+                        ses = sesFactory.openSession();
+
+                        try {
+                            Transaction tx = ses.beginTransaction();
+
+                            User user = (User)ses.get(User.class, userId);
+
+                            System.out.println("User: " + user);
+
+                            for (Post post : user.getPosts())
+                                System.out.println("\tPost: " + post);
+
+                            tx.commit();
+                        }
+                        finally {
+                            ses.close();
+                        }
+                    }
+
+                    // Output the stats. We should see 1 miss and 2 hits for
+                    // User and Collection object (stored separately in L2 cache).
+                    // The Post is loaded with the collection, so it won't imply
+                    // a miss.
+                    printStats(sesFactory);
+                }
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(UPDATE_TIMESTAMPS_CACHE_NAME);
-                ignite.destroyCache(STANDART_QUERY_CACHE_NAME);
+                ignite.destroyCache(timestampsCacheName());
+                ignite.destroyCache(queryResultsCacheName());
                 ignite.destroyCache(USER_CACHE_NAME);
                 ignite.destroyCache(USER_POSTS_CACHE_NAME);
                 ignite.destroyCache(POST_CACHE_NAME);
@@ -226,14 +224,14 @@ public class HibernateL2CacheExample {
      * @return New Hibernate {@link SessionFactory}.
      */
     private static SessionFactory createHibernateSessionFactory(URL hibernateCfg) {
-        ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
+        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", JDBC_URL);
         builder.applySetting("hibernate.show_sql", true);
 
-        return new Configuration()
-            .configure(hibernateCfg)
-            .buildSessionFactory(builder.buildServiceRegistry());
+        builder.configure(hibernateCfg);
+
+        return new MetadataSources(builder.build()).buildMetadata().buildSessionFactory();
     }
 
     /**
@@ -257,5 +255,47 @@ public class HibernateL2CacheExample {
         }
 
         System.out.println("=====================================");
+    }
+
+    /**
+     * Returns the name of the timestamps cache to a specific version of apache-hibernate.
+     *
+     * @return Name of the update timestamps cache.
+     */
+    private static String timestampsCacheName() {
+        return isIgniteHibernate51orBelowEnabled() ?
+            // Represents the name of timestamps region specific to hibernate 5.1 {@see HibernateTimestampsRegion}.
+            "org.hibernate.cache.spi.UpdateTimestampsCache":
+            // Represents the name of timestamps region specific to hibernate 5.3 {@see IgniteTimestampsRegion}.
+            "default-update-timestamps-region";
+    }
+
+    /**
+     * Returns the name of the query results cache to a specific version of apache-hibernate.
+     *
+     * @return Name of the update timestamps cache.
+     */
+    private static String queryResultsCacheName() {
+        return isIgniteHibernate51orBelowEnabled() ?
+            // Represents the name of query results region specific to hibernate 5.1 {@see HibernateQueryResultsRegion}.
+            "org.hibernate.cache.internal.StandardQueryCache":
+            // Represents the name of query results region specific to hibernate 5.3 {@see IgniteQueryResultsRegion}.
+            "default-query-results-region";
+    }
+
+    /**
+     * Returns {@code true} if ignite-hibernate 5.1 is enabled.
+     *
+     * @return {@code true} if ignite-hibernate 5.1 is enabled.
+     */
+    private static boolean isIgniteHibernate51orBelowEnabled() {
+        try {
+            Class.forName("org.apache.ignite.cache.hibernate.HibernateTimestampsRegion");
+
+            return true;
+        }
+        catch (ClassNotFoundException ignore) {
+            return false;
+        }
     }
 }

@@ -21,6 +21,7 @@ import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -29,7 +30,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -52,6 +56,16 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     /** Near enabled flag. */
     private boolean nearEnabled = true;
 
+    /** */
+    @Before
+    public void beforeGridCacheReloadSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cacheMode = null;
@@ -60,8 +74,14 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        if (nearEnabled)
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -82,6 +102,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         plc.setMaxSize(MAX_CACHE_ENTRIES);
 
         cacheCfg.setEvictionPolicy(plc);
+        cacheCfg.setOnheapCacheEnabled(true);
         cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
@@ -116,7 +137,10 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionLocalCache() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         cacheMode = CacheMode.LOCAL;
 
         doTest();
@@ -128,6 +152,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearEnabled() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -140,6 +165,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionPartitionedCacheNearDisabled() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -152,6 +178,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testReloadEvictionReplicatedCache() throws Exception {
         cacheMode = CacheMode.REPLICATED;
 
@@ -172,7 +199,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < N_ENTRIES; i++)
                 load(cache, i, true);
 
-            assertEquals(MAX_CACHE_ENTRIES, cache.size());
+            assertEquals(MAX_CACHE_ENTRIES, cache.size(CachePeekMode.ONHEAP));
         }
         finally {
             stopGrid();

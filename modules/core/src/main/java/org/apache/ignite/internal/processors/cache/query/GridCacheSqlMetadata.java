@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  * can be used to gather information about what can
  * be queried using Ignite cache queries feature.
  */
-public interface GridCacheSqlMetadata extends Externalizable, LessNamingBean {
+public interface GridCacheSqlMetadata extends Externalizable {
     /**
      * Cache name.
      *
@@ -77,6 +76,14 @@ public interface GridCacheSqlMetadata extends Externalizable, LessNamingBean {
      * @return Fields map or {@code null} if type name is unknown.
      */
     @Nullable public Map<String, String> fields(String type);
+
+    /**
+     * Gets not null fields.
+     *
+     * @param type Type name.
+     * @return Not null fields collection map or {@code null} if type name is unknown.
+     */
+    Collection<String> notNullFields(String type);
 
     /**
      * @return Key classes.

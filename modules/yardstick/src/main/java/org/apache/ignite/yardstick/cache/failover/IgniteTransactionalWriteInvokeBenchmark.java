@@ -35,7 +35,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -128,14 +128,12 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
                     case 0: // Read scenario.
                         Map<String, Long> map = new HashMap<>();
 
-                        asyncCache.get(masterKey);
-                        Long cacheVal = asyncCache.<Long>future().get(timeout);
+                        Long cacheVal = cache.getAsync(masterKey).get(timeout);
 
                         map.put(masterKey, cacheVal);
 
                         for (String key : keys) {
-                            asyncCache.get(key);
-                            cacheVal = asyncCache.<Long>future().get(timeout);
+                            cacheVal = cache.getAsync(key).get(timeout);
 
                             map.put(key, cacheVal);
                         }
@@ -147,18 +145,16 @@ public class IgniteTransactionalWriteInvokeBenchmark extends IgniteFailoverAbstr
 
                         break;
                     case 1: // Invoke scenario.
-                        asyncCache.get(masterKey);
-                        Long val = asyncCache.<Long>future().get(timeout);
+                        Long val = cache.getAsync(masterKey).get(timeout);
 
                         if (val == null)
                             badKeys.add(masterKey);
 
-                        asyncCache.put(masterKey, val == null ? -1 : val + 1);
-                        asyncCache.future().get(timeout);
+                        cache.putAsync(masterKey, val == null ? -1 : val + 1).get(timeout);
 
                         for (String key : keys) {
-                            asyncCache.invoke(key, new IncrementWriteInvokeCacheEntryProcessor(), cacheName());
-                            Object o = asyncCache.future().get(timeout);
+                            Object o = cache.invokeAsync(key,
+                                new IncrementWriteInvokeCacheEntryProcessor(), cacheName()).get(timeout);
 
                             if (o != null)
                                 badKeys.add(key);

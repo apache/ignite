@@ -1,0 +1,515 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'dataStorageConfiguration'
+-var clusterModel = '$ctrl.clonedCluster'
+-var model = clusterModel + '.dataStorageConfiguration'
+-var dfltRegionModel = model + '.defaultDataRegionConfiguration'
+-var dataRegionConfigurations = model + '.dataRegionConfigurations'
+
+mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
+    .pc-form-grid-col-60
+        +form-field__text({
+            label: 'Name:',
+            model: `${modelAt}.name`,
+            name: '"name"',
+            placeholder: namePlaceholder,
+        })(
+            ng-model-options='{allowInvalid: true}'
+
+            pc-not-in-collection='::$ctrl.Clusters.dataRegion.name.invalidValues'
+            ignite-unique=dataRegionsAt
+            ignite-unique-property='name'
+            ignite-unique-skip=`["_id", ${modelAt}]`
+        )
+            +form-field__error({ error: 'notInCollection', message: '{{::$ctrl.Clusters.dataRegion.name.invalidValues[0]}} is reserved for internal use' })
+            +form-field__error({ error: 'igniteUnique', message: 'Name should be unique' })
+
+    .pc-form-grid-col-30
+        form-field-size(
+            label='Initial size:'
+            ng-model=`${modelAt}.initialSize`
+            name='initialSize'
+            placeholder='{{ $ctrl.Clusters.dataRegion.initialSize.default / _drISScale.value }}'
+            min='{{ ::$ctrl.Clusters.dataRegion.initialSize.min }}'
+            on-scale-change='_drISScale = $event'
+        )
+
+    .pc-form-grid-col-30
+        form-field-size(
+            ng-model=`${modelAt}.maxSize`
+            ng-model-options='{allowInvalid: true}'
+            name='maxSize'
+            label='Maximum size:'
+            placeholder='{{ ::$ctrl.Clusters.dataRegion.maxSize.default }}'
+            min=`{{ $ctrl.Clusters.dataRegion.maxSize.min(${modelAt}) }}`
+        )
+
+    .pc-form-grid-col-60(ng-if=`!${modelAt}.persistenceEnabled || ${modelAt}.swapPath`)
+        +form-field__text({
+            label: 'Swap file path:',
+            model: `${modelAt}.swapPath`,
+            name: '"swapPath"',
+            placeholder: 'Input swap file path',
+            tip: 'An optional path to a memory mapped file for this data region'
+        })
+
+    .pc-form-grid-col-60
+        +form-field__number({
+            label: 'Checkpoint page buffer:',
+            model: `${modelAt}.checkpointPageBufferSize`,
+            name: '"checkpointPageBufferSize"',
+            placeholder: '0',
+            min: '0',
+            tip: 'Amount of memory allocated for a checkpoint temporary buffer in bytes'
+        })
+
+    .pc-form-grid-col-60
+        +form-field__dropdown({
+            label: 'Entry versioning:',
+            model: `${modelAt}.pageEvictionMode`,
+            name: '"pageEvictionMode"',
+            placeholder: 'DISABLED',
+            options: '[\
+                {value: "DISABLED", label: "DISABLED"},\
+                {value: "RANDOM_LRU", label: "RANDOM_LRU"},\
+                {value: "RANDOM_2_LRU", label: "RANDOM_2_LRU"}\
+            ]',
+            tip: `An algorithm for memory pages eviction
+                <ul>
+                    <li>DISABLED - Eviction is disabled</li>
+                    <li>RANDOM_LRU - Once a memory region defined by a data region is configured, an off-heap array is allocated to track last usage timestamp for every individual data page</li>
+                    <li>RANDOM_2_LRU - Differs from Random - LRU only in a way that two latest access timestamps are stored for every data page</li>
+                </ul>`
+        })
+
+    .pc-form-grid-col-30
+        +form-field__number({
+            label: 'Eviction threshold:',
+            model: `${modelAt}.evictionThreshold`,
+            name: '"evictionThreshold"',
+            placeholder: '{{ ::$ctrl.Clusters.dataRegion.evictionThreshold.default }}',
+            min: '{{ ::$ctrl.Clusters.dataRegion.evictionThreshold.min }}',
+            max: '{{ ::$ctrl.Clusters.dataRegion.evictionThreshold.max }}',
+            step: '{{ ::$ctrl.Clusters.dataRegion.evictionThreshold.step }}',
+            tip: 'A threshold for memory pages eviction initiation'
+        })
+
+    .pc-form-grid-col-30
+        +form-field__number({
+            label: 'Empty pages pool size:',
+            model: `${modelAt}.emptyPagesPoolSize`,
+            name: '"emptyPagesPoolSize"',
+            placeholder: '{{ ::$ctrl.Clusters.dataRegion.emptyPagesPoolSize.default }}',
+            min: '{{ ::$ctrl.Clusters.dataRegion.emptyPagesPoolSize.min }}',
+            max: `{{ $ctrl.Clusters.dataRegion.emptyPagesPoolSize.max($ctrl.clonedCluster, ${modelAt}) }}`,
+            tip: 'The minimal number of empty pages to be present in reuse lists for this data region'
+        })
+
+    .pc-form-grid-col-30
+        +form-field__number({
+            label: 'Metrics sub interval count:',
+            model: `${modelAt}.metricsSubIntervalCount`,
+            name: '"metricsSubIntervalCount"',
+            placeholder: '{{ ::$ctrl.Clusters.dataRegion.metricsSubIntervalCount.default }}',
+            min: '{{ ::$ctrl.Clusters.dataRegion.metricsSubIntervalCount.min }}',
+            step: '{{ ::$ctrl.Clusters.dataRegion.metricsSubIntervalCount.step }}',
+            tip: 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates'
+        })
+
+    .pc-form-grid-col-30
+        form-field-size(
+            ng-model=`${modelAt}.metricsRateTimeInterval`
+            ng-model-options='{allowInvalid: true}'
+            name='metricsRateTimeInterval'
+            size-type='seconds'
+            label='Metrics rate time interval:'
+            placeholder='{{ $ctrl.Clusters.dataRegion.metricsRateTimeInterval.default / _metricsRateTimeIntervalScale.value }}'
+            min=`{{ ::$ctrl.Clusters.dataRegion.metricsRateTimeInterval.min }}`
+            tip='Time interval for allocation rate and eviction rate monitoring purposes'
+            on-scale-change='_metricsRateTimeIntervalScale = $event'
+            size-scale-label='s'
+        )
+
+    .pc-form-grid-col-60
+        +form-field__checkbox({
+            label: 'Metrics enabled',
+            model: `${modelAt}.metricsEnabled`,
+            name: '"MemoryPolicyMetricsEnabled"',
+            tip: 'Whether memory metrics are enabled by default on node startup'
+        })
+
+    .pc-form-grid-col-60(ng-if=`!${modelAt}.swapPath`)
+        +form-field__checkbox({
+            label: 'Persistence enabled',
+            model: `${modelAt}.persistenceEnabled`,
+            name: '"RegionPersistenceEnabled" + $index',
+            tip: 'Enable Ignite Native Persistence'
+        })
+
+panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Data storage configuration
+    panel-description
+        | Page memory is a manageable off-heap based memory architecture that is split into pages of fixed size.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/distributed-persistent-store" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`$ctrl.available("2.3.0") && ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__dropdown({
+                    label: 'Page size:',
+                    model: `${model}.pageSize`,
+                    name: '"DataStorageConfigurationPageSize"',
+                    options: `$ctrl.Clusters.dataStorageConfiguration.pageSize.values`,
+                    tip: 'Every memory region is split on pages of fixed size'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Concurrency level:',
+                    model: model + '.concurrencyLevel',
+                    name: '"DataStorageConfigurationConcurrencyLevel"',
+                    placeholder: 'availableProcessors',
+                    min: '2',
+                    tip: 'The number of concurrent segments in Ignite internal page mapping tables'
+                })
+            .pc-form-grid-col-60.pc-form-group__text-title
+                span System region
+            .pc-form-group.pc-form-grid-row
+                .pc-form-grid-col-30
+                    form-field-size(
+                        label='Initial size:'
+                        ng-model=`${model}.systemRegionInitialSize`
+                        name='DataStorageSystemRegionInitialSize'
+                        placeholder='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionInitialSize.default / systemRegionInitialSizeScale.value }}'
+                        min='{{ ::$ctrl.Clusters.dataStorageConfiguration.systemRegionInitialSize.min }}'
+                        tip='Initial size of a data region reserved for system cache'
+                        on-scale-change='systemRegionInitialSizeScale = $event'
+                    )
+                .pc-form-grid-col-30
+                    form-field-size(
+                        label='Max size:'
+                        ng-model=`${model}.systemRegionMaxSize`
+                        name='DataStorageSystemRegionMaxSize'
+                        placeholder='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionMaxSize.default / systemRegionMaxSizeScale.value }}'
+                        min='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionMaxSize.min($ctrl.clonedCluster) }}'
+                        tip='Maximum data region size reserved for system cache'
+                        on-scale-change='systemRegionMaxSizeScale = $event'
+                    )
+            .pc-form-grid-col-60.pc-form-group__text-title
+                span Default data region
+            .pc-form-group.pc-form-grid-row
+                +data-region-form({
+                    modelAt: dfltRegionModel,
+                    namePlaceholder: '{{ ::$ctrl.Clusters.dataRegion.name.default }}',
+                    dataRegionsAt: dataRegionConfigurations
+                })
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +form-field__label({ label: 'Data region configurations' })
+
+                    list-editable.pc-list-editable-with-form-grid(
+                        name='dataRegionConfigurations'
+                        ng-model=dataRegionConfigurations
+                    )
+                        list-editable-item-edit.pc-form-grid-row
+                            - form = '$parent.form'
+                            +data-region-form({
+                                modelAt: '$item',
+                                namePlaceholder: 'Data region name',
+                                dataRegionsAt: dataRegionConfigurations
+                            })
+                            - form = 'dataStorageConfiguration'
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addDataRegionConfiguration($ctrl.clonedCluster)`
+                                label-single='data region configuration'
+                                label-multiple='data region configurations'
+                            )
+
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'Storage path:',
+                    model: `${model}.storagePath`,
+                    name: '"DataStoragePath"',
+                    placeholder: 'db',
+                    tip: 'Directory where index and partition files are stored'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Checkpoint frequency:',
+                    model: `${model}.checkpointFrequency`,
+                    name: '"DataStorageCheckpointFrequency"',
+                    placeholder: '180000',
+                    min: '1',
+                    tip: 'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__number({
+                    label: 'Checkpoint read lock timeout:',
+                    model: `${model}.checkpointReadLockTimeout`,
+                    name: '"DataStorageCheckpointReadLockTimeout"',
+                    placeholder: 'System workers blocked timeout',
+                    min: '1',
+                    tip: 'Timeout for checkpoint read lock acquisition'
+                })
+            .pc-form-grid-col-20
+                +form-field__number({
+                    label: 'Checkpoint threads:',
+                    model: `${model}.checkpointThreads`,
+                    name: '"DataStorageCheckpointThreads"',
+                    placeholder: '4',
+                    min: '1',
+                    tip: 'A number of threads to use for the checkpoint purposes'
+                })
+            .pc-form-grid-col-20
+                +form-field__dropdown({
+                    label: 'Checkpoint write order:',
+                    model: `${model}.checkpointWriteOrder`,
+                    name: '"DataStorageCheckpointWriteOrder"',
+                    placeholder: 'SEQUENTIAL',
+                    options: '[\
+                        {value: "RANDOM", label: "RANDOM"},\
+                        {value: "SEQUENTIAL", label: "SEQUENTIAL"}\
+                    ]',
+                    tip: 'Order of writing pages to disk storage during checkpoint.\
+                        <ul>\
+                            <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
+                            <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-20
+                +form-field__dropdown({
+                    label: 'WAL mode:',
+                    model: `${model}.walMode`,
+                    name: '"DataStorageWalMode"',
+                    placeholder: 'DEFAULT',
+                    options: '[\
+                        {value: "DEFAULT", label: "DEFAULT"},\
+                        {value: "LOG_ONLY", label: "LOG_ONLY"},\
+                        {value: "BACKGROUND", label: "BACKGROUND"},\
+                        {value: "NONE", label: "NONE"}\
+                    ]',
+                    tip: 'Type define behavior wal fsync.\
+                        <ul>\
+                            <li>DEFAULT - full-sync disk writes</li>\
+                            <li>LOG_ONLY - flushes application buffers</li>\
+                            <li>BACKGROUND - does not force application&#39;s buffer flush</li>\
+                            <li>NONE - WAL is disabled</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'WAL path:',
+                    model: `${model}.walPath`,
+                    name: '"DataStorageWalPath"',
+                    placeholder: 'db/wal',
+                    tip: 'A path to the directory where WAL is stored'
+                })
+            .pc-form-grid-col-20
+                +form-field__number({
+                    label: 'WAL segments:',
+                    model: `${model}.walSegments`,
+                    name: '"DataStorageWalSegments"',
+                    placeholder: '10',
+                    min: '1',
+                    tip: 'A number of WAL segments to work with'
+                })
+            .pc-form-grid-col-20
+                +form-field__number({
+                    label: 'WAL segment size:',
+                    model: `${model}.walSegmentSize`,
+                    name: '"DataStorageWalSegmentSize"',
+                    placeholder: '67108864',
+                    min: '0',
+                    tip: 'Size of a WAL segment'
+                })
+            .pc-form-grid-col-20
+                +form-field__number({
+                    label: 'WAL history size:',
+                    model: `${model}.walHistorySize`,
+                    name: '"DataStorageWalHistorySize"',
+                    placeholder: '20',
+                    min: '1',
+                    tip: 'A total number of checkpoints to keep in the WAL history'
+                })
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'WAL archive path:',
+                    model: `${model}.walArchivePath`,
+                    name: '"DataStorageWalArchivePath"',
+                    placeholder: 'db/wal/archive',
+                    tip: 'A path to the WAL archive directory'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                form-field-size(
+                    label='Max allowed size of WAL archives:'
+                    ng-model=`${model}.maxWalArchiveSize`
+                    name='DataStorageMaxWalArchiveSize'
+                    placeholder='1'
+                    min='1'
+                    tip='Max allowed size of WAL archives'
+                    size-scale-label='gb'
+                    size-type='bytes'
+                )
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__number({
+                    label: 'WAL compaction level:',
+                    model: `${model}.walCompactionLevel`,
+                    name: '"DataStorageWalCompactionLevel"',
+                    placeholder: '1',
+                    min: '0',
+                    max: '9',
+                    tip: 'ZIP level to WAL compaction (0-9)'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'WAL auto archive after inactivity:',
+                    model: `${model}.walAutoArchiveAfterInactivity`,
+                    name: '"DataStorageWalAutoArchiveAfterInactivity"',
+                    placeholder: '-1',
+                    min: '-1',
+                    tip: 'Time in millis to run auto archiving segment after last record logging'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                +form-field__number({
+                    label: 'WAL buffer size:',
+                    model: `${model}.walBufferSize`,
+                    name: '"DataStorageWalBufferSize"',
+                    placeholder: 'WAL segment size / 4',
+                    min: '1',
+                    tip: 'Size of WAL buffer'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'WAL flush frequency:',
+                    model: `${model}.walFlushFrequency`,
+                    name: '"DataStorageWalFlushFrequency"',
+                    placeholder: '2000',
+                    min: '1',
+                    tip: 'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'WAL fsync delay:',
+                    model: `${model}.walFsyncDelayNanos`,
+                    name: '"DataStorageWalFsyncDelay"',
+                    placeholder: '1000',
+                    min: '1',
+                    tip: 'WAL fsync delay, in nanoseconds'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'WAL record iterator buffer size:',
+                    model: `${model}.walRecordIteratorBufferSize`,
+                    name: '"DataStorageWalRecordIteratorBufferSize"',
+                    placeholder: '67108864',
+                    min: '1',
+                    tip: 'How many bytes iterator read from disk(for one reading), during go ahead WAL'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Lock wait time:',
+                    model: `${model}.lockWaitTime`,
+                    name: '"DataStorageLockWaitTime"',
+                    placeholder: '10000',
+                    min: '1',
+                    tip: 'Time out in milliseconds, while wait and try get file lock for start persist manager'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'WAL thread local buffer size:',
+                    model: `${model}.walThreadLocalBufferSize`,
+                    name: '"DataStorageWalThreadLocalBufferSize"',
+                    placeholder: '131072',
+                    min: '1',
+                    tip: 'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Metrics sub interval count:',
+                    model: `${model}.metricsSubIntervalCount`,
+                    name: '"DataStorageMetricsSubIntervalCount"',
+                    placeholder: '5',
+                    min: '1',
+                    tip: 'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Metrics rate time interval:',
+                    model: `${model}.metricsRateTimeInterval`,
+                    name: '"DataStorageMetricsRateTimeInterval"',
+                    placeholder: '60000',
+                    min: '1000',
+                    tip: 'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked'
+                })
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'File IO factory:',
+                    model: `${model}.fileIOFactory`,
+                    name: '"DataStorageFileIOFactory"',
+                    placeholder: 'Default',
+                    options: '[\
+                        {value: "RANDOM", label: "RANDOM"},\
+                        {value: "ASYNC", label: "ASYNC"},\
+                        {value: null, label: "Default"},\
+                    ]',
+                    tip: 'Order of writing pages to disk storage during checkpoint.\
+                        <ul>\
+                            <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
+                            <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Metrics enabled',
+                    model: `${model}.metricsEnabled`,
+                    name: '"DataStorageMetricsEnabled"',
+                    tip: 'Flag indicating whether persistence metrics collection is enabled'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Always write full pages',
+                    model: `${model}.alwaysWriteFullPages`,
+                    name: '"DataStorageAlwaysWriteFullPages"',
+                    tip: 'Flag indicating whether always write full pages'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Write throttling enabled',
+                    model: `${model}.writeThrottlingEnabled`,
+                    name: '"DataStorageWriteThrottlingEnabled"',
+                    tip: 'Throttle threads that generate dirty pages too fast during ongoing checkpoint'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                +form-field__checkbox({
+                    label: 'Enable WAL compaction',
+                    model: `${model}.walCompactionEnabled`,
+                    name: '"DataStorageWalCompactionEnabled"',
+                    tip: 'If true, system filters and compresses WAL archive in background'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__checkbox({
+                    label: 'Authentication enabled',
+                    model: `${clusterModel}.authenticationEnabled`,
+                    name: '"authenticationEnabled"',
+                    disabled: `!$ctrl.Clusters.persistenceEnabled(${model})`,
+                    tip: 'Enable user authentication for cluster with persistence'
+                })
+
+        .pca-form-column-6
+            +preview-xml-java(clusterModel, 'clusterDataStorageConfiguration')

@@ -31,7 +31,7 @@ import org.apache.hadoop.io.serializer.WritableSerialization;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopSerializationWrapper;
 import org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopV2Job;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -69,10 +70,11 @@ public class HadoopV2JobSelfTest extends HadoopAbstractSelfTest {
     }
 
     /**
-     * Tests that {@link HadoopJob} provides wrapped serializer if it's set in configuration.
+     * Tests that {@link HadoopJobEx} provides wrapped serializer if it's set in configuration.
      *
      * @throws IgniteCheckedException If fails.
      */
+    @Test
     public void testCustomSerializationApplying() throws IgniteCheckedException {
         JobConf cfg = new JobConf();
 
@@ -80,13 +82,13 @@ public class HadoopV2JobSelfTest extends HadoopAbstractSelfTest {
         cfg.setMapOutputValueClass(Text.class);
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-        HadoopDefaultJobInfo info = createJobInfo(cfg);
+        HadoopDefaultJobInfo info = createJobInfo(cfg, null);
 
         final UUID uuid = UUID.randomUUID();
 
         HadoopJobId id = new HadoopJobId(uuid, 1);
 
-        HadoopJob job = info.createJob(HadoopV2Job.class, id, log, null, new HadoopHelperImpl());
+        HadoopJobEx job = info.createJob(HadoopV2Job.class, id, log, null, new HadoopHelperImpl());
 
         HadoopTaskContext taskCtx = job.getTaskContext(new HadoopTaskInfo(HadoopTaskType.MAP, null, 0, 0,
             null));

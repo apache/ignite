@@ -49,6 +49,8 @@ public class IgniteInvokeTxBenchmark extends IgniteInvokeBenchmark {
             @Override public Void call() throws Exception {
                 int key = nextRandom(args.range());
 
+                IgniteCache<Integer, Object> cache = cacheForOperation();
+
                 cache.invoke(key, new SetValueEntryProcessor(new SampleValue(key)));
 
                 return null;

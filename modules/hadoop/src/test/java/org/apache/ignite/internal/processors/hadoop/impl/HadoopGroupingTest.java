@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -60,7 +61,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    protected boolean igfsEnabled() {
+    @Override protected boolean igfsEnabled() {
         return false;
     }
 
@@ -75,8 +76,8 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(false);
@@ -87,6 +88,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupingReducer() throws Exception {
         doTestGrouping(false);
     }
@@ -94,6 +96,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupingCombiner() throws Exception {
         doTestGrouping(true);
     }
@@ -127,7 +130,7 @@ public class HadoopGroupingTest extends HadoopAbstractSelfTest {
         }
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
-            createJobInfo(job.getConfiguration())).get(30000);
+            createJobInfo(job.getConfiguration(), null)).get(30000);
 
         assertTrue(HadoopGroupingTestState.values().isEmpty());
     }

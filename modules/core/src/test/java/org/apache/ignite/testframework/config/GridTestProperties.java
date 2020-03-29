@@ -28,6 +28,9 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
@@ -70,33 +73,32 @@ public final class GridTestProperties {
     private static final Map<String, Map<String, String>> pathProps = new HashMap<>();
 
     /** */
-    public static final String MARSH_CLASS_NAME = "marshaller.class";
-
-    /** */
     public static final String ENTRY_PROCESSOR_CLASS_NAME = "entry.processor.class";
 
     /** Binary marshaller compact footers property. */
     public static final String BINARY_COMPACT_FOOTERS = "binary.marshaller.compact.footers";
 
-    /** */
+    /** "True value" enables {@link BinaryBasicNameMapper} in {@link BinaryTypeConfiguration#getNameMapper()}  */
     public static final String BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER = "binary.marshaller.use.simple.name.mapper";
+
+    /**
+     * Name of class which provides static method preprocessConfiguration(IgniteConfiguration cfg) to
+     * alter {@link org.apache.ignite.configuration.IgniteConfiguration} before node is started.
+     * <p>
+     * Note: this pre-preprocessor is started only if test starts node using one of GridAbstractTest's startGrid
+     * method.
+     */
+    public static final String IGNITE_CFG_PREPROCESSOR_CLS = "ignite.cfg.preprocessor.class";
 
     /** */
     static {
         // Initialize IGNITE_HOME system property.
-        String igniteHome = System.getProperty("IGNITE_HOME");
-
-        if (igniteHome == null || igniteHome.isEmpty()) {
-            igniteHome = System.getenv("IGNITE_HOME");
-
-            if (igniteHome != null && !igniteHome.isEmpty())
-                System.setProperty("IGNITE_HOME", igniteHome);
-        }
+        U.getIgniteHome();
 
         // Load default properties.
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
-        assert cfgFile.exists();
+        assert cfgFile != null && cfgFile.exists();
         assert !cfgFile.isDirectory();
 
         dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
@@ -307,13 +309,11 @@ public final class GridTestProperties {
 
                 fileProps.load(in);
 
-                for (Entry<Object, Object> prop : fileProps.entrySet()) {
+                for (Entry<Object, Object> prop : fileProps.entrySet())
                     props.put((String) prop.getKey(), (String) prop.getValue());
-                }
 
-                for (Entry<String, String> prop : props.entrySet()) {
+                for (Entry<String, String> prop : props.entrySet())
                     prop.setValue(substituteProperties(prop.getValue()));
-                }
             }
         }
         catch (IOException e) {

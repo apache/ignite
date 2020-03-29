@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -30,11 +29,15 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.AsyncSupportAdapter;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -98,28 +101,23 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
-    @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) {
-        return cluster.mapKeysToNodes(cacheName, keys);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
-        return cluster.mapKeyToNode(cacheName, key);
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<ClusterStartNodeResult> startNodes(File file,
         boolean restart,
         int timeout,
         int maxConn)
     {
         try {
-            return saveOrGet(cluster.startNodesAsync(file, restart, timeout, maxConn));
+            return saveOrGet(cluster.startNodesAsync0(file, restart, timeout, maxConn));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(File file, boolean restart,
+        int timeout, int maxConn) throws IgniteException {
+        return cluster.startNodesAsync(file, restart, timeout, maxConn);
     }
 
     /** {@inheritDoc} */
@@ -131,11 +129,18 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
         int maxConn)
     {
         try {
-            return saveOrGet(cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn));
+            return saveOrGet(cluster.startNodesAsync0(hosts, dflts, restart, timeout, maxConn));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Collection<ClusterStartNodeResult>> startNodesAsync(
+        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts,
+        boolean restart, int timeout, int maxConn) throws IgniteException {
+        return cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn);
     }
 
     /** {@inheritDoc} */
@@ -161,6 +166,21 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         cluster.resetMetrics();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics(Collection<String> caches, boolean enabled) {
+        cluster.enableStatistics(caches, enabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearStatistics(Collection<String> caches) {
+        cluster.clearStatistics(caches);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        cluster.setTxTimeoutOnPartitionMapExchange(timeout);
     }
 
     /** {@inheritDoc} */
@@ -299,8 +319,91 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public boolean active() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Collection<BaselineNode> currentBaselineTopology() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(Collection<? extends BaselineNode> baselineTop) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setBaselineTopology(long topVer) {
+
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
         return cluster.clientReconnectFuture();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enableWal(String cacheName) throws IgniteException {
+        return cluster.enableWal(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal(String cacheName) throws IgniteException {
+        return cluster.disableWal(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled(String cacheName) {
+        return cluster.isWalEnabled(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isBaselineAutoAdjustEnabled() {
+        return cluster.isBaselineAutoAdjustEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustEnabled(boolean baselineAutoAdjustEnabled) throws IgniteException {
+        cluster.baselineAutoAdjustEnabled(baselineAutoAdjustEnabled);
+    }
+
+    /**
+     * @param baselineAutoAdjustEnabled Value of manual baseline control or auto adjusting baseline. {@code True} If
+     * cluster in auto-adjust. {@code False} If cluster in manuale.
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustEnabledAsync(boolean baselineAutoAdjustEnabled) {
+        return cluster.baselineAutoAdjustEnabledAsync(baselineAutoAdjustEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long baselineAutoAdjustTimeout() {
+        return cluster.baselineAutoAdjustTimeout();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void baselineAutoAdjustTimeout(long baselineAutoAdjustTimeout) throws IgniteException {
+        cluster.baselineAutoAdjustTimeout(baselineAutoAdjustTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
+        return cluster.baselineAutoAdjustStatus();
+    }
+
+    /**
+     * @param baselineAutoAdjustTimeout Value of time which we would wait before the actual topology change since last
+     * server topology change (node join/left/fail).
+     * @return Future for await operation completion.
+     */
+    public IgniteFuture<?> baselineAutoAdjustTimeoutAsync(long baselineAutoAdjustTimeout) {
+        return cluster.baselineAutoAdjustTimeoutAsync(baselineAutoAdjustTimeout);
     }
 
     /** {@inheritDoc} */
@@ -313,12 +416,13 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
         out.writeObject(cluster);
     }
 
-    /**
-     * @return Cluster async instance.
-     *
-     * @throws ObjectStreamException If failed.
-     */
-    protected Object readResolve() throws ObjectStreamException {
-        return cluster.withAsync();
+    /** {@inheritDoc} */
+    @Override public ClusterState state() {
+        return cluster.state();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState) throws IgniteException {
+        cluster.state(newState);
     }
 }

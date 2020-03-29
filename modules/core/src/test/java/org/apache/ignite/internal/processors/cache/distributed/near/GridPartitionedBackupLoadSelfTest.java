@@ -21,15 +21,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -38,9 +36,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Test that persistent store is not used when loading invalidated entry from backup node.
  */
 public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_CNT = 3;
 
@@ -51,24 +46,12 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     private final AtomicInteger cnt = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(discoverySpi());
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
-    }
-
-    /**
-     * @return Discovery SPI.
-     */
-    private DiscoverySpi discoverySpi() {
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        return spi;
     }
 
     /**
@@ -91,6 +74,8 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-8582", MvccFeatureChecker.forcedMvcc());
+
         startGridsMultiThreaded(GRID_CNT);
     }
 
@@ -102,20 +87,21 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBackupLoad() throws Exception {
-        grid(0).cache(null).put(1, 1);
+        grid(0).cache(DEFAULT_CACHE_NAME).put(1, 1);
 
         assert store.get(1) == 1;
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), 1)) {
-                assert cache.localPeek(1, CachePeekMode.ONHEAP) == 1;
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isBackup(grid(i).localNode(), 1)) {
+                assert cache.localPeek(1) == 1;
 
                 jcache(i).localClear(1);
 
-                assert cache.localPeek(1, CachePeekMode.ONHEAP) == null;
+                assert cache.localPeek(1) == null;
 
                 // Store is called in putx method, so we reset counter here.
                 cnt.set(0);

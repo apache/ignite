@@ -29,28 +29,28 @@ public class IgniteSpiThreadFactory implements ThreadFactory {
     private final IgniteLogger log;
 
     /** */
-    private final String gridName;
+    private final String igniteInstanceName;
 
     /** */
     private final String threadName;
 
     /**
-     * @param gridName Grid name, possibly {@code null} for default grid.
+     * @param igniteInstanceName Ignite instance name, possibly {@code null} for default Ignite instance.
      * @param threadName Name for threads created by this factory.
      * @param log Grid logger.
      */
-    public IgniteSpiThreadFactory(String gridName, String threadName, IgniteLogger log) {
+    public IgniteSpiThreadFactory(String igniteInstanceName, String threadName, IgniteLogger log) {
         assert log != null;
         assert threadName != null;
 
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.threadName = threadName;
         this.log = log;
     }
 
     /** {@inheritDoc} */
     @Override public Thread newThread(final Runnable r) {
-        return new IgniteSpiThread(gridName, threadName, log) {
+        return new IgniteSpiThread(igniteInstanceName, threadName, log) {
             /** {@inheritDoc} */
             @Override protected void body() {
                 r.run();

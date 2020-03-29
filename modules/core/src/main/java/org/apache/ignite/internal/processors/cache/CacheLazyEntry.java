@@ -143,7 +143,6 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
-    @SuppressWarnings("unchecked")
     public V getValue(boolean keepBinary) {
         if (val == null)
             val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
@@ -182,12 +181,11 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      *
      * @param updateCntr Update counter.
      */
-    public void updateCounter(Long updateCntr) {
+    public void updateCounter(long updateCntr) {
         this.updateCntr = updateCntr;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
         if (cls.isAssignableFrom(Ignite.class))
             return (T)cctx.kernalContext().grid();
@@ -200,7 +198,7 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(CacheLazyEntry.class, this);
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
+import org.junit.Test;
 
 /**
  * Test for {@link org.jsr166.ConcurrentLinkedDeque8}.
@@ -36,7 +37,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"BusyWait"})
+    @Test
     public void testQueueMultiThreaded() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -89,8 +90,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
             "queue-prod"
         );
 
-        Thread.sleep(2 * 60 * 1000);
-
+        Thread.sleep(20 * 1000);
 
         done.set(true);
 

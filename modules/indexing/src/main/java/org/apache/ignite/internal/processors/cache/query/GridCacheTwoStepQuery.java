@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -29,91 +29,108 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class GridCacheTwoStepQuery {
     /** */
-    public static final int DFLT_PAGE_SIZE = 1000;
+    @GridToStringInclude
+    private final List<GridCacheSqlQuery> mapQrys;
 
     /** */
     @GridToStringInclude
-    private List<GridCacheSqlQuery> mapQrys = new ArrayList<>();
+    private final GridCacheSqlQuery rdc;
 
     /** */
-    @GridToStringInclude
-    private GridCacheSqlQuery rdc;
+    private final boolean explain;
 
     /** */
-    private int pageSize = DFLT_PAGE_SIZE;
+    private final String originalSql;
 
     /** */
-    private boolean explain;
+    private final Set<QueryTable> tbls;
 
     /** */
-    private String originalSql;
+    private final boolean distributedJoins;
 
     /** */
-    private Collection<String> spaces;
+    private final boolean replicatedOnly;
 
     /** */
-    private Set<String> schemas;
+    private final boolean skipMergeTbl;
 
     /** */
-    private Set<String> tbls;
+    private final List<Integer> cacheIds;
 
     /** */
-    private boolean distributedJoins;
+    private final boolean locSplit;
 
     /** */
-    private boolean skipMergeTbl;
+    private final PartitionResult derivedPartitions;
 
     /** */
-    private List<Integer> caches;
+    private final boolean mvccEnabled;
 
-    /** */
-    private List<Integer> extraCaches;
-
-    /** */
-    private boolean local;
+    /** Number of positional arguments in the sql. */
+    private final int paramsCnt;
 
     /**
-     * @param originalSql Original query SQL.
-     * @param schemas Schema names in query.
-     * @param tbls Tables in query.
-     */
-    public GridCacheTwoStepQuery(String originalSql, Set<String> schemas, Set<String> tbls) {
-        this.originalSql = originalSql;
-        this.schemas = schemas;
-        this.tbls = tbls;
-    }
-
-    /**
-     * Specify if distributed joins are enabled for this query.
      *
-     * @param distributedJoins Distributed joins enabled.
+     * @param originalSql Original SQL.
+     * @param paramsCnt Parameters count.
+     * @param tbls Tables.
+     * @param rdc Reduce query.
+     * @param mapQrys Map query.
+     * @param skipMergeTbl Skip merge table flag.
+     * @param explain Explain flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param derivedPartitions Derived partitions.
+     * @param cacheIds Cache ids.
+     * @param mvccEnabled Mvcc flag.
+     * @param locSplit Local split flag.
      */
-    public void distributedJoins(boolean distributedJoins) {
+    public GridCacheTwoStepQuery(
+        String originalSql,
+        int paramsCnt,
+        Set<QueryTable> tbls,
+        GridCacheSqlQuery rdc,
+        List<GridCacheSqlQuery> mapQrys,
+        boolean skipMergeTbl,
+        boolean explain,
+        boolean distributedJoins,
+        boolean replicatedOnly,
+        PartitionResult derivedPartitions,
+        List<Integer> cacheIds,
+        boolean mvccEnabled,
+        boolean locSplit
+    ) {
+        assert !F.isEmpty(mapQrys);
+
+        this.originalSql = originalSql;
+        this.paramsCnt = paramsCnt;
+        this.tbls = tbls;
+        this.rdc = rdc;
+        this.skipMergeTbl = skipMergeTbl;
+        this.explain = explain;
         this.distributedJoins = distributedJoins;
+        this.derivedPartitions = derivedPartitions;
+        this.cacheIds = cacheIds;
+        this.mvccEnabled = mvccEnabled;
+        this.locSplit = locSplit;
+        this.mapQrys = mapQrys;
+        this.replicatedOnly = replicatedOnly;
     }
 
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean distributedJoins() {
         return distributedJoins;
     }
-
 
     /**
      * @return {@code True} if reduce query can skip merge table creation and get data directly from merge index.
      */
     public boolean skipMergeTable() {
         return skipMergeTbl;
-    }
-
-    /**
-     * @param skipMergeTbl Skip merge table.
-     */
-    public void skipMergeTable(boolean skipMergeTbl) {
-        this.skipMergeTbl = skipMergeTbl;
     }
 
     /**
@@ -124,34 +141,12 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param explain If this is explain query.
+     * @return {@code true} If all the map queries contain only replicated tables.
      */
-    public void explain(boolean explain) {
-        this.explain = explain;
-    }
+    public boolean isReplicatedOnly() {
+        assert !mapQrys.isEmpty();
 
-    /**
-     * @param pageSize Page size.
-     */
-    public void pageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Page size.
-     */
-    public int pageSize() {
-        return pageSize;
-    }
-
-    /**
-     * @param qry SQL Query.
-     * @return {@code this}.
-     */
-    public GridCacheTwoStepQuery addMapQuery(GridCacheSqlQuery qry) {
-        mapQrys.add(qry);
-
-        return this;
+        return replicatedOnly;
     }
 
     /**
@@ -162,13 +157,6 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @param rdc Reduce query.
-     */
-    public void reduceQuery(GridCacheSqlQuery rdc) {
-        this.rdc = rdc;
-    }
-
-    /**
      * @return Map queries.
      */
     public List<GridCacheSqlQuery> mapQueries() {
@@ -176,31 +164,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Caches.
+     * @return Cache IDs.
      */
-    public List<Integer> caches() {
-        return caches;
+    public List<Integer> cacheIds() {
+        return cacheIds;
     }
 
     /**
-     * @param caches Caches.
+     * @return Whether cache IDs exist.
      */
-    public void caches(List<Integer> caches) {
-        this.caches = caches;
-    }
-
-    /**
-     * @return Caches.
-     */
-    public List<Integer> extraCaches() {
-        return extraCaches;
-    }
-
-    /**
-     * @param extraCaches Caches.
-     */
-    public void extraCaches(List<Integer> extraCaches) {
-        this.extraCaches = extraCaches;
+    public boolean hasCacheIds() {
+        return !F.isEmpty(cacheIds);
     }
 
     /**
@@ -211,68 +185,52 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Spaces.
-     */
-    public Collection<String> spaces() {
-        return spaces;
-    }
-
-    /**
-     * @param spaces Spaces.
-     */
-    public void spaces(Collection<String> spaces) {
-        this.spaces = spaces;
-    }
-
-    /**
-     * @return Schemas.
-     */
-    public Set<String> schemas() {
-        return schemas;
-    }
-
-    /**
      * @return {@code True} If query is local.
      */
     public boolean isLocal() {
-        return local;
+        return F.isEmpty(cacheIds) || locSplit;
     }
 
     /**
-     * @param local Local query flag.
+     * @return {@code True} if this is local query with split.
      */
-    public void local(boolean local) {
-        this.local = local;
+    public boolean isLocalSplit() {
+        return locSplit;
     }
 
     /**
-     * @param args New arguments to copy with.
-     * @return Copy.
+     * @return Query derived partitions info.
      */
-    public GridCacheTwoStepQuery copy(Object[] args) {
-        assert !explain;
+    public PartitionResult derivedPartitions() {
+        return derivedPartitions;
+    }
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, schemas, tbls);
-
-        cp.caches = caches;
-        cp.extraCaches = extraCaches;
-        cp.spaces = spaces;
-        cp.rdc = rdc.copy(args);
-        cp.skipMergeTbl = skipMergeTbl;
-        cp.pageSize = pageSize;
-        cp.distributedJoins = distributedJoins;
-
-        for (int i = 0; i < mapQrys.size(); i++)
-            cp.mapQrys.add(mapQrys.get(i).copy(args));
-
-        return cp;
+    /**
+     * @return Nuumber of tables.
+     */
+    public int tablesCount() {
+        return tbls.size();
     }
 
     /**
      * @return Tables.
      */
-    public Set<String> tables() {
+    public Set<QueryTable> tables() {
         return tbls;
+    }
+
+    /**
+     * @return Mvcc flag.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /**
+     * @return Number of parameters
+     */
+    public int parametersCount() {
+        return paramsCnt;
     }
 
     /** {@inheritDoc} */

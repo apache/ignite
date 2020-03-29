@@ -17,13 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * Periodically removes expired entities from caches with {@link CacheConfiguration#isEagerTtl()} flag set.
@@ -38,17 +46,15 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
     /** Cleanup worker. */
     private CleanupWorker cleanupWorker;
 
-    /** Mutex on worker thread creation. */
-    private final Object mux = new Object();
+    /** Lock on worker thread creation. */
+    private final ReentrantLock lock = new ReentrantLock();
 
-    /** List of registered ttl managers. */
-    private List<GridCacheTtlManager> mgrs = new CopyOnWriteArrayList<>();
+    /** Map of registered ttl managers, where the cache id is used as the key. */
+    private final Map<Integer, GridCacheTtlManager> mgrs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        synchronized (mux) {
-            stopCleanupWorker();
-        }
+        stopCleanupWorker();
     }
 
     /**
@@ -57,12 +63,10 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      * @param mgr ttl manager of cache.
      * */
     public void register(GridCacheTtlManager mgr) {
-        synchronized (mux) {
-            if (cleanupWorker == null)
-                startCleanupWorker();
+        if (mgrs.isEmpty())
+            startCleanupWorker();
 
-            mgrs.add(mgr);
-        }
+        mgrs.put(mgr.context().cacheId(), mgr);
     }
 
     /**
@@ -71,11 +75,25 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      * @param mgr ttl manager of cache.
      * */
     public void unregister(GridCacheTtlManager mgr) {
-        synchronized (mux) {
-            mgrs.remove(mgr);
+        mgrs.remove(mgr.context().cacheId());
 
-            if (mgrs.isEmpty())
-                stopCleanupWorker();
+        if (mgrs.isEmpty())
+            stopCleanupWorker();
+    }
+
+    /**
+     * @return {@code True} if eager TTL is enabled.
+     */
+    public boolean eagerTtlEnabled() {
+        assert cctx != null : "Manager is not started";
+
+        lock.lock();
+
+        try {
+            return cleanupWorker != null;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -83,20 +101,37 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
      *
      */
     private void startCleanupWorker() {
-        cleanupWorker = new CleanupWorker();
+        lock.lock();
 
-        new IgniteThread(cleanupWorker).start();
+        try {
+            if (cleanupWorker != null)
+                return;
+
+            cleanupWorker = new CleanupWorker();
+
+            new IgniteThread(cleanupWorker).start();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
      *
      */
     private void stopCleanupWorker() {
-        if (null != cleanupWorker) {
-            U.cancel(cleanupWorker);
-            U.join(cleanupWorker, log);
+        lock.lock();
 
-            cleanupWorker = null;
+        try {
+            if (null != cleanupWorker) {
+                U.cancel(cleanupWorker);
+                U.join(cleanupWorker, log);
+
+                cleanupWorker = null;
+            }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -108,24 +143,81 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
          * Creates cleanup worker.
          */
         CleanupWorker() {
-            super(cctx.gridName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class));
+            super(cctx.igniteInstanceName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class),
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                boolean expiredRemains = false;
+            Throwable err = null;
 
-                for (GridCacheTtlManager mgr : mgrs) {
-                    if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                        expiredRemains = true;
+            try {
+                blockingSectionBegin();
 
-                    if (isCancelled())
-                        return;
+                try {
+                    cctx.discovery().localJoin();
+                }
+                finally {
+                    blockingSectionEnd();
                 }
 
-                if (!expiredRemains)
-                    U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+                assert !cctx.kernalContext().recoveryMode();
+
+                final AtomicBoolean expiredRemains = new AtomicBoolean();
+
+                while (!isCancelled()) {
+                    expiredRemains.set(false);
+
+                    for (Map.Entry<Integer, GridCacheTtlManager> mgr : mgrs.entrySet()) {
+                        updateHeartbeat();
+
+                        Integer processedCacheID = mgr.getKey();
+
+                        // Need to be sure that the cache to be processed will not be unregistered and,
+                        // therefore, stopped during the process of expiration is in progress.
+                        mgrs.computeIfPresent(processedCacheID, (id, m) -> {
+                            if (m.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+                                expiredRemains.set(true);
+
+                            return m;
+                        });
+
+                        if (isCancelled())
+                            return;
+                    }
+
+                    updateHeartbeat();
+
+                    if (!expiredRemains.get())
+                        U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+
+                    onIdle();
+                }
+            }
+            catch (Throwable t) {
+                if (X.hasCause(t, NodeStoppingException.class)) {
+                    isCancelled = true; // Treat node stopping as valid worker cancellation.
+
+                    return;
+                }
+
+                if (!(t instanceof IgniteInterruptedCheckedException || t instanceof InterruptedException)) {
+                    if (isCancelled)
+                        return;
+
+                    err = t;
+                }
+
+                throw t;
+            }
+            finally {
+                if (err == null && !isCancelled)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
     }
