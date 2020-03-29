@@ -47,7 +47,10 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Permissions. */
-    public static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+    private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+
+    /** */
+    private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
@@ -77,13 +80,15 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         if (!PERMS.containsKey(cred))
             return null;
 
-        return new TestSecurityContext(
-            new TestSecuritySubject()
-                .setType(REMOTE_NODE)
-                .setId(node.id())
-                .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
-                .setLogin(cred.getLogin())
-                .setPerms(PERMS.get(cred))
+        return registerSecurityContext(
+            new TestSecurityContext(
+                new TestSecuritySubject()
+                    .setType(REMOTE_NODE)
+                    .setId(node.id())
+                    .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
+                    .setLogin(cred.getLogin())
+                    .setPerms(PERMS.get(cred))
+            )
         );
     }
 
@@ -104,14 +109,23 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
             ((SecurityBasicPermissionSet) perms).setDefaultAllowAll(true);
         }
 
-        return new TestSecurityContext(
-            new TestSecuritySubject()
-                .setType(ctx.subjectType())
-                .setId(ctx.subjectId())
-                .setAddr(ctx.address())
-                .setLogin(ctx.credentials().getLogin())
-                .setPerms(perms)
+        return registerSecurityContext(
+            new TestSecurityContext(
+                new TestSecuritySubject()
+                    .setType(ctx.subjectType())
+                    .setId(ctx.subjectId())
+                    .setAddr(ctx.address())
+                    .setLogin(ctx.credentials().getLogin())
+                    .setPerms(perms)
+            )
         );
+    }
+
+    /** Registers SecurityContext in inner map. */
+    private SecurityContext registerSecurityContext(SecurityContext ctx) {
+        SECURITY_CONTEXTS.put(ctx.subject().id(), ctx);
+
+        return ctx;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +139,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return SECURITY_CONTEXTS.get(subjId);
+    }
+
+    /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
         if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
@@ -135,7 +154,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
-        // No-op.
+        SECURITY_CONTEXTS.remove(subjId);
     }
 
     /** {@inheritDoc} */
@@ -163,5 +182,87 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
         for (TestSecurityData data : predefinedAuthData)
             PERMS.remove(data.credentials());
+    }
+
+    /** */
+    public static class TestSecurityProcessorDelegator extends GridProcessorAdapter implements GridSecurityProcessor {
+        /** Original processor. */
+        private final GridSecurityProcessor original;
+
+        /** */
+        public TestSecurityProcessorDelegator(GridKernalContext ctx,
+            GridSecurityProcessor original) {
+            super(ctx);
+
+            this.original = original;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityContext authenticateNode(ClusterNode node,
+            SecurityCredentials cred) throws IgniteCheckedException {
+            return original.authenticateNode(node, cred);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityContext securityContext(UUID subjId) {
+            return original.securityContext(subjId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void authorize(String name, SecurityPermission perm,
+            SecurityContext securityCtx) throws SecurityException {
+            original.authorize(name, perm, securityCtx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isGlobalNodeAuthentication() {
+            return original.isGlobalNodeAuthentication();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException {
+            return original.authenticate(ctx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+            return original.authenticatedSubjects();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+            return original.authenticatedSubject(subjId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onSessionExpired(UUID subjId) {
+            original.onSessionExpired(subjId);
+        }
+
+        /** {@inheritDoc} */
+        @Deprecated
+        @Override public boolean enabled() {
+            return original.enabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteCheckedException {
+            original.start();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop(boolean cancel) throws IgniteCheckedException {
+            original.stop(cancel);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+            original.onKernalStart(active);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onKernalStop(boolean cancel) {
+            original.onKernalStop(cancel);
+        }
     }
 }
