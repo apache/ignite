@@ -72,17 +72,20 @@ public class ClientExecuteTaskRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        if (!ctx.isComputeEnabled()) {
-            throw new IgniteClientException(ClientStatus.FUNCTIONALITY_DISABLED,
-                "Compute grid functionality is disabled for thin clients on server node. " +
-                "To enable it set up ThinClientConfiguration.ComputeEnabled property.");
-        }
-
         ClientComputeTask task = new ClientComputeTask(ctx);
+
+        ctx.incrementActiveTasksCount();
 
         long taskId = ctx.resources().put(task);
 
-        task.execute(taskId, taskName, arg, nodeIds, flags, timeout);
+        try {
+            task.execute(taskId, taskName, arg, nodeIds, flags, timeout);
+        }
+        catch (Exception e) {
+            ctx.resources().release(taskId);
+
+            throw e;
+        }
 
         return new ClientExecuteTaskResponse(requestId(), task);
     }

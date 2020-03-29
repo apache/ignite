@@ -131,8 +131,11 @@ class ClientComputeTask implements ClientCloseableResource {
             }
             finally {
                 // If task was explicitly closed before, resource is already released.
-                if (closed.compareAndSet(false, true))
+                if (closed.compareAndSet(false, true)) {
+                    ctx.decrementActiveTasksCount();
+
                     ctx.resources().release(taskId);
+                }
             }
         });
     }
@@ -149,6 +152,8 @@ class ClientComputeTask implements ClientCloseableResource {
      */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
+            ctx.decrementActiveTasksCount();
+
             try {
                 if (taskFut != null)
                     taskFut.cancel();

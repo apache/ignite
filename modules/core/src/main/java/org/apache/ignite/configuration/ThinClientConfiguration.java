@@ -28,14 +28,14 @@ public class ThinClientConfiguration {
     /** Default limit of active transactions count per connection. */
     public static final int DFLT_MAX_ACTIVE_TX_PER_CONNECTION = 100;
 
-    /** Default value of compute enabled flag. */
-    public static final boolean DFLT_COMPUTE_ENABLED = false;
+    /** Default limit of active compute tasks per connection. */
+    public static final int DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION = 0;
 
     /** Active transactions count per connection limit. */
     private int maxActiveTxPerConn = DFLT_MAX_ACTIVE_TX_PER_CONNECTION;
 
-    /** Compute for thin clients enabled. */
-    private boolean computeEnabled = DFLT_COMPUTE_ENABLED;
+    /** Active compute tasks per connection limit. */
+    private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
     /**
      * Creates thin-client configuration with all default values.
@@ -53,7 +53,7 @@ public class ThinClientConfiguration {
         assert cfg != null;
 
         maxActiveTxPerConn = cfg.maxActiveTxPerConn;
-        computeEnabled = cfg.computeEnabled;
+        maxActiveComputeTasksPerConn = cfg.maxActiveComputeTasksPerConn;
     }
 
     /**
@@ -75,21 +75,22 @@ public class ThinClientConfiguration {
     }
 
     /**
-     * Gets compute enabled flag.
+     * Gets active compute tasks per connection limit.
      *
      * @return {@code True} if compute is enabled for thin client.
      */
-    public boolean isComputeEnabled() {
-        return computeEnabled;
+    public int getMaxActiveComputeTasksPerConnection() {
+        return maxActiveComputeTasksPerConn;
     }
 
     /**
-     * Sets compute enabled flag.
+     * Sets active compute tasks per connection limit.
+     * Value {@code 0} means that compute grid functionality is disabled for thin clients.
      *
      * @return {@code this} for chaining.
      */
-    public ThinClientConfiguration setComputeEnabled(boolean computeEnabled) {
-        this.computeEnabled = computeEnabled;
+    public ThinClientConfiguration setMaxActiveComputeTasksPerConnection(int maxActiveComputeTasksPerConn) {
+        this.maxActiveComputeTasksPerConn = maxActiveComputeTasksPerConn;
 
         return this;
     }

@@ -1852,7 +1852,7 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean()) {
             cfg.setThinClientConfiguration(new ThinClientConfiguration()
                 .setMaxActiveTxPerConnection(in.readInt())
-                .setComputeEnabled(in.readBoolean())
+                .setMaxActiveComputeTasksPerConnection(in.readInt())
             );
         }
 
@@ -1891,7 +1891,7 @@ public class PlatformConfigurationUtils {
             if (thinCfg != null) {
                 w.writeBoolean(true);
                 w.writeInt(thinCfg.getMaxActiveTxPerConnection());
-                w.writeBoolean(thinCfg.isComputeEnabled());
+                w.writeInt(thinCfg.getMaxActiveComputeTasksPerConnection());
             }
             else
                 w.writeBoolean(false);

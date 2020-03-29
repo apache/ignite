@@ -101,20 +101,34 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             // Use a non-existent version that is not supported by the server
             var version = new ClientProtocolVersion(short.MaxValue, short.MaxValue, short.MaxValue);
-            
-            using (var client = GetClient(version))
+
+            try
             {
-                Assert.AreEqual(ClientSocket.CurrentProtocolVersion, client.Socket.CurrentProtocolVersion);
+                using (var client = GetClient(version))
+                {
+                    Assert.AreEqual(ClientSocket.CurrentProtocolVersion, client.Socket.CurrentProtocolVersion);
 
-                var logs = GetLogs(client);
-                
-                var expectedMessage = "Handshake failed on 127.0.0.1:10800, " +
-                                      "requested protocol version = 32767.32767.32767, server protocol version = , " +
-                                      "status = Fail, message = Unsupported version.";
+                    var logs = GetLogs(client);
 
-                var message = Regex.Replace(
-                    logs[2].Message, @"server protocol version = \d\.\d\.\d", "server protocol version = ");
-                
+                    var expectedMessage = "Handshake failed on 127.0.0.1:10800, " +
+                                          "requested protocol version = 32767.32767.32767, server protocol version = , " +
+                                          "status = Fail, message = Unsupported version.";
+
+                    var message = Regex.Replace(
+                        logs[2].Message, @"server protocol version = \d\.\d\.\d", "server protocol version = ");
+
+                    Assert.AreEqual(expectedMessage, message);
+                }
+            }
+            catch (IgniteClientException e)
+            {
+                // Expected when current client version is less then server verion. In this case client doesn't
+                // retry to reconnect, but throws an exception.
+                var expectedMessage = "Client handshake failed: 'Unsupported version.'. Client version: " +
+                    "32767.32767.32767. Server version: ";
+
+                var message = Regex.Replace(e.Message, @"Server version: \d\.\d\.\d", "Server version: ");
+
                 Assert.AreEqual(expectedMessage, message);
             }
         }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -72,6 +73,9 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     /** Grids count. */
     private static final int GRIDS_CNT = 4;
 
+    /** Active tasks limit. */
+    private static final int ACTIVE_TASKS_LIMIT = 50;
+
     /** Default timeout value. */
     private static final long TIMEOUT = 1_000L;
 
@@ -82,7 +86,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setClientConnectorConfiguration(
             new ClientConnectorConfiguration().setThinClientConfiguration(
-                new ThinClientConfiguration().setComputeEnabled(getTestIgniteInstanceIndex(igniteInstanceName) <= 1)));
+                new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(
+                    getTestIgniteInstanceIndex(igniteInstanceName) <= 1 ? ACTIVE_TASKS_LIMIT : 0)));
     }
 
     /**
@@ -157,6 +162,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     @Test
     public void testExecuteTaskAsync() throws Exception {
         try (IgniteClient client = startClient(0)) {
+            TestLatchTask.latch = new CountDownLatch(1);
+
             ClientFuture<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync(TestLatchTask.class.getName(), null);
 
             GridTestUtils.assertThrowsAnyCause(
@@ -319,6 +326,8 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             dropAllThinClientConnections();
 
+            TestLatchTask.latch = new CountDownLatch(1);
+
             ClientFuture<Object> fut3  = compute.executeAsync(TestLatchTask.class.getName(), null);
 
             assertEquals(1, compute.activeTaskFutures().size());
@@ -354,13 +363,13 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             ClientCompute compute1 = client.compute(client.cluster().forNodeId(nodeId(1)));
             ClientCompute compute2 = client.compute(client.cluster().forNodeId(nodeId(2)));
 
+            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+
             ClientFuture<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
 
-            CountDownLatch latch1 = TestLatchTask.latch;
+            CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
 
             ClientFuture<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
-
-            CountDownLatch latch2 = TestLatchTask.latch;
 
             latch2.countDown();
 
@@ -383,13 +392,13 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             ClientCompute compute1 = client1.compute(client1.cluster().forNodeId(nodeId(1)));
             ClientCompute compute2 = client2.compute(client2.cluster().forNodeId(nodeId(2)));
 
+            CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
+
             ClientFuture<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
 
-            CountDownLatch latch1 = TestLatchTask.latch;
+            CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
 
             ClientFuture<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
-
-            CountDownLatch latch2 = TestLatchTask.latch;
 
             latch2.countDown();
 
@@ -400,6 +409,62 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
             latch1.countDown();
 
             assertEquals(nodeIds(1), fut1.get().get2());
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testActiveTasksLimit() throws Exception {
+        try (IgniteClient client = startClient(0)) {
+            ClientCompute compute = client.compute(client.cluster().forNodeId(nodeId(1)));
+
+            CountDownLatch latch = TestLatchTask.latch = new CountDownLatch(1);
+
+            List<ClientFuture<T2<UUID, Set<UUID>>>> futs = new ArrayList<>(ACTIVE_TASKS_LIMIT);
+
+            for (int i = 0; i < ACTIVE_TASKS_LIMIT; i++)
+                futs.add(compute.executeAsync(TestLatchTask.class.getName(), null));
+
+            // Check that we can't start more tasks.
+            GridTestUtils.assertThrowsAnyCause(
+                null,
+                () -> compute.executeAsync(TestLatchTask.class.getName(), null),
+                ClientException.class,
+                "limit"
+            );
+
+            // Check that cancelled tasks restore limit.
+            for (int i = 0; i < ACTIVE_TASKS_LIMIT / 2; i++)
+                futs.get(i).cancel();
+
+            latch.countDown();
+
+            // Check that successfully complited tasks restore limit.
+            for (int i = ACTIVE_TASKS_LIMIT / 2; i < ACTIVE_TASKS_LIMIT; i++)
+                assertEquals(nodeIds(1), futs.get(i).get(TIMEOUT, TimeUnit.MILLISECONDS).get2());
+
+            // Check that complited with error tasks restore limit.
+            GridTestUtils.assertThrowsAnyCause(
+                null,
+                () -> compute.execute("NoSuchTask", null),
+                ClientException.class,
+                null
+            );
+
+            // Check that we can start up to ACTIVE_TASKS_LIMIT new active tasks again.
+            latch = TestLatchTask.latch = new CountDownLatch(1);
+
+            futs = new ArrayList<>(ACTIVE_TASKS_LIMIT);
+
+            for (int i = 0; i < ACTIVE_TASKS_LIMIT; i++)
+                futs.add(compute.executeAsync(TestLatchTask.class.getName(), null));
+
+            latch.countDown();
+
+            for (ClientFuture<T2<UUID, Set<UUID>>> fut : futs)
+                assertEquals(nodeIds(1), fut.get(TIMEOUT, TimeUnit.MILLISECONDS).get2());
         }
     }
 
@@ -540,25 +605,24 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         private static volatile CountDownLatch latch;
 
         /** Local latch. */
-        private final CountDownLatch locLatch = new CountDownLatch(1);
+        private final CountDownLatch locLatch;
 
         /**
          * Default constructor.
          */
         public TestLatchTask() {
-            latch = locLatch;
+            locLatch = latch;
         }
 
         /** {@inheritDoc} */
         @Override public @Nullable T2<UUID, Set<UUID>> reduce(List<ComputeJobResult> results) throws IgniteException {
             try {
-                locLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+                if (locLatch != null)
+                    locLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignore) {
                 // No-op.
             }
-
-            latch = null;
 
             return super.reduce(results);
         }
