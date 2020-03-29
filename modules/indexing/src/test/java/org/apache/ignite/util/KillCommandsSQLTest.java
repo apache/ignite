@@ -110,9 +110,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             name -> execute(srvs.get(0), KILL_SVC_QRY + " '" + name + "'"));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelSQLQuery() throws Exception {
+    public void testCancelSQLQuery() {
         doTestCancelSQLQuery(startCli, qryId -> execute(killCli, KILL_SQL_QRY + " '" + qryId + "'"));
     }
 

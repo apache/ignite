@@ -120,9 +120,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         doTestCancelTx(startCli, srvs, xid -> txMBean.cancel(xid));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelSQLQuery() throws Exception {
+    public void testCancelSQLQuery() {
         doTestCancelSQLQuery(startCli, qryId -> qryMBean.cancelSQL(qryId));
     }
 
