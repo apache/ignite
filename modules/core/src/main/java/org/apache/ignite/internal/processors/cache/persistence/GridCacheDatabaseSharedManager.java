@@ -134,6 +134,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyQueue;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyRequest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -3412,143 +3416,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Partition destroy queue.
-     */
-    private static class PartitionDestroyQueue {
-        /** */
-        private final ConcurrentMap<T2<Integer, Integer>, PartitionDestroyRequest> pendingReqs =
-            new ConcurrentHashMap<>();
-
-        /**
-         * @param grpCtx Group context.
-         * @param partId Partition ID to destroy.
-         */
-        private void addDestroyRequest(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
-            PartitionDestroyRequest req = new PartitionDestroyRequest(grpId, partId);
-
-            PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpId, partId), req);
-
-            assert old == null || grpCtx == null : "Must wait for old destroy request to finish before adding a new one "
-                + "[grpId=" + grpId
-                + ", grpName=" + grpCtx.cacheOrGroupName()
-                + ", partId=" + partId + ']';
-        }
-
-        /**
-         * @param destroyId Destroy ID.
-         * @return Destroy request to complete if was not concurrently cancelled.
-         */
-        private PartitionDestroyRequest beginDestroy(T2<Integer, Integer> destroyId) {
-            PartitionDestroyRequest rmvd = pendingReqs.remove(destroyId);
-
-            return rmvd == null ? null : rmvd.beginDestroy() ? rmvd : null;
-        }
-
-        /**
-         * @param grpId Group ID.
-         * @param partId Partition ID.
-         * @return Destroy request to wait for if destroy has begun.
-         */
-        private PartitionDestroyRequest cancelDestroy(int grpId, int partId) {
-            PartitionDestroyRequest rmvd = pendingReqs.remove(new T2<>(grpId, partId));
-
-            return rmvd == null ? null : !rmvd.cancel() ? rmvd : null;
-        }
-    }
-
-    /**
-     * Partition destroy request.
-     */
-    private static class PartitionDestroyRequest {
-        /** */
-        private final int grpId;
-
-        /** */
-        private final int partId;
-
-        /** Destroy cancelled flag. */
-        private boolean cancelled;
-
-        /** Destroy future. Not null if partition destroy has begun. */
-        private GridFutureAdapter<Void> destroyFut;
-
-        /**
-         * @param grpId Group ID.
-         * @param partId Partition ID.
-         */
-        private PartitionDestroyRequest(int grpId, int partId) {
-            this.grpId = grpId;
-            this.partId = partId;
-        }
-
-        /**
-         * Cancels partition destroy request.
-         *
-         * @return {@code False} if this request needs to be waited for.
-         */
-        private synchronized boolean cancel() {
-            if (destroyFut != null) {
-                assert !cancelled;
-
-                return false;
-            }
-
-            cancelled = true;
-
-            return true;
-        }
-
-        /**
-         * Initiates partition destroy.
-         *
-         * @return {@code True} if destroy request should be executed, {@code false} otherwise.
-         */
-        private synchronized boolean beginDestroy() {
-            if (cancelled) {
-                assert destroyFut == null;
-
-                return false;
-            }
-
-            if (destroyFut != null)
-                return false;
-
-            destroyFut = new GridFutureAdapter<>();
-
-            return true;
-        }
-
-        /**
-         *
-         */
-        private synchronized void onDone(Throwable err) {
-            assert destroyFut != null;
-
-            destroyFut.onDone(err);
-        }
-
-        /**
-         *
-         */
-        private void waitCompleted() throws IgniteCheckedException {
-            GridFutureAdapter<Void> fut;
-
-            synchronized (this) {
-                assert destroyFut != null;
-
-                fut = destroyFut;
-            }
-
-            fut.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "PartitionDestroyRequest [grpId=" + grpId + ", partId=" + partId + ']';
-        }
-    }
-
-    /**
      * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs - now
      * > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait
      */
@@ -3641,7 +3508,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         doCheckpoint();
                     else {
                         synchronized (this) {
-                            scheduledCp.nextCpNanos = System.nanoTime() + U.millisToNanos(checkpointFreq);
+                            scheduledCp.nextCpNanos(System.nanoTime() + U.millisToNanos(checkpointFreq));
                         }
                     }
                 }
@@ -3698,16 +3565,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
-            if (sched.nextCpNanos - nextNanos <= 0)
+            if (sched.nextCpNanos() - nextNanos <= 0)
                 return sched;
 
             synchronized (this) {
                 sched = scheduledCp;
 
-                if (sched.nextCpNanos - nextNanos > 0) {
-                    sched.reason = reason;
+                if (sched.nextCpNanos() - nextNanos > 0) {
+                    sched.reason(reason);
 
-                    sched.nextCpNanos = nextNanos;
+                    sched.nextCpNanos(nextNanos);
                 }
 
                 notifyAll();
@@ -3723,13 +3590,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             GridFutureAdapter<Object> ret;
 
             synchronized (this) {
-                scheduledCp.nextCpNanos = System.nanoTime();
+                scheduledCp.nextCpNanos(System.nanoTime());
 
-                scheduledCp.reason = "snapshot";
+                scheduledCp.reason("snapshot");
 
-                scheduledCp.nextSnapshot = true;
+                scheduledCp.nextSnapshot(true);
 
-                scheduledCp.snapshotOperation = snapshotOperation;
+                scheduledCp.snapshotOperation(snapshotOperation);
 
                 ret = scheduledCp.futureFor(LOCK_RELEASED);
 
@@ -3953,19 +3820,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return The number of destroyed partition files.
          */
         private int destroyEvictedPartitions() throws IgniteCheckedException {
-            PartitionDestroyQueue destroyQueue = curCpProgress.destroyQueue;
+            PartitionDestroyQueue destroyQueue = curCpProgress.destroyQueue();
 
-            if (destroyQueue.pendingReqs.isEmpty())
+            if (!destroyQueue.presentPendingReqs())
                 return 0;
 
             List<PartitionDestroyRequest> reqs = null;
 
-            for (final PartitionDestroyRequest req : destroyQueue.pendingReqs.values()) {
+            for (final PartitionDestroyRequest req : destroyQueue.pendingDestroyRequests()) {
                 if (!req.beginDestroy())
                     continue;
 
-                final int grpId = req.grpId;
-                final int partId = req.partId;
+                final int grpId = req.groupId();
+                final int partId = req.partitionId();
 
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -4015,7 +3882,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 for (PartitionDestroyRequest req : reqs)
                     req.waitCompleted();
 
-            destroyQueue.pendingReqs.clear();
+            destroyQueue.clearPendingRequests();
 
             return reqs != null ? reqs.size() : 0;
         }
@@ -4027,7 +3894,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void schedulePartitionDestroy(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
             synchronized (this) {
-                scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId);
+                scheduledCp.destroyQueue().addDestroyRequest(grpCtx, grpId, partId);
             }
 
             if (log.isDebugEnabled())
@@ -4045,7 +3912,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             PartitionDestroyRequest req;
 
             synchronized (this) {
-                req = scheduledCp.destroyQueue.cancelDestroy(grpId, partId);
+                req = scheduledCp.destroyQueue().cancelDestroy(grpId, partId);
             }
 
             if (req != null)
@@ -4057,7 +3924,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cur = curCpProgress;
 
                 if (cur != null)
-                    req = cur.destroyQueue.cancelDestroy(grpId, partId);
+                    req = cur.destroyQueue().cancelDestroy(grpId, partId);
             }
 
             if (req != null)
@@ -4075,7 +3942,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             try {
                 synchronized (this) {
-                    long remaining = U.nanosToMillis(scheduledCp.nextCpNanos - System.nanoTime());
+                    long remaining = U.nanosToMillis(scheduledCp.nextCpNanos() - System.nanoTime());
 
                     while (remaining > 0 && !isCancelled()) {
                         blockingSectionBegin();
@@ -4083,7 +3950,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         try {
                             wait(remaining);
 
-                            remaining = U.nanosToMillis(scheduledCp.nextCpNanos - System.nanoTime());
+                            remaining = U.nanosToMillis(scheduledCp.nextCpNanos() - System.nanoTime());
                         }
                         finally {
                             blockingSectionEnd();
@@ -4157,8 +4024,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 tracker.onListenersExecuteEnd();
 
-                if (curr.nextSnapshot)
-                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, ctx0.partitionStatMap());
+                if (curr.nextSnapshot())
+                    snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation(), ctx0.partitionStatMap());
 
                 fillCacheGroupState(cpRec);
 
@@ -4169,11 +4036,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 hasUserPages = !cpPagesHolder.onlySystemPages();
 
-                hasPartitionsToDestroy = !curr.destroyQueue.pendingReqs.isEmpty();
+                hasPartitionsToDestroy = curr.destroyQueue().presentPendingReqs();
 
                 WALPointer cpPtr = null;
 
-                if (dirtyPagesCount > 0 || curr.nextSnapshot || hasPartitionsToDestroy) {
+                if (dirtyPagesCount > 0 || curr.nextSnapshot() || hasPartitionsToDestroy) {
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
@@ -4212,7 +4079,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
                 catch (IgniteException e) {
                     U.error(log, "Failed to wait for snapshot operation initialization: " +
-                        curr.snapshotOperation, e);
+                        curr.snapshotOperation(), e);
                 }
             }
 
@@ -4256,7 +4123,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 tracker.splitAndSortCpPagesDuration(),
                                 possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms," : "",
                                 dirtyPagesCount,
-                                curr.reason
+                                curr.reason()
                             )
                         );
                 }
@@ -4264,7 +4131,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return new Checkpoint(cp, cpPages, curr);
             }
             else {
-                if (curr.nextSnapshot)
+                if (curr.nextSnapshot())
                     cctx.wal().flush(null, true);
 
                 if (printCheckpointStats) {
@@ -4276,7 +4143,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.lockWaitDuration(),
                             tracker.listenersExecuteDuration(),
                             tracker.lockHoldDuration(),
-                            curr.reason));
+                            curr.reason()));
                 }
 
                 return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr);
@@ -4416,8 +4283,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 curr.transitTo(LOCK_TAKEN);
 
-                if (curr.reason == null)
-                    curr.reason = "timeout";
+                if (curr.reason() == null)
+                    curr.reason("timeout");
 
                 // It is important that we assign a new progress object before checkpoint mark in page memory.
                 scheduledCp = new CheckpointProgressImpl(checkpointFreq);
@@ -4550,7 +4417,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             /** {@inheritDoc} */
             @Override public boolean nextSnapshot() {
-                return curr.nextSnapshot;
+                return curr.nextSnapshot();
             }
 
             /** {@inheritDoc} */
@@ -4560,7 +4427,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             /** {@inheritDoc} */
             @Override public boolean needToSnapshot(String cacheOrGrpName) {
-                return curr.snapshotOperation.cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
+                return curr.snapshotOperation().cacheGroupIds().contains(CU.cacheId(cacheOrGrpName));
             }
 
             /** {@inheritDoc} */
@@ -4988,113 +4855,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CheckpointStatus.class, this);
-        }
-    }
-
-    /**
-     * Data class representing the state of running/scheduled checkpoint.
-     */
-    public static class CheckpointProgressImpl implements CheckpointProgress {
-        /** Scheduled time of checkpoint. */
-        private volatile long nextCpNanos;
-
-        /** Current checkpoint state. */
-        private volatile AtomicReference<CheckpointState> state = new AtomicReference(CheckpointState.SCHEDULED);
-
-        /** Future which would be finished when corresponds state is set. */
-        private final Map<CheckpointState, GridFutureAdapter> stateFutures = new ConcurrentHashMap<>();
-
-        /** Cause of fail, which has happened during the checkpoint or null if checkpoint was successful. */
-        private volatile Throwable failCause;
-
-        /** Flag indicates that snapshot operation will be performed after checkpoint. */
-        private volatile boolean nextSnapshot;
-
-        /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
-        private volatile SnapshotOperation snapshotOperation;
-
-        /** Partitions destroy queue. */
-        private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
-
-        /** Wakeup reason. */
-        private String reason;
-
-        /**
-         * @param cpFreq Timeout until next checkpoint.
-         */
-        private CheckpointProgressImpl(long cpFreq) {
-            this.nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
-        }
-
-        /**
-         * @return {@code true} If checkpoint already started but have not finished yet.
-         */
-        @Override public boolean inProgress() {
-            return greaterOrEqualTo(LOCK_RELEASED) && !greaterOrEqualTo(FINISHED);
-        }
-
-        /**
-         * @param expectedState Expected state.
-         * @return {@code true} if current state equal to given state.
-         */
-        public boolean greaterOrEqualTo(CheckpointState expectedState) {
-            return state.get().ordinal() >= expectedState.ordinal();
-        }
-
-        /**
-         * @param state State for which future should be returned.
-         * @return Existed or new future which corresponds to the given state.
-         */
-        @Override public GridFutureAdapter futureFor(CheckpointState state) {
-            GridFutureAdapter stateFut = stateFutures.computeIfAbsent(state, (k) -> new GridFutureAdapter());
-
-            if (greaterOrEqualTo(state) && !stateFut.isDone())
-                stateFut.onDone(failCause);
-
-            return stateFut;
-        }
-
-        /**
-         * Mark this checkpoint execution as failed.
-         *
-         * @param error Causal error of fail.
-         */
-        @Override public void fail(Throwable error) {
-            failCause = error;
-
-            transitTo(FINISHED);
-        }
-
-        /**
-         * Changing checkpoint state if order of state is correct.
-         *
-         * @param newState New checkpoint state.
-         */
-        @Override public void transitTo(@NotNull CheckpointState newState) {
-            CheckpointState state = this.state.get();
-
-            if (state.ordinal() < newState.ordinal()) {
-                this.state.compareAndSet(state, newState);
-
-                doFinishFuturesWhichLessOrEqualTo(newState);
-            }
-        }
-
-        /**
-         * Finishing futures with correct result in direct state order until lastState(included).
-         *
-         * @param lastState State until which futures should be done.
-         */
-        private void doFinishFuturesWhichLessOrEqualTo(@NotNull CheckpointState lastState) {
-            for (CheckpointState old : CheckpointState.values()) {
-                GridFutureAdapter fut = stateFutures.get(old);
-
-                if (fut != null && !fut.isDone())
-                    fut.onDone(failCause);
-
-                if (old == lastState)
-                    return;
-            }
         }
     }
 
