@@ -25,8 +25,8 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
+import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.mxbean.QueryMXBean;
@@ -66,29 +66,16 @@ public class KillCommand implements Command<Object> {
     /** Task name. */
     private String taskName;
 
-    /** Subcommand. */
-    private KillSubcommand cmd;
-
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            Object res = executeTaskByNameOnNode(
+            return executeTaskByNameOnNode(
                 client,
                 taskName,
                 taskArgs,
                 null,
                 clientCfg
             );
-
-            switch (cmd) {
-                case SQL:
-                    if (!(boolean)res)
-                        throw new RuntimeException("Query not found.");
-
-                    break;
-            }
-
-            return res;
         }
         catch (Throwable e) {
             log.severe("Failed to perform operation.");
@@ -105,6 +92,8 @@ public class KillCommand implements Command<Object> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
+        KillSubcommand cmd;
+
         try {
             cmd = KillSubcommand.valueOf(argIter.nextArg("Expected type of resource to kill.").toUpperCase());
         }
@@ -144,9 +133,9 @@ public class KillCommand implements Command<Object> {
                 if (ids == null)
                     throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
-                taskArgs = new VisorQueryCancelTaskArg(ids.get1(), ids.get2());
+                taskArgs = new VisorQueryCancelOnInitiatorTaskArg(ids.get1(), ids.get2());
 
-                taskName = VisorQueryCancelTask.class.getName();
+                taskName = VisorQueryCancelOnInitiatorTask.class.getName();
 
                 break;
 

@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -148,7 +147,6 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCancelUnknownSQLQuery() {
-        assertThrowsWithCause(() -> qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42"),
-            RuntimeException.class);
+        qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42");
     }
 }

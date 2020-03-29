@@ -27,7 +27,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -93,9 +92,9 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         });
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelSQLQuery() throws Exception {
+    public void testCancelSQLQuery() {
         doTestCancelSQLQuery(client, qryId -> {
             int res = execute("--kill", "sql", qryId);
 
@@ -132,6 +131,6 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelUnknownSQLQuery() {
         int res = execute("--kill", "sql", srvs.get(0).localNode().id().toString() + "_42");
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
+        assertEquals(EXIT_CODE_OK, res);
     }
 }

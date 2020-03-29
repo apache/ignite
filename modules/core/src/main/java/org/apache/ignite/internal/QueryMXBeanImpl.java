@@ -24,8 +24,8 @@ import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelTask;
-import org.apache.ignite.internal.visor.query.VisorQueryCancelTaskArg;
+import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
+import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
 import org.apache.ignite.mxbean.QueryMXBean;
 
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
@@ -67,11 +67,9 @@ public class QueryMXBeanImpl implements QueryMXBean {
             if (ids == null)
                 throw new IllegalArgumentException("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT);
 
-            boolean res = cluster.compute().execute(new VisorQueryCancelTask(),
-                new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelTaskArg(ids.get1(), ids.get2()), false));
-
-            if (!res)
-                throw new RuntimeException("Query not found[id=" + id + ']');
+            cluster.compute().execute(new VisorQueryCancelOnInitiatorTask(),
+                new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelOnInitiatorTaskArg(ids.get1(), ids.get2()),
+                    false));
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

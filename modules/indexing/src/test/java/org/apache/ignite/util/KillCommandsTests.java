@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -196,7 +195,7 @@ class KillCommandsTests {
      * @param cli Client node.
      * @param qryCanceler Query cancel closure.
      */
-    public static void doTestCancelSQLQuery(IgniteEx cli, Consumer<String> qryCanceler) throws Exception {
+    public static void doTestCancelSQLQuery(IgniteEx cli, Consumer<String> qryCanceler) {
         String qryStr = "SELECT * FROM \"default\".Integer";
 
         SqlFieldsQuery qry = new SqlFieldsQuery(qryStr).setPageSize(PAGE_SZ);
@@ -204,11 +203,12 @@ class KillCommandsTests {
 
         assertNotNull(iter.next());
 
-        List<List<?>> sqlQries = SqlViewExporterSpiTest.execute(cli,
-            "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME");
+        List<List<?>> sqlQries = execute(cli, "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME");
+
         assertEquals(2, sqlQries.size());
 
         String qryId = (String)sqlQries.get(0).get(0);
+
         assertEquals(qryStr, sqlQries.get(0).get(1));
 
         qryCanceler.accept(qryId);
