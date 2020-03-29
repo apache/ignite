@@ -49,9 +49,7 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQuery
         return null;
     }
 
-    /**
-     * Job to cancel queries on node.
-     */
+    /** Job to cancel query on node. */
     private static class VisorCancelQueryOnInitiatorJob extends VisorJob<VisorQueryCancelOnInitiatorTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;

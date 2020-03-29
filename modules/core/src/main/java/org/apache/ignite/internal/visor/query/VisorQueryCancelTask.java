@@ -70,4 +70,5 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
             return null;
         }
     }
+
 }
