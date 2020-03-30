@@ -171,6 +171,7 @@ public class CassandraSessionImplTest {
         @Override public Object processedData() {
             return null;
         }
+
     }
 
     private static class MyBoundStatement1 extends BoundStatement {
@@ -187,4 +188,5 @@ public class CassandraSessionImplTest {
             super(ps);
         }
     }
+
 }
