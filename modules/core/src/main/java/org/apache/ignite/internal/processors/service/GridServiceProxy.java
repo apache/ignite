@@ -367,14 +367,14 @@ public class GridServiceProxy<T> implements Serializable {
     private static Object callSrvcMtd(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
         Object[] args) throws InvocationTargetException, IllegalAccessException {
 
-        long timing = System.currentTimeMillis();
+        long timing = System.nanoTime();
 
         try {
             return mtd.invoke(srvc, args);
         }
         finally {
             if (srvcProc instanceof IgniteServiceProcessor) {
-                timing = System.currentTimeMillis() - timing;
+                timing = System.nanoTime() - timing;
 
                 HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
 

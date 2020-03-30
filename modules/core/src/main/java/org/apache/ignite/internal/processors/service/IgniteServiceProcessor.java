@@ -95,6 +95,8 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -130,8 +132,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Duration of service method in milliseconds.";
 
-    /** Default bounds of invocation histogram in milliseconds. See {@link #createHistogram(String, Method)}. */
-    private static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {1, 10, 50, 200, 1000};
+    /** Default bounds of invocation histogram in nanoseconds. See {@link #createHistogram(String, Method)}. */
+    public static final long[] DEFAULT_INVOCATION_BOUNDS = new long[] {
+        NANOSECONDS.convert(1, MILLISECONDS),
+        NANOSECONDS.convert(10, MILLISECONDS),
+        NANOSECONDS.convert(50, MILLISECONDS),
+        NANOSECONDS.convert(200, MILLISECONDS),
+        NANOSECONDS.convert(1000, MILLISECONDS)
+    };
 
     /** Local service instances. */
     private final ConcurrentMap<IgniteUuid, Collection<ServiceContextImpl>> locServices = new ConcurrentHashMap<>();
