@@ -125,7 +125,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SVCS_VIEW_DESC = "Services";
 
     /** Base name domain for invocation metrics. */
-    public static final String SERVICE_METRIC_REGISTRY = "service";
+    public static final String SERVICE_METRIC_REGISTRY = "Service";
 
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Duration of service method in milliseconds.";
@@ -967,24 +967,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
-        long timeout) throws IgniteException {
+        long timeout)
+        throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
-
-        if (hasLocalNode(prj)) {
-            ServiceContextImpl ctx = serviceContext(name);
-
-            if (ctx != null) {
-                Service srvc = ctx.service();
-
-                if (srvc != null) {
-                    if (!srvcCls.isAssignableFrom(srvc.getClass()))
-                        throw new IgniteException("Service does not implement specified interface [srvcCls=" +
-                            srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
-
-                    return (T)srvc;
-                }
-            }
-        }
 
         return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
     }
@@ -1000,39 +985,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         }
 
         return false;
-    }
-
-    /**
-     * Creates histogram for service method. If exist,s considers one or several argument types has same name but
-     * different package and tries to extend metric name with abbreviation of java package name.
-     *
-     * @param srvcName Service name.
-     * @param method   Method to measure.
-     * @return Histogram of service method timings.
-     */
-    HistogramMetricImpl createHistogram(String srvcName, Method method) {
-        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcName));
-
-        HistogramMetricImpl histogram = null;
-
-        // Find/create histogram.
-        for (int i = 0; i < MAX_ABBREVIATE_NAME_LVL; ++i) {
-            String methodMetricName = methodMetricName(method, i);
-
-            synchronized (metricRegistry) {
-                // If the metric exists skip and try extending metric name in next cycle.
-                if (metricRegistry.findMetric(methodMetricName) == null) {
-                    histogram = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
-                        DESCRIPTION_OF_INVOCATION_METRIC);
-
-                    break;
-                }
-            }
-        }
-
-        assert histogram != null;
-
-        return histogram;
     }
 
     /** {@inheritDoc} */
@@ -1824,39 +1776,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Registers metrics for timings of service. Traverses all methods of service-related interfaces.
-     *
-     * @param srvc     Service for invocations measurement.
-     * @param srvcName Name of {@code srvc}.
-     */
-    private void registerMetrics(Service srvc, String srvcName) {
-        getInterfaces(srvc.getClass()).stream().map(Class::getMethods).flatMap(Arrays::stream)
-            .filter(mtd -> !isMetricIgnoredFor(mtd.getDeclaringClass()))
-            .forEach(mtd -> {
-                // All metrics for current service.
-                Map<String, MethodHistogramHolder> srvcHistograms =
-                    invocationHistograms.computeIfAbsent(srvcName, name -> new HashMap<>(1));
-
-                // Histograms for this method name.
-                MethodHistogramHolder mtdHistograms =
-                    srvcHistograms.computeIfAbsent(mtd.getName(), mdtName -> new MethodHistogramHolder());
-
-                mtdHistograms.addIfAbsent(mtd, () -> createHistogram(srvcName, mtd));
-            });
-    }
-
-    /**
-     * Removes metrics for service {@code srvcName}
-     *
-     * @param srvcName Service name.
-     */
-    private void unregisterMetrics(String srvcName) {
-        ctx.metric().remove(serviceMetricRegistryName(srvcName));
-
-        invocationHistograms.remove(srvcName);
-    }
-
-    /**
      * @param name Service name.
      * @return Mapped service descriptor. Possibly {@code null} if not found.
      */
@@ -1903,7 +1822,73 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * @param method       Method for the invocation timings.
+     * Registers metrics for timings of service. Traverses all methods of service-related interfaces.
+     *
+     * @param srvc Service for invocations measurement.
+     * @param srvcName Name of {@code srvc}.
+     */
+    private void registerMetrics(Service srvc, String srvcName) {
+        getInterfaces(srvc.getClass()).stream().map(Class::getMethods).flatMap(Arrays::stream)
+            .filter(mtd -> !isMetricIgnoredFor(mtd.getDeclaringClass()))
+            .forEach(mtd -> {
+                // All metrics for current service.
+                Map<String, MethodHistogramHolder> srvcHistograms =
+                    invocationHistograms.computeIfAbsent(srvcName, name -> new HashMap<>(1));
+
+                // Histograms for this method name.
+                MethodHistogramHolder mtdHistograms =
+                    srvcHistograms.computeIfAbsent(mtd.getName(), mdtName -> new MethodHistogramHolder());
+
+                mtdHistograms.addIfAbsent(mtd, () -> createHistogram(srvcName, mtd));
+            });
+    }
+
+    /**
+     * Removes metrics for service {@code srvcName}.
+     *
+     * @param srvcName Service name.
+     */
+    private void unregisterMetrics(String srvcName) {
+        ctx.metric().remove(serviceMetricRegistryName(srvcName));
+
+        invocationHistograms.remove(srvcName);
+    }
+
+    /**
+     * Creates histogram for service method. If exist,s considers one or several argument types has same name but
+     * different package and tries to extend metric name with abbreviation of java package name.
+     *
+     * @param srvcName Service name.
+     * @param method Method to measure.
+     * @return Histogram of service method timings.
+     */
+    HistogramMetricImpl createHistogram(String srvcName, Method method) {
+        MetricRegistry metricRegistry = ctx.metric().registry(serviceMetricRegistryName(srvcName));
+
+        HistogramMetricImpl histogram = null;
+
+        // Find/create histogram.
+        for (int i = 0; i < MAX_ABBREVIATE_NAME_LVL; ++i) {
+            String methodMetricName = methodMetricName(method, i);
+
+            synchronized (metricRegistry) {
+                // If the metric exists skip and try extending metric name in next cycle.
+                if (metricRegistry.findMetric(methodMetricName) == null) {
+                    histogram = metricRegistry.histogram(methodMetricName, DEFAULT_INVOCATION_BOUNDS,
+                        DESCRIPTION_OF_INVOCATION_METRIC);
+
+                    break;
+                }
+            }
+        }
+
+        assert histogram != null;
+
+        return histogram;
+    }
+
+    /**
+     * @param method Method for the invocation timings.
      * @param pkgNameDepth Level of package name abbreviation. See {@link MetricUtils#abbreviateName(Class, int)}.
      * @return Metric name for {@code method}.
      */
@@ -1921,9 +1906,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         return sb.toString();
     }
 
-    /**
-     * @return {@code True} if metrics should not be created for this class of interface.
-     */
+    /** @return {@code True} if metrics should not be created for this class or interface. */
     private static boolean isMetricIgnoredFor(Class<?> cls){
         return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls);
     }
@@ -1932,7 +1915,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * Searches histogram for service method.
      *
      * @param srvcName Service name.
-     * @param mtd      Service method.
+     * @param mtd Service method.
      * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
      */
     HistogramMetricImpl histogram(String srvcName, Method mtd) {
@@ -1943,7 +1926,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Histogram holder for service methods. Helps to fasten invocation of not overloaded methods.
+     * Histogram holder for service methods. Helps to fasten invocation of not-overloaded methods.
      * Keeps either map of histograms for overloaded method or single histogram.
      */
     private static final class MethodHistogramHolder {

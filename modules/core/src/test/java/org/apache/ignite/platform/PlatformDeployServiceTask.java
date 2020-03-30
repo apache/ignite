@@ -81,128 +81,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
     }
 
-    /**
-     * Test service.
-     */
-    public static interface PlatformTestService {
-        /**
-         * Returns a value indicating whether this service is cancelled.
-         */
-        boolean isCancelled();
-
-        /**
-         * Returns a value indicating whether this service is initialized.
-         */
-        boolean isInitialized();
-
-        /**
-         * Returns a value indicating whether this service is executed.
-         */
-        boolean isExecuted();
-
-        /** */
-        public byte test(byte arg);
-
-        /** */
-        public short test(short arg);
-
-        /** */
-        public int test(int arg);
-
-        /** */
-        public long test(long arg);
-
-        /** */
-        public float test(float arg);
-
-        /** */
-        public double test(double arg);
-
-        /** */
-        public boolean test(boolean arg);
-
-        /** */
-        public char test(char arg);
-
-        /** */
-        public String test(String arg);
-
-        /** */
-        public Byte testWrapper(Byte arg);
-
-        /** */
-        public Short testWrapper(Short arg);
-
-        /** */
-        public Integer testWrapper(Integer arg);
-
-        /** */
-        public Long testWrapper(Long arg);
-
-        /** */
-        public Float testWrapper(Float arg);
-
-        /** */
-        public Double testWrapper(Double arg);
-
-        /** */
-        public Boolean testWrapper(Boolean arg);
-
-        /** */
-        public Character testWrapper(Character arg);
-
-        /** */
-        public byte[] testArray(byte[] arg);
-
-        /** */
-        public short[] testArray(short[] arg);
-
-        /** */
-        public int[] testArray(int[] arg);
-
-        /** */
-        public long[] testArray(long[] arg);
-
-        /** */
-        public double[] testArray(double[] arg);
-
-        /** */
-        public float[] testArray(float[] arg);
-
-        /** */
-        public String[] testArray(String[] arg);
-
-        /** */
-        public char[] testArray(char[] arg);
-
-        /** */
-        public boolean[] testArray(boolean[] arg);
-
-        /** */
-        public Integer testNull(Integer arg);
-
-        /** */
-        public int testParams(Object... args);
-
-        /** */
-        public int test(int x, String y);
-
-        /** */
-        public int test(String x, int y);
-
-        /** */
-        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg);
-
-        /** */
-        public Object[] testBinarizableArray(Object[] arg);
-
-        /** */
-        public Collection testBinarizableCollection(Collection arg);
-
-        /** */
-        public BinaryObject testBinaryObject(BinaryObject o);
-    }
-
     /** {@inheritDoc} */
     public static class PlatformTestServiceImpl implements Service, PlatformTestService {
         /** */
@@ -468,5 +346,119 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             return o.toBuilder().setField("field", 15).build();
         }
+    }
+
+    /** Test service. */
+    public static interface PlatformTestService {
+        /** Returns a value indicating whether this service is cancelled. */
+        boolean isCancelled();
+
+        /** Returns a value indicating whether this service is initialized. */
+        boolean isInitialized();
+
+        /** Returns a value indicating whether this service is executed. */
+        boolean isExecuted();
+
+        /** */
+        public byte test(byte arg);
+
+        /** */
+        public short test(short arg);
+
+        /** */
+        public int test(int arg);
+
+        /** */
+        public long test(long arg);
+
+        /** */
+        public float test(float arg);
+
+        /** */
+        public double test(double arg);
+
+        /** */
+        public boolean test(boolean arg);
+
+        /** */
+        public char test(char arg);
+
+        /** */
+        public String test(String arg);
+
+        /** */
+        public Byte testWrapper(Byte arg);
+
+        /** */
+        public Short testWrapper(Short arg);
+
+        /** */
+        public Integer testWrapper(Integer arg);
+
+        /** */
+        public Long testWrapper(Long arg);
+
+        /** */
+        public Float testWrapper(Float arg);
+
+        /** */
+        public Double testWrapper(Double arg);
+
+        /** */
+        public Boolean testWrapper(Boolean arg);
+
+        /** */
+        public Character testWrapper(Character arg);
+
+        /** */
+        public byte[] testArray(byte[] arg);
+
+        /** */
+        public short[] testArray(short[] arg);
+
+        /** */
+        public int[] testArray(int[] arg);
+
+        /** */
+        public long[] testArray(long[] arg);
+
+        /** */
+        public double[] testArray(double[] arg);
+
+        /** */
+        public float[] testArray(float[] arg);
+
+        /** */
+        public String[] testArray(String[] arg);
+
+        /** */
+        public char[] testArray(char[] arg);
+
+        /** */
+        public boolean[] testArray(boolean[] arg);
+
+        /** */
+        public Integer testNull(Integer arg);
+
+        /** */
+        public int testParams(Object... args);
+
+        /** */
+        public int test(int x, String y);
+
+        /** */
+        public int test(String x, int y);
+
+        /** */
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg);
+
+        /** */
+        public Object[] testBinarizableArray(Object[] arg);
+
+        /** */
+        public Collection testBinarizableCollection(Collection arg);
+
+        /** */
+        public BinaryObject testBinaryObject(BinaryObject o);
     }
 }

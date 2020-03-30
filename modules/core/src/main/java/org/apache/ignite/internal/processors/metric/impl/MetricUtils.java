@@ -62,51 +62,6 @@ public class MetricUtils {
     }
 
     /**
-     * Abbreviates package name for metric naming purposes.
-     *
-     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
-     *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
-     *                     <pre>
-     *                         0 - wont add package name;
-     *                         1 - add only first char of each name in java package;
-     *                         2 - add first and last char of each name in java package;
-     *                         Any other - add full name of java package.
-     *                     </pre>
-     * @return Abbreviated name of {@code cls}.
-     */
-    public static String abbreviateName(Class<?> cls, int pkgNameDepth) {
-        if (pkgNameDepth == 0)
-            return cls.getSimpleName();
-
-        if (pkgNameDepth < 0 || pkgNameDepth > 2)
-            return cls.getName();
-
-        String[] pkgNameParts = cls.getName().split("\\.");
-
-        // No package like 'void' or 'int'.
-        if (pkgNameParts.length == 1)
-            return pkgNameParts[0];
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < pkgNameParts.length - 1; ++i) {
-            // For {@code pkgNameDepth} == 1 add the first char.
-            sb.append(pkgNameParts[i].charAt(0));
-
-            // For {@code pkgNameDepth} == 2 add the last char.
-            if (pkgNameDepth > 1 && pkgNameParts[i].length() > 1)
-                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
-
-            sb.append(".");
-        }
-
-        // Add name to the class.
-        sb.append(pkgNameParts[pkgNameParts.length - 1]);
-
-        return sb.toString();
-    }
-
-    /**
      * Splits full metric name to registry name and metric name.
      *
      * @param name Full metric name.
@@ -129,16 +84,6 @@ public class MetricUtils {
             return metricName(CACHE_METRICS, cacheName, "near");
 
         return metricName(CACHE_METRICS, cacheName);
-    }
-
-    /**
-     * Gives proper name for service metric registry.
-     *
-     * @param srvcName Name of the service.
-     * @return registry name for service {@code srvcName}.
-     */
-    public static String serviceMetricRegistryName(String srvcName) {
-        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 
     /**
@@ -222,6 +167,61 @@ public class MetricUtils {
         names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
         return names;
+    }
+
+    /**
+     * Abbreviates package name for metric naming purposes.
+     *
+     * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
+     *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
+     *                     <pre>
+     *                         0 - wont add package name;
+     *                         1 - add only first char of each name in java package;
+     *                         2 - add first and last char of each name in java package;
+     *                         Any other - add full name of java package.
+     *                     </pre>
+     * @return Abbreviated name of {@code cls}.
+     */
+    public static String abbreviateName(Class<?> cls, int pkgNameDepth) {
+        if (pkgNameDepth == 0)
+            return cls.getSimpleName();
+
+        if (pkgNameDepth < 0 || pkgNameDepth > 2)
+            return cls.getName();
+
+        String[] pkgNameParts = cls.getName().split("\\.");
+
+        // No package like 'void' or 'int'.
+        if (pkgNameParts.length == 1)
+            return pkgNameParts[0];
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < pkgNameParts.length - 1; ++i) {
+            // For {@code pkgNameDepth} == 1 add the first char.
+            sb.append(pkgNameParts[i].charAt(0));
+
+            // For {@code pkgNameDepth} == 2 add the last char.
+            if (pkgNameDepth > 1 && pkgNameParts[i].length() > 1)
+                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+
+            sb.append(".");
+        }
+
+        // Add name to the class.
+        sb.append(pkgNameParts[pkgNameParts.length - 1]);
+
+        return sb.toString();
+    }
+
+    /**
+     * Gives proper name for service metric registry.
+     *
+     * @param srvcName Name of the service.
+     * @return registry name for service {@code srvcName}.
+     */
+    public static String serviceMetricRegistryName(String srvcName) {
+        return metricName(SERVICE_METRIC_REGISTRY, srvcName);
     }
 
     /**

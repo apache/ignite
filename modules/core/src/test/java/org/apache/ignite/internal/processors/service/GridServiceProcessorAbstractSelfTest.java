@@ -273,7 +273,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         g.services().deployNodeSingleton(name, new DummyService());
 
-        Service svc = g.services().service(name);
+        DummyService svc = g.services().service(name);
 
         assertNotNull(svc);
 

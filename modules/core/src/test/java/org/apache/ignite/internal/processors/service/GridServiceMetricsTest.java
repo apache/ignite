@@ -2,7 +2,6 @@ package org.apache.ignite.internal.processors.service;
 
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,7 +16,6 @@ import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.internal.processors.service.inner.NamingService;
 import org.apache.ignite.internal.processors.service.inner.NamingServiceImpl;
-import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -36,7 +34,7 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 /** Tests metrics of service invocations. */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invocations. */
-    private static final int INVOKE_CNT = 20;
+    private static final int INVOKE_CNT = 100;
 
     /** Utility holder of current grid number. */
     private final AtomicInteger gridNum = new AtomicInteger();
@@ -125,7 +123,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(metricsCnt, totalInstance);
     }
 
-    /** Ensures metric are created when service is deployed and removed when service is undeployed. */
+    /** Checks metric are created when service is deployed and removed when service is undeployed. */
     @Test
     public void testMetricDeplotmentUndeployment() throws Exception {
         List<IgniteEx> servers = startGrids(3, false);
@@ -194,9 +192,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         testServiceMetrics(4, 3, 2, 1);
     }
 
-    /**
-     * Tests service metrics for multy service instance: serveral instances per node.
-     */
+    /** Tests service metrics for multy service instance: serveral instances per node */
     @Test
     public void testServiceMetricsMultyDuplicated() throws Throwable {
         testServiceMetrics(3, 2, 3, 3);
@@ -211,21 +207,15 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /**
      * Invokes service in various ways: from clients, servers, etc. Checks these calls reflect in the metrics.
      *
-     * @param serverCnt     Number of server nodes.
-     * @param clientCnt     Number of client nodes.
+     * @param serverCnt Number of server nodes.
+     * @param clientCnt Number of client nodes.
      * @param perClusterCnt Number of service instances per cluster.
-     * @param perClusterCnt Number of service instances per node.
+     * @param perNodeCnt Number of service instances per node.
      */
-    private void testServiceMetrics(int serverCnt, int clientCnt, int perClusterCnt, int perNodeCnt)
-        throws Throwable {
-
+    private void testServiceMetrics(int serverCnt, int clientCnt, int perClusterCnt, int perNodeCnt) throws Throwable {
         List<IgniteEx> servers = startGrids(serverCnt, false);
 
         List<IgniteEx> clients = startGrids(clientCnt, true);
-
-        Method mtd = getTestMtd();
-
-        Object[] args = getTestMtdArgs();
 
         servers.get(0).services().deploy(serviceCfg(SRVC_NAME, perClusterCnt, perNodeCnt));
 
@@ -246,14 +236,12 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             // Call from server.
             IgniteEx ignite = servers.get(i.get() % servers.size());
 
-            invokeCollector += callService(ignite, () -> serverStickyProxies.get(i.get() % serverStickyProxies.size()),
-                mtd, args);
+            invokeCollector += callService(ignite, () -> serverStickyProxies.get(i.get() % serverStickyProxies.size()));
 
             // Call from client.
             ignite = clients.get(i.get() % clients.size());
 
-            invokeCollector += callService(ignite, () -> clientStickyProxies.get(i.get() % clientStickyProxies.size()),
-                mtd, args);
+            invokeCollector += callService(ignite, () -> clientStickyProxies.get(i.get() % clientStickyProxies.size()));
         }
 
         long invokesInMetrics = 0;
@@ -279,37 +267,21 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /**
      * Invokes service method via proxies and local deployments if available. Calculates the invocations done.
      *
-     * @param ignite    Server or client node.
+     * @param ignite Server or client node.
      * @param extraSrvc Extra service instance or proxy to call.
-     * @param mtd       Method to call through {@link GridServiceProxy}.
-     * @param args      Arguments for {@code mtd}.
      * @return Total invokes done.
      */
-    private int callService(IgniteEx ignite, @Nullable Supplier<MyService> extraSrvc, @Nullable Method mtd,
-        Object... args) throws Throwable {
-        int invokesDone = 0;
-
+    private int callService(IgniteEx ignite, @Nullable Supplier<MyService> extraSrvc) {
         MyService srvc = ignite.services().serviceProxy(SRVC_NAME, MyService.class, false);
 
-        if(Proxy.isProxyClass(srvc.getClass())){
-            srvc.hello();
+        srvc.hello();
 
-            assertEquals(srvc.hello(12), 12);
+        assertEquals(srvc.hello(12), 12);
 
-            invokesDone += 2;
-        }
+        // We just did 2 service calls.
+        int invokesDone = 2;
 
-        if (mtd != null) {
-            new GridServiceProxy<>(ignite.cluster(), SRVC_NAME, Service.class, true, 0, ignite.context())
-                .invokeMethod(mtd, args);
-
-            new GridServiceProxy<>(ignite.cluster(), SRVC_NAME, Service.class, false, 0, ignite.context())
-                .invokeMethod(mtd, args);
-
-            invokesDone += 2;
-        }
-
-        if (extraSrvc != null && Proxy.isProxyClass((srvc = extraSrvc.get()).getClass())) {
+        if (extraSrvc != null) {
             srvc.hello();
 
             assertEquals(srvc.hello(10), 10);
@@ -347,16 +319,12 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         }).limit(cnt).collect(Collectors.toList());
     }
 
-    /**
-     * @return Number of metrics contained in metric registry for {@code srvcName}.
-     */
+    /** @return Number of metrics contained in metric registry for {@code srvcName}. */
     private static int metricsCnt(IgniteEx ignite, String srvcName) {
         return Iterables.size(ignite.context().metric().registry(serviceMetricRegistryName(srvcName)));
     }
 
-    /**
-     * @return Metric registry if it is found in {@code metricMgr} by name {@code srvcName}. Null otherwise.
-     */
+    /** @return Metric registry if it is found in {@code metricMgr} by name {@code srvcName}. Null otherwise. */
     private static ReadOnlyMetricRegistry findMetricRegistry(GridMetricManager metricMgr, String srvcName) {
         for (ReadOnlyMetricRegistry registry : metricMgr) {
             if (registry.name().equals(serviceMetricRegistryName(srvcName)))
@@ -364,20 +332,5 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         }
 
         return null;
-    }
-
-    /**
-     * @return A test method of #MyService.
-     */
-    private static Method getTestMtd() throws NoSuchMethodException {
-        return MyService.class.getMethod("hello", int.class);
-    }
-
-    /**
-     * @return Arguments for the method.
-     * @see #getTestMtd()
-     */
-    private static Object[] getTestMtdArgs() {
-        return new Integer[]{5};
     }
 }

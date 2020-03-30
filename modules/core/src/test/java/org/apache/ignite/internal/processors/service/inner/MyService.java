@@ -31,9 +31,7 @@ public interface MyService extends Service {
      */
     int hello();
 
-    /**
-     * @return Given {@code helloValue}.
-     */
+    /** @return Given {@code helloValue}. */
     default int hello(int helloValue){
         return helloValue;
     }
