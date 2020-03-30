@@ -127,6 +127,11 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     }
 
     /** {@inheritDoc} */
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return SECURITY_CONTEXTS.get(subjId);
+    }
+
+    /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException {
         if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
