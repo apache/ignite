@@ -216,7 +216,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Disconnected flag. */
     private volatile boolean disconnected;
 
-    /** Keeps histograms to measure durations service method invocations. Guided by service name, then method name. */
+    /** Keeps histograms to measure durations of service methods. Guided by service name, then method name. */
     private final Map<String, Map<String, MethodHistogramHolder>> invocationHistograms = new HashMap<>(1);
 
     /**
@@ -978,6 +978,20 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
+
+        if (hasLocalNode(prj)) {
+            ServiceContextImpl ctx = serviceContext(name);
+
+            if (ctx != null) {
+                Service srvc = ctx.service();
+
+                if (srvc != null) {
+                    if (!srvcCls.isAssignableFrom(srvc.getClass()))
+                        throw new IgniteException("Service does not implement specified interface [srvcCls=" +
+                            srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
+                }
+            }
+        }
 
         return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
     }
@@ -1830,7 +1844,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Registers metrics for timings of service. Traverses all methods of service-related interfaces.
+     * Registers metrics to measure durations of service methods.
      *
      * @param srvc Service for invocations measurement.
      * @param srvcName Name of {@code srvc}.
