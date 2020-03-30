@@ -284,7 +284,8 @@ public class IgniteWalIteratorFactory {
             if (file.isDirectory()) {
                 try {
                     walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
-                        @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                        @Override
+                        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
                             addFileDescriptor(path.toFile(), ioFactory, descriptors);
 
                             return FileVisitResult.CONTINUE;

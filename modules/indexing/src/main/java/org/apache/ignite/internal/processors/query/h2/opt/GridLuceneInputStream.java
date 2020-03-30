@@ -184,8 +184,8 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexInput slice(final String sliceDescription, final long offset, final long length)
-        throws IOException {
+    @Override
+    public IndexInput slice(final String sliceDescription, final long offset, final long length) throws IOException {
         if (offset < 0 || length < 0 || offset + length > this.length)
             throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: " + this);
 

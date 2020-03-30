@@ -1705,7 +1705,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     payload[i] = (byte)index;
         }
 
-        @Override public boolean equals(Object o) {
+        @Override
+        public boolean equals(Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
@@ -1715,7 +1716,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 Arrays.equals(payload, bigObject.payload);
         }
 
-        @Override public int hashCode() {
+        @Override
+        public int hashCode() {
             return Objects.hash(index, payload);
         }
     }
