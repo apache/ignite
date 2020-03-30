@@ -28,6 +28,7 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -56,8 +57,8 @@ import org.apache.ignite.internal.processors.rest.request.GridRestBaselineReques
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestChangeStateRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterNameRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestClusterStateRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
@@ -210,6 +211,22 @@ public class GridJettyRestHandler extends AbstractHandler {
         catch (NumberFormatException ignore) {
             throw new IgniteCheckedException(format(FAILED_TO_PARSE_FORMAT, "Long", key, val));
         }
+    }
+
+    /**
+     * Retrieves boolean value from parameters map.
+     *
+     * @param key Key.
+     * @param params Parameters map.
+     * @param dfltVal Default value.
+     * @return Boolean value from parameters map or {@code dfltVal} if null or not exists.
+     */
+    private static boolean booleanValue(String key, Map<String, Object> params, boolean dfltVal) {
+        assert key != null;
+
+        String val = (String)params.get(key);
+
+        return val == null ? dfltVal : Boolean.parseBoolean(val);
     }
 
     /**
@@ -790,6 +807,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 else
                     restReq0.active(false);
 
+                restReq0.forceDeactivation(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
+
                 restReq = restReq0;
 
                 break;
@@ -805,6 +824,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                     ClusterState newState = enumValue("state", params, ClusterState.class);
 
                     restReq0.state(newState);
+
+                    restReq0.forceDeactivation(booleanValue(GridRestClusterStateRequest.ARG_FORCE, params, false));
                 }
 
                 restReq = restReq0;
@@ -946,6 +967,11 @@ public class GridJettyRestHandler extends AbstractHandler {
         restReq.address(new InetSocketAddress(req.getRemoteAddr(), req.getRemotePort()));
 
         restReq.command(cmd);
+
+        Object certs = req.getAttribute("javax.servlet.request.X509Certificate");
+
+        if (certs instanceof X509Certificate[])
+            restReq.certificates((X509Certificate[])certs);
 
         // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
         if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))

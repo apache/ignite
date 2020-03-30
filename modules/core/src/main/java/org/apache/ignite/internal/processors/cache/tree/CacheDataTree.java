@@ -217,6 +217,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
              * @throws IgniteCheckedException If failed.
              */
             private boolean readNextDataPage() throws IgniteCheckedException {
+                checkDestroyed();
+
                 for (;;) {
                     if (++curPage >= pagesCnt) {
                         // Reread number of pages when we reach it (it may grow).

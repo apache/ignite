@@ -51,7 +51,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
     /** Trust key store path. */
     private static final String TRUST_KEY_STORE_PATH = U.getIgniteHome() +
-        "/modules/clients/src/test/keystore/trust.jks";
+        "/modules/clients/src/test/keystore/trust-one.jks";
 
     /** SSL context factory. */
     private static Factory<SSLContext> sslCtxFactory;

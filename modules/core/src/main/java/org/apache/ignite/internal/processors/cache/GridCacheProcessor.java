@@ -307,12 +307,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             perf.add(msg, true);
 
-        if (cfg.getCacheMode() == PARTITIONED) {
+        if (cfg.getCacheMode() == PARTITIONED)
             perf.add("Disable near cache (set 'nearConfiguration' to null)", cfg.getNearConfiguration() == null);
-
-            if (cfg.getAffinity() != null)
-                perf.add("Decrease number of backups (set 'backups' to 0)", cfg.getBackups() == 0);
-        }
 
         // Suppress warning if at least one ATOMIC cache found.
         perf.add("Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)",

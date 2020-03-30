@@ -73,8 +73,11 @@ public class H2ConnectionWrapper implements AutoCloseable {
     public Connection connection(@Nullable String schema) {
         if (schema != null && !F.eq(this.schema, schema)) {
             try {
+                if(schema.trim().isEmpty()){
+                   throw new IgniteSQLException("Failed to set schema for DB connection. " +
+                           "Schema name could not be an empty string");
+                }
                 conn.setSchema(schema);
-
                 this.schema = schema;
             }
             catch (SQLException e) {
