@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.Map;
 import java.util.stream.LongStream;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
