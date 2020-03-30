@@ -19,18 +19,23 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.mxbean.ServiceMXBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 
 /** Tests cancel of user created entities via JMX. */
 public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
@@ -45,6 +50,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** Client that kill task. */
     private static IgniteEx killCli;
+
+    /** */
+    private static TransactionsMXBean txMBean;
 
     /** */
     private static ComputeMXBean computeMBean;
@@ -65,6 +73,13 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
+
+        startCli.getOrCreateCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        txMBean = getMxBean(killCli.name(), "Transactions",
+            TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
 
         computeMBean = getMxBean(killCli.name(), "Compute",
             ComputeMXBeanImpl.class.getSimpleName(), ComputeMXBean.class);
@@ -87,8 +102,20 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCancelTx() {
+        doTestCancelTx(startCli, srvs, xid -> txMBean.cancel(xid));
+    }
+
+    /** */
+    @Test
     public void testCancelUnknownComputeTask() {
         computeMBean.cancel(IgniteUuid.randomUuid().toString());
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownTx() {
+        txMBean.cancel("unknown");
     }
 
     /** */

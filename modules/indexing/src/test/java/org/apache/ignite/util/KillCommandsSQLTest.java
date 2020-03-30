@@ -20,7 +20,9 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -31,8 +33,10 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
+import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 
 /** Tests cancel of user created entities via SQL. */
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
@@ -44,6 +48,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_SVC_QRY = KILL + " " + SERVICE;
+
+    /** */
+    public static final String KILL_TX_QRY = KILL + " " + TRANSACTION;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -67,12 +74,22 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         killCli = startClientGrid("killClient");
 
         srvs.get(0).cluster().state(ACTIVE);
+
+        startCli.getOrCreateCache(
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
         doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
+    }
+
+    /** */
+    @Test
+    public void testCancelTx() {
+        doTestCancelTx(startCli, srvs, xid -> execute(killCli, KILL_TX_QRY + " '" + xid + "'"));
     }
 
     /** @throws Exception If failed. */
@@ -92,6 +109,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     @Test
     public void testCancelUnknownService() {
         execute(killCli, KILL_SVC_QRY + " 'unknown'");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownTx() {
+        execute(killCli, KILL_TX_QRY + " 'unknown'");
     }
 
     /**

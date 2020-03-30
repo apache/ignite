@@ -31,6 +31,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
+import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.jetbrains.annotations.Nullable;
@@ -299,6 +300,9 @@ public class SqlParser {
 
                 case SERVICE:
                     return new SqlKillServiceCommand().parse(lex);
+
+                case TRANSACTION:
+                    return new SqlKillTransactionCommand().parse(lex);
             }
         }
 
