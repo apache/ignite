@@ -42,23 +42,13 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     /** {@inheritDoc} */
     @Override public int[] getDefaultTokens() {
         return new int[]{
-            TokenTypes.CLASS_DEF,
-            TokenTypes.INTERFACE_DEF,
-            TokenTypes.ENUM_DEF,
             TokenTypes.METHOD_DEF,
-            TokenTypes.CTOR_DEF,
         };
     }
 
     /** {@inheritDoc} */
     @Override public int[] getAcceptableTokens() {
-        return new int[]{
-            TokenTypes.CLASS_DEF,
-            TokenTypes.INTERFACE_DEF,
-            TokenTypes.ENUM_DEF,
-            TokenTypes.METHOD_DEF,
-            TokenTypes.ANNOTATION_DEF,
-        };
+        return CommonUtil.EMPTY_INT_ARRAY;
     }
 
     /** {@inheritDoc} */
