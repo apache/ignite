@@ -463,7 +463,7 @@ public class H2Utils {
 
         assert oldCtx == null || oldCtx == qctx : oldCtx;
 
-        s.setVariable("IGNITE_QUERY_CONTEXT", new ValueRuntimeSimpleObject<>(qctx));
+        s.setVariable(QCTX_VARIABLE_NAME, new ValueRuntimeSimpleObject<>(qctx));
 
         // Hack with thread local context is used only for H2 methods that is called without Session object.
         // e.g. GridH2Table.getRowCountApproximation (used only on optimization phase, after parse).
@@ -478,7 +478,7 @@ public class H2Utils {
     public static void resetSession(H2PooledConnection conn) {
         Session s = session(conn);
 
-        s.setVariable("IGNITE_QUERY_CONTEXT", ValueNull.INSTANCE);
+        s.setVariable(QCTX_VARIABLE_NAME, ValueNull.INSTANCE);
     }
 
     /**
@@ -496,7 +496,7 @@ public class H2Utils {
      * @return Query context.
      */
     public static QueryContext context(Session ses) {
-        return (QueryContext)ses.getVariable("IGNITE_QUERY_CONTEXT").getObject();
+        return (QueryContext)ses.getVariable(QCTX_VARIABLE_NAME).getObject();
     }
 
     /**

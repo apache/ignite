@@ -170,6 +170,25 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * @throws Exception On failed.
+     */
+    @Test
+    public void testExplainLeak() throws Exception {
+        startGridAndPopulateCache(NODE_CNT);
+
+        final IgniteCache cache = grid(0).cache(CACHE_NAME);
+
+        for (int i = 0; i < ITERS; ++i) {
+            GridTestUtils.runMultiThreaded(() -> {
+                cache.query(new SqlFieldsQuery("explain select * from String")).getAll();
+
+            }, 10, "explain-threads");
+
+            checkConnectionLeaks();
+        }
+    }
+
+    /**
      * @throws Exception On error.
      */
     private void checkConnectionLeaks() throws Exception {

@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  * Thread local SQL query context which is intended to be accessible from everywhere.
  */
 public class QueryContext {
+    /** Thread local query context is used for API that doesn't support h2 Session:
+     * distributed join and rowCount.
+     */
     private static final ThreadLocal<QueryContext> qctxThreaded = new ThreadLocal<>();
 
     /** Segment ID. */

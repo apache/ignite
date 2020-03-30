@@ -119,8 +119,7 @@ public class H2PooledConnection implements AutoCloseable {
         assert delegate != null;
 
         if (closed.compareAndSet(false, true)) {
-            // clear thread local
-            // H2Utils.resetSession(this);
+             H2Utils.resetSession(this);
 
             connMgr.recycle(delegate);
 
