@@ -80,7 +80,8 @@ public class CommandHandlerParsingTest {
         "--ssl-protocol", "testSSLProtocol");
 
     /** */
-    private static final String USER_ATTRIBUTE_PATH = "modules/core/src/test/resources/user.properties";
+    private static final String USER_ATTRIBUTE_PATH =
+        "modules/core/src/test/resources/org/apache/ignite/internal/commandline/user.properties";
 
     /** */
     @ClassRule public static final TestRule classRule = new SystemPropertiesRule();

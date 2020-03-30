@@ -166,6 +166,8 @@ public class CommonArgParser {
         list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
         list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_USER_PROPS, "USER_PROP=VAL[,USER_PROP_1=VAL_1,...,USER_PROP_N=VAL_N]"));
+        list.add(optional(CMD_USER_PROPS_PATH, "USER_PROPERTY_FILE_PATH"));
 
         return list.toArray(new String[0]);
     }
@@ -337,7 +339,7 @@ public class CommonArgParser {
                         break;
 
                     case CMD_USER_PROPS_PATH:
-                        userPropPath = argIter.nextArg("Expected user property path.");
+                        userPropPath = argIter.nextArg("Expected user property file path.");
 
                         break;
 
@@ -376,7 +378,7 @@ public class CommonArgParser {
      * @param userPropStr {@code String} Property string.
      * @param userPropPath {@code String} Property file path.
      */
-    private Map<String, String> userProperties(String userPropStr, String userPropPath){
+    private Map<String, String> userProperties(String userPropStr, String userPropPath) {
         Map<String, String> res = parsePropertiesFromString(userPropStr);
 
         parsePropertiesFromFile(userPropPath).forEach(res::putIfAbsent);
@@ -392,7 +394,7 @@ public class CommonArgParser {
     private Map<String, String> parsePropertiesFromString(String propStr) {
         Map<String, String> res = new HashMap<>();
 
-        if(propStr == null)
+        if (propStr == null)
             return res;
 
         final int partsOfPropStr = 2;
