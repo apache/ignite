@@ -101,7 +101,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null
         );
 
-        return new PageMemoryImpl(
+        PageMemoryImpl mem = new PageMemoryImpl(
             provider,
             sizes,
             sharedCtx,
@@ -119,9 +119,12 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
-            PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            Mockito.mock(CheckpointProgressImpl.class)
+            PageMemoryImpl.ThrottlingPolicy.DISABLED
         );
+
+        mem.copyProgressProvider(Mockito.mock(CheckpointProgressImpl.class));
+
+        return mem;
     }
 
     /** {@inheritDoc} */

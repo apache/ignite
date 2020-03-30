@@ -111,7 +111,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             new CacheDiagnosticManager()
         );
 
-        return new PageMemoryImpl(
+        PageMemoryImpl mem = new PageMemoryImpl(
             provider, sizes,
             sharedCtx,
             PAGE_SIZE,
@@ -124,8 +124,11 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             },
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
-            PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            Mockito.mock(CheckpointProgressImpl.class)
+            PageMemoryImpl.ThrottlingPolicy.DISABLED
         );
+
+        mem.copyProgressProvider(Mockito.mock(CheckpointProgressImpl.class));
+
+        return mem;
     }
 }

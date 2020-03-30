@@ -96,7 +96,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             new CacheDiagnosticManager()
         );
 
-        PageMemory mem = new PageMemoryImpl(
+        PageMemoryEx mem = new PageMemoryImpl(
             provider, sizes,
             sharedCtx,
             PAGE_SIZE,
@@ -109,9 +109,10 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             },
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
-            PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            Mockito.mock(CheckpointProgressImpl.class)
+            PageMemoryImpl.ThrottlingPolicy.DISABLED
         );
+
+        mem.copyProgressProvider(Mockito.mock(CheckpointProgressImpl.class));
 
         mem.start();
 

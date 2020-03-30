@@ -604,6 +604,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
 
+            for (DataRegion reg : dataRegions()) {
+                if (!reg.config().isPersistenceEnabled())
+                    continue;
+
+                PageMemoryEx mem = ((PageMemoryEx) reg.pageMemory());
+
+                mem.copyProgressProvider(checkpointer.currentProgress());
+            }
+
             cpHistory = new CheckpointHistory(kernalCtx);
 
             IgnitePageStoreManager store = cctx.pageStore();
@@ -1244,8 +1253,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker,
             this,
             memMetrics,
-            resolveThrottlingPolicy(),
-            checkpointer.currentProgress()
+            resolveThrottlingPolicy()
         );
 
         memMetrics.pageMemory(pageMem);

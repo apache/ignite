@@ -27,7 +27,9 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Page memory with some persistence related additions.
@@ -193,4 +195,6 @@ public interface PageMemoryEx extends PageMemory {
      * Total pages can be placed to memory.
      */
     public long totalPages();
+
+    public void copyProgressProvider(CheckpointProgress cpProgressProvider);
 }

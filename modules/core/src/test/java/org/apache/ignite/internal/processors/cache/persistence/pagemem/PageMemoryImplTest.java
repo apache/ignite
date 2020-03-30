@@ -647,8 +647,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 kernalCtx.metric(),
                 NO_OP_METRICS),
-            throttlingPlc,
-            noThrottle
+            throttlingPlc
         ): new PageMemoryImpl(
             provider,
             sizes,
@@ -666,8 +665,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 kernalCtx.metric(),
                 NO_OP_METRICS),
-            throttlingPlc,
-            noThrottle
+            throttlingPlc
         ) {
             @Override public FullPageId pullPageFromCpBuffer() {
                 FullPageId pageId = super.pullPageFromCpBuffer();
@@ -677,6 +675,8 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 return pageId;
             }
         };
+
+        mem.copyProgressProvider(Mockito.mock(CheckpointProgressImpl.class));
 
         mem.metrics().enableMetrics();
 
