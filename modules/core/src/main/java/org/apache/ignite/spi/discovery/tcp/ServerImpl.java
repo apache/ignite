@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +58,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -172,7 +172,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -4751,9 +4750,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            SecurityContext coordSubj = nodeSecurityContext(
-                                spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
-                            );
+                            SecurityContext coordSubj = spi.nodeAuth.securityContext(node);
 
                             if (!permissionsEqual(getPermissions(coordSubj), getPermissions(subj))) {
                                 // Node has not pass authentication.
@@ -4848,13 +4845,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 try {
                                     ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
 
-                                    SecurityContext rmCrd = nodeSecurityContext(
-                                        spi.marshaller(), ldr, node
-                                    );
+                                    SecurityContext rmCrd = spi.nodeAuth.securityContext(node);
 
-                                    SecurityContext locCrd = nodeSecurityContext(
-                                        spi.marshaller(), ldr, locNode
-                                    );
+                                    SecurityContext locCrd = spi.nodeAuth.securityContext(locNode);
 
                                     if (!permissionsEqual(getPermissions(locCrd), getPermissions(rmCrd))) {
                                         // Node has not pass authentication.

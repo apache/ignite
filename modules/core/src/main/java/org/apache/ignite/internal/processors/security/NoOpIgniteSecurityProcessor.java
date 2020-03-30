@@ -87,6 +87,14 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
         return null;
     }
 
+    @Override public SecurityContext securityContext(UUID subjId) {
+        return null;
+    }
+
+    @Override public SecurityContext securityContext(ClusterNode node) {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
         // No-op.

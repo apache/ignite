@@ -517,6 +517,11 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             };
         }
 
+        /** {@inheritDoc} */
+        @Override public SecurityContext securityContext(ClusterNode node) {
+            return null;
+        }
+
         /** */
         private final Collection<String> failAuthNodes;
 
