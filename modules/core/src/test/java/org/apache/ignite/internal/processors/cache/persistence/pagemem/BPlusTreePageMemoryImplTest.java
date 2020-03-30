@@ -28,9 +28,9 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -110,7 +110,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            Mockito.mock(CheckpointWriteProgressSupplier.class)
+            Mockito.mock(CheckpointProgressImpl.class)
         );
 
         mem.start();

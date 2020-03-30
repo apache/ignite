@@ -65,10 +65,10 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -244,7 +244,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private ThrottlingPolicy throttlingPlc;
 
     /** Checkpoint progress provider. Null disables throttling. */
-    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+    @Nullable private final CheckpointProgress cpProgressProvider;
 
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
     private volatile boolean pageReplacementWarned;
@@ -282,7 +282,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
-        @NotNull CheckpointWriteProgressSupplier cpProgressProvider
+        @NotNull CheckpointProgress cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;

@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
@@ -57,6 +58,18 @@ public class CheckpointProgressImpl implements CheckpointProgress {
 
     /** Partitions destroy queue. */
     private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
+
+    /** Counter for written checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger writtenPagesCntr;
+
+    /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger syncedPagesCntr;
+
+    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger evictedPagesCntr;
+
+    /** Number of pages in current checkpoint at the beginning of checkpoint. */
+    private volatile int currCheckpointPagesCnt;
 
     /**
      * @param cpFreq Timeout until next checkpoint.
@@ -117,6 +130,26 @@ public class CheckpointProgressImpl implements CheckpointProgress {
 
             doFinishFuturesWhichLessOrEqualTo(newState);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger writtenPagesCounter() {
+        return writtenPagesCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger syncedPagesCounter() {
+        return syncedPagesCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger evictedPagesCntr() {
+        return evictedPagesCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int currentCheckpointPagesCount() {
+        return currCheckpointPagesCnt;
     }
 
     /**
@@ -201,5 +234,53 @@ public class CheckpointProgressImpl implements CheckpointProgress {
      */
     public PartitionDestroyQueue destroyQueue() {
         return destroyQueue;
+    }
+
+    /**
+     *
+     * @param pagesSize
+     */
+    public void initCounters(int pagesSize) {
+        currCheckpointPagesCnt = pagesSize;
+
+        writtenPagesCntr = new AtomicInteger();
+        syncedPagesCntr = new AtomicInteger();
+        evictedPagesCntr = new AtomicInteger();
+    }
+
+    /**
+     *
+     */
+    public void clearCounters() {
+        currCheckpointPagesCnt = 0;
+
+        writtenPagesCntr = null;
+        syncedPagesCntr = null;
+        evictedPagesCntr = null;
+    }
+
+    /**
+     *
+     * @param deltha
+     */
+    public void updateSyncedPages(int deltha) {
+        syncedPagesCntr.addAndGet(deltha);
+    }
+
+    /**
+     *
+     * @param deltha
+     */
+    @Override public void updateWrittenPages(int deltha) {
+        writtenPagesCntr.addAndGet(deltha);
+    }
+
+    public void currCheckpointPages(int cnt) {
+        currCheckpointPagesCnt = cnt;
+    }
+
+    @Override public void updateEvictedPages(int deltha) {
+        if (evictedPagesCntr() != null)
+            evictedPagesCntr().addAndGet(deltha);
     }
 }

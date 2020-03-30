@@ -80,20 +80,20 @@ public class PartitionDestroyQueue {
      * @return {@code true} If pendingReqs not empty.
      */
     public boolean presentPendingReqs() {
-        return !pendingReqs.isEmpty();
+        return !pendingReqs().isEmpty();
     }
 
     /**
      * @return Pending destroy requests.
      */
     public Collection<PartitionDestroyRequest> pendingDestroyRequests() {
-        return pendingReqs.values();
+        return pendingReqs().values();
     }
 
     /**
      * Clear pending requests.
      */
     public void clearPendingRequests() {
-        pendingReqs.clear();
+        pendingReqs().clear();
     }
 }

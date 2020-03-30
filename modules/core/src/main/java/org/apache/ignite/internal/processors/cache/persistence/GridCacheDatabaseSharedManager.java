@@ -227,7 +227,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
  *
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager implements CheckpointWriteProgressSupplier {
+public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -392,18 +392,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private DataStorageMetricsImpl persStoreMetrics;
 
-    /** Counter for written checkpoint pages. Not null only if checkpoint is running. */
-    private volatile AtomicInteger writtenPagesCntr = null;
-
-    /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
-    private volatile AtomicInteger syncedPagesCntr = null;
-
-    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
-    private volatile AtomicInteger evictedPagesCntr = null;
-
-    /** Number of pages in current checkpoint at the beginning of checkpoint. */
-    private volatile int currCheckpointPagesCnt;
-
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
      * Guarded by {@link GridCacheDatabaseSharedManager#checkpointReadLock()}
@@ -567,8 +555,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             res.add(new T2<>((PageMemoryEx)reg.pageMemory(), nextCpPages));
         }
-
-        currCheckpointPagesCnt = pagesNum;
 
         return new CheckpointPagesInfoHolder(res, pagesNum, hasUserDirtyPages);
     }
@@ -1253,16 +1239,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // Write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
-                AtomicInteger cntr = evictedPagesCntr;
-
-                if (cntr != null)
-                    cntr.incrementAndGet();
+                checkpointer.currentProgress().updateEvictedPages(-1);
             },
             changeTracker,
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            this
+            checkpointer.currentProgress()
         );
 
         memMetrics.pageMemory(pageMem);
@@ -3272,26 +3255,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public AtomicInteger writtenPagesCounter() {
-        return writtenPagesCntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public AtomicInteger syncedPagesCounter() {
-        return syncedPagesCntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public AtomicInteger evictedPagesCntr() {
-        return evictedPagesCntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int currentCheckpointPagesCount() {
-        return currCheckpointPagesCnt;
-    }
-
     /**
      * @param cpTs Checkpoint timestamp.
      * @param cpId Checkpoint ID.
@@ -3630,11 +3593,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 updateHeartbeat();
 
-                currCheckpointPagesCnt = chp.pagesSize;
-
-                writtenPagesCntr = new AtomicInteger();
-                syncedPagesCntr = new AtomicInteger();
-                evictedPagesCntr = new AtomicInteger();
+                scheduledCp.initCounters(chp.pagesSize);
 
                 boolean success = false;
 
@@ -3721,7 +3680,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     blockingSectionEnd();
                                 }
 
-                                syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
+                                scheduledCp.updateSyncedPages(updStoreEntry.getValue().intValue());
                             }
                         }
                     }
@@ -4332,9 +4291,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
             synchronized (this) {
-                writtenPagesCntr = null;
-                syncedPagesCntr = null;
-                evictedPagesCntr = null;
+                scheduledCp.clearCounters();
 
                 for (DataRegion memPlc : dataRegions()) {
                     if (!memPlc.config().isPersistenceEnabled())
@@ -4342,8 +4299,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     ((PageMemoryEx)memPlc.pageMemory()).finishCheckpoint();
                 }
-
-                currCheckpointPagesCnt = 0;
             }
 
             if (chp.hasDelta()) {
@@ -4471,6 +4426,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     pendingFut.get();
                 }
             }
+        }
+
+        /**
+         * @return Current checkpoint. This field is updated only by checkpoint thread.
+         */
+        public @Nullable CheckpointProgressImpl curCopyProgress() {
+            return curCpProgress;
         }
     }
 
@@ -4732,7 +4694,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.onDataPageWritten();
                     }
 
-                    writtenPagesCntr.incrementAndGet();
+                    checkpointer.currentProgress().updateWrittenPages(1);
 
                     PageStore store = storeMgr.writeInternal(groupId, pageId, buf, tag, true);
 
