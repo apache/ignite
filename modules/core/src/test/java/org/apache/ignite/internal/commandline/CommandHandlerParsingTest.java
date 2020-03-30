@@ -535,7 +535,7 @@ public class CommandHandlerParsingTest {
         assertParseArgsThrows("Expected service name.", "--kill", "service");
 
         // Transaction command format errors.
-        assertParseArgsThrows("Expected transaction id.", "--kill", "tx");
+        assertParseArgsThrows("Expected transaction id.", "--kill", "transaction");
 
         // SQL command format errors.
         assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
