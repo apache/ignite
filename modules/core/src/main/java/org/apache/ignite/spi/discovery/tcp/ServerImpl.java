@@ -172,6 +172,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -4750,7 +4751,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            SecurityContext coordSubj = spi.nodeAuth.securityContext(node);
+                            SecurityContext coordSubj = nodeSecurityContext(
+                                spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
+                            );
 
                             if (!permissionsEqual(getPermissions(coordSubj), getPermissions(subj))) {
                                 // Node has not pass authentication.
@@ -4845,9 +4848,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 try {
                                     ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
 
-                                    SecurityContext rmCrd = spi.nodeAuth.securityContext(node);
+                                    SecurityContext rmCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, node
+                                    );
 
-                                    SecurityContext locCrd = spi.nodeAuth.securityContext(locNode);
+                                    SecurityContext locCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, locNode
+                                    );
 
                                     if (!permissionsEqual(getPermissions(locCrd), getPermissions(rmCrd))) {
                                         // Node has not pass authentication.

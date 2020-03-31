@@ -543,11 +543,6 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         }
 
         /** {@inheritDoc} */
-        @Override public SecurityContext securityContext(ClusterNode node) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isGlobalNodeAuthentication() {
             return false;
         }

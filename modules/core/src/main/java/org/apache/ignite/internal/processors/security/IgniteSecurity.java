@@ -56,15 +56,14 @@ public interface IgniteSecurity {
     public OperationSecurityContext withContext(SecurityContext secCtx);
 
     /**
-     * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or
-     * {@link #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is
-     * associated with the security subject with given subjId until holder {@link OperationSecurityContext} will be
-     * closed.
+     * Creates {@link OperationSecurityContext}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
+     * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
+     * the node with given nodeId until holder {@link OperationSecurityContext} will be closed.
      *
-     * @param subjId Subject id.
+     * @param nodeId Node id.
      * @return Security context holder.
      */
-    public OperationSecurityContext withContext(UUID subjId);
+    public OperationSecurityContext withContext(UUID nodeId);
 
     /**
      * @return SecurityContext of holder {@link OperationSecurityContext}.
@@ -75,14 +74,6 @@ public interface IgniteSecurity {
      * Delegates call to {@link GridSecurityProcessor#securityContext(UUID)}
      */
     public SecurityContext securityContext(UUID subjId);
-
-    /**
-     * Gets security context associated with node's subject.
-     *
-     * @param node Cluster node.
-     * @return Security context associated with node's subject.
-     */
-    public SecurityContext securityContext(ClusterNode node);
 
     /**
      * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,

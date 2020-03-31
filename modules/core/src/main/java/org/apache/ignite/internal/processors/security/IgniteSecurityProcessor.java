@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -45,19 +44,10 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
- * Default {@code IgniteSecurity} implementation.
- * <p>
- * {@code IgniteSecurityProcessor} serves here as a facade with is exposed to Ignite internal code,
- * while {@code GridSecurityProcessor} is hidden and managed from {@code IgniteSecurityProcessor}.
- * <p>
- * This implementation of {@code IgniteSecurity} is responsible for:
- * <ul>
- *     <li>Keeping and propagating authenticated security contexts for cluster nodes;</li>
- *     <li>Delegating calls for all aforementioned actions to {@code GridSecurityProcessor};</li>
- *     <li>Managing sandbox and proving point of entry to the internal sandbox API.</li>
- * </ul>
+ * Default IgniteSecurity implementation.
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
@@ -75,8 +65,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
 
-    /** Map of node's security contexts. Key is the node's id. */
-    private final Map<UUID, SecurityContext> nodesSecCtxs = new ConcurrentHashMap<>();
+    /** Map of security contexts. Key is the node's id. */
+    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Grid kernal context.
@@ -105,8 +95,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public OperationSecurityContext withContext(UUID subjId) {
-        ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
-            .orElseGet(() -> ctx.discovery().historicalNode(subjId));
+        ClusterNode node = ctx.discovery().node(subjId);
 
         SecurityContext res = node != null ? securityContext(node) : securityContext(subjId);
 
@@ -130,11 +119,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         return secPrc.securityContext(requireNonNull(subjId, "Parameter 'subjId' cannot be null."));
     }
 
-    /** {@inheritDoc} */
-    @Override public SecurityContext securityContext(ClusterNode node) {
+    private SecurityContext securityContext(ClusterNode node) {
         requireNonNull(node, "Parameter 'node' cannot be null.");
 
-        return nodesSecCtxs.computeIfAbsent(node.id(),
+        return secCtxs.computeIfAbsent(node.id(),
             id -> {
                 byte[] subjBytes = node.attribute(ATTR_SECURITY_SUBJECT_V2);
 
@@ -210,7 +198,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         ctx.event().addDiscoveryEventListener(
-            (evt, discoCache) -> nodesSecCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
+            (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
         );
 
         secPrc.onKernalStart(active);
@@ -283,7 +271,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        return securityContext(ctx.discovery().localNode());
+        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
     }
 
     /**

@@ -38,14 +38,6 @@ public interface DiscoverySpiNodeAuthenticator {
     public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteException;
 
     /**
-     * Gets security context associated with node's subject.
-     *
-     * @param node Cluster node.
-     * @return Security context associated with node's subject.
-     */
-    public SecurityContext securityContext(ClusterNode node);
-
-    /**
      * Gets global node authentication flag.
      *
      * @return {@code True} if all nodes in topology should authenticate joining node, {@code false} if only
