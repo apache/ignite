@@ -17,22 +17,32 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AffinityDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.AnyDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.BroadcastDistribution;
@@ -137,21 +147,86 @@ public class IgniteDistributions {
     }
 
     /**
+     * Suggests possible aggregate distributions.
+     *
+     * @param inDistr Input node distribution.
+     * @param groupSet Aggregate group set.
+     * @param groupSets Aggregate group sets.
+     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
+     */
+    public static List<Suggestion> suggestAggregate(IgniteDistribution inDistr, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets) {
+        return sorted(suggestAggregate0(new HashMap<>(), inDistr, groupSet, groupSets));
+    }
+
+    /**
+     * Suggests possible aggregate distributions.
+     *
+     * @param mq Metadata query.
+     * @param input Input node.
+     * @param groupSet Aggregate group set.
+     * @param groupSets Aggregate group sets.
+     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
+     */
+    public static List<Suggestion> suggestAggregate(RelMetadataQuery mq, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets) {
+        List<IgniteDistribution> inDistrs = IgniteMdDerivedDistribution._deriveDistributions(input, mq);
+
+        Map<Suggestion, Integer> suggestions = new HashMap<>();
+
+        for (IgniteDistribution inDistr : inDistrs)
+            suggestions = suggestAggregate0(suggestions, inDistr, groupSet, groupSets);
+
+        return sorted(suggestions);
+    }
+
+    /**
+     * Suggests possible aggregate distributions based on next principles:
+     * <li>Simple aggregate may be done in a distributed form in case its input is hash distributed by aggregate group keys</li>
+     * <li>Any aggregate may be done without map-reduce processing in case its input is singleton or broadcast distributed</li>
+     * <li>Any aggregate may be done in map-reduce style in case its input is hash or random distributed</li>
+     */
+    private static Map<Suggestion,Integer> suggestAggregate0(Map<Suggestion, Integer> dst, IgniteDistribution inDistr,
+        ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets) {
+
+        IgniteDistribution out, in;
+
+        if (simpleAggregate(groupSet, groupSets)) {
+            // re-hash by group keys
+            in = hash(groupSet.asList());
+            out = hash(ImmutableIntList.range(0, groupSet.cardinality()));
+            dst = add(dst, out, inDistr, in);
+        }
+
+        if (inDistr.satisfies(random()))
+            // map-reduce case
+            dst = add(dst, new Suggestion(single(), inDistr), BEST_CNT > 0 ? INTS[1] : INTS[0]);
+
+        out = broadcast(); in = broadcast();
+        dst = add(dst, out, inDistr, in);
+
+        out = single(); in = single();
+        dst = add(dst, out, inDistr, in);
+
+        return dst;
+    }
+
+    /**
      * Suggests possible join distributions.
      *
+     * @param mq Metadata query.
      * @param left Left node.
      * @param right Right node.
      * @param joinInfo Join info.
      * @param joinType Join type.
      * @return Array of possible distributions, sorted by their efficiency (cheaper first).
      */
-    public static List<BiSuggestion> suggestJoin(RelNode left, RelNode right, JoinInfo joinInfo, JoinRelType joinType) {
-        RelMetadataQuery mq = left.getCluster().getMetadataQuery();
-
+    public static List<BiSuggestion> suggestJoin(RelMetadataQuery mq, RelNode left, RelNode right, JoinInfo joinInfo,
+        JoinRelType joinType) {
         List<IgniteDistribution> leftIn = IgniteMdDerivedDistribution._deriveDistributions(left, mq);
         List<IgniteDistribution> rightIn = IgniteMdDerivedDistribution._deriveDistributions(right, mq);
 
-        Map<BiSuggestion, Integer> suggestions = new LinkedHashMap<>();
+        Map<BiSuggestion, Integer> suggestions = new HashMap<>();
 
         for (IgniteDistribution leftIn0 : leftIn)
             for (IgniteDistribution rightIn0 : rightIn)
@@ -171,45 +246,37 @@ public class IgniteDistributions {
      */
     public static List<BiSuggestion> suggestJoin(IgniteDistribution leftIn, IgniteDistribution rightIn,
         JoinInfo joinInfo, JoinRelType joinType) {
-        return sorted(suggestJoin0(new LinkedHashMap<>(), leftIn, rightIn, joinInfo, joinType));
+        return sorted(suggestJoin0(new HashMap<>(), leftIn, rightIn, joinInfo, joinType));
     }
 
     /**
      * Suggests possible join distributions using inputs distributions and join info
      * based on next distributions table:
-     *
-     * ===============INNER JOIN==============
-     * hash + hash = hash
-     * broadcast + hash = hash
-     * hash + broadcast = hash
-     * broadcast + broadcast = broadcast
-     * single + single = single
-     *
-     * ===============LEFT JOIN===============
-     * hash + hash = hash
-     * hash + broadcast = hash
-     * broadcast + broadcast = broadcast
-     * single + single = single
-     *
-     * ===============RIGHT JOIN==============
-     * hash + hash = hash
-     * broadcast + hash = hash
-     * broadcast + broadcast = broadcast
-     * single + single = single
-     *
-     * ===========FULL JOIN/CROSS JOIN========
-     * broadcast + broadcast = broadcast
-     * single + single = single
-     *
-     * others require redistribution.
-     *
-     * @param leftIn Left distribution.
-     * @param rightIn Right distribution.
-     * @param joinInfo Join info.
-     * @param joinType Join type.
+     * <p/><table>
+     * <tr><th>===============INNER JOIN==============</th></tr>
+     * <tr><td>hash + hash = hash</td></tr>
+     * <tr><td>broadcast + hash = hash</td></tr>
+     * <tr><td>hash + broadcast = hash</td></tr>
+     * <tr><td>broadcast + broadcast = broadcast</td></tr>
+     * <tr><td>single + single = single</td></tr>
+     * <tr><th>===============LEFT JOIN===============</th></tr>
+     * <tr><td>hash + hash = hash</td></tr>
+     * <tr><td>hash + broadcast = hash</td></tr>
+     * <tr><td>broadcast + broadcast = broadcast</td></tr>
+     * <tr><td>single + single = single</td></tr>
+     * <tr><th>===============RIGHT JOIN==============</th></tr>
+     * <tr><td>hash + hash = hash</td></tr>
+     * <tr><td>broadcast + hash = hash</td></tr>
+     * <tr><td>broadcast + broadcast = broadcast</td></tr>
+     * <tr><td>single + single = single</td></tr>
+     * <tr><th>===========FULL JOIN/CROSS JOIN========</th></tr>
+     * <tr><td>broadcast + broadcast = broadcast</td></tr>
+     * <tr><td>single + single = single</td></tr>
+     * </table>
+     * <p/>others require redistribution.
      */
-    private static Map<BiSuggestion, Integer> suggestJoin0(Map<BiSuggestion, Integer> dst, IgniteDistribution leftIn, IgniteDistribution rightIn,
-        JoinInfo joinInfo, JoinRelType joinType) {
+    private static Map<BiSuggestion, Integer> suggestJoin0(Map<BiSuggestion, Integer> dst, IgniteDistribution leftIn,
+        IgniteDistribution rightIn, JoinInfo joinInfo, JoinRelType joinType) {
         IgniteDistribution out, left, right;
 
         if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
@@ -253,8 +320,23 @@ public class IgniteDistributions {
     }
 
     /** */
-    private static Map<BiSuggestion, Integer> add(Map<BiSuggestion, Integer> dst, IgniteDistribution out, IgniteDistribution left, IgniteDistribution right,
-        IgniteDistribution newLeft, IgniteDistribution newRight) {
+    private static Map<Suggestion, Integer> add(Map<Suggestion, Integer> dst, IgniteDistribution out,
+        IgniteDistribution in, IgniteDistribution newIn) {
+        if (BEST_CNT > 0) {
+            int exch = 0;
+
+            if (!in.satisfies(newIn))
+                exch++;
+
+            return add(dst, new Suggestion(out, newIn), INTS[exch]);
+        }
+        else
+            return add(dst, new Suggestion(out, newIn), INTS[0]);
+    }
+
+    /** */
+    private static Map<BiSuggestion, Integer> add(Map<BiSuggestion, Integer> dst, IgniteDistribution out,
+        IgniteDistribution left, IgniteDistribution right, IgniteDistribution newLeft, IgniteDistribution newRight) {
         if (BEST_CNT > 0) {
             int exch = 0;
 
@@ -271,9 +353,9 @@ public class IgniteDistributions {
     }
 
     /** */
-    private static Map<BiSuggestion, Integer> add(Map<BiSuggestion, Integer> dst, BiSuggestion suggest, Integer exchCnt) {
+    private static <T> Map<T, Integer> add(Map<T, Integer> dst, T suggest, Integer exchCnt) {
         if (dst == null)
-            dst = new LinkedHashMap<>();
+            dst = new HashMap<>();
 
         dst.merge(suggest, exchCnt, IgniteDistributions::min);
 
@@ -281,9 +363,9 @@ public class IgniteDistributions {
     }
 
     /** */
-    private static List<BiSuggestion> sorted(Map<BiSuggestion, Integer> src) {
+    private static <T> List<T> sorted(Map<T, Integer> src) {
         if (BEST_CNT > 0) {
-            List<Map.Entry<BiSuggestion, Integer>> entries = new ArrayList<>(src.entrySet());
+            List<Map.Entry<T, Integer>> entries = new ArrayList<>(src.entrySet());
 
             entries.sort(Map.Entry.comparingByValue());
 
@@ -337,10 +419,158 @@ public class IgniteDistributions {
     }
 
     /**
+     * @return Values relational node distribution.
+     */
+    public static IgniteDistribution values(RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples) {
+        return broadcast();
+    }
+
+    /**
+     * @return Project relational node distribution calculated on the basis of its input and projections.
+     */
+    public static IgniteDistribution project(RelMetadataQuery mq, RelNode input, List<? extends RexNode> projects) {
+        IgniteDistribution inDistr = IgniteMdDistribution._distribution(input, mq);
+        Mappings.TargetMapping mapping = Project.getPartialMapping(input.getRowType().getFieldCount(), projects);
+
+        return inDistr.apply(mapping);
+    }
+
+    /**
+     * @return Single aggregate relational node distribution calculated on the basis of its input and groupingSets.
+     * <b>Note</b> that the method returns {@code null} in case the given input cannot be processed by a single aggregate.
+     */
+    public static IgniteDistribution aggregate(RelMetadataQuery mq, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        RelDataType inType = input.getRowType();
+        IgniteDistribution inDistr = IgniteMdDistribution._distribution(input, mq);
+
+        return aggregate(inType, inDistr, groupSet, groupSets, aggCalls);
+    }
+
+    /**
+     * @return Single aggregate relational node distribution calculated on the basis of its input and groupingSets.
+     * <b>Note</b> that the method returns {@code null} in case the given input cannot be processed by a single aggregate.
+     */
+    public static IgniteDistribution aggregate(RelDataType inType, IgniteDistribution inDistr, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        switch (inDistr.getType()) {
+            case SINGLETON:
+            case BROADCAST_DISTRIBUTED:
+                return inDistr;
+            case HASH_DISTRIBUTED:
+                if (!simpleAggregate(groupSet, groupSets))
+                    return null; // ROLLUP and CUBE require map-reduce processing
+
+                int inFields = inType.getFieldCount();
+                int outFields = groupSet.cardinality() + aggCalls.size();
+
+                Mappings.TargetMapping mapping = IgniteAggregate.partialMapping(inFields, outFields, groupSet);
+
+                return inDistr.apply(mapping);
+            default:
+                // Other group types require map-reduce aggregate processing;
+                return null;
+        }
+    }
+
+    /**
+     * @return Map aggregate relational node distribution calculated on the basis of its input and groupingSets.
+     * <b>Note</b> that the method returns {@code null} in case the given input cannot be processed in map-reduce
+     * style by an aggregate.
+     */
+    public static IgniteDistribution mapAggregate(RelMetadataQuery mq, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        IgniteDistribution inputDistr = IgniteMdDistribution._distribution(input, mq);
+
+        switch (inputDistr.getType()) {
+            case SINGLETON:
+            case BROADCAST_DISTRIBUTED:
+                return inputDistr;
+
+            case RANDOM_DISTRIBUTED:
+            case HASH_DISTRIBUTED:
+                return random(); // its OK to just erase distribution here
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * @return Reduce aggregate relational node distribution calculated on the basis of its input and groupingSets.
+     * <b>Note</b> that the method returns {@code null} in case the given input cannot be reduced.
+     */
+    public static IgniteDistribution reduceAggregate(RelMetadataQuery mq, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        IgniteDistribution inputDistr = IgniteMdDistribution._distribution(input, mq);
+
+        // requires singleton distribution
+        if (inputDistr.getType() == RelDistribution.Type.SINGLETON)
+            return inputDistr;
+
+        return null;
+    }
+
+    /**
      * See {@link RelTraitDef#canonize(org.apache.calcite.plan.RelTrait)}.
      */
     private static IgniteDistribution canonize(IgniteDistribution distr) {
         return DistributionTraitDef.INSTANCE.canonize(distr);
+    }
+
+    /** */
+    private static boolean simpleAggregate(ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets) {
+        return Aggregate.Group.induce(groupSet, groupSets) == Aggregate.Group.SIMPLE;
+    }
+
+    /**
+     * Distribution suggestion for SingleRel.
+     */
+    public static class Suggestion {
+        /** */
+        private final IgniteDistribution out;
+
+        /** */
+        private final IgniteDistribution in;
+
+        /**
+         * @param out Result distribution.
+         * @param in Required in distribution.
+         */
+        public Suggestion(IgniteDistribution out, IgniteDistribution in) {
+            this.out = out;
+            this.in = in;
+        }
+
+        /**
+         * @return Result distribution.
+         */
+        public IgniteDistribution out() {
+            return out;
+        }
+
+        /**
+         * @return Required in distribution.
+         */
+        public IgniteDistribution in() {
+            return in;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Suggestion that = (Suggestion) o;
+
+            return out == that.out && in == that.in;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = out.hashCode();
+            result = 31 * result + in.hashCode();
+            return result;
+        }
     }
 
     /**

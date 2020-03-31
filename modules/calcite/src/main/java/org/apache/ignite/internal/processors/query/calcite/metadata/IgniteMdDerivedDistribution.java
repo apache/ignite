@@ -27,8 +27,8 @@ import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -114,16 +114,6 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
     }
 
     /**
-     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
-     */
-    public List<IgniteDistribution> deriveDistributions(SingleRel rel, RelMetadataQuery mq) {
-        if (rel instanceof IgniteRel)
-            return deriveDistributions((IgniteRel)rel, mq);
-
-        return _deriveDistributions(rel.getInput(), mq);
-    }
-
-    /**
      * Here we trying to get physical nodes and request distribution types from them, in case there is no physical
      * nodes, we get logical ones and derive possible distribution types they may satisfy with.
      *
@@ -168,9 +158,19 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
     /**
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
+    public List<IgniteDistribution> deriveDistributions(LogicalAggregate rel, RelMetadataQuery mq) {
+        List<IgniteDistributions.Suggestion> suggestions = IgniteDistributions.suggestAggregate(
+            mq, rel.getInput(), rel.getGroupSet(), rel.getGroupSets());
+
+        return Commons.transform(suggestions, IgniteDistributions.Suggestion::out);
+    }
+
+    /**
+     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
+     */
     public List<IgniteDistribution> deriveDistributions(LogicalJoin rel, RelMetadataQuery mq) {
         List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
-            rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
+            mq, rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
 
         return Commons.transform(suggestions, IgniteDistributions.BiSuggestion::out);
     }

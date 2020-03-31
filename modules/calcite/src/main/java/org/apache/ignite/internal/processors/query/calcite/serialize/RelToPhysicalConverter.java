@@ -20,16 +20,21 @@ package org.apache.ignite.internal.processors.query.calcite.serialize;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.rex.RexLiteral;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.Expression;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToExpTranslator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggCallExp;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -91,6 +96,41 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
                 typeFactory, rel.getLeft().getRowType(), rel.getRight().getRowType()));
 
         return new JoinPhysicalRel(dataType, visit((IgniteRel) rel.getLeft()), visit((IgniteRel) rel.getRight()), rexTranslator.translate(rel.getCondition()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public PhysicalRel visit(IgniteAggregate rel) {
+        byte type = AggregatePhysicalRel.SINGLE;
+        List<ImmutableBitSet> groupSets = rel.getGroupSets();
+        List<AggCallExp> calls = Commons.transform(rel.getAggCallList(), rexTranslator::translate);
+        PhysicalRel input = visit((IgniteRel) rel.getInput());
+        DataType inputRowType = DataType.fromType(rel.getInput().getRowType());
+
+        return new AggregatePhysicalRel(type, groupSets, calls, input, inputRowType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PhysicalRel visit(IgniteMapAggregate rel) {
+        byte type = AggregatePhysicalRel.MAP;
+        List<ImmutableBitSet> groupSets = rel.getGroupSets();
+        List<AggCallExp> calls = Commons.transform(
+            rel.getAggCallList(), rexTranslator::translate);
+        PhysicalRel input = visit((IgniteRel) rel.getInput());
+        DataType inputRowType = DataType.fromType(rel.getInput().getRowType());
+
+        return new AggregatePhysicalRel(type, groupSets, calls, input, inputRowType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PhysicalRel visit(IgniteReduceAggregate rel) {
+        byte type = AggregatePhysicalRel.REDUCE;
+        List<ImmutableBitSet> groupSets = rel.groupSets();
+        List<AggCallExp> calls = Commons.transform(
+            rel.aggregateCalls(), rexTranslator::translate);
+        PhysicalRel input = visit((IgniteRel) rel.getInput());
+        DataType inputRowType = null;
+
+        return new AggregatePhysicalRel(type, groupSets, calls, input, inputRowType);
     }
 
     /** {@inheritDoc} */

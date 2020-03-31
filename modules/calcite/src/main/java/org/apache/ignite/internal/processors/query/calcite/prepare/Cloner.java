@@ -23,11 +23,14 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -126,7 +129,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
-        Fragment fragment = (Fragment) rel.source();
+        Fragment fragment = rel.source();
         fragments.add(fragment = new Fragment(fragment.fragmentId(), visit(fragment.root())));
 
         return new IgniteReceiver(cluster, rel.getTraitSet(), rel.getRowType(), fragment);
@@ -137,6 +140,30 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteExchange(cluster, rel.getTraitSet(), input, rel.getDistribution());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteAggregate rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteAggregate(cluster, rel.getTraitSet(), input,
+            rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteMapAggregate rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteMapAggregate(cluster, rel.getTraitSet(), input,
+            rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteReduceAggregate rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteReduceAggregate(cluster, rel.getTraitSet(), input,
+            rel.groupSet(), rel.groupSets(), rel.aggregateCalls(), rel.getRowType());
     }
 
     /** {@inheritDoc} */

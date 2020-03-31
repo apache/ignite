@@ -21,6 +21,8 @@ import org.apache.calcite.rel.rules.SubQueryRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.ignite.internal.processors.query.calcite.rule.AggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.AggregateTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterTraitsPropagationRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.JoinConverterRule;
@@ -61,6 +63,8 @@ public enum PlannerPhase {
         /** {@inheritDoc} */
         @Override public RuleSet getRules(PlanningContext ctx) {
             return RuleSets.ofList(
+                AggregateConverterRule.INSTANCE,
+                AggregateTraitsPropagationRule.INSTANCE,
                 JoinConverterRule.INSTANCE,
                 JoinTraitsPropagationRule.INSTANCE,
                 ProjectConverterRule.INSTANCE,

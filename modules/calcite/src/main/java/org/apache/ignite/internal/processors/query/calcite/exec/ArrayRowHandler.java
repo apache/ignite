@@ -15,27 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.util;
-
-import org.apache.calcite.runtime.Resources;
-import org.apache.calcite.sql.validate.SqlValidatorException;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 /**
  *
  */
-public interface IgniteResource {
+public class ArrayRowHandler implements RowHandler<Object[]> {
     /** */
-    IgniteResource INSTANCE = Resources.create(IgniteResource.class);
+    public static final RowHandler<Object[]> INSTANCE = new ArrayRowHandler();
 
     /** */
-    @Resources.BaseMessage("Illegal alias. {0} is reserved name.")
-    Resources.ExInst<SqlValidatorException> illegalAlias(String a0);
+    private ArrayRowHandler() {}
 
-    /** */
-    @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update key, key fields or val field in case the val is a complex type.")
-    Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
+    /** {@inheritDoc} */
+    @Override public Object[] create(Object... fields) {
+        return fields;
+    }
 
-    /** */
-    @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
-    Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
+    /** {@inheritDoc} */
+    @Override public <T> T get(int field, Object[] row) {
+        return (T) row[field];
+    }
+
+    /** {@inheritDoc} */
+    @Override public void set(int field, Object[] row, Object value) {
+        row[field] = value;
+    }
 }

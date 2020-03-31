@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -38,6 +41,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -244,5 +249,25 @@ public final class Commons {
     /** */
     public static <T> List<T> flat(List<List<? extends T>> src) {
         return src.stream().flatMap(List::stream).collect(Collectors.toList());
+    }
+
+    /** */
+    public static RelDataType aggregationDataRowType(RelDataTypeFactory typeFactory) {
+        assert typeFactory instanceof IgniteTypeFactory;
+
+        RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
+
+        builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
+        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
+        builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
+
+        return builder.build();
+    }
+
+    /** */
+    public static String explain(RelNode rel) {
+        StringWriter writer = new StringWriter();
+        rel.explain(new RelWriterImpl(new PrintWriter(writer)));
+        return writer.toString();
     }
 }

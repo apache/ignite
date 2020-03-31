@@ -22,33 +22,32 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 
 /**
  *
  */
-public class FilterTraitsPropagationRule extends RelOptRule {
+public class AggregateConverterRule extends RelOptRule {
     /** */
-    public static final RelOptRule INSTANCE = new FilterTraitsPropagationRule();
+    public static final RelOptRule INSTANCE = new AggregateConverterRule();
 
-    public FilterTraitsPropagationRule() {
-        super(RuleUtils.traitPropagationOperand(IgniteFilter.class));
+    /** */
+    public AggregateConverterRule() {
+        super(operand(LogicalAggregate.class, any()));
     }
 
     /** {@inheritDoc} */
     @Override public void onMatch(RelOptRuleCall call) {
-        IgniteFilter rel = call.rel(0);
-        RelNode input = call.rel(1);
+        LogicalAggregate rel = call.rel(0);
 
         RelOptCluster cluster = rel.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
-
+        RelNode input = convert(rel.getInput(), IgniteConvention.INSTANCE);
         RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteMdDistribution._distribution(input, mq));
+            .replace(IgniteConvention.INSTANCE);
 
         RuleUtils.transformTo(call,
-            new IgniteFilter(cluster, traits, input, rel.getCondition()));
+            new IgniteAggregate(cluster, traits, input, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList()));
     }
 }

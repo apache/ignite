@@ -15,27 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.util;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
-import org.apache.calcite.runtime.Resources;
-import org.apache.calcite.sql.validate.SqlValidatorException;
+import java.io.Serializable;
+import java.util.List;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /**
  *
  */
-public interface IgniteResource {
+public interface Accumulator extends Serializable {
     /** */
-    IgniteResource INSTANCE = Resources.create(IgniteResource.class);
+    void add(Object... args);
 
     /** */
-    @Resources.BaseMessage("Illegal alias. {0} is reserved name.")
-    Resources.ExInst<SqlValidatorException> illegalAlias(String a0);
+    void apply(Accumulator other);
 
     /** */
-    @Resources.BaseMessage("Cannot update field \"{0}\". You cannot update key, key fields or val field in case the val is a complex type.")
-    Resources.ExInst<SqlValidatorException> cannotUpdateField(String field);
+    Object end();
 
     /** */
-    @Resources.BaseMessage("Illegal aggregate function. {0} is unsupported at the moment.")
-    Resources.ExInst<SqlValidatorException> unsupportedAggregationFunction(String a0);
+    List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory);
+
+    /** */
+    RelDataType returnType(IgniteTypeFactory typeFactory);
 }

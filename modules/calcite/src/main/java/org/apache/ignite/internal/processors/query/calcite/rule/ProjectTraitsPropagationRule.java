@@ -21,11 +21,10 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
  * Ignite Project converter.
@@ -38,7 +37,7 @@ public class ProjectTraitsPropagationRule extends RelOptRule {
      * Creates a converter.
      */
     public ProjectTraitsPropagationRule() {
-        super(operand(IgniteProject.class, operand(RelSubset.class, any())));
+        super(RuleUtils.traitPropagationOperand(IgniteProject.class));
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
@@ -49,7 +48,7 @@ public class ProjectTraitsPropagationRule extends RelOptRule {
         RelMetadataQuery mq = cluster.getMetadataQuery();
 
         RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteMdDistribution.project(mq, input, rel.getProjects()));
+            .replace(IgniteDistributions.project(mq, input, rel.getProjects()));
 
         RuleUtils.transformTo(call,
             new IgniteProject(cluster, traits, input, rel.getProjects(), rel.getRowType()));

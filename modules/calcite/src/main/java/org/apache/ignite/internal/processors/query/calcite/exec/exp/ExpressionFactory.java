@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.calcite.adapter.enumerable.JavaRowFormat;
 import org.apache.calcite.adapter.enumerable.PhysTypeImpl;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
@@ -38,6 +39,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
@@ -52,8 +54,14 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggCallExp;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.WrappersFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -65,12 +73,13 @@ import org.codehaus.commons.compiler.ICompilerFactory;
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
  * Each expression compiles into a class and a wrapper over it is returned.
  */
+@SuppressWarnings({"rawtypes"})
 public class ExpressionFactory {
     /** */
-    private static final Map<String, Scalar> CACHE_1 = new GridBoundedConcurrentLinkedHashMap<>(1024);
+    private static final Map<String, Scalar> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /** */
-    private static final Map<String, CallOperation> CACHE_2 = new GridBoundedConcurrentLinkedHashMap<>(1024);
+    private static final Map<String, CallOperation> CALL_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /** */
     private final IgniteTypeFactory typeFactory;
@@ -103,6 +112,39 @@ public class ExpressionFactory {
         expToRexTranslator = new ExpToRexTranslator(typeFactory, opTable);
         rexToExpTranslator = new RexToExpTranslator(typeFactory);
         emptyType = new RelDataTypeFactory.Builder(typeFactory).build();
+    }
+
+    /** */
+    public IgniteTypeFactory typeFactory() {
+        return typeFactory;
+    }
+
+    /** */
+    public RexBuilder rexBuilder() {
+        return rexBuilder;
+    }
+
+    /** */
+    public ExpToRexTranslator expToRexTranslator() {
+        return expToRexTranslator;
+    }
+
+    /** */
+    public RexToExpTranslator rexToExpTranslator() {
+        return rexToExpTranslator;
+    }
+
+    /** */
+    public Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext root, AggregateNode.AggregateType type, RowHandler handler, List<AggregateCall> calls, RelDataType rowType) {
+        return new WrappersFactoryImpl(root, type, handler, calls, rowType);
+    }
+
+    /** */
+    public Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext root, AggregateNode.AggregateType type, RowHandler handler, List<AggCallExp> calls, DataType rowType) {
+        List<AggregateCall> calls0 = Commons.transform(calls, expToRexTranslator::translate);
+        RelDataType rowType0 = rowType == null ? null : rowType.logicalType(typeFactory);
+
+        return wrappersFactory(root, type, handler, calls0, rowType0);
     }
 
     /**
@@ -215,17 +257,17 @@ public class ExpressionFactory {
 
     /** */
     public CallOperation implement(Call call) {
-        return CACHE_2.computeIfAbsent(digest(call), k -> compile(call));
+        return CALL_CACHE.computeIfAbsent(digest(call), k -> compile(call));
     }
 
     /** */
-    private Scalar scalar(RexNode node, RelDataType type) {
+    public Scalar scalar(RexNode node, RelDataType type) {
         return scalar(ImmutableList.of(node), type);
     }
 
     /** */
-    private Scalar scalar(List<RexNode> nodes, RelDataType type) {
-        return CACHE_1.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
+    public Scalar scalar(List<RexNode> nodes, RelDataType type) {
+        return SCALAR_CACHE.computeIfAbsent(digest(nodes, type), k -> compile(nodes, type));
     }
 
     /** */

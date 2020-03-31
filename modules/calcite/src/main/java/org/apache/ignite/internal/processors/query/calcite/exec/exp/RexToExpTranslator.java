@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.List;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -32,6 +33,8 @@ import org.apache.calcite.rex.RexRangeRef;
 import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.sql.SqlSyntax;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggCallExp;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -65,6 +68,24 @@ public class RexToExpTranslator implements RexVisitor<Expression> {
      */
     public Expression translate(RexNode rex) {
         return rex.accept(this);
+    }
+
+    /** */
+    public AggCallExp translate(AggregateCall call) {
+        DataType type = DataType.fromType(call.type);
+        SqlSyntax syntax = call.getAggregation().getSyntax();
+        String function = call.getAggregation().getName();
+        String name = call.name;
+        boolean distinct = call.isDistinct();
+        boolean approximate = call.isApproximate();
+        boolean ignoreNulls = call.ignoreNulls();
+        int[] args = call.getArgList().stream()
+            .mapToInt(Integer::intValue)
+            .toArray();
+        int filterArg = call.filterArg;
+
+        return new AggCallExp(type, syntax, function,
+            name, distinct, approximate, ignoreNulls, args, filterArg);
     }
 
     /** {@inheritDoc} */
