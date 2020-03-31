@@ -27,7 +27,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
@@ -95,6 +96,12 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             null
         );
 
+        IgniteOutClosure<CheckpointProgressEx> clo = new IgniteOutClosure<CheckpointProgressEx>() {
+            @Override public CheckpointProgressEx apply() {
+                return Mockito.mock(CheckpointProgressEx.class);
+            }
+        };
+
         PageMemory mem = new PageMemoryImpl(
             provider, sizes,
             sharedCtx,
@@ -109,7 +116,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            Mockito.mock(CheckpointWriteProgressSupplier.class)
+            clo
         );
 
         mem.start();

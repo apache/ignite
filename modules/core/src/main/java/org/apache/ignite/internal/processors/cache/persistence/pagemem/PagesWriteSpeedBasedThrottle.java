@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -41,7 +41,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final CheckpointWriteProgressSupplier cpProgress;
+    private final CheckpointProgressEx cpProgress;
 
     /** Starting throttle time. Limits write speed to 1000 MB/s. */
     private static final long STARTING_THROTTLE_NANOS = 4000;
@@ -118,7 +118,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      */
     public PagesWriteSpeedBasedThrottle(
             PageMemoryImpl pageMemory,
-            CheckpointWriteProgressSupplier cpProgress,
+            CheckpointProgressEx cpProgress,
             CheckpointLockStateChecker stateChecker,
             IgniteLogger log
     ) {

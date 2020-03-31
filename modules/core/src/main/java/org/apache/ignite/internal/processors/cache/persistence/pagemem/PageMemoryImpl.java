@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -65,7 +66,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -244,7 +246,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private ThrottlingPolicy throttlingPlc;
 
     /** Checkpoint progress provider. Null disables throttling. */
-    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+    @Nullable private final IgniteOutClosure<CheckpointProgressEx> cpProgressProvider;
 
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
     private volatile boolean pageReplacementWarned;
@@ -282,7 +284,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
-        @NotNull CheckpointWriteProgressSupplier cpProgressProvider
+        IgniteOutClosure<CheckpointProgressEx> cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;
@@ -388,9 +390,9 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     private void initWriteThrottle() {
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider.apply(), stateChecker, log);
         else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false, log);
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider.apply(), stateChecker, false, log);
         else if (throttlingPlc == ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY)
             writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true, log);
     }

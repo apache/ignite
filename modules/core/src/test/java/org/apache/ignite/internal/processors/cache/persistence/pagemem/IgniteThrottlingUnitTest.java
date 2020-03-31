@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.logger.NullLogger;
@@ -316,7 +316,7 @@ public class IgniteThrottlingUnitTest {
         }).when(log).info(anyString());
 
         AtomicInteger written = new AtomicInteger();
-        CheckpointWriteProgressSupplier cpProgress = mock(CheckpointWriteProgressSupplier.class);
+        CheckpointProgressEx cpProgress = mock(CheckpointProgressEx.class);
         when(cpProgress.writtenPagesCounter()).thenReturn(written);
 
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {

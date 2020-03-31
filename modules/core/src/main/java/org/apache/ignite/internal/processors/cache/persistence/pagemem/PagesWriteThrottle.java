@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -33,7 +33,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final CheckpointWriteProgressSupplier cpProgress;
+    private final CheckpointProgressEx cpProgress;
 
     /** If true, throttle will only protect from checkpoint buffer overflow, not from dirty pages ratio cap excess. */
     private final boolean throttleOnlyPagesInCheckpoint;
@@ -70,7 +70,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
      * @param log Logger.
      */
     public PagesWriteThrottle(PageMemoryImpl pageMemory,
-        CheckpointWriteProgressSupplier cpProgress,
+        CheckpointProgressEx cpProgress,
         CheckpointLockStateChecker stateChecker,
         boolean throttleOnlyPagesInCheckpoint,
         IgniteLogger log

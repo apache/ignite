@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -622,12 +623,16 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        CheckpointWriteProgressSupplier noThrottle = Mockito.mock(CheckpointWriteProgressSupplier.class);
+        IgniteOutClosure<CheckpointProgressEx> noThrottle = new IgniteOutClosure<CheckpointProgressEx>() {
+            @Override public CheckpointProgressEx apply() {
+                return Mockito.mock(CheckpointProgressEx.class);
+            }
+        };
 
-        Mockito.when(noThrottle.currentCheckpointPagesCount()).thenReturn(1_000_000);
-        Mockito.when(noThrottle.evictedPagesCntr()).thenReturn(new AtomicInteger(0));
-        Mockito.when(noThrottle.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
-        Mockito.when(noThrottle.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        Mockito.when(noThrottle.apply().currentCheckpointPagesCount()).thenReturn(1_000_000);
+        Mockito.when(noThrottle.apply().evictedPagesCntr()).thenReturn(new AtomicInteger(0));
+        Mockito.when(noThrottle.apply().syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        Mockito.when(noThrottle.apply().writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
 
         PageMemoryImpl mem = cpBufChecker == null ? new PageMemoryImpl(
             provider,

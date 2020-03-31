@@ -30,7 +30,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
@@ -101,6 +102,12 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null
         );
 
+        IgniteOutClosure<CheckpointProgressEx> clo = new IgniteOutClosure<CheckpointProgressEx>() {
+            @Override public CheckpointProgressEx apply() {
+                return Mockito.mock(CheckpointProgressEx.class);
+            }
+        };
+
         return new PageMemoryImpl(
             provider,
             sizes,
@@ -120,7 +127,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            Mockito.mock(CheckpointWriteProgressSupplier.class)
+            clo
         );
     }
 

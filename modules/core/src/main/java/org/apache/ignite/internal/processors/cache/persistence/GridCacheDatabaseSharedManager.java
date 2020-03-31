@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -135,7 +136,6 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyQueue;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyRequest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -1247,21 +1247,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            new CheckpointWriteProgressSupplier() {
-                @Override public AtomicInteger writtenPagesCounter() {
-                    return getCheckpointer().currentProgress().writtenPagesCounter();
-                }
-
-                @Override public AtomicInteger syncedPagesCounter() {
-                    return getCheckpointer().currentProgress().syncedPagesCounter();
-                }
-
-                @Override public AtomicInteger evictedPagesCntr() {
-                    return getCheckpointer().currentProgress().evictedPagesCntr();
-                }
-
-                @Override public int currentCheckpointPagesCount() {
-                    return getCheckpointer().currentProgress().currentCheckpointPagesCount();
+            new IgniteOutClosure<CheckpointProgressEx>() {
+                @Override public CheckpointProgressEx apply() {
+                    return getCheckpointer().currentProgress();
                 }
             }
         );
