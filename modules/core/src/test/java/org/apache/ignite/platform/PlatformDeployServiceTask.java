@@ -17,11 +17,6 @@
 
 package org.apache.ignite.platform;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -36,6 +31,12 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Task that deploys a Java service.
@@ -348,7 +349,9 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
     }
 
-    /** Test service. */
+    /**
+     * Test service.
+     */
     public static interface PlatformTestService {
         /** Returns a value indicating whether this service is cancelled. */
         boolean isCancelled();

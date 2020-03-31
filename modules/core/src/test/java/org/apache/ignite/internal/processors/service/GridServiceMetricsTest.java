@@ -4,8 +4,6 @@ import com.google.common.collect.Iterables;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -22,7 +20,6 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
@@ -31,13 +28,15 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.sumH
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.methodMetricName;
 
-/** Tests metrics of service invocations. */
+/**
+ * Tests metrics of service invocations.
+ */
 public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invocations. */
-    private static final int INVOKE_CNT = 100;
+    private static final int INVOKE_CNT = 50;
 
     /** Utility holder of current grid number. */
-    private final AtomicInteger gridNum = new AtomicInteger();
+    private int gridNum;
 
     /** Service name used in the tests. */
     private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName()+"_service";
@@ -67,11 +66,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testMultipleDeployment() throws Throwable {
         List<IgniteEx> servers = new ArrayList<>();
 
-        servers.add(startGrid(gridNum.getAndIncrement()));
+        servers.add(startGrid(gridNum++));
 
         IgniteEx server = servers.get(0);
 
-        IgniteEx client = startClientGrid(gridNum.getAndIncrement());
+        IgniteEx client = startClientGrid(gridNum++);
 
         assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(server.context().metric(), SERVICE_METRIC_REGISTRY));
 
@@ -100,9 +99,9 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(callsCnt, totalInstance);
 
         // Add servers more than service instances.
-        servers.add(startGrid(gridNum.getAndIncrement()));
+        servers.add(startGrid(gridNum++));
 
-        servers.add(startGrid(gridNum.getAndIncrement()));
+        servers.add(startGrid(gridNum++));
 
         awaitPartitionMapExchange();
 
@@ -232,16 +231,18 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         long invokeCollector = 0;
 
         // Call service through the server proxies.
-        for (AtomicInteger i = new AtomicInteger(); i.get() < INVOKE_CNT; i.incrementAndGet()) {
+        for (int i = 0; i < INVOKE_CNT; ++i) {
             // Call from server.
-            IgniteEx ignite = servers.get(i.get() % servers.size());
+            IgniteEx ignite = servers.get(i % servers.size());
 
-            invokeCollector += callService(ignite, () -> serverStickyProxies.get(i.get() % serverStickyProxies.size()));
+            callService4Times(ignite, serverStickyProxies.get(i % serverStickyProxies.size()));
 
             // Call from client.
-            ignite = clients.get(i.get() % clients.size());
+            ignite = clients.get(i % clients.size());
 
-            invokeCollector += callService(ignite, () -> clientStickyProxies.get(i.get() % clientStickyProxies.size()));
+            callService4Times(ignite, clientStickyProxies.get(i % clientStickyProxies.size()));
+
+            invokeCollector += 8;
         }
 
         long invokesInMetrics = 0;
@@ -264,36 +265,37 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals("Calculated wrong service invocation number.", invokesInMetrics, invokeCollector);
     }
 
+    /** Expose ignite-references of the nodes as list. */
+    private List<IgniteEx> startGrids(int cnt, boolean client) throws Exception {
+        List<IgniteEx> grids = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; ++i)
+            grids.add(client ? startClientGrid(gridNum++) : startGrid(gridNum++));
+
+        return grids;
+    }
+
     /**
-     * Invokes service method via proxies and local deployments if available. Calculates the invocations done.
+     * Executes 2 calls for {@link MyService} though unsticky proxy and 2 calls to {@code extraSrvc}. Total 4 are
+     * suposed to present in the metrics.
      *
      * @param ignite Server or client node.
      * @param extraSrvc Extra service instance or proxy to call.
-     * @return Total invokes done.
      */
-    private int callService(IgniteEx ignite, @Nullable Supplier<MyService> extraSrvc) {
+    private static void callService4Times(IgniteEx ignite, MyService extraSrvc) {
         MyService srvc = ignite.services().serviceProxy(SRVC_NAME, MyService.class, false);
 
         srvc.hello();
 
-        assertEquals(srvc.hello(12), 12);
+        srvc.hello(1);
 
-        // We just did 2 service calls.
-        int invokesDone = 2;
+        extraSrvc.hello();
 
-        if (extraSrvc != null) {
-            srvc.hello();
-
-            assertEquals(srvc.hello(10), 10);
-
-            invokesDone += 2;
-        }
-
-        return invokesDone;
+        extraSrvc.hello(1);
     }
 
     /** Provides test service configuration. */
-    private ServiceConfiguration serviceCfg(String svcName, int perClusterCnt, int perNodeCnt) {
+    private static ServiceConfiguration serviceCfg(String svcName, int perClusterCnt, int perNodeCnt) {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
 
         svcCfg.setService(MyServiceFactory.create());
@@ -305,18 +307,6 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         svcCfg.setTotalCount(perClusterCnt);
 
         return svcCfg;
-    }
-
-    /** Expose ignite-references of the nodes as list. */
-    private List<IgniteEx> startGrids(int cnt, boolean client) {
-        return Stream.generate(() -> {
-            try {
-                return client ? startClientGrid(gridNum.getAndIncrement()) : startGrid(gridNum.getAndIncrement());
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).limit(cnt).collect(Collectors.toList());
     }
 
     /** @return Number of metrics contained in metric registry for {@code srvcName}. */

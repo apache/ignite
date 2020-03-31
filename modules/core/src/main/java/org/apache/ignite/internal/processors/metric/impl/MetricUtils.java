@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.stream.LongStream;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -228,6 +227,11 @@ public class MetricUtils {
      * @return Sum of all entries of {@code histogram} buckets.
      */
     public static long sumHistogramEntries(HistogramMetric histogram) {
-        return LongStream.of(histogram.value()).reduce(Long::sum).orElse(0);
+        long sum = 0;
+
+        for (int i = 0; i < histogram.value().length; ++i)
+            sum += histogram.value()[i];
+
+        return sum;
     }
 }
