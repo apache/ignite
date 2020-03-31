@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
