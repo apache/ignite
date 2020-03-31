@@ -895,6 +895,17 @@ public final class IgniteSystemProperties {
     @Deprecated
     public static final String IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE = "IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE";
 
+    /** The list of SQL functions to disable.
+     * Default is:
+     * "FILE_READ, FILE_WRITE, CSVWRITE, CSVREAD, MEMORY_FREE, MEMORY_USED,
+     * LOCK_MODE, LINK_SCHEMA, SESSION_ID, CANCEL_SESSION".
+     *
+     * Empty string enables all available SQL functions.
+     * @deprecated Since 8.7.16.
+     */
+    @Deprecated
+    public static final String IGNITE_SQL_DISABLED_FUNCTIONS = "IGNITE_SQL_DISABLED_FUNCTIONS";
+
     /**
      * Enforces singleton.
      */

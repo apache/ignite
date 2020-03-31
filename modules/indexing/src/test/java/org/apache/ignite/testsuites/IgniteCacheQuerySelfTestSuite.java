@@ -141,6 +141,10 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
+import org.apache.ignite.internal.processors.query.DisabledSqlFunctions_DistributedClientTest;
+import org.apache.ignite.internal.processors.query.DisabledSqlFunctions_DistributedServerTest;
+import org.apache.ignite.internal.processors.query.DisabledSqlFunctions_LocalClientTest;
+import org.apache.ignite.internal.processors.query.DisabledSqlFunctions_LocalServerTest;
 import org.apache.ignite.internal.processors.query.IgniteCachelessQueriesSelfTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteStableBaselineBinObjFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
@@ -189,6 +193,11 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
+
+        suite.addTestSuite(DisabledSqlFunctions_LocalClientTest.class);
+        suite.addTestSuite(DisabledSqlFunctions_DistributedClientTest.class);
+        suite.addTestSuite(DisabledSqlFunctions_LocalServerTest.class);
+        suite.addTestSuite(DisabledSqlFunctions_DistributedServerTest.class);
 
         suite.addTestSuite(SqlParserCreateIndexSelfTest.class);
         suite.addTestSuite(SqlParserDropIndexSelfTest.class);
