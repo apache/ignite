@@ -366,7 +366,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         if (activeTasksCnt.incrementAndGet() > maxActiveComputeTasks) {
             activeTasksCnt.decrementAndGet();
 
-            throw new IgniteClientException(ClientStatus.RESOURCE_LIMIT_EXCEED, "Active compute tasks per connection " +
+            throw new IgniteClientException(ClientStatus.TOO_MANY_COMPUTE_TASKS, "Active compute tasks per connection " +
                 "limit (" + maxActiveComputeTasks + ") exceeded. To start a new task you need to wait for some of " +
                 "currently active tasks complete. To change the limit set up the " +
                 "ThinClientConfiguration.MaxActiveComputeTasksPerConnection property.");

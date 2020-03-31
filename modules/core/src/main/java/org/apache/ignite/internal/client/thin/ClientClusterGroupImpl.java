@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 class ClientClusterGroupImpl implements ClientClusterGroup {
     /** Node id's. */
-    private volatile Collection<UUID> nodeIds;
+    private final Collection<UUID> nodeIds;
 
     /**
      * @param ids Ids.

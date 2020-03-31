@@ -152,32 +152,15 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     ) throws ClientException {
         Collection<UUID> nodeIds = clusterGrp == cluster ? null : clusterGrp.nodeIds();
 
+        if (F.isEmpty(taskName))
+            throw new ClientException("Task name can't be null or empty.");
+
         if (nodeIds != null && nodeIds.isEmpty())
             throw new ClientException("Cluster group is empty.");
 
         while (true) {
-            Consumer<PayloadOutputChannel> payloadWriter = ch -> {
-                if (!ch.clientChannel().isFeatureSupported(ClientFeature.EXECUTE_TASK_BY_NAME)) {
-                    throw new ClientFeatureNotSupportedByServerException("Compute grid functionality for thin " +
-                        "client not supported by server node (" + ch.clientChannel().serverNodeId() + ')');
-                }
-
-                try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), ch.out(), null, null)) {
-                    if (nodeIds == null) // Include all nodes.
-                        w.writeInt(0);
-                    else {
-                        w.writeInt(nodeIds.size());
-
-                        for (UUID nodeId : nodeIds)
-                            w.writeUuid(nodeId);
-                    }
-
-                    w.writeByte(flags);
-                    w.writeLong(timeout);
-                    w.writeString(taskName);
-                    utils.writeObject(ch.out(), arg);
-                }
-            };
+            Consumer<PayloadOutputChannel> payloadWriter =
+                ch -> writeExecuteTaskRequest(ch, taskName, arg, nodeIds, flags, timeout);
 
             Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader =
                 ch -> new T2<>(ch.clientChannel(), ch.in().readLong());
@@ -199,6 +182,39 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             task.fut.listen(f -> removeTask(task.ch, task.taskId));
 
             return new ClientFutureImpl<>((IgniteInternalFuture<R>)task.fut);
+        }
+    }
+
+    /**
+     *
+     */
+    private <T> void writeExecuteTaskRequest(
+        PayloadOutputChannel ch,
+        String taskName,
+        @Nullable T arg,
+        Collection<UUID> nodeIds,
+        byte flags,
+        long timeout
+    ) throws ClientException {
+        if (!ch.clientChannel().isFeatureSupported(ClientFeature.EXECUTE_TASK_BY_NAME)) {
+            throw new ClientFeatureNotSupportedByServerException("Compute grid functionality for thin " +
+                "client not supported by server node (" + ch.clientChannel().serverNodeId() + ')');
+        }
+
+        try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), ch.out(), null, null)) {
+            if (nodeIds == null) // Include all nodes.
+                w.writeInt(0);
+            else {
+                w.writeInt(nodeIds.size());
+
+                for (UUID nodeId : nodeIds)
+                    w.writeUuid(nodeId);
+            }
+
+            w.writeByte(flags);
+            w.writeLong(timeout);
+            w.writeString(taskName);
+            utils.writeObject(ch.out(), arg);
         }
     }
 

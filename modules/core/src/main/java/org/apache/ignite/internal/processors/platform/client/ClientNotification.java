@@ -26,7 +26,7 @@ import static org.apache.ignite.internal.processors.platform.client.ClientConnec
 /**
  * Server to client notification for some resource.
  */
-public class ClientNotification extends ClientListenerResponse {
+public class ClientNotification extends ClientListenerResponse implements ClientOutgoingMessage {
     /** Resource id. */
     private final long rsrcId;
 
@@ -81,7 +81,7 @@ public class ClientNotification extends ClientListenerResponse {
      * @param ctx Connection context.
      * @param writer Writer.
      */
-    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         writer.writeLong(rsrcId);
 
         ClientListenerProtocolVersion ver = ctx.currentVersion();

@@ -498,7 +498,7 @@ class TcpClientChannel implements ClientChannel {
         writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
         if (ver.compareTo(V2_0_0) >= 0)
-            writer.writeByteArray(ClientFeature.marshallFeatures(SUPPORTED_FEATURES));
+            writer.writeByteArray(ClientFeature.marshalFeatures(SUPPORTED_FEATURES));
 
         if (ver.compareTo(V1_7_0) >= 0)
             writer.writeMap(userAttrs);

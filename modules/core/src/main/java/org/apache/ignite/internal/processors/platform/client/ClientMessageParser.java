@@ -461,13 +461,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        assert resp instanceof ClientResponse || resp instanceof ClientNotification : "Unexpected response type: " +
-            resp.getClass();
+        assert resp instanceof ClientOutgoingMessage : "Unexpected response type: " + resp.getClass();
 
-        if (resp instanceof ClientResponse)
-            ((ClientResponse)resp).encode(ctx, writer);
-        else if (resp instanceof ClientNotification)
-            ((ClientNotification)resp).encode(ctx, writer);
+        ((ClientOutgoingMessage)resp).encode(ctx, writer);
 
         return outStream.arrayCopy();
     }

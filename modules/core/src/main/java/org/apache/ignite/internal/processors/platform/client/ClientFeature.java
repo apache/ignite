@@ -46,12 +46,12 @@ public enum ClientFeature {
     }
 
     /**
-     * Marshall array of features.
+     * Marshal array of features.
      *
      * @param features Features.
      * @return Byte array representing {@code features} array.
      */
-    public static byte[] marshallFeatures(ClientFeature ... features) {
+    public static byte[] marshalFeatures(ClientFeature ... features) {
         final BitSet set = new BitSet();
 
         for (ClientFeature feature : features) {

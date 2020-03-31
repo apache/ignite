@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
             Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
             Assert.AreEqual("fooGroup", cacheCfg.GroupName);
-
+            
             Assert.AreEqual("bar", cacheCfg.KeyConfiguration.Single().AffinityKeyFieldName);
             Assert.AreEqual("foo", cacheCfg.KeyConfiguration.Single().TypeName);
 
@@ -354,12 +354,12 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(dr.MetricsEnabled);
 
             Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
-
+            
             Assert.IsInstanceOf<StopNodeOrHaltFailureHandler>(cfg.FailureHandler);
 
             var failureHandler = (StopNodeOrHaltFailureHandler)cfg.FailureHandler;
-
-            Assert.IsTrue(failureHandler.TryStop);
+            
+            Assert.IsTrue(failureHandler.TryStop);  
             Assert.AreEqual(TimeSpan.Parse("0:1:0"), failureHandler.Timeout);
 
             var ec = cfg.ExecutorConfiguration;
@@ -380,7 +380,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Test custom with different culture to make sure numbers are serialized properly
             RunWithCustomCulture(() => CheckSerializeDeserialize(GetTestConfig()));
-
+            
             // Test default
             CheckSerializeDeserialize(new IgniteConfiguration());
         }
@@ -391,7 +391,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllPropertiesArePresentInSchema()
         {
-            CheckAllPropertiesArePresentInSchema("IgniteConfigurationSection.xsd", "igniteConfiguration",
+            CheckAllPropertiesArePresentInSchema("IgniteConfigurationSection.xsd", "igniteConfiguration", 
                 typeof(IgniteConfiguration));
         }
 
@@ -783,7 +783,7 @@ namespace Apache.Ignite.Core.Tests
                             {
                                 AffinityKeyFieldName = "abc",
                                 TypeName = "def"
-                            },
+                            }, 
                         },
                         OnheapCacheEnabled = true,
                         StoreConcurrentLoadAllThreshold = 7,

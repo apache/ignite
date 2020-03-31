@@ -123,7 +123,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         writer.writeBoolean(true);
 
         if (ver.compareTo(VER_2_0_0) >= 0)
-            writer.writeByteArray(ClientFeature.marshallFeatures(ClientFeature.values()));
+            writer.writeByteArray(ClientFeature.marshalFeatures(ClientFeature.values()));
 
         if (ver.compareTo(VER_1_4_0) >= 0)
             writer.writeUuid(ctx.kernalContext().localNodeId());
