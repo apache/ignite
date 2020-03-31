@@ -85,22 +85,41 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
 
         cache0.put(key, key);
 
-        cache0.put(key+1, key + 1);
+        cache0.put(key + 1, key + 1);
+
+        cache0.put(key + 2, key + 2);
 
         cache0.localClear(key);
+
+        cache0.localClear(key + 1);
+
+        cache0.localClear(key + 2);
 
         assertEquals(1, cache0.get(key));
 
         try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-            cache1.getAll(Stream.of(key, key + 1, key + 2).collect(Collectors.toSet()));
+            cache1.get(key);
+
+            cache1.getAll(Stream.of(key + 1, key + 2).collect(Collectors.toSet()));
 
             cache1.put(key, key + 1);
+
+            cache1.put(key + 1, key + 2);
+
+            cache1.put(key + 2, key + 3);
 
             tx.commit();
         }
 
-        for (int i = 0; i < NODE_CNT; ++i)
-            assertEquals(key + 1, grid(i).cache("tx").get(key));
+        for (int i = 0; i < NODE_CNT; ++i) {
+            IgniteCache<Object, Object> cache = grid(i).cache("tx");
+
+            assertEquals(key + 1, cache.get(key));
+
+            assertEquals(key + 2, cache.get(key + 1));
+
+            assertEquals(key + 3, cache.get(key + 2));
+        }
     }
 
     /** Shared read/write-through store factory. */
