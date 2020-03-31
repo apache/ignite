@@ -21,8 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -33,7 +34,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final CheckpointProgressEx cpProgress;
+    private final IgniteOutClosure<CheckpointProgressImpl> cpProgress;
 
     /** If true, throttle will only protect from checkpoint buffer overflow, not from dirty pages ratio cap excess. */
     private final boolean throttleOnlyPagesInCheckpoint;
@@ -70,7 +71,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
      * @param log Logger.
      */
     public PagesWriteThrottle(PageMemoryImpl pageMemory,
-        CheckpointProgressEx cpProgress,
+        IgniteOutClosure<CheckpointProgressImpl> cpProgress,
         CheckpointLockStateChecker stateChecker,
         boolean throttleOnlyPagesInCheckpoint,
         IgniteLogger log
@@ -94,14 +95,16 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             shouldThrottle = shouldThrottle();
 
         if (!shouldThrottle && !throttleOnlyPagesInCheckpoint) {
-            AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
+            CheckpointProgressImpl progress = cpProgress.apply();
 
-            if (writtenPagesCntr == null)
+            AtomicInteger writtenPagesCntr = progress == null ? null : cpProgress.apply().writtenPagesCounter();
+
+            if (progress == null || writtenPagesCntr == null)
                 return; // Don't throttle if checkpoint is not running.
 
             int cpWrittenPages = writtenPagesCntr.get();
 
-            int cpTotalPages = cpProgress.currentCheckpointPagesCount();
+            int cpTotalPages = progress.currentCheckpointPagesCount();
 
             if (cpWrittenPages == cpTotalPages) {
                 // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4

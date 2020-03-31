@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -135,7 +134,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyQueue;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyRequest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -556,8 +555,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             res.add(new T2<>((PageMemoryEx)reg.pageMemory(), nextCpPages));
         }
 
-        CheckpointProgressEx progress = getCheckpointer().currentProgress();
-        
+        CheckpointProgressImpl progress = getCheckpointer().currentProgress();
+
         if (progress != null)
             progress.currentCheckpointPagesCount(pagesNum);
 
@@ -1250,8 +1249,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            new IgniteOutClosure<CheckpointProgressEx>() {
-                @Override public CheckpointProgressEx apply() {
+            new IgniteOutClosure<CheckpointProgressImpl>() {
+                @Override public CheckpointProgressImpl apply() {
                     return getCheckpointer().currentProgress();
                 }
             }
@@ -1958,7 +1957,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public CheckpointProgressEx forceCheckpoint(String reason) {
+    @Override public CheckpointProgressImpl forceCheckpoint(String reason) {
         Checkpointer cp = checkpointer;
 
         if (cp == null)
@@ -2234,7 +2233,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointerThread = cpThread;
 
-        CheckpointProgressEx chp = checkpointer.wakeupForCheckpoint(0, "node started");
+        CheckpointProgressImpl chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
         if (chp != null)
             chp.futureFor(LOCK_RELEASED).get();
@@ -3411,10 +3410,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final ByteBuffer tmpWriteBuf;
 
         /** Next scheduled checkpoint progress. */
-        private volatile CheckpointProgressEx scheduledCp;
+        private volatile CheckpointProgressImpl scheduledCp;
 
         /** Current checkpoint. This field is updated only by checkpoint thread. */
-        @Nullable private volatile CheckpointProgressEx curCpProgress;
+        @Nullable private volatile CheckpointProgressImpl curCpProgress;
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
@@ -3437,7 +3436,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         protected Checkpointer(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log, cctx.kernalContext().workersRegistry());
 
-            scheduledCp = new CheckpointProgressEx(checkpointFreq);
+            scheduledCp = new CheckpointProgressImpl(checkpointFreq);
 
             tmpWriteBuf = ByteBuffer.allocateDirect(pageSize());
 
@@ -3449,7 +3448,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @return Progress of current chekpoint or {@code null}, if isn't checkpoint at this moment.
          */
-        public CheckpointProgressEx currentProgress() {
+        public CheckpointProgressImpl currentProgress() {
             return curCpProgress;
         }
 
@@ -3512,14 +3511,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          */
-        private CheckpointProgressEx wakeupForCheckpoint(long delayFromNow, String reason) {
+        private CheckpointProgressImpl wakeupForCheckpoint(long delayFromNow, String reason) {
             return wakeupForCheckpoint(delayFromNow, reason, null);
         }
 
         /**
          *
          */
-        private <R> CheckpointProgressEx wakeupForCheckpoint(
+        private <R> CheckpointProgressImpl wakeupForCheckpoint(
             long delayFromNow,
             String reason,
             IgniteInClosure<? super IgniteInternalFuture<R>> lsnr
@@ -3527,13 +3526,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (lsnr != null) {
                 //To be sure lsnr always will be executed in checkpoint thread.
                 synchronized (this) {
-                    CheckpointProgressEx sched = scheduledCp;
+                    CheckpointProgressImpl sched = scheduledCp;
 
                     sched.futureFor(FINISHED).listen(lsnr);
                 }
             }
 
-            CheckpointProgressEx sched = scheduledCp;
+            CheckpointProgressImpl sched = scheduledCp;
 
             long nextNanos = System.nanoTime() + U.millisToNanos(delayFromNow);
 
@@ -3886,7 +3885,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (req != null)
                 req.waitCompleted();
 
-            CheckpointProgressEx cur;
+            CheckpointProgressImpl cur;
 
             synchronized (this) {
                 cur = curCpProgress;
@@ -3943,7 +3942,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private Checkpoint markCheckpointBegin(CheckpointMetricsTracker tracker) throws IgniteCheckedException {
             long cpTs = updateLastCheckpointTime();
 
-            CheckpointProgressEx curr = scheduledCp;
+            CheckpointProgressImpl curr = scheduledCp;
 
             CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
 
@@ -4243,8 +4242,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @return Current checkpoint progress.
          */
-        @NotNull private CheckpointProgressEx updateCurrentCheckpointProgress() {
-            final CheckpointProgressEx curr;
+        @NotNull private CheckpointProgressImpl updateCurrentCheckpointProgress() {
+            final CheckpointProgressImpl curr;
 
             synchronized (this) {
                 curr = scheduledCp;
@@ -4255,7 +4254,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     curr.reason("timeout");
 
                 // It is important that we assign a new progress object before checkpoint mark in page memory.
-                scheduledCp = new CheckpointProgressEx(checkpointFreq);
+                scheduledCp = new CheckpointProgressImpl(checkpointFreq);
 
                 curCpProgress = curr;
             }
@@ -4361,7 +4360,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private class DbCheckpointContextImpl implements DbCheckpointListener.Context {
             /** Current checkpoint progress. */
-            private final CheckpointProgressEx curr;
+            private final CheckpointProgressImpl curr;
 
             /** Partition map. */
             private final PartitionAllocationMap map;
@@ -4373,7 +4372,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
              * @param curr Current checkpoint progress.
              * @param map Partition map.
              */
-            private DbCheckpointContextImpl(CheckpointProgressEx curr, PartitionAllocationMap map) {
+            private DbCheckpointContextImpl(CheckpointProgressImpl curr, PartitionAllocationMap map) {
                 this.curr = curr;
                 this.map = map;
                 this.pendingTaskFuture = asyncRunner == null ? null : new GridCompoundFuture();
@@ -4717,7 +4716,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages;
 
         /** */
-        private final CheckpointProgressEx progress;
+        private final CheckpointProgressImpl progress;
 
         /** Number of deleted WAL files. */
         private int walFilesDeleted;
@@ -4736,7 +4735,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private Checkpoint(
             @Nullable CheckpointEntry cpEntry,
             @NotNull GridConcurrentMultiPairQueue<PageMemoryEx, FullPageId> cpPages,
-            CheckpointProgressEx progress
+            CheckpointProgressImpl progress
         ) {
             this.cpEntry = cpEntry;
             this.cpPages = cpPages;

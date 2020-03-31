@@ -28,7 +28,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
@@ -97,9 +97,9 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             new CacheDiagnosticManager()
         );
 
-        IgniteOutClosure<CheckpointProgressEx> clo = new IgniteOutClosure<CheckpointProgressEx>() {
-            @Override public CheckpointProgressEx apply() {
-                return Mockito.mock(CheckpointProgressEx.class);
+        IgniteOutClosure<CheckpointProgressImpl> clo = new IgniteOutClosure<CheckpointProgressImpl>() {
+            @Override public CheckpointProgressImpl apply() {
+                return Mockito.mock(CheckpointProgressImpl.class);
             }
         };
 

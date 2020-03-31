@@ -21,6 +21,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Represents information of a progress of a given checkpoint and
  * allows to obtain future to wait for a particular checkpoint state.
@@ -46,5 +48,28 @@ public interface CheckpointProgress {
      */
     public void transitTo(@NotNull CheckpointState newState);
 
+    /**
+     * @return PartitionDestroyQueue.
+     */
     public PartitionDestroyQueue getDestroyQueue();
+
+    /**
+     * @return Counter for written checkpoint pages. Not <code>null</code> only if checkpoint is running.
+     */
+    public AtomicInteger writtenPagesCounter();
+
+    /**
+     * @return Counter for fsynced checkpoint pages. Not  <code>null</code> only if checkpoint is running.
+     */
+    public AtomicInteger syncedPagesCounter();
+
+    /**
+     * @return Counter for evicted pages during current checkpoint. Not <code>null</code> only if checkpoint is running.
+     */
+    public AtomicInteger evictedPagesCntr();
+
+    /**
+     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
+     */
+    public int currentCheckpointPagesCount();
 }

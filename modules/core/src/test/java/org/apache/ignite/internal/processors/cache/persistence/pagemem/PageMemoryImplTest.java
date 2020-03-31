@@ -43,7 +43,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressEx;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -623,9 +623,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        IgniteOutClosure<CheckpointProgressEx> noThrottle = new IgniteOutClosure<CheckpointProgressEx>() {
-            @Override public CheckpointProgressEx apply() {
-                return Mockito.mock(CheckpointProgressEx.class);
+        IgniteOutClosure<CheckpointProgressImpl> noThrottle = new IgniteOutClosure<CheckpointProgressImpl>() {
+            @Override public CheckpointProgressImpl apply() {
+                return Mockito.mock(CheckpointProgressImpl.class);
             }
         };
 

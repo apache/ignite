@@ -34,7 +34,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -147,13 +147,13 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         long cpWrittenPages;
 
-                        AtomicInteger cntr = ((CheckpointWriteProgressSupplier)(((IgniteEx)ignite(0))
-                            .context().cache().context().database())).writtenPagesCounter();
+                        AtomicInteger cntr = ((GridCacheDatabaseSharedManager)((ignite(0))
+                            .context().cache().context().database())).getCheckpointer().currentProgress().writtenPagesCounter();
 
                         cpWrittenPages = cntr == null ? 0 : cntr.get();
 
                         try {
-                            cpBufPages = ((PageMemoryImpl)((IgniteEx)ignite(0)).context().cache().context().database()
+                            cpBufPages = ((ignite(0)).context().cache().context().database()
                                 .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {

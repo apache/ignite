@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
@@ -33,7 +35,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 /**
  * Data class representing the state of running/scheduled checkpoint.
  */
-public class CheckpointProgressEx extends CheckpointWriteProgressSupplierImpl implements CheckpointProgress {
+public class CheckpointProgressImpl implements CheckpointProgress {
     /** Scheduled time of checkpoint. */
     private volatile long nextCpNanos;
 
@@ -58,10 +60,22 @@ public class CheckpointProgressEx extends CheckpointWriteProgressSupplierImpl im
     /** Wakeup reason. */
     private String reason;
 
+    /** Counter for written checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger writtenPagesCntr;
+
+    /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger syncedPagesCntr;
+
+    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger evictedPagesCntr;
+
+    /** Number of pages in current checkpoint at the beginning of checkpoint. */
+    private volatile int currCheckpointPagesCnt;
+
     /**
      * @param cpFreq Timeout until next checkpoint.
      */
-    public CheckpointProgressEx(long cpFreq) {
+    public CheckpointProgressImpl(long cpFreq) {
         this.nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
     }
 
@@ -197,5 +211,86 @@ public class CheckpointProgressEx extends CheckpointWriteProgressSupplierImpl im
      */
     public void nextSnapshot(boolean nextSnapshot) {
         this.nextSnapshot = nextSnapshot;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger writtenPagesCounter() {
+        return writtenPagesCntr;
+    }
+
+    /**
+     * Update written pages in checkpoint;
+     *
+     * @param deltha Pages num to update.
+     */
+    public void updateWrittenPagesCounter(int deltha) {
+        A.ensure(deltha > 0, "param must be positive");
+
+        writtenPagesCntr.addAndGet(deltha);
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger syncedPagesCounter() {
+        return syncedPagesCntr;
+    }
+
+    /**
+     * Update synced pages in checkpoint;
+     *
+     * @param deltha Pages num to update.
+     */
+    public void updateSyncedPages(int deltha) {
+        A.ensure(deltha > 0, "param must be positive");
+
+        syncedPagesCntr.addAndGet(deltha);
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger evictedPagesCntr() {
+        return evictedPagesCntr;
+    }
+
+    /**
+     * Update evicted pages in checkpoint;
+     *
+     * @param deltha Pages num to update.
+     */
+    public void updateEvictedPagesCntr(int deltha) {
+        A.ensure(deltha > 0, "param must be positive");
+
+        if (evictedPagesCntr() != null)
+            evictedPagesCntr().addAndGet(deltha);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int currentCheckpointPagesCount() {
+        return currCheckpointPagesCnt;
+    }
+
+    /**
+     * Sets current checkpoint pages to store.
+     *
+     * @param num Pages to store.
+     */
+    public void currentCheckpointPagesCount(int num) {
+        currCheckpointPagesCnt = num;
+    }
+
+    /** Clears all counters. */
+    public void clearCounters() {
+        currCheckpointPagesCnt = 0;
+
+        writtenPagesCntr = null;
+        syncedPagesCntr = null;
+        evictedPagesCntr = null;
+    }
+
+    /** Initialize all counters before checkpoint.  */
+    public void initCounters(int pagesSize) {
+        currCheckpointPagesCnt = pagesSize;
+
+        writtenPagesCntr = new AtomicInteger();
+        syncedPagesCntr = new AtomicInteger();
+        evictedPagesCntr = new AtomicInteger();
     }
 }
