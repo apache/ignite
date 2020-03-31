@@ -72,6 +72,41 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** Row id attribute name. */
     public static final String ID = "systemViewRowId";
 
+    private static final Map<Class<?>, SimpleType<?>> CLASS_TO_SIMPLE_TYPE_MAP = new HashMap<>();
+
+    static {
+        registerClassToSimpleTypeRecords();
+    }
+
+    /** Maps classes to their SimpleType representation. */
+    private static void registerClassToSimpleTypeRecords() {
+        CLASS_TO_SIMPLE_TYPE_MAP.put(String.class, SimpleType.STRING);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(IgniteUuid.class, SimpleType.STRING);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(UUID.class, SimpleType.STRING);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Class.class, SimpleType.STRING);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(InetSocketAddress.class, SimpleType.STRING);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(BigDecimal.class, SimpleType.BIGDECIMAL);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(BigInteger.class, SimpleType.BIGINTEGER);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Date.class, SimpleType.DATE);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(ObjectName.class, SimpleType.OBJECTNAME);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(boolean.class, SimpleType.BOOLEAN);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Boolean.class, SimpleType.BOOLEAN);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(byte.class, SimpleType.BYTE);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Byte.class, SimpleType.BYTE);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(short.class, SimpleType.SHORT);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Short.class, SimpleType.SHORT);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(int.class, SimpleType.INTEGER);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Integer.class, SimpleType.INTEGER);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(long.class, SimpleType.LONG);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Long.class, SimpleType.LONG);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(char.class, SimpleType.CHARACTER);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Character.class, SimpleType.CHARACTER);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(float.class, SimpleType.FLOAT);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Float.class, SimpleType.FLOAT);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(double.class, SimpleType.DOUBLE);
+        CLASS_TO_SIMPLE_TYPE_MAP.put(Double.class, SimpleType.DOUBLE);
+    }
+
     /** System view to export. */
     private final SystemView<R> sysView;
 
@@ -103,37 +138,7 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
                 fields[idx] = name;
-
-                if (clazz.isAssignableFrom(String.class) || clazz.isEnum() ||
-                    clazz.isAssignableFrom(IgniteUuid.class) || clazz.isAssignableFrom(UUID.class) ||
-                    clazz.isAssignableFrom(Class.class) || clazz.isAssignableFrom(InetSocketAddress.class))
-                    types[idx] = SimpleType.STRING;
-                else if (clazz.isAssignableFrom(BigDecimal.class))
-                    types[idx] = SimpleType.BIGDECIMAL;
-                else if (clazz.isAssignableFrom(BigInteger.class))
-                    types[idx] = SimpleType.BIGINTEGER;
-                else if (clazz.isAssignableFrom(Date.class))
-                    types[idx] = SimpleType.DATE;
-                else if (clazz.isAssignableFrom(ObjectName.class))
-                    types[idx] = SimpleType.OBJECTNAME;
-                else if (clazz == boolean.class || clazz.isAssignableFrom(Boolean.class))
-                    types[idx] = SimpleType.BOOLEAN;
-                else if (clazz == byte.class || clazz.isAssignableFrom(Byte.class))
-                    types[idx] = SimpleType.BYTE;
-                else if (clazz == char.class || clazz.isAssignableFrom(Character.class))
-                    types[idx] = SimpleType.CHARACTER;
-                else if (clazz == short.class || clazz.isAssignableFrom(Short.class))
-                    types[idx] = SimpleType.SHORT;
-                else if (clazz == int.class || clazz.isAssignableFrom(Integer.class))
-                    types[idx] = SimpleType.INTEGER;
-                else if (clazz == long.class || clazz.isAssignableFrom(Long.class))
-                    types[idx] = SimpleType.LONG;
-                else if (clazz == float.class || clazz.isAssignableFrom(Float.class))
-                    types[idx] = SimpleType.FLOAT;
-                else if (clazz == double.class || clazz.isAssignableFrom(Double.class))
-                    types[idx] = SimpleType.DOUBLE;
-                else
-                    types[idx] = SimpleType.STRING;
+                types[idx] = CLASS_TO_SIMPLE_TYPE_MAP.getOrDefault(clazz, SimpleType.STRING);
 
                 if (sysView.walker().filtrableAttributes().contains(name))
                     filterFieldIdxs.add(idx);
