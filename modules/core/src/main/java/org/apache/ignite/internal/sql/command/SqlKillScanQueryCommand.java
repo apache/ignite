@@ -35,7 +35,7 @@ import org.apache.ignite.spi.systemview.view.ScanQueryView;
 public class SqlKillScanQueryCommand implements SqlCommand {
     /** KILL SCAN_QUERY format message. */
     public static final String KILL_SCAN_QRY_FORMAT =
-        "Format of the query is KILL SCAN_QUERY '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1";
+        "Format of the query is KILL SCAN '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1";
 
     /** Origin node id. */
     private UUID originNodeId;
