@@ -525,6 +525,20 @@ public class CommandHandlerParsingTest {
     public void testKillArguments() {
         assertParseArgsThrows("Expected type of resource to kill.", "--kill");
 
+        String uuid = UUID.randomUUID().toString();
+
+        // Scan command format errors.
+        assertParseArgsThrows("Expected query originating node id.", "--kill", "scan");
+        assertParseArgsThrows("Expected cache name.", "--kill", "scan", uuid);
+        assertParseArgsThrows("Expected query identifier.", "--kill", "scan", uuid, "cache");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "scan", "not_a_uuid");
+
+        assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
+            "--kill", "scan", uuid, "my-cache", "not_a_number");
+
+
         // Compute command format errors.
         assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
 

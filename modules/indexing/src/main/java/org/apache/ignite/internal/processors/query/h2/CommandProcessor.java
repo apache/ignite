@@ -52,6 +52,7 @@ import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -102,6 +103,7 @@ import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
@@ -421,6 +423,8 @@ public class CommandProcessor {
                 processKillTxCommand((SqlKillTransactionCommand) cmdNative);
             else if (cmdNative instanceof SqlKillServiceCommand)
                 processKillServiceTaskCommand((SqlKillServiceCommand) cmdNative);
+            else if (cmdNative instanceof SqlKillScanQueryCommand)
+                processKillScanQueryCommand((SqlKillScanQueryCommand) cmdNative);
             else
                 processTxCommand(cmdNative, params);
         }
@@ -497,6 +501,15 @@ public class CommandProcessor {
             throw new IgniteSQLException("Failed to cancel query [nodeId=" + cmd.nodeId() + ",qryId="
                 + cmd.nodeQueryId() + ",err=" + e + "]", e);
         }
+    }
+
+    /**
+     * Process kill scan query command.
+     *
+     * @param command Command.
+     */
+    private void processKillScanQueryCommand(SqlKillScanQueryCommand command) {
+        new QueryMXBeanImpl(ctx).cancelScan(command.getOriginNodeId(), command.getCacheName(), command.getQryId());
     }
 
     /**

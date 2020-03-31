@@ -18,14 +18,19 @@
 package org.apache.ignite.internal;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
+import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
 import org.apache.ignite.mxbean.QueryMXBean;
 
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
@@ -70,6 +75,47 @@ public class QueryMXBeanImpl implements QueryMXBean {
             cluster.compute().execute(new VisorQueryCancelOnInitiatorTask(),
                 new VisorTaskArgument<>(ids.get1(), new VisorQueryCancelOnInitiatorTaskArg(ids.get1(), ids.get2()),
                     false));
+        }
+        catch (IgniteException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelScan(String originNodeId, String cacheName, Long id) {
+        A.notNullOrEmpty(originNodeId, "originNodeId");
+        A.notNullOrEmpty(cacheName, "cacheName");
+        A.notNull(id, "id");
+
+        if (log.isInfoEnabled())
+            log.info("Killing scan query[id=" + id + ",originNodeId=" + originNodeId + ']');
+
+        cancelScan(UUID.fromString(originNodeId), cacheName, id);
+    }
+
+    /**
+     * Kills scan query by the identifiers.
+     *
+     * @param originNodeId Originating node id.
+     * @param cacheName Cache name.
+     * @param id Scan query id.
+     */
+    public void cancelScan(UUID originNodeId, String cacheName, long id) {
+        try {
+            IgniteClusterImpl cluster = ctx.cluster().get();
+
+            ClusterNode srv = U.randomServerNode(ctx);
+
+            IgniteCompute compute = cluster.compute();
+
+            boolean res = compute.execute(new VisorScanQueryCancelTask(),
+                new VisorTaskArgument<>(srv.id(),
+                    new VisorScanQueryCancelTaskArg(originNodeId, cacheName, id), false));
+
+            if (!res) {
+                throw new RuntimeException("Query not found[originNodeId=" + originNodeId +
+                    ",cacheName=" + cacheName + ",qryId=" + id + ']');
+            }
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

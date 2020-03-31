@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.execute;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
@@ -42,6 +43,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
+import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via SQL. */
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
@@ -93,6 +95,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
+    public void testCancelScanQuery() throws Exception {
+        doTestScanQueryCancel(startCli, srvs, args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testCancelComputeTask() throws Exception {
         doTestCancelComputeTask(startCli, srvs, sessId -> execute(killCli, KILL_COMPUTE_QRY + " '" + sessId + "'"));
     }
@@ -114,6 +122,13 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     @Test
     public void testCancelSQLQuery() {
         doTestCancelSQLQuery(startCli, qryId -> execute(killCli, KILL_SQL_QRY + " '" + qryId + "'"));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownScanQuery() throws Exception {
+        assertThrowsWithCause(() -> execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1"),
+            RuntimeException.class);
     }
 
     /** */

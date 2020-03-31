@@ -27,11 +27,13 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
+import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via control.sh. */
 public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -60,6 +62,16 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         // No-op. Prevent cache destroy from super class.
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelScanQuery() throws Exception {
+        doTestScanQueryCancel(client, srvs, args -> {
+            int res = execute("--kill", "scan", args.get1().toString(), args.get2(), args.get3().toString());
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
     }
 
     /** @throws Exception If failed. */
@@ -100,6 +112,14 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
             assertEquals(EXIT_CODE_OK, res);
         });
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownScanQuery() throws Exception {
+        int res = execute("--kill", "scan", srvs.get(0).localNode().id().toString(), "unknown", "1");
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
     }
 
     /** */

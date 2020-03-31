@@ -92,6 +92,15 @@ This utility can do the following commands:
     Parameters:
       query_id  - Query identifier.
 
+  Kill scan query by node id, cache name and query id:
+    control.(sh|bat) --kill scan origin_node_id cache_name query_id
+
+    Parameters:
+      cache_name      - Cache name.
+      query_id        - Query identifier.
+      origin_node_id  - Originating node id.
+
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
