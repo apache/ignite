@@ -2473,7 +2473,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ((IgniteDiscoverySpi)spi).resolveCommunicationFailure(node, err);
     }
 
-
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
