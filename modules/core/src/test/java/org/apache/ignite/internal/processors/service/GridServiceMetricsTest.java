@@ -131,10 +131,10 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testMapConcurrency() throws InterruptedException {
         final Map<Integer, Integer> map = new HashMap<>(1);
         final Random rnd = new Random();
-        final int valueCnt = 1000;
+        final int valueCnt = 100000;
         final Integer[] holder = new Integer[1];
 
-        for(int i=0; i<3; ++i) {
+        for(int i=0; i<5; ++i) {
             new Thread(() -> {
                 while (true) {
                     for (int v = 0; v < valueCnt; ++v)
@@ -152,7 +152,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             }, "putter_"+i).start();
         }
 
-        for(int i=0; i<10; ++i) {
+        for(int i=0; i<30; ++i) {
             new Thread(() -> {
                 while (true) {
 
@@ -171,7 +171,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             }, "getter_"+i).start();
         }
 
-        for(int i=0; i<2; ++i) {
+        for(int i=0; i<5; ++i) {
             new Thread(() -> {
                 while (true) {
                     try {
@@ -190,7 +190,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             }, "clearer_"+i).start();
         }
 
-        Thread.sleep(60000);
+        Thread.sleep(5*60000);
     }
 
     /** Checks metric are created when service is deployed and removed when service is undeployed. */

@@ -1240,7 +1240,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            // Check there is no concurrent #undeploy()
+            // Check there is no concurrent #undeploy().
             synchronized (ctxs) {
                 if (!ctxs.iterator().next().isCancelled())
                     registerMetrics(srvc, srvcCtx.name());
@@ -1883,7 +1883,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
-     * Creates histogram for service method. If exist,s considers one or several argument types has same name but
+     * Creates histogram for service method. If exists, considers one or several argument types has same name but
      * different package and tries to extend metric name with abbreviation of java package name.
      *
      * @param srvcName Service name.
@@ -1977,7 +1977,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
          * @param mtd Method to keep histogram for.
          * @param initiator Histogram creator.
          */
-        private synchronized void addIfAbsent(Method mtd, Supplier<HistogramMetricImpl> initiator) {
+        private void addIfAbsent(Method mtd, Supplier<HistogramMetricImpl> initiator) {
             if (singleMtd == null && overloadedMtd == null) {
                 singleMtd = mtd;
 
