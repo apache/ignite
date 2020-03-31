@@ -397,7 +397,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void assertCacheSize(int expectedCacheSize) throws Exception {
-        awaitPartitionMapExchange();
+//        awaitPartitionMapExchange();
 
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
