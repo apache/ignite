@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 
@@ -34,7 +34,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final IgniteOutClosure<CheckpointProgressImpl> cpProgress;
+    private final IgniteOutClosure<CheckpointProgress> cpProgress;
 
     /** If true, throttle will only protect from checkpoint buffer overflow, not from dirty pages ratio cap excess. */
     private final boolean throttleOnlyPagesInCheckpoint;
@@ -71,7 +71,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
      * @param log Logger.
      */
     public PagesWriteThrottle(PageMemoryImpl pageMemory,
-        IgniteOutClosure<CheckpointProgressImpl> cpProgress,
+        IgniteOutClosure<CheckpointProgress> cpProgress,
         CheckpointLockStateChecker stateChecker,
         boolean throttleOnlyPagesInCheckpoint,
         IgniteLogger log
@@ -95,7 +95,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             shouldThrottle = shouldThrottle();
 
         if (!shouldThrottle && !throttleOnlyPagesInCheckpoint) {
-            CheckpointProgressImpl progress = cpProgress.apply();
+            CheckpointProgress progress = cpProgress.apply();
 
             AtomicInteger writtenPagesCntr = progress == null ? null : cpProgress.apply().writtenPagesCounter();
 

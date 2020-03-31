@@ -37,6 +37,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -260,8 +261,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
-        IgniteOutClosure<CheckpointProgressImpl> clo = new IgniteOutClosure<CheckpointProgressImpl>() {
-            @Override public CheckpointProgressImpl apply() {
+        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
+            @Override public CheckpointProgress apply() {
                 return Mockito.mock(CheckpointProgressImpl.class);
             }
         };

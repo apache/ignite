@@ -218,12 +218,8 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         return writtenPagesCntr;
     }
 
-    /**
-     * Update written pages in checkpoint;
-     *
-     * @param deltha Pages num to update.
-     */
-    public void updateWrittenPagesCounter(int deltha) {
+    /** {@inheritDoc} */
+    @Override public void updateWrittenPages(int deltha) {
         A.ensure(deltha > 0, "param must be positive");
 
         writtenPagesCntr.addAndGet(deltha);
@@ -234,32 +230,24 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         return syncedPagesCntr;
     }
 
-    /**
-     * Update synced pages in checkpoint;
-     *
-     * @param deltha Pages num to update.
-     */
-    public void updateSyncedPages(int deltha) {
+    /** {@inheritDoc} */
+    @Override public void updateSyncedPages(int deltha) {
         A.ensure(deltha > 0, "param must be positive");
 
         syncedPagesCntr.addAndGet(deltha);
     }
 
     /** {@inheritDoc} */
-    @Override public AtomicInteger evictedPagesCntr() {
+    @Override public AtomicInteger evictedPagesCounter() {
         return evictedPagesCntr;
     }
 
-    /**
-     * Update evicted pages in checkpoint;
-     *
-     * @param deltha Pages num to update.
-     */
-    public void updateEvictedPagesCntr(int deltha) {
+    /** {@inheritDoc} */
+    @Override public void updateEvictedPages(int deltha) {
         A.ensure(deltha > 0, "param must be positive");
 
-        if (evictedPagesCntr() != null)
-            evictedPagesCntr().addAndGet(deltha);
+        if (evictedPagesCounter() != null)
+            evictedPagesCounter().addAndGet(deltha);
     }
 
     /** {@inheritDoc} */
@@ -267,17 +255,13 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         return currCheckpointPagesCnt;
     }
 
-    /**
-     * Sets current checkpoint pages to store.
-     *
-     * @param num Pages to store.
-     */
-    public void currentCheckpointPagesCount(int num) {
+    /** {@inheritDoc} */
+    @Override public void currentCheckpointPagesCount(int num) {
         currCheckpointPagesCnt = num;
     }
 
-    /** Clears all counters. */
-    public void clearCounters() {
+    /** {@inheritDoc} */
+    @Override public void clearCounters() {
         currCheckpointPagesCnt = 0;
 
         writtenPagesCntr = null;
@@ -285,8 +269,8 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         evictedPagesCntr = null;
     }
 
-    /** Initialize all counters before checkpoint.  */
-    public void initCounters(int pagesSize) {
+    /** {@inheritDoc} */
+    @Override public void initCounters(int pagesSize) {
         currCheckpointPagesCnt = pagesSize;
 
         writtenPagesCntr = new AtomicInteger();

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -112,9 +113,9 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             new CacheDiagnosticManager()
         );
 
-        IgniteOutClosure<CheckpointProgressImpl> clo = new IgniteOutClosure<CheckpointProgressImpl>() {
-            @Override public CheckpointProgressImpl apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
+        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
+            @Override public CheckpointProgress apply() {
+                return Mockito.mock(CheckpointProgress.class);
             }
         };
 

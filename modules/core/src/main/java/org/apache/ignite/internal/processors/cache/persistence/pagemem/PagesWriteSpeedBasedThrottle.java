@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -42,7 +42,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     private final PageMemoryImpl pageMemory;
 
     /** Database manager. */
-    private final IgniteOutClosure<CheckpointProgressImpl> cpProgress;
+    private final IgniteOutClosure<CheckpointProgress> cpProgress;
 
     /** Starting throttle time. Limits write speed to 1000 MB/s. */
     private static final long STARTING_THROTTLE_NANOS = 4000;
@@ -119,7 +119,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      */
     public PagesWriteSpeedBasedThrottle(
             PageMemoryImpl pageMemory,
-            IgniteOutClosure<CheckpointProgressImpl> cpProgress,
+            IgniteOutClosure<CheckpointProgress> cpProgress,
             CheckpointLockStateChecker stateChecker,
             IgniteLogger log
     ) {
@@ -134,7 +134,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     @Override public void onMarkDirty(boolean isPageInCheckpoint) {
         assert cpLockStateChecker.checkpointLockIsHeldByThread();
 
-        CheckpointProgressImpl progress = cpProgress.apply();
+        CheckpointProgress progress = cpProgress.apply();
 
         AtomicInteger writtenPagesCntr = progress == null ? null : cpProgress.apply().writtenPagesCounter();
 
@@ -276,7 +276,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return number of evicted pages.
      */
     private int cpEvictedPages() {
-        AtomicInteger evictedPagesCntr = cpProgress.apply().evictedPagesCntr();
+        AtomicInteger evictedPagesCntr = cpProgress.apply().evictedPagesCounter();
 
         return evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
     }

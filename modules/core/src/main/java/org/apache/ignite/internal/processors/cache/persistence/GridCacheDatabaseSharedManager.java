@@ -134,6 +134,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyQueue;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.PartitionDestroyRequest;
@@ -555,7 +556,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             res.add(new T2<>((PageMemoryEx)reg.pageMemory(), nextCpPages));
         }
 
-        CheckpointProgressImpl progress = getCheckpointer().currentProgress();
+        CheckpointProgress progress = getCheckpointer().currentProgress();
 
         if (progress != null)
             progress.currentCheckpointPagesCount(pagesNum);
@@ -1243,14 +1244,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // Write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
-                getCheckpointer().currentProgress().updateEvictedPagesCntr(1);
+                getCheckpointer().currentProgress().updateEvictedPages(1);
             },
             changeTracker,
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            new IgniteOutClosure<CheckpointProgressImpl>() {
-                @Override public CheckpointProgressImpl apply() {
+            new IgniteOutClosure<CheckpointProgress>() {
+                @Override public CheckpointProgress apply() {
                     return getCheckpointer().currentProgress();
                 }
             }
@@ -3413,7 +3414,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile CheckpointProgressImpl scheduledCp;
 
         /** Current checkpoint. This field is updated only by checkpoint thread. */
-        @Nullable private volatile CheckpointProgressImpl curCpProgress;
+        private volatile CheckpointProgressImpl curCpProgress;
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
@@ -3448,7 +3449,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @return Progress of current chekpoint or {@code null}, if isn't checkpoint at this moment.
          */
-        public CheckpointProgressImpl currentProgress() {
+        public CheckpointProgress currentProgress() {
             return curCpProgress;
         }
 
@@ -4695,7 +4696,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             tracker.onDataPageWritten();
                     }
 
-                    getCheckpointer().currentProgress().updateWrittenPagesCounter(1);
+                    getCheckpointer().currentProgress().updateWrittenPages(1);
 
                     PageStore store = storeMgr.writeInternal(groupId, pageId, buf, tag, true);
 

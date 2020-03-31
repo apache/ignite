@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -319,8 +320,8 @@ public class IgniteThrottlingUnitTest {
 
         AtomicInteger written = new AtomicInteger();
 
-        IgniteOutClosure<CheckpointProgressImpl> cpProgress = new IgniteOutClosure<CheckpointProgressImpl>() {
-            @Override public CheckpointProgressImpl apply() {
+        IgniteOutClosure<CheckpointProgress> cpProgress = new IgniteOutClosure<CheckpointProgress>() {
+            @Override public CheckpointProgress apply() {
                 return Mockito.mock(CheckpointProgressImpl.class);
             }
         };

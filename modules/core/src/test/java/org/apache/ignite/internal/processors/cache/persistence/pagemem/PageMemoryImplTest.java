@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
@@ -623,14 +624,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        IgniteOutClosure<CheckpointProgressImpl> noThrottle = new IgniteOutClosure<CheckpointProgressImpl>() {
-            @Override public CheckpointProgressImpl apply() {
+        IgniteOutClosure<CheckpointProgress> noThrottle = new IgniteOutClosure<CheckpointProgress>() {
+            @Override public CheckpointProgress apply() {
                 return Mockito.mock(CheckpointProgressImpl.class);
             }
         };
 
         Mockito.when(noThrottle.apply().currentCheckpointPagesCount()).thenReturn(1_000_000);
-        Mockito.when(noThrottle.apply().evictedPagesCntr()).thenReturn(new AtomicInteger(0));
+        Mockito.when(noThrottle.apply().evictedPagesCounter()).thenReturn(new AtomicInteger(0));
         Mockito.when(noThrottle.apply().syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
         Mockito.when(noThrottle.apply().writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
 

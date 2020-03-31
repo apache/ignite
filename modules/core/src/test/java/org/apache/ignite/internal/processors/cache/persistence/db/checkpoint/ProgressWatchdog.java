@@ -275,7 +275,7 @@ class ProgressWatchdog {
         AtomicInteger syncedPagesCntr = db.getCheckpointer().currentProgress().syncedPagesCounter();
         int cpSyncedPages = syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
 
-        AtomicInteger evictedPagesCntr = db.getCheckpointer().currentProgress().evictedPagesCntr();
+        AtomicInteger evictedPagesCntr = db.getCheckpointer().currentProgress().evictedPagesCounter();
         int cpEvictedPages = evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
 
         int pageSize = pageMemory == null ? 0 : pageMemory.pageSize();

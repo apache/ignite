@@ -66,10 +66,44 @@ public interface CheckpointProgress {
     /**
      * @return Counter for evicted pages during current checkpoint. Not <code>null</code> only if checkpoint is running.
      */
-    public AtomicInteger evictedPagesCntr();
+    public AtomicInteger evictedPagesCounter();
 
     /**
      * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
      */
     public int currentCheckpointPagesCount();
+
+    /**
+     * Sets current checkpoint pages num to store.
+     *
+     * @param num Pages to store.
+     */
+    public void currentCheckpointPagesCount(int num);
+
+    /** Initialize all counters before checkpoint.  */
+    public void initCounters(int pagesSize);
+
+    /** Clears all counters. */
+    public void clearCounters();
+
+    /**
+     * Update synced pages in checkpoint;
+     *
+     * @param deltha Pages num to update.
+     */
+    public void updateSyncedPages(int deltha);
+
+    /**
+     * Update written pages in checkpoint;
+     *
+     * @param deltha Pages num to update.
+     */
+    public void updateWrittenPages(int deltha);
+
+    /**
+     * Update evicted pages in checkpoint;
+     *
+     * @param deltha Pages num to update.
+     */
+    public void updateEvictedPages(int deltha);
 }
