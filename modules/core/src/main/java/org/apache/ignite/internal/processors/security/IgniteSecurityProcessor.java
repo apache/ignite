@@ -40,7 +40,6 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
@@ -116,7 +115,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
 
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(UUID subjId) {
-        return secPrc.securityContext(requireNonNull(subjId, "Parameter 'subjId' cannot be null."));
+        return secPrc.securityContext(subjId);
     }
 
     /** {@inheritDoc} */
