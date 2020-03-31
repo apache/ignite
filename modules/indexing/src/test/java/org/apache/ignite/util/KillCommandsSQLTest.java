@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,9 +33,13 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
+import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 
@@ -42,6 +47,9 @@ import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** */
     public static final int  NODES_CNT = 3;
+
+    /** */
+    public static final String KILL_SQL_QRY = KILL + " " + QUERY;
 
     /** */
     public static final String KILL_COMPUTE_QRY = KILL + " " + COMPUTE;
@@ -75,9 +83,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
         srvs.get(0).cluster().state(ACTIVE);
 
-        startCli.getOrCreateCache(
+        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
     }
 
     /** @throws Exception If failed. */
@@ -101,6 +112,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCancelSQLQuery() {
+        doTestCancelSQLQuery(startCli, qryId -> execute(killCli, KILL_SQL_QRY + " '" + qryId + "'"));
+    }
+
+    /** */
+    @Test
     public void testCancelUnknownComputeTask() {
         execute(killCli, KILL_COMPUTE_QRY + " '" + IgniteUuid.randomUuid() + "'");
     }
@@ -115,6 +132,14 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     @Test
     public void testCancelUnknownTx() {
         execute(killCli, KILL_TX_QRY + " 'unknown'");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownSQLQuery() {
+        assertThrowsWithCause(
+            () -> execute(killCli, KILL_SQL_QRY + " '" + srvs.get(0).localNode().id().toString() + "_42'"),
+            RuntimeException.class);
     }
 
     /**

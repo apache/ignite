@@ -19,21 +19,26 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
+import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 
@@ -50,6 +55,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** Client that kill task. */
     private static IgniteEx killCli;
+
+    /** */
+    private static QueryMXBean qryMBean;
 
     /** */
     private static TransactionsMXBean txMBean;
@@ -74,9 +82,15 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
         srvs.get(0).cluster().state(ACTIVE);
 
-        startCli.getOrCreateCache(
+        IgniteCache<Object, Object> cache = startCli.getOrCreateCache(
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
+
+        qryMBean = getMxBean(killCli.name(), "Query",
+            QueryMXBeanImpl.class.getSimpleName(), QueryMXBean.class);
 
         txMBean = getMxBean(killCli.name(), "Transactions",
             TransactionsMXBeanImpl.class.getSimpleName(), TransactionsMXBean.class);
@@ -108,6 +122,12 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCancelSQLQuery() {
+        doTestCancelSQLQuery(startCli, qryId -> qryMBean.cancelSQL(qryId));
+    }
+
+    /** */
+    @Test
     public void testCancelUnknownComputeTask() {
         computeMBean.cancel(IgniteUuid.randomUuid().toString());
     }
@@ -122,5 +142,11 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     @Test
     public void testCancelUnknownService() {
         svcMxBean.cancel("unknown");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownSQLQuery() {
+        qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42");
     }
 }
