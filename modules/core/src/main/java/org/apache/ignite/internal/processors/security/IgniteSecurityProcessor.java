@@ -97,7 +97,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     @Override public OperationSecurityContext withContext(UUID subjId) {
         ClusterNode node = ctx.discovery().node(subjId);
 
-        SecurityContext res = node != null ? securityContext(node) : securityContext(subjId);
+        SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
+            uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node)) : securityContext(subjId);
 
         if (res == null)
             throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
@@ -117,25 +118,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public SecurityContext securityContext(UUID subjId) {
         return secPrc.securityContext(requireNonNull(subjId, "Parameter 'subjId' cannot be null."));
-    }
-
-    private SecurityContext securityContext(ClusterNode node) {
-        requireNonNull(node, "Parameter 'node' cannot be null.");
-
-        return secCtxs.computeIfAbsent(node.id(),
-            id -> {
-                byte[] subjBytes = node.attribute(ATTR_SECURITY_SUBJECT_V2);
-
-                if (subjBytes == null)
-                    throw new SecurityException("Security context isn't certain.");
-
-                try {
-                    return U.unmarshal(marsh, subjBytes, U.resolveClassLoader(ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new SecurityException("Failed to get security context.", e);
-                }
-            });
     }
 
     /** {@inheritDoc} */

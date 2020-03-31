@@ -80,15 +80,13 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
         if (!PERMS.containsKey(cred))
             return null;
 
-        return registerSecurityContext(
-            new TestSecurityContext(
-                new TestSecuritySubject()
-                    .setType(REMOTE_NODE)
-                    .setId(node.id())
-                    .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
-                    .setLogin(cred.getLogin())
-                    .setPerms(PERMS.get(cred))
-            )
+        return new TestSecurityContext(
+            new TestSecuritySubject()
+                .setType(REMOTE_NODE)
+                .setId(node.id())
+                .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
+                .setLogin(cred.getLogin())
+                .setPerms(PERMS.get(cred))
         );
     }
 
