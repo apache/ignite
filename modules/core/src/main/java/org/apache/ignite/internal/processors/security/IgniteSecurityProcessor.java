@@ -63,7 +63,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSe
  * This implementation of {@code IgniteSecurity} is responsible for:
  * <ul>
  *     <li>Keeping and propagating authenticated security contexts for cluster nodes;</li>
- *     <li>Delegating calls for all aforementioned actions to {@code GridSecurityProcessor};</li>
+ *     <li>Delegating calls for all actions to {@code GridSecurityProcessor};</li>
  *     <li>Managing sandbox and proving point of entry to the internal sandbox API.</li>
  * </ul>
  */
