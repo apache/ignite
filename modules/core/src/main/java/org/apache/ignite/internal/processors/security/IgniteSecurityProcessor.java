@@ -96,7 +96,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         ClusterNode node = ctx.discovery().node(subjId);
 
         SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
-            uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node)) : securityContext(subjId);
+            uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
+            : secPrc.securityContext(subjId);
 
         if (res == null)
             throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
@@ -111,11 +112,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         assert res != null;
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SecurityContext securityContext(UUID subjId) {
-        return secPrc.securityContext(subjId);
     }
 
     /** {@inheritDoc} */

@@ -63,11 +63,6 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext securityContext(UUID subjId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
         return null;
     }

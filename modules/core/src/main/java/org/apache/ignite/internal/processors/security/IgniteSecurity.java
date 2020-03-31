@@ -71,11 +71,6 @@ public interface IgniteSecurity {
     public SecurityContext securityContext();
 
     /**
-     * Delegates call to {@link GridSecurityProcessor#securityContext(UUID)}
-     */
-    public SecurityContext securityContext(UUID subjId);
-
-    /**
      * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,
      * org.apache.ignite.plugin.security.SecurityCredentials)}
      */
