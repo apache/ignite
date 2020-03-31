@@ -419,7 +419,7 @@ public class CommonArgParser {
     private Map<String, String> parsePropertiesFromFile(String userPropPath) {
         Map<String, String> res = new HashMap<>();
 
-        if(userPropPath == null)
+        if (userPropPath == null)
             return res;
 
         Properties props = new Properties();
