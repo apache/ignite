@@ -556,7 +556,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             res.add(new T2<>((PageMemoryEx)reg.pageMemory(), nextCpPages));
         }
 
-        getCheckpointer().currentProgress().currentCheckpointPagesCount(pagesNum);
+        CheckpointProgressEx progress = getCheckpointer().currentProgress();
+        
+        if (progress != null)
+            progress.currentCheckpointPagesCount(pagesNum);
 
         return new CheckpointPagesInfoHolder(res, pagesNum, hasUserDirtyPages);
     }
