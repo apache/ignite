@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.query;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.QueryMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
-import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.spi.systemview.view.SqlQueryView;
 
 /**
- * Subcommands of the kill command.
- *
- * @see KillCommand
- * @see QueryMXBean
- * @see ComputeMXBean
- * @see TransactionsMXBean
- * @see ServiceMXBean
+ * Query MXBean interface.
  */
-public enum KillSubcommand {
-    /** Kill compute task. */
-    COMPUTE,
-
-    /** Kill transaction. */
-    TRANSACTION,
-
-    /** Kill service. */
-    SERVICE,
-
-    /** Kill sql query. */
-    SQL
+public interface QueryMXBean {
+    /**
+     * Kills SQL query by the identifier.
+     *
+     * @param id SQL query id.
+     * @see SqlQueryView#queryId()
+     */
+    @MXBeanDescription("Kills SQL query by the identifier.")
+    void cancelSQL(
+        @MXBeanParameter(name = "id", description = "SQL query id.") String id
+    );
 }

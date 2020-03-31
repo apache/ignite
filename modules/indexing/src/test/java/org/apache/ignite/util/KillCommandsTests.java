@@ -18,11 +18,14 @@
 package org.apache.ignite.util;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
@@ -32,6 +35,7 @@ import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -50,6 +54,9 @@ class KillCommandsTests {
 
     /** Cache name. */
     public static final String DEFAULT_CACHE_NAME = "default";
+
+    /** Page size. */
+    public static final int PAGE_SZ = 5;
 
     /** Operations timeout. */
     public static final int TIMEOUT = 10_000;
@@ -180,6 +187,36 @@ class KillCommandsTests {
         res = waitForCondition(() -> svcView.size() == 0, TIMEOUT);
 
         assertTrue(res);
+    }
+
+    /**
+     * Test cancel of the SQL query.
+     *
+     * @param cli Client node.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestCancelSQLQuery(IgniteEx cli, Consumer<String> qryCanceler) {
+        String qryStr = "SELECT * FROM \"default\".Integer";
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(qryStr).setPageSize(PAGE_SZ);
+        Iterator<List<?>> iter = queryProcessor(cli).querySqlFields(qry, true).iterator();
+
+        assertNotNull(iter.next());
+
+        List<List<?>> sqlQries = execute(cli, "SELECT * FROM SYS.SQL_QUERIES ORDER BY START_TIME");
+
+        assertEquals(2, sqlQries.size());
+
+        String qryId = (String)sqlQries.get(0).get(0);
+
+        assertEquals(qryStr, sqlQries.get(0).get(1));
+
+        qryCanceler.accept(qryId);
+
+        for (int i=0; i < PAGE_SZ - 2; i++)
+            assertNotNull(iter.next());
+
+        assertThrowsWithCause(iter::next, CacheException.class);
     }
 
     /** */

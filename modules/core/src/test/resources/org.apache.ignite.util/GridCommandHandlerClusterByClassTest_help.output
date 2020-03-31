@@ -86,6 +86,12 @@ This utility can do the following commands:
     Parameters:
       xid  - Transaction identifier.
 
+  Kill sql query by query id:
+    control.(sh|bat) --kill SQL query_id
+
+    Parameters:
+      query_id  - Query identifier.
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

@@ -47,6 +47,7 @@ import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
@@ -532,6 +533,15 @@ public class CommandHandlerParsingTest {
 
         // Service command format errors.
         assertParseArgsThrows("Expected service name.", "--kill", "service");
+
+        // Transaction command format errors.
+        assertParseArgsThrows("Expected transaction id.", "--kill", "transaction");
+
+        // SQL command format errors.
+        assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
+
+        assertParseArgsThrows("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT,
+            "--kill", "sql", "not_sql_id");
     }
 
     /**
