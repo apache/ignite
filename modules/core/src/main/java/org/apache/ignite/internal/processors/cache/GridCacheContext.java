@@ -2242,16 +2242,18 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
      * @param partId Partition ID.
+     * @param forcePrimary Force searching only the primary node.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         Set<ClusterNode> invalidNodes,
         int partId,
-        boolean canRemap
+        boolean canRemap,
+        boolean forcePrimary
     ) {
         if (!readLoadBalancingEnabled) {
-            if (!canRemap) {
+            if (!canRemap && !forcePrimary) {
                 // Find next available node if we can not wait next topology version.
                 for (ClusterNode node : affNodes) {
                     if (ctx.discovery().alive(node) && !invalidNodes.contains(node))
@@ -2267,7 +2269,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             }
         }
 
-        if (!readFromBackup){
+        if (!readFromBackup || forcePrimary){
             ClusterNode first = affNodes.get(0);
 
             return !invalidNodes.contains(first) ? first : null;

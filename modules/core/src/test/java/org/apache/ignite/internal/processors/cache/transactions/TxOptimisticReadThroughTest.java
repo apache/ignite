@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -28,6 +30,7 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -44,6 +47,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  * Test for optimistic tx with read/through cache.
  */
 public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
+    /** Test nodes count. */
+    protected static final int NODE_CNT = 5;
+
     /** Shared read/write-through store. */
     private static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
 
@@ -54,6 +60,7 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(new CacheConfiguration<>("tx")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.REPLICATED)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setCacheStoreFactory(new TestStoreFactory())
             .setReadThrough(true)
             .setWriteThrough(true)
@@ -68,31 +75,32 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
     /** Check optimistic transaction synchronizes value version. */
     @Test
     public void testReplicatedOptimistic() throws Exception {
-        startGrids(5);
+        startGrids(NODE_CNT);
 
-        int key = primaryKey(grid(0).cache("tx"));
+        final IgniteCache<Object, Object> cache0 = grid(0).cache("tx");
 
-        IgniteCache<Object, Object> cache = grid(0).cache("tx");
+        final IgniteCache<Object, Object> cache1 = grid(1).cache("tx");
 
-        cache.put(key, 1);
+        final int key = primaryKey(cache0);
 
-        cache.localClear(key);
+        cache0.put(key, key);
 
-        assertEquals(1, cache.get(key));
+        cache0.put(key+1, key + 1);
 
-        cache = grid(1).cache("tx");
+        cache0.localClear(key);
+
+        assertEquals(1, cache0.get(key));
 
         try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-            cache.get(key);
+            cache1.getAll(Stream.of(key, key + 1, key + 2).collect(Collectors.toSet()));
 
-            cache.put(key, 2);
+            cache1.put(key, key + 1);
 
             tx.commit();
         }
 
-        assertEquals(2, grid(1).cache("tx").get(key));
-
-        assertEquals(2, grid(0).cache("tx").get(key));
+        for (int i = 0; i < NODE_CNT; ++i)
+            assertEquals(key + 1, grid(i).cache("tx").get(key));
     }
 
     /** Shared read/write-through store factory. */

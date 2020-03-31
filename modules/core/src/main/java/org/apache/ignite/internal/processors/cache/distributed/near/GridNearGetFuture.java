@@ -403,7 +403,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     Set<ClusterNode> invalidNodesSet = getInvalidNodes(part, topVer);
 
-                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap);
+                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap,
+                        false);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(part, topVer));
