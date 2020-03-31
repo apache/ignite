@@ -17,24 +17,19 @@
 
 package org.apache.ignite.internal.cluster;
 
-import java.io.Serializable;
-import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.jetbrains.annotations.NotNull;
 
 import static java.lang.String.format;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 
@@ -92,8 +87,8 @@ public class DistributedBaselineConfiguration {
         isp.registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    baselineAutoAdjustEnabled.addListener(makeUpdateListener());
-                    baselineAutoAdjustTimeout.addListener(makeUpdateListener());
+                    baselineAutoAdjustEnabled.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
+                    baselineAutoAdjustTimeout.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
 
                     dispatcher.registerProperties(baselineAutoAdjustEnabled, baselineAutoAdjustTimeout);
                 }
@@ -104,38 +99,6 @@ public class DistributedBaselineConfiguration {
                 }
             }
         );
-    }
-
-    /**
-     * @param property Property which value should be set.
-     * @param value Default value.
-     * @param log Logger.
-     * @param <T> Property type.
-     */
-    private <T extends Serializable> void setDefaultValue(DistributedProperty<T> property, T value, IgniteLogger log) {
-        if (property.get() == null) {
-            try {
-                property.propagateAsync(null, value)
-                    .listen((IgniteInClosure<IgniteInternalFuture<?>>)future -> {
-                        if (future.error() != null)
-                            log.error("Cannot set default value of '" + property.getName() + '\'', future.error());
-                    });
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Cannot initiate setting default value of '" + property.getName() + '\'', e);
-            }
-        }
-    }
-
-    /**
-     * @param <T> Type of property value.
-     * @return Update property listener.
-     */
-    @NotNull private <T> DistributePropertyListener<T> makeUpdateListener() {
-        return (name, oldVal, newVal) -> {
-            if (!Objects.equals(oldVal, newVal))
-                log.info(format(PROPERTY_UPDATE_MESSAGE, name, oldVal, newVal));
-        };
     }
 
     /**
