@@ -16,7 +16,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 /**
  * Data class representing the state of running/scheduled checkpoint.
  */
-public class CheckpointProgressImpl extends CheckpointWriteProgressSupplierImpl implements CheckpointProgress {
+public class CheckpointProgressEx extends CheckpointWriteProgressSupplierImpl implements CheckpointProgress {
     /** Scheduled time of checkpoint. */
     private volatile long nextCpNanos;
 
@@ -44,7 +44,7 @@ public class CheckpointProgressImpl extends CheckpointWriteProgressSupplierImpl 
     /**
      * @param cpFreq Timeout until next checkpoint.
      */
-    public CheckpointProgressImpl(long cpFreq) {
+    public CheckpointProgressEx(long cpFreq) {
         this.nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
     }
 

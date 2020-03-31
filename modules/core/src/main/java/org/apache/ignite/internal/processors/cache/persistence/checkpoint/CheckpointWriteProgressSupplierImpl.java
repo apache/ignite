@@ -79,7 +79,7 @@ public class CheckpointWriteProgressSupplierImpl implements CheckpointWriteProgr
      *
      * @param deltha Pages num to update.
      */
-    public void evictedPagesCntr(int deltha) {
+    public void updateEvictedPagesCntr(int deltha) {
         A.ensure(deltha > 0, "param must be positive");
 
         if (evictedPagesCntr() != null)
