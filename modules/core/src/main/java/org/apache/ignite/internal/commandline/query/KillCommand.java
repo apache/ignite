@@ -48,6 +48,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SQL;

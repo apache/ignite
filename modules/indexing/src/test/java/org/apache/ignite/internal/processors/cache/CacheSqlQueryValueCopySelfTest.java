@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -315,7 +316,7 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         final Collection<GridRunningQueryInfo> finalQueries = queries;
 
         for (GridRunningQueryInfo query : finalQueries)
-            qryProc.cancelQuery(query.id());
+            qryProc.cancelQueries(Collections.singleton(query.id()));
 
         int n = 100;
 

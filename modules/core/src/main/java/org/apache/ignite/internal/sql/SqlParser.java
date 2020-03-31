@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.REVOKE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
-import static org.apache.ignite.internal.sql.SqlKeyword.SCAN_QUERY;
+import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SHOW;
@@ -297,7 +297,7 @@ public class SqlParser {
                 case QUERY:
                     return new SqlKillQueryCommand().parse(lex);
 
-                case SCAN_QUERY:
+                case SCAN:
                     return new SqlKillScanQueryCommand().parse(lex);
 
                 case COMPUTE:

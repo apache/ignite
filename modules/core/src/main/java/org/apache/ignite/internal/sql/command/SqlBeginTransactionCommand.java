@@ -30,6 +30,16 @@ public class SqlBeginTransactionCommand implements SqlCommand {
     }
 
     /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlBeginTransactionCommand.class, this);
     }

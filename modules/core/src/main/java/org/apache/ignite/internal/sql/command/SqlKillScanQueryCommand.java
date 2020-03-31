@@ -55,9 +55,8 @@ public class SqlKillScanQueryCommand implements SqlCommand {
                 if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
                     cacheName = lex.token();
 
-                    if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+                    if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT)
                         qryId = Long.parseLong(lex.token());
-                    }
                     else
                         throw SqlParserUtils.error(lex, "Expected query id. " + KILL_SCAN_QRY_FORMAT);
                 }
@@ -69,6 +68,16 @@ public class SqlKillScanQueryCommand implements SqlCommand {
         }
 
         throw SqlParserUtils.error(lex, "Expected origin node id. " + KILL_SCAN_QRY_FORMAT);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
     }
 
     /** @return Origin node id. */

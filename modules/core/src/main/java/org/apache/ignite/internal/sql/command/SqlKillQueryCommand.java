@@ -86,25 +86,14 @@ public class SqlKillQueryCommand implements SqlCommand {
                 + EXPECTED_GLOBAL_QRY_ID_FORMAT);
     }
 
-    /**
-     * Parse global SQL query id.
-     * Format is {origin_node_id}_{query_id}.
-     *
-     * @param globalQryId Global query id.
-     * @return Results of parsing of {@code null} if parse failed.
-     */
-    public static T2<UUID, Long> parseGlobalQueryId(String globalQryId) {
-        String[] ids = globalQryId.split("_");
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
 
-        if (ids.length != 2)
-            return null;
-
-        try {
-            return new T2<>(UUID.fromString(ids[0]), Long.parseLong(ids[1]));
-        }
-        catch (Exception ignore) {
-            return null;
-        }
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
     }
 
     /**

@@ -50,7 +50,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             srvs.add(grid(i));
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
+            new CacheConfiguration<>(KillCommandsTests.DEFAULT_CACHE_NAME)
+                .setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
@@ -114,12 +115,12 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         });
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownScanQuery() throws Exception {
+    public void testCancelUnknownScanQuery() {
         int res = execute("--kill", "scan", srvs.get(0).localNode().id().toString(), "unknown", "1");
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
+        assertEquals(EXIT_CODE_OK, res);
     }
 
     /** */

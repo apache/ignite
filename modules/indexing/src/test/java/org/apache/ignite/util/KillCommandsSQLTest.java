@@ -31,10 +31,10 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
-import static org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest.execute;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
+import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -61,6 +61,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_TX_QRY = KILL + " " + TRANSACTION;
+
+    /** */
+    public static final String KILL_SCAN_QRY = KILL + " " + SCAN;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -93,10 +96,11 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             cache.put(i, i);
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelScanQuery() throws Exception {
-        doTestScanQueryCancel(startCli, srvs, args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
+    public void testCancelScanQuery() {
+        doTestScanQueryCancel(startCli, srvs,
+            args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
     }
 
     /** @throws Exception If failed. */
@@ -124,10 +128,11 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         doTestCancelSQLQuery(startCli, qryId -> execute(killCli, KILL_SQL_QRY + " '" + qryId + "'"));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownScanQuery() throws Exception {
-        assertThrowsWithCause(() -> execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1"),
+    public void testCancelUnknownScanQuery() {
+        assertThrowsWithCause(
+            () -> execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1"),
             RuntimeException.class);
     }
 
