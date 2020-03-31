@@ -135,12 +135,10 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         doTestCancelSQLQuery(startCli, qryId -> qryMBean.cancelSQL(qryId));
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownScanQuery() throws Exception {
-        assertThrowsWithCause(() -> qryMBean.cancelScan(srvs.get(0).localNode().id().toString(), "unknown", 1L),
-            RuntimeException.class);
-
+    public void testCancelUnknownScanQuery() {
+        qryMBean.cancelScan(srvs.get(0).localNode().id().toString(), "unknown", 1L);
     }
 
     /** */

@@ -108,14 +108,9 @@ public class QueryMXBeanImpl implements QueryMXBean {
 
             IgniteCompute compute = cluster.compute();
 
-            boolean res = compute.execute(new VisorScanQueryCancelTask(),
+            compute.execute(new VisorScanQueryCancelTask(),
                 new VisorTaskArgument<>(srv.id(),
                     new VisorScanQueryCancelTaskArg(originNodeId, cacheName, id), false));
-
-            if (!res) {
-                throw new RuntimeException("Query not found[originNodeId=" + originNodeId +
-                    ",cacheName=" + cacheName + ",qryId=" + id + ']');
-            }
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);

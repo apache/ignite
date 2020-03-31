@@ -34,7 +34,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -92,7 +91,7 @@ class KillCommandsTests {
         // Fetch first entry and therefore caching first page.
         assertNotNull(iter1.next());
 
-        List<List<?>> scanQries0 = SqlViewExporterSpiTest.execute(srvs.get(0),
+        List<List<?>> scanQries0 = execute(srvs.get(0),
             "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
 
         assertEquals(1, scanQries0.size());

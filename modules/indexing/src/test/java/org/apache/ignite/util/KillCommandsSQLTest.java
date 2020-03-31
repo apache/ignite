@@ -131,9 +131,7 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCancelUnknownScanQuery() {
-        assertThrowsWithCause(
-            () -> execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1"),
-            RuntimeException.class);
+        execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1");
     }
 
     /** */
