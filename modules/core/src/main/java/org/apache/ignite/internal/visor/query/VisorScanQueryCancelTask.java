@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.util.Collections;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
