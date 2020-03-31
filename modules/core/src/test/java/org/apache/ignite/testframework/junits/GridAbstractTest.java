@@ -854,7 +854,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    private final Ignite startMultiThreaded(int init, int cnt, Consumer<Integer> starter) throws Exception {
+    protected final Ignite startMultiThreaded(int init, int cnt, Consumer<Integer> starter) throws Exception {
         assert init >= 0;
         assert cnt > 0;
 
