@@ -53,7 +53,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
 /**
  * Tests failed start of iteration through index.
  */
-public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerClusterPerMethodAbstractTest{
     /** */
     private final String IDX_NAME = "bad_index";
 
