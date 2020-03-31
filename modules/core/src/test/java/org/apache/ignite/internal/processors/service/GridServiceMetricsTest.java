@@ -3,7 +3,10 @@ package org.apache.ignite.internal.processors.service;
 import com.google.common.collect.Iterables;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -20,6 +23,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
@@ -120,6 +124,73 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(deployedCnt, metricsCnt);
 
         assertEquals(metricsCnt, totalInstance);
+    }
+
+    @Ignore
+    @Test
+    public void testMapConcurrency() throws InterruptedException {
+        final Map<Integer, Integer> map = new HashMap<>(1);
+        final Random rnd = new Random();
+        final int valueCnt = 1000;
+        final Integer[] holder = new Integer[1];
+
+        for(int i=0; i<3; ++i) {
+            new Thread(() -> {
+                while (true) {
+                    for (int v = 0; v < valueCnt; ++v)
+                        map.put(v, rnd.nextInt(valueCnt));
+
+                    System.err.println("Filled");
+
+                    try {
+                        Thread.sleep(rnd.nextInt(5000));
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, "putter_"+i).start();
+        }
+
+        for(int i=0; i<10; ++i) {
+            new Thread(() -> {
+                while (true) {
+
+                    try {
+                        holder[0] = map.get(rnd.nextInt(valueCnt));
+
+                        Thread.sleep(rnd.nextInt(50));
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, "getter_"+i).start();
+        }
+
+        for(int i=0; i<2; ++i) {
+            new Thread(() -> {
+                while (true) {
+                    try {
+                        Thread.sleep(rnd.nextInt(5000));
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    System.err.println("Clearing");
+
+                    map.clear();
+
+                    System.err.println("Cleared");
+                }
+            }, "clearer_"+i).start();
+        }
+
+        Thread.sleep(60000);
     }
 
     /** Checks metric are created when service is deployed and removed when service is undeployed. */
