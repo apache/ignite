@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -30,8 +33,10 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
@@ -50,6 +55,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
@@ -63,6 +69,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Tests for cache data loading during simultaneous grids start.
  */
+@WithSystemProperty(key=IgniteSystemProperties.IGNITE_QUIET, value="false")
 public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Grids count */
     private static int GRIDS_CNT = 5;
@@ -91,6 +98,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setConsistentId(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -154,8 +163,12 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                     try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
                         dataStreamer.allowOverwrite(allowOverwrite);
 
-                        for (int i = 0; i < KEYS_CNT; i++)
+                        for (int i = 0; i < KEYS_CNT; i++) {
+                            if (i % (KEYS_CNT / 40) == 0)
+                                log.warning("###### Keys loaded: " + i);
+
                             dataStreamer.addData(i, Integer.toString(i));
+                        }
                     }
 
                     log.info("Data loaded.");
@@ -379,7 +392,16 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
             @Override public Ignite call() throws Exception {
-                return startGridsMultiThreaded(1, GRIDS_CNT - 1);
+                return startMultiThreaded(1, GRIDS_CNT - 1, idx -> {
+                    try {
+                        startGrid(idx);
+
+                        log.warning("###### Grid started: " + idx);
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
         });
 
@@ -388,6 +410,13 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
         }
         finally {
             fut.get();
+        }
+
+        try {
+            assertPartitionsSame(idleVerify(g0, DEFAULT_CACHE_NAME));
+        }
+        catch (AssertionError e) {
+            log.warning("###### Idle verify conflicts: " + e.getMessage());
         }
 
         assertCacheSize(KEYS_CNT);
@@ -417,6 +446,35 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 return size == expectedCacheSize && expectedCacheSize == total;
             }
         }, 2 * 60_000);
+
+        if (!consistentCache) {
+            Map<String, Map<Integer, Set<Integer>>> consistentIdToPartitionsToKeys = new HashMap<>();
+
+            Affinity<Object> affinity = grid(0).affinity(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; i < KEYS_CNT; i++) {
+                Collection<ClusterNode> nodes = affinity.mapKeyToPrimaryAndBackups(i);
+
+                ClusterNode primary = nodes.iterator().next();
+
+                String primaryConsId = primary.consistentId().toString();
+
+                int part = affinity.partition(i);
+
+                Object v = grid(primaryConsId).cache(DEFAULT_CACHE_NAME).localPeek(i);
+
+                if (v == null) {
+                    Map<Integer, Set<Integer>> partToKeys =
+                        consistentIdToPartitionsToKeys.computeIfAbsent(primaryConsId, k -> new HashMap<>());
+
+                    Set<Integer> keys = partToKeys.computeIfAbsent(part, k -> new HashSet<>());
+
+                    keys.add(i);
+                }
+            }
+
+            log.warning("###### Missing keys: " + consistentIdToPartitionsToKeys);
+        }
 
         assertTrue("Data lost. Actual cache size: " + cache.size(CachePeekMode.PRIMARY), consistentCache);
     }
