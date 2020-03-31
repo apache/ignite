@@ -175,18 +175,17 @@ public class MetricUtils {
      * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
      *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
      *                     <pre>
-     *                         0 - wont add package name;
-     *                         1 - add only first char of each name in java package;
-     *                         2 - add first and last char of each name in java package;
-     *                         Any other - add full name of java package.
+     *                         0 or negative - wont add package name;
+     *                         1 - add first and last char of each name in java package;
+     *                         2 or bigger - add full name of java package.
      *                     </pre>
      * @return Abbreviated name of {@code cls}.
      */
     public static String abbreviateName(Class<?> cls, int pkgNameDepth) {
-        if (pkgNameDepth == 0)
+        if (pkgNameDepth < 1)
             return cls.getSimpleName();
 
-        if (pkgNameDepth < 0 || pkgNameDepth > 2)
+        if (pkgNameDepth >= MAX_ABBREVIATE_NAME_LVL)
             return cls.getName();
 
         String[] pkgNameParts = cls.getName().split("\\.");
@@ -198,11 +197,9 @@ public class MetricUtils {
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < pkgNameParts.length - 1; ++i) {
-            // For {@code pkgNameDepth} == 1 add the first char.
             sb.append(pkgNameParts[i].charAt(0));
 
-            // For {@code pkgNameDepth} == 2 add the last char.
-            if (pkgNameDepth > 1 && pkgNameParts[i].length() > 1)
+            if (pkgNameParts[i].length() > 1)
                 sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
 
             sb.append(".");

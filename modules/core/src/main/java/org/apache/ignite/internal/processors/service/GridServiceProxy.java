@@ -177,7 +177,7 @@ public class GridServiceProxy<T> implements Serializable {
                             Service svc = svcCtx.service();
 
                             if (svc != null)
-                                return callSrvcMtd(ctx.service(), svc, name, mtd, args);
+                                return callServiceMethod(ctx.service(), svc, name, mtd, args);
                         }
                     }
                     else {
@@ -356,7 +356,7 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * Calls service method, measures and registers its performance.
+     * Calls service method, measures and registers its duration.
      *
      * @param srvcProc Current service processor.
      * @param srvc The service object.
@@ -364,24 +364,24 @@ public class GridServiceProxy<T> implements Serializable {
      * @param mtd Method to call.
      * @param args Arguments for {@code mtd}.
      */
-    private static Object callSrvcMtd(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
+    private static Object callServiceMethod(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
         Object[] args) throws InvocationTargetException, IllegalAccessException {
 
-        long timing = System.nanoTime();
+        long startTime = System.nanoTime();
 
         try {
             return mtd.invoke(srvc, args);
         }
         finally {
             if (srvcProc instanceof IgniteServiceProcessor) {
-                timing = System.nanoTime() - timing;
+                long duration = System.nanoTime() - startTime;
 
                 HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
 
                 assert histogram != null;
 
                 if (histogram != null)
-                    histogram.value(timing);
+                    histogram.value(duration);
             }
         }
     }
@@ -455,7 +455,7 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return callSrvcMtd(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(), mtd, args);
+                return callServiceMethod(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(), mtd, args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());

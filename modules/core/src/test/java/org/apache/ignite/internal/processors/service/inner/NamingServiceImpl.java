@@ -20,12 +20,12 @@ public class NamingServiceImpl implements NamingService {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ServiceContext ctx) throws Exception {
+    @Override public void init(ServiceContext ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ServiceContext ctx) throws Exception {
+    @Override public void execute(ServiceContext ctx) {
         // No-op.
     }
 }

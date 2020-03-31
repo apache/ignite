@@ -1890,7 +1890,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         HistogramMetricImpl histogram = null;
 
         // Find/create histogram.
-        for (int i = 0; i < MAX_ABBREVIATE_NAME_LVL; ++i) {
+        for (int i = 0; i <= MAX_ABBREVIATE_NAME_LVL; ++i) {
             String methodMetricName = methodMetricName(method, i);
 
             synchronized (metricRegistry) {
@@ -1918,7 +1918,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         StringBuilder sb = new StringBuilder();
 
         sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
-        sb.append("_");
+        sb.append(" ");
         sb.append(method.getName());
         sb.append("(");
         sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
@@ -1974,13 +1974,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 singleHistogram = initiator.get();
             }
             else if (!isSameSingleMtd(mtd) && (overloadedMtd == null || !overloadedMtd.containsKey(key(mtd)))) {
-                overloadedMtd = new HashMap<>(2);
+                if (overloadedMtd == null) {
+                    overloadedMtd = new HashMap<>(2);
 
-                overloadedMtd.put(key(singleMtd), singleHistogram);
+                    overloadedMtd.put(key(singleMtd), singleHistogram);
 
-                singleMtd = null;
+                    singleMtd = null;
 
-                singleHistogram = null;
+                    singleHistogram = null;
+                }
 
                 overloadedMtd.put(key(mtd), initiator.get());
             }
