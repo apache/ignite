@@ -154,7 +154,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
 
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
-        SECURITY_CONTEXTS.remove(subjId);
+        // No-op.
     }
 
     /** {@inheritDoc} */
