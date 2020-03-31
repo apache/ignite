@@ -910,11 +910,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(
-        SchemaIndexCacheFilter filter,
-        SchemaIndexCacheVisitorClosure clo,
-        @Nullable SchemaIndexCacheStat stat
-    ) {
+    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo) {
         // No-op.
     }
 

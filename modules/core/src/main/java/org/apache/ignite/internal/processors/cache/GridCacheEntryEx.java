@@ -1038,19 +1038,14 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
-     * Update index from within entry lock, passing key, value, and expiration time to provided closure and collect
-     * statistics about index update to {@code stat}, if it is present.
+     * Update index from within entry lock, passing key, value, and expiration time to provided closure.
      *
-     * @param filter Row filter.
      * @param clo Closure to apply to key, value, and expiration time.
-     * @param stat Object for collecting statistics about index update (can be {@code null}).
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public void updateIndex(
-        SchemaIndexCacheFilter filter,
-        SchemaIndexCacheVisitorClosure clo,
-        @Nullable SchemaIndexCacheStat stat
+        SchemaIndexCacheVisitorClosure clo
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
