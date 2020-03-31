@@ -71,6 +71,12 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
+    /** JKS. */
+    private String jksPath;
+
+    /** JKS Password. */
+    private char[] jksPassword;
+
     /** High-level command. */
     private Command command;
 
@@ -92,12 +98,15 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStorePath Truststore.
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
+     * @param jksPath JKS.
+     * @param jksPassword JKS password.
      */
     public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType,
+        String jksPath, char[] jksPassword
     ) {
         this.command = command;
         this.host = host;
@@ -121,6 +130,9 @@ public class ConnectionAndSslParameters {
         this.sslTrustStorePath = sslTrustStorePath;
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
+
+        this.jksPath = jksPath;
+        this.jksPassword = jksPassword;
     }
 
     /**
@@ -258,5 +270,19 @@ public class ConnectionAndSslParameters {
      */
     public char[] sslTrustStorePassword() {
         return sslTrustStorePassword;
+    }
+
+    /**
+     * @return JKS
+     */
+    public String jksPath() {
+        return jksPath;
+    }
+
+    /**
+     * @return JKS password
+     */
+    public char[] jksPassword() {
+        return jksPassword;
     }
 }

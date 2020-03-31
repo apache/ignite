@@ -18,11 +18,23 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.logging.FileHandler;
@@ -47,9 +59,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.logger.java.JavaLoggerFormatter;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -108,6 +122,9 @@ public class CommandHandler {
 
     /** */
     public static final String NULL = "null";
+
+    /** */
+    public static final String ATTR_SECURITY_USER_CERTIFICATES = "com.sbt.sbergrid.users.security.cert";
 
     /** JULs logger. */
     private final Logger logger;
@@ -462,6 +479,23 @@ public class CommandHandler {
         if (!F.isEmpty(args.sslKeyStorePath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
 
+        if (args.jksPath() != null &&  args.jksPassword() != null) {
+            Map<String, String> userAttr = new HashMap<>();
+
+            X509Certificate[] selfCerts;
+
+            try {
+                selfCerts = extractCertificates(loadKeyStore(args.jksPath(), args.jksPassword()));
+            }
+            catch (Exception e) {
+                throw new SecurityException("Failed to get user private key chain.", e);
+            }
+
+            userAttr.put(ATTR_SECURITY_USER_CERTIFICATES, Arrays.toString(U.marshal(new JdkMarshaller(), selfCerts)));
+
+            clientCfg.setUserAttributes(userAttr);
+        }
+
         return clientCfg;
     }
 
@@ -634,6 +668,80 @@ public class CommandHandler {
             .map(String::trim)
             .filter(item -> !item.isEmpty())
             .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Loads key store with configured parameters.
+     *
+     * @param storeFilePath Path to key store file.
+     * @param keyStorePwd Store password.
+     * @return Initialized key store.
+     * @throws SecurityException If key store could not be initialized.
+     */
+    public static KeyStore loadKeyStore(String storeFilePath, char[] keyStorePwd) {
+        try (InputStream input = new FileInputStream(storeFilePath)) {
+            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+
+            keyStore.load(input, keyStorePwd);
+
+            return keyStore;
+        }
+        catch (GeneralSecurityException e) {
+            throw new SecurityException("Failed to initialize key store (security exception occurred) [keyStorePath="
+                + storeFilePath + ']', e);
+        }
+        catch (FileNotFoundException e) {
+            throw new SecurityException("Failed to initialize key store (key store file was not found): [path=" +
+                storeFilePath + ", msg=" + e.getMessage() + ']', e);
+        }
+        catch (IOException e) {
+            throw new SecurityException(
+                "Failed to initialize key store (I/O error occurred): " + storeFilePath, e);
+        }
+    }
+
+    /**
+     * Extracts certificate from key store.
+     *
+     * @throws SecurityException If any exceptions while key store file reading occur or if the stored
+     *     certificate number different from one.
+     */
+    public static X509Certificate[] extractCertificates(KeyStore keyStore) {
+        try {
+            Enumeration<String> aliases = keyStore.aliases();
+
+            String selfAlias = null;
+
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+
+                if (keyStore.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class)) {
+                    if (selfAlias != null)
+                        throw new SecurityException("Key store contains more than one user key.");
+
+                    selfAlias = alias;
+                }
+            }
+
+            if (selfAlias == null)
+                throw new SecurityException("Key store does not contain user certificates.");
+
+            Certificate[] certChain = keyStore.getCertificateChain(selfAlias);
+
+            if (F.isEmpty(certChain))
+                throw new SecurityException("Certificate chain is missing [alias: " + selfAlias + ']');
+
+            if (!Arrays.stream(certChain).allMatch(cert -> cert instanceof X509Certificate)) {
+                throw new SecurityException("Certificate chain contains certificates with unexceptale types" +
+                    " [alias: " + selfAlias + "]. Expected type: java.security.cert.X509Certificate.");
+            }
+
+            return Arrays.copyOf(certChain, certChain.length, X509Certificate[].class);
+        }
+        catch (KeyStoreException e) {
+            throw new SecurityException("Key store is not initialized.", e);
+        }
     }
 
     /** */

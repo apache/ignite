@@ -293,7 +293,8 @@ public class CommandHandlerParsingTest {
 
             ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
                 "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
-                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
+                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol",
+                "--cert-keystore", "client.jks", cmd.text()));
 
             assertEquals("testSSLProtocol", args.sslProtocol());
             assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
@@ -303,6 +304,7 @@ public class CommandHandlerParsingTest {
             assertEquals("testTruststore", args.sslTrustStorePath());
             assertArrayEquals("testTruststorePassword".toCharArray(), args.sslTrustStorePassword());
             assertEquals("testTruststoreType", args.sslTrustStoreType());
+            assertEquals("client.jks", args.jksPath());
 
             assertEquals(cmd.command(), args.command());
         }

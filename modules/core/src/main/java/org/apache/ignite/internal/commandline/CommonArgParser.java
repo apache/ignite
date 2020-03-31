@@ -91,6 +91,12 @@ public class CommonArgParser {
     /** */
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
+    /** */
+    static final String CMD_CERT_KEYSTORE = "--cert-keystore";
+
+    /** */
+    static final String CMD_CERT_KEYSTORE_PASSWORD = "--cert-keystore-password";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -117,6 +123,9 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_CERT_KEYSTORE);
+        AUX_COMMANDS.add(CMD_CERT_KEYSTORE_PASSWORD);
     }
 
     /**
@@ -149,6 +158,8 @@ public class CommonArgParser {
         list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
         list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_CERT_KEYSTORE, "JKS_PATH"));
+        list.add(optional(CMD_CERT_KEYSTORE_PASSWORD, "JKS_PASSWORD"));
 
         return list.toArray(new String[0]);
     }
@@ -192,6 +203,10 @@ public class CommonArgParser {
         String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
+
+        String certKeystorePath = null;
+
+        char certKeystorePassword[] = null;
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
@@ -305,6 +320,18 @@ public class CommonArgParser {
 
                         break;
 
+                    case CMD_CERT_KEYSTORE:
+                        certKeystorePath = argIter.nextArg("Expected JKS path");
+
+                        break;
+
+                    case CMD_CERT_KEYSTORE_PASSWORD:
+                        certKeystorePassword = argIter.nextArg("Expected JKS password").toCharArray();
+
+                        logger.info(securityWarningMessage(CMD_CERT_KEYSTORE_PASSWORD));
+
+                        break;
+
                     case CMD_AUTO_CONFIRMATION:
                         autoConfirmation = true;
 
@@ -323,7 +350,7 @@ public class CommonArgParser {
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, certKeystorePath, certKeystorePassword);
     }
 
     /**
