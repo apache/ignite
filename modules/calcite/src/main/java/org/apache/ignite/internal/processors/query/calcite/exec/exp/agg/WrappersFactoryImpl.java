@@ -312,7 +312,7 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
 
             AccumulatorWrapper wrapper;
 
-            if (inAdapter == null)
+            if (F.isEmpty(call.getArgList()))
                 wrapper = new NoArgsWrapper(accumulator, outAdapter);
             else
                 wrapper = new Wrapper(accumulator, call.getArgList(), call.ignoreNulls(), inAdapter, outAdapter);
