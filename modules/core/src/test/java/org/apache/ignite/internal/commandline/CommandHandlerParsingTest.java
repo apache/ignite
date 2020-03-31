@@ -285,7 +285,8 @@ public class CommandHandlerParsingTest {
         return cmd == CommandList.CACHE ||
             cmd == CommandList.WAL ||
             cmd == CommandList.SET_STATE ||
-            cmd == CommandList.ENCRYPTION;
+            cmd == CommandList.ENCRYPTION ||
+            cmd == CommandList.KILL;
     }
 
     /**
@@ -471,7 +472,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * test parsing dump transaction arguments
+     * Test parsing dump transaction arguments.
      */
     @Test
     public void testTransactionArguments() {
@@ -517,6 +518,23 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Test parsing kill arguments.
+     */
+    @Test
+    public void testKillArguments() {
+        assertParseArgsThrows("Expected type of resource to kill.", "--kill");
+
+        // Compute command format errors.
+        assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "compute", "not_a_uuid");
+
+        // Service command format errors.
+        assertParseArgsThrows("Expected service name.", "--kill", "service");
+    }
+
+    /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
@@ -547,6 +565,17 @@ public class CommandHandlerParsingTest {
      * @param args Incoming arguments.
      */
     private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
-        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
+        assertParseArgsThrows(failMsg, IllegalArgumentException.class, args);
+    }
+
+    /**
+     * Checks that parse arguments fails with {@code exception} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param cls Exception class.
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> cls, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), cls, failMsg);
     }
 }

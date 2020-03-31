@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitio
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
@@ -85,6 +86,7 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(ExchangeMergeStaleServerNodesTest.class);
         ignoredTests.add(IgniteExchangeLatchManagerCoordinatorFailTest.class);
         ignoredTests.add(IgniteExchangeLatchManagerDiscoHistoryTest.class);
+        ignoredTests.add(ExchangeLatchManagerTest.class);
         ignoredTests.add(PartitionsExchangeCoordinatorFailoverTest.class);
         ignoredTests.add(CacheParallelStartTest.class);
         ignoredTests.add(IgniteCache150ClientsTest.class);

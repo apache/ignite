@@ -206,7 +206,7 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
             ((IgniteProcessProxy)grid(2)).getId());
 
         VisorValidateIndexesTaskArg arg = new VisorValidateIndexesTaskArg(null,
-            null, 10000, 1);
+            null, 10000, 1, true);
 
         VisorTaskArgument<VisorValidateIndexesTaskArg> argument = new VisorTaskArgument<>(nodes, arg, true);
 

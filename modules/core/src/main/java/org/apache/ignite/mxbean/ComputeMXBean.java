@@ -15,34 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.sql.ResultSet;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
- * Special key/value iterator based on database result set.
+ * Compute MXBean interface.
  */
-public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<K, V>> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public interface ComputeMXBean {
     /**
-     * @param data Data array.
-     * @throws IgniteCheckedException If failed.
+     * Kills compute task by the session idenitifier.
+     *
+     * @param sesId Session id.
+     * @see ComputeTaskView#sessionId()
+     * @see ComputeJobView#sessionId()
      */
-    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
-        super(data);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteBiTuple<K, V> createRow() {
-        K key = (K)row[0];
-        V val = (V)row[1];
-
-        return new IgniteBiTuple<>(key, val);
-    }
+    @MXBeanDescription("Kills compute task by the session idenitifier.")
+    public void cancel(
+        @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
+    );
 }
