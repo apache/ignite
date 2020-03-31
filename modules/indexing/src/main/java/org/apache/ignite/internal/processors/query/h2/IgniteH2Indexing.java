@@ -1944,22 +1944,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean inMemoryRebuild) {
         assert nonNull(cctx);
 
         // No data in fresh in-memory cache.
-        if (!cctx.group().persistenceEnabled())
+        if (!(cctx.group().persistenceEnabled() || inMemoryRebuild))
             return null;
 
         IgnitePageStoreManager pageStore = cctx.shared().pageStore();
-
-        assert nonNull(pageStore);
 
         SchemaIndexCacheVisitorClosure clo;
 
         String cacheName = cctx.name();
 
-        if (!pageStore.hasIndexStore(cctx.groupId())) {
+        if (pageStore == null || !pageStore.hasIndexStore(cctx.groupId())) {
             // If there are no index store, rebuild all indexes.
             clo = new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled());
         }

@@ -31,6 +31,7 @@ import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntitiesOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
@@ -276,9 +277,7 @@ public class QuerySchema implements Serializable {
                 if (replaceTarget)
                     ((List<QueryEntity>)entities).set(targetIdx, target);
             }
-            else {
-                assert op instanceof SchemaAlterTableDropColumnOperation;
-
+            else if (op instanceof SchemaAlterTableDropColumnOperation) {
                 SchemaAlterTableDropColumnOperation op0 = (SchemaAlterTableDropColumnOperation)op;
 
                 int targetIdx = -1;
@@ -304,7 +303,9 @@ public class QuerySchema implements Serializable {
                     assert rmv || op0.ifExists() : "Invalid operation state [removed=" + rmv
                         + ", ifExists=" + op0.ifExists() + ']';
                 }
-            }
+            } else
+                assert op instanceof SchemaAddQueryEntitiesOperation
+                        : "Unsupported schema operation [" + op.toString() + "]";
         }
     }
 

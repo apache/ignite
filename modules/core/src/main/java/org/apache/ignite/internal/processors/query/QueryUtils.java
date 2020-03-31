@@ -52,7 +52,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -416,19 +415,21 @@ public class QueryUtils {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cacheInfo Cache context info.
+     * @param ccfg Cache configuration.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
      * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(GridKernalContext ctx, String cacheName, String schemaName,
-        GridCacheContextInfo cacheInfo,
-        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
-        throws IgniteCheckedException {
-        CacheConfiguration<?, ?> ccfg = cacheInfo.config();
-
+    public static QueryTypeCandidate typeForQueryEntity(
+        GridKernalContext ctx,
+        String cacheName,
+        String schemaName,
+        CacheConfiguration<?, ?> ccfg,
+        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss,
+        boolean escape
+    ) throws IgniteCheckedException {
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
 
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
@@ -540,7 +541,7 @@ public class QueryUtils {
         else {
             processClassMeta(qryEntity, desc, coCtx);
 
-            AffinityKeyMapper keyMapper = cacheInfo.config().getAffinityMapper();
+            AffinityKeyMapper keyMapper = ccfg.getAffinityMapper();
 
             if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
                 String affField =

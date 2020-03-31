@@ -215,10 +215,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridLocalEventListener lsnr;
 
     /** */
-    private boolean enabled;
+    private volatile boolean enabled;
 
     /** */
-    private boolean qryProcEnabled;
+    private volatile boolean qryProcEnabled;
 
     /** */
     private AffinityTopologyVersion qryTopVer;
@@ -292,6 +292,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public boolean enabled() {
         return enabled;
+    }
+
+    /**
+     *
+     */
+    public void enable() {
+        qryProcEnabled = true;
+        enabled = true;
     }
 
     /** {@inheritDoc} */

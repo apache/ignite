@@ -92,11 +92,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstract
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
-import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.*;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -104,6 +100,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -729,53 +726,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 String schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheInfo.config().getSqlSchema());
 
-                // Prepare candidates.
-                List<Class<?>> mustDeserializeClss = new ArrayList<>();
-
-                Collection<QueryTypeCandidate> cands = new ArrayList<>();
-
-                Collection<QueryEntity> qryEntities = schema.entities();
-
-                if (!F.isEmpty(qryEntities)) {
-                    for (QueryEntity qryEntity : qryEntities) {
-                        QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(
-                            ctx,
-                            cacheName,
-                            schemaName,
-                            cacheInfo,
-                            qryEntity,
-                            mustDeserializeClss,
-                            escape
-                        );
-
-                        cands.add(cand);
-                    }
-                }
+                GridTuple3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                    candRes = createQueryCandidates(cacheName, schemaName, cacheInfo.config(), schema.entities(), escape);
 
                 // Ensure that candidates has unique index names.
                 // Otherwise we will not be able to apply pending operations.
-                Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
-                Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
-
-                for (QueryTypeCandidate cand : cands) {
-                    QueryTypeDescriptorImpl desc = cand.descriptor();
-
-                    QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
-
-                    if (oldDesc != null)
-                        throw new IgniteException("Duplicate table name [cache=" + cacheName +
-                            ",tblName=" + desc.tableName() +
-                            ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
-
-                    for (String idxName : desc.indexes().keySet()) {
-                        oldDesc = idxTypMap.put(idxName, desc);
-
-                        if (oldDesc != null)
-                            throw new IgniteException("Duplicate index name [cache=" + cacheName +
-                                ",idxName=" + idxName +
-                                ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
-                    }
-                }
+                Collection<QueryTypeCandidate> cands = candRes.get1();
+                Map<String, QueryTypeDescriptorImpl> tblTypMap = candRes.get2();
+                Map<String, QueryTypeDescriptorImpl> idxTypMap = candRes.get3();
 
                 // Apply pending operation which could have been completed as no-op at this point.
                 // There could be only one in-flight operation for a cache.
@@ -834,7 +792,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                         processDynamicDropColumn(typeDesc, opDropCol.columns());
                                     }
                                     else
-                                        assert false;
+                                        assert op0 instanceof SchemaAddQueryEntitiesOperation;
                                 }
                             }
                         }
@@ -845,16 +803,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 // Ready to register at this point.
                 registerCache0(cacheName, schemaName, cacheInfo, cands, isSql);
-
-                // Warn about possible implicit deserialization.
-                if (!mustDeserializeClss.isEmpty()) {
-                    U.warnDevOnly(log, "Some classes in query configuration cannot be written in binary format " +
-                        "because they either implement Externalizable interface or have writeObject/readObject " +
-                        "methods. Instances of these classes will be deserialized in order to build indexes. Please " +
-                        "ensure that all nodes have these classes in classpath. To enable binary serialization " +
-                        "either implement " + Binarylizable.class.getSimpleName() + " interface or set explicit " +
-                        "serializer using BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
-                }
             }
         }
         finally {
@@ -1034,6 +982,75 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
+     */
+    private GridTuple3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+        createQueryCandidates(
+            String cacheName,
+            String schemaName,
+            CacheConfiguration<?, ?> ccfg,
+            Collection<QueryEntity> entities,
+            boolean escape
+        ) throws IgniteCheckedException {
+        Collection<QueryTypeCandidate> cands = new ArrayList<>();
+
+        List<Class<?>> mustDeserializeClss = new ArrayList<>();
+
+        if (!F.isEmpty(entities)) {
+            for (QueryEntity qryEntity : entities) {
+                QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(
+                    ctx,
+                    cacheName,
+                    schemaName,
+                    ccfg,
+                    qryEntity,
+                    mustDeserializeClss,
+                    escape
+                );
+
+                cands.add(cand);
+            }
+        }
+
+        // Ensure that candidates has unique index names.
+        // Otherwise we will not be able to apply pending operations.
+        Map<String, QueryTypeDescriptorImpl> tblTypMap = new HashMap<>();
+        Map<String, QueryTypeDescriptorImpl> idxTypMap = new HashMap<>();
+
+        for (QueryTypeCandidate cand : cands) {
+            QueryTypeDescriptorImpl desc = cand.descriptor();
+
+            QueryTypeDescriptorImpl oldDesc = tblTypMap.put(desc.tableName(), desc);
+
+            if (oldDesc != null)
+                throw new IgniteException("Duplicate table name [cache=" + cacheName +
+                    ",tblName=" + desc.tableName() +
+                    ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+
+            for (String idxName : desc.indexes().keySet()) {
+                oldDesc = idxTypMap.put(idxName, desc);
+
+                if (oldDesc != null)
+                    throw new IgniteException("Duplicate index name [cache=" + cacheName +
+                        ",idxName=" + idxName +
+                        ", type1=" + desc.name() + ", type2=" + oldDesc.name() + ']');
+            }
+        }
+
+        // Warn about possible implicit deserialization.
+        if (!mustDeserializeClss.isEmpty()) {
+            U.warnDevOnly(log, "Some classes in query configuration cannot be written in binary format " +
+                "because they either implement Externalizable interface or have writeObject/readObject " +
+                "methods. Instances of these classes will be deserialized in order to build indexes. Please " +
+                "ensure that all nodes have these classes in classpath. To enable binary serialization " +
+                "either implement " + Binarylizable.class.getSimpleName() + " interface or set explicit " +
+                "serializer using BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
+        }
+
+        return new GridTuple3<>(cands, tblTypMap, idxTypMap);
+    }
+
+    /**
      * Register class metadata locally if it didn't do it earlier.
      *
      * @param cls Class for which the metadata should be registered.
@@ -1209,6 +1226,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     err = QueryUtils.validateDropColumn(type, name);
                 }
             }
+        }
+        else if (op instanceof SchemaAddQueryEntitiesOperation) {
+
         }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
@@ -1400,6 +1420,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
+        else if (op instanceof SchemaAddQueryEntitiesOperation) {
+
+        }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
 
@@ -1520,7 +1543,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxs.remove(idxKey);
                 }
                 else {
-                    assert (op instanceof SchemaAlterTableAddColumnOperation ||
+                    assert (op instanceof SchemaAddQueryEntitiesOperation || op instanceof SchemaAlterTableAddColumnOperation ||
                         op instanceof SchemaAlterTableDropColumnOperation);
 
                     // No-op - all processing is done at "local" stage
@@ -1579,7 +1602,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String cacheName = op.cacheName();
 
-        GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
+        ctx.cache().context().cacheContext(CU.cacheId(cacheName));
+
+        GridCacheContextInfo<?, ?> cacheInfo = null;
+
+        if (op instanceof SchemaAddQueryEntitiesOperation) {
+            GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
+
+            if (cctx != null)
+                cacheInfo = new GridCacheContextInfo(cctx, false);
+
+        } else
+            cacheInfo = idx.registeredCacheInfo(cacheName);
+
 
         if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
@@ -1656,6 +1691,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 idx.dynamicDropColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
                     op0.ifExists());
+            }
+            else if (op instanceof SchemaAddQueryEntitiesOperation) {
+                SchemaAddQueryEntitiesOperation op0 = (SchemaAddQueryEntitiesOperation)op;
+
+                boolean escape = cacheInfo.config().isSqlEscapeAll();
+
+                GridTuple3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                    candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo.config(), op0.entities(), escape);
+
+                registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
+
+                cacheInfo.cacheContext().queries().enable();
+
+                idx.rebuildIndexesFromHash(cacheInfo.cacheContext(), true);
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -2045,7 +2094,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            return idx.rebuildIndexesFromHash(cctx);
+            return idx.rebuildIndexesFromHash(cctx, false);
         }
         finally {
             busyLock.leaveBusy();
@@ -2711,6 +2760,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         SchemaAlterTableDropColumnOperation op = new SchemaAlterTableDropColumnOperation(UUID.randomUUID(), cacheName,
             schemaName, tblName, cols, ifTblExists, ifExists);
 
+        return startIndexOperationDistributed(op);
+    }
+
+    /**
+     * Add dynamically {@code QueryEntities} to existing cache.
+     */
+    public IgniteInternalFuture<?> dynamicAddQueryEntities(
+            String cacheName,
+            String schemaName,
+            Collection<QueryEntity> entities
+    ) {
+        SchemaAddQueryEntitiesOperation op = new SchemaAddQueryEntitiesOperation(UUID.randomUUID(), cacheName,
+                schemaName, entities);
         return startIndexOperationDistributed(op);
     }
 

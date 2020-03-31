@@ -330,9 +330,10 @@ public interface GridQueryIndexing {
      * Rebuild indexes for the given cache if necessary.
      *
      * @param cctx Cache context.
+     * @param inMemoryRebuild If {@code True}, rebuild even if cache is in-memory.
      * @return Future completed when index rebuild finished.
      */
-    IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
+    IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean inMemoryRebuild);
 
     /**
      * Mark as rebuild needed for the given cache.

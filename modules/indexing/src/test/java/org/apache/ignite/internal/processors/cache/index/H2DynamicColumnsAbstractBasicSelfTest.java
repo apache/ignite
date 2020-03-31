@@ -19,18 +19,27 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.h2.jdbc.JdbcSQLException;
 import org.junit.Assert;
@@ -163,6 +172,64 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         assertThrows("ALTER TABLE City ADD COLUMN name varchar", "Table doesn't exist: CITY");
     }
 
+    /** */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testAddQueryEntityDynamically() throws Exception {
+        IgniteCache<Integer, POI> cache = ignite(nodeIndex())
+                .getOrCreateCache(defaultCacheConfiguration().setName("POI"));
+
+        IgniteEx ig0 = ignite(nodeIndex());
+        GridQueryProcessor qry = ig0.context().query();
+
+        QueryEntity entity = new QueryEntity(Integer.class, POI.class);
+        entity.setKeyFieldName("id");
+
+        int NUM_OF_POI = 1000;
+
+        Random rnd = ThreadLocalRandom.current();
+
+        for (int i = 0; i < NUM_OF_POI; i++) {
+            POI poi = new POI();
+            poi.id(i);
+            poi.name("poi_" + i);
+            poi.latitude(rnd.nextDouble());
+            poi.longitude(rnd.nextDouble());
+            cache.put(i, poi);
+        }
+
+
+        Collection<QueryEntity> entities = Collections.singletonList(entity);
+
+        IgniteInternalFuture<?> fut = qry.dynamicAddQueryEntities("POI", QueryUtils.DFLT_SCHEMA, entities);
+
+        GridTestUtils.waitForAllFutures(fut);
+
+        run(cache, "INSERT INTO POI(id, name) VALUES (100500, 'test')");
+
+        run(cache, "UPDATE POI set name = 'poi_100500', latitude = 0.0, longitude = 0.0 where id = 0");
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM POI").setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
+
+        assertEquals(NUM_OF_POI + 1, cache.size(CachePeekMode.PRIMARY));
+        assertEquals("poi_100500", cache.get(0).name());
+        assertEquals("test", cache.get(100500).name());
+        assertEquals(NUM_OF_POI + 1, res.size());
+
+
+        POI poi = new POI();
+        poi.id(100600);
+        poi.name("poi_" + 100600);
+        poi.latitude(rnd.nextDouble());
+        poi.longitude(rnd.nextDouble());
+        cache.put(100600, poi);
+
+        res = cache.query(new SqlFieldsQuery("SELECT * FROM POI where name = 'poi_100600'").setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
+
+        assertEquals("poi_100600", res.get(0).get(1));
+    }
+    
+    
     /** */
     @SuppressWarnings("unchecked")
     @Test
@@ -847,6 +914,83 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      */
     protected List<List<?>> run(String sql) {
         return run(grid(nodeIndex()), sql);
+    }
+
+    /**
+     *
+     */
+    private static final class POI {
+        /** */
+        @QuerySqlField(name = "ID")
+        private Integer id;
+
+        /** */
+        @QuerySqlField(name = "NAME", index = true)
+        private String name;
+
+        /** */
+        @QuerySqlField(name = "LATITUDE")
+        private Double latitude;
+
+        /** */
+        @QuerySqlField(name = "LONGITUDE")
+        private Double longitude;
+
+        /**
+         * @return Id.
+         */
+        public Integer id() {
+            return id;
+        }
+
+        /**
+         * @param id POI id.
+         */
+        public void id(Integer id) {
+            this.id = id;
+        }
+
+        /**
+         * @return POI name.
+         */
+        public String name() {
+            return name;
+        }
+
+        /**
+         * @param name POI name.
+         */
+        public void name(String name) {
+            this.name = name;
+        }
+
+        /**
+         * @return POI latitude.
+         */
+        public Double latitude() {
+            return latitude;
+        }
+
+        /**
+         * @param latitude POI latitude.
+         */
+        public void latitude(Double latitude) {
+            this.latitude = latitude;
+        }
+
+        /**
+         * @return POI longitude.
+         */
+        public Double longitude() {
+            return longitude;
+        }
+
+        /**
+         * @param longitude POI longitude.
+         */
+        public void longitude(Double longitude) {
+            this.longitude = longitude;
+        }
     }
 
     /** City class. */
