@@ -18,17 +18,15 @@
 package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.IgniteAuthenticationException;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.junit.Test;
 
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -39,44 +37,29 @@ public class InvalidServerTest extends AbstractSecurityTest {
     /** Test server name. */
     private static final String TEST_SERVER_NAME = "test_server";
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String instanceName,
+        AbstractTestSecurityPluginProvider pluginProv) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName, pluginProv);
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+            @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                if (msg instanceof TcpDiscoveryNodeAddedMessage && msg.verified())
+                    TestSecurityProcessor.PERMS.remove(new SecurityCredentials(TEST_SERVER_NAME, ""));
+            }
+        }.setIpFinder(LOCAL_IP_FINDER));
+
+        return cfg;
+    }
+
     /** */
     @Test
     public void testInvalidServer() throws Exception {
         globalAuth = true;
 
-        startServerNode("server1");
-        startServerNode("server2");
+        startGridAllowAll("server1");
+        startGridAllowAll("server2");
 
-        assertThrowsWithCause(() -> startServerNode(TEST_SERVER_NAME), IgniteAuthenticationException.class);
-    }
-
-    /** */
-    private IgniteEx startServerNode(String login) throws Exception {
-        TestSecurityPluginProvider provider = new TestSecurityPluginProvider(login, "", ALLOW_ALL, globalAuth) {
-            @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-                return new InvalidServerSecurityProcessor(ctx, super.securityProcessor(ctx));
-            }
-        };
-
-        return startGrid(getConfiguration(login, provider)
-            .setClientMode(false));
-    }
-
-    /** */
-    static class InvalidServerSecurityProcessor extends TestSecurityProcessor.TestSecurityProcessorDelegator {
-        /** */
-        public InvalidServerSecurityProcessor(GridKernalContext ctx,
-            GridSecurityProcessor original) {
-            super(ctx, original);
-        }
-
-        /** {@inheritDoc} */
-        @Override public SecurityContext authenticateNode(ClusterNode node,
-            SecurityCredentials cred) throws IgniteCheckedException {
-            if(TEST_SERVER_NAME.equals(cred.getLogin()) && !TEST_SERVER_NAME.equals(ctx.igniteInstanceName()))
-                return null;
-
-            return super.authenticateNode(node, cred);
-        }
+        assertThrowsWithCause(() -> startGridAllowAll(TEST_SERVER_NAME), IgniteAuthenticationException.class);
     }
 }
