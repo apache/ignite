@@ -59,6 +59,7 @@ import org.h2.value.ValueUuid;
 public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
     private static final Map<Class<?>, Function<Object, ? extends Value>> CLASS_TO_VALUE_MAP = new HashMap<>();
+
     private static final Map<Class<?>, Integer> CLASS_TO_VALUE_TYPE_RECORDS = new HashMap<>();
 
     static {
