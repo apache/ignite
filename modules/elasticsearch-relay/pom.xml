@@ -13,7 +13,7 @@
 	<artifactId>elasticsearch-relay</artifactId>
 
 
-	<version>2.8.0-SNAPSHOT</version>
+	<version>2.9.0-SNAPSHOT</version>
 	<build>
 		<finalName>elasticsearch-relay</finalName>
 		<plugins>

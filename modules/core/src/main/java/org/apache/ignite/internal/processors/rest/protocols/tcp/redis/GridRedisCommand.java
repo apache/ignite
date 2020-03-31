@@ -70,7 +70,10 @@ public enum GridRedisCommand {
     /** EXPIRE. */
     EXPIRE("EXPIRE"),
     /** PEXPIRE. */
-    PEXPIRE("PEXPIRE"),
+    PEXPIRE("PEXPIRE"),    
+   
+    /** SET and EXPIRE. */ //add@byron
+    SETEXPIRE("SETEX"),
 
     // Server commands.
     /** DBSIZE. */

@@ -6,8 +6,11 @@ public class IgniteConfig {
     private String user;
     private String password;
     private String url;
+    private boolean thinConnection;
+    private String cfg;
+   
 
-    /**
+	/**
      * @return the user
      */
     public String getUser() {
@@ -54,4 +57,21 @@ public class IgniteConfig {
         this.url = url;
         return this;
     }
+
+	public boolean isThinConnection() {
+		return thinConnection;
+	}
+
+	@Config("ignite.thinConnection")
+	public void setThinConnection(boolean thinConnection) {
+		this.thinConnection = thinConnection;
+	}
+	
+	public String getCfg() {
+		return cfg;
+	}
+	@Config("ignite.cfg")
+	public void setCfg(String cfg) {
+		this.cfg = cfg;
+	}
 }

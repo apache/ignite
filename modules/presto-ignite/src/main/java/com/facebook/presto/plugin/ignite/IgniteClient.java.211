@@ -1,5 +1,7 @@
 package com.facebook.presto.plugin.ignite;
 
+
+
 import com.facebook.presto.plugin.jdbc.*;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.PrestoException;
@@ -9,8 +11,11 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import org.apache.ignite.IgniteJdbcThinDriver;
+
 import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.IgniteJdbcThinDriver;
+
+import org.apache.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.sql.Connection;
@@ -18,7 +23,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,21 +35,23 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 
 public class IgniteClient extends BaseJdbcClient {
 
-	IgniteConfig igniteConfig;
+    private static final Logger log = Logger.getLogger(IgniteClient.class);
 
     @Inject
     public IgniteClient(JdbcConnectorId connectorId, BaseJdbcConfig config, IgniteConfig igniteConfig) {
-    	 super(connectorId, config, "",        		
-         		igniteConfig.isThinConnection() ? 
-         				 new DriverConnectionFactory(new IgniteJdbcThinDriver(), config)
-         				:new DriverConnectionFactory(new IgniteJdbcDriver(), config));
+    
+        super(connectorId, config, "",        		
+        		igniteConfig.isThinConnection() ? 
+        				 new DriverConnectionFactory(new IgniteJdbcThinDriver(), config)
+        				:new DriverConnectionFactory(new IgniteJdbcDriver(), config));
 
     }
 
     @Override
-    protected Collection<String> listSchemas(Connection connection){
+    public Set<String> getSchemaNames() {
         // for MySQL, we need to list catalogs instead of schemas
-        try (ResultSet resultSet = connection.getMetaData().getSchemas()) {
+        try (Connection connection = connectionFactory.openConnection();
+             ResultSet resultSet = connection.getMetaData().getSchemas()) {
             ImmutableSet.Builder<String> schemaNames = ImmutableSet.builder();
             while (resultSet.next()) {
                 String schemaName = resultSet.getString(1).toLowerCase(ENGLISH);
@@ -57,26 +63,37 @@ public class IgniteClient extends BaseJdbcClient {
         }
     }
 
-   
-
-   
     @Override
-    protected ResultSet getTables(Connection connection, Optional<String> schemaName, Optional<String> tableName)
-            throws SQLException
-    {
-        DatabaseMetaData metadata = connection.getMetaData();
-        Optional<String> escape = Optional.ofNullable(metadata.getSearchStringEscape());
-        return metadata.getTables(
-                connection.getCatalog(),
-                escapeNamePattern(schemaName, escape).orElse(null),
-                escapeNamePattern(tableName, escape).orElse(null),
-                new String[] {"TABLE", "VIEW"});
+    public List<SchemaTableName> getTableNames(@Nullable String schema) {
+        try (Connection connection = connectionFactory.openConnection()) {
+            DatabaseMetaData metadata = connection.getMetaData();
+            if (metadata.storesUpperCaseIdentifiers() && (schema != null)) {
+                schema = schema.toUpperCase();
+            }
+            try (ResultSet resultSet = getTables(connection, schema, null)) {
+                ImmutableList.Builder<SchemaTableName> list = ImmutableList
+                        .builder();
+                while (resultSet.next()) {
+                    list.add(getSchemaTableName(resultSet));
+                }
+                return list.build();
+            }
+        } catch (SQLException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    @Override
+    protected ResultSet getTables(Connection connection, String schemaName,
+                                  String tableName) throws SQLException {
+        //We filter just VIEW, TABLE and SYNONYM. For more table types: connection.getMetaData().getTableTypes()
+        return connection.getMetaData().getTables(null, schemaName, tableName, new String[]{"VIEW", "TABLE"});
     }
 
     @Nullable
     @Override
-    public JdbcTableHandle getTableHandle(JdbcIdentity identity, SchemaTableName schemaTableName) {
-        try (Connection connection = connectionFactory.openConnection(identity)) {
+    public JdbcTableHandle getTableHandle(SchemaTableName schemaTableName) {
+        try (Connection connection = connectionFactory.openConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
             String jdbcSchemaName = schemaTableName.getSchemaName();
             String jdbcTableName = schemaTableName.getTableName();
@@ -84,8 +101,8 @@ public class IgniteClient extends BaseJdbcClient {
                 jdbcSchemaName = jdbcSchemaName.toUpperCase();
                 jdbcTableName = jdbcTableName.toUpperCase();
             }
-            try (ResultSet resultSet = getTables(connection,  Optional.of(jdbcSchemaName),
-            		 Optional.of(jdbcTableName))) {
+            try (ResultSet resultSet = getTables(connection, jdbcSchemaName,
+                    jdbcTableName)) {
                 List<JdbcTableHandle> tableHandles = new ArrayList<>();
                 while (resultSet.next()) {
                     tableHandles.add(new JdbcTableHandle(connectorId,
@@ -109,7 +126,7 @@ public class IgniteClient extends BaseJdbcClient {
 
     @Override
     public List<JdbcColumnHandle> getColumns(ConnectorSession session, JdbcTableHandle tableHandle) {
-        try (Connection connection = connectionFactory.openConnection(JdbcIdentity.from(session))) {
+        try (Connection connection = connectionFactory.openConnection()) {
             try (ResultSet resultSet = getColumns(tableHandle, connection.getMetaData())) {
                 List<JdbcColumnHandle> columns = new ArrayList<>();
                 while (resultSet.next()) {
@@ -135,7 +152,19 @@ public class IgniteClient extends BaseJdbcClient {
         }
     }
 
-  
+    @Override
+    protected SchemaTableName getSchemaTableName(ResultSet resultSet)
+            throws SQLException {
+        String tableSchema = resultSet.getString("TABLE_SCHEM");
+        String tableName = resultSet.getString("TABLE_NAME");
+        if (tableSchema != null) {
+            tableSchema = tableSchema.toLowerCase();
+        }
+        if (tableName != null) {
+            tableName = tableName.toLowerCase();
+        }
+        return new SchemaTableName(tableSchema, tableName);
+    }
 
     private static ResultSet getColumns(JdbcTableHandle tableHandle, DatabaseMetaData metadata)
             throws SQLException {

@@ -49,9 +49,11 @@
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
        
+        <!-- 
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
-        <module>modules/extdata/platform</module>
+        <module>modules/extdata/platform</module> 
+        -->
          
         <module>modules/clients</module>
         <module>modules/spring</module>
@@ -97,7 +99,7 @@
         
         <module>modules/elasticsearch-relay</module>
         <module>modules/mongodb-relay</module>
-		<module>modules/presto-ignite</module>
+		<!-- <module>modules/presto-ignite</module> -->
         
         <module>modules/opencensus</module>
         <module>modules/calcite</module>

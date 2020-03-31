@@ -88,6 +88,8 @@ public class SqlDdlExample {
                     "SELECT p.name, c.name FROM Person p INNER JOIN City c on c.id = p.city_id")).getAll();
 
                 print("Query results:");
+                
+                System.in.read();
 
                 for (Object next : res)
                     System.out.println(">>>    " + next);
