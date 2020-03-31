@@ -299,6 +299,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** H2 Connection manager. */
     private LongRunningQueryManager longRunningQryMgr;
 
+    /** Functions manager. */
+    private FunctionsManager funcsMgr;
+
     /**
      * @return Kernal context.
      */
@@ -2356,6 +2359,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
+        funcsMgr = new FunctionsManager(this);
+
         assert ctx != null;
     }
 
@@ -2935,6 +2940,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public LongRunningQueryManager longRunningQueries() {
         return longRunningQryMgr;
+    }
+
+    /**
+     * @return Functions manager.
+     */
+    public FunctionsManager functionsManager() {
+        return funcsMgr;
     }
 
     /** {@inheritDoc} */
