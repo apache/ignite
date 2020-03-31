@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -1241,7 +1240,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            registerMetrics(srvc, srvcCtx.name());
+            // Check there is no concurrent #undeploy()
+            synchronized (ctxs) {
+                if (!ctxs.iterator().next().isCancelled())
+                    registerMetrics(srvc, srvcCtx.name());
+            }
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
@@ -1850,9 +1853,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @param srvcName Name of {@code srvc}.
      */
     private void registerMetrics(Service srvc, String srvcName) {
-        getInterfaces(srvc.getClass()).stream().map(Class::getMethods).flatMap(Arrays::stream)
-            .filter(mtd -> !isMetricIgnoredFor(mtd.getDeclaringClass()))
-            .forEach(mtd -> {
+        for (Class<?> itf : getInterfaces(srvc.getClass())) {
+            for (Method mtd : itf.getMethods()) {
+                if (!isMetricIgnoredFor(mtd.getDeclaringClass()))
+                    continue;
+
                 // All metrics for current service.
                 Map<String, MethodHistogramHolder> srvcHistograms =
                     invocationHistograms.computeIfAbsent(srvcName, name -> new HashMap<>(1));
@@ -1862,7 +1867,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     srvcHistograms.computeIfAbsent(mtd.getName(), mdtName -> new MethodHistogramHolder());
 
                 mtdHistograms.addIfAbsent(mtd, () -> createHistogram(srvcName, mtd));
-            });
+            }
+        }
     }
 
     /**
@@ -1941,10 +1947,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
      */
     HistogramMetricImpl histogram(String srvcName, Method mtd) {
-        MethodHistogramHolder histogramHolder = Optional.ofNullable(invocationHistograms.get(srvcName))
-            .orElse(Collections.emptyMap()).get(mtd.getName());
+        Map<String, MethodHistogramHolder> srvHistograms = invocationHistograms.get(srvcName);
 
-        return histogramHolder == null ? null : histogramHolder.getHistogram(mtd);
+        if (srvHistograms == null)
+            return null;
+
+        MethodHistogramHolder holder = srvHistograms.get(mtd.getName());
+
+        return holder == null ? null : holder.getHistogram(mtd);
     }
 
     /**
