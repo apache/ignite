@@ -378,8 +378,7 @@ public class GridServiceProxy<T> implements Serializable {
 
                 HistogramMetricImpl histogram = ((IgniteServiceProcessor)srvcProc).histogram(srvcName, mtd);
 
-                assert histogram != null;
-
+                // Service can be canceled concurently.
                 if (histogram != null)
                     histogram.value(duration);
             }
