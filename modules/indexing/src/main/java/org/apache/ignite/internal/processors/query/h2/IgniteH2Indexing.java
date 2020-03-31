@@ -374,6 +374,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     };
 
+    /** Functions manager. */
+    private FunctionsManager funcsMgr;
+
     /**
      * @return Kernal context.
      */
@@ -2690,6 +2693,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 cleanupConnections();
             }
         }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
+
+        funcsMgr = new FunctionsManager(this);
     }
 
     /**
@@ -3149,6 +3154,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return cacheIds;
         }
+    }
+
+    /**
+     * @return Functions manager.
+     */
+    public FunctionsManager functionsManager() {
+        return funcsMgr;
     }
 
     /**
