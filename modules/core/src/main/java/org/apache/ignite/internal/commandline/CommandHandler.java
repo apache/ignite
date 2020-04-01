@@ -124,7 +124,7 @@ public class CommandHandler {
     public static final String NULL = "null";
 
     /** */
-    public static final String ATTR_SECURITY_USER_CERTIFICATES = "com.sbt.sbergrid.users.security.cert";
+    public static final String ATTR_SECURITY_USER_CERTIFICATES = "users.security.cert";
 
     /** JULs logger. */
     private final Logger logger;
