@@ -51,7 +51,8 @@ public enum SecurityPermission {
     /** Visor cache read (query) permission. */
     ADMIN_QUERY,
 
-    /** Visor cache load permission. */
+    /** @deprecated Use {@link #CACHE_CREATE/CACHE_DESTROY} instead. */
+    @Deprecated
     ADMIN_CACHE,
 
     /** Visor admin operations permissions. */

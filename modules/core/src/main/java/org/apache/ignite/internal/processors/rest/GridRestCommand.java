@@ -19,7 +19,14 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
+import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,67 +39,68 @@ public enum GridRestCommand {
      */
 
     /** Get cached value. */
-    CACHE_GET("get"),
+    CACHE_GET("get", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_READ),
 
     /** Contains cached value. */
-    CACHE_CONTAINS_KEY("conkey"),
+    CACHE_CONTAINS_KEY("conkey", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_READ),
 
     /** Contains cached values. */
-    CACHE_CONTAINS_KEYS("conkeys"),
+    CACHE_CONTAINS_KEYS("conkeys", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_READ),
 
     /** Get several cached values. */
-    CACHE_GET_ALL("getall"),
+    CACHE_GET_ALL("getall", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_READ),
 
     /** Store value in cache and return previous value. */
-    CACHE_GET_AND_PUT("getput"),
+    CACHE_GET_AND_PUT("getput", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Store value in cache and return previous value. */
-    CACHE_GET_AND_PUT_IF_ABSENT("getputifabs"),
+    CACHE_GET_AND_PUT_IF_ABSENT("getputifabs", AuthorizeNameExtractor.FROM_CACHE_REQ,
+        SecurityPermission.CACHE_PUT),
 
     /** Store value in cache. */
-    CACHE_PUT("put"),
+    CACHE_PUT("put", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Store value in cache. */
-    CACHE_PUT_IF_ABSENT("putifabs"),
+    CACHE_PUT_IF_ABSENT("putifabs", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Store value in cache if it doesn't exist. */
-    CACHE_ADD("add"),
+    CACHE_ADD("add", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Store several values in cache. */
-    CACHE_PUT_ALL("putall"),
+    CACHE_PUT_ALL("putall", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Remove value from cache. */
-    CACHE_REMOVE("rmv"),
+    CACHE_REMOVE("rmv", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_REMOVE),
 
     /** Remove value from cache. */
-    CACHE_REMOVE_VALUE("rmvval"),
+    CACHE_REMOVE_VALUE("rmvval", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_REMOVE),
 
     /** Remove value from cache. */
-    CACHE_GET_AND_REMOVE("getrmv"),
+    CACHE_GET_AND_REMOVE("getrmv", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_REMOVE),
 
     /** Remove several values from cache. */
-    CACHE_REMOVE_ALL("rmvall"),
+    CACHE_REMOVE_ALL("rmvall", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_REMOVE),
 
     /** Clear the specified cache, or all caches if none is specified. */
-    CACHE_CLEAR("clear"),
+    CACHE_CLEAR("clear", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_REMOVE),
 
     /** Replace cache value only if there is currently a mapping for it. */
-    CACHE_REPLACE("rep"),
+    CACHE_REPLACE("rep", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Replace cache value only if there is currently a mapping for it. */
-    CACHE_REPLACE_VALUE("repval"),
+    CACHE_REPLACE_VALUE("repval", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Replace cache value only if there is currently a mapping for it. */
-    CACHE_GET_AND_REPLACE("getrep"),
+    CACHE_GET_AND_REPLACE("getrep", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Compare and set. */
-    CACHE_CAS("cas"),
+    CACHE_CAS("cas", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Append. */
-    CACHE_APPEND("append"),
+    CACHE_APPEND("append", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Prepend. */
-    CACHE_PREPEND("prepend"),
+    CACHE_PREPEND("prepend", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.CACHE_PUT),
 
     /** Cache metrics. */
     CACHE_METRICS("cache"),
@@ -119,10 +127,10 @@ public enum GridRestCommand {
     NODE("node"),
 
     /** Task execution .*/
-    EXE("exe"),
+    EXE("exe", AuthorizeNameExtractor.FROM_TASK_REQ, SecurityPermission.TASK_EXECUTE),
 
     /** Task execution .*/
-    RESULT("res"),
+    RESULT("res", AuthorizeNameExtractor.FROM_TASK_REQ, SecurityPermission.TASK_EXECUTE),
 
     /** Version. */
     VERSION("version"),
@@ -140,25 +148,27 @@ public enum GridRestCommand {
     QUIT("quit"),
 
     /** Get or create cache. */
-    GET_OR_CREATE_CACHE("getorcreate"),
+    GET_OR_CREATE_CACHE("getorcreate", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.ADMIN_CACHE,
+        SecurityPermission.CACHE_CREATE),
 
     /** Stops dynamically started cache. */
-    DESTROY_CACHE("destcache"),
+    DESTROY_CACHE("destcache", AuthorizeNameExtractor.FROM_CACHE_REQ, SecurityPermission.ADMIN_CACHE,
+        SecurityPermission.CACHE_DESTROY),
 
     /** Execute sql query. */
-    EXECUTE_SQL_QUERY("qryexe"),
+    EXECUTE_SQL_QUERY("qryexe", AuthorizeNameExtractor.FROM_QUERY_REQ, SecurityPermission.CACHE_READ),
 
     /** Execute sql fields query. */
-    EXECUTE_SQL_FIELDS_QUERY("qryfldexe"),
+    EXECUTE_SQL_FIELDS_QUERY("qryfldexe", AuthorizeNameExtractor.FROM_QUERY_REQ, SecurityPermission.CACHE_READ),
 
     /** Execute scan query. */
-    EXECUTE_SCAN_QUERY("qryscanexe"),
+    EXECUTE_SCAN_QUERY("qryscanexe", AuthorizeNameExtractor.FROM_QUERY_REQ, SecurityPermission.CACHE_READ),
 
     /** Fetch query results. */
-    FETCH_SQL_QUERY("qryfetch"),
+    FETCH_SQL_QUERY("qryfetch", AuthorizeNameExtractor.FROM_QUERY_REQ, SecurityPermission.CACHE_READ),
 
     /** Close query. */
-    CLOSE_SQL_QUERY("qrycls"),
+    CLOSE_SQL_QUERY("qrycls", AuthorizeNameExtractor.FROM_QUERY_REQ, SecurityPermission.CACHE_READ),
 
     /** @deprecated Use {@link #CLUSTER_ACTIVATE} instead. */
     @Deprecated
@@ -234,11 +244,40 @@ public enum GridRestCommand {
     /** Command key. */
     private final String key;
 
+    /** Permissions. */
+    private final SecurityPermission[] perms;
+
+    /** Index of task name wrapped by VisorGatewayTask */
+    private static final int WRAPPED_TASK_IDX = 1;
+
+    /** Name extractor. */
+    private final Function<GridRestRequest, String> nameExtractor;
+
     /**
      * @param key Key.
      */
     GridRestCommand(String key) {
+        this(key, r -> null);
+    }
+
+    /**
+     * @param key Key.
+     * @param perm Perm.
+     */
+    GridRestCommand(String key, SecurityPermission... perm) {
+        this(key, r -> null, perm);
+    }
+
+
+    /**
+     * @param key Key.
+     * @param nameExtractor Name extractor.
+     * @param perms Perms.
+     */
+    GridRestCommand(String key, Function<GridRestRequest, String> nameExtractor, SecurityPermission... perms) {
         this.key = key;
+        this.nameExtractor = nameExtractor;
+        this.perms = perms;
     }
 
     /**
@@ -262,5 +301,44 @@ public enum GridRestCommand {
      */
     public String key() {
         return key;
+    }
+
+    /**
+     * @return SecurityPermission.
+     */
+    public SecurityPermission[] permissions(){
+        return perms.clone();
+    }
+
+    /**
+     * @param req GridRestRequest.
+     */
+    public String name(GridRestRequest req) {
+        return nameExtractor.apply(req);
+    }
+
+    /** */
+    private static class AuthorizeNameExtractor {
+        /** */
+        private static final Function<GridRestRequest, String> FROM_CACHE_REQ =
+            r -> ((GridRestCacheRequest)r).cacheName();
+
+        /** */
+        private static final Function<GridRestRequest, String> FROM_QUERY_REQ =
+            r -> ((RestQueryRequest)r).cacheName();
+
+        /** */
+        private static final Function<GridRestRequest, String> FROM_TASK_REQ =
+            r -> {
+                GridRestTaskRequest taskReq = (GridRestTaskRequest)r;
+
+                String name = taskReq.taskName();
+
+                // We should extract task name wrapped by VisorGatewayTask.
+                if (VisorGatewayTask.class.getName().equals(name))
+                    name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
+
+                return name;
+            };
     }
 }
