@@ -18,17 +18,14 @@
 package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.QueryMXBeanImpl.doCancel;
 
 /**
  * Task to cancel scan queries.
@@ -63,30 +60,7 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
-            ignite.compute(ignite.cluster()).broadcast(new IgniteClosure<Long, Void>() {
-                /** Auto-injected grid instance. */
-                @IgniteInstanceResource
-                private transient IgniteEx ignite;
-
-                /** {@inheritDoc} */
-                @Override public Void apply(Long qryId) {
-                    IgniteLogger log = ignite.log().getLogger(getClass());
-
-                    int cacheId = CU.cacheId(arg.getCacheName());
-
-                    GridCacheContext<?, ?> ctx = ignite.context().cache().context().cacheContext(cacheId);
-
-                    if (ctx == null) {
-                        log.warning("Cache not found[cacheName=" + arg.getCacheName() + ']');
-
-                        return null;
-                    }
-
-                    ctx.queries().removeQueryResult(arg.getOriginNodeId(), arg.getQueryId());
-
-                    return null;
-                }
-            }, arg.getQueryId());
+            doCancel(ignite.context(), new T3<>(arg.getOriginNodeId(), arg.getCacheName(), arg.getQueryId()));
 
             return null;
         }

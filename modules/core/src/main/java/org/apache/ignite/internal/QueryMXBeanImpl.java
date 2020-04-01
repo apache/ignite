@@ -18,20 +18,20 @@
 package org.apache.ignite.internal;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
-import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
-import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import static org.apache.ignite.internal.sql.command.SqlKillQueryCommand.parseGlobalQueryId;
 
@@ -101,19 +101,39 @@ public class QueryMXBeanImpl implements QueryMXBean {
      * @param id Scan query id.
      */
     public void cancelScan(UUID originNodeId, String cacheName, long id) {
-        try {
-            IgniteClusterImpl cluster = ctx.cluster().get();
+        doCancel(ctx, new T3<>(originNodeId, cacheName, id));
+    }
 
-            ClusterNode srv = U.randomServerNode(ctx);
+    /**
+     * Executes scan query cancel on all cluster nodes.
+     *
+     * @param ctx Grid context.
+     * @param arg Query identifier.
+     */
+    public static void doCancel(GridKernalContext ctx, T3<UUID, String, Long> arg) {
+        ctx.grid().compute(ctx.grid().cluster()).broadcast(new IgniteClosure<T3<UUID, String, Long>, Void>() {
+            /** Auto-injected grid instance. */
+            @IgniteInstanceResource
+            private transient IgniteEx ignite;
 
-            IgniteCompute compute = cluster.compute();
+            /** {@inheritDoc} */
+            @Override public Void apply(T3<UUID, String, Long> arg) {
+                IgniteLogger log = ignite.log().getLogger(getClass());
 
-            compute.execute(new VisorScanQueryCancelTask(),
-                new VisorTaskArgument<>(srv.id(),
-                    new VisorScanQueryCancelTaskArg(originNodeId, cacheName, id), false));
-        }
-        catch (IgniteException e) {
-            throw new RuntimeException(e);
-        }
+                int cacheId = CU.cacheId(arg.get2());
+
+                GridCacheContext<?, ?> ctx = ignite.context().cache().context().cacheContext(cacheId);
+
+                if (ctx == null) {
+                    log.warning("Cache not found[cacheName=" + arg.get2() + ']');
+
+                    return null;
+                }
+
+                ctx.queries().removeQueryResult(arg.get1(), arg.get3());
+
+                return null;
+            }
+        }, arg);
     }
 }
