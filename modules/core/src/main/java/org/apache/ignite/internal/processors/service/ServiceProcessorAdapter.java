@@ -44,6 +44,26 @@ public abstract class ServiceProcessorAdapter extends GridProcessorAdapter {
     }
 
     /**
+     * Creates service configuration.
+     *
+     * @param name Service name.
+     * @param srv Service instance.
+     * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
+     * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
+     * @return Service configuration.
+     */
+    public ServiceConfiguration serviceConfiguration(String name, Service srv, int totalCnt, int maxPerNodeCnt){
+        ServiceConfiguration cfg = new ServiceConfiguration();
+
+        cfg.setName(name);
+        cfg.setService(srv);
+        cfg.setTotalCount(totalCnt);
+        cfg.setMaxPerNodeCount(maxPerNodeCnt);
+
+        return cfg;
+    }
+
+    /**
      * @param prj Grid projection.
      * @param name Service name.
      * @param srvc Service.

@@ -553,12 +553,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> deployMultiple(ClusterGroup prj, String name, Service srvc, int totalCnt,
         int maxPerNodeCnt) {
-        ServiceConfiguration cfg = new ServiceConfiguration();
-
-        cfg.setName(name);
-        cfg.setService(srvc);
-        cfg.setTotalCount(totalCnt);
-        cfg.setMaxPerNodeCount(maxPerNodeCnt);
+        ServiceConfiguration cfg = serviceConfiguration(name, srvc, totalCnt, maxPerNodeCnt);
 
         return deployAll(prj, Collections.singleton(cfg));
     }
@@ -568,14 +563,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         Object affKey) {
         A.notNull(affKey, "affKey");
 
-        ServiceConfiguration cfg = new ServiceConfiguration();
-
-        cfg.setName(name);
-        cfg.setService(srvc);
+        ServiceConfiguration cfg = serviceConfiguration(name, srvc, 1, 1);
         cfg.setCacheName(cacheName);
         cfg.setAffinityKey(affKey);
-        cfg.setTotalCount(1);
-        cfg.setMaxPerNodeCount(1);
 
         // Ignore projection here.
         return deployAll(Collections.singleton(cfg), null);
@@ -1205,7 +1195,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         UUID.randomUUID(),
                         cacheName,
                         affKey,
-                        Executors.newSingleThreadExecutor(threadFactory));
+                        Executors.newSingleThreadExecutor(threadFactory),
+                        cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
 
@@ -1240,9 +1231,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            // Check there is no concurrent service cancellation.
+            // Despite expected serialized discovery message, checking of concurrent cancellation is trivial and cheap.
             synchronized (ctxs) {
-                if (!ctxs.iterator().next().isCancelled())
+                if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled())
                     registerMetrics(srvc, srvcCtx.name());
             }
 
@@ -1855,7 +1846,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private void registerMetrics(Service srvc, String srvcName) {
         for (Class<?> itf : getInterfaces(srvc.getClass())) {
             for (Method mtd : itf.getMethods()) {
-                if (isMetricIgnoredFor(mtd.getDeclaringClass()))
+                if (metricIgnored(mtd.getDeclaringClass()))
                     continue;
 
                 // All metrics for current service.
@@ -1935,7 +1926,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /** @return {@code True} if metrics should not be created for this class or interface. */
-    private static boolean isMetricIgnoredFor(Class<?> cls){
+    private static boolean metricIgnored(Class<?> cls){
         return Object.class.equals(cls) || Service.class.equals(cls) || Externalizable.class.equals(cls);
     }
 
