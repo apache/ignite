@@ -214,8 +214,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 flagSkipStore: true,
                 flagKeepBinary: _flagKeepBinary,
                 flagNoRetries: _flagNoRetries,
-                flagPartitionRecover: _flagPartitionRecover,
-                flagAllowAtomicOpsInTx: _flagAllowAtomicOpsInTx);
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /// <summary>
@@ -245,16 +244,12 @@ namespace Apache.Ignite.Core.Impl.Cache
                 flagSkipStore: _flagSkipStore,
                 flagKeepBinary: true,
                 flagNoRetries: _flagNoRetries,
-                flagPartitionRecover: _flagPartitionRecover,
-                flagAllowAtomicOpsInTx: _flagAllowAtomicOpsInTx);
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
-            if (_flagAllowAtomicOpsInTx)
-                return this;
-
             var target = DoOutOpObject((int)CacheOp.WithSkipStore);
 
             return new CacheImpl<TK, TV>(
@@ -262,8 +257,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 flagSkipStore: true,
                 flagKeepBinary: _flagKeepBinary,
                 flagNoRetries: _flagNoRetries,
-                flagPartitionRecover: _flagPartitionRecover,
-                flagAllowAtomicOpsInTx: true);
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -278,8 +272,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 flagSkipStore: _flagSkipStore,
                 flagKeepBinary: _flagKeepBinary,
                 flagNoRetries: _flagNoRetries,
-                flagPartitionRecover: _flagPartitionRecover,
-                flagAllowAtomicOpsInTx: _flagAllowAtomicOpsInTx);
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -1544,8 +1537,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 flagSkipStore: _flagSkipStore,
                 flagKeepBinary: _flagKeepBinary,
                 flagNoRetries: true,
-                flagPartitionRecover: _flagPartitionRecover,
-                flagAllowAtomicOpsInTx: _flagAllowAtomicOpsInTx);
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -1561,8 +1553,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 flagSkipStore: _flagSkipStore,
                 flagKeepBinary: _flagKeepBinary,
                 flagNoRetries: _flagNoRetries,
-                flagPartitionRecover: true,
-                flagAllowAtomicOpsInTx: _flagAllowAtomicOpsInTx);
+                flagPartitionRecover: true);
         }
 
         /** <inheritDoc /> */
