@@ -56,8 +56,9 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** */
     private static final Map<UUID, SecurityContext> SECURITY_CONTEXTS = new ConcurrentHashMap<>();
 
-
-    /** Node security data. */
+    /**
+     * Node security data.
+     */
     private final TestSecurityData nodeSecData;
 
     /** Users security data. */
