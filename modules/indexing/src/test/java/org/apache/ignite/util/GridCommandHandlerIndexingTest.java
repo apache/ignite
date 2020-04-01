@@ -26,6 +26,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -95,11 +97,47 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         stopAllGrids();
 
-        corruptIndexPartition(idxPath);
+        corruptIndexPartition(idxPath, 1024, 4096);
+
+        startGrids(GRID_CNT);
+
+        awaitPartitionMapExchange();
+
+        forceCheckpoint();
+
+        disableCheckpoints(G.allGrids());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", CACHE_NAME));
+
+        assertContains(log, testOut.toString(), "issues found (listed above)");
+        assertContains(log, testOut.toString(), "CRC validation failed");
+        assertNotContains(log, testOut.toString(), "Runtime failure on bounds");
+    }
+
+    /**
+     * Tests with that corrupted pages in the index partition are detected.
+     */
+    @Test
+    public void testCorruptedIndexPartitionShouldFailValidationWithoutCrc() throws Exception {
+        Ignite ignite = prepareGridForTest();
+
+        forceCheckpoint();
+
+        stopAllGrids();
+
+        File idxPath = indexPartition(ignite, GROUP_NAME);
+
+        corruptIndexPartition(idxPath, 6, 47746);
 
         startGrids(2);
 
         awaitPartitionMapExchange();
+
+        forceCheckpoint();
+
+        disableCheckpoints(G.allGrids());
 
         injectTestSystemOut();
 
