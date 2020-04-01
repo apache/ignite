@@ -17,6 +17,7 @@
 
 package org.apache.ignite.platform;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -220,8 +221,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public Date testDateTime(Date input) {
-            Date exp = new Date(1992, JANUARY, 1);
+        public Date testDateTime(Timestamp input) {
+            Timestamp exp = new Timestamp(1992, JANUARY, 1, 0, 0, 0, 0);
 
             if (!exp.equals(input))
                 throw new RuntimeException("Expected \"" + exp + "\" but got \"" + input + "\"");
