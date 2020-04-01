@@ -43,7 +43,6 @@ public class TestSecurityContext implements SecurityContext, Serializable {
      * @param perm Permission.
      */
     public boolean operationAllowed(String opName, SecurityPermission perm) {
-
         switch (perm) {
             case CACHE_CREATE:
             case CACHE_DESTROY:
