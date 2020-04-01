@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -95,12 +95,16 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
 
         cache0.localClear(key + 2);
 
-        assertEquals(1, cache0.get(key));
+        assertEquals(key, cache0.get(key));
+
+        assertEquals(key + 1, cache0.get(key + 1));
+
+        assertEquals(key + 2, cache0.get(key + 2));
 
         try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
             cache1.get(key);
 
-            cache1.getAll(Stream.of(key + 1, key + 2).collect(Collectors.toSet()));
+            cache1.getAll(new HashSet<>(Arrays.asList(key + 1, key + 3)));
 
             cache1.put(key, key + 1);
 
