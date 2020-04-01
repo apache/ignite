@@ -76,7 +76,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
         CLASS_TO_VALUE_TYPE_RECORDS.put(InetSocketAddress.class, Value.STRING);
         CLASS_TO_VALUE_TYPE_RECORDS.put(BigDecimal.class, Value.DECIMAL);
         CLASS_TO_VALUE_TYPE_RECORDS.put(BigInteger.class, Value.DECIMAL);
-        CLASS_TO_VALUE_TYPE_RECORDS.put(Date.class, Value.DATE);
+        CLASS_TO_VALUE_TYPE_RECORDS.put(Date.class, Value.TIMESTAMP);
         CLASS_TO_VALUE_TYPE_RECORDS.put(boolean.class, Value.BOOLEAN);
         CLASS_TO_VALUE_TYPE_RECORDS.put(Boolean.class, Value.BOOLEAN);
         CLASS_TO_VALUE_TYPE_RECORDS.put(byte.class, Value.BYTE);
