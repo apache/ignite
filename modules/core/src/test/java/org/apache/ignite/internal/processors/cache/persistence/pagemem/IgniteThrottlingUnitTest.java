@@ -320,13 +320,12 @@ public class IgniteThrottlingUnitTest {
 
         AtomicInteger written = new AtomicInteger();
 
-        IgniteOutClosure<CheckpointProgress> cpProgress = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
-        when(cpProgress.apply().writtenPagesCounter()).thenReturn(written);
+        IgniteOutClosure<CheckpointProgress> cpProgress = Mockito.mock(IgniteOutClosure.class);
+        Mockito.when(cpProgress.apply()).thenReturn(cl0);
+
+        Mockito.when(cl0.writtenPagesCounter()).thenReturn(written);
 
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
