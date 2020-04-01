@@ -870,7 +870,12 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
+            
+            DateTime req = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime resp = svc.testDateTime(req);
 
+            Assert.AreEqual(req, resp);
+            
             Services.Cancel(javaSvcName);
         }
 
@@ -1446,6 +1451,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             IBinaryObject testBinaryObject(IBinaryObject x);
+
+            /** */
+            DateTime testDateTime(DateTime dt);
         }
 
         /// <summary>

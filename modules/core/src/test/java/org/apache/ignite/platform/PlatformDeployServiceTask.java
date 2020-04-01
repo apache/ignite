@@ -17,6 +17,7 @@
 
 package org.apache.ignite.platform;
 
+import java.util.Date;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -37,6 +38,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.Calendar.JANUARY;
 
 /**
  * Task that deploys a Java service.
@@ -214,6 +217,16 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         /** */
         public Character testWrapper(Character arg) {
             return arg == null ? null :  (char) (arg + 1);
+        }
+
+        /** */
+        public Date testDateTime(Date input) {
+            Date exp = new Date(1992, JANUARY, 1);
+
+            if (!exp.equals(input))
+                throw new RuntimeException("Expected \"" + exp + "\" but got \"" + input + "\"");
+
+            return input;
         }
 
         /** */
