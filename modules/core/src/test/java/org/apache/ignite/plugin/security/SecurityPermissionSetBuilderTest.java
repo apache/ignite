@@ -53,8 +53,8 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
         SecurityBasicPermissionSet exp = new SecurityBasicPermissionSet();
 
         Map<String, Collection<SecurityPermission>> permCache = new HashMap<>();
-        permCache.put("cache1", permissions(CACHE_PUT, CACHE_REMOVE));
-        permCache.put("cache2", permissions(CACHE_READ));
+        permCache.put("cache1", permissions(CACHE_PUT, CACHE_REMOVE, CACHE_CREATE));
+        permCache.put("cache2", permissions(CACHE_READ, CACHE_DESTROY));
 
         exp.setCachePermissions(permCache);
 
@@ -98,7 +98,8 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                         return null;
                     }
                 }, IgniteException.class,
-                "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, JOIN_AS_SERVER], but you try TASK_EXECUTE"
+                "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
+                    "JOIN_AS_SERVER], but you try TASK_EXECUTE"
         );
 
         assertThrows(log, new Callable<Object>() {
@@ -107,22 +108,15 @@ public class SecurityPermissionSetBuilderTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, IgniteException.class,
-            "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, JOIN_AS_SERVER], but you try SERVICE_INVOKE"
-        );
-
-        assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    permsBuilder.appendCachePermissions("cache", CACHE_CREATE);
-                    return null;
-                }
-            }, IgniteException.class,
-            "CACHE_CREATE should be assigned as system permission, not cache permission"
+            "you can assign permission only start with [EVENTS_, ADMIN_, CACHE_CREATE, CACHE_DESTROY, " +
+                "JOIN_AS_SERVER], but you try SERVICE_INVOKE"
         );
 
         permsBuilder
-            .appendCachePermissions("cache1", CACHE_PUT)
+            .appendCachePermissions("cache1", CACHE_PUT, CACHE_CREATE)
             .appendCachePermissions("cache1", CACHE_PUT, CACHE_REMOVE)
             .appendCachePermissions("cache2", CACHE_READ)
+            .appendCachePermissions("cache2", CACHE_DESTROY)
             .appendTaskPermissions("task1", TASK_CANCEL)
             .appendTaskPermissions("task2", TASK_EXECUTE)
             .appendTaskPermissions("task2", TASK_EXECUTE)
