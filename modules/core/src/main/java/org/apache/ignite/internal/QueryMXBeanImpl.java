@@ -90,50 +90,50 @@ public class QueryMXBeanImpl implements QueryMXBean {
         if (log.isInfoEnabled())
             log.info("Killing scan query[id=" + id + ",originNodeId=" + originNodeId + ']');
 
-        cancelScan(UUID.fromString(originNodeId), cacheName, id);
-    }
-
-    /**
-     * Kills scan query by the identifiers.
-     *
-     * @param originNodeId Originating node id.
-     * @param cacheName Cache name.
-     * @param id Scan query id.
-     */
-    public void cancelScan(UUID originNodeId, String cacheName, long id) {
-        doCancel(ctx, new T3<>(originNodeId, cacheName, id));
+        cancelScan(ctx, UUID.fromString(originNodeId), cacheName, id);
     }
 
     /**
      * Executes scan query cancel on all cluster nodes.
      *
      * @param ctx Grid context.
-     * @param arg Query identifier.
+     * @param originNodeId Originating node id.
+     * @param cacheName Cache name.
+     * @param id Scan query id.
      */
-    public static void doCancel(GridKernalContext ctx, T3<UUID, String, Long> arg) {
-        ctx.grid().compute(ctx.grid().cluster()).broadcast(new IgniteClosure<T3<UUID, String, Long>, Void>() {
-            /** Auto-injected grid instance. */
-            @IgniteInstanceResource
-            private transient IgniteEx ignite;
+    public static void cancelScan(GridKernalContext ctx, UUID originNodeId, String cacheName, long id) {
+        ctx.grid().compute(ctx.grid().cluster()).broadcast(new CancelScanClosure(),
+            new T3<>(originNodeId, cacheName, id));
+    }
 
-            /** {@inheritDoc} */
-            @Override public Void apply(T3<UUID, String, Long> arg) {
-                IgniteLogger log = ignite.log().getLogger(getClass());
+    /**
+     * Cancel scan closure.
+     */
+    private static class CancelScanClosure implements IgniteClosure<T3<UUID, String, Long>, Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-                int cacheId = CU.cacheId(arg.get2());
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
 
-                GridCacheContext<?, ?> ctx = ignite.context().cache().context().cacheContext(cacheId);
+        /** {@inheritDoc} */
+        @Override public Void apply(T3<UUID, String, Long> arg) {
+            IgniteLogger log = ignite.log().getLogger(getClass());
 
-                if (ctx == null) {
-                    log.warning("Cache not found[cacheName=" + arg.get2() + ']');
+            int cacheId = CU.cacheId(arg.get2());
 
-                    return null;
-                }
+            GridCacheContext<?, ?> ctx = ignite.context().cache().context().cacheContext(cacheId);
 
-                ctx.queries().removeQueryResult(arg.get1(), arg.get3());
+            if (ctx == null) {
+                log.warning("Cache not found[cacheName=" + arg.get2() + ']');
 
                 return null;
             }
-        }, arg);
+
+            ctx.queries().removeQueryResult(arg.get1(), arg.get3());
+
+            return null;
+        }
     }
 }

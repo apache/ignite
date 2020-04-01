@@ -131,6 +131,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.QueryMXBeanImpl.cancelScan;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
@@ -509,7 +510,7 @@ public class CommandProcessor {
      * @param command Command.
      */
     private void processKillScanQueryCommand(SqlKillScanQueryCommand command) {
-        new QueryMXBeanImpl(ctx).cancelScan(command.getOriginNodeId(), command.getCacheName(), command.getQryId());
+        cancelScan(ctx, command.getOriginNodeId(), command.getCacheName(), command.getQryId());
     }
 
     /**
