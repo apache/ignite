@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_CRC;
 
 /**
  * Validate indexes command.
@@ -72,6 +73,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
 
         map.put(CHECK_FIRST + " N", "validate only the first N keys");
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
+        map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk");
 
         usageCache(logger, VALIDATE_INDEXES, description, map,
             optional(CACHES), OP_NODE_ID, optional(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
@@ -93,14 +95,22 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         /** Number of entries to check through. */
         private int checkThrough = -1;
 
+        /** Check CRC */
+        private boolean checkCrc;
+
         /**
-         *
+         * @param caches Caches to validate.
+         * @param nodeId Node Id.
+         * @param checkFirst Max number of entries to be checked..
+         * @param checkThrough Number of entries to check through.
+         * @param checkCrc Check CRC.
          */
-        public Arguments(Set<String> caches, UUID nodeId, int checkFirst, int checkThrough) {
+        public Arguments(Set<String> caches, UUID nodeId, int checkFirst, int checkThrough, boolean checkCrc) {
             this.caches = caches;
             this.nodeId = nodeId;
             this.checkFirst = checkFirst;
             this.checkThrough = checkThrough;
+            this.checkCrc = checkCrc;
         }
 
         /**
@@ -115,6 +125,13 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
          */
         public int checkFirst() {
             return checkFirst;
+        }
+
+        /**
+         * @return Check CRC
+         */
+        public boolean checkCrc() {
+            return checkCrc;
         }
 
         /**
@@ -146,7 +163,8 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             args.caches(),
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null,
             args.checkFirst(),
-            args.checkThrough()
+            args.checkThrough(),
+            args.checkCrc()
         );
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -200,7 +218,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             if (!errors)
                 logger.info("no issues found.");
             else
-                logger.info("issues found (listed above).");
+                logger.severe("issues found (listed above).");
 
             logger.info("");
 
@@ -212,15 +230,18 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
     @Override public void parseArguments(CommandArgIterator argIter) {
         int checkFirst = -1;
         int checkThrough = -1;
+        boolean checkCrc = false;
         UUID nodeId = null;
         Set<String> caches = null;
 
-        int argsCnt = 0;
-
-        while (argIter.hasNextSubArg() && argsCnt++ < 4) {
+        while (argIter.hasNextSubArg()) {
             String nextArg = argIter.nextArg("");
 
             ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
+            if (arg == CHECK_CRC) {
+                checkCrc = true;
+                continue;
+            }
 
             if (arg == CHECK_FIRST || arg == CHECK_THROUGH) {
                 if (!argIter.hasNextSubArg())
@@ -262,7 +283,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             caches = argIter.parseStringSet(nextArg);
         }
 
-        args = new Arguments(caches, nodeId, checkFirst, checkThrough);
+        args = new Arguments(caches, nodeId, checkFirst, checkThrough, checkCrc);
     }
 
     /** {@inheritDoc} */

@@ -47,6 +47,7 @@ import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
+import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
@@ -285,7 +286,8 @@ public class CommandHandlerParsingTest {
         return cmd == CommandList.CACHE ||
             cmd == CommandList.WAL ||
             cmd == CommandList.SET_STATE ||
-            cmd == CommandList.ENCRYPTION;
+            cmd == CommandList.ENCRYPTION ||
+            cmd == CommandList.KILL;
     }
 
     /**
@@ -471,7 +473,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     * test parsing dump transaction arguments
+     * Test parsing dump transaction arguments.
      */
     @Test
     public void testTransactionArguments() {
@@ -517,6 +519,32 @@ public class CommandHandlerParsingTest {
     }
 
     /**
+     * Test parsing kill arguments.
+     */
+    @Test
+    public void testKillArguments() {
+        assertParseArgsThrows("Expected type of resource to kill.", "--kill");
+
+        // Compute command format errors.
+        assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "compute", "not_a_uuid");
+
+        // Service command format errors.
+        assertParseArgsThrows("Expected service name.", "--kill", "service");
+
+        // Transaction command format errors.
+        assertParseArgsThrows("Expected transaction id.", "--kill", "transaction");
+
+        // SQL command format errors.
+        assertParseArgsThrows("Expected SQL query id.", "--kill", "sql");
+
+        assertParseArgsThrows("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT,
+            "--kill", "sql", "not_sql_id");
+    }
+
+    /**
      * @param args Raw arg list.
      * @return Common parameters container object.
      */
@@ -547,6 +575,17 @@ public class CommandHandlerParsingTest {
      * @param args Incoming arguments.
      */
     private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
-        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
+        assertParseArgsThrows(failMsg, IllegalArgumentException.class, args);
+    }
+
+    /**
+     * Checks that parse arguments fails with {@code exception} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param cls Exception class.
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, Class<? extends Exception> cls, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), cls, failMsg);
     }
 }
