@@ -1178,6 +1178,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     void redeploy(IgniteUuid srvcId, ServiceConfiguration cfg,
         Map<UUID, Integer> top) throws IgniteCheckedException {
+
+        System.err.println("redeploying " + srvcId);
+
         String name = cfg.getName();
         String cacheName = cfg.getCacheName();
         Object affKey = cfg.getAffinityKey();
@@ -1190,6 +1193,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
+                System.err.println("Canceling when undeploying " + srvcId);
+
                 int cancelCnt = ctxs.size() - assignCnt;
 
                 if (cancelCnt >= ctxs.size())
@@ -1220,6 +1225,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             try {
                 srvc = copyAndInject(cfg);
 
+                log.error("Initializing service " + srvcCtx.name() +" execId: " + srvcCtx.executionId());
+
                 // Initialize service.
                 srvc.init(srvcCtx);
 
@@ -1242,8 +1249,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             // Check there is no concurrent #undeploy().
             synchronized (ctxs) {
-                if (!ctxs.iterator().next().isCancelled())
+                if (!ctxs.iterator().next().isCancelled()) {
+                    log.error("registering metrics for " + srvcCtx.name() +" execId: " + srvcCtx.executionId());
+
                     registerMetrics(srvc, srvcCtx.name());
+                } else
+                    log.error("Wont register metrics for " + srvcCtx.name() + ": cancelled.");
             }
 
             // Start service in its own thread.
@@ -1251,6 +1262,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
             exe.execute(new Runnable() {
                 @Override public void run() {
+                    log.error("Running " + srvcCtx.name() +" execId: " + srvcCtx.executionId());
+
                     try {
                         srvc.execute(srvcCtx);
                     }
@@ -1397,6 +1410,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (ctxs != null) {
             synchronized (ctxs) {
+                System.err.println("Undeploying service " + srvcId);
+
                 if (!ctxs.isEmpty())
                     unregisterMetrics(ctxs.iterator().next().name());
 
@@ -1855,7 +1870,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private void registerMetrics(Service srvc, String srvcName) {
         for (Class<?> itf : getInterfaces(srvc.getClass())) {
             for (Method mtd : itf.getMethods()) {
-                if (!isMetricIgnoredFor(mtd.getDeclaringClass()))
+                if (isMetricIgnoredFor(mtd.getDeclaringClass()))
                     continue;
 
                 // All metrics for current service.
@@ -1878,6 +1893,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void unregisterMetrics(String srvcName) {
         ctx.metric().remove(serviceMetricRegistryName(srvcName));
+
+        System.err.println("Unregistering metrics for service " + srvcName);
 
         invocationHistograms.remove(srvcName);
     }

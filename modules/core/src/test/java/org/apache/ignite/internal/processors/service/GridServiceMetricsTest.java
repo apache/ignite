@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -126,56 +127,117 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         assertEquals(metricsCnt, totalInstance);
     }
 
+    @Test
+    public void testCancelService() throws Exception {
+        IgniteEx igniteEx = startGrids(3);
+        Random rnd = new Random();
+        AtomicReference<NamingService> srv = new AtomicReference<>();
+
+        new Thread(()->{
+            while(true){
+                igniteEx.services().deployNodeSingleton( "srv", new NamingServiceImpl() );
+
+                try {
+                    Thread.sleep(100 + rnd.nextInt(1000));
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, "depoyer").start();
+
+        new Thread(()->{
+            while(true){
+                igniteEx.services().cancel("srv");
+
+                try {
+                    Thread.sleep(100 + rnd.nextInt(1000));
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, "undepoyer").start();
+
+        new Thread(()->{
+            while(true){
+                synchronized (srv){
+                    if(srv.get() == null){
+                        try {
+                            srv.set(igniteEx.services().serviceProxy("srv", NamingService.class, false));
+                        } catch (Exception e){
+                            System.err.println("Unable to get service: " + e.getMessage());
+                        }
+                    }
+                }
+
+                try {
+                    srv.get().dummy();
+                } catch (Exception e){
+                    System.err.println("Unable to call serice: " + e.getMessage());
+                }
+
+                try {
+                    Thread.sleep(5 + rnd.nextInt(100));
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, "caller").start();
+
+        Thread.sleep(10 * 60000);
+    }
+
     @Ignore
     @Test
     public void testMapConcurrency() throws InterruptedException {
         final Map<Integer, Integer> map = new HashMap<>(1);
         final Random rnd = new Random();
-        final int valueCnt = 100000;
+        final int valueCnt = 500000;
         final Integer[] holder = new Integer[1];
 
-        for(int i=0; i<5; ++i) {
+        for (int i = 0; i < 5; ++i) {
             new Thread(() -> {
                 while (true) {
-                    for (int v = 0; v < valueCnt; ++v)
-                        map.put(v, rnd.nextInt(valueCnt));
+                    int cnt = 10000 + rnd.nextInt(valueCnt-10000);
+
+                    for (int v = 0; v < cnt; ++v)
+                        map.put(v, rnd.nextInt(Integer.MAX_VALUE));
 
                     System.err.println("Filled");
 
                     try {
-                        Thread.sleep(rnd.nextInt(5000));
+                        Thread.sleep(100 + rnd.nextInt(5000));
                     }
                     catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-            }, "putter_"+i).start();
+            }, "putter_" + i).start();
         }
 
-        for(int i=0; i<30; ++i) {
+        for (int i = 0; i < 30; ++i) {
             new Thread(() -> {
                 while (true) {
 
                     try {
                         holder[0] = map.get(rnd.nextInt(valueCnt));
 
-                        Thread.sleep(rnd.nextInt(50));
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
+                        Thread.yield();
                     }
                     catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
-            }, "getter_"+i).start();
+            }, "getter_" + i).start();
         }
 
-        for(int i=0; i<5; ++i) {
+        for (int i = 0; i < 5; ++i) {
             new Thread(() -> {
                 while (true) {
                     try {
-                        Thread.sleep(rnd.nextInt(5000));
+                        Thread.sleep(100 + rnd.nextInt(5000));
                     }
                     catch (InterruptedException e) {
                         e.printStackTrace();
@@ -187,10 +249,10 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
                     System.err.println("Cleared");
                 }
-            }, "clearer_"+i).start();
+            }, "clearer_" + i).start();
         }
 
-        Thread.sleep(5*60000);
+        Thread.sleep(5 * 60000);
     }
 
     /** Checks metric are created when service is deployed and removed when service is undeployed. */
