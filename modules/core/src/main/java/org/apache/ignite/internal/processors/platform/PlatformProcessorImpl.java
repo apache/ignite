@@ -76,7 +76,7 @@ import static org.apache.ignite.internal.processors.platform.PlatformAbstractTar
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
- * GridGain platform processor.
+ * Platform processor.
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class PlatformProcessorImpl extends GridProcessorAdapter implements PlatformProcessor, PlatformTarget {
