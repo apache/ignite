@@ -624,16 +624,15 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        IgniteOutClosure<CheckpointProgress> noThrottle = new IgniteOutClosure<CheckpointProgress>() {
-            @Override public CheckpointProgress apply() {
-                return Mockito.mock(CheckpointProgressImpl.class);
-            }
-        };
+        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
-        Mockito.when(noThrottle.apply().currentCheckpointPagesCount()).thenReturn(1_000_000);
-        Mockito.when(noThrottle.apply().evictedPagesCounter()).thenReturn(new AtomicInteger(0));
-        Mockito.when(noThrottle.apply().syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
-        Mockito.when(noThrottle.apply().writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        IgniteOutClosure<CheckpointProgress> noThrottle = Mockito.mock(IgniteOutClosure.class);
+        Mockito.when(noThrottle.apply()).thenReturn(cl0);
+
+        Mockito.when(cl0.currentCheckpointPagesCount()).thenReturn(1_000_000);
+        Mockito.when(cl0.evictedPagesCounter()).thenReturn(new AtomicInteger(0));
+        Mockito.when(cl0.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        Mockito.when(cl0.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
 
         PageMemoryImpl mem = cpBufChecker == null ? new PageMemoryImpl(
             provider,
