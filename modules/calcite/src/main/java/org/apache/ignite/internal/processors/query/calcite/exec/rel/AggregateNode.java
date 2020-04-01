@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -162,7 +164,6 @@ public class AggregateNode<T> extends AbstractNode<T> implements SingleNode<T>, 
     }
 
     /** */
-    @SuppressWarnings({"LabeledStatement", "ContinueStatementWithLabel"})
     public void flushFromBuffer() {
         assert waiting == -1;
 
@@ -170,38 +171,51 @@ public class AggregateNode<T> extends AbstractNode<T> implements SingleNode<T>, 
         try {
             int processed = 0;
 
-            parent:
-            while (requested > 0) {
-                for (Grouping group : groupings) {
-                    int request = requested;
-                    requested = 0; // not to violate assert in request() method
+            ArrayDeque<Grouping> groupingsQueue = groupingsQueue();
 
-                    int sent = group.send(downstream, request);
+            while (requested > 0 && !groupingsQueue.isEmpty()) {
+                Grouping grouping = groupingsQueue.peek();
 
-                    if ((processed += sent) >= IN_BUFFER_SIZE && requested > 0) {
-                        // allow others to do their job
-                        context().execute(this::flushFromBuffer);
+                int toSend = Math.min(requested, IN_BUFFER_SIZE - processed);
 
-                        return;
-                    }
+                for (T row : grouping.getRows(toSend)) {
+                    requested--;
+                    downstream.push(row);
 
-                    if (request == sent)
-                        continue parent;
-
-                    assert requested == 0;
-
-                    requested = request - sent;
+                    processed++;
                 }
 
-                if (requested > 0) {
-                    downstream.end();
-                    requested = 0;
+                if (processed >= IN_BUFFER_SIZE && requested > 0) {
+                    // allow others to do their job
+                    context().execute(this::flushFromBuffer);
+
+                    return;
                 }
+
+                if (grouping.isEmpty())
+                    groupingsQueue.remove();
+            }
+
+            if (requested > 0) {
+                downstream.end();
+                requested = 0;
             }
         }
         finally {
             inLoop = false;
         }
+    }
+
+    /** */
+    private ArrayDeque<Grouping> groupingsQueue() {
+        ArrayDeque<Grouping> res = new ArrayDeque<>(groupings.size());
+
+        for (Grouping grouping : groupings) {
+            if (!grouping.isEmpty())
+                res.add(grouping);
+        }
+
+        return res;
     }
 
     /** */
@@ -235,18 +249,17 @@ public class AggregateNode<T> extends AbstractNode<T> implements SingleNode<T>, 
         }
 
         /**
-         * @param downstream Target downstream.
-         * @param cnt Number of rows to send.
+         * @param cnt Number of rows.
          *
          * @return Actually sent rows number.
          */
-        private int send(Downstream<T> downstream, int cnt) {
+        private List<T> getRows(int cnt) {
             if (F.isEmpty(groups))
-                return 0;
+                return Collections.emptyList();
             else if (type == AggregateType.MAP)
-                return sendOnMapper(downstream, cnt);
+                return getOnMapper(cnt);
             else
-                return sendOnReducer(downstream, cnt);
+                return getOnReducer(cnt);
         }
 
         /** */
@@ -285,35 +298,33 @@ public class AggregateNode<T> extends AbstractNode<T> implements SingleNode<T>, 
         }
 
         /** */
-        private int sendOnMapper(Downstream<T> downstream, int cnt) {
+        private List<T> getOnMapper(int cnt) {
             Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper>>> it = groups.entrySet().iterator();
 
-            int processed = 0;
+            int amount = Math.min(cnt, groups.size());
+            List<T> res = new ArrayList<>(amount);
 
-            while (it.hasNext() && processed < cnt) {
+            for (int i = 0; i < amount; i++) {
                 Map.Entry<GroupKey, List<AccumulatorWrapper>> entry = it.next();
 
                 GroupKey groupKey = entry.getKey();
                 List<Accumulator> accums = Commons.transform(entry.getValue(), AccumulatorWrapper::accumulator);
 
-                T row = handler.create(groupId, groupKey, accums);
-
-                downstream.push(row);
-
-                processed++;
+                res.add(handler.create(groupId, groupKey, accums));
                 it.remove();
             }
 
-            return processed;
+            return res;
         }
 
         /** */
-        private int sendOnReducer(Downstream<T> downstream, int cnt) {
+        private List<T> getOnReducer(int cnt) {
             Iterator<Map.Entry<GroupKey, List<AccumulatorWrapper>>> it = groups.entrySet().iterator();
 
-            int processed = 0;
+            int amount = Math.min(cnt, groups.size());
+            List<T> res = new ArrayList<>(amount);
 
-            while (it.hasNext() && processed < cnt) {
+            for (int i = 0; i < amount; i++) {
                 Map.Entry<GroupKey, List<AccumulatorWrapper>> entry = it.next();
 
                 GroupKey groupKey = entry.getKey();
@@ -321,28 +332,29 @@ public class AggregateNode<T> extends AbstractNode<T> implements SingleNode<T>, 
 
                 Object[] fields = new Object[groupSet.cardinality() + wrappers.size()];
 
-                int i = 0, j = 0;
+                int j = 0, k = 0;
 
                 for (Integer field : groupSet)
-                    fields[i++] = groupFields.get(field) ? groupKey.field(j++) : null;
+                    fields[j++] = groupFields.get(field) ? groupKey.field(k++) : null;
 
                 for (AccumulatorWrapper wrapper : wrappers)
-                    fields[i++] = wrapper.end();
+                    fields[j++] = wrapper.end();
 
-                T row = handler.create(fields);
-
-                downstream.push(row);
-
-                processed++;
+                res.add(handler.create(fields));
                 it.remove();
             }
 
-            return processed;
+            return res;
         }
 
         /** */
         private List<AccumulatorWrapper> create(GroupKey key) {
             return wrappersFactory.get();
+        }
+
+        /** */
+        private boolean isEmpty() {
+            return groups.isEmpty();
         }
     }
 }
