@@ -1234,6 +1234,18 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_INDEX_COST_FUNCTION = "IGNITE_INDEX_COST_FUNCTION";
 
     /**
+     * The list of SQL functions to disable.
+     * Default is:
+     * "FILE_READ, FILE_WRITE, CSVWRITE, CSVREAD, MEMORY_FREE, MEMORY_USED,
+     * LOCK_MODE, LINK_SCHEMA, SESSION_ID, CANCEL_SESSION".
+     *
+     * Empty string enables all available SQL functions.
+     * @deprecated Since 8.7.16.
+     */
+    @Deprecated
+    public static final String IGNITE_SQL_DISABLED_FUNCTIONS = "IGNITE_SQL_DISABLED_FUNCTIONS";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
