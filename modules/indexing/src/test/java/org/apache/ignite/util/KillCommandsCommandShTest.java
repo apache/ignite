@@ -49,8 +49,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
             srvs.add(grid(i));
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(
-            new CacheConfiguration<>(KillCommandsTests.DEFAULT_CACHE_NAME)
-                .setIndexedTypes(Integer.class, Integer.class)
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)

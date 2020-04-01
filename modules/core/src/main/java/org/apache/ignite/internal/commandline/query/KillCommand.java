@@ -159,7 +159,6 @@ public class KillCommand implements Command<Object> {
 
                 break;
 
-
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
