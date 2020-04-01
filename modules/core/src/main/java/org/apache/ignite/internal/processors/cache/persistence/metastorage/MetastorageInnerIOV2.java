@@ -17,41 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.IgniteCheckedException;
 
 /** */
-public class MetastorageDataRow implements MetastorageRow {
-    /** Link to the data. */
-    private final long link;
-    /** Key. */
-    private final String key;
-    /** Link to the key if the key itself is too long to be inlined into the page. */
-    private final long keyLink;
-
-    /** */
-    public MetastorageDataRow(long link, String key, long keyLink) {
-        this.link = link;
-        this.key = key;
-        this.keyLink = keyLink;
+public class MetastorageInnerIOV2 extends MetastorageInnerIO {
+    /**
+     * @param ver Page format version.
+     */
+    public MetastorageInnerIOV2(int ver) {
+        super(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public long link() {
-        return link;
+    @Override public String getKey(long pageAddr, int idx, MetastorageRowStore rowStore)
+        throws IgniteCheckedException
+    {
+        return MetastoragePageIOUtils.getKeyV2(this, pageAddr, idx, rowStore);
     }
 
     /** {@inheritDoc} */
-    @Override public String key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long keyLink() {
-        return keyLink;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MetastorageDataRow.class, this);
+    @Override public MetastorageDataRow getDataRow(long pageAddr, int idx, MetastorageRowStore rowStore)
+        throws IgniteCheckedException
+    {
+        return MetastoragePageIOUtils.getDataRowV2(this, pageAddr, idx, rowStore);
     }
 }

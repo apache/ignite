@@ -129,7 +129,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     private RootPage reuseListRoot;
 
     /** */
-    private PartitionMetaStorageImpl<MetastorageDataRow> partStorage;
+    private PartitionMetaStorageImpl<MetastorageRowStoreEntry> partStorage;
 
     /** */
     private SortedMap<String, byte[]> lastUpdates;
@@ -215,7 +215,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
 
-            tmpStorage.add(row.key(), row.value());
+            tmpStorage.add(row.key(), partStorage.readRow(row.link()));
         }
 
         return tmpStorage;
@@ -256,7 +256,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             String freeListName = METASTORAGE_CACHE_NAME + "##FreeList";
             String treeName = METASTORAGE_CACHE_NAME + "##Tree";
 
-            partStorage = new PartitionMetaStorageImpl<MetastorageDataRow>(
+            partStorage = new PartitionMetaStorageImpl<MetastorageRowStoreEntry>(
                 METASTORAGE_CACHE_ID,
                 freeListName,
                 regionMetrics,
@@ -322,7 +322,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
         if (readOnly) {
             if (lastUpdates != null) {
-                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
+                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\u007F");
 
                 if (!prefixedSubmap.isEmpty())
                     updatesIter = prefixedSubmap.entrySet().iterator();
@@ -337,9 +337,9 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             curUpdatesEntry = updatesIter.next();
         }
 
-        MetastorageDataRow lower = new MetastorageDataRow(keyPrefix, null);
+        MetastorageSearchRow lower = new MetastorageSearchRow(keyPrefix);
 
-        MetastorageDataRow upper = new MetastorageDataRow(keyPrefix + "\uFFFF", null);
+        MetastorageSearchRow upper = new MetastorageSearchRow(keyPrefix + "\u007F");
 
         GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
 
@@ -347,7 +347,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             MetastorageDataRow row = cur.get();
 
             String key = row.key();
-            byte[] valBytes = row.value();
+            byte[] valBytes = partStorage.readRow(row.link());
 
             int c = 0;
 
@@ -405,7 +405,9 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         while (cur.next()) {
             MetastorageDataRow row = cur.get();
 
-            res.add(new IgniteBiTuple<>(row.key(), marshaller.unmarshal(row.value(), getClass().getClassLoader())));
+            byte[] val = marshaller.unmarshal(partStorage.readRow(row.link()), getClass().getClassLoader());
+
+            res.add(new IgniteBiTuple<>(row.key(), val));
         }
 
         return res;
@@ -432,16 +434,25 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             synchronized (this) {
                 ptr = wal.log(new MetastoreDataRecord(key, data));
 
-                MetastorageDataRow oldRow = tree.findOne(new MetastorageDataRow(key, null));
+                MetastorageDataRow oldRow = tree.findOne(new MetastorageSearchRow(key));
 
-                if (oldRow != null) {
-                    tree.removex(oldRow);
+                byte[] keyBytes = key.getBytes();
+
+                long keyLink;
+
+                if (oldRow != null)
+                    keyLink = oldRow.keyLink();
+                else if (keyBytes.length > MetastorageTree.MAX_KEY_LEN)
+                    keyLink = tree.rowStore().addRow(keyBytes);
+                else
+                    keyLink = 0L;
+
+                long dataLink = tree.rowStore().addRow(data);
+
+                tree.put(new MetastorageDataRow(dataLink, key, keyLink));
+
+                if (oldRow != null)
                     tree.rowStore().removeRow(oldRow.link());
-                }
-
-                MetastorageDataRow row = new MetastorageDataRow(key, data);
-                tree.rowStore().addRow(row);
-                tree.put(row);
             }
 
             wal.flush(ptr, false);
@@ -462,30 +473,35 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 return null;
         }
 
-        MetastorageDataRow row = tree.findOne(new MetastorageDataRow(key, null));
+        MetastorageDataRow row = tree.findOne(new MetastorageSearchRow(key));
 
         if (row == null)
             return null;
 
-        return row.value();
+        return partStorage.readRow(row.link());
     }
 
     /** */
     public void removeData(String key) throws IgniteCheckedException {
         if (!readOnly) {
-            WALPointer ptr = wal.log(new MetastoreDataRecord(key, null));
-
-            wal.flush(ptr, false);
+            WALPointer ptr;
 
             synchronized (this) {
-                MetastorageDataRow row = new MetastorageDataRow(key, null);
-                MetastorageDataRow oldRow = tree.findOne(row);
+                MetastorageDataRow oldRow = tree.findOne(new MetastorageSearchRow(key));
 
-                if (oldRow != null) {
-                    tree.removex(oldRow);
-                    tree.rowStore().removeRow(oldRow.link());
-                }
+                if (oldRow == null)
+                    return;
+
+                ptr = wal.log(new MetastoreDataRecord(key, null));
+
+                tree.removex(oldRow);
+                tree.rowStore().removeRow(oldRow.link());
+
+                if (oldRow.keyLink() != 0L)
+                    tree.rowStore().removeRow(oldRow.keyLink());
             }
+
+            wal.flush(ptr, false);
         }
     }
 
