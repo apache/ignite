@@ -322,7 +322,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
         if (readOnly) {
             if (lastUpdates != null) {
-                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\u007F");
+                SortedMap<String, byte[]> prefixedSubmap = lastUpdates.subMap(keyPrefix, keyPrefix + "\uFFFF");
 
                 if (!prefixedSubmap.isEmpty())
                     updatesIter = prefixedSubmap.entrySet().iterator();
@@ -339,7 +339,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
         MetastorageSearchRow lower = new MetastorageSearchRow(keyPrefix);
 
-        MetastorageSearchRow upper = new MetastorageSearchRow(keyPrefix + "\u007F");
+        MetastorageSearchRow upper = new MetastorageSearchRow(keyPrefix + "\uFFFF");
 
         GridCursor<MetastorageDataRow> cur = tree.find(lower, upper);
 
