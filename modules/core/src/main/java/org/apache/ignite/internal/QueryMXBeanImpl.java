@@ -90,18 +90,17 @@ public class QueryMXBeanImpl implements QueryMXBean {
         if (log.isInfoEnabled())
             log.info("Killing scan query[id=" + id + ",originNodeId=" + originNodeId + ']');
 
-        cancelScan(ctx, UUID.fromString(originNodeId), cacheName, id);
+        cancelScan(UUID.fromString(originNodeId), cacheName, id);
     }
 
     /**
      * Executes scan query cancel on all cluster nodes.
      *
-     * @param ctx Grid context.
      * @param originNodeId Originating node id.
      * @param cacheName Cache name.
      * @param id Scan query id.
      */
-    public static void cancelScan(GridKernalContext ctx, UUID originNodeId, String cacheName, long id) {
+    public void cancelScan(UUID originNodeId, String cacheName, long id) {
         ctx.grid().compute(ctx.grid().cluster()).broadcast(new CancelScanClosure(),
             new T3<>(originNodeId, cacheName, id));
     }

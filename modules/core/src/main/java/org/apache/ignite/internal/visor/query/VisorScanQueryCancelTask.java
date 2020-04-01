@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.visor.query;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.QueryMXBeanImpl.cancelScan;
 
 /**
  * Task to cancel scan queries.
@@ -59,7 +58,8 @@ public class VisorScanQueryCancelTask extends VisorOneNodeTask<VisorScanQueryCan
 
         /** {@inheritDoc} */
         @Override protected Void run(@Nullable VisorScanQueryCancelTaskArg arg) throws IgniteException {
-            cancelScan(ignite.context(), arg.getOriginNodeId(), arg.getCacheName(), arg.getQueryId());
+            new QueryMXBeanImpl(ignite.context())
+                .cancelScan(arg.getOriginNodeId(), arg.getCacheName(), arg.getQueryId());
 
             return null;
         }
