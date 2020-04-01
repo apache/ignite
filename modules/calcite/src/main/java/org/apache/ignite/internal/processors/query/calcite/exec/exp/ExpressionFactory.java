@@ -135,16 +135,16 @@ public class ExpressionFactory {
     }
 
     /** */
-    public Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext root, AggregateNode.AggregateType type, RowHandler handler, List<AggregateCall> calls, RelDataType rowType) {
+    public Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext root, RowHandler handler, AggregateNode.AggregateType type, List<AggregateCall> calls, RelDataType rowType) {
         return new WrappersFactoryImpl(root, type, handler, calls, rowType);
     }
 
     /** */
-    public Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext root, AggregateNode.AggregateType type, RowHandler handler, List<AggCallExp> calls, DataType rowType) {
+    public Supplier<List<AccumulatorWrapper>> wrappersFactory(ExecutionContext root, RowHandler handler, AggregateNode.AggregateType type, List<AggCallExp> calls, DataType rowType) {
         List<AggregateCall> calls0 = Commons.transform(calls, expToRexTranslator::translate);
         RelDataType rowType0 = rowType == null ? null : rowType.logicalType(typeFactory);
 
-        return wrappersFactory(root, type, handler, calls0, rowType0);
+        return wrappersFactory(root, handler, type, calls0, rowType0);
     }
 
     /**
@@ -312,8 +312,10 @@ public class ExpressionFactory {
                         list.get(i))));
         }
 
+        builder.add(outputValues_); // return out
+
         MethodDeclaration declaration = Expressions.methodDecl(
-            Modifier.PUBLIC, void.class, IgniteMethod.SCALAR_EXECUTE.method().getName(),
+            Modifier.PUBLIC, Object[].class, IgniteMethod.SCALAR_EXECUTE.method().getName(),
             ImmutableList.of(context_, inputValues_, outputValues_), builder.toBlock());
 
         return compile(Scalar.class, Expressions.toString(F.asList(declaration), "\n", false));
@@ -470,9 +472,7 @@ public class ExpressionFactory {
 
         /** {@inheritDoc} */
         @Override public boolean test(T r) {
-            scalar.execute(ctx, (Object[]) r, out);
-
-            return (Boolean) out[0];
+            return (Boolean) scalar.execute(ctx, (Object[]) r, out)[0];
         }
     }
 
@@ -500,10 +500,7 @@ public class ExpressionFactory {
 
         /** {@inheritDoc} */
         @Override public T apply(T r) {
-            Object[] out = new Object[count];
-            scalar.execute(ctx, (Object[]) r, out);
-
-            return (T) out;
+            return (T) scalar.execute(ctx, (Object[]) r, new Object[count]);
         }
     }
 

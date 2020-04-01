@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
+import com.google.common.primitives.Primitives;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -29,7 +31,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -68,7 +69,7 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
         this.handler = handler;
         this.inputRowType = inputRowType;
 
-        ArrayList prototypes = new ArrayList(aggCalls.size());
+        ArrayList<WrapperPrototype> prototypes = new ArrayList<>(aggCalls.size());
 
         for (AggregateCall aggCall : aggCalls)
             prototypes.add(new WrapperPrototype(aggCall));
@@ -82,83 +83,89 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
     }
 
     /** */
-    private final class InTypeAdapter implements Function<Object[], Object[]> {
+    private abstract class AbstractWrapper implements AccumulatorWrapper {
         /** */
-        private final Scalar scalar;
+        protected final Accumulator accumulator;
 
         /** */
-        private InTypeAdapter(ExpressionFactory factory, RelDataType inType, RelDataType outType) {
-            assert inType.isStruct();
-            assert outType.isStruct();
-            assert inType.getFieldCount() == outType.getFieldCount();
+        protected final Function<Object, Object> outAdapter;
 
-            int cnt = inType.getFieldCount();
-
-            List<RelDataTypeField> inFields = inType.getFieldList();
-            List<RelDataTypeField> outFields = outType.getFieldList();
-            List<RexNode> rexNodes = new ArrayList<>(cnt);
-
-            RexBuilder rexBuilder = factory.rexBuilder();
-
-            for (int i = 0; i < cnt; i++) {
-                rexNodes.add(
-                    rexBuilder.makeCast(outFields.get(i).getType(),
-                        rexBuilder.makeInputRef(inFields.get(i).getType(), i)));
-            }
-
-            scalar = factory.scalar(rexNodes, inType);
+        /** */
+        private AbstractWrapper(Accumulator accumulator, Function<Object, Object> outAdapter) {
+            this.accumulator = accumulator;
+            this.outAdapter = outAdapter;
         }
 
         /** {@inheritDoc} */
-        @Override public Object[] apply(Object[] in) {
-            Object[] out = new Object[in.length];
+        @Override public Object end() {
+            assert type != AggregateType.MAP;
 
-            scalar.execute(ctx, in, out);
+            return outAdapter.apply(accumulator.end());
+        }
 
-            return out;
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator accumulator) {
+            assert type == AggregateType.REDUCE;
+
+            this.accumulator.apply(accumulator);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Accumulator accumulator() {
+            return accumulator;
         }
     }
 
     /** */
-    private final class OutTypeAdapter implements Function<Object, Object> {
+    private final class NoArgsWrapper extends AbstractWrapper {
         /** */
-        private final Scalar scalar;
-
-        /** */
-        private final Object[] in = new Object[1];
-
-        /** */
-        private final Object[] out = new Object[1];
-
-        /** */
-        private OutTypeAdapter(ExpressionFactory factory, RelDataType inType, RelDataType outType) {
-            assert !inType.isStruct();
-            assert !outType.isStruct();
-
-            IgniteTypeFactory typeFactory = factory.typeFactory();
-
-            RelDataType rowType = typeFactory.createStructType(F.asList(Pair.of("$EXP", inType)));
-
-            RexBuilder rexBuilder = factory.rexBuilder();
-
-            scalar = factory.scalar(
-                rexBuilder.makeCast(outType,
-                    rexBuilder.makeInputRef(inType, 0)), rowType);
+        private NoArgsWrapper(Accumulator accumulator, Function<Object, Object> outAdapter) {
+            super(accumulator, outAdapter);
         }
 
         /** {@inheritDoc} */
-        @Override public Object apply(Object o) {
-            try {
-                in[0] = o;
+        @Override public void add(Object row) {
+            assert type != AggregateType.REDUCE;
 
-                scalar.execute(ctx, in, out);
+            accumulator.add(EMPTY);
+        }
+    }
 
-                return out[0];
+    /** */
+    private final class Wrapper extends AbstractWrapper {
+        /** */
+        private final List<Integer> args;
+
+        /** */
+        private final boolean ignoreNulls;
+
+        /** */
+        private final Function<Object[], Object[]> inAdapter;
+
+        /** */
+        private Wrapper(Accumulator accumulator, List<Integer> args, boolean ignoreNulls,
+            Function<Object[], Object[]> inAdapter, Function<Object, Object> outAdapter) {
+            super(accumulator, outAdapter);
+
+            this.args = args;
+            this.ignoreNulls = ignoreNulls;
+            this.inAdapter = inAdapter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object row) {
+            Object[] args0 = new Object[args.size()];
+
+            for (int i = 0; i < args.size(); i++) {
+                Object val = handler.get(args.get(i), row);
+
+                if (ignoreNulls && val == null)
+                    return;
+
+                args0[i] = val;
             }
-            finally {
-                in[0] = null;
-                out[0] = null;
-            }
+
+            accumulator.add(inAdapter.apply(args0));
         }
     }
 
@@ -199,88 +206,42 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
     }
 
     /** */
-    private final class NoArgsWrapper extends AbstractWrapper {
+    private static class InTypeAdapter implements Function<Object[], Object[]> {
         /** */
-        private NoArgsWrapper(Accumulator accumulator, OutTypeAdapter outAdapter) {
-            super(accumulator, outAdapter);
+        private final ExecutionContext ctx;
+
+        /** */
+        private final Scalar scalar;
+
+        /** */
+        private InTypeAdapter(ExecutionContext ctx, Scalar scalar) {
+            this.ctx = ctx;
+            this.scalar = scalar;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object[] apply(Object[] in) {
+            return scalar.execute(ctx, in, new Object[in.length]);
         }
     }
 
     /** */
-    private final class Wrapper extends AbstractWrapper {
+    private static class OutTypeAdapter implements Function<Object, Object> {
         /** */
-        private final List<Integer> args;
+        private final ExecutionContext ctx;
 
         /** */
-        private final boolean ignoreNulls;
+        private final Scalar scalar;
 
         /** */
-        private final InTypeAdapter inAdapter;
-
-        /** */
-        private Wrapper(Accumulator accumulator, List<Integer> args, boolean ignoreNulls, InTypeAdapter inAdapter, OutTypeAdapter outAdapter) {
-            super(accumulator, outAdapter);
-
-            this.args = args;
-            this.ignoreNulls = ignoreNulls;
-            this.inAdapter = inAdapter;
+        private OutTypeAdapter(ExecutionContext ctx, Scalar scalar) {
+            this.ctx = ctx;
+            this.scalar = scalar;
         }
 
         /** {@inheritDoc} */
-        @Override public void add(Object row) {
-            Object[] args0 = new Object[args.size()];
-
-            for (int i = 0; i < args.size(); i++) {
-                Object val = handler.get(args.get(i), row);
-
-                if (ignoreNulls && val == null)
-                    return;
-
-                args0[i] = val;
-            }
-
-            accumulator.add(inAdapter.apply(args0));
-        }
-    }
-
-    /** */
-    private abstract class AbstractWrapper implements AccumulatorWrapper {
-        /** */
-        protected final Accumulator accumulator;
-
-        /** */
-        protected final OutTypeAdapter outAdapter;
-
-        /** */
-        private AbstractWrapper(Accumulator accumulator, OutTypeAdapter outAdapter) {
-            this.accumulator = accumulator;
-            this.outAdapter = outAdapter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(Object row) {
-            assert type != AggregateType.REDUCE;
-
-            accumulator.add(EMPTY);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            assert type != AggregateType.MAP;
-
-            return outAdapter.apply(accumulator.end());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator accumulator) {
-            assert type == AggregateType.REDUCE;
-
-            this.accumulator.apply(accumulator);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Accumulator accumulator() {
-            return accumulator;
+        @Override public Object apply(Object val) {
+            return scalar.execute(ctx, new Object[] {val}, new Object[1])[0];
         }
     }
 
@@ -290,10 +251,10 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
         private final AggregateCall call;
 
         /** */
-        private InTypeAdapter inAdapter;
+        private Function<Object[], Object[]> inAdapter;
 
         /** */
-        private OutTypeAdapter outAdapter;
+        private Function<Object, Object> outAdapter;
 
         /** */
         private Supplier<Accumulator> accFactory;
@@ -338,33 +299,108 @@ public class WrappersFactoryImpl implements Supplier<List<AccumulatorWrapper>> {
 
             ExpressionFactory factory = new ExpressionFactory(typeFactory, conformance, opTable);
 
-            if (type != AggregateType.REDUCE && !F.isEmpty(call.getArgList())) {
-                List<Integer> argList = call.getArgList();
-                List<RelDataType> argTypes = accumulator.argumentTypes(typeFactory);
+            if (type != AggregateType.REDUCE && !F.isEmpty(call.getArgList()))
+                inAdapter = createInAdapter(accumulator, factory);
 
-                assert !F.isEmpty(argTypes) && argTypes.size() == argList.size();
-
-                List<RelDataTypeField> rowFields = inputRowType.getFieldList();
-
-                RelDataTypeFactory.Builder inBuilder = new RelDataTypeFactory.Builder(typeFactory);
-                RelDataTypeFactory.Builder outBuilder = new RelDataTypeFactory.Builder(typeFactory);
-
-                for (int i = 0; i < argList.size(); i++) {
-                    inBuilder.add("$EXP" + i, rowFields.get(argList.get(i)).getType());
-                    outBuilder.add("$EXP" + i, argTypes.get(i));
-                }
-
-                inAdapter = new InTypeAdapter(factory, inBuilder.build(), outBuilder.build());
-            }
-
-            if (type != AggregateType.MAP) {
-                RelDataType inType = accumulator.returnType(typeFactory);
-                RelDataType outType = call.getType();
-
-                outAdapter = new OutTypeAdapter(factory, inType, outType);
-            }
+            if (type != AggregateType.MAP)
+                outAdapter = createOutAdapter(accumulator, factory);
 
             return accumulator;
+        }
+
+        /** */
+        public Function<Object[], Object[]> createInAdapter(Accumulator accumulator, ExpressionFactory factory) {
+            IgniteTypeFactory typeFactory = factory.typeFactory();
+
+            List<Integer> argList = call.getArgList();
+            List<RelDataType> argTypes = accumulator.argumentTypes(typeFactory);
+
+            assert !F.isEmpty(argTypes) && argTypes.size() == argList.size();
+
+            List<RelDataType> rowTypes = new ArrayList<>(argList.size());
+            List<RelDataTypeField> rowFields = inputRowType.getFieldList();
+
+            for (Integer arg : argList)
+                rowTypes.add(rowFields.get(arg).getType());
+
+            RexBuilder rexBuilder = factory.rexBuilder();
+            List<RexNode> rexNodes = new ArrayList<>(argList.size());
+
+            boolean shouldCast = false;
+
+            for (int i = 0; i < argList.size(); i++) {
+                RelDataType rowType = rowTypes.get(i);
+                RelDataType argType = argTypes.get(i);
+
+                RexNode rexNode = rexBuilder.makeInputRef(rowType, i);
+
+                if (shouldCast(typeFactory, rowType, argType)) {
+                    rexNode = rexBuilder.makeCast(argType, rexNode);
+
+                    shouldCast = true;
+                }
+
+                rexNodes.add(rexNode);
+            }
+
+            if (shouldCast) {
+                RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
+
+                for (int i = 0; i < rowTypes.size(); i++)
+                    builder.add("$EXP" + i, rowTypes.get(i));
+
+                return new InTypeAdapter(ctx, factory.scalar(rexNodes, builder.build()));
+            }
+
+            return Function.identity();
+        }
+
+        /** */
+        public Function<Object, Object> createOutAdapter(Accumulator accumulator, ExpressionFactory factory) {
+            IgniteTypeFactory typeFactory = factory.typeFactory();
+
+            RelDataType inType = accumulator.returnType(typeFactory);
+            RelDataType outType = call.getType();
+
+            assert !inType.isStruct();
+            assert !outType.isStruct();
+
+            if (shouldCast(typeFactory, inType, outType)) {
+                RexBuilder rexBuilder = factory.rexBuilder();
+
+                RelDataType rowType =  new RelDataTypeFactory.Builder(typeFactory)
+                    .add("$EXP0", inType).build();
+
+                Scalar scalar = factory.scalar(
+                    rexBuilder.makeCast(outType,
+                        rexBuilder.makeInputRef(inType, 0)), rowType);
+
+                return new OutTypeAdapter(ctx, scalar);
+            }
+
+            return Function.identity();
+        }
+
+        /** */
+        private boolean shouldCast(IgniteTypeFactory typeFactory, RelDataType inDataType, RelDataType outDataType) {
+            Type inType = typeFactory.getJavaClass(inDataType);
+
+            if (!(inType instanceof Class))
+                return false; // null or synthetic type, impossible to cast
+
+            Type outType = typeFactory.getJavaClass(outDataType);
+
+            if (!(outType instanceof Class))
+                return false; // null or synthetic type, impossible to cast
+
+            // since we can't use primitive types in rows
+            // we have to box both types before comparison
+            Class inBoxed = Primitives.wrap((Class) inType);
+            Class outBoxed = Primitives.wrap((Class) outType);
+
+            // the classes are expected to be basic types like
+            // Integer or Long, so, it's OK to compare by links
+            return inBoxed != outBoxed;
         }
     }
 }

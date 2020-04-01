@@ -191,7 +191,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
 
         Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
-            type, rowHandler, rel.getAggCallList(), rel.getInput().getRowType());
+            rowHandler, type, rel.getAggCallList(), rel.getInput().getRowType());
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), factory, rowHandler);
         node.register(visit(rel.getInput()));
@@ -205,7 +205,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
 
         Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
-            type, rowHandler, rel.getAggCallList(), rel.getInput().getRowType());
+            rowHandler, type, rel.getAggCallList(), rel.getInput().getRowType());
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), factory, rowHandler);
         node.register(visit(rel.getInput()));
@@ -219,7 +219,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
 
         Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
-            type, rowHandler, rel.aggregateCalls(), null);
+            rowHandler, type, rel.aggregateCalls(), null);
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.groupSets(), factory, rowHandler);
         node.register(visit(rel.getInput()));

@@ -189,7 +189,7 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
         RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
 
         Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
-            type, rowHandler, rel.calls(), rel.inputRowType());
+            rowHandler, type, rel.calls(), rel.inputRowType());
 
         AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.groupSets(), factory, rowHandler);
 
