@@ -1240,7 +1240,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            // Check there is no concurrent #undeploy().
+            // Check there is no concurrent service cancellation.
             synchronized (ctxs) {
                 if (!ctxs.iterator().next().isCancelled())
                     registerMetrics(srvc, srvcCtx.name());
@@ -1855,7 +1855,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private void registerMetrics(Service srvc, String srvcName) {
         for (Class<?> itf : getInterfaces(srvc.getClass())) {
             for (Method mtd : itf.getMethods()) {
-                if (!isMetricIgnoredFor(mtd.getDeclaringClass()))
+                if (isMetricIgnoredFor(mtd.getDeclaringClass()))
                     continue;
 
                 // All metrics for current service.
