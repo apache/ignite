@@ -538,7 +538,6 @@ public class CommandHandlerParsingTest {
         assertParseArgsThrows("For input string: \"not_a_number\"", NumberFormatException.class,
             "--kill", "scan", uuid, "my-cache", "not_a_number");
 
-
         // Compute command format errors.
         assertParseArgsThrows("Expected compute task id.", "--kill", "compute");
 
