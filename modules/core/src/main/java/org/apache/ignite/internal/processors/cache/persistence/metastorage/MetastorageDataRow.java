@@ -23,8 +23,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class MetastorageDataRow implements MetastorageRow {
     /** Link to the data. */
     private final long link;
+
     /** Key. */
     private final String key;
+
     /** Link to the key if the key itself is too long to be inlined into the page. */
     private final long keyLink;
 
