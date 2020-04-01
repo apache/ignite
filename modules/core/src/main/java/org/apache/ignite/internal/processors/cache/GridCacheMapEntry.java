@@ -6951,7 +6951,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Invokes platform near cache callback, if applicable.
      *
      * @param val Updated value, null on remove.
-     * @param val Topology version, null on remove.
+     * @param ver Topology version, null on remove.
      */
     protected void updatePlatformNearCache(@Nullable CacheObject val, @Nullable AffinityTopologyVersion ver) {
         if (!hasPlatformNearCache())
