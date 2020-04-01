@@ -76,7 +76,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
      * @param cpFreq Timeout until next checkpoint.
      */
     public CheckpointProgressImpl(long cpFreq) {
-        this.nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
+        nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
     }
 
     /**

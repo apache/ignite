@@ -1958,7 +1958,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public CheckpointProgressImpl forceCheckpoint(String reason) {
+    @Override public CheckpointProgress forceCheckpoint(String reason) {
         Checkpointer cp = checkpointer;
 
         if (cp == null)
@@ -2234,7 +2234,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointerThread = cpThread;
 
-        CheckpointProgressImpl chp = checkpointer.wakeupForCheckpoint(0, "node started");
+        CheckpointProgress chp = checkpointer.wakeupForCheckpoint(0, "node started");
 
         if (chp != null)
             chp.futureFor(LOCK_RELEASED).get();
@@ -3512,14 +3512,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          *
          */
-        private CheckpointProgressImpl wakeupForCheckpoint(long delayFromNow, String reason) {
+        private CheckpointProgress wakeupForCheckpoint(long delayFromNow, String reason) {
             return wakeupForCheckpoint(delayFromNow, reason, null);
         }
 
         /**
          *
          */
-        private <R> CheckpointProgressImpl wakeupForCheckpoint(
+        private <R> CheckpointProgress wakeupForCheckpoint(
             long delayFromNow,
             String reason,
             IgniteInClosure<? super IgniteInternalFuture<R>> lsnr
@@ -3527,7 +3527,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (lsnr != null) {
                 //To be sure lsnr always will be executed in checkpoint thread.
                 synchronized (this) {
-                    CheckpointProgressImpl sched = scheduledCp;
+                    CheckpointProgress sched = scheduledCp;
 
                     sched.futureFor(FINISHED).listen(lsnr);
                 }
@@ -4243,7 +4243,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          *
          * @return Current checkpoint progress.
          */
-        @NotNull private CheckpointProgressImpl updateCurrentCheckpointProgress() {
+        @NotNull private CheckpointProgress updateCurrentCheckpointProgress() {
             final CheckpointProgressImpl curr;
 
             synchronized (this) {
