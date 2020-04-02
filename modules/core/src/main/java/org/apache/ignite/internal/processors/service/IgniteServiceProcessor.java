@@ -1218,7 +1218,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            // Despite expected serialized discovery message, checking of concurrent cancellation is trivial and cheap.
             synchronized (ctxs) {
                 if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled())
                     registerMetrics(srvc, srvcCtx.name());
