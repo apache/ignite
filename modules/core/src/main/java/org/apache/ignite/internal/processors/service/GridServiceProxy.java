@@ -458,8 +458,11 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return measureServiceMethod(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(),
-                    mtd, args);
+                if (svcCtx.statisticsEnabled())
+                    return measureServiceMethod(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(),
+                        mtd, args);
+                else
+                    return mtd.invoke(svcCtx.service(), args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());
