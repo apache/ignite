@@ -874,14 +874,16 @@ namespace Apache.Ignite.Core.Tests.Services
             DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             Assert.AreEqual(dt, svc.test(dt));
-            Assert.AreEqual(dt, svc.testNull(dt));
-            Assert.AreEqual(dt, svc.testArray(new DateTime[] {dt})[0]);
+            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
+            Assert.IsNull(svc.testNullTimestamp(null));
+            Assert.AreEqual(dt, svc.testArray(new DateTime?[] {dt})[0]);
 
-            Guid guid = Guid.NewGuid;
+            Guid guid = Guid.NewGuid();
 
             Assert.AreEqual(guid, svc.test(guid));
-            Assert.AreEqual(guid, svc.testNull(guid));
-            Assert.AreEqual(guid, svc.testArray(new Guid[] {guid})[0]);
+            Assert.AreEqual(guid, svc.testNullUUID(guid));
+            Assert.IsNull(svc.testNullUUID(null));
+            Assert.AreEqual(guid, svc.testArray(new Guid?[] {guid})[0]);
 
             Services.Cancel(javaSvcName);
         }
@@ -953,11 +955,19 @@ namespace Apache.Ignite.Core.Tests.Services
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
                     .GetField<int>("Field"));
 
-            DateTime req = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
-            Assert.AreEqual(req, svc.testDateTime(req));
-            Assert.AreEqual(req, svc.testNullableDateTime(req));
-            Assert.AreEqual(req, svc.testDateTimeArray(new[] {req})[0]);
+            Assert.AreEqual(dt, svc.test(dt));
+            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
+            Assert.IsNull(svc.testNullTimestamp(null));
+            Assert.AreEqual(dt, svc.testArray(new DateTime?[] { dt })[0]);
+
+            Guid guid = Guid.NewGuid();
+
+            Assert.AreEqual(guid, svc.test(guid));
+            Assert.AreEqual(guid, svc.testNullUUID(guid));
+            Assert.IsNull(svc.testNullUUID(null));
+            Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
         }
 
         /// <summary>
@@ -1449,10 +1459,10 @@ namespace Apache.Ignite.Core.Tests.Services
             bool[] testArray(bool[] x);
 
             /** */
-            DateTime[] testArray(DateTime[] dt);
+            DateTime?[] testArray(DateTime?[] dt);
 
             /** */
-            Guid[] testArray(Guid[] dt);
+            Guid?[] testArray(Guid?[] dt);
 
             /** */
             int test(int x, string y);
@@ -1464,10 +1474,10 @@ namespace Apache.Ignite.Core.Tests.Services
             int? testNull(int? x);
 
             /** */
-            DateTime? testNull(DateTime? x);
+            DateTime? testNullTimestamp(DateTime? x);
 
             /** */
-            Guid? testNull(Guid? x);
+            Guid? testNullUUID(Guid? x);
 
             /** */
             int testParams(params object[] args);

@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="obj">Value.</param>
         private static void WriteTimestampArray(BinaryWriter ctx, DateTime?[] obj)
         {
-            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
+            ctx.Stream.WriteByte(BinaryTypeId.ArrayTimestamp);
 
             BinaryUtils.WriteTimestampArray(obj, ctx.Stream);
         }

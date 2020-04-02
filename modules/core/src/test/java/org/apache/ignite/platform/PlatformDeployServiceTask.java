@@ -340,12 +340,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public UUID testNull(UUID arg) {
+        public UUID testNullUUID(UUID arg) {
             return arg;
         }
 
         /** */
-        public Timestamp testNull(Timestamp arg) {
+        public Timestamp testNullTimestamp(Timestamp arg) {
             return arg;
         }
 
