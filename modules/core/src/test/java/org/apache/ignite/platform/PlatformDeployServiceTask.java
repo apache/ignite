@@ -27,7 +27,6 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -91,10 +90,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
         /** */
         private boolean isCancelled;
 
