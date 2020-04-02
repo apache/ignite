@@ -17,8 +17,8 @@
 
 package org.apache.ignite.platform;
 
+import java.io.File;
 import java.sql.Timestamp;
-import java.util.Date;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -27,6 +27,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -90,6 +91,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     public static class PlatformTestService implements Service {
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
         /** */
         private boolean isCancelled;
 
@@ -106,6 +111,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
+            new File("/Users/sbt-izhikov-nv/tmp/HelloFromService.txt").createNewFile();
+
             isInitialized = true;
         }
 
@@ -221,7 +228,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public Date testDateTime(Timestamp input) {
+        public Timestamp testDateTime(Timestamp input) {
+            ignite.log().info("testDateTime - " + input);
+            ignite.log().warning("testDateTime - " + input);
+
             Timestamp exp = new Timestamp(1992, JANUARY, 1, 0, 0, 0, 0);
 
             if (!exp.equals(input))
