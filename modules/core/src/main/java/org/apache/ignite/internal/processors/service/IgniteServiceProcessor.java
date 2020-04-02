@@ -1410,7 +1410,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
         if (ctxs != null) {
             synchronized (ctxs) {
-                System.err.println("Undeploying service " + srvcId);
+                log.error("Undeploying service " + srvcId);
 
                 if (!ctxs.isEmpty())
                     unregisterMetrics(ctxs.iterator().next().name());
