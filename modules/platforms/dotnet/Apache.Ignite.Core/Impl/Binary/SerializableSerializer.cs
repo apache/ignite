@@ -544,9 +544,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteGuid(entry.Name, (Guid?) entry.Value);
                 }
-                else if (type == typeof(Guid?[]))
+                else if (type == typeof(DateTime))
                 {
-                    writer.WriteGuidArray(entry.Name, (Guid?[]) entry.Value);
+                    writer.WriteTimestamp(entry.Name, (DateTime) entry.Value);
+                }
+                else if (type == typeof(DateTime?))
+                {
+                    writer.WriteTimestamp(entry.Name, (DateTime) entry.Value);
+                }
+                else if (type == typeof(DateTime?[]))
+                {
+                    writer.WriteTimestampArray(entry.Name, (DateTime?[]) entry.Value);
                 }
                 else
                 {

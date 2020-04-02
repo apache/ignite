@@ -871,11 +871,18 @@ namespace Apache.Ignite.Core.Tests.Services
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
             
-            DateTime req = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime resp = svc.testDateTime(req);
+            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
-            Assert.AreEqual(req, resp);
-            
+            Assert.AreEqual(dt, svc.test(dt));
+            Assert.AreEqual(dt, svc.testNull(dt));
+            Assert.AreEqual(dt, svc.testArray(new DateTime[] {dt})[0]);
+
+            Guid guid = Guid.NewGuid;
+
+            Assert.AreEqual(guid, svc.test(guid));
+            Assert.AreEqual(guid, svc.testNull(guid));
+            Assert.AreEqual(guid, svc.testArray(new Guid[] {guid})[0]);
+
             Services.Cancel(javaSvcName);
         }
 
@@ -945,6 +952,12 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
                     .GetField<int>("Field"));
+
+            DateTime req = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(req, svc.testDateTime(req));
+            Assert.AreEqual(req, svc.testNullableDateTime(req));
+            Assert.AreEqual(req, svc.testDateTimeArray(new[] {req})[0]);
         }
 
         /// <summary>
@@ -1379,6 +1392,12 @@ namespace Apache.Ignite.Core.Tests.Services
             bool test(bool x);
 
             /** */
+            DateTime test(DateTime dt);
+
+            /** */
+            Guid test(Guid dt);
+
+            /** */
             byte? testWrapper(byte? x);
 
             /** */
@@ -1430,12 +1449,25 @@ namespace Apache.Ignite.Core.Tests.Services
             bool[] testArray(bool[] x);
 
             /** */
+            DateTime[] testArray(DateTime[] dt);
+
+            /** */
+            Guid[] testArray(Guid[] dt);
+
+            /** */
             int test(int x, string y);
+
             /** */
             int test(string x, int y);
 
             /** */
             int? testNull(int? x);
+
+            /** */
+            DateTime? testNull(DateTime? x);
+
+            /** */
+            Guid? testNull(Guid? x);
 
             /** */
             int testParams(params object[] args);
@@ -1451,9 +1483,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             IBinaryObject testBinaryObject(IBinaryObject x);
-
-            /** */
-            DateTime testDateTime(DateTime dt);
         }
 
         /// <summary>

@@ -26,6 +26,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -174,6 +177,19 @@ public class GridServiceProxy<T> implements Serializable {
 
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
+
+                            try {
+                                StringBuilder argsStr = new StringBuilder();
+
+                                for (Object arg : args)
+                                    argsStr.append(arg == null ? null : arg.getClass().getName()).append(", ");
+
+                                Files.write(Paths.get("/Users/sbt-izhikov-nv/tmp/svc_invoke.txt"),
+                                    ("\n" + mtd.getName() + " = " + argsStr).getBytes(), StandardOpenOption.APPEND);
+                            }
+                            catch (IOException err) {
+                                throw new RuntimeException(err);
+                            }
 
                             if (svc != null)
                                 return mtd.invoke(svc, args);

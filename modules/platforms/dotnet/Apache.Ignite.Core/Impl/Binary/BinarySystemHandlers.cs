@@ -147,6 +147,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return new BinarySystemWriteHandler<decimal>(WriteDecimal, false);
             if (type == typeof(Guid))
                 return new BinarySystemWriteHandler<Guid>(WriteGuid, false);
+            if (type == typeof(DateTime))
+                return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
             if (type == typeof (BinaryObject))
                 return new BinarySystemWriteHandler<BinaryObject>(WriteBinary, false);
             if (type == typeof (BinaryEnum))
@@ -224,6 +226,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new BinarySystemWriteHandler<string[]>(WriteStringArray, true);
                 if (elemType == typeof(Guid?))
                     return new BinarySystemWriteHandler<Guid?[]>(WriteGuidArray, true);
+                if (elemType == typeof(DateTime?))
+                    return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
                 // Enums.
                 if (BinaryUtils.IsIgniteEnum(elemType) || elemType == typeof(BinaryEnum))
                     return new BinarySystemWriteHandler<object>(WriteEnumArray, true);
@@ -291,6 +295,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryTypeId.Guid);
 
             BinaryUtils.WriteGuid(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write Timestamp.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestamp(BinaryWriter ctx, DateTime obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
+
+            BinaryUtils.WriteTimestamp(obj, ctx.Stream);
         }
 
         /// <summary>
@@ -423,6 +439,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryTypeId.ArrayGuid);
 
             BinaryUtils.WriteGuidArray(obj, ctx.Stream);
+        }
+
+        /// <summary>
+        /// Write nullable GUID array.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="obj">Value.</param>
+        private static void WriteTimestampArray(BinaryWriter ctx, DateTime?[] obj)
+        {
+            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
+
+            BinaryUtils.WriteTimestampArray(obj, ctx.Stream);
         }
 
         /// <summary>

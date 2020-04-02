@@ -17,8 +17,8 @@
 
 package org.apache.ignite.platform;
 
-import java.io.File;
 import java.sql.Timestamp;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -111,8 +111,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
-            new File("/Users/sbt-izhikov-nv/tmp/HelloFromService.txt").createNewFile();
-
             isInitialized = true;
         }
 
@@ -188,6 +186,21 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public Timestamp test(Timestamp input) {
+            Timestamp exp = new Timestamp(1992, JANUARY, 1, 0, 0, 0, 0);
+/*
+            if (!exp.equals(input))
+                throw new RuntimeException("Expected \"" + exp + "\" but got \"" + input + "\"");
+*/
+            return input;
+        }
+
+        /** */
+        public UUID test(UUID input) {
+            return input;
+        }
+
+        /** */
         public Byte testWrapper(Byte arg) {
             return arg == null ? null : (byte) (arg + 1);
         }
@@ -214,30 +227,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Double testWrapper(Double arg) {
-            return arg == null ? null :  arg + 2.5;
+            return arg == null ? null : arg + 2.5;
         }
 
         /** */
         public Boolean testWrapper(Boolean arg) {
-            return arg == null ? null :  !arg;
+            return arg == null ? null : !arg;
         }
 
         /** */
         public Character testWrapper(Character arg) {
-            return arg == null ? null :  (char) (arg + 1);
-        }
-
-        /** */
-        public Timestamp testDateTime(Timestamp input) {
-            ignite.log().info("testDateTime - " + input);
-            ignite.log().warning("testDateTime - " + input);
-
-            Timestamp exp = new Timestamp(1992, JANUARY, 1, 0, 0, 0, 0);
-
-            if (!exp.equals(input))
-                throw new RuntimeException("Expected \"" + exp + "\" but got \"" + input + "\"");
-
-            return input;
+            return arg == null ? null : (char) (arg + 1);
         }
 
         /** */
@@ -322,8 +322,31 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public Timestamp[] testArray(Timestamp[] arg) {
+            if (arg == null || arg.length != 1)
+                throw new RuntimeException("Expected array of length 1");
+
+            return new Timestamp[] {test(arg[0])};
+        }
+
+        /** */
+        public UUID[] testArray(UUID[] arg) {
+            return arg;
+        }
+
+        /** */
         public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
+        }
+
+        /** */
+        public UUID testNull(UUID arg) {
+            return arg;
+        }
+
+        /** */
+        public Timestamp testNull(Timestamp arg) {
+            return arg;
         }
 
         /** */
