@@ -394,25 +394,6 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
         }
     }
 
-    /**
-     * Read all items from metastore.
-     */
-    public Collection<IgniteBiTuple<String, byte[]>> readAll() throws IgniteCheckedException {
-        ArrayList<IgniteBiTuple<String, byte[]>> res = new ArrayList<>();
-
-        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
-
-        while (cur.next()) {
-            MetastorageDataRow row = cur.get();
-
-            byte[] val = marshaller.unmarshal(partStorage.readRow(row.link()), getClass().getClassLoader());
-
-            res.add(new IgniteBiTuple<>(row.key(), val));
-        }
-
-        return res;
-    }
-
     /** {@inheritDoc} */
     @Override public void write(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException {
         assert val != null;
