@@ -571,7 +571,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (type == OP_GET_CACHE_CONFIG) {
             int cacheId = reader.readInt();
             CacheConfiguration cfg = ctx.cache().cacheDescriptor(cacheId).cacheConfiguration();
-            PlatformConfigurationUtils.writeCacheConfiguration(writer, cfg, DEFAULT_VER);
+            PlatformConfigurationUtils.writeCacheConfiguration(writer, cfg, DEFAULT_PROTOCOL_CONTEXT);
 
             return;
         }
