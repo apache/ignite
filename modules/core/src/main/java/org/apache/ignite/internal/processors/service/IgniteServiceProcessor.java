@@ -216,7 +216,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private volatile boolean disconnected;
 
     /** Keeps histograms to measure durations of service methods. Guided by service name, then method name. */
-    private final Map<String, Map<String, MethodHistogramHolder>> invocationHistograms = new HashMap<>(1);
+    private final Map<String, Map<String, MethodHistogramHolder>> invocationHistograms = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -1867,7 +1867,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 // All metrics for current service.
                 Map<String, MethodHistogramHolder> srvcHistograms =
-                    invocationHistograms.computeIfAbsent(srvcName, name -> new HashMap<>(1));
+                    invocationHistograms.computeIfAbsent(srvcName, name -> new ConcurrentHashMap<>());
 
                 // Histograms for this method name.
                 MethodHistogramHolder mtdHistograms =
@@ -1986,7 +1986,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
          * @param mtd Method to keep histogram for.
          * @param initiator Histogram creator.
          */
-        private void addIfAbsent(Method mtd, Supplier<HistogramMetricImpl> initiator) {
+        private synchronized void addIfAbsent(Method mtd, Supplier<HistogramMetricImpl> initiator) {
             if (singleMtd == null && overloadedMtd == null) {
                 singleMtd = mtd;
 
@@ -1994,7 +1994,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
             else if (!isSameSingleMtd(mtd) && (overloadedMtd == null || !overloadedMtd.containsKey(key(mtd)))) {
                 if (overloadedMtd == null) {
-                    overloadedMtd = new HashMap<>(2);
+                    overloadedMtd = new ConcurrentHashMap<>();
 
                     overloadedMtd.put(key(singleMtd), singleHistogram);
 
