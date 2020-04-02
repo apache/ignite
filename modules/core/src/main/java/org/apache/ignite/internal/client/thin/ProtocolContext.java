@@ -26,7 +26,6 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
 
-
 /**
  * Protocol Context.
  */
