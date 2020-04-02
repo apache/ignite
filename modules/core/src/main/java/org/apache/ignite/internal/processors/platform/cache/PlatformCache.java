@@ -359,6 +359,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR_STATISTICS = 94;
 
+    /** */
+    private static final int OP_PUT_WITH_NEAR = 95;
+
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
 
@@ -820,6 +823,17 @@ public class PlatformCache extends PlatformAbstractTarget {
                         return part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes);
 
                 }
+
+                case OP_PUT_WITH_NEAR:
+                    platformCtx.enableThreadLocalForNearUpdate();
+
+                    try {
+                        cache.put(reader.readObjectDetached(), reader.readObjectDetached());
+                    } finally {
+                        platformCtx.disableThreadLocalForNearUpdate();
+                    }
+
+                    return TRUE;
             }
         }
         catch (Exception e) {
