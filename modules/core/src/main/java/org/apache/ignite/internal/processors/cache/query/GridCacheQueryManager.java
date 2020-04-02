@@ -1513,7 +1513,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param reqId Request ID.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
+    public void removeQueryResult(@Nullable UUID sndId, long reqId) {
         if (sndId == null)
             return;
 
