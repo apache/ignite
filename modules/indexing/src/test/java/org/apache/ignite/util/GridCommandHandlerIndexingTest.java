@@ -27,11 +27,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.G;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
@@ -41,6 +41,9 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
  * {@link GridCommandHandlerIndexingClusterByClassTest}.
  */
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    /** */
+    public static final int GRID_CNT = 2;
+
     /** */
     public void testValidateIndexesFailedOnNotIdleCluster() throws Exception {
         checkpointFreq = 100L;
@@ -97,7 +100,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         stopAllGrids();
 
-        corruptIndexPartition(idxPath, 1024, 4096);
+        corruptIndexPartition(idxPath);
 
         startGrids(GRID_CNT);
 
@@ -119,7 +122,6 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
     /**
      * Tests with that corrupted pages in the index partition are detected.
      */
-    @Test
     public void testCorruptedIndexPartitionShouldFailValidationWithoutCrc() throws Exception {
         Ignite ignite = prepareGridForTest();
 
@@ -129,7 +131,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         File idxPath = indexPartition(ignite, GROUP_NAME);
 
-        corruptIndexPartition(idxPath, 6, 47746);
+        corruptIndexPartition(idxPath);
 
         startGrids(2);
 
