@@ -20,13 +20,23 @@ package org.apache.ignite.util;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -40,6 +50,7 @@ import static org.apache.ignite.internal.processors.service.IgniteServiceProcess
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -63,6 +74,75 @@ class KillCommandsTests {
 
     /** Latch to block compute task execution. */
     private static CountDownLatch computeLatch;
+
+    /**
+     * Test cancel of the scan query.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestScanQueryCancel(IgniteEx cli, List<IgniteEx> srvs, Consumer<T3<UUID, String, Long>> qryCanceler) {
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+        QueryCursor<Cache.Entry<Object, Object>> qry1 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
+        Iterator<Cache.Entry<Object, Object>> iter1 = qry1.iterator();
+
+        // Fetch first entry and therefore caching first page.
+        assertNotNull(iter1.next());
+
+        List<List<?>> scanQries0 = execute(srvs.get(0),
+            "SELECT ORIGIN_NODE_ID, CACHE_NAME, QUERY_ID FROM SYS.SCAN_QUERIES");
+
+        assertEquals(1, scanQries0.size());
+
+        UUID originNodeId = (UUID)scanQries0.get(0).get(0);
+        String cacheName = (String)scanQries0.get(0).get(1);
+        long qryId = (Long)scanQries0.get(0).get(2);
+
+        // Opens second query.
+        QueryCursor<Cache.Entry<Object, Object>> qry2 = cache.query(new ScanQuery<>().setPageSize(PAGE_SZ));
+        Iterator<Cache.Entry<Object, Object>> iter2 = qry2.iterator();
+
+        // Fetch first entry and therefore caching first page.
+        assertNotNull(iter2.next());
+
+        // Cancel first query.
+        qryCanceler.accept(new T3<>(originNodeId, cacheName, qryId));
+
+        // Fetch all cached entries. It's size equal to the {@code PAGE_SZ * NODES_CNT}.
+        for (int i = 0; i < PAGE_SZ * srvs.size() - 1; i++)
+            assertNotNull(iter1.next());
+
+        // Fetch of the next page should throw the exception.
+        assertThrowsWithCause(iter1::next, IgniteCheckedException.class);
+
+        // Checking that second query works fine after canceling first.
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ - 1; i++)
+            assertNotNull(iter2.next());
+
+        // Checking all server node objects cleared after cancel.
+        for (int i = 0; i < srvs.size(); i++) {
+            IgniteEx ignite = srvs.get(i);
+
+            int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
+
+            GridCacheContext<?, ?> ctx = ignite.context().cache().context().cacheContext(cacheId);
+
+            ConcurrentMap<UUID, ? extends GridCacheQueryManager<?, ?>.RequestFutureMap> qryIters =
+                ctx.queries().queryIterators();
+
+            assertTrue(qryIters.size() <= 1);
+
+            if (qryIters.isEmpty())
+                return;
+
+            GridCacheQueryManager<?, ?>.RequestFutureMap futs = qryIters.get(cli.localNode().id());
+
+            assertNotNull(futs);
+            assertFalse(futs.containsKey(qryId));
+        }
+    }
 
     /**
      * Test cancel of the compute task.
