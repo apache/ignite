@@ -182,7 +182,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Timestamp test(Timestamp input) {
-            Timestamp exp = new Timestamp(1992, JANUARY, 1, 0, 0, 0, 0);
+            Timestamp exp = new Timestamp(92, JANUARY, 1, 0, 0, 0, 0);
 
             if (!exp.equals(input))
                 throw new RuntimeException("Expected \"" + exp + "\" but got \"" + input + "\"");
