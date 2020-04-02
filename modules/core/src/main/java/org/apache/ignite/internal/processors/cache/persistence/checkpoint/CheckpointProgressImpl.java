@@ -261,15 +261,6 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     }
 
     /** {@inheritDoc} */
-    @Override public void clearCounters() {
-        currCheckpointPagesCnt = 0;
-
-        writtenPagesCntr = null;
-        syncedPagesCntr = null;
-        evictedPagesCntr = null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void initCounters(int pagesSize) {
         currCheckpointPagesCnt = pagesSize;
 

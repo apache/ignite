@@ -83,9 +83,6 @@ public interface CheckpointProgress {
     /** Initialize all counters before checkpoint.  */
     public void initCounters(int pagesSize);
 
-    /** Clears all counters. */
-    public void clearCounters();
-
     /**
      * Update synced pages in checkpoint;
      *
