@@ -114,6 +114,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         SizeLongAsync = 91,
         SizeLongLoc = 92,
         EnableStatistics = 93,
-        ClearStatistics = 94
+        ClearStatistics = 94,
+        PutWithNear = 95
     }
 }

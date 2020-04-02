@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// The action will then make sure that the loaded value is stored in cache.
         /// </summary>
         /// <param name="act">Action for loaded values.</param>
-        /// <param name="args">Optional arguemnts passed to <see cref="ICache{K,V}.LocalLoadCache" /> method.</param>
+        /// <param name="args">Optional arguments passed to <see cref="ICache{K,V}.LocalLoadCache" /> method.</param>
         public virtual void LoadCache(Action<TK, TV> act, params object[] args)
         {
             // No-op.
