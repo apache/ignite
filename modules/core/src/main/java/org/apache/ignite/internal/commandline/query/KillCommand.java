@@ -164,6 +164,7 @@ public class KillCommand implements Command<Object> {
 
             case CONTINUOUS:
                 taskArgs = new VisorContinuousQueryCancelTaskArg(
+                    UUID.fromString(argIter.nextArg("Expected query originating node id.")),
                     UUID.fromString(argIter.nextArg("Expected continuous query id.")));
 
                 taskName = VisorContinuousQueryCancelTask.class.getName();

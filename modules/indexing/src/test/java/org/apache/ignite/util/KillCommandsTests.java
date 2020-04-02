@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -309,7 +310,8 @@ class KillCommandsTests {
      * @param srvs Server nodes.
      * @param qryCanceler Query cancel closure.
      */
-    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs, Consumer<UUID> qryCanceler) throws Exception {
+    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs,
+        BiConsumer<UUID, UUID> qryCanceler) throws Exception {
         IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
@@ -327,7 +329,7 @@ class KillCommandsTests {
             }
         });
 
-        QueryCursor<Cache.Entry<Integer, Integer>> qry = cache.query(cq);
+        cache.query(cq);
 
         for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
             cache.put(i, i);
@@ -336,12 +338,13 @@ class KillCommandsTests {
         assertTrue(res);
 
         List<List<?>> cqQries = execute(cli,
-            "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
+            "SELECT NODE_ID, ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
         assertEquals(1, cqQries.size());
 
-        UUID routineId = (UUID)cqQries.get(0).get(0);
+        UUID nodeId = (UUID)cqQries.get(0).get(0);
+        UUID routineId = (UUID)cqQries.get(0).get(1);
 
-        qryCanceler.accept(routineId);
+        qryCanceler.accept(nodeId, routineId);
 
         long cnt = cntr.get();
 

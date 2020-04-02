@@ -25,26 +25,38 @@ import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 
 /**
- * KILL CONTINUOUS_QUERY command.
+ * KILL CONTINUOUS command.
  *
- * @see QueryMXBean#cancelContinuous(String)
+ * @see QueryMXBean#cancelContinuous(String, String)
+ * @see ContinuousQueryView#nodeId()
  * @see ContinuousQueryView#routineId()
  */
 public class SqlKillContinuousQueryCommand implements SqlCommand {
+    /** KILL CONTINUOUS format message. */
+    public static final String KILL_CQ_FORMAT = "Format of the query is " +
+        "KILL CONTINUOUS '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' '6fa749ee-7cf8-4635-be10-36a1c75267a7_12345'";
+
+    /** Origin node id. */
+    private UUID originNodeId;
+
     /** Routine id. */
     private UUID routineId;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        if (lex.shift()) {
-            if (lex.tokenType() == SqlLexerTokenType.STRING) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
+            originNodeId = UUID.fromString(lex.token());
+
+            if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
                 routineId = UUID.fromString(lex.token());
 
                 return this;
             }
+            else
+                throw SqlParserUtils.error(lex, "Expected routine id. " + KILL_CQ_FORMAT);
         }
 
-        throw SqlParserUtils.error(lex, "Expected routine id.");
+        throw SqlParserUtils.error(lex, "Expected origin node id. " + KILL_CQ_FORMAT);
     }
 
     /** {@inheritDoc} */
@@ -60,5 +72,10 @@ public class SqlKillContinuousQueryCommand implements SqlCommand {
     /** @return Routine id. */
     public UUID getRoutineId() {
         return routineId;
+    }
+
+    /** @return Origin node id. */
+    public UUID getOriginNodeId() {
+        return originNodeId;
     }
 }

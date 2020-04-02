@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
-import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS_QUERY;
+import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -305,7 +305,7 @@ public class SqlParser {
                 case COMPUTE:
                     return new SqlKillComputeTaskCommand().parse(lex);
 
-                case CONTINUOUS_QUERY:
+                case CONTINUOUS:
                     return new SqlKillContinuousQueryCommand().parse(lex);
 
                 case SERVICE:

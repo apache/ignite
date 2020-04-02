@@ -507,13 +507,13 @@ public class CommandProcessor {
     }
 
     /**
-     * Process kill scan query command.
+     * Process kill scan query cmd.
      *
-     * @param command Command.
+     * @param cmd Command.
      */
-    private void processKillScanQueryCommand(SqlKillScanQueryCommand command) {
+    private void processKillScanQueryCommand(SqlKillScanQueryCommand cmd) {
         new QueryMXBeanImpl(ctx)
-            .cancelScan(command.getOriginNodeId(), command.getCacheName(), command.getQryId());
+            .cancelScan(cmd.getOriginNodeId(), cmd.getCacheName(), cmd.getQryId());
     }
 
     /**
@@ -526,12 +526,12 @@ public class CommandProcessor {
     }
 
     /**
-     * Process kill transaction command.
+     * Process kill transaction cmd.
      *
-     * @param command Command.
+     * @param cmd Command.
      */
-    private void processKillTxCommand(SqlKillTransactionCommand command) {
-        new TransactionsMXBeanImpl(ctx).cancel(command.getXid());
+    private void processKillTxCommand(SqlKillTransactionCommand cmd) {
+        new TransactionsMXBeanImpl(ctx).cancel(cmd.getXid());
     }
 
     /**
@@ -544,12 +544,12 @@ public class CommandProcessor {
     }
 
     /**
-     * Process kill continuous query command.
+     * Process kill continuous query cmd.
      *
-     * @param command Command.
+     * @param cmd Command.
      */
-    private void processKillContinuousQueryCommand(SqlKillContinuousQueryCommand command) {
-        new QueryMXBeanImpl(ctx).cancelContinuous(command.getRoutineId());
+    private void processKillContinuousQueryCommand(SqlKillContinuousQueryCommand cmd) {
+        new QueryMXBeanImpl(ctx).cancelContinuous(cmd.getOriginNodeId(), cmd.getRoutineId());
     }
 
     /**

@@ -34,6 +34,9 @@ public class VisorContinuousQueryCancelTaskArg extends IgniteDataTransferObject 
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Node id. */
+    private UUID nodeId;
+
     /** Routine id. */
     private UUID routineId;
 
@@ -45,10 +48,19 @@ public class VisorContinuousQueryCancelTaskArg extends IgniteDataTransferObject 
     }
 
     /**
+     * @param nodeId Node id.
      * @param routineId Routine id.
      */
-    public VisorContinuousQueryCancelTaskArg(UUID routineId) {
+    public VisorContinuousQueryCancelTaskArg(UUID nodeId, UUID routineId) {
+        this.nodeId = nodeId;
         this.routineId = routineId;
+    }
+
+    /**
+     * @return Originating node id.
+     */
+    public UUID getNodeId() {
+        return nodeId;
     }
 
     /**
@@ -60,11 +72,13 @@ public class VisorContinuousQueryCancelTaskArg extends IgniteDataTransferObject 
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeUuid(out, nodeId);
         U.writeUuid(out, routineId);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        nodeId = U.readUuid(in);
         routineId = U.readUuid(in);
     }
 

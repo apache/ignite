@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -32,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContinuousQueryCancelTaskArg, Boolean> {
+public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContinuousQueryCancelTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +43,7 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContin
     /**
      * Job to cancel scan queries on node.
      */
-    private static class VisorContinuousQueryCancelJob extends VisorJob<VisorContinuousQueryCancelTaskArg, Boolean> {
+    private static class VisorContinuousQueryCancelJob extends VisorJob<VisorContinuousQueryCancelTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,22 +58,15 @@ public class VisorContinuousQueryCancelTask extends VisorOneNodeTask<VisorContin
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(@Nullable VisorContinuousQueryCancelTaskArg arg) throws IgniteException {
+        @Override protected Void run(@Nullable VisorContinuousQueryCancelTaskArg arg) throws IgniteException {
             IgniteLogger log = ignite.log().getLogger(VisorContinuousQueryCancelJob.class);
 
             if (log.isInfoEnabled())
                 log.info("Cancelling continuous query[routineId=" + arg.getRoutineId() + ']');
 
-            try {
-                IgniteInternalFuture<?> fut = ignite.context().continuous().stopRoutine(arg.getRoutineId());
+            new QueryMXBeanImpl(ignite.context()).cancelContinuous(arg.getNodeId(), arg.getRoutineId());
 
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                return false;
-            }
-
-            return true;
+            return null;
         }
     }
 }

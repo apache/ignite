@@ -33,6 +33,7 @@ public interface QueryMXBean {
      */
     @MXBeanDescription("Kills continuous query by the identifier.")
     void cancelContinuous(
+        @MXBeanParameter(name = "originNodeId", description = "Originating node ID.") String originNodeId,
         @MXBeanParameter(name = "routineId", description = "Continuous query id.") String routineId
     );
 

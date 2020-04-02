@@ -28,7 +28,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -119,8 +118,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     /** @throws Exception If failed. */
     @Test
     public void testCancelContinuousQuery() throws Exception {
-        doTestCancelContinuousQuery(client, srvs, routineId -> {
-            int res = execute("--kill", "continuous", routineId.toString());
+        doTestCancelContinuousQuery(client, srvs, (nodeId, routineId) -> {
+            int res = execute("--kill", "continuous", nodeId.toString(), routineId.toString());
 
             assertEquals(EXIT_CODE_OK, res);
         });
@@ -169,7 +168,8 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     /** */
     @Test
     public void testCancelUnknownContinuousQuery() {
-        int res = execute("--kill", "continuous", UUID.randomUUID().toString());
+        int res = execute("--kill", "continuous", srvs.get(0).localNode().id().toString(),
+            UUID.randomUUID().toString());
 
         assertEquals(EXIT_CODE_OK, res);
     }

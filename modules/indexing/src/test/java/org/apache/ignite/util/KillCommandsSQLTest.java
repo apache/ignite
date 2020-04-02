@@ -33,6 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
+import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
@@ -68,7 +69,7 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public static final String KILL_SCAN_QRY = KILL + " " + SCAN;
 
     /** */
-    public static final String KILL_CQ_QRY = "KILL CONTINUOUS_QUERY";
+    public static final String KILL_CQ_QRY = KILL + " " + CONTINUOUS;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -136,8 +137,8 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelContinuousQuery() throws Exception {
-        doTestCancelContinuousQuery(startCli, srvs, routineId ->
-            execute(killCli, KILL_CQ_QRY + " '" + routineId.toString() + "'"));
+        doTestCancelContinuousQuery(startCli, srvs, (nodeId, routineId) ->
+            execute(killCli, KILL_CQ_QRY + " '" + nodeId.toString() + "'" + " '" + routineId.toString() + "'"));
     }
 
     /** */
@@ -172,11 +173,11 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             RuntimeException.class);
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownContinuousQuery() throws Exception {
-        assertThrowsWithCause(() -> execute(startCli, KILL_CQ_QRY + " '" + UUID.randomUUID() + "'"),
-            RuntimeException.class);
+    public void testCancelUnknownContinuousQuery() {
+        execute(startCli,
+            KILL_CQ_QRY + " '" + srvs.get(0).localNode().id().toString() + "' '" + UUID.randomUUID() + "'");
     }
 
     /**

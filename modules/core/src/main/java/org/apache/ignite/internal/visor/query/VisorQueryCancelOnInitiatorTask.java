@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -66,27 +63,8 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQuery
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorQueryCancelOnInitiatorTaskArg arg) throws IgniteException {
-            ignite.compute(ignite.cluster().forNodeId(arg.getNodeId())).broadcast(new CancelQueryOnInitiatoClosure(),
-                arg.getQueryId());
-
-            return null;
-        }
-    }
-
-    /**
-     * Cancel query on initiator closure.
-     */
-    private static class CancelQueryOnInitiatoClosure implements IgniteClosure<Long, Void> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public Void apply(Long qryId) {
-            ignite.context().query().cancelQueries(Collections.singleton(qryId));
+            new QueryMXBeanImpl(ignite.context())
+                .cancelSQL(arg.getNodeId(), arg.getQueryId());
 
             return null;
         }
