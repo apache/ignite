@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -191,68 +193,27 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
     @Ignore
     @Test
-    public void testMapConcurrency() throws InterruptedException {
-        final Map<Integer, Integer> map = new HashMap<>(1);
-        final Random rnd = new Random();
-        final int valueCnt = 500000;
-        final Integer[] holder = new Integer[1];
+    public void testMapConcurrenPuts() throws InterruptedException {
+        final Map<Integer, Integer> map = new ConcurrentHashMap<>(1, 0.75f, 8);
+//        final Map<Integer, Integer> map = new HashMap<>(1);
+        final int valueCnt = 10000;
+        final int threadsCnt = 10;
+        final CountDownLatch latch = new CountDownLatch(threadsCnt);
 
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < threadsCnt; ++i) {
+            final int num = i;
+
             new Thread(() -> {
-                while (true) {
-                    int cnt = 10000 + rnd.nextInt(valueCnt-10000);
+                for (int v = 0; v < valueCnt; ++v)
+                    map.put(num * valueCnt + v, num * valueCnt + v);
 
-                    for (int v = 0; v < cnt; ++v)
-                        map.put(v, rnd.nextInt(Integer.MAX_VALUE));
-
-                    System.err.println("Filled");
-
-                    try {
-                        Thread.sleep(100 + rnd.nextInt(5000));
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, "putter_" + i).start();
+                latch.countDown();
+            }).start();
         }
 
-        for (int i = 0; i < 30; ++i) {
-            new Thread(() -> {
-                while (true) {
+        latch.await();
 
-                    try {
-                        holder[0] = map.get(rnd.nextInt(valueCnt));
-
-                        Thread.yield();
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }, "getter_" + i).start();
-        }
-
-        for (int i = 0; i < 5; ++i) {
-            new Thread(() -> {
-                while (true) {
-                    try {
-                        Thread.sleep(100 + rnd.nextInt(5000));
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    System.err.println("Clearing");
-
-                    map.clear();
-
-                    System.err.println("Cleared");
-                }
-            }, "clearer_" + i).start();
-        }
-
-        Thread.sleep(5 * 60000);
+        assertEquals(threadsCnt*valueCnt, map.size());
     }
 
     /** Checks metric are created when service is deployed and removed when service is undeployed. */
