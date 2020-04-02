@@ -18,15 +18,20 @@
 package org.apache.ignite.internal;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
 import org.apache.ignite.lang.IgniteClosure;
@@ -110,6 +115,34 @@ public class QueryMXBeanImpl implements QueryMXBean {
     public void cancelScan(UUID originNodeId, String cacheName, long id) {
         ctx.grid().compute(ctx.grid().cluster()).broadcast(new CancelScanClosure(),
             new T3<>(originNodeId, cacheName, id));
+    }
+
+    /**
+     * Kills continuous query by the identifier.
+     *
+     * @param routineId Routine id.
+     */
+    public void cancelContinuous(UUID routineId) {
+        if (log.isInfoEnabled())
+            log.info("Killing continuous query[routineId=" + routineId + ']');
+
+        try {
+            IgniteClusterImpl cluster = ctx.cluster().get();
+
+            IgniteCompute compute = cluster.compute();
+
+            ClusterNode srv = U.randomServerNode(ctx);
+
+            boolean res = compute.execute(new VisorContinuousQueryCancelTask(),
+                new VisorTaskArgument<>(srv.id(),
+                    new VisorContinuousQueryCancelTaskArg(routineId), false));
+
+            if (!res)
+                throw new RuntimeException("Query not found[routineId=" + routineId + ']');
+        }
+        catch (IgniteException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

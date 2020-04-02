@@ -166,11 +166,11 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
     }
 
-    /** @throws Exception If failed. */
+    /** */
     @Test
-    public void testCancelUnknownContinuousQuery() throws Exception {
+    public void testCancelUnknownContinuousQuery() {
         int res = execute("--kill", "continuous", UUID.randomUUID().toString());
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
+        assertEquals(EXIT_CODE_OK, res);
     }
 }

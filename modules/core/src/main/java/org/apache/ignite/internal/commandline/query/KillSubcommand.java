@@ -48,5 +48,5 @@ public enum KillSubcommand {
     SCAN,
 
     /** Kill continuous query. */
-    CONTINUOUS_QUERY,
+    CONTINUOUS,
 }

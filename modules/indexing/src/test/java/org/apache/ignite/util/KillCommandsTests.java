@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -36,7 +37,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -335,7 +335,7 @@ class KillCommandsTests {
         boolean res = waitForCondition(() -> cntr.get() == PAGE_SZ * PAGE_SZ, TIMEOUT);
         assertTrue(res);
 
-        List<List<?>> cqQries = SqlViewExporterSpiTest.execute(cli,
+        List<List<?>> cqQries = execute(cli,
             "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
         assertEquals(1, cqQries.size());
 
@@ -355,7 +355,7 @@ class KillCommandsTests {
         for (int i = 0; i < srvs.size(); i++) {
             IgniteEx srv = srvs.get(i);
 
-            res = waitForCondition(() -> SqlViewExporterSpiTest.execute(srv,
+            res = waitForCondition(() -> execute(srv,
                 "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES").isEmpty(), TIMEOUT);
 
             assertTrue(srv.configuration().getIgniteInstanceName(), res);

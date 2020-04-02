@@ -136,7 +136,8 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @Test
     public void testCancelContinuousQuery() throws Exception {
-        doTestCancelContinuousQuery(startCli, srvs, routineId -> execute(cli, KILL_CQ_QRY + " '" + routineId.toString() + "'"));
+        doTestCancelContinuousQuery(startCli, srvs, routineId ->
+            execute(killCli, KILL_CQ_QRY + " '" + routineId.toString() + "'"));
     }
 
     /** */

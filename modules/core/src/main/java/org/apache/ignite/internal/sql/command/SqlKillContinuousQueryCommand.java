@@ -47,6 +47,16 @@ public class SqlKillContinuousQueryCommand implements SqlCommand {
         throw SqlParserUtils.error(lex, "Expected routine id.");
     }
 
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void schemaName(String schemaName) {
+        // No-op.
+    }
+
     /** @return Routine id. */
     public UUID getRoutineId() {
         return routineId;
