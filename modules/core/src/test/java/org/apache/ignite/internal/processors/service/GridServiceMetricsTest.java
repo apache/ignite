@@ -135,68 +135,78 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         IgniteEx igniteEx = startGrids(gridCnt);
         Random rnd = new Random();
 
-        new Thread(()->{
-            while(true){
-                igniteEx.services().deployMultiple( "srv", new NamingServiceImpl(), 2, 1 );
+        for(int i=0; i<3; ++i) {
+            new Thread(() -> {
+                while (true) {
+                    igniteEx.services().deployMultiple("srv", new NamingServiceImpl(), 1, 1);
 
-                try {
-                    Thread.sleep(100 + rnd.nextInt(1000));
+                    try {
+                        Thread.sleep(100 + rnd.nextInt(1000));
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, "deployer").start();
+            }, "deployer_"+i).start();
+        }
 
-        new Thread(()->{
-            while(true){
-                igniteEx.services().cancel("srv");
+        for(int i=0; i<5; ++i) {
+            new Thread(() -> {
+                while (true) {
+                    igniteEx.services().cancel("srv");
 
-                try {
-                    Thread.sleep(100 + rnd.nextInt(1000));
+                    try {
+                        Thread.sleep(100 + rnd.nextInt(1000));
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, "undepoyer").start();
+            }, "undepoyer_"+i).start();
+        }
 
-        new Thread(()->{
-            while(true){
-                Ignite ignite = grid(new Random().nextInt(gridCnt));
+        for(int i=0; i<3; ++i) {
+            new Thread(() -> {
+                while (true) {
+                    Ignite ignite = grid(new Random().nextInt(gridCnt));
 
-                try {
-                    ignite.services().serviceProxy("srv", NamingService.class, true).dummy();
-                } catch (Exception e){
-                    System.err.println("Unable to call service: " + e.getMessage());
-                }
+                    try {
+                        ignite.services().serviceProxy("srv", NamingService.class, true).dummy();
+                    }
+                    catch (Exception e) {
+                        System.err.println("Unable to call service: " + e.getMessage());
+                    }
 
-                try {
-                    ignite.services().serviceProxy("srv", NamingService.class, false).dummy();
-                } catch (Exception e){
-                    System.err.println("Unable to call service: " + e.getMessage());
-                }
+                    try {
+                        ignite.services().serviceProxy("srv", NamingService.class, false).dummy();
+                    }
+                    catch (Exception e) {
+                        System.err.println("Unable to call service: " + e.getMessage());
+                    }
 
-                try {
-                    ignite.services().serviceProxy("srv", NamingService.class, true, 5000).dummy();
-                } catch (Exception e){
-                    System.err.println("Unable to call service: " + e.getMessage());
-                }
+                    try {
+                        ignite.services().serviceProxy("srv", NamingService.class, true, 5000).dummy();
+                    }
+                    catch (Exception e) {
+                        System.err.println("Unable to call service: " + e.getMessage());
+                    }
 
-                try {
-                    ignite.services().serviceProxy("srv", NamingService.class, false, 5000).dummy();
-                } catch (Exception e){
-                    System.err.println("Unable to call service: " + e.getMessage());
-                }
+                    try {
+                        ignite.services().serviceProxy("srv", NamingService.class, false, 5000).dummy();
+                    }
+                    catch (Exception e) {
+                        System.err.println("Unable to call service: " + e.getMessage());
+                    }
 
-                try {
-                    Thread.sleep(5 + rnd.nextInt(100));
+                    try {
+                        Thread.sleep(5 + rnd.nextInt(100));
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, "caller").start();
+            }, "caller_"+i).start();
+        }
 
         Thread.sleep(10 * 60000);
     }

@@ -1886,7 +1886,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private void unregisterMetrics(String srvcName) {
         ctx.metric().remove(serviceMetricRegistryName(srvcName));
 
-        System.err.println("Unregistering metrics for service " + srvcName);
+        log.error("Unregistering metrics for service " + srvcName);
 
         invocationHistograms.remove(srvcName);
     }
