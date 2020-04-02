@@ -39,7 +39,7 @@ public class ClientProtocolContext {
      */
     public ClientProtocolContext(ClientListenerProtocolVersion ver, EnumSet<ClientFeature> features) {
         this.ver = ver;
-        this.features = features;
+        this.features = features != null ? features : EnumSet.noneOf(ClientFeature.class);
     }
 
     /**

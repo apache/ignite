@@ -43,7 +43,7 @@ public class ProtocolContext {
      */
     public ProtocolContext(ProtocolVersion ver, EnumSet<ProtocolFeature> features) {
         this.ver = ver;
-        this.features = features;
+        this.features = features != null ? features : EnumSet.noneOf(ProtocolFeature.class);
     }
 
     /**
