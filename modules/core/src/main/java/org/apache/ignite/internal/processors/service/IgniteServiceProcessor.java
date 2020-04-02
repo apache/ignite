@@ -1218,10 +1218,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            synchronized (ctxs) {
-                if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled())
-                    registerMetrics(srvc, srvcCtx.name());
-            }
+            if (cfg.isStatisticsEnabled() && !ctxs.iterator().next().isCancelled())
+                registerMetrics(srvc, srvcCtx.name());
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();
