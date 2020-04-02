@@ -103,7 +103,7 @@ class GridCacheQueryInfo {
     /**
      * @return Id of sender node.
      */
-    @Nullable UUID senderId() {
+    UUID senderId() {
         return sndId;
     }
 

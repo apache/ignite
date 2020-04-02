@@ -58,6 +58,13 @@ public class QueryMXBeanImpl implements QueryMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public void cancelContinuous(String routineId) {
+        A.notNull(routineId, "routineId");
+
+        cancelContinuous(UUID.fromString(routineId));
+    }
+
+    /** {@inheritDoc} */
     @Override public void cancelSQL(String id) {
         A.notNull(id, "id");
 

@@ -258,7 +258,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (ctx.isStopping())
                         return;
 
-                    processStopRequest(snd, msg);
+                    processStopRequest(msg);
                 }
             });
 
@@ -1063,7 +1063,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param routineId Consume ID.
+     * @param routineId Routine ID.
      * @return Future.
      */
     public IgniteInternalFuture<?> stopRoutine(UUID routineId) {
@@ -1104,10 +1104,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     stop = routinesInfo.routineExists(routineId);
 
                 // Finish if routine is not found (wrong ID is provided).
-                if (!stop) {
+                if (!stop && !rmtInfos.containsKey(routineId)) {
                     stopFuts.remove(routineId);
 
-                    fut.onDone();
+                    fut.onDone(new IgniteException("Routine not found."));
 
                     return fut;
                 }
@@ -1338,15 +1338,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param snd Sender node.
-     * @param msg Message/
+     * @param msg Message.
      */
-    private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
-        if (!snd.id().equals(ctx.localNodeId())) {
-            UUID routineId = msg.routineId();
+    private void processStopRequest(StopRoutineDiscoveryMessage msg) {
+        UUID routineId = msg.routineId();
 
-            unregisterRemote(routineId);
-        }
+        unregisterRemote(routineId);
 
         for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
             if (clientInfo.remove(msg.routineId()) != null)

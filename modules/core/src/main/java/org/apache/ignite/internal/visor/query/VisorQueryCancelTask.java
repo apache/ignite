@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.visor.query;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Void> {
+public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskArg, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -42,14 +45,24 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
-        return null;
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorQueryCancelTaskArg> arg) {
+        return Collections.singleton(arg.getArgument().getNodeId());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteException {
+        for (ComputeJobResult res : results) {
+            if (!res.isCancelled() && res.getData() != null && (Boolean)res.getData())
+                return true;
+        }
+
+        return false;
     }
 
     /**
      * Job to cancel queries on node.
      */
-    private static class VisorCancelQueriesJob extends VisorJob<VisorQueryCancelTaskArg, Void> {
+    private static class VisorCancelQueriesJob extends VisorJob<VisorQueryCancelTaskArg, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -59,16 +72,13 @@ public class VisorQueryCancelTask extends VisorOneNodeTask<VisorQueryCancelTaskA
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorCancelQueriesJob(@Nullable VisorQueryCancelTaskArg arg, boolean debug) {
+        protected VisorCancelQueriesJob(VisorQueryCancelTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable VisorQueryCancelTaskArg arg) throws IgniteException {
-            ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
-
-            return null;
+        @Override protected Boolean run(VisorQueryCancelTaskArg arg) throws IgniteException {
+            return ignite.context().query().cancelQuery(arg.getQueryId());
         }
     }
-
 }

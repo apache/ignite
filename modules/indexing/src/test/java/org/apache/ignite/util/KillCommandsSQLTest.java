@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -40,6 +41,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
@@ -64,6 +66,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_SCAN_QRY = KILL + " " + SCAN;
+
+    /** */
+    public static final String KILL_CQ_QRY = "KILL CONTINUOUS_QUERY";
 
     /** */
     private static List<IgniteEx> srvs;
@@ -128,6 +133,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
         doTestCancelSQLQuery(startCli, qryId -> execute(killCli, KILL_SQL_QRY + " '" + qryId + "'"));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelContinuousQuery() throws Exception {
+        doTestCancelContinuousQuery(startCli, srvs, routineId -> execute(cli, KILL_CQ_QRY + " '" + routineId.toString() + "'"));
+    }
+
     /** */
     @Test
     public void testCancelUnknownScanQuery() {
@@ -157,6 +168,13 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public void testCancelUnknownSQLQuery() {
         assertThrowsWithCause(
             () -> execute(killCli, KILL_SQL_QRY + " '" + srvs.get(0).localNode().id().toString() + "_42'"),
+            RuntimeException.class);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelUnknownContinuousQuery() throws Exception {
+        assertThrowsWithCause(() -> execute(startCli, KILL_CQ_QRY + " '" + UUID.randomUUID() + "'"),
             RuntimeException.class);
     }
 
