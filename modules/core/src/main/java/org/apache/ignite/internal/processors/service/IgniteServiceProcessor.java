@@ -1944,7 +1944,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         private HistogramMetricImpl singleHistogram;
 
         /** Histograms for overloaded method. */
-        private Map<Object, HistogramMetricImpl> overloadedMtd;
+        private final Map<Object, HistogramMetricImpl> overloadedMtd = new ConcurrentHashMap<>();
 
         /**
          * Saves new histogram.
@@ -1952,21 +1952,19 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
          * @param mtd Method to keep histogram for.
          * @param initiator Histogram creator.
          */
-        private synchronized void addIfAbsent(Method mtd, Supplier<HistogramMetricImpl> initiator) {
-            if (singleMtd == null && overloadedMtd == null) {
+        private void addIfAbsent(Method mtd, Supplier<HistogramMetricImpl> initiator) {
+            if (singleHistogram == null && overloadedMtd.isEmpty()) {
                 singleMtd = mtd;
 
                 singleHistogram = initiator.get();
             }
-            else if (!isSameSingleMtd(mtd) && (overloadedMtd == null || !overloadedMtd.containsKey(key(mtd)))) {
-                if (overloadedMtd == null) {
-                    overloadedMtd = new ConcurrentHashMap<>();
-
+            else if (!isSameSingleMtd(mtd) && !overloadedMtd.containsKey(key(mtd))) {
+                if (singleHistogram != null) {
                     overloadedMtd.put(key(singleMtd), singleHistogram);
 
-                    singleMtd = null;
-
                     singleHistogram = null;
+
+                    singleMtd = null;
                 }
 
                 overloadedMtd.put(key(mtd), initiator.get());
@@ -1986,7 +1984,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
          * @return {@code True} if current not-overloaded method is not null and same as {@code mtd}.
          */
         private boolean isSameSingleMtd(Method mtd) {
-            return singleMtd != null && singleMtd.getName().equals(mtd.getName())
+            return singleHistogram != null && singleMtd.getName().equals(mtd.getName())
                 && Arrays.equals(singleMtd.getParameterTypes(), mtd.getParameterTypes());
         }
 
@@ -1995,10 +1993,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
          * @return Current histogram held.
          */
         private HistogramMetricImpl getHistogram(Method mtd) {
-            assert (singleMtd != null && singleMtd.getName().equals(mtd.getName())) ||
-                (overloadedMtd != null && overloadedMtd.containsKey(key(mtd)));
+            HistogramMetricImpl singleHistogram = this.singleHistogram;
 
-            return singleMtd != null ? singleHistogram : overloadedMtd.get(key(mtd));
+            return singleHistogram != null ? singleHistogram : overloadedMtd.get(key(mtd));
         }
     }
 }
