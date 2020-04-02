@@ -1247,15 +1247,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
                     srvcCtx.executionId() + ']');
 
-            // Check there is no concurrent #undeploy().
-            synchronized (ctxs) {
-                if (!ctxs.iterator().next().isCancelled()) {
-                    log.error("registering metrics for " + srvcCtx.name() +" execId: " + srvcCtx.executionId());
-
-                    registerMetrics(srvc, srvcCtx.name());
-                } else
-                    log.error("Wont register metrics for " + srvcCtx.name() + ": cancelled.");
-            }
+            registerMetrics(srvc, srvcCtx.name());
 
             // Start service in its own thread.
             final ExecutorService exe = srvcCtx.executor();

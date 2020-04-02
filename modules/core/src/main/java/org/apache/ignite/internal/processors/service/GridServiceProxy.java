@@ -382,9 +382,8 @@ public class GridServiceProxy<T> implements Serializable {
 
                 if (histogram != null)
                     histogram.value(duration);
-                else {
+                else
                     System.err.println("Null hist for service " + srvcName);
-                }
             }
         }
     }

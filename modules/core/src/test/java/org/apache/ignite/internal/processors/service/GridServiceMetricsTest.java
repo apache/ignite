@@ -11,6 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -130,13 +131,13 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
     @Test
     public void testCancelService() throws Exception {
-        IgniteEx igniteEx = startGrids(3);
+        final int gridCnt = 5;
+        IgniteEx igniteEx = startGrids(gridCnt);
         Random rnd = new Random();
-        AtomicReference<NamingService> srv = new AtomicReference<>();
 
         new Thread(()->{
             while(true){
-                igniteEx.services().deployNodeSingleton( "srv", new NamingServiceImpl() );
+                igniteEx.services().deployMultiple( "srv", new NamingServiceImpl(), 2, 1 );
 
                 try {
                     Thread.sleep(100 + rnd.nextInt(1000));
@@ -145,7 +146,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
                     e.printStackTrace();
                 }
             }
-        }, "depoyer").start();
+        }, "deployer").start();
 
         new Thread(()->{
             while(true){
@@ -162,20 +163,30 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         new Thread(()->{
             while(true){
-                synchronized (srv){
-                    if(srv.get() == null){
-                        try {
-                            srv.set(igniteEx.services().serviceProxy("srv", NamingService.class, false));
-                        } catch (Exception e){
-                            System.err.println("Unable to get service: " + e.getMessage());
-                        }
-                    }
+                Ignite ignite = grid(new Random().nextInt(gridCnt));
+
+                try {
+                    ignite.services().serviceProxy("srv", NamingService.class, true).dummy();
+                } catch (Exception e){
+                    System.err.println("Unable to call service: " + e.getMessage());
                 }
 
                 try {
-                    srv.get().dummy();
+                    ignite.services().serviceProxy("srv", NamingService.class, false).dummy();
                 } catch (Exception e){
-                    System.err.println("Unable to call serice: " + e.getMessage());
+                    System.err.println("Unable to call service: " + e.getMessage());
+                }
+
+                try {
+                    ignite.services().serviceProxy("srv", NamingService.class, true, 5000).dummy();
+                } catch (Exception e){
+                    System.err.println("Unable to call service: " + e.getMessage());
+                }
+
+                try {
+                    ignite.services().serviceProxy("srv", NamingService.class, false, 5000).dummy();
+                } catch (Exception e){
+                    System.err.println("Unable to call service: " + e.getMessage());
                 }
 
                 try {
