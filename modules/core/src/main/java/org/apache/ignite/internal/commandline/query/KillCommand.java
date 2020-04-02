@@ -199,8 +199,12 @@ public class KillCommand implements Command<Object> {
         Command.usage(log, "Kill scan query by node id, cache name and query id:", KILL,
             params, SCAN.toString(),"origin_node_id", "cache_name", "query_id");
 
-        Command.usage(log, "Kill continuous query by routine id:", KILL,
-            singletonMap("routine_id", "Routine identifier."), CONTINUOUS.toString(), "routine_id");
+        params.clear();
+        params.put("origin_node_id", "Originating node id.");
+        params.put("routine_id", "Routine identifier.");
+
+        Command.usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
+            "origin_node_id", "routine_id");
     }
 
     /** {@inheritDoc} */

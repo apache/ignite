@@ -100,6 +100,13 @@ This utility can do the following commands:
       query_id        - Query identifier.
       origin_node_id  - Originating node id.
 
+  Kill continuous query by routine id:
+    control.(sh|bat) --kill CONTINUOUS origin_node_id routine_id
+
+    Parameters:
+      routine_id      - Routine identifier.
+      origin_node_id  - Originating node id.
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 
