@@ -68,7 +68,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * Version 1.7.0. Added: protocol features.
      * ATTENTION! Do not add any new protocol versions unless totally necessary. Use {@link ClientFeature} instead.
      */
-    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 8, 0);
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
 
     /** Default version. */
     public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;

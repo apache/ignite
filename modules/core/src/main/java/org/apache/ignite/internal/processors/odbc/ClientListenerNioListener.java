@@ -316,7 +316,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
             else
-                throw new IgniteCheckedException("Unsupported version.");
+                throw new IgniteCheckedException("Unsupported version: " + ver);
 
             cancelHandshakeTimeout(ses);
 
