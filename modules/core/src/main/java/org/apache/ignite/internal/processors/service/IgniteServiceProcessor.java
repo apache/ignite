@@ -126,7 +126,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     public static final String SVCS_VIEW_DESC = "Services";
 
     /** Base name domain for invocation metrics. */
-    public static final String SERVICE_METRIC_REGISTRY = "Service";
+    public static final String SERVICE_METRIC_REGISTRY = "Services";
 
     /** Description for the service method invocation metric. */
     private static final String DESCRIPTION_OF_INVOCATION_METRIC = "Duration of service method in milliseconds.";
@@ -564,6 +564,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         A.notNull(affKey, "affKey");
 
         ServiceConfiguration cfg = serviceConfiguration(name, srvc, 1, 1);
+
         cfg.setCacheName(cacheName);
         cfg.setAffinityKey(affKey);
 
@@ -967,20 +968,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         long timeout)
         throws IgniteException {
         ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
-
-        if (hasLocalNode(prj)) {
-            ServiceContextImpl ctx = serviceContext(name);
-
-            if (ctx != null) {
-                Service srvc = ctx.service();
-
-                if (srvc != null) {
-                    if (!srvcCls.isAssignableFrom(srvc.getClass()))
-                        throw new IgniteException("Service does not implement specified interface [srvcCls=" +
-                            srvcCls.getName() + ", srvcCls=" + srvc.getClass().getName() + ']');
-                }
-            }
-        }
 
         return new GridServiceProxy<T>(prj, name, srvcCls, sticky, timeout, ctx).proxy();
     }
@@ -1840,7 +1827,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /**
      * Registers metrics to measure durations of service methods.
      *
-     * @param srvc Service for invocations measurement.
+     * @param srvc Service to measure durations of methods.
      * @param srvcName Name of {@code srvc}.
      */
     private void registerMetrics(Service srvc, String srvcName) {

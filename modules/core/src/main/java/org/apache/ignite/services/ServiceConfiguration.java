@@ -78,7 +78,7 @@ public class ServiceConfiguration implements Serializable {
     @GridToStringExclude
     protected IgnitePredicate<ClusterNode> nodeFilter;
 
-    /** Enabled or disables service statistics. */
+    /** Enables or disables service statistics. */
     protected boolean isStatisticsEnabled;
 
     /**
