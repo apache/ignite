@@ -992,6 +992,24 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /**
+     * Returns number of elements in the tree by scanning pages of the bottom (leaf) level.
+     *
+     * @return Number of elements in the tree.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long size() throws IgniteCheckedException {
+        long ret = 0;
+
+        for (int i = 0; i < segmentsCount(); i++) {
+            final H2Tree tree = treeForRead(i);
+
+            ret += tree.size();
+        }
+
+        return ret;
+    }
+
+    /**
      *
      */
     @SuppressWarnings({"PublicInnerClass", "AssignmentOrReturnOfFieldWithMutableType"})
