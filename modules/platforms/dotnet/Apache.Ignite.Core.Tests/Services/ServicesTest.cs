@@ -1402,10 +1402,10 @@ namespace Apache.Ignite.Core.Tests.Services
             bool test(bool x);
 
             /** */
-            DateTime test(DateTime dt);
+            DateTime test(DateTime x);
 
             /** */
-            Guid test(Guid dt);
+            Guid test(Guid x);
 
             /** */
             byte? testWrapper(byte? x);
@@ -1459,10 +1459,10 @@ namespace Apache.Ignite.Core.Tests.Services
             bool[] testArray(bool[] x);
 
             /** */
-            DateTime?[] testArray(DateTime?[] dt);
+            DateTime?[] testArray(DateTime?[] x);
 
             /** */
-            Guid?[] testArray(Guid?[] dt);
+            Guid?[] testArray(Guid?[] x);
 
             /** */
             int test(int x, string y);

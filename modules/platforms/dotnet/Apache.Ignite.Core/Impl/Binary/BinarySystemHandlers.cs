@@ -442,7 +442,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write nullable GUID array.
+        /// Write nullable Timestamp array.
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="obj">Value.</param>
