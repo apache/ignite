@@ -17,28 +17,12 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
+    using System;
 
-    /// <summary>
-    /// Fields query cursor.
-    /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public interface IFieldsQueryCursor : IQueryCursor<IList<object>>
+    public class QueryCursorFieldMetadata
     {
-        /// <summary>
-        /// Gets the field names.
-        /// </summary>
-        IList<string> FieldNames { get; }
-
-        /// <summary>
-        /// Gets the field type names.
-        /// </summary>
-        IList<string> FieldTypeNames { get; }
-
-        /// <summary>
-        /// Gets fields metadata
-        /// </summary>
-        IList<QueryCursorFieldMetadata> FieldsMetadata { get; }
+        public string Name { get; set; }
+        public string JavaTypeName { get; set; }
+        public Type Type { get; set; }
     }
 }

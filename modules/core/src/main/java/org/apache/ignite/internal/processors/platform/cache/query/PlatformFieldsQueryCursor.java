@@ -92,7 +92,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
             writer.writeInt(metadatas.size());
 
             for (GridQueryFieldMetadata metadata: metadatas){
-                writer.writeString(metadata.fieldTypeName() + metadata.fieldName() + metadata.typeName() + metadata.schemaName());
+                writer.writeString(metadata.fieldTypeName());
             }
         } else {
             super.processOutStream(type, writer);

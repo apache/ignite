@@ -55,6 +55,7 @@
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\IQueryMetrics.cs" />
+    <Compile Include="Cache\Query\QueryCursorFieldMetadata.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />

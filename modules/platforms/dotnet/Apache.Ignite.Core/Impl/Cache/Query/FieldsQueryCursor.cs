@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
@@ -69,6 +70,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /** */
         private IList<string> _fieldTypeNames;
 
+        /** */
+        private IList<QueryCursorFieldMetadata> _fieldMeta;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -99,6 +103,26 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                 return _fieldTypeNames ??
                     (_fieldTypeNames = new ReadOnlyCollection<string>(
                         Target.OutStream(OpGetFieldTypes, reader => reader.ReadStringCollection())));
+            }
+        }
+
+        public IList<QueryCursorFieldMetadata> FieldsMetadata 
+        {
+            get
+            {
+                if (_fieldMeta == null)
+                {
+                    var x = Target.OutStream(OpGetFieldTypes, reader => reader.ReadStringCollection());
+                    _fieldMeta = x.Select(s => new QueryCursorFieldMetadata
+                        {
+                            Name = "",
+                            Type = JavaTypes.GetDotNetType(s),
+                            JavaTypeName = s
+                        })
+                       .ToList();
+                } 
+
+                return _fieldMeta;
             }
         }
     }

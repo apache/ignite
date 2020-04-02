@@ -67,6 +67,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         public IList<string> FieldNames { get; private set; }
 
         public IList<string> FieldTypeNames { get; private set; }
+        public IList<QueryCursorFieldMetadata> FieldsMetadata { get; private set; }
 
         /// <summary>
         /// Reads the columns.

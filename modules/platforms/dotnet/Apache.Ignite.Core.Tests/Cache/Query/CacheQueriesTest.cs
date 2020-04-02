@@ -833,8 +833,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Custom order, key-val, get after iteration.
             qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
             cur = cache.Query(qry);
-            cur.GetAll();
+            var list = cur.GetAll();
 
+            var curFieldTypeNames = cur.FieldsMetadata;
             Assert.AreEqual(new[] { "NAME", "_KEY", "AGE", "_VAL" }, cur.FieldNames);
 
             // Get after disposal.
