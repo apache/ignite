@@ -26,10 +26,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.util.typedef.G;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
@@ -39,6 +41,9 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFi
  * {@link GridCommandHandlerIndexingClusterByClassTest}.
  */
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    /** */
+    public static final int GRID_CNT = 2;
+
     /** */
     public void testValidateIndexesFailedOnNotIdleCluster() throws Exception {
         checkpointFreq = 100L;
@@ -97,9 +102,44 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         corruptIndexPartition(idxPath);
 
+        startGrids(GRID_CNT);
+
+        awaitPartitionMapExchange();
+
+        forceCheckpoint();
+
+        disableCheckpoints(G.allGrids());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", CACHE_NAME));
+
+        assertContains(log, testOut.toString(), "issues found (listed above)");
+        assertContains(log, testOut.toString(), "CRC validation failed");
+        assertNotContains(log, testOut.toString(), "Runtime failure on bounds");
+    }
+
+    /**
+     * Tests with that corrupted pages in the index partition are detected.
+     */
+    public void testCorruptedIndexPartitionShouldFailValidationWithoutCrc() throws Exception {
+        Ignite ignite = prepareGridForTest();
+
+        forceCheckpoint();
+
+        stopAllGrids();
+
+        File idxPath = indexPartition(ignite, GROUP_NAME);
+
+        corruptIndexPartition(idxPath);
+
         startGrids(2);
 
         awaitPartitionMapExchange();
+
+        forceCheckpoint();
+
+        disableCheckpoints(G.allGrids());
 
         injectTestSystemOut();
 
