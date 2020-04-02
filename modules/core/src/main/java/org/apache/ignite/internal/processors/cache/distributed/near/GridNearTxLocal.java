@@ -3101,6 +3101,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 topVer,
                 keys,
                 readThrough,
+                optimistic() && serializable() && readThrough,
                 /*deserializeBinary*/false,
                 recovery,
                 expiryPlc0,

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,27 +28,30 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- * Test for optimistic tx with read/through cache.
+ * Tests optimistic tx with read/through cache.
  */
 public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
     /** Test nodes count. */
-    protected static final int NODE_CNT = 5;
+    protected static final int NODE_CNT = 2;
 
     /** Shared read/write-through store. */
     private static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
@@ -57,73 +60,135 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(new CacheConfiguration<>("tx")
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setCacheMode(CacheMode.REPLICATED)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setCacheStoreFactory(new TestStoreFactory())
-            .setReadThrough(true)
-            .setWriteThrough(true)
-        );
-
+        // Different adresses not to pickup only first node when searching value wihit transaction.
         cfg.setUserAttributes(Collections.singletonMap(
             IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
 
         return cfg;
     }
 
-    /** Check optimistic transaction synchronizes value version. */
+    /**
+     *  Checks optimistic serializable transaction asks primary node for actual value version when read-through is
+     *  enabled for replicated transactional cache.
+     */
     @Test
-    public void testReplicatedOptimistic() throws Exception {
+    public void testReplicated() throws Exception {
+        CacheConfiguration<Object, Object> cacheCfg = cacheConfiguration();
+
+        cacheCfg.setCacheMode(REPLICATED);
+
+        checkOptimisticSerializableTransaction(cacheCfg, false);
+    }
+
+    /**
+     *  Checks optimistic serializable transaction asks primary node for actual value version when read-through is
+     *  enabled for partitioned transactional cache.
+     */
+    @Test
+    public void testPartitioned() throws Exception {
+        CacheConfiguration<Object, Object> cacheCfg = cacheConfiguration();
+
+        cacheCfg.setCacheMode(PARTITIONED);
+
+        checkOptimisticSerializableTransaction(cacheCfg, false);
+    }
+
+    /**
+     *  Checks optimistic serializable transaction asks primary node for actual value version when read-through is
+     *  enabled for near partitioned transactional cache.
+     */
+    @Test
+    public void testNearPartitioned() throws Exception {
+        CacheConfiguration<Object, Object> cacheCfg = cacheConfiguration();
+
+        cacheCfg.setCacheMode(PARTITIONED);
+
+        checkOptimisticSerializableTransaction(cacheCfg, true);
+    }
+
+    /**
+     *  Checks optimistic serializable transaction asks primary node for actual value version when read-through is
+     *  enabled for near replicated transactional cache.
+     */
+    @Test
+    public void testNearReplicated() throws Exception {
+        CacheConfiguration<Object, Object> cacheCfg = cacheConfiguration();
+
+        cacheCfg.setCacheMode(REPLICATED);
+
+        checkOptimisticSerializableTransaction(cacheCfg, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids(true);
+    }
+
+    /**
+     *  Checks optimistic serializable transaction asks primary node for actual value version when read-throug is
+     *  enabled for a transactional cache.
+     *
+     * @param cacheCfg Transactional cache configuration for the testing cache.
+     * @param near {@code True} to check transaction with near cache from a client node. {@code False} for server node.
+     */
+    private void checkOptimisticSerializableTransaction(CacheConfiguration<Object, Object> cacheCfg, boolean near)
+        throws Exception {
         startGrids(NODE_CNT);
 
-        final IgniteCache<Object, Object> cache0 = grid(0).cache("tx");
+        final IgniteCache<Object, Object> cache0 = grid(0).getOrCreateCache(cacheCfg);
 
-        final IgniteCache<Object, Object> cache1 = grid(1).cache("tx");
+        final IgniteCache<Object, Object> txCache;
+        final IgniteEx txGrid;
 
-        final int key = primaryKey(cache0);
+        if (near) {
+            txGrid = startClientGrid();
 
-        cache0.put(key, key);
+            txCache = txGrid.createNearCache(cacheCfg.getName(), new NearCacheConfiguration<>());
+        }
+        else {
+            txGrid = grid(1);
 
-        cache0.put(key + 1, key + 1);
+            txCache = grid(1).cache(cacheCfg.getName());
+        }
 
-        cache0.put(key + 2, key + 2);
+        List<Integer> primaryKeys = primaryKeys(cache0, 3);
 
-        cache0.localClear(key);
+        primaryKeys.forEach(k -> cache0.put(k, k));
 
-        cache0.localClear(key + 1);
+        primaryKeys.forEach(k -> cache0.localClear(k));
 
-        cache0.localClear(key + 2);
+        primaryKeys.forEach(k -> assertEquals(k, cache0.get(k)));
 
-        assertEquals(key, cache0.get(key));
+        try (Transaction tx = txGrid.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+            // Force requesting value from primary node by one key.
+            txCache.get(primaryKeys.get(0));
 
-        assertEquals(key + 1, cache0.get(key + 1));
+            // Force requesting value from primary node by keys batch.
+            txCache.getAll(new HashSet<>(primaryKeys.subList(1, primaryKeys.size())));
 
-        assertEquals(key + 2, cache0.get(key + 2));
-
-        try (Transaction tx = grid(1).transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-            cache1.get(key);
-
-            cache1.getAll(new HashSet<>(Arrays.asList(key + 1, key + 3)));
-
-            cache1.put(key, key + 1);
-
-            cache1.put(key + 1, key + 2);
-
-            cache1.put(key + 2, key + 3);
+            primaryKeys.forEach(k -> txCache.put(k, k + 1));
 
             tx.commit();
         }
 
         for (int i = 0; i < NODE_CNT; ++i) {
-            IgniteCache<Object, Object> cache = grid(i).cache("tx");
+            IgniteCache<Object, Object> cache = grid(i).cache(cacheCfg.getName());
 
-            assertEquals(key + 1, cache.get(key));
-
-            assertEquals(key + 2, cache.get(key + 1));
-
-            assertEquals(key + 3, cache.get(key + 2));
+            primaryKeys.forEach(k -> assertEquals(k + 1, cache.get(k)));
         }
+    }
+
+    /** @return Default configuration of a transactional cache cache. */
+    private static CacheConfiguration<Object, Object> cacheConfiguration(){
+        return new CacheConfiguration<>("tx")
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setCacheStoreFactory(new TestStoreFactory())
+            .setAtomicityMode(TRANSACTIONAL)
+            .setBackups(1)
+            .setReadThrough(true)
+            .setWriteThrough(true);
     }
 
     /** Shared read/write-through store factory. */

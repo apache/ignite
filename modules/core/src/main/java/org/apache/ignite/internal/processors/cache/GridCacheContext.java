@@ -2242,7 +2242,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
      * @param partId Partition ID.
-     * @param forcePrimary Force searching only the primary node.
+     * @param forcePrimary Force primary flag.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
