@@ -242,17 +242,12 @@ public class RunningQueryManager {
      * Cancel query.
      *
      * @param qryId Query id.
-     * @return {@code True} if query cancele. {@code false} otherwise.
      */
-    public boolean cancel(Long qryId) {
+    public void cancel(Long qryId) {
         GridRunningQueryInfo run = runs.get(qryId);
 
-        if (run == null)
-            return false;
-
-        run.cancel();
-
-        return true;
+        if (run != null)
+            run.cancel();
     }
 
     /**

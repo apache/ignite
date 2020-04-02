@@ -2634,15 +2634,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Cancel specified query.
+     * Cancel specified queries.
      *
-     * @param id Query ID to cancel.
+     * @param queries Queries ID's to cancel.
      */
-    public boolean cancelQuery(long id) {
-        if (!moduleEnabled())
-            return false;
-
-        return idx.cancelQuery(id);
+    public void cancelQueries(Collection<Long> queries) {
+        if (moduleEnabled())
+            idx.cancelQueries(queries);
     }
 
     /**
