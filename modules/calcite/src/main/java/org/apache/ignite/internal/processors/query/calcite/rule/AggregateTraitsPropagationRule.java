@@ -27,11 +27,12 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
@@ -54,13 +55,14 @@ public class AggregateTraitsPropagationRule extends RelOptRule {
         RelOptCluster cluster = rel.getCluster();
         RelMetadataQuery mq = cluster.getMetadataQuery();
 
-        RelDataType outType = rel.getRowType();
         ImmutableBitSet groupSet = rel.getGroupSet();
         List<ImmutableBitSet> groupSets = rel.getGroupSets();
-        List<AggregateCall> aggCallList = rel.getAggCallList();
+        List<AggregateCall> aggCalls = rel.getAggCallList();
+
+        IgniteDistribution inDistr = IgniteMdDistribution._distribution(input, mq);
 
         List<IgniteDistributions.Suggestion> suggestions =
-            IgniteDistributions.suggestAggregate(mq, input, groupSet, groupSets);
+            IgniteDistributions.suggestAggregate(inDistr, groupSet, groupSets);
 
         List<RelNode> newRels = new ArrayList<>(suggestions.size());
 
@@ -70,15 +72,15 @@ public class AggregateTraitsPropagationRule extends RelOptRule {
 
             if (isMapReduce(suggestion)) {
                 RelTraitSet mapTraits = input0.getTraitSet()
-                    .replace(IgniteDistributions.mapAggregate(mq, input0, groupSet, groupSets, aggCallList));
+                    .replace(IgniteDistributions.mapAggregate(mq, input0, groupSet, groupSets, aggCalls));
 
-                input0 = new IgniteMapAggregate(cluster, mapTraits, input0, groupSet, groupSets, aggCallList);
+                input0 = new IgniteMapAggregate(cluster, mapTraits, input0, groupSet, groupSets, aggCalls);
                 input0 = RuleUtils.changeTraits(input0, suggestion.out());
 
-                newRels.add(new IgniteReduceAggregate(cluster, traits, input0, groupSet, groupSets, aggCallList, outType));
+                newRels.add(new IgniteReduceAggregate(cluster, traits, input0, groupSet, groupSets, aggCalls, rel.getRowType()));
             }
             else
-                newRels.add(new IgniteAggregate(cluster, traits, input0, groupSet, groupSets, aggCallList));
+                newRels.add(new IgniteAggregate(cluster, traits, input0, groupSet, groupSets, aggCalls));
         }
 
         RuleUtils.transformTo(call, newRels);

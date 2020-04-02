@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
@@ -74,15 +74,6 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
 
     /**
      * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
-     *
-     * Prunes involved partitions (hence nodes, involved in query execution) if possible.
-     */
-    public FragmentInfo fragmentInfo(IgniteFilter rel, RelMetadataQuery mq) {
-        return _fragmentInfo(rel.getInput(), mq).prune(rel);
-    }
-
-    /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
      */
     public FragmentInfo fragmentInfo(SingleRel rel, RelMetadataQuery mq) {
         return _fragmentInfo(rel.getInput(), mq);
@@ -97,7 +88,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
      * information will be recalculated for all fragments.
      */
-    public FragmentInfo fragmentInfo(Join rel, RelMetadataQuery mq) {
+    public FragmentInfo fragmentInfo(BiRel rel, RelMetadataQuery mq) {
         FragmentInfo left = _fragmentInfo(rel.getLeft(), mq);
         FragmentInfo right = _fragmentInfo(rel.getRight(), mq);
 
@@ -122,6 +113,15 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
                 throw new OptimisticPlanningException(msg, leftCost.isLe(rightCost) ? rel.getLeft() : rel.getRight(), e);
             }
         }
+    }
+
+    /**
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     *
+     * Prunes involved partitions (hence nodes, involved in query execution) if possible.
+     */
+    public FragmentInfo fragmentInfo(IgniteFilter rel, RelMetadataQuery mq) {
+        return _fragmentInfo(rel.getInput(), mq).prune(rel);
     }
 
     /**

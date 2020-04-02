@@ -107,10 +107,15 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
     public List<IgniteDistribution> deriveDistributions(LogicalProject rel, RelMetadataQuery mq) {
+        HashSet<IgniteDistribution> res = new HashSet<>();
+
         Mappings.TargetMapping mapping =
             Project.getPartialMapping(rel.getInput().getRowType().getFieldCount(), rel.getProjects());
 
-        return Commons.transform(_deriveDistributions(rel.getInput(), mq), i -> i.apply(mapping));
+        for (IgniteDistribution inDistr : _deriveDistributions(rel.getInput(), mq))
+            res.add(inDistr.apply(mapping));
+
+        return new ArrayList<>(res);
     }
 
     /**
@@ -138,7 +143,7 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
         if (!F.isEmpty(res))
             return new ArrayList<>(res);
 
-        return Collections.emptyList();
+        return F.asList(IgniteMdDistribution._distribution(rel, mq));
     }
 
     /**
