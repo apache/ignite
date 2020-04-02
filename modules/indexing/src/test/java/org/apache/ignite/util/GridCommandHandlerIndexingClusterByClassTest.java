@@ -26,6 +26,7 @@ import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.breakSqlInd
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.createAndFillCache;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.CACHE_NAME;
 import static org.apache.ignite.util.GridCommandHandlerIndexingUtils.GROUP_NAME;
+
 /**
  * You can use this class if you don't need create nodes for each test because
  * here create {@link #SERVER_NODE_CNT} server and 1 client nodes at before all
