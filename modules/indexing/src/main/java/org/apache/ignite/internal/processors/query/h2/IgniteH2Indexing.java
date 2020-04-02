@@ -691,36 +691,58 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             UpdatePlan plan = dml.plan();
 
-            List<List<?>> planRows = plan.createRows(args != null ? args : X.EMPTY_OBJECT_ARRAY);
+            Object[] params = args != null ? args : X.EMPTY_OBJECT_ARRAY;
 
-            Iterator<List<?>> iter = new GridQueryCacheObjectsIterator(
-                planRows.iterator(),
-                objectContext(),
-                true
-            );
+            Iterator<List<?>> iter0;
 
-            if (planRows.size() == 1) {
-                IgniteBiTuple t = plan.processRow(iter.next());
+            if (!F.isEmpty(plan.selectQuery())) {
+                SqlFieldsQuery selectQry = new SqlFieldsQuery(plan.selectQuery())
+                    .setArgs(params)
+                    .setLocal(true);
 
-                streamer.addData(t.getKey(), t.getValue());
+                QueryParserResult selectParseRes = parser.parse(schemaName, selectQry, false);
 
-                return 1;
+                GridQueryFieldsResult res = executeSelectLocal(
+                    selectParseRes.queryDescriptor(),
+                    selectParseRes.queryParameters(),
+                    selectParseRes.select(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    0
+                );
+
+                iter0 = res.iterator();
             }
-            else {
-                Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
+            else
+                iter0 = plan.createRows(params).iterator();
 
-                while (iter.hasNext()) {
-                    List<?> row = iter.next();
+            Iterator<List<?>> iter = new GridQueryCacheObjectsIterator(iter0, objectContext(), true);
 
-                    IgniteBiTuple t = plan.processRow(row);
+            Map<Object, Object> rows = null;
 
-                    rows.put(t.getKey(), t.getValue());
+            while (iter.hasNext()) {
+                List<?> row = iter.next();
+
+                IgniteBiTuple<?, ?> t = plan.processRow(row);
+
+                if (rows == null) {
+                    if (iter.hasNext())
+                        rows = new LinkedHashMap<>(plan.rowCount());
+                    else {
+                        streamer.addData(t.getKey(), t.getValue());
+
+                        return 1;
+                    }
                 }
 
-                streamer.addData(rows);
-
-                return rows.size();
+                rows.put(t.getKey(), t.getValue());
             }
+
+            streamer.addData(rows);
+
+            return rows.size();
         }
         catch (IgniteException | IgniteCheckedException e) {
             failReason = e;

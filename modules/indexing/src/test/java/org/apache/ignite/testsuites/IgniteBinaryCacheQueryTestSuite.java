@@ -208,6 +208,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateD
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.JdbcSqlCustomSchemaTest;
 import org.apache.ignite.internal.processors.query.JdbcSqlDefaultSchemaTest;
+import org.apache.ignite.internal.processors.query.JdbcSqlStreamingTest;
 import org.apache.ignite.internal.processors.query.KillQueryErrorOnCancelTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromClientTest;
 import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
@@ -549,6 +550,8 @@ import org.junit.runners.Suite;
     IgniteCacheReplicatedAtomicColumnConstraintsTest.class,
     IgniteCacheReplicatedTransactionalColumnConstraintsTest.class,
     IgniteCacheReplicatedTransactionalSnapshotColumnConstraintTest.class,
+
+    JdbcSqlStreamingTest.class,
 
     // H2 Rows on-heap cache
     H2RowCacheSelfTest.class,
