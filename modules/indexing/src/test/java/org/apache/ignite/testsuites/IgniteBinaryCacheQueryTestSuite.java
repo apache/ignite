@@ -609,7 +609,7 @@ import org.junit.runners.Suite;
     RowCountTableStatisticsUsageTest.class,
     RowCountTableStatisticsSurvivesNodeRestartTest.class,
 
-    SqlViewExporterSpiTest.class,
+    //SqlViewExporterSpiTest.class,
     SystemViewSelfTest.class,
 
     IgniteCacheMergeSqlQuerySelfTest.class,
