@@ -175,7 +175,7 @@ public class MetricUtils {
      *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
      *                     <pre>
      *                         0 or negative - wont add package name;
-     *                         1 - add first and last char of each name in java package;
+     *                         1 - add first, middle and last char of each name in java package;
      *                         2 or bigger - add full name of java package.
      *                     </pre>
      * @return Abbreviated name of {@code cls}.
@@ -196,10 +196,21 @@ public class MetricUtils {
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < pkgNameParts.length - 1; ++i) {
-            sb.append(pkgNameParts[i].charAt(0));
+            // Add whole package part in case its length is exactly 3.
+            if( pkgNameParts[i].length() == 3 )
+                sb.append(pkgNameParts[i]);
+            else {
+                // Add first char.
+                sb.append(pkgNameParts[i].charAt(0));
 
-            if (pkgNameParts[i].length() > 1)
-                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+                // Add middle char.
+                if (pkgNameParts[i].length() > 3)
+                    sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() / 2));
+
+                // Add last char.
+                if (pkgNameParts[i].length() > 1)
+                    sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+            }
 
             sb.append(".");
         }

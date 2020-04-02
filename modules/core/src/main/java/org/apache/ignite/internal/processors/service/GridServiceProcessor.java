@@ -1282,7 +1282,8 @@ public class GridServiceProcessor extends ServiceProcessorAdapter implements Ign
                         UUID.randomUUID(),
                         assigns.cacheName(),
                         assigns.affinityKey(),
-                        Executors.newSingleThreadExecutor(threadFactory));
+                        Executors.newSingleThreadExecutor(threadFactory),
+                        assigns.configuration().isStatisticsEnabled());
 
                     ctxs.add(svcCtx);
 

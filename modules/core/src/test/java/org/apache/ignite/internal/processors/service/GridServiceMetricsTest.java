@@ -55,10 +55,33 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        // JMX metrics exposition for debug launch mode.
+        // JMX metrics exposition to see actual namings and placement of the metrics.
         cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return cfg;
+    }
+
+    /** Checks service metrics are enabled / disabled properly. */
+    @Test
+    public void testServiceMetricsEnabledDisabled() throws Exception {
+        IgniteEx ignite = startGrid();
+
+        ServiceConfiguration srvcCfg = serviceCfg(SRVC_NAME, 0, 1);
+
+        srvcCfg.setStatisticsEnabled(false);
+
+        ignite.services().deploy(srvcCfg);
+
+        assertNull(METRICS_MUST_NOT_BE_CREATED, findMetricRegistry(ignite.context().metric(), SRVC_NAME));
+
+        ignite.services().cancel(SRVC_NAME);
+
+        srvcCfg.setStatisticsEnabled(true);
+
+        ignite.services().deploy(srvcCfg);
+
+        assertNotNull("Service metric registry must be created.",
+            findMetricRegistry(ignite.context().metric(), SRVC_NAME));
     }
 
     /** Checks metric behaviour when launched several service instances via #IgniteServices#deployMultiple */
@@ -78,7 +101,12 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         int perNode = 2;
 
-        server.services().deployMultiple(SRVC_NAME, MyServiceFactory.create(), totalInstance, perNode);
+        ServiceConfiguration srvcCfg = server.services().multipleConfiguration(SRVC_NAME, MyServiceFactory.create(),
+            totalInstance, perNode);
+
+        srvcCfg.setStatisticsEnabled(true);
+
+        server.services().deploy(srvcCfg);
 
         awaitPartitionMapExchange();
 
@@ -149,7 +177,8 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testMetricNaming() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        ignite.services().deployNodeSingleton(SRVC_NAME, new NamingServiceImpl());
+        ignite.services().deploy(ignite.services().nodeSingletonConfiguration(SRVC_NAME, new NamingServiceImpl())
+            .setStatisticsEnabled(true));
 
         MetricRegistry registry = ignite.context().metric().registry(serviceMetricRegistryName(SRVC_NAME));
 
@@ -298,13 +327,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     private static ServiceConfiguration serviceCfg(String svcName, int perClusterCnt, int perNodeCnt) {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
 
-        svcCfg.setService(MyServiceFactory.create());
-
         svcCfg.setName(svcName);
-
+        svcCfg.setService(MyServiceFactory.create());
         svcCfg.setMaxPerNodeCount(perNodeCnt);
-
         svcCfg.setTotalCount(perClusterCnt);
+        svcCfg.setStatisticsEnabled(true);
 
         return svcCfg;
     }
