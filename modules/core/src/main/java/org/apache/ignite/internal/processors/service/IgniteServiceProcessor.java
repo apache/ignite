@@ -1941,7 +1941,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         private Method singleMtd;
 
         /** Histogram if method is not overloaded. */
-        private HistogramMetricImpl singleHistogram;
+        private volatile HistogramMetricImpl singleHistogram;
 
         /** Histograms for overloaded method. */
         private final Map<Object, HistogramMetricImpl> overloadedMtd = new ConcurrentHashMap<>();
