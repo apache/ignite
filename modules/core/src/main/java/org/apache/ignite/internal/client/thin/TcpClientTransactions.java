@@ -88,13 +88,14 @@ class TcpClientTransactions implements ClientTransactions {
         TcpClientTransaction tx0 = tx();
 
         if (tx0 != null)
-            throw new ClientException("A transaction has already started by the current thread.");
+            throw new ClientException("A transaction has already been started by the current thread.");
 
         tx0 = ch.service(ClientOperation.TX_START,
             req -> {
-                if (req.clientChannel().serverVersion().compareTo(V1_5_0) < 0) {
-                    throw new ClientProtocolError(String.format("Transactions have not supported by the server's " +
-                        "protocol version %s, required version %s", req.clientChannel().serverVersion(), V1_5_0));
+                ProtocolContext protocolContext = req.clientChannel().protocolContext();
+                if (!protocolContext.isTransactionsSupported()) {
+                    throw new ClientProtocolError(String.format("Transactions are not supported by the server's " +
+                        "protocol version %s, required version %s", protocolContext.version(), V1_5_0));
                 }
 
                 try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -39,12 +39,12 @@ public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
      * Constructor.
      *
      * @param reader Reader.
-     * @param ver Client version.
+     * @param protocolContext Client protocol context.
      */
-    public ClientCacheCreateWithConfigurationRequest(BinaryRawReader reader, ClientListenerProtocolVersion ver) {
+    public ClientCacheCreateWithConfigurationRequest(BinaryRawReader reader, ClientProtocolContext protocolContext) {
         super(reader);
 
-        cacheCfg = ClientCacheConfigurationSerializer.read(reader, ver);
+        cacheCfg = ClientCacheConfigurationSerializer.read(reader, protocolContext);
     }
 
     /** {@inheritDoc} */

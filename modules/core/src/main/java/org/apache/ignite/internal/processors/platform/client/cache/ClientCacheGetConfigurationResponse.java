@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
@@ -30,30 +30,30 @@ public class ClientCacheGetConfigurationResponse extends ClientResponse {
     /** Cache configuration. */
     private final CacheConfiguration cfg;
 
-    /** Client version. */
-    private final ClientListenerProtocolVersion ver;
+    /** Client protocol context. */
+    private final ClientProtocolContext protocolContext;
 
     /**
      * Constructor.
      *
      * @param reqId Request id.
      * @param cfg Cache configuration.
-     * @param ver Client version.
+     * @param protocolContext Client protocol context.
      */
-    ClientCacheGetConfigurationResponse(long reqId, CacheConfiguration cfg, ClientListenerProtocolVersion ver) {
+    ClientCacheGetConfigurationResponse(long reqId, CacheConfiguration cfg, ClientProtocolContext protocolContext) {
         super(reqId);
 
         assert cfg != null;
-        assert ver != null;
+        assert protocolContext != null;
 
         this.cfg = cfg;
-        this.ver = ver;
+        this.protocolContext = protocolContext;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        ClientCacheConfigurationSerializer.write(writer, cfg, ver);
+        ClientCacheConfigurationSerializer.write(writer, cfg, protocolContext);
     }
 }

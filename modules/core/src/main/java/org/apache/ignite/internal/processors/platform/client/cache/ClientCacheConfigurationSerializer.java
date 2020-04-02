@@ -30,10 +30,9 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_6_0;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.readQueryEntity;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.writeEnumInt;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.writeQueryEntity;
@@ -139,9 +138,9 @@ public class ClientCacheConfigurationSerializer {
      * Writes the cache configuration.
      * @param writer Writer.
      * @param cfg Configuration.
-     * @param ver Client version.
+     * @param protocolContext Client protocol context.
      */
-    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, ClientListenerProtocolVersion ver) {
+    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, ClientProtocolContext protocolContext) {
         assert writer != null;
         assert cfg != null;
 
@@ -197,11 +196,11 @@ public class ClientCacheConfigurationSerializer {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(writer, e, ver);
+                writeQueryEntity(writer, e, protocolContext);
         } else
             writer.writeInt(0);
 
-        if (ver.compareTo(VER_1_6_0) >= 0)
+        if (protocolContext.isExpirationPolicySupported())
             PlatformConfigurationUtils.writeExpiryPolicyFactory(writer, cfg.getExpiryPolicyFactory());
 
         // Write length (so that part of the config can be skipped).
@@ -212,10 +211,10 @@ public class ClientCacheConfigurationSerializer {
      * Reads the cache configuration.
      *
      * @param reader Reader.
-     * @param ver Client version.
+     * @param protocolContext Client protocol context.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader, ClientListenerProtocolVersion ver) {
+    static CacheConfiguration read(BinaryRawReader reader, ClientProtocolContext protocolContext) {
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();
@@ -363,7 +362,7 @@ public class ClientCacheConfigurationSerializer {
                         Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
                         for (int j = 0; j < qryEntCnt; j++)
-                            entities.add(readQueryEntity(reader, ver));
+                            entities.add(readQueryEntity(reader, protocolContext));
 
                         cfg.setQueryEntities(entities);
                     }

@@ -29,8 +29,6 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareReq
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.plugin.security.SecurityException;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
-
 /**
  * Thin client request handler.
  */
@@ -41,8 +39,8 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Auth context. */
     private final AuthorizationContext authCtx;
 
-    /** Protocol version. */
-    private final ClientListenerProtocolVersion ver;
+    /** Protocol context. */
+    private ClientProtocolContext protocolContext;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -52,14 +50,14 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
      *
      * @param ctx Kernal context.
      * @param authCtx Authentication context.
-     * @param ver Protocol version.
+     * @param protocolContext Protocol context.
      */
-    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientListenerProtocolVersion ver) {
+    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientProtocolContext protocolContext) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.authCtx = authCtx;
-        this.ver = ver;
+        this.protocolContext = protocolContext;
         log = ctx.kernalContext().log(getClass());
     }
 
@@ -121,9 +119,11 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
 
-        if (ver.compareTo(VER_1_4_0) >= 0) {
+        if (protocolContext.isFeaturesSupported())
+            writer.writeByteArray(protocolContext.featureBytes());
+
+        if (protocolContext.isPartitionAwarenessSupported())
             writer.writeUuid(ctx.kernalContext().localNodeId());
-        }
     }
 
     /** {@inheritDoc} */
@@ -148,6 +148,6 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion protocolVersion() {
-        return ver;
+        return protocolContext.version();
     }
 }

@@ -34,6 +34,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,8 +68,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.ThinProtocolFeature;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -81,12 +82,14 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.CURRENT_VER;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_3_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
@@ -96,22 +99,26 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
  * Implements {@link ClientChannel} over TCP.
  */
 class TcpClientChannel implements ClientChannel {
+    /** Protocol version used by default on first connection attempt. */
+    private static final ProtocolVersion DEFAULT_VERSION = LATEST_VER;
+
     /** Supported protocol versions. */
     private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
         V1_7_0,
         V1_6_0,
         V1_5_0,
         V1_4_0,
+        V1_3_0,
         V1_2_0,
-        V1_1_0, 
+        V1_1_0,
         V1_0_0
     );
 
     /** Timeout before next attempt to lock channel and process next response by current thread. */
     private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
-    /** Protocol version agreed with the server. */
-    private ProtocolVersion ver = CURRENT_VER;
+    /** Protocol context. */
+    private ProtocolContext protocolContext;
 
     /** Server node ID. */
     private UUID srvNodeId;
@@ -157,7 +164,7 @@ class TcpClientChannel implements ClientChannel {
             throw handleIOError("addr=" + cfg.getAddress(), e);
         }
 
-        handshake(cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
+        handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
     }
 
     /** {@inheritDoc} */
@@ -294,7 +301,7 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream resIn;
 
-        if (ver.compareTo(V1_4_0) >= 0) {
+        if (protocolContext.isPartitionAwarenessSupported()) {
             short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
@@ -336,8 +343,8 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public ProtocolVersion serverVersion() {
-        return ver;
+    @Override public ProtocolContext protocolContext() {
+        return protocolContext;
     }
 
     /** {@inheritDoc} */
@@ -390,54 +397,62 @@ class TcpClientChannel implements ClientChannel {
         return sock;
     }
 
-    /** Serialize String for thin client protocol. */
-    private static byte[] marshalString(String s) {
-        try (BinaryOutputStream out = new BinaryHeapOutputStream(s == null ? 1 : s.length() + 20);
-             BinaryRawWriterEx writer = new BinaryWriterExImpl(null, out, null, null)
-        ) {
-            writer.writeString(s);
-
-            return out.arrayCopy();
-        }
-    }
-
     /** Client handshake. */
-    private void handshake(String user, String pwd, Map<String, String> userAttrs)
+    private void handshake(ProtocolVersion ver, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
-        handshakeReq(user, pwd, userAttrs);
-        handshakeRes(user, pwd, userAttrs);
+        handshakeReq(ver, user, pwd, userAttrs);
+        handshakeRes(ver, user, pwd, userAttrs);
     }
 
     /** Send handshake request. */
-    private void handshakeReq(String user, String pwd, Map<String, String> userAttrs)
-        throws ClientConnectionException {
+    private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
+        Map<String, String> userAttrs) throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null);
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
+            ProtocolContext protocolContext = protocolContextFromVersion(proposedVer);
 
-        writer.writeInt(0); // reserve an integer for the request size
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+            writer.writeInt(0); // reserve an integer for the request size
+            writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
-        writer.writeShort(ver.major());
-        writer.writeShort(ver.minor());
-        writer.writeShort(ver.patch());
+            writer.writeShort(proposedVer.major());
+            writer.writeShort(proposedVer.minor());
+            writer.writeShort(proposedVer.patch());
 
-        writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
+            writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
-        if (ver.compareTo(V1_7_0) >= 0)
-            writer.writeMap(userAttrs);
+            if (protocolContext.isFeaturesSupported()) {
+                byte[] features = ThinProtocolFeature.featuresAsBytes(protocolContext.features());
+                writer.writeByteArray(features);
+            }
 
-        if (ver.compareTo(V1_1_0) >= 0 && user != null && !user.isEmpty()) {
-            writer.writeString(user);
-            writer.writeString(pwd);
+            if (protocolContext.isUserAttributesSupported())
+                writer.writeMap(userAttrs);
+
+            if (protocolContext.isAuthorizationSupported() && user != null && !user.isEmpty()) {
+                writer.writeString(user);
+                writer.writeString(pwd);
+            }
+
+            writer.out().writeInt(0, writer.out().position() - 4);// actual size
+
+            write(writer.array(), writer.out().position());
         }
+    }
 
-        writer.out().writeInt(0, writer.out().position() - 4);// actual size
+    /**
+     * @param version Protocol version.
+     * @return Protocol context for a version.
+     */
+    private ProtocolContext protocolContextFromVersion(ProtocolVersion version) {
+        EnumSet<ProtocolFeature> features = null;
+        if (ProtocolContext.isFeaturesSupported(version))
+            features = ProtocolFeature.allFeaturesAsEnumSet();
 
-        write(writer.array(), writer.out().position());
+        return new ProtocolContext(version, features);
     }
 
     /** Receive and handle handshake response. */
-    private void handshakeRes(String user, String pwd, Map<String, String> userAttrs)
+    private void handshakeRes(ProtocolVersion proposedVer, String user, String pwd, Map<String, String> userAttrs)
         throws ClientConnectionException, ClientAuthenticationException {
         int resSize = dataInput.readInt();
 
@@ -446,39 +461,46 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
-        try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
-            if (res.readBoolean()) { // Success flag.
-                if (ver.compareTo(V1_4_0) >= 0)
-                    srvNodeId = r.readUuid(); // Server node UUID.
-            }
-            else {
+        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, true)) {
+
+            boolean success = res.readBoolean();
+            if (success) {
+                byte[] features = new byte[0];
+                if (ProtocolContext.isFeaturesSupported(proposedVer)) {
+                    features = reader.readByteArray();
+                }
+
+                protocolContext = new ProtocolContext(proposedVer, ProtocolFeature.enumSet(features));
+
+                if (protocolContext.isPartitionAwarenessSupported()) {
+                    // Reading server UUID
+                    srvNodeId = reader.readUuid();
+                }
+            } else {
                 ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
 
-                String err = r.readString();
-
+                String err = reader.readString();
                 int errCode = ClientStatus.FAILED;
 
                 if (res.remaining() > 0)
-                    errCode = r.readInt();
+                    errCode = reader.readInt();
 
                 if (errCode == ClientStatus.AUTH_FAILED)
                     throw new ClientAuthenticationException(err);
-                else if (ver.equals(srvVer))
+                else if (proposedVer.equals(srvVer))
                     throw new ClientProtocolError(err);
                 else if (!supportedVers.contains(srvVer) ||
-                    (srvVer.compareTo(V1_1_0) < 0 && user != null && !user.isEmpty()))
+                    (srvVer.compareTo(V1_1_0) < 0 && !F.isEmpty(user)))
                     // Server version is not supported by this client OR server version is less than 1.1.0 supporting
                     // authentication and authentication is required.
                     throw new ClientProtocolError(String.format(
                         "Protocol version mismatch: client %s / server %s. Server details: %s",
-                        ver,
+                        proposedVer,
                         srvVer,
                         err
                     ));
                 else { // Retry with server version.
-                    ver = srvVer;
-
-                    handshake(user, pwd, userAttrs);
+                    handshake(srvVer, user, pwd, userAttrs);
                 }
             }
         }

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
@@ -245,20 +244,18 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Client connection context */
     private final ClientConnectionContext ctx;
 
-    /** Client version */
-    private final ClientListenerProtocolVersion ver;
+    /** Client protocol context */
+    private final ClientProtocolContext protocolContext;
 
     /**
-     * Ctor.
-     *
      * @param ctx Client connection context.
      */
-    ClientMessageParser(ClientConnectionContext ctx, ClientListenerProtocolVersion ver) {
+    ClientMessageParser(ClientConnectionContext ctx, ClientProtocolContext protocolContext) {
         assert ctx != null;
-        assert ver != null;
+        assert protocolContext != null;
 
         this.ctx = ctx;
-        this.ver = ver;
+        this.protocolContext = protocolContext;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
         marsh = cacheObjProc.marshaller();
@@ -309,6 +306,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheScanQueryRequest(reader);
 
             case OP_QUERY_SCAN_CURSOR_GET_PAGE:
+
+            case OP_QUERY_SQL_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
 
             case OP_RESOURCE_CLOSE:
@@ -393,19 +392,16 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheGetNamesRequest(reader);
 
             case OP_CACHE_GET_CONFIGURATION:
-                return new ClientCacheGetConfigurationRequest(reader, ver);
+                return new ClientCacheGetConfigurationRequest(reader, protocolContext);
 
             case OP_CACHE_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheCreateWithConfigurationRequest(reader, ver);
+                return new ClientCacheCreateWithConfigurationRequest(reader, protocolContext);
 
             case OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, ver);
+                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, protocolContext);
 
             case OP_QUERY_SQL:
                 return new ClientCacheSqlQueryRequest(reader);
-
-            case OP_QUERY_SQL_CURSOR_GET_PAGE:
-                return new ClientCacheQueryNextPageRequest(reader);
 
             case OP_QUERY_SQL_FIELDS:
                 return new ClientCacheSqlFieldsQueryRequest(reader);

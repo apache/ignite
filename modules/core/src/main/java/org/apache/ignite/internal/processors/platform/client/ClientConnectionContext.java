@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,11 +64,18 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.6.0. Added: Expiration Policy configuration. */
     public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
 
-    /** Version 1.7.0. Added: User attributes support. */
-    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
+    /**
+     * Version 1.7.0. Added: protocol features.
+     * ATTENTION! Do not add any new protocol versions unless totally necessary. Use {@link ClientFeature} instead.
+     */
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 8, 0);
 
     /** Default version. */
     public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
+
+    /** Default protocol context. */
+    public static final ClientProtocolContext DEFAULT_PROTOCOL_CONTEXT =
+        new ClientProtocolContext(DEFAULT_VER, ClientFeature.allFeaturesAsEnumSet());
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
@@ -93,8 +101,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
-    /** Current protocol version. */
-    private ClientListenerProtocolVersion currentVer;
+    /** Current protocol context. */
+    private ClientProtocolContext currentProtocolContext;
 
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
@@ -149,25 +157,37 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /**
-     * @return Currently used protocol version.
+     * @return Currently used protocol context.
      */
-    public ClientListenerProtocolVersion currentVersion() {
-        return currentVer;
+    public ClientProtocolContext currentProtocolContext() {
+        return currentProtocolContext;
     }
 
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(GridNioSession ses,
         ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-        boolean hasMore;
+
+        EnumSet<ClientFeature> features = null;
+
+        if (ClientProtocolContext.isFeaturesSupported(ver)) {
+            byte [] cliFeatures = reader.readByteArray();
+
+            features = ClientFeature.enumSet(cliFeatures);
+
+            features.retainAll(ClientFeature.allFeaturesAsEnumSet());
+        }
+
+        currentProtocolContext = new ClientProtocolContext(ver, features);
 
         String user = null;
         String pwd = null;
 
-        if (ver.compareTo(VER_1_7_0) >= 0)
+        if (currentProtocolContext.isUserAttributesSupported())
             userAttrs = reader.readMap();
 
-        if (ver.compareTo(VER_1_1_0) >= 0) {
+        if (currentProtocolContext.isAuthorizationSupported()) {
+            boolean hasMore;
             try {
                 hasMore = reader.available() > 0;
             }
@@ -183,11 +203,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
 
-        currentVer = ver;
-
-        handler = new ClientRequestHandler(this, authCtx, ver);
-
-        parser = new ClientMessageParser(this, ver);
+        handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
+        parser = new ClientMessageParser(this, currentProtocolContext);
     }
 
     /** {@inheritDoc} */
