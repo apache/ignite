@@ -367,8 +367,13 @@ public class GridServiceProxy<T> implements Serializable {
      * @param mtd Method to call.
      * @param args Arguments for {@code mtd}.
      */
-    private static Object measureServiceMethod(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName,
-        Method mtd, Object[] args) throws InvocationTargetException, IllegalAccessException {
+    private static Object measureServiceMethod(
+        ServiceProcessorAdapter srvcProc,
+        Service srvc,
+        String srvcName,
+        Method mtd,
+        Object[] args
+    ) throws InvocationTargetException, IllegalAccessException {
 
         long startTime = System.nanoTime();
 

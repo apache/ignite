@@ -86,8 +86,12 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public ServiceConfiguration keyAffinitySingletonConfiguration(String name, Service svc, String cacheName,
-        Object affKey) {
+    @Override public ServiceConfiguration keyAffinitySingletonConfiguration(
+        String name,
+        Service svc,
+        String cacheName,
+        Object affKey
+    ) {
         return ctx.service().serviceConfiguration(name, svc, 1, 1)
             .setCacheName(cacheName)
             .setAffinityKey(affKey);

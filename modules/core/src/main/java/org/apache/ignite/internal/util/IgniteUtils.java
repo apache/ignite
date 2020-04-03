@@ -5876,7 +5876,7 @@ public abstract class IgniteUtils {
      * @param cls Class to search for interfaces.
      * @return Collection of interfaces of {@code cls}.
      */
-    public static Collection<Class<?>> getInterfaces(Class<?> cls) {
+    public static Collection<Class<?>> allInterfaces(Class<?> cls) {
         Set<Class<?>> interfaces = new HashSet<>();
 
         while (cls != null) {

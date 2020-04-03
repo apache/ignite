@@ -260,6 +260,9 @@ public class MetricUtils {
      * @return Sum of all entries of {@code histogram} buckets.
      */
     public static long sumHistogramEntries(HistogramMetric histogram) {
+        if (histogram == null)
+            return 0;
+
         long sum = 0;
 
         for (int i = 0; i < histogram.value().length; ++i)

@@ -193,8 +193,12 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @return Configuration of key-affinity service.
      */
-    public ServiceConfiguration keyAffinitySingletonConfiguration(String name, Service svc, String cacheName,
-        Object affKey);
+    public ServiceConfiguration keyAffinitySingletonConfiguration(
+        String name,
+        Service svc,
+        String cacheName,
+        Object affKey
+    );
 
     /**
      * Creates configuration for multiple instances of the service on the grid. Ignite will deploy a
