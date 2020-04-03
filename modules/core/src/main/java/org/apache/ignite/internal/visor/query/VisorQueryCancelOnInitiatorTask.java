@@ -63,8 +63,7 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQuery
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorQueryCancelOnInitiatorTaskArg arg) throws IgniteException {
-            new QueryMXBeanImpl(ignite.context())
-                .cancelSQL(arg.getNodeId(), arg.getQueryId());
+            new QueryMXBeanImpl(ignite.context()).cancelSQL(arg.getNodeId(), arg.getQueryId());
 
             return null;
         }
