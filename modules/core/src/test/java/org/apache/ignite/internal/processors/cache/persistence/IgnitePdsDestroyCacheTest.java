@@ -20,11 +20,20 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.mockito.Mockito;
 
@@ -108,6 +117,117 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      */
     public void testDestroyCacheOperationNotBlockingCheckpointTest_LocalCache() throws Exception {
         doTestDestroyCacheOperationNotBlockingCheckpointTest(true);
+    }
+
+    /**
+     * Tests cache destry with hudge dirty pages.
+     */
+    public void testDestroyCache() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setGroupName("gr1"));
+        ignite.getOrCreateCache(new CacheConfiguration<>("cache2").setGroupName("gr1"));
+
+        try (IgniteDataStreamer<Object, Object> streamer2 = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            PageMemoryEx pageMemory = (PageMemoryEx)ignite.cachex(DEFAULT_CACHE_NAME).context().dataRegion().pageMemory();
+
+            long totalPages = pageMemory.totalPages();
+
+            for (int i = 0; i <= totalPages; i++)
+                streamer2.addData(i, new byte[pageMemory.pageSize() / 2]);
+        }
+
+        ignite.destroyCache(DEFAULT_CACHE_NAME);
+    }
+
+    /**
+     * Tests partitioned cache destry with hudge dirty pages.
+     */
+    public void testDestroyCacheNotThrowsOOMPartitioned() throws Exception {
+        doTestDestroyCacheNotThrowsOOM(false);
+    }
+
+    /**
+     * Tests local cache destry with hudge dirty pages.
+     */
+    public void testDestroyCacheNotThrowsOOMLocal() throws Exception {
+        doTestDestroyCacheNotThrowsOOM(true);
+    }
+
+    /** */
+    public void doTestDestroyCacheNotThrowsOOM(boolean loc) throws Exception {
+        Field batchField = U.findField(IgniteCacheOffheapManagerImpl.class, "BATCH_SIZE");
+
+        int batchSize = batchField.getInt(null);
+
+        int pageSize = 1024;
+
+        int partitions = 32;
+
+        DataStorageConfiguration ds = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(batchSize * pageSize * partitions)
+                .setPersistenceEnabled(true))
+            .setPageSize(pageSize);
+
+        int payLoadSize = pageSize * 3 / 4;
+
+        IgniteConfiguration cfg = getConfiguration().setDataStorageConfiguration(ds);
+
+        final IgniteEx ignite = startGrid(optimize(cfg));
+
+        ignite.cluster().active(true);
+
+        startGroupCachesDynamically(ignite, loc);
+
+        PageMemoryEx pageMemory = (PageMemoryEx) ignite.cachex(cacheName(0)).context().dataRegion().pageMemory();
+
+        IgniteInternalFuture<?> loaderFut = runAsync(() -> {
+            IgniteCache<Object, byte[]> c1 = ignite.cache(cacheName(0));
+
+            long totalPages = pageMemory.totalPages();
+
+            for (int i = 0; i <= totalPages; i++)
+                c1.put(i, new byte[payLoadSize]);
+        });
+
+        CountDownLatch cpStart = new CountDownLatch(1);
+
+        GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
+            .cache().context().database());
+
+        DbCheckpointListener lsnr = new DbCheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                /* No-op. */
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                cpStart.countDown();
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                /* No-op. */
+            }
+        };
+
+        dbMgr.addCheckpointListener(lsnr);
+
+        loaderFut.get();
+
+        cpStart.await();
+
+        dbMgr.removeCheckpointListener(lsnr);
+
+        IgniteInternalFuture<?> delFut = runAsync(() -> {
+            if (loc)
+                ignite.cache(cacheName(0)).close();
+            else
+                ignite.destroyCache(cacheName(0));
+        });
+
+        delFut.get(20_000);
     }
 
     /**
