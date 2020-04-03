@@ -1885,8 +1885,6 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        assert histogram != null;
-
         return histogram;
     }
 

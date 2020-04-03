@@ -35,14 +35,14 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invocations. */
     private static final int INVOKE_CNT = 50;
 
-    /** Utility holder of current grid number. */
-    private int gridNum;
-
     /** Service name used in the tests. */
     private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName()+"_service";
 
     /** Error message of created metrics. */
     private static final String METRICS_MUST_NOT_BE_CREATED = "Service metric registry must not be created.";
+
+    /** Utility holder of current grid number. */
+    private int gridNum;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

@@ -234,7 +234,7 @@ public class MetricUtils {
                     sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
             }
 
-            sb.append(".");
+            sb.append('.');
         }
 
         // Add name to the class.
