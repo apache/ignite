@@ -711,7 +711,7 @@ public class PlatformUtils {
     }
 
     /**
-     * Get GridGain platform processor.
+     * Get platform processor.
      *
      * @param grid Ignite instance.
      * @return Platform processor.

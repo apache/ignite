@@ -66,18 +66,27 @@ public class VisorQueryCancelOnInitiatorTask extends VisorOneNodeTask<VisorQuery
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorQueryCancelOnInitiatorTaskArg arg) throws IgniteException {
-            ignite.compute(ignite.cluster().forNodeId(arg.getNodeId())).broadcast(new IgniteClosure<Long, Void>() {
-                /** Auto-injected grid instance. */
-                @IgniteInstanceResource
-                private transient IgniteEx ignite;
+            ignite.compute(ignite.cluster().forNodeId(arg.getNodeId())).broadcast(new CancelQueryOnInitiatoClosure(),
+                arg.getQueryId());
 
-                /** {@inheritDoc} */
-                @Override public Void apply(Long qryId) {
-                    ignite.context().query().cancelQueries(Collections.singleton(arg.getQueryId()));
+            return null;
+        }
+    }
 
-                    return null;
-                }
-            }, arg.getQueryId());
+    /**
+     * Cancel query on initiator closure.
+     */
+    private static class CancelQueryOnInitiatoClosure implements IgniteClosure<Long, Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(Long qryId) {
+            ignite.context().query().cancelQueries(Collections.singleton(qryId));
 
             return null;
         }
