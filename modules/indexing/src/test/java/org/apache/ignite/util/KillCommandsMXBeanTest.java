@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,6 +39,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
@@ -134,6 +136,13 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
         doTestCancelSQLQuery(startCli, qryId -> qryMBean.cancelSQL(qryId));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelContinuousQuery() throws Exception {
+        doTestCancelContinuousQuery(startCli, srvs,
+            (nodeId, routineId) -> qryMBean.cancelContinuous(nodeId.toString(), routineId.toString()));
+    }
+
     /** */
     @Test
     public void testCancelUnknownScanQuery() {
@@ -162,5 +171,11 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     @Test
     public void testCancelUnknownSQLQuery() {
         qryMBean.cancelSQL(srvs.get(0).localNode().id().toString() + "_42");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownContinuousQuery() {
+        qryMBean.cancelContinuous(srvs.get(0).localNode().id().toString(), UUID.randomUUID().toString());
     }
 }
