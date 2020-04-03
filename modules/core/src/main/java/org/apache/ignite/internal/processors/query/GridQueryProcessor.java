@@ -1484,6 +1484,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         buildIdxPoolSize + "]");
                 }
 
+                cctx.group().metrics0().addIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+
                 SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(
                     cctx,
                     cancelTok,
