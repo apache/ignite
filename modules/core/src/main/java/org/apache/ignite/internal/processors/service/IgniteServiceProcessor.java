@@ -1845,7 +1845,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
         }
 
-        invocationHistograms.put(srvcName, srvcHistograms);
+        invocationHistograms.put(srvcName, Collections.unmodifiableMap(srvcHistograms));
     }
 
     /**
