@@ -28,7 +28,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.jdbc.JdbcConnection;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,9 +41,6 @@ public class ReduceQueryRun {
     private CountDownLatch latch;
 
     /** */
-    private final JdbcConnection conn;
-
-    /** */
     private final int pageSize;
 
     /** */
@@ -55,20 +51,16 @@ public class ReduceQueryRun {
 
     /**
      * Constructor.
-     * @param conn Connection.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param dataPageScanEnabled If data page scan is enabled.
      */
     ReduceQueryRun(
-        JdbcConnection conn,
         int idxsCnt,
         int pageSize,
         Boolean dataPageScanEnabled
     ) {
         assert pageSize > 0;
-
-        this.conn = conn;
 
         idxs = new ArrayList<>(idxsCnt);
 
@@ -144,13 +136,6 @@ public class ReduceQueryRun {
      */
     int pageSize() {
         return pageSize;
-    }
-
-    /**
-     * @return Connection.
-     */
-    JdbcConnection connection() {
-        return conn;
     }
 
     /** */

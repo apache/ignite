@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
         public const string CategoryExamples = "EXAMPLES_TEST";
 
         /** */
-        private const int DfltBusywaitSleepInterval = 200;
+        public const int DfltBusywaitSleepInterval = 200;
 
         /** Work dir. */
         private static readonly string WorkDir =
@@ -93,6 +93,14 @@ namespace Apache.Ignite.Core.Tests
         public static Random Random
         {
             get { return _random ?? (_random = new Random(Interlocked.Increment(ref _seed))); }
+        }
+
+        /// <summary>
+        /// Gets current test name.
+        /// </summary>
+        public static string TestName
+        {
+            get { return TestContext.CurrentContext.Test.Name; }
         }
 
         /// <summary>
@@ -260,6 +268,20 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Waits for condition, polling in a busy wait loop, then asserts that condition is true.
+        /// </summary>
+        /// <param name="cond">Condition.</param>
+        /// <param name="timeout">Timeout, in milliseconds.</param>
+        /// <param name="message">Assertion message.</param>
+        public static void WaitForTrueCondition(Func<bool> cond, int timeout = 1000, string message = null)
+        {
+            var res = WaitForCondition(cond, timeout);
+            message = message ?? string.Format("Condition not reached within {0} ms", timeout);
+
+            Assert.IsTrue(res, message);
+        }
+
+        /// <summary>
         /// Gets the static discovery.
         /// </summary>
         public static TcpDiscoverySpi GetStaticDiscovery()
@@ -275,15 +297,24 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Gets cache keys.
+        /// </summary>
+        public static IEnumerable<int> GetKeys(IIgnite ignite, string cacheName,
+            IClusterNode node = null, bool primary = true)
+        {
+            var aff = ignite.GetAffinity(cacheName);
+            node = node ?? ignite.GetCluster().GetLocalNode();
+
+            return Enumerable.Range(1, int.MaxValue).Where(x => aff.IsPrimary(node, x) == primary);
+        }
+
+        /// <summary>
         /// Gets the primary keys.
         /// </summary>
         public static IEnumerable<int> GetPrimaryKeys(IIgnite ignite, string cacheName,
             IClusterNode node = null)
         {
-            var aff = ignite.GetAffinity(cacheName);
-            node = node ?? ignite.GetCluster().GetLocalNode();
-
-            return Enumerable.Range(1, int.MaxValue).Where(x => aff.IsPrimary(node, x));
+            return GetKeys(ignite, cacheName, node);
         }
 
         /// <summary>
@@ -292,6 +323,14 @@ namespace Apache.Ignite.Core.Tests
         public static int GetPrimaryKey(IIgnite ignite, string cacheName, IClusterNode node = null)
         {
             return GetPrimaryKeys(ignite, cacheName, node).First();
+        }
+
+        /// <summary>
+        /// Gets the primary key.
+        /// </summary>
+        public static int GetKey(IIgnite ignite, string cacheName, IClusterNode node = null, bool primaryKey = false)
+        {
+            return GetKeys(ignite, cacheName, node, primaryKey).First();
         }
 
         /// <summary>
