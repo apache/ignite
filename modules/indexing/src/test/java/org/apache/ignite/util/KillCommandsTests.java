@@ -23,12 +23,16 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -297,6 +301,68 @@ class KillCommandsTests {
             assertNotNull(iter.next());
 
         assertThrowsWithCause(iter::next, CacheException.class);
+    }
+
+    /**
+     * Test cancel of the continuous query.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param qryCanceler Query cancel closure.
+     */
+    public static void doTestCancelContinuousQuery(IgniteEx cli, List<IgniteEx> srvs,
+        BiConsumer<UUID, UUID> qryCanceler) throws Exception {
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+        ContinuousQuery<Integer, Integer> cq = new ContinuousQuery<>();
+
+        AtomicInteger cntr = new AtomicInteger();
+
+        cq.setInitialQuery(new ScanQuery<>());
+        cq.setTimeInterval(1_000L);
+        cq.setPageSize(PAGE_SZ);
+        cq.setLocalListener(events -> {
+            for (CacheEntryEvent<? extends Integer, ? extends Integer> e : events) {
+                assertNotNull(e);
+
+                cntr.incrementAndGet();
+            }
+        });
+
+        cache.query(cq);
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
+
+        boolean res = waitForCondition(() -> cntr.get() == PAGE_SZ * PAGE_SZ, TIMEOUT);
+        assertTrue(res);
+
+        List<List<?>> cqQries = execute(cli,
+            "SELECT NODE_ID, ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES");
+        assertEquals(1, cqQries.size());
+
+        UUID nodeId = (UUID)cqQries.get(0).get(0);
+        UUID routineId = (UUID)cqQries.get(0).get(1);
+
+        qryCanceler.accept(nodeId, routineId);
+
+        long cnt = cntr.get();
+
+        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+            cache.put(i, i);
+
+        res = waitForCondition(() -> cntr.get() > cnt, TIMEOUT);
+
+        assertFalse(res);
+
+        for (int i = 0; i < srvs.size(); i++) {
+            IgniteEx srv = srvs.get(i);
+
+            res = waitForCondition(() -> execute(srv,
+                "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES").isEmpty(), TIMEOUT);
+
+            assertTrue(srv.configuration().getIgniteInstanceName(), res);
+        }
     }
 
     /** */
