@@ -24,21 +24,6 @@ import org.apache.ignite.cluster.ClusterState;
  */
 public interface GridClientClusterState {
     /**
-     * @param active {@code True} activate, {@code False} deactivate.
-     * @throws GridClientException If the request to change the cluster state failed.
-     * @deprecated Use {@link #state(ClusterState, boolean)} instead.
-     */
-    @Deprecated
-    public void active(boolean active) throws GridClientException;
-
-    /**
-     * @return {@code Boolean} - Current cluster state. {@code True} active, {@code False} inactive.
-     * @deprecated Use {@link #state()} instead.
-     */
-    @Deprecated
-    public boolean active() throws GridClientException;
-
-    /**
      * @return Current cluster state.
      * @throws GridClientException If the request to get the cluster state failed.
      */

@@ -332,16 +332,6 @@ public abstract class GridClientConnection {
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Get current grid state.
-     *
-     * @param destNodeId Destination node id.
-     * @deprecated Use {@link #state(UUID)} instead.
-     */
-    @Deprecated
-    public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException;
-
-    /**
      * Gets current grid global state.
      *
      * @param destNodeId Destination node id.

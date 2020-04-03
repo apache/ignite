@@ -69,6 +69,18 @@ public class GridCommandHandlerIndexingClusterByClassTest extends GridCommandHan
     }
 
     /**
+     * Tests that validation with CRC checking doesn't fail if nothing is broken.
+     */
+    @Test
+    public void testValidateIndexesWithCrcNoErrors() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", CACHE_NAME));
+
+        assertContains(log, testOut.toString(), "no issues found");
+    }
+
+    /**
      * Test verifies that validate_indexes command finishes successfully when no cache names are specified.
      */
     @Test

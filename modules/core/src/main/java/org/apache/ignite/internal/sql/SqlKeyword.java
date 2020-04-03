@@ -32,6 +32,15 @@ public class SqlKeyword {
     /** Keyword: QUERY. */
     public static final String QUERY = "QUERY";
 
+    /** Keyword: SCAN. */
+    public static final String SCAN = "SCAN";
+
+    /** Keyword: COMPUTE_TASK. */
+    public static final String COMPUTE = "COMPUTE";
+
+    /** Keyword: SERVICE. */
+    public static final String SERVICE = "SERVICE";
+
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
