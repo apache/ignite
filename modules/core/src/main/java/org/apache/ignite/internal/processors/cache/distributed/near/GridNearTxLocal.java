@@ -3101,7 +3101,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 topVer,
                 keys,
                 readThrough,
-                optimistic() && serializable() && readThrough,
+                /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
+                    || (optimistic() && serializable() && readThrough),
                 /*deserializeBinary*/false,
                 recovery,
                 expiryPlc0,
