@@ -198,8 +198,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
-            readThrough || forcePrimary,
-            /*force primary*/needVer || !ctx.config().isReadFromBackup(),
+            readThrough,
+            /*force primary*/needVer || !ctx.config().isReadFromBackup() || forcePrimary,
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
