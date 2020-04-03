@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 var expectedMessage = "Handshake failed on 127.0.0.1:10800, " +
                                       "requested protocol version = 32767.32767.32767, server protocol version = , " +
-                                      "status = Fail, message = Unsupported version.";
+                                      "status = Fail, message = Unsupported version: 32767.32767.32767";
 
                 var message = Regex.Replace(
                     logs[2].Message, @"server protocol version = \d\.\d\.\d", "server protocol version = ");
