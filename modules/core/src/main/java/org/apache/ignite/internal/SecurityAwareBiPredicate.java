@@ -15,54 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query.continuous;
+package org.apache.ignite.internal;
 
 import java.util.UUID;
-import javax.cache.configuration.Factory;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- *  Security aware transformer factory.
+ * Security aware IgniteBiPredicate.
  */
-public class SecurityAwareTransformerFactory<E, R> extends
-    AbstractSecurityAwareExternalizable<Factory<IgniteClosure<E, R>>> implements Factory<IgniteClosure<E, R>> {
+public class SecurityAwareBiPredicate<E1, E2> extends AbstractSecurityAwareExternalizable<IgniteBiPredicate<E1, E2>>
+    implements IgniteBiPredicate<E1, E2> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Ignite. */
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
 
     /**
      * Default constructor.
      */
-    public SecurityAwareTransformerFactory() {
+    public SecurityAwareBiPredicate() {
         // No-op.
     }
 
     /**
      * @param subjectId Security subject id.
-     * @param original Original factory.
+     * @param original Original predicate.
      */
-    public SecurityAwareTransformerFactory(UUID subjectId, Factory<IgniteClosure<E, R>> original) {
+    public SecurityAwareBiPredicate(UUID subjectId, IgniteBiPredicate<E1, E2> original) {
         super(subjectId, original);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteClosure<E, R> create() {
-        final IgniteClosure<E, R> cl = original.create();
-
-        return new IgniteClosure<E, R>() {
-            /** Ignite. */
-            @IgniteInstanceResource
-            private IgniteEx ignite;
-
-            /** {@inheritDoc} */
-            @Override public R apply(E e) {
-                try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-                    return cl.apply(e);
-                }
-            }
-        };
+    @Override public boolean apply(E1 e1, E2 e2) {
+        try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
+            return original.apply(e1, e2);
+        }
     }
 }
