@@ -18,11 +18,19 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -91,6 +99,12 @@ public class CommonArgParser {
     /** */
     static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
+    /** */
+    static final String CMD_USER_PROPS = "--user-properties";
+
+    /** */
+    static final String CMD_USER_PROPS_PATH = "--user-properties-path";
+
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
@@ -117,6 +131,9 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_TRUSTSTORE);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
         AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_USER_PROPS);
+        AUX_COMMANDS.add(CMD_USER_PROPS_PATH);
     }
 
     /**
@@ -140,8 +157,8 @@ public class CommonArgParser {
         list.add(optional(CMD_PASSWORD, "PASSWORD"));
         list.add(optional(CMD_PING_INTERVAL, "PING_INTERVAL"));
         list.add(optional(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
-        list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
-        list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
+        list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[,SSL_PROTOCOL_2,...,SSL_PROTOCOL_N]"));
+        list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[,SSL_CIPHER_2,...,SSL_CIPHER_N]"));
         list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
         list.add(optional(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
         list.add(optional(CMD_KEYSTORE, "KEYSTORE_PATH"));
@@ -149,6 +166,8 @@ public class CommonArgParser {
         list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
         list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
         list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_USER_PROPS, "USER_PROP=VAL[,USER_PROP_1=VAL_1,...,USER_PROP_N=VAL_N]"));
+        list.add(optional(CMD_USER_PROPS_PATH, "USER_PROPERTY_FILE_PATH"));
 
         return list.toArray(new String[0]);
     }
@@ -192,6 +211,10 @@ public class CommonArgParser {
         String sslTrustStorePath = null;
 
         char sslTrustStorePassword[] = null;
+
+        String userPropStr = null;
+
+        String userPropPath = null;
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
@@ -310,6 +333,16 @@ public class CommonArgParser {
 
                         break;
 
+                    case CMD_USER_PROPS:
+                        userPropStr = argIter.nextArg("Expected user property string.");
+
+                        break;
+
+                    case CMD_USER_PROPS_PATH:
+                        userPropPath = argIter.nextArg("Expected user property file path.");
+
+                        break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
@@ -319,11 +352,13 @@ public class CommonArgParser {
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
+        Map<String, String> userProps = userProperties(userPropStr, userPropPath);
+
         return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType, userProps);
     }
 
     /**
@@ -335,5 +370,71 @@ public class CommonArgParser {
             "Whenever possible, use interactive prompt for password (just discard %s option).";
 
         return String.format(pwdArgWarnFmt, password, password);
+    }
+
+    /**
+     * Extracts user properties from property string or file.
+     *
+     * @param userPropStr {@code String} Property string.
+     * @param userPropPath {@code String} Property file path.
+     */
+    private Map<String, String> userProperties(String userPropStr, String userPropPath) {
+        Map<String, String> res = parsePropertiesFromString(userPropStr);
+
+        parsePropertiesFromFile(userPropPath).forEach(res::putIfAbsent);
+
+        return res;
+    }
+
+    /**
+     * Extracts user properties from attribute string.
+     *
+     * @param propStr {@code String} Attribute string.
+     */
+    private Map<String, String> parsePropertiesFromString(String propStr) {
+        Map<String, String> res = new HashMap<>();
+
+        if (propStr == null)
+            return res;
+
+        final int partsOfPropStr = 2;
+
+        for (String prop : propStr.split(",")) {
+            if (!prop.contains("="))
+                throw new RuntimeException(String.format("Failed to parse property %s", prop));
+
+            String[] keyVal = prop.split("=", partsOfPropStr);
+
+            res.putIfAbsent(keyVal[0], keyVal[1]);
+        }
+
+        return res;
+    }
+
+    /**
+     * Extracts user properties from a given file.
+     *
+     * @param userPropPath {@code String} Property file path.
+     */
+    private Map<String, String> parsePropertiesFromFile(String userPropPath) {
+        Map<String, String> res = new HashMap<>();
+
+        if (userPropPath == null)
+            return res;
+
+        Properties props = new Properties();
+
+        try (InputStream is = new FileInputStream(new File(userPropPath))) {
+            props.load(is);
+        }
+        catch (IOException e) {
+            logger.log(Level.SEVERE, "Failed to read property file: " + userPropPath, e);
+
+            throw new RuntimeException(e);
+        }
+
+        props.forEach((key, value) -> res.put(key.toString(), value.toString()));
+
+        return res;
     }
 }

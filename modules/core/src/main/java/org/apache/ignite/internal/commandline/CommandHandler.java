@@ -77,9 +77,6 @@ public class CommandHandler {
     public static final String CONFIRM_MSG = "y";
 
     /** */
-    static final String DELIM = "--------------------------------------------------------------------------------";
-
-    /** */
     public static final int EXIT_CODE_OK = 0;
 
     /** */
@@ -108,6 +105,12 @@ public class CommandHandler {
 
     /** */
     public static final String NULL = "null";
+
+    /** */
+    private static final int DELIM_LINE_LEN = 80;
+
+    /** */
+    static final String DELIM = String.join("", Collections.nCopies(DELIM_LINE_LEN, "-"));
 
     /** JULs logger. */
     private final Logger logger;
@@ -281,7 +284,7 @@ public class CommandHandler {
 
                     String pwd = new String(requestPasswordFromConsole("password: "));
 
-                    clientCfg = getClientConfiguration(user, pwd,  args);
+                    clientCfg = getClientConfiguration(user, pwd, args);
 
                     credentialsRequested = true;
                 }
@@ -349,8 +352,8 @@ public class CommandHandler {
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
             Arrays.stream(logger.getHandlers())
-                  .filter(handler -> handler instanceof FileHandler)
-                  .forEach(Handler::close);
+                .filter(handler -> handler instanceof FileHandler)
+                .forEach(Handler::close);
         }
     }
 
@@ -461,6 +464,8 @@ public class CommandHandler {
 
         if (!F.isEmpty(args.sslKeyStorePath()))
             clientCfg.setSslContextFactory(createSslSupportFactory(args));
+
+        clientCfg.setUserAttributes(args.userProperties());
 
         return clientCfg;
     }

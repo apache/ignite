@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 /**
@@ -71,6 +73,9 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
+    /** User attributes. */
+    private Map<String, String> userProps;
+
     /** High-level command. */
     private Command command;
 
@@ -92,12 +97,14 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStorePath Truststore.
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
+     * @param userProps User properties.
      */
     public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
-        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
+        String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType,
+        Map<String, String> userProps
     ) {
         this.command = command;
         this.host = host;
@@ -121,6 +128,8 @@ public class ConnectionAndSslParameters {
         this.sslTrustStorePath = sslTrustStorePath;
         this.sslTrustStoreType = sslTrustStoreType;
         this.sslTrustStorePassword = sslTrustStorePassword;
+
+        this.userProps = userProps;
     }
 
     /**
@@ -276,5 +285,21 @@ public class ConnectionAndSslParameters {
      */
     public void sslTrustStorePassword(char[] sslTrustStorePassword) {
         this.sslTrustStorePassword = sslTrustStorePassword;
+    }
+
+    /**
+     * @return {@code Map} User properties.
+     */
+    public Map<String, String> userProperties() {
+        return userProps;
+    }
+
+    /**
+     * Set user properties.
+     *
+     * @param userProps {@code Map} User properties.
+     */
+    public void userProperties(Map<String, String> userProps) {
+        this.userProps = new HashMap<>(userProps);
     }
 }
