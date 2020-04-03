@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline.query;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
@@ -27,6 +29,8 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
+import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.mxbean.QueryMXBean;
@@ -44,6 +48,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SQL;
@@ -139,6 +144,21 @@ public class KillCommand implements Command<Object> {
 
                 break;
 
+            case SCAN:
+                String originNodeIsStr = argIter.nextArg("Expected query originating node id.");
+
+                UUID originNodeId = UUID.fromString(originNodeIsStr);
+
+                String cacheName = argIter.nextArg("Expected cache name.");
+
+                long qryId = Long.parseLong(argIter.nextArg("Expected query identifier."));
+
+                taskArgs = new VisorScanQueryCancelTaskArg(originNodeId, cacheName, qryId);
+
+                taskName = VisorScanQueryCancelTask.class.getName();
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
@@ -157,6 +177,15 @@ public class KillCommand implements Command<Object> {
 
         Command.usage(log, "Kill sql query by query id:", KILL, singletonMap("query_id", "Query identifier."),
             SQL.toString(), "query_id");
+
+        Map<String, String> params = new HashMap<>();
+
+        params.put("origin_node_id", "Originating node id.");
+        params.put("cache_name", "Cache name.");
+        params.put("query_id", "Query identifier.");
+
+        Command.usage(log, "Kill scan query by node id, cache name and query id:", KILL,
+            params, SCAN.toString(),"origin_node_id", "cache_name", "query_id");
     }
 
     /** {@inheritDoc} */

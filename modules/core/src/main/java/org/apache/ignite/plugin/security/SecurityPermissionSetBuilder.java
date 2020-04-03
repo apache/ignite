@@ -68,7 +68,7 @@ public class SecurityPermissionSetBuilder {
     private boolean dfltAllowAll;
 
     /** */
-    public static final SecurityPermissionSet ALLOW_ALL = create().defaultAllowAll(true).build();
+    public static final SecurityPermissionSet ALLOW_ALL = create().build();
 
     /**
      * Static factory method for create new permission builder.
@@ -129,11 +129,6 @@ public class SecurityPermissionSetBuilder {
      * @return {@link SecurityPermissionSetBuilder} refer to same permission builder.
      */
     public SecurityPermissionSetBuilder appendCachePermissions(String name, SecurityPermission... perms) {
-        for (SecurityPermission perm : perms) {
-            if (perm == SecurityPermission.CACHE_CREATE || perm == SecurityPermission.CACHE_DESTROY)
-                throw new IgniteException(perm + " should be assigned as system permission, not cache permission");
-        }
-
         validate(toCollection("CACHE_"), perms);
 
         append(cachePerms, name, toCollection(perms));

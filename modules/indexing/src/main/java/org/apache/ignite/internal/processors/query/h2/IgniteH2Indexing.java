@@ -3071,6 +3071,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return longRunningQryMgr;
     }
 
+    /** {@inheritDoc} */
+    @Override public long indexSize(String schemaName, String idxName) throws IgniteCheckedException {
+        GridH2Table tbl = schemaMgr.dataTableForIndex(schemaName, idxName);
+
+        if (tbl == null)
+            return 0;
+
+        H2TreeIndex idx = (H2TreeIndex)tbl.userIndex(idxName);
+
+        return idx == null ? 0 : idx.size();
+    }
+
     /**
      * @return Distrubuted SQL configuration.
      */

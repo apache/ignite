@@ -34,6 +34,7 @@ import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSe
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
+import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -42,6 +43,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
+import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via SQL. */
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
@@ -59,6 +61,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_TX_QRY = KILL + " " + TRANSACTION;
+
+    /** */
+    public static final String KILL_SCAN_QRY = KILL + " " + SCAN;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -91,6 +96,13 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             cache.put(i, i);
     }
 
+    /** */
+    @Test
+    public void testCancelScanQuery() {
+        doTestScanQueryCancel(startCli, srvs,
+            args -> execute(killCli, KILL_SCAN_QRY + " '" + args.get1() + "' '" + args.get2() + "' " + args.get3()));
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
@@ -114,6 +126,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     @Test
     public void testCancelSQLQuery() {
         doTestCancelSQLQuery(startCli, qryId -> execute(killCli, KILL_SQL_QRY + " '" + qryId + "'"));
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownScanQuery() {
+        execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1");
     }
 
     /** */
