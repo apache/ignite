@@ -17,6 +17,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -33,25 +34,25 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
     private TestService test;
 
     @Benchmark
-    public void directReference() throws Exception {
-        local.handleVal(5);
+    public void directReference( Blackhole blackhole ) throws Exception {
+        blackhole.consume( local.handleVal(5) );
     }
 
     @Benchmark
-    public void testProxt() throws Exception {
-        test.handleVal(5);
+    public void testProxy( Blackhole blackhole ) throws Exception {
+        blackhole.consume( test.handleVal(5) );
     }
 
     @Benchmark
-    public void serviceProxy() throws Exception {
-        proxy.handleVal(5);
+    public void serviceProxy( Blackhole blackhole ) throws Exception {
+        blackhole.consume( proxy.handleVal(5) );
     }
 
     @Setup
     public void setup() throws Exception {
         ignite = (IgniteEx)Ignition.start(configuration("grid0"));
 
-        ignite.services().deployNodeSingleton("srv", new TestServiceImpl());
+        ignite.services().deploy( ignite.services().nodeSingletonConfiguration("srv", new TestServiceImpl()) );
 
         local = ignite.services().service("srv");
 
@@ -87,8 +88,8 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
             .include(ServiceBenchmark.class.getSimpleName())
             .threads(1)
             .forks(1)
-            .warmupIterations(10)
-            .measurementIterations(5)
+            .warmupIterations(30)
+            .measurementIterations(10)
             .jvmArgs("-Xms1g", "-Xmx1g")
             .build();
 

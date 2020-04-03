@@ -214,7 +214,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     private volatile boolean disconnected;
 
     /** Keeps histograms to measure durations of service methods. Guided by service name, then method name. */
-    private final Map<String, Map<String, HistogramHolder>> invocationHistograms = new ConcurrentHashMap<>();
+//    private final Map<String, Map<String, HistogramHolder>> invocationHistograms = new ConcurrentHashMap<>();
+//    private final Map<String, Map<String, Map<List<Class>, HistogramMetricImpl>>> invocationHistograms
+//        = new ConcurrentHashMap<>();
+    private final Map<String, Map<GridServiceMethodReflectKey, HistogramMetricImpl>> invocationHistograms
+        = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -1838,7 +1842,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private void cacheServiceMetrics(Service srvc, String srvcName) {
         // Histograms for this service.
-        Map<String, HistogramHolder> srvcHistograms = invocationHistograms.get(srvcName);
+//        Map<String, HistogramHolder> srvcHistograms = invocationHistograms.get(srvcName);
+
+//        Map<String, Map<List<Class>, HistogramMetricImpl>> srvcHistograms = invocationHistograms.get(srvcName);
+
+        Map<GridServiceMethodReflectKey, HistogramMetricImpl> srvcHistograms = invocationHistograms.get(srvcName);
 
         // The histogms might be already created by multipile-deploy.
         if (srvcHistograms != null)
@@ -1847,9 +1855,9 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         srvcHistograms = new ConcurrentHashMap<>();
 
         // Histograms by method name.
-        Map<String, List<HistogramMetricImpl>> overloadedHistograms = new HashMap<>();
-
-        Map<String, List<Method>> overloadedMtds = new HashMap<>();
+//        Map<String, List<HistogramMetricImpl>> overloadedHistograms = new HashMap<>();
+//
+//        Map<String, List<Method>> overloadedMtds = new HashMap<>();
 
         for (Class<?> itf : allInterfaces(srvc.getClass())) {
             for (Method mtd : itf.getMethods()) {
@@ -1858,36 +1866,46 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
 
                 HistogramMetricImpl histogram = createHistogram(srvcName, mtd);
 
-                overloadedHistograms.computeIfAbsent(mtd.getName(), name -> new ArrayList<>())
-                    .add(histogram);
+                srvcHistograms.put( new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes()), histogram );
 
-                overloadedMtds.computeIfAbsent(mtd.getName(), name -> new ArrayList<>())
-                    .add(mtd);
+//                Map<GridServiceMethodReflectKey, HistogramMetricImpl> overloadedMtd =
+//                    srvcHistograms.computeIfAbsent(mtd.getName(), mtdName -> new ConcurrentHashMap<>());
+//
+//                Map<List<Class>, HistogramMetricImpl> overloadedMtd =
+//                    srvcHistograms.computeIfAbsent(mtd.getName(), mtdName -> new ConcurrentHashMap<>());
+//
+//                overloadedMtd.put( Arrays.asList(mtd.getParameterTypes()), histogram);
+
+//                overloadedHistograms.computeIfAbsent(mtd.getName(), name -> new ArrayList<>())
+//                    .add(histogram);
+////
+//                overloadedMtds.computeIfAbsent(mtd.getName(), name -> new ArrayList<>())
+//                    .add(mtd);
             }
         }
 
         // Final histograms representation for this service. Organized by method name.
-        Map<String, HistogramHolder> holders = new HashMap<>();
-
-        for (String mtdName : overloadedHistograms.keySet()) {
-            List<HistogramMetricImpl> historgams = overloadedHistograms.get(mtdName);
-
-            if (historgams.size() == 1)
-                holders.put(mtdName, new HistogramHolder(historgams.get(0), null));
-            else {
-                // Histograms of this overloaded method organized by unique key created.
-                Map<Object, HistogramMetricImpl> holderMap = new HashMap<>();
-
-                List<Method> mtds = overloadedMtds.get(mtdName);
-
-                for (int i = 0; i < historgams.size(); ++i)
-                    holderMap.put(HistogramHolder.key(mtds.get(i)), historgams.get(i));
-
-                holders.put(mtdName, new HistogramHolder(null, holderMap));
-            }
-        }
-
-        srvcHistograms.putAll(holders);
+//        Map<String, HistogramHolder> holders = new HashMap<>();
+//
+//        for (String mtdName : overloadedHistograms.keySet()) {
+//            List<HistogramMetricImpl> historgams = overloadedHistograms.get(mtdName);
+//
+//            if (historgams.size() == 1)
+//                holders.put(mtdName, new HistogramHolder(historgams.get(0), null));
+//            else {
+//                // Histograms of this overloaded method organized by unique key created.
+//                Map<Object, HistogramMetricImpl> holderMap = new HashMap<>();
+//
+//                List<Method> mtds = overloadedMtds.get(mtdName);
+//
+//                for (int i = 0; i < historgams.size(); ++i)
+//                    holderMap.put(HistogramHolder.key(mtds.get(i)), historgams.get(i));
+//
+//                holders.put(mtdName, new HistogramHolder(null, holderMap));
+//            }
+//        }
+//
+//        srvcHistograms.putAll(holders);
 
         invocationHistograms.put(srvcName, srvcHistograms);
     }
@@ -1947,14 +1965,39 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * @return Histogram for {@code srvcName} and {@code mtd} or {@code null} if not found.
      */
     HistogramMetricImpl histogram(String srvcName, Method mtd) {
-        Map<String, HistogramHolder> srvHistograms = invocationHistograms.get(srvcName);
+        Map<GridServiceMethodReflectKey, HistogramMetricImpl> srvcMap = invocationHistograms.get(srvcName);
 
-        if (srvHistograms == null)
+        if (srvcMap == null)
             return null;
 
-        HistogramHolder holder = srvHistograms.get(mtd.getName());
+        return srvcMap.get( new GridServiceMethodReflectKey(mtd.getName(), mtd.getParameterTypes()) );
 
-        return holder == null ? null : holder.histogram(mtd);
+//        Map<GridServiceMethodReflectKey, HistogramMetricImpl> mtdHistograms =
+//            srvcMap.get();
+
+//        Map<String, Map<List<Class>, HistogramMetricImpl>> mtdMap = invocationHistograms.get(srvcName);
+//
+//        if (mtdMap == null)
+//            return null;
+//
+//        Map<List<Class>, HistogramMetricImpl> overloadedMtdMap = mtdMap.get(mtd.getName());
+//
+//        if (overloadedMtdMap == null)
+//            return null;
+
+//        if(overloadedMtdMap.size()==1)
+//            return overloadedMtdMap.values().iterator().next();
+
+//        return overloadedMtdMap.get(Arrays.asList(mtd.getParameterTypes()));
+
+//        Map<String, HistogramHolder> srvHistograms = invocationHistograms.get(srvcName);
+//
+//        if (srvHistograms == null)
+//            return null;
+//
+//        HistogramHolder holder = srvHistograms.get(mtd.getName());
+//
+//        return holder == null ? null : holder.histogram(mtd);
     }
 
     /**
