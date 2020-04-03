@@ -3101,8 +3101,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 topVer,
                 keys,
                 readThrough,
-                /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
-                    || (optimistic() && serializable() && readThrough),
+                needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                 /*deserializeBinary*/false,
                 recovery,
                 expiryPlc0,
@@ -3167,8 +3166,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return cacheCtx.colocated().loadAsync(
                     key,
                     readThrough,
-                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
-                        || (optimistic() && serializable() && readThrough),
+                    needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
@@ -3201,8 +3199,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return cacheCtx.colocated().loadAsync(
                     keys,
                     readThrough,
-                    /*force primary*/needVer || !cacheCtx.config().isReadFromBackup()
-                        || (optimistic() && serializable() && readThrough),
+                    needVer || !cacheCtx.config().isReadFromBackup() || (optimistic() && serializable() && readThrough),
                     topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
