@@ -66,11 +66,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Version 1.7.0. */
         public static readonly ClientProtocolVersion Ver170 = new ClientProtocolVersion(1, 7, 0);
 
-        /** Version 1.8.0. */
-        public static readonly ClientProtocolVersion Ver180 = new ClientProtocolVersion(1, 8, 0);
-
         /** Current version. */
-        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver180;
+        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver170;
 
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
@@ -373,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private void Handshake(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion version)
         {
             bool auth = version >= Ver110 && clientConfiguration.UserName != null;
-            bool features = version >= Ver180;
+            bool features = version >= Ver170;
 
             // Send request.
             int messageLen;
@@ -398,10 +395,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     BinaryUtils.Marshaller.Marshal(stream, w => w.WriteByteArray(featureBytes));
                 }
-
-                // TODO User attributes
-                if (version >= Ver170)
-                    stream.WriteByte(BinaryUtils.HdrNull);
 
                 // Authentication data.
                 if (auth)
@@ -428,6 +421,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     if (version >= Ver170)
                     {
+                        // TODO: Implement features support
                         BinaryUtils.Marshaller.Unmarshal<byte[]>(stream);
                     }
 
