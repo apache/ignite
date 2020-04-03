@@ -35,6 +35,9 @@ public class SqlKeyword {
     /** Keyword: SCAN. */
     public static final String SCAN = "SCAN";
 
+    /** Keyword: CONTINUOUS. */
+    public static final String CONTINUOUS = "CONTINUOUS";
+
     /** Keyword: COMPUTE_TASK. */
     public static final String COMPUTE = "COMPUTE";
 

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
+import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
@@ -41,6 +42,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
+import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
@@ -302,6 +304,9 @@ public class SqlParser {
 
                 case COMPUTE:
                     return new SqlKillComputeTaskCommand().parse(lex);
+
+                case CONTINUOUS:
+                    return new SqlKillContinuousQueryCommand().parse(lex);
 
                 case SERVICE:
                     return new SqlKillServiceCommand().parse(lex);

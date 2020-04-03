@@ -22,52 +22,41 @@ import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.mxbean.QueryMXBean;
-import org.apache.ignite.spi.systemview.view.ScanQueryView;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 
 /**
- * KILL SCAN_QUERY command.
+ * KILL CONTINUOUS command.
  *
- * @see QueryMXBean#cancelScan(String, String, Long)
- * @see ScanQueryView#originNodeId()
- * @see ScanQueryView#cacheName()
- * @see ScanQueryView#queryId()
+ * @see QueryMXBean#cancelContinuous(String, String)
+ * @see ContinuousQueryView#nodeId()
+ * @see ContinuousQueryView#routineId()
  */
-public class SqlKillScanQueryCommand implements SqlCommand {
-    /** KILL SCAN format message. */
-    public static final String KILL_SCAN_QRY_FORMAT =
-        "Format of the query is KILL SCAN '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' 'cache-name' 1";
+public class SqlKillContinuousQueryCommand implements SqlCommand {
+    /** KILL CONTINUOUS format message. */
+    public static final String KILL_CQ_FORMAT = "Format of the query is " +
+        "KILL CONTINUOUS '6fa749ee-7cf8-4635-be10-36a1c75267a7_54321' '6fa749ee-7cf8-4635-be10-36a1c75267a7_12345'";
 
     /** Origin node id. */
     private UUID originNodeId;
 
-    /** Cache name. */
-    private String cacheName;
-
-    /** Query id. */
-    private long qryId;
+    /** Routine id. */
+    private UUID routineId;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        if (lex.shift()) {
-            if (lex.tokenType() == SqlLexerTokenType.STRING) {
-                originNodeId = UUID.fromString(lex.token());
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
+            originNodeId = UUID.fromString(lex.token());
 
-                if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
-                    cacheName = lex.token();
-
-                    if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT)
-                        qryId = Long.parseLong(lex.token());
-                    else
-                        throw SqlParserUtils.error(lex, "Expected query id. " + KILL_SCAN_QRY_FORMAT);
-                }
-                else
-                    throw SqlParserUtils.error(lex, "Expected cache name. " + KILL_SCAN_QRY_FORMAT);
+            if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING) {
+                routineId = UUID.fromString(lex.token());
 
                 return this;
             }
+            else
+                throw SqlParserUtils.error(lex, "Expected routine id. " + KILL_CQ_FORMAT);
         }
 
-        throw SqlParserUtils.error(lex, "Expected origin node id. " + KILL_SCAN_QRY_FORMAT);
+        throw SqlParserUtils.error(lex, "Expected origin node id. " + KILL_CQ_FORMAT);
     }
 
     /** {@inheritDoc} */
@@ -80,18 +69,13 @@ public class SqlKillScanQueryCommand implements SqlCommand {
         // No-op.
     }
 
+    /** @return Routine id. */
+    public UUID getRoutineId() {
+        return routineId;
+    }
+
     /** @return Origin node id. */
     public UUID getOriginNodeId() {
         return originNodeId;
-    }
-
-    /** @return Cache name. */
-    public String getCacheName() {
-        return cacheName;
-    }
-
-    /** @return Query id. */
-    public long getQryId() {
-        return qryId;
     }
 }
