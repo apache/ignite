@@ -50,19 +50,6 @@ public class MetastoragePageIOUtils {
      * @see MetastorageBPlusIO#getKey(long, int, MetastorageRowStore)
      */
     public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    String getKeyV1(IO io, long pageAddr, int idx) {
-        int off = io.offset(idx);
-        int len = PageUtils.getShort(pageAddr, off + 8);
-
-        byte[] keyBytes = PageUtils.getBytes(pageAddr, off + 10, len);
-
-        return new String(keyBytes);
-    }
-
-    /**
-     * @see MetastorageBPlusIO#getKey(long, int, MetastorageRowStore)
-     */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
     String getKeyV2(IO io, long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
         int off = io.offset(idx);
         int len = PageUtils.getShort(pageAddr, off + 8);
@@ -72,6 +59,8 @@ public class MetastoragePageIOUtils {
 
             byte[] keyBytes = rowStore.readRow(keyLink);
 
+            assert keyBytes != null : "[pageAddr=" + Long.toHexString(pageAddr) + ", idx=" + idx + ']';
+
             return new String(keyBytes);
         }
         else {
@@ -79,16 +68,6 @@ public class MetastoragePageIOUtils {
 
             return new String(keyBytes);
         }
-    }
-
-    /**
-     * @see MetastorageBPlusIO#getDataRow(long, int, MetastorageRowStore)
-     */
-    public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    MetastorageDataRow getDataRowV1(IO io, long pageAddr, int idx) {
-        long link = io.getLink(pageAddr, idx);
-
-        return new MetastorageDataRow(link, getKeyV1(io, pageAddr, idx), 0L);
     }
 
     /**
@@ -107,6 +86,8 @@ public class MetastoragePageIOUtils {
             long keyLink = PageUtils.getLong(pageAddr, off + 10);
 
             byte[] keyBytes = rowStore.readRow(keyLink);
+
+            assert keyBytes != null : "[pageAddr=" + Long.toHexString(pageAddr) + ", idx=" + idx + ']';
 
             return new MetastorageDataRow(link, new String(keyBytes), keyLink);
         }

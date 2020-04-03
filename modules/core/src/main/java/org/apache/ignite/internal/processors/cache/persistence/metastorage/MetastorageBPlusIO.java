@@ -25,13 +25,13 @@ public interface MetastorageBPlusIO {
     /** IO versions for metastorage inner nodes. */
     public static final IOVersions<MetastorageInnerIO> INNER_IO_VERSIONS = new IOVersions<>(
         new MetastorageInnerIO(1),
-        new MetastorageInnerIOV2(2)
+        new MetastorageInnerIO(2)
     );
 
     /** IO versions for metastorage leaf nodes. */
     public static final IOVersions<MetastorageLeafIO> LEAF_IO_VERSIONS = new IOVersions<>(
         new MetastorageLeafIO(1),
-        new MetastorageLeafIOV2(2)
+        new MetastorageLeafIO(2)
     );
 
     /**

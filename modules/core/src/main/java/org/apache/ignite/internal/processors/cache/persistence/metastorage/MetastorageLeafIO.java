@@ -72,11 +72,11 @@ public class MetastorageLeafIO extends BPlusLeafIO<MetastorageRow> implements Me
 
     /** {@inheritDoc} */
     @Override public String getKey(long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
-        return MetastoragePageIOUtils.getKeyV1(this, pageAddr, idx);
+        return MetastoragePageIOUtils.getKeyV2(this, pageAddr, idx, rowStore);
     }
 
     /** {@inheritDoc} */
     @Override public MetastorageDataRow getDataRow(long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
-        return MetastoragePageIOUtils.getDataRowV1(this, pageAddr, idx);
+        return MetastoragePageIOUtils.getDataRowV2(this, pageAddr, idx, rowStore);
     }
 }
