@@ -28,7 +28,8 @@ namespace Apache.Ignite.Core.Common
     /// allowed for such APIs: API may be removed, changed or stabilized in future Ignite releases
     /// (both minor and maintenance).
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Enum | 
+                    AttributeTargets.Property | AttributeTargets.Field)]
     public sealed class IgniteExperimentalAttribute : Attribute
     {
         // No-op.

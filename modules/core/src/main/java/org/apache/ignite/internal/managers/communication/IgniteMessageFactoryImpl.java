@@ -20,8 +20,6 @@ package org.apache.ignite.internal.managers.communication;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
@@ -30,7 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 /**
  * Message factory implementation which is responsible for instantiation of all communication messages.
@@ -42,14 +39,20 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
     /** Array size. */
     private static final int ARR_SIZE = 1 << Short.SIZE;
 
-    /** Custom messages registry. Used for test purposes. */
-    private static final Map<Short, Supplier<Message>> CUSTOM = new ConcurrentHashMap<>();
-
     /** Message suppliers. */
     private final Supplier<Message>[] msgSuppliers = (Supplier<Message>[]) Array.newInstance(Supplier.class, ARR_SIZE);
 
     /** Initialized flag. If {@code true} then new message type couldn't be registered. */
     private boolean initialized;
+
+    /** Min index of registered message supplier. */
+    private int minIdx = Integer.MAX_VALUE;
+
+    /** Max index of registered message supplier. */
+    private int maxIdx = -1;
+
+    /** Count of registered message suppliers. */
+    private int cnt;
 
     /**
      * Contructor.
@@ -103,15 +106,21 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
 
         Supplier<Message> curr = msgSuppliers[idx];
 
-        if (curr == null)
+        if (curr == null) {
             msgSuppliers[idx] = supplier;
+
+            minIdx = Math.min(idx, minIdx);
+
+            maxIdx = Math.max(idx, maxIdx);
+
+            cnt++;
+        }
         else
             throw new IgniteException("Message factory is already registered for direct type: " + directType);
     }
 
     /**
      * Creates new message instance of provided direct type.
-     * <p>
      *
      * @param directType Message direct type.
      * @return Message instance.
@@ -121,12 +130,27 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         Supplier<Message> supplier = msgSuppliers[directTypeToIndex(directType)];
 
         if (supplier == null)
-            supplier = CUSTOM.get(directType);
-
-        if (supplier == null)
             throw new IgniteException("Invalid message type: " + directType);
 
         return supplier.get();
+    }
+
+    /**
+     * Returns direct types of all registered messages.
+     *
+     * @return Direct types of all registered messages.
+     */
+    public short[] registeredDirectTypes() {
+        short[] res = new short[cnt];
+
+        if (cnt > 0) {
+            for (int i = minIdx, p = 0; i <= maxIdx; i++) {
+                if (msgSuppliers[i] != null)
+                    res[p++] = indexToDirectType(i);
+            }
+        }
+
+        return res;
     }
 
     /**
@@ -145,22 +169,5 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
         assert res >= Short.MIN_VALUE && res <= Short.MAX_VALUE;
 
         return (short)res;
-    }
-
-    /**
-     * Registers factory for custom message. Used for test purposes.
-     *
-     * @param type Message type.
-     * @param c Message producer.
-     *
-     * @deprecated Should be removed. Please don't use this method anymore.
-     * Consider using of plugin with own message types.
-     */
-    @TestOnly
-    @Deprecated
-    public static void registerCustom(short type, Supplier<Message> c) {
-        assert c != null;
-
-        CUSTOM.put(type, c);
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,10 +111,26 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         return withContext(
             secCtxs.computeIfAbsent(nodeId,
                 uuid -> nodeSecurityContext(
-                    marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().node(uuid)
+                    marsh, U.resolveClassLoader(ctx.config()), findNode(uuid)
                 )
             )
         );
+    }
+
+    /**
+     * Resolves cluster node by its ID.
+     *
+     * @param nodeId Node id.
+     * @throws IllegalStateException If node with provided ID doesn't exist.
+     */
+    private ClusterNode findNode(UUID nodeId) {
+        ClusterNode node = Optional.ofNullable(ctx.discovery().node(nodeId))
+            .orElseGet(() -> ctx.discovery().historicalNode(nodeId));
+
+        if (node == null)
+            throw new IllegalStateException("Failed to find node with given ID for security context setup: " + nodeId);
+
+        return node;
     }
 
     /** {@inheritDoc} */

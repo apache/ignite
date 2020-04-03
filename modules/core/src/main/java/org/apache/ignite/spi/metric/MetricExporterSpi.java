@@ -22,7 +22,7 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
- * Exporter of metric information to the external recepient.
+ * Exporter of metric information to the external recipient.
  * Expected, that each implementation would support some specific protocol.
  *
  * Implementation of this Spi should work by pull paradigm.

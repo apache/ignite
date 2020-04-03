@@ -526,6 +526,16 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
+            public void EnableStatistics(bool enabled)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ClearStatistics()
+            {
+                throw new NotImplementedException();
+            }
+
             public Task Rebalance()
             {
                 throw new NotImplementedException();

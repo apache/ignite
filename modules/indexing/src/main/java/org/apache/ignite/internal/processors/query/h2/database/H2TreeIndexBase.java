@@ -21,15 +21,19 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
+import org.h2.index.IndexType;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
+import org.h2.table.Table;
 import org.h2.table.TableFilter;
 
 /**
@@ -44,8 +48,8 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      *
      * @param tbl Table.
      */
-    protected H2TreeIndexBase(GridH2Table tbl) {
-        super(tbl);
+    protected H2TreeIndexBase(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
+        super(tbl, name, cols, type);
     }
 
     /**
@@ -69,12 +73,23 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
      * @param cols Columns array.
      * @return List of {@link InlineIndexHelper} objects.
      */
-    protected List<InlineIndexHelper> getAvailableInlineColumns(IndexColumn[] cols) {
+    static List<InlineIndexHelper> getAvailableInlineColumns(boolean affinityKey, String cacheName,
+        String idxName, IgniteLogger log, boolean pk, Table tbl, IndexColumn[] cols) {
         List<InlineIndexHelper> res = new ArrayList<>();
 
         for (IndexColumn col : cols) {
             if (!InlineIndexHelper.AVAILABLE_TYPES.contains(col.column.getType())) {
-                warnCantBeInlined(col);
+                String idxType = pk ? "PRIMARY KEY" : affinityKey ? "AFFINITY KEY (implicit)" : "SECONDARY";
+
+                U.warn(log, "Column cannot be inlined into the index because it's type doesn't support inlining, " +
+                    "index access may be slow due to additional page reads (change column type if possible) " +
+                    "[cacheName=" + cacheName +
+                    ", tableName=" + tbl.getName() +
+                    ", idxName=" + idxName +
+                    ", idxType=" + idxType +
+                    ", colName=" + col.columnName +
+                    ", columnType=" + InlineIndexHelper.nameTypeBycode(col.column.getType()) + ']'
+                );
 
                 break;
             }
@@ -84,7 +99,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
                 col.column.getType(),
                 col.column.getColumnId(),
                 col.sortType,
-                table.getCompareMode());
+                tbl.getCompareMode());
 
             res.add(idx);
         }

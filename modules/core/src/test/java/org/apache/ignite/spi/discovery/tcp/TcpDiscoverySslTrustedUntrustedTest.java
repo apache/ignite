@@ -77,6 +77,22 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @Test
+    public void testTrustOneMultiCert() throws Exception {
+        checkDiscoverySuccess("node01", "trustone", "node0102", "trustone");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTrustBothMultiCert() throws Exception {
+        checkDiscoverySuccess("node03", "trustboth", "node0102", "trusttwo");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDifferentCa() throws Exception {
         checkDiscoveryFailure("node01", "trustone", "node02", "trusttwo");
     }

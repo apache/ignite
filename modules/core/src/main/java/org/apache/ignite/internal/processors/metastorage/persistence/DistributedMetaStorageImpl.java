@@ -401,7 +401,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** {@inheritDoc} */
     @Override public long getUpdatesCount() {
-        return ver.id;
+        return ver.id();
     }
 
     /** {@inheritDoc} */
@@ -586,7 +586,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!discoData.hasJoiningNodeData()) {
                 // Joining node doesn't support distributed metastorage feature.
 
-                if (isSupported(ctx) && locVer.id > 0 && !(node.isClient() || node.isDaemon())) {
+                if (isSupported(ctx) && locVer.id() > 0 && !(node.isClient() || node.isDaemon())) {
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
@@ -623,17 +623,17 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             int locHistSize = histCache.size();
 
-            if (remoteVer.id < locVer.id - locHistSize) {
+            if (remoteVer.id() < locVer.id() - locHistSize) {
                 // Remote node is too far behind.
                 // Technicaly this situation should be banned because there's no way to prove data consistency.
                 errorMsg = null;
             }
-            else if (remoteVer.id < locVer.id) {
+            else if (remoteVer.id() < locVer.id()) {
                 // Remote node it behind the cluster version and there's enough history.
                 DistributedMetaStorageVersion newRemoteVer = remoteVer.nextVersion(
                     this::historyItem,
-                    remoteVer.id + 1,
-                    locVer.id
+                    remoteVer.id() + 1,
+                    locVer.id()
                 );
 
                 if (newRemoteVer.equals(locVer))
@@ -641,7 +641,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else
                     errorMsg = "Joining node has conflicting distributed metastorage data.";
             }
-            else if (remoteVer.id == locVer.id) {
+            else if (remoteVer.id() == locVer.id()) {
                 // Remote and local versions match.
                 if (remoteVer.equals(locVer))
                     errorMsg = null;
@@ -653,7 +653,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     );
                 }
             }
-            else if (remoteVer.id <= locVer.id + remoteHistSize) {
+            else if (remoteVer.id() <= locVer.id() + remoteHistSize) {
                 // Remote node is ahead of the cluster and has enough history.
                 if (clusterIsActive) {
                     errorMsg = "Attempting to join node with larger distributed metastorage version id." +
@@ -664,7 +664,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 else {
                     DistributedMetaStorageVersion newLocVer = locVer.nextVersion(
                         remoteHist,
-                        remoteHistSize - (int)(remoteVer.id - locVer.id),
+                        remoteHistSize - (int)(remoteVer.id() - locVer.id()),
                         remoteHistSize
                     );
 
@@ -675,7 +675,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
             else {
-                assert remoteVer.id > locVer.id + remoteHistSize;
+                assert remoteVer.id() > locVer.id() + remoteHistSize;
 
                 // Remote node is too far ahead.
                 if (clusterIsActive) {
@@ -706,12 +706,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      */
     private String validatePayload(DistributedMetaStorageJoiningNodeData joiningData) {
         for (DistributedMetaStorageHistoryItem item : joiningData.hist) {
-            for (int i = 0; i < item.keys.length; i++) {
+            for (int i = 0; i < item.keys().length; i++) {
                 try {
-                    unmarshal(marshaller, item.valBytesArray[i]);
+                    unmarshal(marshaller, item.valuesBytesArray()[i]);
                 }
                 catch (IgniteCheckedException e) {
-                    return "Unable to unmarshal key=" + item.keys[i];
+                    return "Unable to unmarshal key=" + item.keys()[i];
                 }
             }
         }
@@ -737,7 +737,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
         DistributedMetaStorageVersion remoteVer = joiningData.ver;
 
-        if (!isSupported(ctx) && remoteVer.id > 0)
+        if (!isSupported(ctx) && remoteVer.id() > 0)
             return;
 
         lock.writeLock().lock();
@@ -745,12 +745,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         try {
             DistributedMetaStorageVersion locVer = ver;
 
-            if (remoteVer.id > locVer.id) {
+            if (remoteVer.id() > locVer.id()) {
                 DistributedMetaStorageHistoryItem[] hist = joiningData.hist;
 
-                if (remoteVer.id - locVer.id <= hist.length) {
-                    for (long v = locVer.id + 1; v <= remoteVer.id; v++) {
-                        int hv = (int)(v - remoteVer.id + hist.length - 1);
+                if (remoteVer.id() - locVer.id() <= hist.length) {
+                    for (long v = locVer.id() + 1; v <= remoteVer.id(); v++) {
+                        int hv = (int)(v - remoteVer.id() + hist.length - 1);
 
                         try {
                             completeWrite(hist[hv]);
@@ -806,14 +806,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         try {
             DistributedMetaStorageVersion locVer = ver;
 
-            if (remoteVer.id >= locVer.id) {
+            if (remoteVer.id() >= locVer.id()) {
                 Serializable nodeData = new DistributedMetaStorageClusterNodeData(remoteVer, null, null, null);
 
                 dataBag.addGridCommonData(COMPONENT_ID, nodeData);
             }
             else {
-                if (locVer.id - remoteVer.id <= histCache.size() && !dataBag.isJoiningNodeClient()) {
-                    DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id + 1, locVer.id);
+                if (locVer.id() - remoteVer.id() <= histCache.size() && !dataBag.isJoiningNodeClient()) {
+                    DistributedMetaStorageHistoryItem[] updates = history(remoteVer.id() + 1, locVer.id());
 
                     Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver, null, null, updates);
 
@@ -829,7 +829,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     if (dataBag.isJoiningNodeClient())
                         hist = EMPTY_ARRAY;
                     else
-                        hist = history(ver.id - histCache.size() + 1, locVer.id);
+                        hist = history(ver.id() - histCache.size() + 1, locVer.id());
 
                     Serializable nodeData = new DistributedMetaStorageClusterNodeData(ver0, fullData, hist, null);
 
@@ -961,7 +961,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     for (int i = 0, len = nodeData.hist.length; i < len; i++) {
                         DistributedMetaStorageHistoryItem histItem = nodeData.hist[i];
 
-                        addToHistoryCache(ver.id + i - (len - 1), histItem);
+                        addToHistoryCache(ver.id() + i - (len - 1), histItem);
                     }
                 }
 
@@ -973,7 +973,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                         completeWrite(update);
                 }
             }
-            else if (!isClient && ver.id > 0) {
+            else if (!isClient && ver.id() > 0) {
                 throw new IgniteException("Cannot join the cluster because it doesn't support distributed metastorage" +
                     " feature and this node has not empty distributed metastorage data");
             }
@@ -1129,13 +1129,13 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
             ver = ver.nextVersion(histItem);
 
-            for (int i = 0, len = histItem.keys.length; i < len; i++)
-                notifyListeners(histItem.keys[i], bridge.read(histItem.keys[i]), unmarshal(marshaller, histItem.valBytesArray[i]));
+            for (int i = 0, len = histItem.keys().length; i < len; i++)
+                notifyListeners(histItem.keys()[i], bridge.read(histItem.keys()[i]), unmarshal(marshaller, histItem.valuesBytesArray()[i]));
 
-            for (int i = 0, len = histItem.keys.length; i < len; i++)
-                bridge.write(histItem.keys[i], histItem.valBytesArray[i]);
+            for (int i = 0, len = histItem.keys().length; i < len; i++)
+                bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
 
-            addToHistoryCache(ver.id, histItem);
+            addToHistoryCache(ver.id(), histItem);
         }
         finally {
             lock.writeLock().unlock();
@@ -1156,8 +1156,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     @Nullable private DistributedMetaStorageHistoryItem optimizeHistoryItem(
         DistributedMetaStorageHistoryItem histItem
     ) {
-        String[] keys = histItem.keys;
-        byte[][] valBytesArr = histItem.valBytesArray;
+        String[] keys = histItem.keys();
+        byte[][] valBytesArr = histItem.valuesBytesArray();
 
         int len = keys.length;
         int cnt = 0;
@@ -1256,7 +1256,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 histCache.removeOldest();
 
                 if (isPersistenceEnabled)
-                    worker.removeHistItem(ver.id - histCache.size());
+                    worker.removeHistItem(ver.id() - histCache.size());
             }
         }
         finally {

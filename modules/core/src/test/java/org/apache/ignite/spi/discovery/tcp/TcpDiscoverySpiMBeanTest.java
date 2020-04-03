@@ -23,16 +23,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import java.lang.management.ManagementFactory;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
@@ -72,16 +67,12 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
     public void testMBean() throws Exception {
         startGrids(3);
 
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
         try {
             for (int i = 0; i < 3; i++) {
                 IgniteEx grid = grid(i);
 
-                ObjectName spiName = U.makeMBeanName(grid.context().igniteInstanceName(), "SPIs",
-                        TcpDiscoverySpi.class.getSimpleName());
-
-                TcpDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, TcpDiscoverySpiMBean.class);
+                TcpDiscoverySpiMBean bean = getMxBean(grid.context().igniteInstanceName(), "SPIs",
+                    TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
 
                 assertNotNull(bean);
                 assertEquals(grid.cluster().topologyVersion(), bean.getCurrentTopologyVersion());
@@ -105,18 +96,14 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         try {
             int srvCnt = 2;
 
-            IgniteEx grid0 = (IgniteEx)startGrids(srvCnt);
+            IgniteEx grid0 = startGrids(srvCnt);
 
             IgniteEx client;
 
             client = startClientGrid("client");
 
-            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-            ObjectName spiName = U.makeMBeanName(grid0.context().igniteInstanceName(), "SPIs",
-                TcpDiscoverySpi.class.getSimpleName());
-
-            TcpDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, TcpDiscoverySpiMBean.class);
+            TcpDiscoverySpiMBean bean = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
+                TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
 
             assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
 

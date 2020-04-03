@@ -20,23 +20,26 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.engine.Session;
 import org.h2.util.CloseWatcher;
+
+import static org.apache.ignite.internal.util.IgniteUtils.awaitQuiet;
 
 /**
  * Base class for all indexing tests to check H2 connection management.
@@ -104,18 +107,43 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      */
     public static class BlockingIndexing extends IgniteH2Indexing {
         /** */
-        private final ConcurrentHashMap<String, CountDownLatch> latches = new ConcurrentHashMap<>();
+        private final Map<String, CountDownLatch> latches = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
-            throws IgniteCheckedException {
-            String cacheName = cctx.name();
+        @Override protected void rebuildIndexesFromHash0(
+            GridCacheContext cctx,
+            SchemaIndexCacheVisitorClosure clo,
+            GridFutureAdapter<Void> rebuildIdxFut
+        ) {
+            CountDownLatch startThread = new CountDownLatch(1);
 
-            latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1));
+            new Thread(() -> {
+                startThread.countDown();
 
-            U.await(latches.get(cacheName));
+                new SchemaIndexCacheVisitorImpl(cctx, null, null, rebuildIdxFut) {
+                    /** {@inheritDoc} */
+                    @Override protected void beforeExecute() {
+                        String cacheName = cctx.name();
 
-            super.rebuildIndexesFromHash0(cctx, clo);
+                        if (log.isInfoEnabled())
+                            log.info("Before execute build idx for cache=" + cacheName);
+
+                        awaitQuiet(latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1)));
+                    }
+                }.visit(clo);
+            }).start();
+
+            awaitQuiet(startThread);
+        }
+
+        /**
+         * Returns whether creating/rebuilding an index for cache is blocked.
+         *
+         * @return {@code True} if creating/rebuilding an index for cache is
+         *      blocked.
+         */
+        public boolean isBlock(String cacheName) {
+            return latches.containsKey(cacheName) && latches.get(cacheName).getCount() != 0;
         }
 
         /**
@@ -124,9 +152,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
          * @param cacheName Cache name.
          */
         public void stopBlock(String cacheName) {
-            CountDownLatch latch = latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1));
-
-            latch.countDown();
+            latches.computeIfAbsent(cacheName, l -> new CountDownLatch(1)).countDown();
         }
     }
 }

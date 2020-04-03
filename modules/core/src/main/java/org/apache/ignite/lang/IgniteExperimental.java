@@ -20,6 +20,7 @@ package org.apache.ignite.lang;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PACKAGE;
 import static java.lang.annotation.ElementType.TYPE;
@@ -32,6 +33,6 @@ import static java.lang.annotation.ElementType.TYPE;
  * that an API element should be "eventually" stabilized. Incompatible changes are allowed for such APIs: API may be
  * removed, changed or stabilized in future Ignite releases (both minor and maintenance).
  */
-@Target(value = {TYPE, METHOD, ANNOTATION_TYPE, PACKAGE})
+@Target(value = {TYPE, METHOD, ANNOTATION_TYPE, PACKAGE, FIELD})
 public @interface IgniteExperimental {
 }

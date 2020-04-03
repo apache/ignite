@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.net.InetSocketAddress;
+import java.util.Map;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 /**
  * Configuration required to initialize {@link TcpClientChannel}.
@@ -88,6 +89,9 @@ final class ClientChannelConfiguration {
     /** Reconnect retries within period (for throttling). */
     private final int reconnectThrottlingRetries;
 
+    /** User attributes. */
+    private Map<String, String> userAttrs;
+
     /**
      * Constructor.
      */
@@ -112,6 +116,7 @@ final class ClientChannelConfiguration {
         this.reconnectThrottlingPeriod = cfg.getReconnectThrottlingPeriod();
         this.reconnectThrottlingRetries = cfg.getReconnectThrottlingRetries();
         this.addr = addr;
+        this.userAttrs = cfg.getUserAttributes();
     }
 
     /**
@@ -252,5 +257,12 @@ final class ClientChannelConfiguration {
      */
     public int getReconnectThrottlingRetries() {
         return reconnectThrottlingRetries;
+    }
+
+    /**
+     * @return User attributes.
+     */
+    public Map<String, String> getUserAttributes() {
+        return userAttrs;
     }
 }
