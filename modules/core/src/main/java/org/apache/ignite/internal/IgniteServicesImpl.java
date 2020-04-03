@@ -98,8 +98,12 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public ServiceConfiguration multipleConfiguration(String name, Service svc, int totalCnt,
-        int maxPerNodeCnt) {
+    @Override public ServiceConfiguration multipleConfiguration(
+        String name,
+        Service svc,
+        int totalCnt,
+        int maxPerNodeCnt
+    ) {
         return ctx.service().serviceConfiguration(name, svc, totalCnt, maxPerNodeCnt);
     }
 
