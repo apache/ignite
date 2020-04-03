@@ -50,4 +50,12 @@ public class CacheGroupMetricsImpl implements CacheGroupMetrics {
     public long decrementIndexBuildCountPartitionsLeft() {
         return idxBuildCntPartitionsLeft.decrementAndGet();
     }
+
+    /**
+     * Add number of partitions before processed indexes create or rebuilding.
+     * @param partitions Count partition for add.
+     */
+    public void addIndexBuildCountPartitionsLeft(long partitions) {
+        idxBuildCntPartitionsLeft.addAndGet(partitions);
+    }
 }
