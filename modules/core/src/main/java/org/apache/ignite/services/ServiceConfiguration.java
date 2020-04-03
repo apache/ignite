@@ -19,6 +19,7 @@ package org.apache.ignite.services;
 
 import java.io.Serializable;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -76,6 +77,9 @@ public class ServiceConfiguration implements Serializable {
     /** Node filter. */
     @GridToStringExclude
     protected IgnitePredicate<ClusterNode> nodeFilter;
+
+    /** Enables or disables service statistics. */
+    protected boolean isStatisticsEnabled;
 
     /**
      * Gets service name.
@@ -254,6 +258,28 @@ public class ServiceConfiguration implements Serializable {
         this.nodeFilter = nodeFilter;
 
         return this;
+    }
+
+    /**
+     * Enables or disables statistics for the service. If enabled, durations of the service's methods are measured and
+     * stored in histograms in metric registry {@link IgniteServiceProcessor#SERVICE_METRIC_REGISTRY} by service name.
+     *
+     * @param enabled If {@code true}, enables service statistics. Disables otherwise.
+     * @return {@code this} for chaining.
+     */
+    public ServiceConfiguration setStatisticsEnabled(boolean enabled) {
+        this.isStatisticsEnabled = enabled;
+
+        return this;
+    }
+
+    /**
+     * Tells wheter statistics for this service is enabled.
+     *
+     * @return {@code True}, if statistics for this service will be enabled. {@code False} otherwise.
+     */
+    public boolean isStatisticsEnabled() {
+        return isStatisticsEnabled;
     }
 
     /** {@inheritDoc} */

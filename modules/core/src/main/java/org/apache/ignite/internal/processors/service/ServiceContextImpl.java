@@ -66,23 +66,29 @@ public class ServiceContextImpl implements ServiceContext {
     /** Cancelled flag. */
     private volatile boolean isCancelled;
 
+    /** Service statistics flag. */
+    private final boolean isStatisticsEnabled;
+
     /**
      * @param name Service name.
      * @param execId Execution ID.
      * @param cacheName Cache name.
      * @param affKey Affinity key.
      * @param exe Executor service.
+     * @param statisticsEnabled Service statistics flag.
      */
     ServiceContextImpl(String name,
         UUID execId,
         String cacheName,
         Object affKey,
-        ExecutorService exe) {
+        ExecutorService exe,
+        boolean statisticsEnabled) {
         this.name = name;
         this.execId = execId;
         this.cacheName = cacheName;
         this.affKey = affKey;
         this.exe = exe;
+        this.isStatisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */
@@ -129,6 +135,11 @@ public class ServiceContextImpl implements ServiceContext {
      */
     ExecutorService executor() {
         return exe;
+    }
+
+    /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
+    boolean statisticsEnabled() {
+        return isStatisticsEnabled;
     }
 
     /**

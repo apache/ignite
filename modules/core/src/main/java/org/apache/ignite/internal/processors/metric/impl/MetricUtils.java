@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.lang.reflect.Method;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -169,13 +172,32 @@ public class MetricUtils {
     }
 
     /**
+     * @param method Method to create metric name for.
+     * @param pkgNameDepth Level of package name abbreviation. See {@link #abbreviateName(Class, int)}.
+     * @return Metric name for {@code method}.
+     */
+    public static String methodMetricName(Method method, int pkgNameDepth) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
+        sb.append(" ");
+        sb.append(method.getName());
+        sb.append("(");
+        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
+            .collect(Collectors.joining(", ")));
+        sb.append(")");
+
+        return sb.toString();
+    }
+
+    /**
      * Abbreviates package name for metric naming purposes.
      *
      * @param pkgNameDepth Exhibition level of java package name. The bigger, the wider.
      *                     Max level is {@link #MAX_ABBREVIATE_NAME_LVL}. Values:
      *                     <pre>
      *                         0 or negative - wont add package name;
-     *                         1 - add first and last char of each name in java package;
+     *                         1 - add first, middle and last char of each name in java package;
      *                         2 or bigger - add full name of java package.
      *                     </pre>
      * @return Abbreviated name of {@code cls}.
@@ -196,10 +218,21 @@ public class MetricUtils {
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < pkgNameParts.length - 1; ++i) {
-            sb.append(pkgNameParts[i].charAt(0));
+            // Add whole package part in case its length is exactly 3.
+            if( pkgNameParts[i].length() == 3 )
+                sb.append(pkgNameParts[i]);
+            else {
+                // Add first char.
+                sb.append(pkgNameParts[i].charAt(0));
 
-            if (pkgNameParts[i].length() > 1)
-                sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+                // Add middle char.
+                if (pkgNameParts[i].length() > 3)
+                    sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() / 2));
+
+                // Add last char.
+                if (pkgNameParts[i].length() > 1)
+                    sb.append(pkgNameParts[i].charAt(pkgNameParts[i].length() - 1));
+            }
 
             sb.append(".");
         }
@@ -227,6 +260,9 @@ public class MetricUtils {
      * @return Sum of all entries of {@code histogram} buckets.
      */
     public static long sumHistogramEntries(HistogramMetric histogram) {
+        if (histogram == null)
+            return 0;
+
         long sum = 0;
 
         for (int i = 0; i < histogram.value().length; ++i)

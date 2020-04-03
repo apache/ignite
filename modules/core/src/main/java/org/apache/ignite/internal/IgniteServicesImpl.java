@@ -76,6 +76,38 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
+    @Override public ServiceConfiguration clusterSingletonConfiguration(String name, Service svc) {
+        return ctx.service().serviceConfiguration(name, svc, 1, 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceConfiguration nodeSingletonConfiguration(String name, Service svc) {
+        return ctx.service().serviceConfiguration(name, svc, 0, 1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceConfiguration keyAffinitySingletonConfiguration(
+        String name,
+        Service svc,
+        String cacheName,
+        Object affKey
+    ) {
+        return ctx.service().serviceConfiguration(name, svc, 1, 1)
+            .setCacheName(cacheName)
+            .setAffinityKey(affKey);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ServiceConfiguration multipleConfiguration(
+        String name,
+        Service svc,
+        int totalCnt,
+        int maxPerNodeCnt
+    ) {
+        return ctx.service().serviceConfiguration(name, svc, totalCnt, maxPerNodeCnt);
+    }
+
+    /** {@inheritDoc} */
     @Override public void deployNodeSingleton(String name, Service svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");

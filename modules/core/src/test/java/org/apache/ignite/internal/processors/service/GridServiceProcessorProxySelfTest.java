@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -264,7 +266,8 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
                     ref.set(svc);
 
-                    return svc instanceof Service;
+                    return Proxy.isProxyClass(svc.getClass()) &&
+                        Arrays.asList(svc.getClass().getInterfaces()).contains(MapService.class);
                 }
             }, 2000);
 

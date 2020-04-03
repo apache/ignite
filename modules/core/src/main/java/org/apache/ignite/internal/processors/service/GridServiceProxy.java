@@ -176,8 +176,11 @@ public class GridServiceProxy<T> implements Serializable {
                         if (svcCtx != null) {
                             Service svc = svcCtx.service();
 
-                            if (svc != null)
-                                return callServiceMethod(ctx.service(), svc, name, mtd, args);
+                            if (svc != null) {
+                                return svcCtx.statisticsEnabled() ?
+                                    measureServiceMethod(ctx.service(), svc, name, mtd, args) :
+                                    mtd.invoke(svc, args);
+                            }
                         }
                     }
                     else {
@@ -364,8 +367,13 @@ public class GridServiceProxy<T> implements Serializable {
      * @param mtd Method to call.
      * @param args Arguments for {@code mtd}.
      */
-    private static Object callServiceMethod(ServiceProcessorAdapter srvcProc, Service srvc, String srvcName, Method mtd,
-        Object[] args) throws InvocationTargetException, IllegalAccessException {
+    private static Object measureServiceMethod(
+        ServiceProcessorAdapter srvcProc,
+        Service srvc,
+        String srvcName,
+        Method mtd,
+        Object[] args
+    ) throws InvocationTargetException, IllegalAccessException {
 
         long startTime = System.nanoTime();
 
@@ -457,7 +465,11 @@ public class GridServiceProxy<T> implements Serializable {
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return callServiceMethod(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(), mtd, args);
+                if (svcCtx.statisticsEnabled())
+                    return measureServiceMethod(((IgniteEx)ignite).context().service(), svcCtx.service(), svcCtx.name(),
+                        mtd, args);
+                else
+                    return mtd.invoke(svcCtx.service(), args);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());

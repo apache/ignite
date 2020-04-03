@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.resource;
 
 import java.io.Serializable;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteCallable;
@@ -110,7 +112,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(svc instanceof Service);
+                assertTrue(Proxy.isProxyClass(svc.getClass())
+                    && Arrays.asList(svc.getClass().getInterfaces()).contains(DummyService.class));
 
                 svc.noop();
 
@@ -206,7 +209,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(svc instanceof Service);
+                assertTrue(Proxy.isProxyClass(svc.getClass()) &&
+                    Arrays.asList(svc.getClass().getInterfaces()).contains(DummyService.class));
 
                 this.svc = svc;
             }
