@@ -68,6 +68,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.PlatformNearCacheConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
@@ -261,6 +262,9 @@ public class PlatformConfigurationUtils {
             ccfg.setKeyConfiguration(keys);
         }
 
+        if (in.readBoolean())
+            ccfg.setPlatformNearConfiguration(readPlatformNearConfiguration(in));
+
         int pluginCnt = in.readInt();
 
         if (pluginCnt > 0) {
@@ -332,6 +336,19 @@ public class PlatformConfigurationUtils {
         cfg.setNearEvictionPolicy(readEvictionPolicy(in));
 
         return cfg;
+    }
+
+    /**
+     * Reads platform near config.
+     *
+     * @param in Stream.
+     * @return PlatformNearCacheConfiguration.
+     */
+    public static PlatformNearCacheConfiguration readPlatformNearConfiguration(BinaryRawReaderEx in) {
+        return new PlatformNearCacheConfiguration()
+                .setKeyTypeName(in.readString())
+                .setValueTypeName(in.readString())
+                .setKeepBinary(in.readBoolean());
     }
 
     /**
@@ -1094,6 +1111,17 @@ public class PlatformConfigurationUtils {
             }
         } else {
             writer.writeInt(0);
+        }
+
+        PlatformNearCacheConfiguration platCfg = ccfg.getPlatformNearConfiguration();
+        if (platCfg != null) {
+            writer.writeBoolean(true);
+            writer.writeString(platCfg.getKeyTypeName());
+            writer.writeString(platCfg.getValueTypeName());
+            writer.writeBoolean(platCfg.isKeepBinary());
+        }
+        else {
+            writer.writeBoolean(false);
         }
 
         CachePluginConfiguration[] plugins = ccfg.getPluginConfigurations();
