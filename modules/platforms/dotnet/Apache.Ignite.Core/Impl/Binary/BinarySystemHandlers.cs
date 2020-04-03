@@ -294,18 +294,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Write Timestamp.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteTimestamp(BinaryWriter ctx, DateTime obj)
-        {
-            ctx.Stream.WriteByte(BinaryTypeId.Timestamp);
-
-            BinaryUtils.WriteTimestamp(obj, ctx.Stream);
-        }
-
-        /// <summary>
         /// Write boolaen array.
         /// </summary>
         /// <param name="ctx">Context.</param>
@@ -435,18 +423,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.Stream.WriteByte(BinaryTypeId.ArrayGuid);
 
             BinaryUtils.WriteGuidArray(obj, ctx.Stream);
-        }
-
-        /// <summary>
-        /// Write nullable Timestamp array.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="obj">Value.</param>
-        private static void WriteTimestampArray(BinaryWriter ctx, DateTime?[] obj)
-        {
-            ctx.Stream.WriteByte(BinaryTypeId.ArrayTimestamp);
-
-            BinaryUtils.WriteTimestampArray(obj, ctx.Stream);
         }
 
         /// <summary>
