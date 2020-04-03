@@ -137,7 +137,7 @@ public class ServiceContextImpl implements ServiceContext {
         return exe;
     }
 
-    /** return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
+    /** @return {@code True} if statistics is enabled for this service. {@code False} otherwise. */
     boolean statisticsEnabled() {
         return isStatisticsEnabled;
     }

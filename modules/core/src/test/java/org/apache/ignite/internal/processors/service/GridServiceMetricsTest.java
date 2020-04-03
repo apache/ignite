@@ -23,10 +23,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.MAX_ABBREVIATE_NAME_LVL;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.methodMetricName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.serviceMetricRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.sumHistogramEntries;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SERVICE_METRIC_REGISTRY;
-import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.methodMetricName;
 
 /**
  * Tests metrics of service invocations.
@@ -84,7 +84,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
             findMetricRegistry(ignite.context().metric(), SRVC_NAME));
     }
 
-    /** Checks metric behaviour when launched several service instances via #IgniteServices#deployMultiple */
+    /** Checks metric behaviour when launched several service instances. */
     @Test
     public void testMultipleDeployment() throws Throwable {
         List<IgniteEx> servers = new ArrayList<>();

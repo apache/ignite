@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
+import java.lang.reflect.Method;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -166,6 +169,25 @@ public class MetricUtils {
         names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
         return names;
+    }
+
+    /**
+     * @param method Method to create metric name for.
+     * @param pkgNameDepth Level of package name abbreviation. See {@link #abbreviateName(Class, int)}.
+     * @return Metric name for {@code method}.
+     */
+    public static String methodMetricName(Method method, int pkgNameDepth) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(abbreviateName(method.getReturnType(), pkgNameDepth));
+        sb.append(" ");
+        sb.append(method.getName());
+        sb.append("(");
+        sb.append(Stream.of(method.getParameterTypes()).map(t -> abbreviateName(t, pkgNameDepth))
+            .collect(Collectors.joining(", ")));
+        sb.append(")");
+
+        return sb.toString();
     }
 
     /**
