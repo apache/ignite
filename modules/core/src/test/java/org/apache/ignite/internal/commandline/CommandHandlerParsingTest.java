@@ -545,6 +545,17 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows("Expected global query id. " + EXPECTED_GLOBAL_QRY_ID_FORMAT,
             "--kill", "sql", "not_sql_id");
+
+        // Continuous command format errors.
+        assertParseArgsThrows("Expected query originating node id.", "--kill", "continuous");
+
+        assertParseArgsThrows("Expected continuous query id.", "--kill", "continuous", UUID.randomUUID().toString());
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "continuous", "not_a_uuid");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "continuous", UUID.randomUUID().toString(), "not_a_uuid");
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
 
@@ -24,6 +25,18 @@ import org.apache.ignite.spi.systemview.view.SqlQueryView;
  * Query MXBean interface.
  */
 public interface QueryMXBean {
+    /**
+     * Kills continuous query by the identifier.
+     *
+     * @param routineId Continuous query id.
+     * @see ContinuousQueryView#routineId()
+     */
+    @MXBeanDescription("Kills continuous query by the identifier.")
+    void cancelContinuous(
+        @MXBeanParameter(name = "originNodeId", description = "Originating node ID.") String originNodeId,
+        @MXBeanParameter(name = "routineId", description = "Continuous query id.") String routineId
+    );
+
     /**
      * Kills SQL query by the identifier.
      *
