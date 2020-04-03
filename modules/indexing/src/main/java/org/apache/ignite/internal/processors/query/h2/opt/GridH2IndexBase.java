@@ -78,13 +78,12 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * @param qctx Query context.
      * @return Index segment ID for current query context.
      */
-    protected int threadLocalSegment() {
+    protected int segment(QueryContext qctx) {
         if(segmentsCount() == 1)
             return 0;
-
-        QueryContext qctx = queryContextRegistry().getThreadLocal();
 
         if(qctx == null)
             throw new IllegalStateException("GridH2QueryContext is not initialized.");

@@ -41,6 +41,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
+import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via JMX. */
 public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
@@ -102,6 +103,13 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
             ServiceMXBeanImpl.class.getSimpleName(), ServiceMXBean.class);
     }
 
+    /** */
+    @Test
+    public void testCancelScanQuery() {
+        doTestScanQueryCancel(startCli, srvs, args ->
+            qryMBean.cancelScan(args.get1().toString(), args.get2(), args.get3()));
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testCancelComputeTask() throws Exception {
@@ -124,6 +132,12 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     @Test
     public void testCancelSQLQuery() {
         doTestCancelSQLQuery(startCli, qryId -> qryMBean.cancelSQL(qryId));
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownScanQuery() {
+        qryMBean.cancelScan(srvs.get(0).localNode().id().toString(), "unknown", 1L);
     }
 
     /** */

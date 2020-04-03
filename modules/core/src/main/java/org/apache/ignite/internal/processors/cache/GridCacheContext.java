@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
@@ -346,7 +347,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheDrManager drMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
-        GridCacheAffinityManager affMgr
+        GridCacheAffinityManager affMgr,
+        PlatformCacheManager platformMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -392,6 +394,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
         this.affMgr = add(affMgr);
+        add(platformMgr);
 
         log = ctx.log(getClass());
 
