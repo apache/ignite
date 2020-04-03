@@ -1472,14 +1472,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd.isQuery()) {
+        if (err == null && hnd.isQuery()) {
             GridCacheProcessor proc = ctx.cache();
 
             if (proc != null) {
                 GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
-                if (cache != null && !cache.isLocal() && cache.context().userCache())
-                    req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
+                Map<Integer, T2<Long, Long>> cntrs = hnd.updateCounters();
+
+                if (cache != null && cntrs != null && !cache.isLocal() && cache.context().userCache())
+                    req.addUpdateCounters(ctx.localNodeId(), cntrs);
             }
         }
 
