@@ -161,8 +161,9 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
 
                 sysView.walker().visitAll(row, new AttributeWithValueVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
-                        data[idx] = CLASS_TO_VALUE_MAP
-                                .getOrDefault(clazz, value -> ValueString.get(Objects.toString(value))).apply(val);
+                        Class<?> key = val == null ? null : clazz;
+                        data[idx] = CLASS_TO_VALUE_MAP.getOrDefault(key,
+                                value -> ValueString.get(Objects.toString(value))).apply(val);
                     }
 
                     @Override public void acceptBoolean(int idx, String name, boolean val) {
