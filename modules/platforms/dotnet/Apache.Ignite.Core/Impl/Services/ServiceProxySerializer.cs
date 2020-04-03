@@ -253,10 +253,23 @@ namespace Apache.Ignite.Core.Impl.Services
                 return null;
 
             if (type.IsArray)
-                return (writer, o) => writer.WriteArrayInternal((Array) o);
+            {
+                Type elemType = type.GetElementType();
+
+                if (elemType == typeof(Guid?))
+                    return (writer, o) => writer.WriteGuidArray((Guid?[]) o);
+                else if (elemType == typeof(DateTime?))
+                    return (writer, o) => writer.WriteTimestampArray((DateTime?[]) o);
+                else
+                    return (writer, o) => writer.WriteArrayInternal((Array) o);
+
+            }
 
             if (arg is ICollection)
                 return (writer, o) => writer.WriteCollection((ICollection) o);
+
+            if (arg is DateTime)
+                return (writer, o) => writer.WriteTimestamp((DateTime) o);
 
             return null;
         }

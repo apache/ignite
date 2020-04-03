@@ -147,8 +147,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return new BinarySystemWriteHandler<decimal>(WriteDecimal, false);
             if (type == typeof(Guid))
                 return new BinarySystemWriteHandler<Guid>(WriteGuid, false);
-            if (type == typeof(DateTime))
-                return new BinarySystemWriteHandler<DateTime>(WriteTimestamp, false);
             if (type == typeof (BinaryObject))
                 return new BinarySystemWriteHandler<BinaryObject>(WriteBinary, false);
             if (type == typeof (BinaryEnum))
@@ -226,8 +224,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return new BinarySystemWriteHandler<string[]>(WriteStringArray, true);
                 if (elemType == typeof(Guid?))
                     return new BinarySystemWriteHandler<Guid?[]>(WriteGuidArray, true);
-                if (elemType == typeof(DateTime?))
-                    return new BinarySystemWriteHandler<DateTime?[]>(WriteTimestampArray, true);
                 // Enums.
                 if (BinaryUtils.IsIgniteEnum(elemType) || elemType == typeof(BinaryEnum))
                     return new BinarySystemWriteHandler<object>(WriteEnumArray, true);
