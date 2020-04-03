@@ -3084,7 +3084,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Distrubuted SQL configuration.
+     * @return Distributed SQL configuration.
      */
     public DistributedSqlConfiguration distributedConfiguration() {
         return distrCfg;
