@@ -88,10 +88,7 @@ public enum IgniteFeatures {
     CONT_QRY_SECURITY_AWARE(21),
 
     /** Long operations dump timeout. */
-    LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
-    /** IgniteMessaging with security subject id support. */
-    IGNITE_MESSAGING_SECURITY_AWARE(31);
+    LONG_OPERATIONS_DUMP_TIMEOUT(30);
 
     /**
      * Unique feature identifier.
