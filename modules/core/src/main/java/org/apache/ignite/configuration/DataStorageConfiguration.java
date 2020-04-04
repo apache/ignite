@@ -81,8 +81,8 @@ public class DataStorageConfiguration implements Serializable {
         (long)(DFLT_DATA_REGION_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_DATA_REGION_INITIAL_SIZE);
 
-    /** Default working directory for a snapshot final result. */
-    public static final String DFLT_LOCAL_SNAPSHOT_DIRECTORY = "snapshots";
+    /** Default relative working directory path for snapshot operation result. */
+    public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */
     private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
@@ -197,8 +197,11 @@ public class DataStorageConfiguration implements Serializable {
     /** Directory where index and partition files are stored. */
     private String storagePath;
 
-    /** Directory where will be stored all results of snapshot operations. */
-    private String locSnapshotPath = DFLT_LOCAL_SNAPSHOT_DIRECTORY;
+    /**
+     * Directory where will be stored all results of snapshot operations. If {@code null} then
+     * relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
+     */
+    private String snapshotPath;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -479,19 +482,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * @return Relative path where will be stored all local snapshot results.
+     * @return {@code null} if relative {@link #DFLT_SNAPSHOT_DIRECTORY} should be used
+     * and snapshot absolute path the otherwise.
      */
-    public String getLocalSnapshotPath() {
-        return locSnapshotPath;
+    public String getSnapshotPath() {
+        return snapshotPath;
     }
 
     /**
-     * @param locSnapshotPath Relative path to store all local snapshot results. By default
-     * {@code DFLT_LOCAL_SNAPSHOT_DIRECTORY} is used.
+     * @param snapshotPath Absolute path to store all local snapshot results.
+     * By default relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
      * @return Data storage configurations for chaining.
      */
-    public DataStorageConfiguration setLocalSnapshotPath(String locSnapshotPath) {
-        this.locSnapshotPath = locSnapshotPath;
+    public DataStorageConfiguration setSnapshotPath(String snapshotPath) {
+        this.snapshotPath = snapshotPath;
 
         return this;
     }
