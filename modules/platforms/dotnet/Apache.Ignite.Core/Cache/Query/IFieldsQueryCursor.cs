@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Query
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Impl.Cache.Query;
 
     /// <summary>
     /// Fields query cursor.
@@ -32,13 +33,8 @@ namespace Apache.Ignite.Core.Cache.Query
         IList<string> FieldNames { get; }
 
         /// <summary>
-        /// Gets the field type names.
-        /// </summary>
-        IList<string> FieldTypeNames { get; }
-
-        /// <summary>
         /// Gets fields metadata
         /// </summary>
-        IList<QueryCursorFieldMetadata> FieldsMetadata { get; }
+        IList<IQueryCursorFieldMetadata> FieldsMetadata { get; }
     }
 }

@@ -38,7 +38,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
     /**
      * Gets field types.
      */
-    private static final int OP_GET_FIELD_TYPES = 8;
+    private static final int OP_GET_FIELDS_META = 8;
 
     /**
      * Constructor.
@@ -84,7 +84,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
             for (int i = 0; i < cnt; i++) {
                 writer.writeString(fq.getFieldName(i));
             }
-        } else if (type == OP_GET_FIELD_TYPES) {
+        } else if (type == OP_GET_FIELDS_META) {
             QueryCursorEx<List<?>> cursor = cursor();
 
             List<GridQueryFieldMetadata> metadatas = cursor.fieldsMeta();
@@ -92,6 +92,7 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
             writer.writeInt(metadatas.size());
 
             for (GridQueryFieldMetadata metadata: metadatas){
+                writer.writeString(metadata.fieldName());
                 writer.writeString(metadata.fieldTypeName());
             }
         } else {

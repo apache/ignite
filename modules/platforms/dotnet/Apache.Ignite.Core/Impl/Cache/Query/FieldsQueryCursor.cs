@@ -62,22 +62,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         private const int OpGetFieldNames = 7;
 
         /** */
-        private const int OpGetFieldTypes = 8;
+        private const int OpGetFieldsMeta = 8;
 
         /** */
         private IList<string> _fieldNames;
 
         /** */
-        private IList<string> _fieldTypeNames;
-
-        /** */
-        private IList<QueryCursorFieldMetadata> _fieldMeta;
+        private IList<IQueryCursorFieldMetadata> _fieldsMeta;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="keepBinary">Keep portable flag.</param>
         /// <param name="readerFunc">The reader function.</param>
         public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
             Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
@@ -96,33 +93,22 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             }
         }
 
-        public IList<string> FieldTypeNames
+        public IList<IQueryCursorFieldMetadata> FieldsMetadata 
         {
             get
             {
-                return _fieldTypeNames ??
-                    (_fieldTypeNames = new ReadOnlyCollection<string>(
-                        Target.OutStream(OpGetFieldTypes, reader => reader.ReadStringCollection())));
-            }
-        }
-
-        public IList<QueryCursorFieldMetadata> FieldsMetadata 
-        {
-            get
-            {
-                if (_fieldMeta == null)
+                if (_fieldsMeta == null)
                 {
-                    var x = Target.OutStream(OpGetFieldTypes, reader => reader.ReadStringCollection());
-                    _fieldMeta = x.Select(s => new QueryCursorFieldMetadata
-                        {
-                            Name = "",
-                            Type = JavaTypes.GetDotNetType(s),
-                            JavaTypeName = s
-                        })
-                       .ToList();
-                } 
+                    var metadata = Target.OutStream(
+                        OpGetFieldsMeta,
+                        reader => reader.ReadCollectionRaw(stream =>
+                            new QueryCursorFieldMetadataImpl(stream) as IQueryCursorFieldMetadata));
 
-                return _fieldMeta;
+                    _fieldsMeta = new ReadOnlyCollection<IQueryCursorFieldMetadata>(
+                        metadata as List<IQueryCursorFieldMetadata> ?? metadata.ToList());
+                }
+
+                return _fieldsMeta;
             }
         }
     }

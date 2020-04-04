@@ -19,10 +19,25 @@ namespace Apache.Ignite.Core.Cache.Query
 {
     using System;
 
-    public class QueryCursorFieldMetadata
+    /// <summary>
+    /// Query field descriptor. This descriptor is used to provide metadata
+    /// about fields returned in query result.
+    /// </summary>
+    public interface IQueryCursorFieldMetadata
     {
-        public string Name { get; set; }
-        public string JavaTypeName { get; set; }
-        public Type Type { get; set; }
+        /// <summary>
+        /// Field name
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
+        /// Name of java type to which this field belongs
+        /// </summary>
+        string JavaTypeName { get; }
+
+        /// <summary>
+        /// Type to which this field belongs
+        /// </summary>
+        Type Type { get; }
     }
 }
