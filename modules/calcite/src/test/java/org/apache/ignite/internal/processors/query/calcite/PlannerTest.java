@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -39,10 +40,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -71,9 +70,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.SortedTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -375,7 +373,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext root) {
+            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
                 return Linq4j.asEnumerable(Arrays.asList(
                     new Object[]{0, "Igor", 0},
                     new Object[]{1, "Roman", 0}
@@ -403,7 +401,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext root) {
+            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
                 return Linq4j.asEnumerable(Arrays.asList(
                     new Object[]{0, "Calcite", 1},
                     new Object[]{1, "Ignite", 1}
@@ -524,12 +522,9 @@ public class PlannerTest extends GridCommonAbstractTest {
         SchemaPlus schema = createRootSchema(false)
             .add("PUBLIC", publicSchema);
 
-        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
-            "FROM PUBLIC.Developer d JOIN (" +
-            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
-            ") p " +
-            "ON d.projectId = p.id0 " +
-            "WHERE (d.projectId + 1) > ?";
+        String sql = "SELECT d.id,  p.ver " +
+            "FROM PUBLIC.Developer d JOIN PUBLIC.Project p " +
+            "ON d.projectId = p.id " ;
 
         RelTraitDef<?>[] traitDefs = {
             DistributionTraitDef.INSTANCE,
@@ -733,7 +728,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext root) {
+            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
                 return Linq4j.asEnumerable(Arrays.asList(
                     new Object[]{0, "Igor", 0},
                     new Object[]{1, "Roman", 0}
@@ -755,7 +750,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("NAME", f.createJavaType(String.class))
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext root) {
+            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
                 return Linq4j.asEnumerable(Arrays.asList(
                     new Object[]{0, "Calcite", 1},
                     new Object[]{1, "Ignite", 1}
@@ -984,7 +979,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .add("ID0", f.createJavaType(Integer.class))
                 .add("ID1", f.createJavaType(Integer.class))
                 .build()) {
-            @Override public Enumerable<Object[]> scan(DataContext root) {
+            @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
                 return Linq4j.asEnumerable(Arrays.asList(
                     new Object[]{0, 1},
                     new Object[]{1, 2}
@@ -1810,12 +1805,13 @@ public class PlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private abstract static class TestTable extends AbstractTable implements TranslatableTable, ScannableTable, DistributedTable, SortedTable {
+    private abstract static class TestTable extends IgniteTable {
         /** */
         private final RelProtoDataType protoType;
 
         /** */
         private TestTable(RelDataType type) {
+            super(null, null, null);
             protoType = RelDataTypeImpl.proto(type);
         }
 
@@ -1826,7 +1822,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTable);
+            return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
         }
 
         /** {@inheritDoc} */
@@ -1835,7 +1831,7 @@ public class PlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Enumerable<Object[]> scan(DataContext root) {
+        @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
             throw new AssertionError();
         }
 
@@ -1851,7 +1847,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public List<RelCollation> collations() {
-            throw new AssertionError();
+            return Collections.emptyList();
         }
     }
 

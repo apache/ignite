@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -36,7 +37,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -61,8 +64,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+
 /** */
-public class IgniteTable extends AbstractTable implements TranslatableTable, ScannableTable, DistributedTable, SortedTable {
+public class IgniteTable extends AbstractTable implements TranslatableTable, ProjectableFilterableTable {
     /** */
     private final String name;
 
@@ -81,10 +87,10 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     /**
      * @param name Table full name.
      */
-    public IgniteTable(String name, TableDescriptor desc, List<RelCollation> collations) {
+    public IgniteTable(String name, TableDescriptor desc, RelCollation collation) {
         this.name = name;
         this.desc = desc;
-        this.collations = collations;
+        this.collations = collation == null ? emptyList() : singletonList(collation);
 
         statistic = new StatisticsImpl();
     }
@@ -125,7 +131,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
             .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
             .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTable);
+        return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
     }
 
     /**
@@ -141,7 +147,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
      * @param collation Index collation.
      */
     public void addIndex(String idxName, RelCollation collation) {
-        IgniteTable idx = new IgniteTable(idxName, desc, Collections.singletonList(collation));
+        IgniteTable idx = new IgniteTable(idxName, desc, collation);
 
         indexes.put(idxName, idx);
     }
@@ -160,8 +166,8 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         return desc.columnDescriptorsMap();
     }
 
-    /** {@inheritDoc} */
-    @Override public NodesMapping mapping(PlanningContext ctx) {
+    /**  */
+    public NodesMapping mapping(PlanningContext ctx) {
         GridCacheContext<?, ?> cctx = desc.cacheContext();
 
         assert cctx != null;
@@ -180,19 +186,28 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteDistribution distribution() {
+    /** */
+    public IgniteDistribution distribution() {
         return desc.distribution();
     }
 
-    /** {@inheritDoc} */
-    @Override public List<RelCollation> collations() {
+    /**  */
+    public List<RelCollation> collations() {
         return collations;
     }
 
     /** {@inheritDoc} */
-    @Override public Enumerable<Object[]> scan(DataContext root) {
-        return Linq4j.asEnumerable(new TableScan((ExecutionContext) root, desc));
+    @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
+        ExecutionContext execCtx = (ExecutionContext)dataCtx;
+        ExpressionFactory expFactory = execCtx.planningContext().expressionFactory();
+//        expFactory.predicate();
+//        SearchRow
+        return Linq4j.asEnumerable(new TableScan((ExecutionContext) dataCtx, desc));
+    }
+
+
+    public Iterable<Object[]> scan(ExecutionContext ctx, Predicate<Object[]> filters, Function<Object[], Object[]> proj) {
+        return emptyList();
     }
 
     /** {@inheritDoc} */
@@ -214,7 +229,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
             res = new ArrayList<>(assignments.size());
 
             for (List<ClusterNode> partNodes : assignments)
-                res.add(F.isEmpty(partNodes) ? Collections.emptyList() : Collections.singletonList(F.first(partNodes).id()));
+                res.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
         }
         else if (!cctx.topology().rebalanceFinished(topVer)) {
             res = new ArrayList<>(assignments.size());
@@ -287,7 +302,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Sca
     private class StatisticsImpl implements Statistic {
         /** {@inheritDoc} */
         @Override public Double getRowCount() {
-            return null;
+            return 1000d;
         }
 
         /** {@inheritDoc} */

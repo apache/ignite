@@ -1198,7 +1198,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(SimilarAffinityKey.class, this);
+            return "[func=" + "HASH" /*affFuncCls.getSimpleName() +
+                ", parts=" + partsCnt +
+                ", backups=" + backups +
+                ", filter="  + filterCls.getSimpleName()*/ + ']' ;
         }
     }
 }

@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 
@@ -51,5 +54,11 @@ public class IgniteProject extends Project implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        RelOptCost cost = super.computeSelfCost(planner, mq); // TODO: CODE: implement.
+        System.out.println("IgniteProjectCost==" + cost +  ", projects=" + getProjects());
+        return cost;
     }
 }

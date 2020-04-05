@@ -70,7 +70,7 @@ public class ExecutionContext implements DataContext {
     /**
      * @return Parent context.
      */
-    public PlanningContext parent() {
+    public PlanningContext planningContext() {
         return ctx;
     }
 
@@ -120,7 +120,7 @@ public class ExecutionContext implements DataContext {
      * @return Originating node ID.
      */
     public UUID originatingNodeId() {
-        return parent().originatingNodeId();
+        return planningContext().originatingNodeId();
     }
 
     /** {@inheritDoc} */

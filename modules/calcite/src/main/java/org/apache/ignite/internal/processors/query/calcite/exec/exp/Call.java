@@ -105,9 +105,9 @@ public class Call implements Expression {
     /** {@inheritDoc} */
     @Override public <T> T evaluate(ExecutionContext ctx, Object... args) {
         if (opImpl == null) {
-            IgniteTypeFactory typeFactory = ctx.parent().typeFactory();
-            SqlConformance conformance = ctx.parent().conformance();
-            SqlOperatorTable opTable = ctx.parent().opTable();
+            IgniteTypeFactory typeFactory = ctx.planningContext().typeFactory();
+            SqlConformance conformance = ctx.planningContext().conformance();
+            SqlOperatorTable opTable = ctx.planningContext().opTable();
 
             opImpl = new ExpressionFactory(typeFactory, conformance, opTable).implement(this);
         }

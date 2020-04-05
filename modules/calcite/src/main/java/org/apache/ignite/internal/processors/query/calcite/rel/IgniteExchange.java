@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 /**
  * Relational expression that imposes a particular distribution on its input
@@ -48,5 +51,13 @@ public class IgniteExchange extends Exchange implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        double rowCount = mq.getRowCount(this);
+        double bytesPerRow = getRowType().getFieldCount();
+        return planner.getCostFactory().makeCost(
+            rowCount, rowCount, 0);
     }
 }

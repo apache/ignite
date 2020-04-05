@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -88,8 +90,8 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         this.ctx = ctx;
 
         final IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-        final SqlConformance conformance = ctx.parent().conformance();
-        final SqlOperatorTable opTable = ctx.parent().opTable();
+        final SqlConformance conformance = ctx.planningContext().conformance();
+        final SqlOperatorTable opTable = ctx.planningContext().opTable();
 
         expressionFactory = new ExpressionFactory(typeFactory, conformance, opTable);
     }
@@ -98,10 +100,10 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     @Override public Node<Object[]> visit(IgniteSender rel) {
         RelTarget target = rel.target();
         IgniteDistribution distribution = rel.distribution();
-        Destination destination = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
+        Destination dest = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, ctx.fragmentId(), target.fragmentId(), destination);
+        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, ctx.fragmentId(), target.fragmentId(), dest);
         outbox.register(visit(rel.getInput()));
 
         mailboxRegistry.register(outbox);
@@ -139,7 +141,14 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTableScan rel) {
-        return new ScanNode(ctx, rel.getTable().unwrap(ScannableTable.class).scan(ctx));
+        List<RexNode> filters = rel.filters();
+        int[] projects = rel.projects();
+
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+
+        Iterable<Object[]> rowsIterator = tbl.scan(ctx, filters, projects);
+
+        return new ScanNode(ctx, rowsIterator);
     }
 
     /** {@inheritDoc} */

@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.validate.SqlConformance;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.serialize.FilterPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.JoinPhysicalRel;
@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.TableModify
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableScanPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.ValuesPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -71,24 +70,27 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
         this.partitionService = partitionService;
         this.mailboxRegistry = mailboxRegistry;
         this.exchangeService = exchangeService;
-
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-        SqlOperatorTable opTable = ctx.parent().opTable();
-        SqlConformance conformance = ctx.parent().conformance();
-
-        expressionFactory = new ExpressionFactory(typeFactory, conformance, opTable);
+        this.expressionFactory = ctx.planningContext().expressionFactory();
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(TableScanPhysicalRel rel) {
-        Iterable<Object[]> source = ctx
-            .parent()
+        IgniteTable tbl = ctx.planningContext()
             .catalogReader()
             .getTable(rel.tableName())
-            .unwrap(ScannableTable.class)
-            .scan(ctx);
+            .unwrap(IgniteTable.class);
 
-        return new ScanNode(ctx, source);
+        Predicate<Object[]> filters = null;
+        if (rel.condition() != null)
+            filters = expressionFactory.predicate(ctx, rel.condition(), rel.rowType());
+
+        Function<Object[], Object[]> proj = null;
+        if (rel.projects() != null)
+            proj = expressionFactory.project(ctx, rel.projects(), rel.rowType());
+
+        Iterable<Object[]> rowsIter = tbl.scan(ctx, filters, proj);
+
+        return new ScanNode(ctx, rowsIter);
     }
 
     /** {@inheritDoc} */
@@ -151,7 +153,7 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
             case INSERT:
             case UPDATE:
             case DELETE:
-                TableDescriptor desc = ctx.parent().catalogReader().getTable(rel.tableName()).unwrap(TableDescriptor.class);
+                TableDescriptor desc = ctx.planningContext().catalogReader().getTable(rel.tableName()).unwrap(TableDescriptor.class);
                 ModifyNode node = new ModifyNode(ctx, desc, rel.operation(), rel.updateColumnList());
                 node.register(visit(rel.input()));
 

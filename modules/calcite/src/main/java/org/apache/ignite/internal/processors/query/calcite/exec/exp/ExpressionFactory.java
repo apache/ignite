@@ -459,6 +459,7 @@ public class ExpressionFactory {
         /** {@inheritDoc} */
         @Override public T apply(T r) {
             Object[] out = new Object[count];
+
             scalar.execute(ctx, (Object[]) r, out);
 
             return (T) out;

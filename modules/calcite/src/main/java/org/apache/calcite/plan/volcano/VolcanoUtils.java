@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.schema;
+package org.apache.calcite.plan.volcano;
 
 import java.util.List;
-import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelNode;
 
 /**
- *
+ * Utility methods to exploit package private API.
  */
-public interface SortedTable {
+public class VolcanoUtils {
     /**
-     * @return The table collations.
+     * Return all rels from the current set.
+     * @param subset Subset.
+     * @return All rels from the current set.
      */
-    List<RelCollation> collations();
+    public static List<RelNode> deriveSiblings(RelSubset subset) {
+        return subset.set.getRelsFromAllSubsets();
+    }
 }

@@ -93,7 +93,9 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory implem
 
         List<ColumnDescriptor> descriptors = new ArrayList<>(fields.size() + 2);
 
-        int keyField = 0, valField = 1, affField = 0;
+        int keyField = QueryUtils.KEY_COL;
+        int valField = QueryUtils.VAL_COL;
+        int affField = QueryUtils.KEY_COL;
 
         // A _key/_val fields is virtual in case there is an alias or a property(es) mapped to _key/_val object fields.
         BitSet virtualFlags = new BitSet();

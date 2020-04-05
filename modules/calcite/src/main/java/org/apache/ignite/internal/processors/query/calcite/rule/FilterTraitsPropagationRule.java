@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 
 /**
@@ -44,12 +48,21 @@ public class FilterTraitsPropagationRule extends RelOptRule {
         RelNode input = call.rel(1);
 
         RelOptCluster cluster = rel.getCluster();
-        RelMetadataQuery mq = cluster.getMetadataQuery();
+        RelMetadataQueryEx mq = (RelMetadataQueryEx)cluster.getMetadataQuery();
+        Set<RelTraitSet> allTraitSets = mq.deriveTraitSets(rel);
+        Set<RelTraitSet> physicalTraitSets = new HashSet<>();
+        for (RelTraitSet set : allTraitSets) {
+            RelTraitSet physSet = set.replace(IgniteConvention.INSTANCE);
+            physicalTraitSets.add(physSet);
+        }
 
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteMdDistribution.filter(mq, input, rel.getCondition()));
+        List<RelNode> newRels = new ArrayList<>(physicalTraitSets.size());
+        for (RelTraitSet traits : physicalTraitSets) {
+            RelNode newInput = convert(input, traits);
+            IgniteFilter newFilter = new IgniteFilter(cluster, traits, newInput, rel.getCondition());
+            newRels.add(newFilter);
+        }
 
-        RuleUtils.transformTo(call,
-            new IgniteFilter(cluster, traits, input, rel.getCondition()));
+        RuleUtils.transformTo(call, newRels);
     }
 }

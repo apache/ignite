@@ -163,7 +163,7 @@ public class TableScan implements Iterable<Object[]> {
                 top.readLock();
                 try {
                     GridDhtTopologyFuture fut = top.topologyVersionFuture();
-                    AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
+                    AffinityTopologyVersion topVer = ectx.planningContext().topologyVersion();
 
                     if (!fut.isDone() || fut.topologyVersion().compareTo(topVer) != 0)
                         throw new ClusterTopologyCheckedException("Failed to execute query. Retry on stable topology.");
@@ -212,7 +212,7 @@ public class TableScan implements Iterable<Object[]> {
 
         /** */
         private void reservePartitioned(GridDhtPartitionTopology top) {
-            AffinityTopologyVersion topVer = ectx.parent().topologyVersion();
+            AffinityTopologyVersion topVer = ectx.planningContext().topologyVersion();
             int[] partitions = ectx.partitions();
 
             assert topVer != null && !F.isEmpty(partitions);

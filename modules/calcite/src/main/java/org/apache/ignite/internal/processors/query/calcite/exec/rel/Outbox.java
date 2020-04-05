@@ -201,7 +201,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
             exchange.cancel(nodeId, queryId(), targetFragmentId, exchangeId, batchId);
         }
         catch (IgniteCheckedException e) {
-            U.warn(context().parent().logger(), "Failed to send cancel message.", e);
+            U.warn(context().planningContext().logger(), "Failed to send cancel message.", e);
         }
     }
 

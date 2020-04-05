@@ -108,9 +108,9 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         TableDescriptorImpl desc =
             new TableDescriptorImpl(cacheInfo.cacheContext(), typeDescriptor, affinityIdentity(cacheInfo));
 
-        List<RelCollation> pkCollations = derivePkIndexCollations(desc);
+        RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
 
-        schema.addTable(tableName, new IgniteTable(tableName, desc, pkCollations));
+        schema.addTable(tableName, new IgniteTable(tableName, desc, pkCollation));
 
         rebuild();
     }
@@ -120,26 +120,6 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     private static Object affinityIdentity(GridCacheContextInfo<?, ?> cacheInfo) {
         return cacheInfo.config().getCacheMode() == CacheMode.PARTITIONED ?
             cacheInfo.cacheContext().group().affinity().similarAffinityKey() : null;
-    }
-
-    /**
-     * @return Index collation.
-     */
-    @NotNull private static List<RelCollation> derivePkIndexCollations(TableDescriptor desc) {
-        List<RelCollation> collations = new ArrayList<>(2);
-
-        RelCollation keyFieldCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
-
-        collations.add(keyFieldCollation);
-
-        // Case where there is an alias for key => PK sorted by both _key and alias columns.
-        if (QueryUtils.KEY_COL != desc.keyField()) {
-            RelCollation keAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
-
-            collations.add(keAliasCollation);
-        }
-
-        return collations;
     }
 
     /** {@inheritDoc} */

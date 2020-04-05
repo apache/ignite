@@ -22,6 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.Expression;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 
 /**
@@ -29,21 +31,54 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
  */
 public class TableScanPhysicalRel implements PhysicalRel {
     /** */
-    private List<String> tableName;
+    private List<String> tblName;
+
+    /** Row type after the project. */
+    private DataType rowType;
+
+    /** */
+    private Expression cond;
+
+    /** */
+    private List<Expression> projects;
 
     /** */
     public TableScanPhysicalRel() {
     }
 
     /**
-     * @param tableName Qualified table name
+     * @param tblName Qualified table name
      */
-    public TableScanPhysicalRel(List<String> tableName) {
-        this.tableName = tableName;
+    public TableScanPhysicalRel(List<String> tblName) {
+        this.tblName = tblName;
     }
 
+    /**
+     * @return Full table name.
+     */
     public List<String> tableName() {
-        return tableName;
+        return tblName;
+    }
+
+    /**
+     * @return Row type.
+     */
+    public DataType rowType() {
+        return rowType;
+    }
+
+    /**
+     * @return Filter confition.
+     */
+    public Expression condition() {
+        return cond;
+    }
+
+    /**
+     * @return Projection.
+     */
+    public List<Expression> projects() {
+        return projects;
     }
 
     /** {@inheritDoc} */
@@ -53,21 +88,41 @@ public class TableScanPhysicalRel implements PhysicalRel {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(tableName.size());
+        out.writeObject(rowType);
+        out.writeObject(cond);
 
-        for (String name : tableName)
+        out.writeInt(tblName.size());
+        for (String name : tblName)
             out.writeUTF(name);
+
+        if (projects == null) {
+            out.writeInt(0);
+        }
+        else {
+            out.writeInt(projects.size());
+            for (Expression project : projects)
+                out.writeObject(project);
+        }
+
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        int tableNameSize = in.readInt();
+        rowType = (DataType) in.readObject();
+        cond = (Expression) in.readObject();
 
-        List<String> tableName = new ArrayList<>(tableNameSize);
+        int tblNameSize = in.readInt();
+        List<String> tblName = new ArrayList<>(tblNameSize);
+        for (int i = 0; i < tblNameSize; i++)
+            tblName.add(in.readUTF());
+        this.tblName = tblName;
 
-        for (int i = 0; i < tableNameSize; i++)
-            tableName.add(in.readUTF());
-
-        this.tableName = tableName;
+        int projectsSize = in.readInt();
+        if (projectsSize > 0) {
+            List<Expression> projects = new ArrayList<>(projectsSize);
+            for (int i = 0; i < projectsSize; i++)
+                projects.add((Expression) in.readObject());
+            this.projects = projects;
+        }
     }
 }

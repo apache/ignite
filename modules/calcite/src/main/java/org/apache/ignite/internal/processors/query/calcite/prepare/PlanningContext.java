@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -84,10 +85,13 @@ public final class PlanningContext implements Context {
     private final IgniteLogger logger;
 
     /** */
-    private IgnitePlanner planner;
+    private final IgniteTypeFactory typeFactory;
 
     /** */
-    private IgniteTypeFactory typeFactory;
+    private final ExpressionFactory expressionFactory;
+
+    /** */
+    private IgnitePlanner planner;
 
     /** */
     private CalciteConnectionConfig connectionConfig;
@@ -112,6 +116,11 @@ public final class PlanningContext implements Context {
         this.config = Frameworks.newConfigBuilder(config).context(this).build();
 
         queryCancel = unwrap(GridQueryCancel.class);
+
+        RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, config.getTypeSystem());
+        this.typeFactory = new IgniteTypeFactory(typeSys);
+
+        expressionFactory = new ExpressionFactory(typeFactory, conformance(), opTable());
     }
 
     /**
@@ -214,12 +223,14 @@ public final class PlanningContext implements Context {
      * @return Type factory.
      */
     public IgniteTypeFactory typeFactory() {
-        if (typeFactory != null)
-            return typeFactory;
+        return typeFactory;
+    }
 
-        RelDataTypeSystem typeSystem = connectionConfig().typeSystem(RelDataTypeSystem.class, config.getTypeSystem());
-
-        return typeFactory = new IgniteTypeFactory(typeSystem);
+    /**
+     * @return Expression factory.
+     */
+    public ExpressionFactory expressionFactory() {
+        return expressionFactory;
     }
 
     /**
