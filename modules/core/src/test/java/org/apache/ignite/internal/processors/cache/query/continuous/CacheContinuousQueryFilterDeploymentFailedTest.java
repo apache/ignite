@@ -34,25 +34,27 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
- * Tests the behaviour of continuous query registration in case the remote node failed to obtain the filter deployment.
+ * Tests the behavior of continuous query registration in case the remote node failed to obtain the filter deployment.
  */
-public class ContinuousQueryFilterDeploymentFailedTest extends GridCommonAbstractTest {
+public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAbstractTest {
     /** The name of the CQ filter factory class. Its obtaining on a non-local node requires P2P class loading. */
-    private static final String EXT_FILTER_CLS = "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory";
+    private static final String EXT_FILTER_FACTORY_CLS =
+        "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setPeerClassLoadingEnabled(true);
         cfg.setNetworkTimeout(1000);
 
         return cfg;
     }
 
     /**
-     * Tests continuous query behaviour in case of filter deployment obtaining failure.
+     * Tests continuous query behavior in case of filter deployment obtaining failure.
+     *
+     * @throws Exception If failed.
      */
     @Test
     @SuppressWarnings({"ThrowableNotThrown"})
@@ -63,13 +65,13 @@ public class ContinuousQueryFilterDeploymentFailedTest extends GridCommonAbstrac
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        Class<Factory<? extends CacheEntryEventFilter<Integer, Integer>>> filterFactoryCls =
-            (Class<Factory<? extends CacheEntryEventFilter<Integer, Integer>>>) getExternalClassLoader()
-                .loadClass(EXT_FILTER_CLS);
+        Class<Factory<CacheEntryEventFilter<Integer, Integer>>> remoteFilterFactoryCls =
+            (Class<Factory<CacheEntryEventFilter<Integer, Integer>>>)getExternalClassLoader()
+                .loadClass(EXT_FILTER_FACTORY_CLS);
 
-        Factory<? extends CacheEntryEventFilter<Integer, Integer>> filterFactory = filterFactoryCls.newInstance();
+        Factory<CacheEntryEventFilter<Integer, Integer>> remoteFilterFactory = remoteFilterFactoryCls.newInstance();
 
-        qry.setRemoteFilterFactory(filterFactory);
+        qry.setRemoteFilterFactory(remoteFilterFactory);
 
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof GridDeploymentRequest);
 
