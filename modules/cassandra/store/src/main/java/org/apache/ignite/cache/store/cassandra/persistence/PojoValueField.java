@@ -91,6 +91,15 @@ public class PojoValueField extends PojoField {
     }
 
     /** {@inheritDoc} */
+    public PojoValueField(PojoValueField field, Class<?> pojoCls) {
+        super(field, pojoCls);
+        this.isStatic = field.isStatic;
+        this.isIndexed = field.isIndexed;
+        this.idxCls = field.idxCls;
+        this.idxOptions = field.idxOptions;
+    }
+
+    /** {@inheritDoc} */
     @Override public String getColumnDDL() {
         String colDDL = super.getColumnDDL();
 

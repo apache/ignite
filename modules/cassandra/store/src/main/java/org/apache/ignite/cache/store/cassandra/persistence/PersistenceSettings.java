@@ -19,14 +19,11 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 
 import com.datastax.driver.core.DataType;
 import java.beans.PropertyDescriptor;
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collections;
+import java.util.*;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.ignite.IgniteException;
@@ -42,7 +39,7 @@ import org.w3c.dom.NodeList;
  * Stores persistence settings, which describes how particular key/value
  * from Ignite cache should be stored in Cassandra.
  */
-public abstract class PersistenceSettings implements Serializable {
+public abstract class PersistenceSettings<FIELD extends PojoField> implements Serializable {
     /** Xml attribute specifying persistence strategy. */
     private static final String STRATEGY_ATTR = "strategy";
 
@@ -75,7 +72,7 @@ public abstract class PersistenceSettings implements Serializable {
      * List of POJO fields having unique mapping to Cassandra columns - skipping aliases pointing
      *  to the same Cassandra table column.
      */
-    private List<PojoField> casUniqueFields;
+    private List<FIELD> casUniqueFields;
 
     /**
      * Extracts property descriptor from the descriptors list by its name.
@@ -229,7 +226,7 @@ public abstract class PersistenceSettings implements Serializable {
      *
      * @return list of fields.
      */
-    public abstract List<PojoField> getFields();
+    public abstract List<FIELD> getFields();
 
     /**
      * Returns POJO field by Cassandra table column name.
@@ -239,7 +236,7 @@ public abstract class PersistenceSettings implements Serializable {
      * @return POJO field or null if not exists.
      */
     public PojoField getFieldByColumn(String column) {
-        List<PojoField> fields = getFields();
+        List<FIELD> fields = getFields();
 
         if (fields == null || fields.isEmpty())
             return null;
@@ -258,7 +255,7 @@ public abstract class PersistenceSettings implements Serializable {
      *
      * @return List of fields.
      */
-    public List<PojoField> cassandraUniqueFields() {
+    public List<FIELD> cassandraUniqueFields() {
         return casUniqueFields;
     }
 
@@ -293,7 +290,7 @@ public abstract class PersistenceSettings implements Serializable {
         if (PersistenceStrategy.PRIMITIVE == stgy)
             return "  \"" + col + "\" " + PropertyMappingHelper.getCassandraType(javaCls);
 
-        List<PojoField> fields = getFields();
+        List<FIELD> fields = getFields();
 
         if (fields == null || fields.isEmpty()) {
             throw new IllegalStateException("There are no POJO fields found for '" + javaCls.toString()
@@ -306,7 +303,7 @@ public abstract class PersistenceSettings implements Serializable {
 
         StringBuilder builder = new StringBuilder();
 
-        for (PojoField field : fields) {
+        for (FIELD field : fields) {
             if ((ignoreColumns != null && ignoreColumns.contains(field.getColumn())) ||
                     processedColumns.contains(field.getColumn())) {
                 continue;
@@ -336,14 +333,23 @@ public abstract class PersistenceSettings implements Serializable {
      * @param el XML element describing POJO field
      * @param clazz POJO java class.
      */
-    protected abstract PojoField createPojoField(Element el, Class clazz);
+    protected abstract FIELD createPojoField(Element el, Class clazz);
 
     /**
      * Creates instance of {@link PojoField} from its field accessor.
      *
      * @param accessor field accessor.
      */
-    protected abstract PojoField createPojoField(PojoFieldAccessor accessor);
+    protected abstract FIELD createPojoField(PojoFieldAccessor accessor);
+
+    /**
+     * Creates instance of {@link PojoField} based on the other instance and java class
+     * to initialize accessor.
+     *
+     * @param field PojoField instance
+     * @param clazz java class
+     */
+    protected abstract FIELD createPojoField(FIELD field, Class clazz);
 
     /**
      * Class instance initialization.
@@ -357,7 +363,7 @@ public abstract class PersistenceSettings implements Serializable {
             return;
         }
 
-        List<PojoField> fields = getFields();
+        List<FIELD> fields = getFields();
 
         if (fields == null || fields.isEmpty())
             return;
@@ -365,7 +371,7 @@ public abstract class PersistenceSettings implements Serializable {
         tableColumns = new LinkedList<>();
         casUniqueFields = new LinkedList<>();
 
-        for (PojoField field : fields) {
+        for (FIELD field : fields) {
             if (!tableColumns.contains(field.getColumn())) {
                 tableColumns.add(field.getColumn());
                 casUniqueFields.add(field);
@@ -381,7 +387,7 @@ public abstract class PersistenceSettings implements Serializable {
      *
      * @param fields List of fields to be persisted into Cassandra.
      */
-    protected void checkDuplicates(List<PojoField> fields) {
+    protected void checkDuplicates(List<FIELD> fields) {
         if (fields == null || fields.isEmpty())
             return;
 
@@ -419,14 +425,14 @@ public abstract class PersistenceSettings implements Serializable {
      * @param fieldNodes Field nodes to process.
      * @return POJO fields list.
      */
-    protected List<PojoField> detectPojoFields(NodeList fieldNodes) {
-        List<PojoField> detectedFields = new LinkedList<>();
+    protected List<FIELD> detectPojoFields(NodeList fieldNodes) {
+        List<FIELD> detectedFields = new LinkedList<>();
 
         if (fieldNodes != null && fieldNodes.getLength() != 0) {
             int cnt = fieldNodes.getLength();
 
             for (int i = 0; i < cnt; i++) {
-                PojoField field = createPojoField((Element)fieldNodes.item(i), getJavaClass());
+                FIELD field = createPojoField((Element)fieldNodes.item(i), getJavaClass());
 
                 // Just checking that such field exists in the class
                 PropertyMappingHelper.getPojoFieldAccessor(getJavaClass(), field.getName());
@@ -517,5 +523,29 @@ public abstract class PersistenceSettings implements Serializable {
         catch (Throwable e) {
             throw new IgniteException("Failed to instantiate class '" + clazz + "' using default constructor", e);
         }
+    }
+
+    /**
+     * @see java.io.Serializable
+     */
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        casUniqueFields = Collections.unmodifiableList(enrichFields(casUniqueFields));
+    }
+
+    /**
+     * Sets accessor for the given {@code source} fields.
+     * Required as accessor is transient and is not present
+     * after deserialization.
+     */
+    protected List<FIELD> enrichFields(List<FIELD> source) {
+        if (source != null) {
+            List<FIELD> enriched = new ArrayList<>(source.size());
+            for (FIELD sourceField : source) {
+                enriched.add(createPojoField(sourceField, getJavaClass()));
+            }
+            return enriched;
+        } else
+            return null;
     }
 }

@@ -60,6 +60,12 @@ public class PojoKeyField extends PojoField {
         }
     }
 
+    /** {@inheritDoc} */
+    public PojoKeyField(PojoKeyField field, Class<?> pojoCls) {
+        super(field, pojoCls);
+        this.sortOrder = field.sortOrder;
+    }
+
     /**
      * Constructs Ignite cache key POJO object descriptor.
      *
