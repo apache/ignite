@@ -65,13 +65,13 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        Class<Factory<CacheEntryEventFilter<Integer, Integer>>> remoteFilterFactoryCls =
+        Class<Factory<CacheEntryEventFilter<Integer, Integer>>> rmtFilterFactoryCls =
             (Class<Factory<CacheEntryEventFilter<Integer, Integer>>>)getExternalClassLoader()
                 .loadClass(EXT_FILTER_FACTORY_CLS);
 
-        Factory<CacheEntryEventFilter<Integer, Integer>> remoteFilterFactory = remoteFilterFactoryCls.newInstance();
+        Factory<CacheEntryEventFilter<Integer, Integer>> rmtFilterFactory = rmtFilterFactoryCls.newInstance();
 
-        qry.setRemoteFilterFactory(remoteFilterFactory);
+        qry.setRemoteFilterFactory(rmtFilterFactory);
 
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof GridDeploymentRequest);
 
