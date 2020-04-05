@@ -59,7 +59,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
@@ -99,7 +98,7 @@ import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
@@ -849,11 +848,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
      * @return Snapshot work path.
      */
     static Path snapshotPath(IgniteConfiguration cfg) {
-        DataStorageConfiguration dcfg = cfg.getDataStorageConfiguration();
-
-        return dcfg.getSnapshotPath() == null ?
+        return cfg.getSnapshotPath() == null ?
             Paths.get(cfg.getWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY) :
-            Paths.get(dcfg.getSnapshotPath());
+            Paths.get(cfg.getSnapshotPath());
     }
 
     /** Remote snapshot future which tracks remote snapshot transmission result. */

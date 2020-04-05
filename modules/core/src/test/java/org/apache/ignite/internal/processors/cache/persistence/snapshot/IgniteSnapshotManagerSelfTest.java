@@ -89,7 +89,7 @@ import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -112,14 +112,6 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CACHE_KEYS_RANGE = 1024;
-
-    /** */
-    private static final DataStorageConfiguration memCfg = new DataStorageConfiguration()
-        .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(100L * 1024 * 1024)
-            .setPersistenceEnabled(true))
-        .setCheckpointFrequency(3000)
-        .setPageSize(1024);
 
     /** */
     private CacheConfiguration<Integer, Integer> dfltCacheCfg =

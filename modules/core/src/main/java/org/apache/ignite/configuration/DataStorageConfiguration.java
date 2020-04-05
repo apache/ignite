@@ -81,9 +81,6 @@ public class DataStorageConfiguration implements Serializable {
         (long)(DFLT_DATA_REGION_FRACTION * U.getTotalMemoryAvailable()),
         DFLT_DATA_REGION_INITIAL_SIZE);
 
-    /** Default relative working directory path for snapshot operation result. */
-    public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
-
     /** Default initial size of a memory chunk for the system cache (40 MB). */
     private static final long DFLT_SYS_REG_INIT_SIZE = 40L * 1024 * 1024;
 
@@ -196,12 +193,6 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Directory where index and partition files are stored. */
     private String storagePath;
-
-    /**
-     * Directory where will be stored all results of snapshot operations. If {@code null} then
-     * relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
-     */
-    private String snapshotPath;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -477,25 +468,6 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
         this.storagePath = persistenceStorePath;
-
-        return this;
-    }
-
-    /**
-     * @return {@code null} if relative {@link #DFLT_SNAPSHOT_DIRECTORY} should be used
-     * and snapshot absolute path the otherwise.
-     */
-    public String getSnapshotPath() {
-        return snapshotPath;
-    }
-
-    /**
-     * @param snapshotPath Absolute path to store all local snapshot results.
-     * By default relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
-     * @return Data storage configurations for chaining.
-     */
-    public DataStorageConfiguration setSnapshotPath(String snapshotPath) {
-        this.snapshotPath = snapshotPath;
 
         return this;
     }

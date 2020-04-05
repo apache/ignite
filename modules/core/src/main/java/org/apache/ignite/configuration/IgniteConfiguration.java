@@ -221,6 +221,9 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
+    /** Default relative working directory path for snapshot operation result. */
+    public static final String DFLT_SNAPSHOT_DIRECTORY = "snapshots";
+
     /** Default value for late affinity assignment flag. */
     @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
@@ -552,6 +555,12 @@ public class IgniteConfiguration {
     /** Page memory configuration. */
     private DataStorageConfiguration dsCfg;
 
+    /**
+     * Directory where will be stored all results of snapshot operations. If {@code null} then
+     * relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
+     */
+    private String snapshotPath;
+
     /** Active on start flag. */
     @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
@@ -711,6 +720,7 @@ public class IgniteConfiguration {
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
         segResolvers = cfg.getSegmentationResolvers();
+        snapshotPath = cfg.getSnapshotPath();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
@@ -3148,6 +3158,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setLocalEventListeners(Map<IgnitePredicate<? extends Event>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
+
+        return this;
+    }
+
+    /**
+     * @return {@code null} if relative {@link #DFLT_SNAPSHOT_DIRECTORY} should be used
+     * and snapshot absolute path the otherwise.
+     */
+    public String getSnapshotPath() {
+        return snapshotPath;
+    }
+
+    /**
+     * @param snapshotPath Absolute path to store all local snapshot results.
+     * By default relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
+     * @return Ignite configuration for chaining.
+     */
+    public IgniteConfiguration setSnapshotPath(String snapshotPath) {
+        this.snapshotPath = snapshotPath;
 
         return this;
     }
