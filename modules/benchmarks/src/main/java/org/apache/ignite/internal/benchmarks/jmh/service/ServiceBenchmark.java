@@ -39,13 +39,14 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+/** */
 @State(Scope.Benchmark)
 public class ServiceBenchmark extends JmhAbstractBenchmark implements InvocationHandler {
     /** */
     private IgniteEx ignite;
 
     /** */
-    private TestServiceImpl local;
+    private TestServiceImpl loc;
 
     /** */
     private TestService proxy;
@@ -56,7 +57,7 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
     /** */
     @Benchmark
     public void directReference(Blackhole blackhole) throws Exception {
-        blackhole.consume(local.handleVal(5));
+        blackhole.consume(loc.handleVal(5));
     }
 
     /** */
@@ -78,9 +79,9 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
 
         ignite.services().deploy(ignite.services().nodeSingletonConfiguration("srv", new TestServiceImpl()));
 
-        local = ignite.services().service("srv");
+        loc = ignite.services().service("srv");
 
-        test = (TestService)Proxy.newProxyInstance(local.getClass().getClassLoader(), new Class<?>[] {TestService.class}, this);
+        test = (TestService)Proxy.newProxyInstance(loc.getClass().getClassLoader(), new Class<?>[] {TestService.class}, this);
 
         proxy = new GridServiceProxy<>(ignite.cluster(), "srv", TestService.class, true, 0, ignite.context()).proxy();
 //        proxy = ignite.services().serviceProxy("srv", TestService.class, true);
@@ -123,7 +124,7 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
 
     /** */
     @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        return method.invoke(local, args);
+        return method.invoke(loc, args);
     }
 
     /** */
