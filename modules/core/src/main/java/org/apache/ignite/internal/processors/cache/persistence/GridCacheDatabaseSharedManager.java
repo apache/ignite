@@ -2688,12 +2688,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     // TODO IGNITE-12722: Get rid of GridCacheDatabaseSharedManager#getPageMemoryForCacheGroup functionality.
     private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
-/*        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
+        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
             return (PageMemoryEx)dataRegion(METASTORE_DATA_REGION_NAME).pageMemory();
 
         // TODO IGNITE-7792 add generic mapping.
         if (grpId == TxLog.TX_LOG_CACHE_ID)
-            return (PageMemoryEx)dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();*/
+            return (PageMemoryEx)dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
 
         // TODO IGNITE-5075: cache descriptor can be removed.
         GridCacheSharedContext sharedCtx = context();
