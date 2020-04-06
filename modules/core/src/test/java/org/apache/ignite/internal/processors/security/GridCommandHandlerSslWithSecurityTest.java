@@ -93,6 +93,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
         List<String> args = new ArrayList<>();
 
         args.add(DEACTIVATE.text());
+        args.add("--force");
         args.add("--yes");
 
         args.add("--user");

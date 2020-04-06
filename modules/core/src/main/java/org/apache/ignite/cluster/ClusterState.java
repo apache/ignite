@@ -23,7 +23,12 @@ import org.jetbrains.annotations.Nullable;
  * Cluster states.
  */
 public enum ClusterState {
-    /** Cluster deactivated. Cache operations aren't allowed. */
+    /**
+     * Cluster deactivated. Cache operations aren't allowed.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     */
     INACTIVE,
 
     /** Cluster activated. All cache operations are allowed. */

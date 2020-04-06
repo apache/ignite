@@ -60,11 +60,14 @@ namespace Apache.Ignite.Examples.Datagrid
                         MaxSize = 10
                     }
                 };
+                
+                // Enable .NET near cache: keeps data in CLR heap to avoid deserialization costs.
+                var platformNearCacheCfg = new PlatformNearCacheConfiguration();
 
                 Console.WriteLine(">>> Populating the cache...");
 
                 ICache<int, int> cache = ignite.GetOrCreateCache<int, int>(
-                    new CacheConfiguration(CacheName), nearCacheCfg);
+                    new CacheConfiguration(CacheName), nearCacheCfg, platformNearCacheCfg);
 
                 // Adding data into the cache. 
                 // Latest 10 entries will be stored in the near cache on the client node side.
@@ -72,11 +75,12 @@ namespace Apache.Ignite.Examples.Datagrid
                     cache.Put(i, i * 10);
 
                 Console.WriteLine(">>> Cache size: [Total={0}, Near={1}]", 
-                    cache.GetSize(), cache.GetSize(CachePeekMode.Near));
+                    cache.GetSize(), cache.GetSize(CachePeekMode.PlatformNear));
 
                 Console.WriteLine("\n>>> Reading from near cache...");
 
-                foreach (var entry in cache.GetLocalEntries(CachePeekMode.Near))
+                // Read data directly from .NET cache, without network or JVM calls, and without deserialization.
+                foreach (var entry in cache.GetLocalEntries(CachePeekMode.PlatformNear))
                     Console.WriteLine(entry);
 
                 Console.WriteLine("\n>>> Example finished, press any key to exit ...");

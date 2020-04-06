@@ -71,7 +71,7 @@ public abstract class ClusterStateThinClientAbstractTest extends ClusterStateAbs
     /** {@inheritDoc} */
     @Override protected void changeState(ClusterState state) {
         try {
-            gridClient.state().state(state);
+            gridClient.state().state(state, true);
         }
         catch (GridClientException e) {
             throw new RuntimeException("Can't change state to " + state, e);

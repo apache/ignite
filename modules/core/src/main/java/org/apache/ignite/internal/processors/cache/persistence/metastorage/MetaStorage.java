@@ -655,7 +655,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
      * @throws IgniteCheckedException If failed.
      */
     private void saveStoreMetadata() throws IgniteCheckedException {
-        PageMemoryEx pageMem = (PageMemoryEx) pageMemory();
+        PageMemoryEx pageMem = (PageMemoryEx)pageMemory();
 
         long partMetaId = pageMem.partitionMetaPageId(METASTORAGE_CACHE_ID, partId);
         long partMetaPage = pageMem.acquirePage(METASTORAGE_CACHE_ID, partMetaId);

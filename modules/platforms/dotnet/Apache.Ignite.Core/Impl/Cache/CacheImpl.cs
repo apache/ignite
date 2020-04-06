@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
+    using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -32,12 +34,15 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Impl.Cache.Near;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Transactions;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Native cache wrapper.
@@ -66,6 +71,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Pre-allocated delegate. */
         private readonly Func<IBinaryStream, Exception> _readException;
 
+        /** Near cache. */
+        private readonly INearCache _nearCache;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -84,17 +92,44 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
 
-            _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
+            var configuration = GetConfiguration();
+            _txManager = configuration.AtomicityMode == CacheAtomicityMode.Transactional
                 ? new CacheTransactionManager(_ignite.GetIgnite().GetTransactions())
                 : null;
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
+
+            if (configuration.PlatformNearConfiguration != null)
+            {
+                _nearCache = _ignite.NearCacheManager.GetOrCreateNearCache(configuration);
+            }
         }
 
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
             get { return _ignite.GetIgnite(); }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether this instance is near-enabled.
+        /// </summary>
+        private bool IsNear
+        {
+            get { return _nearCache != null && !_nearCache.IsStopped; }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether near caching can be used.
+        /// </summary>
+        private bool CanUseNear
+        {
+            get
+            {
+                // Near caching within transaction is not supported for now.
+                // Commit/rollback logic requires additional implementation.
+                return IsNear && (_txManager == null || !_txManager.IsInTx());
+            }
         }
 
         /// <summary>
@@ -172,8 +207,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
-                true, _flagKeepBinary, true, _flagPartitionRecover);
+            var target = DoOutOpObject((int) CacheOp.WithSkipStore);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: true,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /// <summary>
@@ -196,14 +237,27 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
-                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
+            var target = DoOutOpObject((int) CacheOp.WithKeepBinary);
+
+            return new CacheImpl<TK1, TV1>(
+                target,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: true,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
-            return this;
+            var target = DoOutOpObject((int)CacheOp.WithSkipStore);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: true,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -213,7 +267,12 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
-            return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, _flagNoRetries, _flagPartitionRecover);
+            return new CacheImpl<TK, TV>(
+                cache0,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -305,6 +364,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            TV _;
+            if (CanUseNear && _nearCache.TryGetValue(key, out _))
+            {
+                return true;
+            }
+
             return DoOutOp(CacheOp.ContainsKey, key);
         }
 
@@ -312,6 +377,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         public Task<bool> ContainsKeyAsync(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            TV _;
+            if (CanUseNear && _nearCache.TryGetValue(key, out _))
+            {
+                return TaskRunner.FromResult(true);
+            }
 
             return DoOutOpAsync<TK, bool>(CacheOp.ContainsKeyAsync, key);
         }
@@ -321,6 +392,36 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            if (CanUseNear)
+            {
+                var allKeysAreNear = true;
+                
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+
+                        TV _;
+                        if (!_nearCache.TryGetValue(key, out _))
+                        {
+                            allKeysAreNear = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreNear)
+                    {
+                        return true;
+                    }
+
+                    // ReSharper disable AccessToDisposedClosure (operation is synchronous, not an issue).
+                    ICollection<ICacheEntry<TK, TV>> res = null;
+                    return DoOutOp(CacheOp.ContainsKeys,
+                        writer => WriteKeysOrGetFromNear(writer, enumerator, ref res, discardResults: true));
+                }
+            }
+
             return DoOutOp(CacheOp.ContainsKeys, writer => writer.WriteEnumerable(keys));
         }
 
@@ -328,6 +429,36 @@ namespace Apache.Ignite.Core.Impl.Cache
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            if (CanUseNear)
+            {
+                var allKeysAreNear = true;
+                
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+
+                        TV _;
+                        if (!_nearCache.TryGetValue(key, out _))
+                        {
+                            allKeysAreNear = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreNear)
+                    {
+                        return TaskRunner.FromResult(true);
+                    }
+
+                    // ReSharper disable AccessToDisposedClosure (write is synchronous, not an issue).
+                    ICollection<ICacheEntry<TK, TV>> res = null;
+                    return DoOutOpAsync<bool>(CacheOp.ContainsKeysAsync,
+                        writer => WriteKeysOrGetFromNear(writer, enumerator, ref res, discardResults: true));
+                }
+            }
 
             return DoOutOpAsync<bool>(CacheOp.ContainsKeysAsync, writer => writer.WriteEnumerable(keys));
         }
@@ -339,10 +470,10 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             TV res;
 
-            if (TryLocalPeek(key, out res))
+            if (TryLocalPeek(key, out res, modes))
                 return res;
 
-            throw GetKeyNotFoundException();
+            throw GetKeyNotFoundException(key);
         }
 
         /** <inheritDoc /> */
@@ -350,11 +481,29 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            var res = DoOutInOpX((int)CacheOp.Peek,
+            bool hasPlatformNear;
+            var peekModes = IgniteUtils.EncodePeekModes(modes, out hasPlatformNear);
+
+            if (hasPlatformNear)
+            {
+                if (_nearCache != null && _nearCache.TryGetValue(key, out value))
+                {
+                    return true;
+                }
+
+                if (peekModes == 0)
+                {
+                    // Only NativeNear is specified.
+                    value = default(TV);
+                    return false;
+                }
+            }
+
+            var res = DoOutInOpX((int) CacheOp.Peek,
                 w =>
                 {
                     w.WriteObjectDetached(key);
-                    w.WriteInt(IgniteUtils.EncodePeekModes(modes));
+                    w.WriteInt(peekModes);
                 },
                 (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
                 _readException);
@@ -382,12 +531,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            TV val;
+            if (CanUseNear && _nearCache.TryGetValue(key, out val))
+            {
+                return val;
+            }
+
             return DoOutInOpX((int) CacheOp.Get,
                 w => w.Write(key),
                 (stream, res) =>
                 {
                     if (res != True)
-                        throw GetKeyNotFoundException();
+                        throw GetKeyNotFoundException(key);
 
                     return Unmarshal<TV>(stream);
                 }, _readException);
@@ -398,12 +553,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            TV val;
+            if (CanUseNear && _nearCache.TryGetValue(key, out val))
+            {
+                return TaskRunner.FromResult(val);
+            }
+
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
                 if (reader != null)
                     return reader.ReadObject<TV>();
 
-                throw GetKeyNotFoundException();
+                throw GetKeyNotFoundException(key);
             });
         }
 
@@ -411,6 +572,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            if (CanUseNear && _nearCache.TryGetValue(key, out value))
+            {
+                return true;
+            }
 
             var res = DoOutInOpNullable(CacheOp.Get, key);
 
@@ -432,9 +598,59 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            if (CanUseNear)
+            {
+                // Get what we can from Near Cache, and the rest from Java.
+                // Enumerator usage is necessary to satisfy performance requirements:
+                // * No overhead when all keys are resolved from Near.
+                // * Do not enumerate keys twice.
+                // * Do not allocate a collection for keys.
+                
+                // Resulting collection is null by default:
+                // When no keys are found in near, there is no extra allocations, because result size will be known.
+                ICollection<ICacheEntry<TK, TV>> res = null;
+                var allKeysAreNear = true;
+
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+                        
+                        TV val;
+                        if (_nearCache.TryGetValue(key, out val))
+                        {
+                            res = res ?? new List<ICacheEntry<TK, TV>>();
+                            res.Add(new CacheEntry<TK, TV>(key, val));
+                        }
+                        else
+                        {
+                            allKeysAreNear = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreNear)
+                    {
+                        return res;
+                    }
+                    
+                    // ReSharper disable AccessToDisposedClosure (operation is synchronous, not an issue).
+                    return DoOutInOpX((int) CacheOp.GetAll,
+                        w => WriteKeysOrGetFromNear(w, enumerator, ref res),
+                        (s, r) => r == True 
+                            ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary), res) 
+                            : res,
+                        _readException);
+                    // ReSharper restore AccessToDisposedClosure
+                }
+            }
+
             return DoOutInOpX((int) CacheOp.GetAll,
                 writer => writer.WriteEnumerable(keys),
-                (s, r) => r == True ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary)) : null,
+                (s, r) => r == True 
+                    ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary)) 
+                    : null,
                 _readException);
         }
 
@@ -443,7 +659,48 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync(CacheOp.GetAllAsync, w => w.WriteEnumerable(keys), r => ReadGetAllDictionary(r));
+            if (CanUseNear)
+            {
+                // Get what we can from Near Cache, and the rest from Java.
+                // Duplicates the logic from GetAll above, but extracting common parts increases complexity too much.
+                ICollection<ICacheEntry<TK, TV>> res = null;
+                var allKeysAreNear = true;
+
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+
+                        TV val;
+                        if (_nearCache.TryGetValue(key, out val))
+                        {
+                            res = res ?? new List<ICacheEntry<TK, TV>>();
+                            res.Add(new CacheEntry<TK, TV>(key, val));
+                        }
+                        else
+                        {
+                            allKeysAreNear = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreNear)
+                    {
+                        return TaskRunner.FromResult(res);
+                    }
+
+                    // ReSharper disable AccessToDisposedClosure (write operation is synchronous, not an issue).
+                    return DoOutOpAsync(CacheOp.GetAllAsync,
+                        w => WriteKeysOrGetFromNear(w, enumerator, ref res),
+                        r => ReadGetAllDictionary(r, res));
+                    // ReSharper restore AccessToDisposedClosure
+                }
+            }
+
+            return DoOutOpAsync(CacheOp.GetAllAsync, 
+                w => w.WriteEnumerable(keys),
+                r => ReadGetAllDictionary(r));
         }
 
         /** <inheritdoc /> */
@@ -454,7 +711,27 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             StartTxIfNeeded();
 
-            DoOutOp(CacheOp.Put, key, val);
+            var near = CanUseNear;
+            
+            try
+            {
+                if (near)
+                {
+                    // Near Cache optimization on primary nodes:
+                    // Update from Java comes in this same thread, so we don't need to pass key/val from Java.
+                    // However, we still rely on a callback to maintain the order of updates.
+                    _nearCache.SetThreadLocalPair(key, val);
+                }
+
+                DoOutOp(CacheOp.PutWithNear, key, val);
+            }
+            finally
+            {
+                if (near)
+                {
+                    _nearCache.ResetThreadLocalPair();
+                }
+            }
         }
 
         /** <inheritDoc /> */
@@ -867,11 +1144,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private int Size0(bool loc, params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            int nativeNearSize;
+            bool onlyNativeNear;
+            var modes0 = EncodePeekModes(null, modes, out onlyNativeNear, out nativeNearSize);
+            
+            if (onlyNativeNear)
+            {
+                return nativeNearSize;
+            }
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
-            return (int) DoOutInOp((int) op, modes0); 
+            return (int) DoOutInOp((int) op, modes0) + nativeNearSize; 
         }
         
         /// <summary>
@@ -883,7 +1167,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private long Size0(bool loc, int? part, params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            int nativeNearSize;
+            bool onlyNativeNear;
+            var modes0 = EncodePeekModes(part, modes, out onlyNativeNear, out nativeNearSize);
+            
+            if (onlyNativeNear)
+            {
+                return nativeNearSize;
+            }
 
             var op = loc ? CacheOp.SizeLongLoc : CacheOp.SizeLong; 
            
@@ -900,9 +1191,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 {
                     writer.WriteBoolean(false);   
                 }                     
-            });  
+            }) + nativeNearSize;  
         }
-        
+
         /// <summary>
         /// Internal async integer size routine.
         /// </summary>
@@ -910,9 +1201,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private Task<int> SizeAsync0(params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
-
-            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
+            int nativeNearSize;
+            bool onlyNativeNear;
+            var modes0 = EncodePeekModes(null, modes, out onlyNativeNear, out nativeNearSize);
+            
+            if (onlyNativeNear)
+            {
+                return TaskRunner.FromResult(nativeNearSize);
+            }
+            
+            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0))
+                .ContWith(t => t.Result + nativeNearSize, TaskContinuationOptions.ExecuteSynchronously);
         }
         
         /// <summary>
@@ -923,7 +1222,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private Task<long> SizeAsync0(int? part, params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            int nativeNearSize;
+            bool onlyNativeNear;
+            var modes0 = EncodePeekModes(part, modes, out onlyNativeNear, out nativeNearSize);
+            
+            if (onlyNativeNear)
+            {
+                return TaskRunner.FromResult((long) nativeNearSize);
+            }
 
             return DoOutOpAsync<long>(CacheOp.SizeLongAsync, writer =>
             {
@@ -938,7 +1244,34 @@ namespace Apache.Ignite.Core.Impl.Cache
                 {
                     writer.WriteBoolean(false);   
                 }             
-            });
+            }).ContWith(t => t.Result + nativeNearSize, TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        /// <summary>
+        /// Encodes peek modes, includes native near check.
+        /// </summary>
+        private int EncodePeekModes(int? part, CachePeekMode[] modes, out bool onlyNativeNear, out int size)
+        {
+            size = 0;
+            onlyNativeNear = false;
+            
+            bool hasPlatformNear;
+            var modes0 = IgniteUtils.EncodePeekModes(modes, out hasPlatformNear);
+
+            if (hasPlatformNear)
+            {
+                if (_nearCache != null)
+                {
+                    size += _nearCache.GetSize(part);
+                }
+
+                if (modes0 == 0)
+                {
+                    onlyNativeNear = true;
+                }
+            }
+
+            return modes0;
         }
 
         /** <inheritdoc /> */
@@ -1180,6 +1513,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public void ClearStatistics()
+        {
+            DoOutInOp((int)CacheOp.ClearStatistics);
+        }
+
+        /** <inheritDoc /> */
         public Task Rebalance()
         {
             return DoOutOpAsync(CacheOp.Rebalance);
@@ -1191,8 +1530,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
-                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
+            var target = DoOutOpObject((int) CacheOp.WithNoRetries);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: true,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -1201,8 +1546,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagPartitionRecover)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
-                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
+            var target = DoOutOpObject((int) CacheOp.WithPartitionRecover);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: true);
         }
 
         /** <inheritDoc /> */
@@ -1337,7 +1688,27 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(CachePeekMode[] peekModes)
         {
-            return new CacheEnumerable<TK, TV>(this, IgniteUtils.EncodePeekModes(peekModes));
+            bool hasPlatformNearMode;
+            var encodedPeekModes = IgniteUtils.EncodePeekModes(peekModes, out hasPlatformNearMode);
+            var onlyPlatformNearMode = hasPlatformNearMode && encodedPeekModes == 0;
+
+            if (IsNear && hasPlatformNearMode)
+            {
+                if (onlyPlatformNearMode)
+                {
+                    // Only PlatformNear.
+                    return _nearCache.GetEntries<TK, TV>();
+                }
+
+                return _nearCache.GetEntries<TK, TV>().Concat(new CacheEnumerable<TK, TV>(this, encodedPeekModes));
+            }
+
+            if (!IsNear && onlyPlatformNearMode)
+            {
+                return Enumerable.Empty<ICacheEntry<TK, TV>>();
+            }
+
+            return new CacheEnumerable<TK, TV>(this, encodedPeekModes);
         }
 
         /** <inheritdoc /> */
@@ -1432,8 +1803,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Read dictionary returned by GET_ALL operation.
         /// </summary>
         /// <param name="reader">Reader.</param>
+        /// <param name="res">Resulting collection.</param>
         /// <returns>Dictionary.</returns>
-        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader)
+        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader, 
+            ICollection<ICacheEntry<TK, TV>> res = null)
         {
             if (reader == null)
                 return null;
@@ -1444,7 +1817,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 int size = stream.ReadInt();
 
-                var res = new List<ICacheEntry<TK, TV>>(size);
+                res = res ?? new List<ICacheEntry<TK, TV>>(size);
 
                 for (int i = 0; i < size; i++)
                 {
@@ -1474,9 +1847,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Throws the key not found exception.
         /// </summary>
-        private static KeyNotFoundException GetKeyNotFoundException()
+        private static KeyNotFoundException GetKeyNotFoundException(TK key)
         {
-            return new KeyNotFoundException("The given key was not present in the cache.");
+            return new KeyNotFoundException("The given key was not present in the cache: " + key);
         }
 
         /// <summary>
@@ -1632,6 +2005,43 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return 0;
 
             return _ignite.HandleRegistry.Allocate(obj);
+        }
+
+        /// <summary>
+        /// Enumerates provided keys, looking for near cache values.
+        /// Keys that are not in near cache are written to the writer.
+        /// </summary>
+        private void WriteKeysOrGetFromNear(BinaryWriter writer, IEnumerator<TK> enumerator,
+            ref ICollection<ICacheEntry<TK, TV>> res, bool discardResults = false)
+        {
+            var count = 1;
+            var pos = writer.Stream.Position;
+            writer.WriteInt(count); // Reserve count.
+
+            writer.WriteObjectDetached(enumerator.Current);
+
+            while (enumerator.MoveNext())
+            {
+                TV val;
+                if (_nearCache.TryGetValue(enumerator.Current, out val))
+                {
+                    if (!discardResults)
+                    {
+                        res = res ?? new List<ICacheEntry<TK, TV>>();
+                        res.Add(new CacheEntry<TK, TV>(enumerator.Current, val));
+                    }
+                }
+                else
+                {
+                    writer.WriteObjectDetached(enumerator.Current);
+                    count++;
+                }
+            }
+
+            var endPos = writer.Stream.Position;
+            writer.Stream.Seek(pos, SeekOrigin.Begin);
+            writer.WriteInt(count);
+            writer.Stream.Seek(endPos, SeekOrigin.Begin);
         }
     }
 }
