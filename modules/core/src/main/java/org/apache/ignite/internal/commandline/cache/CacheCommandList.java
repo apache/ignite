@@ -37,12 +37,12 @@ public enum CacheCommandList {
     /**
      * Checks consistency of primary and backup partitions assuming that there might be concurrently updated.
      */
-    PARTITION_RECONCILIATION("partition-reconciliation", new PartitionReconciliation()),
+    PARTITION_RECONCILIATION("partition_reconciliation", new PartitionReconciliation()),
 
     /**
      * Cancels partition reconciliation command.
      */
-    PARTITION_RECONCILIATION_CANCEL("partition-reconciliation-cancel", new PartitionReconciliationCancel()),
+    PARTITION_RECONCILIATION_CANCEL("partition_reconciliation_cancel", new PartitionReconciliationCancel()),
 
     /**
      * Prints info regarding caches, groups or sequences.

@@ -375,10 +375,10 @@ public class PartitionReconciliation implements Command<PartitionReconciliation.
     }
 
     /**
-     * @return String with meta information about current run of partition-reconciliation: used arguments, params, etc.
+     * @return String with meta information about current run of partition_reconciliation: used arguments, params, etc.
      */
     private String prepareHeaderMeta() {
-        SB options = new SB("partition-reconciliation task was executed with the following args: ");
+        SB options = new SB("partition_reconciliation task was executed with the following args: ");
 
         options
             .a("caches=[")
@@ -411,7 +411,7 @@ public class PartitionReconciliation implements Command<PartitionReconciliation.
         Map<UUID, String> nodeIdsToFolders,
         Map<UUID, String> nodesIdsToConsistenceIdsMap
     ) {
-        SB out = new SB("partition-reconciliation task prepared result where line is " +
+        SB out = new SB("partition_reconciliation task prepared result where line is " +
             "- <nodeConsistentId>, <nodeId> : <folder> \n");
 
         for (Map.Entry<UUID, String> entry : nodeIdsToFolders.entrySet()) {

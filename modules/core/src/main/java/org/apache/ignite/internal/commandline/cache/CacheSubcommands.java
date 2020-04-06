@@ -47,12 +47,12 @@ public enum CacheSubcommands {
     /**
      * Checks consistency of primary and backup partitions assuming that there might be concurrently updated.
      */
-    PARTITION_RECONCILIATION("partition-reconciliation", PartitionReconciliationCommandArg.class, new PartitionReconciliation()),
+    PARTITION_RECONCILIATION("partition_reconciliation", PartitionReconciliationCommandArg.class, new PartitionReconciliation()),
 
     /**
      * Cancels partition reconciliation command.
      */
-    PARTITION_RECONCILIATION_CANCEL("partition-reconciliation-cancel", null, new PartitionReconciliationCancel()),
+    PARTITION_RECONCILIATION_CANCEL("partition_reconciliation_cancel", null, new PartitionReconciliationCancel()),
 
     /**
      * Prints info regarding caches, groups or sequences.

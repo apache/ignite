@@ -637,7 +637,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Argument validation test.
      *
-     * validate that following partition-reconciliation arguments validated as expected:
+     * validate that following partition_reconciliation arguments validated as expected:
      *
      * --repair if value is missing - IllegalArgumentException (The repair algorithm should be specified. The following
      * values can be used: [LATEST, PRIMARY, MAJORITY, REMOVE, PRINT_ONLY].) is expected. if unsupported value is used -
@@ -661,72 +661,72 @@ public class CommandHandlerParsingTest extends TestCase {
     @Test
     public void testPartitionReconciliationArgumentsValidation() {
         assertParseArgsThrows("The repair algorithm should be specified. The following values can be used: "
-            + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition-reconciliation", "--repair");
+            + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition_reconciliation", "--repair");
 
         assertParseArgsThrows("Invalid repair algorithm: invalid-repair-alg. The following values can be used: "
-                + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition-reconciliation", "--repair",
+                + Arrays.toString(RepairAlgorithm.values()) + '.', "--cache", "partition_reconciliation", "--repair",
             "invalid-repair-alg");
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--fix-alg", "PRIMARY"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--fix-alg", "PRIMARY"));
 
         // --load-factor
         assertParseArgsThrows("The parallelism level should be specified.",
-            "--cache", "partition-reconciliation", "--parallelism");
+            "--cache", "partition_reconciliation", "--parallelism");
 
         assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "abc"),
-            "--cache", "partition-reconciliation", "--parallelism", "abc");
+            "--cache", "partition_reconciliation", "--parallelism", "abc");
 
         assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "0.5"),
-            "--cache", "partition-reconciliation", "--parallelism", "0.5");
+            "--cache", "partition_reconciliation", "--parallelism", "0.5");
 
         assertParseArgsThrows(String.format(PARALLELISM_FORMAT_MESSAGE, "-1"),
-            "--cache", "partition-reconciliation", "--parallelism", "-1");
+            "--cache", "partition_reconciliation", "--parallelism", "-1");
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--parallelism", "8"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--parallelism", "8"));
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--parallelism", "1"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--parallelism", "1"));
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--parallelism", "0"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--parallelism", "0"));
 
         // --batch-size
         assertParseArgsThrows("The batch size should be specified.",
-            "--cache", "partition-reconciliation", "--batch-size");
+            "--cache", "partition_reconciliation", "--batch-size");
 
         assertParseArgsThrows("Invalid batch size: abc. Integer value greater than zero should be used.",
-            "--cache", "partition-reconciliation", "--batch-size", "abc");
+            "--cache", "partition_reconciliation", "--batch-size", "abc");
 
         assertParseArgsThrows("Invalid batch size: 0. Integer value greater than zero should be used.",
-            "--cache", "partition-reconciliation", "--batch-size", "0");
+            "--cache", "partition_reconciliation", "--batch-size", "0");
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--batch-size", "10"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--batch-size", "10"));
 
         // --recheck-attempts
         assertParseArgsThrows("The recheck attempts should be specified.",
-            "--cache", "partition-reconciliation", "--recheck-attempts");
+            "--cache", "partition_reconciliation", "--recheck-attempts");
 
         assertParseArgsThrows("Invalid recheck attempts: abc. Integer value between 1 (inclusive) and 5 (exclusive) should be used.",
-            "--cache", "partition-reconciliation", "--recheck-attempts", "abc");
+            "--cache", "partition_reconciliation", "--recheck-attempts", "abc");
 
         assertParseArgsThrows("Invalid recheck attempts: 6. Integer value between 1 (inclusive) and 5 (exclusive) should be used.",
-            "--cache", "partition-reconciliation", "--recheck-attempts", "6");
+            "--cache", "partition_reconciliation", "--recheck-attempts", "6");
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-attempts", "1"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--recheck-attempts", "1"));
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-attempts", "5"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--recheck-attempts", "5"));
 
         // --recheck-delay
         assertParseArgsThrows("The recheck delay should be specified.",
-            "--cache", "partition-reconciliation", "--recheck-delay");
+            "--cache", "partition_reconciliation", "--recheck-delay");
 
         assertParseArgsThrows("Invalid recheck delay: abc. Integer value between 0 (inclusive) and 100 (exclusive) should be used.",
-            "--cache", "partition-reconciliation", "--recheck-delay", "abc");
+            "--cache", "partition_reconciliation", "--recheck-delay", "abc");
 
         assertParseArgsThrows("Invalid recheck delay: 101. Integer value between 0 (inclusive) and 100 (exclusive) should be used.",
-            "--cache", "partition-reconciliation", "--recheck-delay", "101");
+            "--cache", "partition_reconciliation", "--recheck-delay", "101");
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-delay", "0"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--recheck-delay", "0"));
 
-        parseArgs(asList("--cache", "partition-reconciliation", "--recheck-delay", "50"));
+        parseArgs(asList("--cache", "partition_reconciliation", "--recheck-delay", "50"));
     }
 
     /**
