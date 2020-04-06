@@ -196,7 +196,6 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -4106,15 +4105,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (res == null)
             res = validateRestartingCaches(node);
-
-        // Allow joining client nodes during snapshot operation.
-        if (node.isClient())
-            return res;
-
-        IgniteSnapshotManager snpMgr = context().snapshotMgr();
-
-        if (res == null && snpMgr != null && snpMgr.snapshotInProgress())
-            return new IgniteNodeValidationResult(node.id(), SNP_IN_PROGRESS_ERR_MSG);
 
         return res;
     }

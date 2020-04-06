@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -232,7 +231,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testJoinRejectedDuringClusterSnapshot() throws Exception {
+    public void testBltChangeDuringClusterSnapshot() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         startGrid(3);
@@ -246,22 +245,24 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         spi.waitBlocked(10_000L);
 
-        assertThrowsAnyCause(log,
-            () -> startGrid(4),
-            IgniteSpiException.class,
-            SNP_IN_PROGRESS_ERR_MSG);
+        // Not baseline node joins successfully.
+        String grid4Dir = folderName(startGrid(4));
+
+        // Not blt node left the cluster and snapshot not affected.
+        stopGrid(4);
 
         // Client node must connect successfully.
         startClientGrid(4);
 
+        // Changing baseline complete successfully.
         ignite.cluster().setBaselineTopology(topVer);
 
         spi.unblock();
 
         fut.get();
 
-        // Check that after snapshot has been finished grid can start successfully.
-        startGrid(5);
+        assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + grid4Dir,
+            !searchDirectoryRecursively(snp(ignite).snapshotDir(SNAPSHOT_NAME).toPath(), grid4Dir).isPresent());
     }
 
     /** @throws Exception If fails. */
@@ -506,9 +507,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     // todo fail snapshot only if success result from fail node has not been received
     // todo remove limitation on remote snapshot for index files, array of partitions must allowed to be null
-
-    // todo revert reject join new server nodes
-    // todo reject changing baseline topology during snapshot
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
