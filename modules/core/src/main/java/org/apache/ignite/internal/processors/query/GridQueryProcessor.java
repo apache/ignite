@@ -2223,16 +2223,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @param val Value.
      * @param checkType If {@code true} checks that key and value type correspond to found TypeDescriptor.
-     * @return Type descriptor if found.
+     * @return Type descriptor if found and {@code null} otherwise.
      * @throws IgniteCheckedException If type check failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Nullable private QueryTypeDescriptorImpl typeByValue(String cacheName,
+    @Nullable public QueryTypeDescriptorImpl typeByValue(
+        String cacheName,
         CacheObjectContext coctx,
         KeyCacheObject key,
         CacheObject val,
-        boolean checkType)
-        throws IgniteCheckedException {
+        boolean checkType
+    ) throws IgniteCheckedException {
         Class<?> valCls = null;
 
         QueryTypeIdKey id;

@@ -806,7 +806,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         final InternalScanFilter<K, V> intFilter = keyValFilter != null ? new InternalScanFilter<>(keyValFilter) : null;
 
         try {
-            injectResources(keyValFilter);
+            if (keyValFilter instanceof PlatformCacheEntryFilter) {
+                ((PlatformCacheEntryFilter)keyValFilter).cacheContext(cctx);
+            } else {
+                injectResources(keyValFilter);
+            }
 
             Integer part = cctx.isLocal() ? null : qry.partition();
 
@@ -1517,7 +1521,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param reqId Request ID.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
+    public void removeQueryResult(@Nullable UUID sndId, long reqId) {
         if (sndId == null)
             return;
 

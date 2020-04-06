@@ -52,12 +52,15 @@
     <Compile Include="Interop\GetAllBinaryBenchmark.cs" />
     <Compile Include="Interop\GetAllBenchmark.cs" />
     <Compile Include="Interop\GetAllEmployeesBenchmark.cs" />
+    <Compile Include="Interop\GetNearBenchmark.cs" />
     <Compile Include="Interop\PlatformBenchmarkBase.cs" />
     <Compile Include="Interop\ClosureBenchmark.cs" />
     <Compile Include="Interop\GetAsyncBenchmark.cs" />
     <Compile Include="Interop\GetBenchmark.cs" />
     <Compile Include="Interop\PutAsyncBenchmark.cs" />
     <Compile Include="Interop\PutBenchmark.cs" />
+    <Compile Include="Interop\PutNearBenchmark.cs" />
+    <Compile Include="Interop\ScanQueryBenchmark.cs" />
     <Compile Include="Interop\TaskBenchmark.cs" />
     <Compile Include="Interop\TxBenchmark.cs" />
     <Compile Include="Model\Address.cs" />
