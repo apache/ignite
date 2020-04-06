@@ -41,49 +41,58 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 @State(Scope.Benchmark)
 public class ServiceBenchmark extends JmhAbstractBenchmark implements InvocationHandler {
-
+    /** */
     private IgniteEx ignite;
 
+    /** */
     private TestServiceImpl local;
 
+    /** */
     private TestService proxy;
 
+    /** */
     private TestService test;
 
+    /** */
     @Benchmark
-    public void directReference( Blackhole blackhole ) throws Exception {
-        blackhole.consume( local.handleVal(5) );
+    public void directReference(Blackhole blackhole) throws Exception {
+        blackhole.consume(local.handleVal(5));
     }
 
+    /** */
     @Benchmark
-    public void testProxy( Blackhole blackhole ) throws Exception {
-        blackhole.consume( test.handleVal(5) );
+    public void testProxy(Blackhole blackhole) throws Exception {
+        blackhole.consume(test.handleVal(5));
     }
 
+    /** */
     @Benchmark
-    public void serviceProxy( Blackhole blackhole ) throws Exception {
-        blackhole.consume( proxy.handleVal(5) );
+    public void serviceProxy(Blackhole blackhole) throws Exception {
+        blackhole.consume(proxy.handleVal(5));
     }
 
+    /** */
     @Setup
     public void setup() throws Exception {
         ignite = (IgniteEx)Ignition.start(configuration("grid0"));
 
-        ignite.services().deploy( ignite.services().nodeSingletonConfiguration("srv", new TestServiceImpl()) );
+        ignite.services().deploy(ignite.services().nodeSingletonConfiguration("srv", new TestServiceImpl()));
 
         local = ignite.services().service("srv");
 
-        test = (TestService)Proxy.newProxyInstance(local.getClass().getClassLoader(), new Class<?>[]{TestService.class}, this);
+        test = (TestService)Proxy.newProxyInstance(local.getClass().getClassLoader(), new Class<?>[] {TestService.class}, this);
 
-        proxy = new GridServiceProxy<>(ignite.cluster(),"srv", TestService.class, true, 0, ignite.context()).proxy();
+        proxy = new GridServiceProxy<>(ignite.cluster(), "srv", TestService.class, true, 0, ignite.context()).proxy();
 //        proxy = ignite.services().serviceProxy("srv", TestService.class, true);
     }
 
+    /** */
     @TearDown
     public void shutdown() {
         Ignition.stopAll(true);
     }
 
+    /** */
     protected IgniteConfiguration configuration(String igniteInstanceName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -98,8 +107,7 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
         return cfg;
     }
 
-
-
+    /** */
     public static void main(String[] args) throws Exception {
         Options opt = new OptionsBuilder()
             .include(ServiceBenchmark.class.getSimpleName())
@@ -113,19 +121,31 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
         new Runner(opt).run();
     }
 
+    /** */
     @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         return method.invoke(local, args);
     }
 
+    /** */
     protected interface TestService {
-        default int handleVal(int value){ return value; }
+        /** */
+        default int handleVal(int val) {
+            return val;
+        }
     }
 
+    /** */
     protected static class TestServiceImpl implements Service, TestService {
-        @Override public void cancel(ServiceContext ctx) {}
+        /** */
+        @Override public void cancel(ServiceContext ctx) {
+        }
 
-        @Override public void init(ServiceContext ctx) throws Exception {}
+        /** */
+        @Override public void init(ServiceContext ctx) throws Exception {
+        }
 
-        @Override public void execute(ServiceContext ctx) throws Exception {}
+        /** */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+        }
     }
 }
