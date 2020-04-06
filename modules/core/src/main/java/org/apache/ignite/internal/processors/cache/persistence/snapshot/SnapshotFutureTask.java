@@ -206,13 +206,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     }
 
     /**
-     * @return Snapshot name.
-     */
-    public String snapshotName() {
-        return snpName;
-    }
-
-    /**
      * @return Node id which triggers this operation.
      */
     public UUID sourceNodeId() {
@@ -289,14 +282,16 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /**
      * Initiates snapshot task.
+     *
+     * @return {@code true} if task started by this call.
      */
-    public void start() {
+    public boolean start() {
         if (stopping())
-            return;
+            return false;
 
         try {
             if (!started.compareAndSet(false, true))
-                return;
+                return false;
 
             tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
                 igniteCacheStoragePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
@@ -336,7 +331,11 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
+
+            return false;
         }
+
+        return true;
     }
 
     /** {@inheritDoc} */

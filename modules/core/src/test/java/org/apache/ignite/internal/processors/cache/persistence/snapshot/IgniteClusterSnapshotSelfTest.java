@@ -504,10 +504,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    // todo revert reject join new server nodes
     // todo stop cluster snapshot only if baseline node left, revert changes for distributed process
     // todo fail snapshot only if success result from fail node has not been received
     // todo remove limitation on remote snapshot for index files, array of partitions must allowed to be null
+
+    // todo revert reject join new server nodes
+    // todo reject changing baseline topology during snapshot
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
@@ -539,8 +541,11 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = this.delegate.create(file, modes);
 
-            if (pred.test(file))
+            if (pred.test(file)) {
+                System.out.println(">>>>> HALT");
+
                 Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
+            }
 
             return delegate;
         }

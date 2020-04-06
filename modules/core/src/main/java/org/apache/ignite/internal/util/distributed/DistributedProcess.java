@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridInClosure4;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -88,23 +87,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
-    public DistributedProcess(GridKernalContext ctx,
-        DistributedProcessType type,
+    public DistributedProcess(GridKernalContext ctx, DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
-        this(ctx, type, exec, (id, res, err, skipped) -> finish.apply(id, res, err));
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param type Process type.
-     * @param exec Execute action and returns future with the single node result to send to the coordinator.
-     * @param finish Finish process closure. Called on each node when all single nodes results received.
-     */
-    public DistributedProcess(GridKernalContext ctx,
-        DistributedProcessType type,
-        Function<I, IgniteInternalFuture<R>> exec,
-        GridInClosure4<UUID, Map<UUID, R>, Map<UUID, Exception>, Set<UUID>> finish) {
         this.ctx = ctx;
         this.type = type;
 
@@ -169,7 +154,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 return;
             }
 
-            finish.apply(p.id,msg.result(), msg.error(), msg.skipped());
+            finish.apply(p.id,msg.result(), msg.error());
 
             processes.remove(msg.processId());
         });
@@ -212,8 +197,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                             rmvd = p.remaining.remove(leftNodeId);
 
                             isEmpty = p.remaining.isEmpty();
-
-                            p.skipped.add(leftNodeId);
                         }
 
                         if (rmvd) {
@@ -334,7 +317,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 res.put(uuid, msg.response());
         });
 
-        FullMessage<R> msg = new FullMessage<>(p.id, type, res, err, p.skipped);
+        FullMessage<R> msg = new FullMessage<>(p.id, type, res, err);
 
         try {
             ctx.discovery().sendCustomEvent(msg);
@@ -370,9 +353,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         /** Remaining nodes ids to received single nodes result. */
         private final Set<UUID> remaining = new GridConcurrentHashSet<>();
-
-        /** Left or failed nodes on which action has been skipped. */
-        private final Set<UUID> skipped = new GridConcurrentHashSet<>();
 
         /** Future for a local action result. */
         private final GridFutureAdapter<R> resFut = new GridFutureAdapter<>();
