@@ -90,13 +90,19 @@ public class PojoValueField extends PojoField {
         isIndexed = sqlField != null && sqlField.index();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Constructs instance of {@code PojoValueField} based on the other instance and java class
+     * to initialize accessor.
+     *
+     * @param field PojoValueField instance
+     * @param pojoCls java class of the corresponding POJO
+     */
     public PojoValueField(PojoValueField field, Class<?> pojoCls) {
         super(field, pojoCls);
-        this.isStatic = field.isStatic;
-        this.isIndexed = field.isIndexed;
-        this.idxCls = field.idxCls;
-        this.idxOptions = field.idxOptions;
+        isStatic = field.isStatic;
+        isIndexed = field.isIndexed;
+        idxCls = field.idxCls;
+        idxOptions = field.idxOptions;
     }
 
     /** {@inheritDoc} */

@@ -60,10 +60,16 @@ public class PojoKeyField extends PojoField {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Constructs instance of {@code PojoKeyField} based on the other instance and java class
+     * to initialize accessor.
+     *
+     * @param field PojoKeyField instance
+     * @param pojoCls java class of the corresponding POJO
+     */
     public PojoKeyField(PojoKeyField field, Class<?> pojoCls) {
         super(field, pojoCls);
-        this.sortOrder = field.sortOrder;
+        sortOrder = field.sortOrder;
     }
 
     /**
