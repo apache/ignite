@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.service;
 
 import com.google.common.collect.Iterables;
@@ -35,14 +52,14 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     /** Number of service invocations. */
     private static final int INVOKE_CNT = 50;
 
-    /** Utility holder of current grid number. */
-    private int gridNum;
-
     /** Service name used in the tests. */
     private static final String SRVC_NAME = GridServiceMetricsTest.class.getSimpleName()+"_service";
 
     /** Error message of created metrics. */
     private static final String METRICS_MUST_NOT_BE_CREATED = "Service metric registry must not be created.";
+
+    /** Utility holder of current grid number. */
+    private int gridNum;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
