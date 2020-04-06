@@ -504,7 +504,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    // todo stop cluster snapshot only if baseline node left, revert changes for distributed process
     // todo fail snapshot only if success result from fail node has not been received
     // todo remove limitation on remote snapshot for index files, array of partitions must allowed to be null
 

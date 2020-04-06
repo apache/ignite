@@ -206,6 +206,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     }
 
     /**
+     * @return Snapshot name.
+     */
+    public String snapshotName() {
+        return snpName;
+    }
+
+    /**
      * @return Node id which triggers this operation.
      */
     public UUID sourceNodeId() {

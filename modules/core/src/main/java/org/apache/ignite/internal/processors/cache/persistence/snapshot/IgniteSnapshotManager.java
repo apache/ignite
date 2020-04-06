@@ -448,8 +448,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
                 }
                 else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
+                    SnapshotOperationRequest snpRq = clusterSnpRq;
+
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
-                        if (sctx.sourceNodeId().equals(leftNodeId)) {
+                        if (sctx.sourceNodeId().equals(leftNodeId) ||
+                            (snpRq != null &&
+                                snpRq.snpName.equals(sctx.snapshotName()) &&
+                                snpRq.bltNodes.contains(leftNodeId))) {
                             sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
                                 "creation has left the grid"));
                         }
@@ -785,7 +790,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             parts.put(grpId, null);
 
         SnapshotFutureTask task0 = registerSnapshotTask(req.snpName,
-            cctx.localNodeId(),
+            req.srcNodeId,
             parts,
             locSndrFactory.apply(req.snpName));
 
@@ -911,7 +916,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-        takeSnpProc.start(snpFut0.id, new SnapshotOperationRequest(name, grps,
+        takeSnpProc.start(snpFut0.id, new SnapshotOperationRequest(cctx.localNodeId(),
+            name,
+            grps,
             new HashSet<>(F.viewReadOnly(srvNodes,
                 F.node2id(),
                 (node) -> CU.baselineNode(node, clusterState)))));
@@ -1711,6 +1718,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
+        /** Source node id which trigger request. */
+        private final UUID srcNodeId;
+
         /** Snapshot name. */
         private final String snpName;
 
@@ -1726,7 +1736,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param grpIds Cache groups to include into snapshot.
          */
-        public SnapshotOperationRequest(String snpName, List<Integer> grpIds, Set<UUID> bltNodes) {
+        public SnapshotOperationRequest(UUID srcNodeId, String snpName, List<Integer> grpIds, Set<UUID> bltNodes) {
+            this.srcNodeId = srcNodeId;
             this.snpName = snpName;
             this.grpIds = grpIds;
             this.bltNodes = bltNodes;
