@@ -324,8 +324,8 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             && deployment.participants() == null
             && !ctx.discovery().localNode().id().equals(deployment.classLoaderId().globalId())) {
             log.warning("Possibly incorrect deployment detected in '" + store + "', can't be used to deserialize " +
-                "message on target node, participants=null, localNodeId=" + ctx.discovery().localNode().id() +
-                ", deployment=" + deployment);
+                "message on target node [participants=null, localNodeId=" + ctx.discovery().localNode().id() +
+                ", deployment=" + deployment + "]");
         }
 
         return deployment;

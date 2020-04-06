@@ -428,9 +428,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             if (depInfo == null) {
                 if (!sndId.equals(ldrId.globalId()) && participants == null) {
-                    throw new IgnitePeerToPeerClassLoadingException("Unable to load class using class loader with id=" +
-                        ldrId + ", senderId=" + sndId + ", participants=null (loader id doesn't match sender id " +
-                        "and there are no more participants)");
+                    throw new IgnitePeerToPeerClassLoadingException("Failed to load class using class loader with " +
+                        "given id (loader id doesn't match sender id and there are no more participants) " +
+                        "[clsLdrId=" + ldrId + ", senderId=" + sndId + ", participants=null]");
                 }
 
                 depInfo = new CachedDeploymentInfo<>(sndId, ldrId, userVer, mode, participants);
@@ -712,10 +712,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         throws IgnitePeerToPeerClassLoadingException {
         if (deployment.participants() == null
             && !cctx.localNode().id().equals(deployment.classLoaderId().globalId())) {
-            throw new IgnitePeerToPeerClassLoadingException("Could not use deployment to prepare deployable, " +
-                "because local node id does not correspond with class loader id, and there are no more participants, " +
-                "localNodeId=" + cctx.localNode().id() + ", deployment=" + deployment + ", deployable=" + deployable +
-                ", locDep=" + locDep.get());
+            throw new IgnitePeerToPeerClassLoadingException("Failed to use deployment to prepare deployable, " +
+                "because local node id does not correspond with class loader id, and there are no more participants " +
+                "[localNodeId=" + cctx.localNode().id() + ", deployment=" + deployment + ", deployable=" + deployable +
+                ", locDep=" + locDep.get() + "]");
         }
     }
 
