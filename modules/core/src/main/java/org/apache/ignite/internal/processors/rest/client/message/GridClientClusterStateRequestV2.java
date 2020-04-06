@@ -31,7 +31,7 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** If {@code true}, cluster deactivation will be forced. */
+    /** If {@code true}, cluster deactivation will be forced. See {@link ClusterState#INACTIVE}. */
     private boolean forceDeactivation;
 
     /**
@@ -46,6 +46,7 @@ public class GridClientClusterStateRequestV2 extends GridClientClusterStateReque
      * @param state New cluster state.
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @return Cluster state change request.
+     * @see ClusterState#INACTIVE
      */
     public static GridClientClusterStateRequestV2 state(ClusterState state, boolean forceDeactivation) {
         GridClientClusterStateRequestV2 req = new GridClientClusterStateRequestV2();

@@ -327,6 +327,7 @@ public abstract class GridClientConnection {
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @throws GridClientConnectionResetException In case of error.
      * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     * @see ClusterState#INACTIVE
      */
     public abstract GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
         throws GridClientClosedException, GridClientConnectionResetException;

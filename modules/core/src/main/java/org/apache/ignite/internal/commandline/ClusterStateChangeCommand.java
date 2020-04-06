@@ -45,7 +45,7 @@ public class ClusterStateChangeCommand implements Command<ClusterState> {
     /** Cluster name. */
     private String clusterName;
 
-    /** If {@code true}, cluster deactivation will be forced. */
+    /** If {@code true}, cluster deactivation will be forced. See {@link ClusterState#INACTIVE}. */
     private boolean forceDeactivation;
 
     /** {@inheritDoc} */

@@ -1276,6 +1276,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
      * @param blt New cluster state.
      * @param forceBlt New cluster state.
+     * @see ClusterState#INACTIVE
      */
     private IgniteInternalFuture<Void> sendComputeChangeGlobalState(
         ClusterState state,
@@ -1968,7 +1969,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         /** */
         private final ClusterState state;
 
-        /** If {@code true}, cluster deactivation will be forced. */
+        /** If {@code true}, cluster deactivation will be forced. See {@link ClusterState#INACTIVE}. */
         private final boolean forceDeactivation;
 
         /** */
@@ -1986,6 +1987,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
          * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
          * @param blt New baseline topology.
          * @param forceBlt Force change cluster state.
+         * @see ClusterState#INACTIVE
          */
         private ClientSetGlobalStateComputeRequest(
             ClusterState state,

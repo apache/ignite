@@ -29,7 +29,7 @@ public class GridRestChangeStateRequest extends GridRestRequest {
     /** Request current state. */
     private boolean reqCurrentState;
 
-    /** If {@code true}, cluster deactivation will be forced. */
+    /** If {@code true}, cluster deactivation will be forced. See {@link ClusterState#INACTIVE}. */
     private boolean forceDeactivation;
 
     /**
@@ -62,6 +62,7 @@ public class GridRestChangeStateRequest extends GridRestRequest {
 
     /**
      * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @see ClusterState#INACTIVE
      */
     public void forceDeactivation(boolean forceDeactivation) {
         this.forceDeactivation = forceDeactivation;
