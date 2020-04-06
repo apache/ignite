@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Cache.Query;
 
     /// <summary>
     /// Client fields cursor.
@@ -67,7 +66,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         public IList<string> FieldNames { get; private set; }
 
-        public IList<IQueryCursorFieldMetadata> FieldsMetadata { get; private set; }
+        /** <inheritdoc /> */
+        public IList<IQueryCursorFieldMetadata> FieldsMetadata
+        {
+            get
+            {
+                throw IgniteClient.GetClientNotSupportedException();
+            }
+        }
 
         /// <summary>
         /// Reads the columns.
