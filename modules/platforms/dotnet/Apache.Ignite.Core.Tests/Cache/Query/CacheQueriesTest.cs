@@ -857,7 +857,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Get before iteration.
             var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson");
             var cur = cache.Query(qry);
-            var metas = cur.FieldsMetadata;
+            var metas = cur.Fields;
 
             ValidateFieldsMetadata(
                 metas,
@@ -867,9 +867,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             );
 
             cur.Dispose();
-            Assert.AreSame(metas, cur.FieldsMetadata);
+            Assert.AreSame(metas, cur.Fields);
 
-            Assert.Throws<NotSupportedException>(() => cur.FieldsMetadata.Add(default(IQueryCursorFieldMetadata)));
+            Assert.Throws<NotSupportedException>(() => cur.Fields.Add(default(IQueryCursorField)));
 
             // Custom order, key-val, get after iteration.
             qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
@@ -877,7 +877,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var list = cur.GetAll();
 
             ValidateFieldsMetadata(
-                cur.FieldsMetadata,
+                cur.Fields,
                 new[] {"NAME", "_KEY", "AGE", "_VAL"},
                 new[] {typeof(string), typeof(object), typeof(int), typeof(object)},
                 new[] {"java.lang.String", "java.lang.Object", "java.lang.Integer", "java.lang.Object"}
@@ -889,7 +889,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             cur.Dispose();
 
             ValidateFieldsMetadata(
-                cur.FieldsMetadata,
+                cur.Fields,
                 new[] {"1", "AGE"},
                 new[] {typeof(int), typeof(int)},
                 new[] {"java.lang.Integer", "java.lang.Integer"}
@@ -904,7 +904,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <param name="expectedTypes">Expected field types</param>
         /// <param name="expectedJavaTypeNames">Expected java type names</param>
         private static void ValidateFieldsMetadata(
-            IList<IQueryCursorFieldMetadata> metadata,
+            IList<IQueryCursorField> metadata,
             string[] expectedNames,
             Type[] expectedTypes,
             string[] expectedJavaTypeNames

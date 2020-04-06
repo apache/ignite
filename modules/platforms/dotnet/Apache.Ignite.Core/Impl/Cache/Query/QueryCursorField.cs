@@ -23,15 +23,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Query cursor field metadata implementation.
+    /// Query cursor field implementation.
     /// </summary>
-    public class QueryCursorFieldMetadataImpl : IQueryCursorFieldMetadata
+    internal class QueryCursorField : IQueryCursorField
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="QueryCursorFieldMetadataImpl"/> class.
+        /// Initializes a new instance of the <see cref="QueryCursorField"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public QueryCursorFieldMetadataImpl(IBinaryRawReader reader)
+        public QueryCursorField(IBinaryRawReader reader)
         {
             Name = reader.ReadString();
             JavaTypeName = reader.ReadString();

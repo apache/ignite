@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         public IList<string> FieldNames { get; private set; }
 
         /** <inheritdoc /> */
-        public IList<IQueryCursorFieldMetadata> FieldsMetadata
+        public IList<IQueryCursorField> Fields
         {
             get
             {

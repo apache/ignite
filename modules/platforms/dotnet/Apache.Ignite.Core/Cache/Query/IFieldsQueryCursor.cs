@@ -33,8 +33,8 @@ namespace Apache.Ignite.Core.Cache.Query
         IList<string> FieldNames { get; }
 
         /// <summary>
-        /// Gets fields metadata
+        /// Gets fields metadata.
         /// </summary>
-        IList<IQueryCursorFieldMetadata> FieldsMetadata { get; }
+        IList<IQueryCursorField> Fields { get; }
     }
 }

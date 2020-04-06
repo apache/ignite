@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readerFunc">The reader function.</param>
         public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
             Func<IBinaryRawReader, int, T> readerFunc)
@@ -68,13 +68,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         private IList<string> _fieldNames;
 
         /** */
-        private IList<IQueryCursorFieldMetadata> _fieldsMeta;
+        private IList<IQueryCursorField> _fieldsMeta;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="readerFunc">The reader function.</param>
         public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
             Func<IBinaryRawReader, int, IList<object>> readerFunc) : base(target, keepBinary, readerFunc)
@@ -93,7 +93,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             }
         }
 
-        public IList<IQueryCursorFieldMetadata> FieldsMetadata 
+        /** <inheritdoc /> */
+        public IList<IQueryCursorField> Fields 
         {
             get
             {
@@ -102,10 +103,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                     var metadata = Target.OutStream(
                         OpGetFieldsMeta,
                         reader => reader.ReadCollectionRaw(stream =>
-                            new QueryCursorFieldMetadataImpl(stream) as IQueryCursorFieldMetadata));
+                            new QueryCursorField(stream) as IQueryCursorField))
+                        ?? new List<IQueryCursorField>();
 
-                    _fieldsMeta = new ReadOnlyCollection<IQueryCursorFieldMetadata>(
-                        metadata as List<IQueryCursorFieldMetadata> ?? metadata.ToList());
+                    _fieldsMeta = new ReadOnlyCollection<IQueryCursorField>(
+                        metadata as List<IQueryCursorField> ?? metadata.ToList());
                 }
 
                 return _fieldsMeta;

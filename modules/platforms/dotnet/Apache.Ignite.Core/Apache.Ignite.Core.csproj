@@ -55,7 +55,7 @@
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Cache\IQueryMetrics.cs" />
-    <Compile Include="Cache\Query\IQueryCursorFieldMetadata.cs" />
+    <Compile Include="Cache\Query\IQueryCursorField.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
@@ -86,7 +86,7 @@
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
-    <Compile Include="Impl\Cache\Query\QueryCursorFieldMetadataImpl.cs" />
+    <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
     <Compile Include="Impl\Client\ClientContextBase.cs" />
     <Compile Include="Impl\Client\ClientOpExtensions.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
