@@ -20,8 +20,8 @@ Arguments: --cache help --yes
     Parameters:
       --check-crc  - check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.
 
-  --cache partition-reconciliation [--repair] [--fast-check] [--parallelism] [--batch-size] [--recheck-attempts] [--include-sensitive] [cacheName1,...,cacheNameN]
-    Verify whether there are inconsistent entries for the specified caches and print out the differences if any. Fix inconsistency if --repairargument is presented. When no parameters are specified, all user caches are verified. Cache filtering options configure the set of caches that will be processed by partition-reconciliation command. If cache names are specified, in form of regular expressions, only matching caches will be verified.
+  --cache partition_reconciliation [--repair] [--fast-check] [--parallelism] [--batch-size] [--recheck-attempts] [--include-sensitive] [cacheName1,...,cacheNameN]
+    Verify whether there are inconsistent entries for the specified caches and print out the differences if any. Fix inconsistency if --repairargument is presented. When no parameters are specified, all user caches are verified. Cache filtering options configure the set of caches that will be processed by partition_reconciliation command. If cache names are specified, in form of regular expressions, only matching caches will be verified.
 
     Parameters:
       --fast-check         - This option allows checking and repairing only partitions that did not pass validation during the last partition map exchange, otherwise, all partitions will be taken into account.
@@ -31,7 +31,7 @@ Arguments: --cache help --yes
       --batch-size         - Amount of keys to retrieve within one job. Default value is 1000.
       --recheck-attempts   - Amount of potentially inconsistent keys recheck attempts. Value between 1 (inclusive) and 5 (exclusive) should be used. Default value is 2.
 
-  --cache partition-reconciliation-cancel
+  --cache partition_reconciliation_cancel
     Cancels partition reconciliation command.
 
   --cache list regexPattern [--groups|--seq] [nodeId] [--config] [--output-format multi-line]

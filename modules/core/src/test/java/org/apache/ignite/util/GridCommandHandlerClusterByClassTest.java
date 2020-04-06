@@ -57,6 +57,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.apache.ignite.internal.commandline.cache.CacheCommandList;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -78,7 +79,9 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.TestStorageUtils.corruptDataEntry;
@@ -294,17 +297,33 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         checkHelp(output, "org.apache.ignite.util/control.sh_cache_help.output");
     }
 
-    /** */
+    /**
+     * Test checks that all cache subcommands have snake case naming,
+     * and option corresponds to "Long Option Style".
+     */
     @Test
-    public void testCorrectCacheOptionsNaming() {
-        Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
+    public void testCorrectCacheCmdOptionsNaming() {
+        Pattern cmdNamePtrn = compile("([a-z]+(_)?)+");
+        Pattern opNamePtrn = compile("^--([a-z]+(-)?)+([a-z]+)");
 
         for (CacheSubcommands cmd : CacheSubcommands.values()) {
+            String cmdName = cmd.toString();
+            assertTrue(cmdName, cmdNamePtrn.matcher(cmdName).matches());
+
             Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
 
-            if (args != null)
-                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
-                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+            if (isNull(args))
+                continue;
+
+            for (Enum<? extends CommandArg> arg : args.getEnumConstants()) {
+                String opName = arg.toString();
+                assertTrue(cmdName + " " + opName, opNamePtrn.matcher(opName).matches());
+            }
+        }
+
+        for (CacheCommandList cmd : CacheCommandList.values()) {
+            String cmdName = cmd.toString();
+            assertTrue(cmdName, cmdNamePtrn.matcher(cmdName).matches());
         }
     }
 
@@ -717,8 +736,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @param output Output.
      */
     private void assertSort(int expectedPartsCount, String output) {
-        Pattern partIdPattern = Pattern.compile(".*partId=([0-9]*)");
-        Pattern primaryPattern = Pattern.compile("Partition instances: \\[PartitionHashRecordV2 \\[isPrimary=true");
+        Pattern partIdPattern = compile(".*partId=([0-9]*)");
+        Pattern primaryPattern = compile("Partition instances: \\[PartitionHashRecordV2 \\[isPrimary=true");
 
         Matcher partIdMatcher = partIdPattern.matcher(output);
         Matcher primaryMatcher = primaryPattern.matcher(output);
@@ -970,7 +989,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      * @return Build matcher for dump file name.
      */
     @NotNull private Matcher dumpFileNameMatcher() {
-        Pattern fileNamePattern = Pattern.compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
+        Pattern fileNamePattern = compile(".*VisorIdleVerifyDumpTask successfully written output to '(.*)'");
 
         return fileNamePattern.matcher(testOut.toString());
     }
