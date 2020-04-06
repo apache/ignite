@@ -28,7 +28,6 @@ import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.balancer.GridClientLoadBalancer;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 
@@ -52,16 +51,6 @@ public class GridClientClusterStateImpl extends GridClientAbstractProjection<Gri
         GridClientLoadBalancer balancer
     ) {
         super(client, nodes, filter, balancer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void active(final boolean active) throws GridClientException {
-        state(active ? ACTIVE : INACTIVE, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean active() throws GridClientException {
-        return withReconnectHandling(GridClientConnection::currentState).get();
     }
 
     /** {@inheritDoc} */
