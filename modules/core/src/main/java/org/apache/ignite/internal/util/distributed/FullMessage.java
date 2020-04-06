@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -56,17 +57,22 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     /** Errors. */
     private Map<UUID, Exception> err;
 
+    /** Fail, left nodes. */
+    private Set<UUID> skipped;
+
     /**
      * @param processId Process id.
      * @param type Process type.
      * @param res Results.
      * @param err Errors
      */
-    public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Exception> err) {
+    public FullMessage(UUID processId, DistributedProcessType type, Map<UUID, R> res, Map<UUID, Exception> err,
+        Set<UUID> skipped) {
         this.processId = processId;
         this.type = type.ordinal();
         this.res = res;
         this.err = err;
+        this.skipped = skipped;
     }
 
     /** {@inheritDoc} */
@@ -108,6 +114,11 @@ public class FullMessage<R extends Serializable> implements DiscoveryCustomMessa
     /** @return Nodes errors. */
     public Map<UUID, Exception> error() {
         return err;
+    }
+
+    /** @return Set of left of failed nodes. */
+    public Set<UUID> skipped() {
+        return skipped;
     }
 
     /** {@inheritDoc} */

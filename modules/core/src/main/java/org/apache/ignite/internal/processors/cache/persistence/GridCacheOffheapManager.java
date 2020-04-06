@@ -238,11 +238,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         if (needSnapshot) {
             if (execSvc == null)
-                addPartitions(ctx);
+                addIndexPartition(ctx);
             else {
                 execSvc.execute(() -> {
                     try {
-                        addPartitions(ctx);
+                        addIndexPartition(ctx);
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -764,7 +764,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @param ctx Context.
      */
-    private void addPartitions(Context ctx) throws IgniteCheckedException {
+    private void addIndexPartition(Context ctx) throws IgniteCheckedException {
         int grpId = grp.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 

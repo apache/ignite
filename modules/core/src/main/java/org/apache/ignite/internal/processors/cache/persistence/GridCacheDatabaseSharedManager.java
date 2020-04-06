@@ -68,7 +68,6 @@ import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -155,8 +154,8 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
+import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -1606,6 +1605,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps
     ) {
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
+
+        cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrps.stream()
+            .filter(IgniteBiTuple::get2)
+            .map(t -> t.get1().groupId())
+            .collect(Collectors.toList()));
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
@@ -4110,6 +4114,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             CheckpointProgressImpl curr = scheduledCp;
 
+            List<DbCheckpointListener> dbLsnrs = new ArrayList<>(lsnrs);
+
             CheckpointRecord cpRec = new CheckpointRecord(memoryRecoveryRecordPtr);
 
             memoryRecoveryRecordPtr = null;
@@ -4129,7 +4135,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             internalReadLock();
 
             try {
-                for (DbCheckpointListener lsnr : lsnrs)
+                for (DbCheckpointListener lsnr : dbLsnrs)
                     lsnr.beforeCheckpointBegin(ctx0);
 
                 ctx0.awaitPendingTasksFinished();
@@ -4150,7 +4156,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 tracker.onMarkStart();
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
-                for (DbCheckpointListener lsnr : lsnrs)
+                for (DbCheckpointListener lsnr : dbLsnrs)
                     lsnr.onMarkCheckpointBegin(ctx0);
 
                 ctx0.awaitPendingTasksFinished();
@@ -4203,7 +4209,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             curr.transitTo(LOCK_RELEASED);
 
-            for (DbCheckpointListener lsnr : lsnrs)
+            for (DbCheckpointListener lsnr : dbLsnrs)
                 lsnr.onCheckpointBegin(ctx);
 
             if (snapFut != null) {
@@ -4439,6 +4445,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
+                @Override public IgniteInternalFuture<?> finishedStateFut() {
+                    return delegate.finishedStateFut();
+                }
+
+                /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
                     return delegate.partitionStatMap();
                 }
@@ -4551,6 +4562,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             /** {@inheritDoc} */
             @Override public boolean nextSnapshot() {
                 return curr.nextSnapshot;
+            }
+
+            /** {@inheritDoc} */
+            @Override public IgniteInternalFuture<?> finishedStateFut() {
+                return curr.futureFor(FINISHED);
             }
 
             /** {@inheritDoc} */

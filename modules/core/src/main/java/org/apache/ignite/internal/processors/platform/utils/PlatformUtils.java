@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import java.sql.Timestamp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -67,6 +66,7 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.EventType;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

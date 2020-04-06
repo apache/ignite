@@ -93,6 +93,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             null,
             null,
             null,
+            null,
             new CacheDiagnosticManager()
         );
 

@@ -84,6 +84,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 
 /**
  * Logic related to cache discovery data processing.
@@ -762,7 +763,8 @@ public class ClusterCachesInfo {
                     return;
                 }
 
-                processStopCacheRequest(exchangeActions, req, cacheName, desc);
+                if (!processStopCacheRequest(exchangeActions, req, res, cacheName, desc))
+                    return;
 
                 needExchange = true;
             }
@@ -783,13 +785,27 @@ public class ClusterCachesInfo {
      * @param exchangeActions Exchange actions to update.
      * @param cacheName Cache name.
      * @param desc Dynamic cache descriptor.
+     * @return {@code true} if stop request can be proceed.
      */
-    private void processStopCacheRequest(
+    private boolean processStopCacheRequest(
         ExchangeActions exchangeActions,
         DynamicCacheChangeRequest req,
+        CacheChangeProcessResult res,
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
+        if (ctx.cache().context().snapshotMgr().snapshotInProgress()) {
+            IgniteCheckedException err = new IgniteCheckedException(SNP_IN_PROGRESS_ERR_MSG);
+
+            U.warn(log, err);
+
+            res.errs.add(err);
+
+            ctx.cache().completeCacheStartFuture(req, false, err);
+
+            return false;
+        }
+
         DynamicCacheDescriptor old = registeredCaches.get(cacheName);
 
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
@@ -834,6 +850,8 @@ public class ClusterCachesInfo {
                 }
             }
         }
+
+        return true;
     }
 
     /**

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.platform;
 
-import java.sql.Timestamp;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -39,8 +37,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Calendar.JANUARY;
 
 /**
  * Task that deploys a Java service.
@@ -181,21 +177,6 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public Timestamp test(Timestamp input) {
-            Timestamp exp = new Timestamp(92, JANUARY, 1, 0, 0, 0, 0);
-
-            if (!exp.equals(input))
-                throw new RuntimeException("Expected \"" + exp + "\" but got \"" + input + "\"");
-
-            return input;
-        }
-
-        /** */
-        public UUID test(UUID input) {
-            return input;
-        }
-
-        /** */
         public Byte testWrapper(Byte arg) {
             return arg == null ? null : (byte) (arg + 1);
         }
@@ -222,17 +203,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public Double testWrapper(Double arg) {
-            return arg == null ? null : arg + 2.5;
+            return arg == null ? null :  arg + 2.5;
         }
 
         /** */
         public Boolean testWrapper(Boolean arg) {
-            return arg == null ? null : !arg;
+            return arg == null ? null :  !arg;
         }
 
         /** */
         public Character testWrapper(Character arg) {
-            return arg == null ? null : (char) (arg + 1);
+            return arg == null ? null :  (char) (arg + 1);
         }
 
         /** */
@@ -317,31 +298,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
-        public Timestamp[] testArray(Timestamp[] arg) {
-            if (arg == null || arg.length != 1)
-                throw new RuntimeException("Expected array of length 1");
-
-            return new Timestamp[] {test(arg[0])};
-        }
-
-        /** */
-        public UUID[] testArray(UUID[] arg) {
-            return arg;
-        }
-
-        /** */
         public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
-        }
-
-        /** */
-        public UUID testNullUUID(UUID arg) {
-            return arg;
-        }
-
-        /** */
-        public Timestamp testNullTimestamp(Timestamp arg) {
-            return arg;
         }
 
         /** */

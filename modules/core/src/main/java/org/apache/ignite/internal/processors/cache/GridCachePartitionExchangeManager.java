@@ -553,7 +553,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param evt Event.
      * @param cache Discovery data cache.
      */
-    private void onDiscoveryEvent(DiscoveryEvent evt, DiscoCache cache) {
+    public void onDiscoveryEvent(DiscoveryEvent evt, DiscoCache cache) {
         ClusterNode loc = cctx.localNode();
 
         assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ||

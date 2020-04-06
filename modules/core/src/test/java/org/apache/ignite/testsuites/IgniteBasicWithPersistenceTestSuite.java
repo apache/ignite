@@ -35,6 +35,9 @@ import org.apache.ignite.internal.encryption.MasterKeyChangeConsistencyCheckTest
 import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassWithSSLTest;
@@ -80,7 +83,11 @@ import org.junit.runners.Suite;
     MasterKeyChangeTest.class,
     MasterKeyChangeConsistencyCheckTest.class,
 
-    EncryptionMXBeanTest.class
+    EncryptionMXBeanTest.class,
+
+    IgniteSnapshotManagerSelfTest.class,
+    IgniteClusterSnapshotSelfTest.class,
+    SnapshotMXBeanTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

@@ -109,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -141,6 +142,8 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
 import org.apache.ignite.internal.util.InitializationProtector;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -193,6 +196,7 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
@@ -1992,7 +1996,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    private void stopCacheSafely(GridCacheContext<?, ?> cctx) {
+    public void stopCacheSafely(GridCacheContext<?, ?> cctx) {
         stopCacheSafely(cctx, true);
     }
 
@@ -2981,6 +2985,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 
+        IgniteSnapshotManager snapshotMgr = new IgniteSnapshotManager(ctx);
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
         if (snpMgr == null)
@@ -3008,6 +3013,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walMgr,
             walStateMgr,
             dbMgr,
+            snapshotMgr,
             snpMgr,
             depMgr,
             exchMgr,
@@ -4040,6 +4046,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node) {
+        if (msg instanceof InitMessage &&
+            ((InitMessage)msg).type() == DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal())
+            return true;
+
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
             ctx.query().onDiscovery((SchemaAbstractDiscoveryMessage)msg);
 
@@ -4096,6 +4106,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (res == null)
             res = validateRestartingCaches(node);
+
+        // Allow joining client nodes during snapshot operation.
+        if (node.isClient())
+            return res;
+
+        IgniteSnapshotManager snpMgr = context().snapshotMgr();
+
+        if (res == null && snpMgr != null && snpMgr.snapshotInProgress())
+            return new IgniteNodeValidationResult(node.id(), SNP_IN_PROGRESS_ERR_MSG);
 
         return res;
     }
