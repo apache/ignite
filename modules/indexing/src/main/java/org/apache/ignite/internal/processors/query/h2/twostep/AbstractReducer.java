@@ -183,7 +183,8 @@ public abstract class AbstractReducer implements Reducer {
      */
     protected void checkBounds(Row lastEvictedRow, SearchRow first, SearchRow last) {
         if (lastEvictedRow != null)
-            throw new IgniteException("Fetched result set was too large.");
+            throw new IgniteException("Fetched result set was too large. " +
+                    IGNITE_SQL_MERGE_TABLE_MAX_SIZE + "(" + MAX_FETCH_SIZE + ") should be increased.");
     }
 
     /**
