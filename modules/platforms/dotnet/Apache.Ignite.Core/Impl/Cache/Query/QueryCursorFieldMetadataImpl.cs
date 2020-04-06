@@ -57,11 +57,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             var dotNetType = JavaTypes.GetDotNetType(javaTypeName);
             if (dotNetType == null && javaTypeName == "java.lang.Object") dotNetType = typeof(object);
 
-            // if (dotNetType == null)
-            // {
-            //     throw new IgniteException($"Field type mapping was not found for {javaTypeName}");
-            // }
-
             return dotNetType;
         }
     }
