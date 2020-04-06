@@ -80,14 +80,16 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            ignite.services().deployNodeSingleton(serviceName, new PlatformTestServiceImpl());
+            ignite.services().deployNodeSingleton(serviceName, new PlatformTestService());
 
             return null;
         }
     }
 
-    /** {@inheritDoc} */
-    public static class PlatformTestServiceImpl implements Service, PlatformTestService {
+    /**
+     * Test service.
+     */
+    public static class PlatformTestService implements Service {
         /** */
         private boolean isCancelled;
 
@@ -112,68 +114,74 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             isExecuted = true;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean isCancelled() {
+        /**
+         * Returns a value indicating whether this service is cancelled.
+         */
+        public boolean isCancelled() {
             return isCancelled;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean isInitialized() {
+        /**
+         * Returns a value indicating whether this service is initialized.
+         */
+        public boolean isInitialized() {
             return isInitialized;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean isExecuted() {
+        /**
+         * Returns a value indicating whether this service is executed.
+         */
+        public boolean isExecuted() {
             return isExecuted;
         }
 
-        /** {@inheritDoc} */
-        @Override public byte test(byte arg) {
+        /** */
+        public byte test(byte arg) {
             return (byte) (arg + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public short test(short arg) {
+        /** */
+        public short test(short arg) {
             return (short) (arg + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public int test(int arg) {
+        /** */
+        public int test(int arg) {
             return arg + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public long test(long arg) {
+        /** */
+        public long test(long arg) {
             return arg + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public float test(float arg) {
+        /** */
+        public float test(float arg) {
             return arg + 1.5f;
         }
 
-        /** {@inheritDoc} */
-        @Override public double test(double arg) {
+        /** */
+        public double test(double arg) {
             return arg + 2.5;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean test(boolean arg) {
+        /** */
+        public boolean test(boolean arg) {
             return !arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public char test(char arg) {
+        /** */
+        public char test(char arg) {
             return (char) (arg + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public String test(String arg) {
+        /** */
+        public String test(String arg) {
             return arg == null ? null : arg + "!";
         }
 
-        /** {@inheritDoc} */
-        @Override public Timestamp test(Timestamp input) {
+        /** */
+        public Timestamp test(Timestamp input) {
             Timestamp exp = new Timestamp(92, JANUARY, 1, 0, 0, 0, 0);
 
             if (!exp.equals(input))
@@ -182,53 +190,53 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return input;
         }
 
-        /** {@inheritDoc} */
-        @Override public UUID test(UUID input) {
+        /** */
+        public UUID test(UUID input) {
             return input;
         }
 
-        /** {@inheritDoc} */
-        @Override public Byte testWrapper(Byte arg) {
+        /** */
+        public Byte testWrapper(Byte arg) {
             return arg == null ? null : (byte) (arg + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public Short testWrapper(Short arg) {
+        /** */
+        public Short testWrapper(Short arg) {
             return arg == null ? null : (short) (arg + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public Integer testWrapper(Integer arg) {
+        /** */
+        public Integer testWrapper(Integer arg) {
             return arg == null ? null : arg + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public Long testWrapper(Long arg) {
+        /** */
+        public Long testWrapper(Long arg) {
             return arg == null ? null : arg + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public Float testWrapper(Float arg) {
+        /** */
+        public Float testWrapper(Float arg) {
             return arg == null ? null : arg + 1.5f;
         }
 
-        /** {@inheritDoc} */
-        @Override public Double testWrapper(Double arg) {
-            return arg == null ? null :  arg + 2.5;
+        /** */
+        public Double testWrapper(Double arg) {
+            return arg == null ? null : arg + 2.5;
         }
 
-        /** {@inheritDoc} */
-        @Override public Boolean testWrapper(Boolean arg) {
-            return arg == null ? null :  !arg;
+        /** */
+        public Boolean testWrapper(Boolean arg) {
+            return arg == null ? null : !arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public Character testWrapper(Character arg) {
-            return arg == null ? null :  (char) (arg + 1);
+        /** */
+        public Character testWrapper(Character arg) {
+            return arg == null ? null : (char) (arg + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public byte[] testArray(byte[] arg) {
+        /** */
+        public byte[] testArray(byte[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -236,8 +244,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public short[] testArray(short[] arg) {
+        /** */
+        public short[] testArray(short[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -245,8 +253,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public int[] testArray(int[] arg) {
+        /** */
+        public int[] testArray(int[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -254,8 +262,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public long[] testArray(long[] arg) {
+        /** */
+        public long[] testArray(long[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -263,8 +271,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public double[] testArray(double[] arg) {
+        /** */
+        public double[] testArray(double[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -272,8 +280,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public float[] testArray(float[] arg) {
+        /** */
+        public float[] testArray(float[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -281,8 +289,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public String[] testArray(String[] arg) {
+        /** */
+        public String[] testArray(String[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -290,8 +298,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public char[] testArray(char[] arg) {
+        /** */
+        public char[] testArray(char[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] += 1;
@@ -299,8 +307,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean[] testArray(boolean[] arg) {
+        /** */
+        public boolean[] testArray(boolean[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
                     arg[i] = !arg[i];
@@ -308,56 +316,56 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public Timestamp[] testArray(Timestamp[] arg) {
+        /** */
+        public Timestamp[] testArray(Timestamp[] arg) {
             if (arg == null || arg.length != 1)
                 throw new RuntimeException("Expected array of length 1");
 
             return new Timestamp[] {test(arg[0])};
         }
 
-        /** {@inheritDoc} */
-        @Override public UUID[] testArray(UUID[] arg) {
+        /** */
+        public UUID[] testArray(UUID[] arg) {
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public Integer testNull(Integer arg) {
+        /** */
+        public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public UUID testNullUUID(UUID arg) {
+        /** */
+        public UUID testNullUUID(UUID arg) {
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public Timestamp testNullTimestamp(Timestamp arg) {
+        /** */
+        public Timestamp testNullTimestamp(Timestamp arg) {
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public int testParams(Object... args) {
+        /** */
+        public int testParams(Object... args) {
             return args.length;
         }
 
-        /** {@inheritDoc} */
-        @Override public int test(int x, String y) {
+        /** */
+        public int test(int x, String y) {
             return x + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public int test(String x, int y) {
+        /** */
+        public int test(String x, int y) {
             return y + 1;
         }
 
-        /** {@inheritDoc} */
-        @Override public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
+        /** */
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
             return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public Object[] testBinarizableArray(Object[] arg) {
+        /** */
+        public Object[] testBinarizableArray(Object[] arg) {
             if (arg == null)
                 return null;
 
@@ -369,8 +377,8 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
-        /** {@inheritDoc} */
-        @Override public Collection testBinarizableCollection(Collection arg) {
+        /** */
+        public Collection testBinarizableCollection(Collection arg) {
             if (arg == null)
                 return null;
 
@@ -382,146 +390,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return res;
         }
 
-        /** {@inheritDoc} */
-        @Override public BinaryObject testBinaryObject(BinaryObject o) {
+        /** */
+        public BinaryObject testBinaryObject(BinaryObject o) {
             if (o == null)
                 return null;
 
             return o.toBuilder().setField("field", 15).build();
         }
-    }
-
-    /**
-     * Test service.
-     */
-    public static interface PlatformTestService {
-        /** Returns a value indicating whether this service is cancelled. */
-        boolean isCancelled();
-
-        /** Returns a value indicating whether this service is initialized. */
-        boolean isInitialized();
-
-        /** Returns a value indicating whether this service is executed. */
-        boolean isExecuted();
-
-        /** */
-        public byte test(byte arg);
-
-        /** */
-        public short test(short arg);
-
-        /** */
-        public int test(int arg);
-
-        /** */
-        public long test(long arg);
-
-        /** */
-        public float test(float arg);
-
-        /** */
-        public double test(double arg);
-
-        /** */
-        public boolean test(boolean arg);
-
-        /** */
-        public char test(char arg);
-
-        /** */
-        public String test(String arg);
-
-        /**  */
-        public Timestamp test(Timestamp input);
-
-        /** */
-        public UUID test(UUID input);
-
-        /** */
-        public Byte testWrapper(Byte arg);
-
-        /** */
-        public Short testWrapper(Short arg);
-
-        /** */
-        public Integer testWrapper(Integer arg);
-
-        /** */
-        public Long testWrapper(Long arg);
-
-        /** */
-        public Float testWrapper(Float arg);
-
-        /** */
-        public Double testWrapper(Double arg);
-
-        /** */
-        public Boolean testWrapper(Boolean arg);
-
-        /** */
-        public Character testWrapper(Character arg);
-
-        /** */
-        public byte[] testArray(byte[] arg);
-
-        /** */
-        public short[] testArray(short[] arg);
-
-        /** */
-        public int[] testArray(int[] arg);
-
-        /** */
-        public long[] testArray(long[] arg);
-
-        /** */
-        public double[] testArray(double[] arg);
-
-        /** */
-        public float[] testArray(float[] arg);
-
-        /** */
-        public String[] testArray(String[] arg);
-
-        /** */
-        public char[] testArray(char[] arg);
-
-        /** */
-        public boolean[] testArray(boolean[] arg);
-
-        /** */
-        public Timestamp[] testArray(Timestamp[] arg);
-
-        /** */
-        public UUID[] testArray(UUID[] arg);
-
-        /** */
-        public Integer testNull(Integer arg);
-
-        /** */
-        public UUID testNullUUID(UUID arg);
-
-        /** */
-        public Timestamp testNullTimestamp(Timestamp arg);
-
-        /** */
-        public int testParams(Object... args);
-
-        /** */
-        public int test(int x, String y);
-
-        /** */
-        public int test(String x, int y);
-
-        /** */
-        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg);
-
-        /** */
-        public Object[] testBinarizableArray(Object[] arg);
-
-        /** */
-        public Collection testBinarizableCollection(Collection arg);
-
-        /** */
-        public BinaryObject testBinaryObject(BinaryObject o);
     }
 }
