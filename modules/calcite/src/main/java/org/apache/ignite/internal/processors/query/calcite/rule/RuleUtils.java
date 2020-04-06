@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelOptRuleOperand;
 import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
@@ -30,14 +31,24 @@ import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.calcite.plan.RelOptRule.any;
+import static org.apache.calcite.plan.RelOptRule.operand;
+import static org.apache.calcite.plan.RelOptRule.some;
 
 /**
  *
  */
 public class RuleUtils {
+    /** */
+    public static RelOptRuleOperand traitPropagationOperand(Class<? extends RelNode> clazz) {
+        return operand(clazz, IgniteDistributions.any(), some(operand(RelSubset.class, any())));
+    }
+
     /** */
     public static RelNode convert(RelNode rel, @NotNull RelTrait toTrait) {
         RelTraitSet toTraits = rel.getTraitSet().replace(toTrait);

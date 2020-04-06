@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -77,7 +78,7 @@ public class Call implements Expression {
             new SqlIdentifier(opName, SqlParserPos.ZERO), null,
             syntax, bag, SqlNameMatchers.withCaseSensitive(true));
 
-        return F.first(bag);
+        return Objects.requireNonNull(F.first(bag));
     }
 
     /** */

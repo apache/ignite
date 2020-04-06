@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.apache.calcite.plan.hep.HepRelVertex;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalExchange;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
@@ -38,9 +35,6 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.DistributedTable;
@@ -93,21 +87,39 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(LogicalFilter rel, RelMetadataQuery mq) {
-        return filter(mq, rel.getInput(), rel.getCondition());
+        return _distribution(rel.getInput(), mq);
     }
 
     /**
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(LogicalProject rel, RelMetadataQuery mq) {
-        return project(mq, rel.getInput(), rel.getProjects());
+        return IgniteDistributions.project(mq, rel.getInput(), rel.getProjects());
     }
 
     /**
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(LogicalJoin rel, RelMetadataQuery mq) {
-        return join(mq, rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
+        IgniteDistribution leftIn = _distribution(rel.getLeft(), mq);
+        IgniteDistribution rightIn = _distribution(rel.getRight(), mq);
+
+        List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
+            leftIn, rightIn, rel.analyzeCondition(), rel.getJoinType());
+
+        return F.first(suggestions).out();
+    }
+
+    /**
+     * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
+     */
+    public IgniteDistribution distribution(LogicalAggregate rel, RelMetadataQuery mq) {
+        IgniteDistribution inDistr = _distribution(rel.getInput(), mq);
+
+        List<IgniteDistributions.Suggestion> suggestions =
+            IgniteDistributions.suggestAggregate(inDistr, rel.getGroupSet(), rel.getGroupSets());
+
+        return F.first(suggestions).out();
     }
 
     /**
@@ -128,7 +140,7 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      * See {@link IgniteMdDistribution#distribution(RelNode, RelMetadataQuery)}
      */
     public IgniteDistribution distribution(LogicalValues rel, RelMetadataQuery mq) {
-        return values(rel.getRowType(), rel.getTuples());
+        return IgniteDistributions.broadcast();
     }
 
     /**
@@ -143,41 +155,6 @@ public class IgniteMdDistribution implements MetadataHandler<BuiltInMetadata.Dis
      */
     public IgniteDistribution distribution(HepRelVertex rel, RelMetadataQuery mq) {
         return _distribution(rel.getCurrentRel(), mq);
-    }
-
-    /**
-     * @return Values relational node distribution.
-     */
-    public static IgniteDistribution values(RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples) {
-        return IgniteDistributions.broadcast();
-    }
-
-    /**
-     * @return Project relational node distribution calculated on the basis of its input and projections.
-     */
-    public static IgniteDistribution project(RelMetadataQuery mq, RelNode input, List<? extends RexNode> projects) {
-        return project(input.getRowType(), _distribution(input, mq), projects);
-    }
-
-    /**
-     * @return Project relational node distribution calculated on the basis of its input distribution and projections.
-     */
-    public static IgniteDistribution project(RelDataType inType, IgniteDistribution inDistr, List<? extends RexNode> projects) {
-        return inDistr.apply(Project.getPartialMapping(inType.getFieldCount(), projects));
-    }
-
-    /**
-     * @return Filter relational node distribution calculated on the basis of its input.
-     */
-    public static IgniteDistribution filter(RelMetadataQuery mq, RelNode input, RexNode condition) {
-        return _distribution(input, mq);
-    }
-
-    /**
-     * @return Join relational node distribution calculated on the basis of its inputs and join information.
-     */
-    public static IgniteDistribution join(RelMetadataQuery mq, RelNode left, RelNode right, JoinInfo joinInfo, JoinRelType joinType) {
-        return F.first(IgniteDistributions.suggestJoin(_distribution(left, mq), _distribution(right, mq), joinInfo, joinType)).out();
     }
 
     /**

@@ -25,6 +25,7 @@ import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -136,6 +137,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public void validateAggregateParams(SqlCall aggCall, SqlNode filter, SqlNodeList orderList, SqlValidatorScope scope) {
+        validateAggregateFunction(aggCall, (SqlAggFunction) aggCall.getOperator());
+
+        super.validateAggregateParams(aggCall, filter, orderList, scope);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void addToSelectList(List<SqlNode> list, Set<String> aliases,
         List<Map.Entry<String, RelDataType>> fieldList, SqlNode exp, SelectScope scope, boolean includeSystemVars) {
         if (includeSystemVars || exp.getKind() != SqlKind.IDENTIFIER || !isSystemFieldName(deriveAlias(exp, 0)))
@@ -145,6 +153,26 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override public boolean isSystemField(RelDataTypeField field) {
         return isSystemFieldName(field.getName());
+    }
+
+    /** */
+    private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
+        if (!SqlKind.AGGREGATE.contains(aggFunction.kind))
+            throw newValidationError(call,
+                IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
+
+        switch (aggFunction.kind) {
+            case COUNT:
+            case SUM:
+            case AVG:
+            case MIN:
+            case MAX:
+
+                return;
+            default:
+                throw newValidationError(call,
+                    IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
+        }
     }
 
     /** */

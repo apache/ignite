@@ -19,35 +19,34 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- * Relational operator that returns the contents of a table.
+ *
  */
-public class IgniteTableScan extends TableScan implements IgniteRel {
-    /**
-     * Creates a TableScan.
-     *
-     * @param cluster  Cluster that this relational expression belongs to
-     * @param traits   Traits of this relational expression
-     * @param table    Table definition.
-     */
-    public IgniteTableScan(RelOptCluster cluster, RelTraitSet traits, RelOptTable table) {
-        super(cluster, traits, table);
+public class IgniteMapAggregate extends Aggregate implements IgniteRel {
+    public IgniteMapAggregate(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        super(cluster, traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        assert inputs.isEmpty();
-
-        return this;
+    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        return new IgniteMapAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RelDataType deriveRowType() {
+        return Commons.aggregationDataRowType(getCluster().getTypeFactory());
     }
 }

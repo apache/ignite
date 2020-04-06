@@ -27,8 +27,8 @@ import org.apache.calcite.plan.volcano.AbstractConverter;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
@@ -107,20 +107,15 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
     public List<IgniteDistribution> deriveDistributions(LogicalProject rel, RelMetadataQuery mq) {
+        HashSet<IgniteDistribution> res = new HashSet<>();
+
         Mappings.TargetMapping mapping =
             Project.getPartialMapping(rel.getInput().getRowType().getFieldCount(), rel.getProjects());
 
-        return Commons.transform(_deriveDistributions(rel.getInput(), mq), i -> i.apply(mapping));
-    }
+        for (IgniteDistribution inDistr : _deriveDistributions(rel.getInput(), mq))
+            res.add(inDistr.apply(mapping));
 
-    /**
-     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
-     */
-    public List<IgniteDistribution> deriveDistributions(SingleRel rel, RelMetadataQuery mq) {
-        if (rel instanceof IgniteRel)
-            return deriveDistributions((IgniteRel)rel, mq);
-
-        return _deriveDistributions(rel.getInput(), mq);
+        return new ArrayList<>(res);
     }
 
     /**
@@ -148,7 +143,7 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
         if (!F.isEmpty(res))
             return new ArrayList<>(res);
 
-        return Collections.emptyList();
+        return F.asList(IgniteMdDistribution._distribution(rel, mq));
     }
 
     /**
@@ -168,9 +163,19 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
     /**
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
+    public List<IgniteDistribution> deriveDistributions(LogicalAggregate rel, RelMetadataQuery mq) {
+        List<IgniteDistributions.Suggestion> suggestions = IgniteDistributions.suggestAggregate(
+            mq, rel.getInput(), rel.getGroupSet(), rel.getGroupSets());
+
+        return Commons.transform(suggestions, IgniteDistributions.Suggestion::out);
+    }
+
+    /**
+     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
+     */
     public List<IgniteDistribution> deriveDistributions(LogicalJoin rel, RelMetadataQuery mq) {
         List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
-            rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
+            mq, rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
 
         return Commons.transform(suggestions, IgniteDistributions.BiSuggestion::out);
     }

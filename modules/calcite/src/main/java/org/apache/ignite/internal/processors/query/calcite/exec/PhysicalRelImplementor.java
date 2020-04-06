@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.List;
+import java.util.function.Supplier;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.JoinNode;
@@ -32,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.serialize.AggregatePhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.FilterPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.JoinPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.PhysicalRel;
@@ -161,6 +166,36 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
             default:
                 throw new AssertionError();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(AggregatePhysicalRel rel) {
+        AggregateNode.AggregateType type;
+
+        switch (rel.type()) {
+            case AggregatePhysicalRel.MAP:
+                type = AggregateNode.AggregateType.MAP;
+                break;
+            case AggregatePhysicalRel.REDUCE:
+                type = AggregateNode.AggregateType.REDUCE;
+                break;
+            case AggregatePhysicalRel.SINGLE:
+                type = AggregateNode.AggregateType.SINGLE;
+                break;
+            default:
+                throw new AssertionError();
+        }
+
+        RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
+
+        Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
+            rowHandler, type, rel.calls(), rel.inputRowType());
+
+        AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.groupSets(), factory, rowHandler);
+
+        node.register(visit(rel.input()));
+
+        return node;
     }
 
     /** {@inheritDoc} */

@@ -21,22 +21,29 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -88,15 +95,76 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteFilter rel) {
+    @Override public IgniteRel visit(IgniteAggregate rel) {
         boolean split = rel == cutPoint;
 
         RelNode input = rel.getInput();
         RelNode newInput = visit((IgniteRel) input);
 
         if (input != newInput) {
+            IgniteDistribution newDistr = IgniteDistributions.aggregate(mq,
+                newInput, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
+
+            assert newDistr != null;
+
             RelTraitSet traits = rel.getTraitSet()
-                .replace(IgniteMdDistribution.filter(mq, newInput, rel.getCondition()));
+                .replace(newDistr);
+
+            rel = (IgniteAggregate) rel.copy(traits, ImmutableList.of(newInput));
+        }
+
+        return split ? split(rel, rel.getTraitSet()) : rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteMapAggregate rel) {
+        // a split may happen on BiRel inputs merge. An map aggregate node cannot be a BiRel input.
+        assert rel != cutPoint;
+
+        RelNode input = rel.getInput();
+        RelNode newInput = visit((IgniteRel) input);
+
+        if (input == newInput)
+            return rel;
+
+        IgniteDistribution newDistr = IgniteDistributions.mapAggregate(mq,
+            newInput, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
+
+        assert newDistr != null;
+
+        RelTraitSet traits = rel.getTraitSet()
+            .replace(newDistr);
+
+        return (IgniteRel) rel.copy(traits, ImmutableList.of(newInput));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteReduceAggregate rel) {
+        // a split may happen on BiRel inputs merge. An reduce aggregate node doesn't have a
+        // physical mapping (because it always goes after receiver node), so, its merge with
+        // any input cannot cause the split.
+        assert rel != cutPoint;
+
+        if (U.assertionsEnabled()) {
+            RelNode input = rel.getInput();
+            RelNode newInput = visit((IgniteRel) input);
+
+            assert input == newInput;
+        }
+
+        return rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteFilter rel) {
+        boolean split = rel == cutPoint;
+
+        RelNode input = rel.getInput();
+        IgniteRel newInput = visit((IgniteRel) input);
+
+        if (input != newInput) {
+            RelTraitSet traits = rel.getTraitSet()
+                .replace(newInput.distribution());
 
             rel = (IgniteFilter) rel.copy(traits, ImmutableList.of(newInput));
         }
@@ -113,7 +181,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
 
         if (input != newInput) {
             RelTraitSet traits = rel.getTraitSet()
-                .replace(IgniteMdDistribution.project(mq, newInput, rel.getProjects()));
+                .replace(IgniteDistributions.project(mq, newInput, rel.getProjects()));
 
             rel = (IgniteProject) rel.copy(traits, ImmutableList.of(newInput));
         }
@@ -131,10 +199,14 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
         RelNode newLeft = visit((IgniteRel) left);
         RelNode newRight = visit((IgniteRel) right);
 
-        // Join requires input distribution and produces its own one.
-        // It cannot change the distribution on a child node change.
-        if (left != newLeft || right != newRight)
+        if (left != newLeft || right != newRight) {
+            // Join requires input distribution and produces its own one.
+            // It cannot change the distribution on a child node change.
+            checkDistributionEqual(left, newLeft);
+            checkDistributionEqual(right, newRight);
+
             rel = (IgniteJoin) rel.copy(rel.getTraitSet(), ImmutableList.of(newLeft, newRight));
+        }
 
         return split ? split(rel, rel.getTraitSet()) : rel;
     }
@@ -194,5 +266,16 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
         fragments.add(fragment);
 
         return new IgniteReceiver(cluster, traits, input.getRowType(), fragment);
+    }
+
+    /** */
+    private void checkDistributionEqual(RelNode rel1, RelNode rel2) {
+        if (!U.assertionsEnabled())
+            return;
+
+        IgniteDistribution distr1 = IgniteMdDistribution._distribution(rel1, mq);
+        IgniteDistribution distr2 = IgniteMdDistribution._distribution(rel2, mq);
+
+        assert Objects.equals(distr1, distr2) : "distr1=" + distr1 + "; distr2=" + distr2;
     }
 }

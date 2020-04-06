@@ -59,6 +59,21 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
+    T visit(IgniteAggregate rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteMapAggregate rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteReduceAggregate rel);
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
     T visit(IgniteTableModify rel);
 
     /**

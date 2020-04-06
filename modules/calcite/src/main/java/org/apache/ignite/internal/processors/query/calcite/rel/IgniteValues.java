@@ -25,7 +25,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 
 /**
  *
@@ -52,10 +51,7 @@ public class IgniteValues extends Values implements IgniteRel {
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.isEmpty();
 
-        RelTraitSet traits = getCluster().traitSetOf(IgniteConvention.INSTANCE)
-            .replace(IgniteMdDistribution.values(rowType, tuples));
-
-        return new IgniteValues(getCluster(), rowType, tuples, traits);
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -56,6 +56,35 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     @Test
+    public void aggregate() throws Exception {
+        IgniteCache<Integer, Employer> employer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("employer")
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Employer.class)
+            .setBackups(2)
+        );
+
+        waitForReadyTopology(internalCache(employer).context().topology(), new AffinityTopologyVersion(5, 2));
+
+        employer.putAll(ImmutableMap.of(
+            0, new Employer("Igor", 10d),
+            1, new Employer("Roman", 15d),
+            2, new Employer("Nikolay", 20d)
+        ));
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
+            "SELECT * FROM employer WHERE employer.salary = (SELECT AVG(employer.salary) FROM employer)");
+
+        assertEquals(1, query.size());
+
+        List<List<?>> rows = query.get(0).getAll();
+        assertEquals(1, rows.size());
+        assertEquals(Arrays.asList("Roman", 15d), F.first(rows));
+    }
+
+    @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = ignite.getOrCreateCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
@@ -294,6 +323,23 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         public Key(int id, int affinityKey) {
             this.id = id;
             this.affinityKey = affinityKey;
+        }
+    }
+
+    /** */
+    public static class Employer {
+        /** */
+        @QuerySqlField
+        public String name;
+
+        /** */
+        @QuerySqlField
+        public Double salary;
+
+        /** */
+        public Employer(String name, Double salary) {
+            this.name = name;
+            this.salary = salary;
         }
     }
 

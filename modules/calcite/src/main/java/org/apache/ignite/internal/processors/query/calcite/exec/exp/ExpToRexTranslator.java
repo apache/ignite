@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.util.List;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperatorTable;
+import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggCallExp;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -68,6 +72,21 @@ public class ExpToRexTranslator implements ExpressionVisitor<RexNode> {
      */
     public RexNode translate(Expression exp) {
         return exp.accept(this);
+    }
+
+    /** */
+    public AggregateCall translate(AggCallExp desc) {
+        return AggregateCall.create(
+            desc.sqlOperator(opTable),
+            desc.distinct(),
+            desc.approximate(),
+            desc.ignoreNulls(),
+            ImmutableIntList.of(desc.args()),
+            desc.filterArg(),
+            RelCollations.EMPTY,
+            desc.resultType().logicalType(typeFactory),
+            desc.name()
+        );
     }
 
     /** {@inheritDoc} */

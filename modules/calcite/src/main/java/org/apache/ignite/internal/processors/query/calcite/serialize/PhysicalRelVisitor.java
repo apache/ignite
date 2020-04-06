@@ -59,6 +59,11 @@ public interface PhysicalRelVisitor<T> {
     /**
      * See {@link PhysicalRelVisitor#visit(PhysicalRel)}
      */
+    T visit(AggregatePhysicalRel rel);
+
+    /**
+     * See {@link PhysicalRelVisitor#visit(PhysicalRel)}
+     */
     T visit(TableModifyPhysicalRel rel);
 
     /**

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ScannableTable;
@@ -26,6 +28,8 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.JoinNode;
@@ -37,11 +41,14 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
@@ -176,6 +183,48 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         inbox.init(ctx, source.mapping().nodes(), expressionFactory.comparator(ctx, rel.collations(), rel.getRowType()));
 
         return inbox;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteAggregate rel) {
+        AggregateNode.AggregateType type = AggregateNode.AggregateType.SINGLE;
+        RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
+
+        Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
+            rowHandler, type, rel.getAggCallList(), rel.getInput().getRowType());
+
+        AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), factory, rowHandler);
+        node.register(visit(rel.getInput()));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteMapAggregate rel) {
+        AggregateNode.AggregateType type = AggregateNode.AggregateType.MAP;
+        RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
+
+        Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
+            rowHandler, type, rel.getAggCallList(), rel.getInput().getRowType());
+
+        AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.getGroupSets(), factory, rowHandler);
+        node.register(visit(rel.getInput()));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteReduceAggregate rel) {
+        AggregateNode.AggregateType type = AggregateNode.AggregateType.REDUCE;
+        RowHandler<Object[]> rowHandler = ArrayRowHandler.INSTANCE;
+
+        Supplier<List<AccumulatorWrapper>> factory = expressionFactory.wrappersFactory(ctx,
+            rowHandler, type, rel.aggregateCalls(), null);
+
+        AggregateNode<Object[]> node = new AggregateNode<>(ctx, type, rel.groupSets(), factory, rowHandler);
+        node.register(visit(rel.getInput()));
+
+        return node;
     }
 
     /** {@inheritDoc} */
