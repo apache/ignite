@@ -383,10 +383,17 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         MASTER_KEY_CHANGE_FINISH,
 
         /**
-         * Take snapshot operation procedure.
+         * Start snapshot procedure.
          *
          * @see IgniteSnapshotManager
          */
-        TAKE_SNAPSHOT
+        START_SNAPSHOT,
+
+        /**
+         * End snapshot procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        END_SNAPSHOT
     }
 }

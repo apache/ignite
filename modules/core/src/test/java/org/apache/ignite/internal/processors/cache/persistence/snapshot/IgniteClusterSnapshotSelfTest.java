@@ -195,7 +195,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 FullMessage<?> msg0 = (FullMessage<?>)msg;
 
                 assertEquals("Snapshot distributed process must be used",
-                    DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal(), msg0.type());
+                    DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal(), msg0.type());
 
                 assertTrue("Snapshot has to be finished successfully on all nodes", msg0.error().isEmpty());
 
@@ -354,7 +354,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             fut::get,
             IgniteCheckedException.class,
-            "Snapshot operation has been failed due to an error");
+            "Snapshot creation has been finished with an error");
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite0).isPresent());
@@ -406,7 +406,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
             IgniteCheckedException.class,
-            "Snapshot operation has been failed due to an error on remote nodes");
+            "Snapshot creation has been finished with an error");
 
         assertTrue("Snapshot directory must be empty: " + grid0Dir,
             !searchDirectoryRecursively(locSnpDir.toPath(), grid0Dir).isPresent());
@@ -505,7 +505,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    // todo fail snapshot only if success result from fail node has not been received
     // todo remove limitation on remote snapshot for index files, array of partitions must allowed to be null
 
     /** {@inheritDoc} */

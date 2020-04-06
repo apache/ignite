@@ -4046,7 +4046,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node) {
         if (msg instanceof InitMessage &&
-            ((InitMessage)msg).type() == DistributedProcess.DistributedProcessType.TAKE_SNAPSHOT.ordinal())
+            ((InitMessage)msg).type() == DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal())
             return true;
 
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
