@@ -79,7 +79,7 @@ public class ServiceConfiguration implements Serializable {
     protected IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Enables or disables service statistics. */
-    protected boolean isStatisticsEnabled;
+    protected boolean isStatisticsEnabled = true;
 
     /**
      * Gets service name.
