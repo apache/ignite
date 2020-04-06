@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.internal.processors.service.inner.NamingService;
 import org.apache.ignite.internal.processors.service.inner.NamingServiceImpl;
+import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -83,7 +84,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testServiceMetricsEnabledDisabled() throws Exception {
         IgniteEx ignite = startGrid();
 
-        ServiceConfiguration srvcCfg = serviceCfg(SRVC_NAME, 0, 1);
+        ServiceConfiguration srvcCfg = serviceCfg(MyServiceFactory.create(), 0, 1);
 
         srvcCfg.setStatisticsEnabled(false);
 
@@ -118,10 +119,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         int perNode = 2;
 
-        ServiceConfiguration srvcCfg = server.services().multipleConfiguration(SRVC_NAME, MyServiceFactory.create(),
-            totalInstance, perNode);
-
-        srvcCfg.setStatisticsEnabled(true);
+        ServiceConfiguration srvcCfg = serviceCfg(MyServiceFactory.create(), totalInstance, perNode);
 
         server.services().deploy(srvcCfg);
 
@@ -173,7 +171,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
         List<IgniteEx> servers = startGrids(3, false);
 
         // 2 services per node.
-        servers.get(0).services().deploy(serviceCfg(SRVC_NAME, servers.size(), 2));
+        servers.get(0).services().deploy(serviceCfg( MyServiceFactory.create(), servers.size(), 2));
 
         awaitPartitionMapExchange();
 
@@ -194,8 +192,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     public void testMetricNaming() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        ignite.services().deploy(ignite.services().nodeSingletonConfiguration(SRVC_NAME, new NamingServiceImpl())
-            .setStatisticsEnabled(true));
+        ignite.services().deploy(serviceCfg(new NamingServiceImpl(), 0, 1));
 
         MetricRegistry registry = ignite.context().metric().registry(serviceMetricRegistryName(SRVC_NAME));
 
@@ -262,7 +259,7 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
 
         List<IgniteEx> clients = startGrids(clientCnt, true);
 
-        servers.get(0).services().deploy(serviceCfg(SRVC_NAME, perClusterCnt, perNodeCnt));
+        servers.get(0).services().deploy(serviceCfg(MyServiceFactory.create(), perClusterCnt, perNodeCnt));
 
         awaitPartitionMapExchange();
 
@@ -341,11 +338,11 @@ public class GridServiceMetricsTest extends GridCommonAbstractTest {
     }
 
     /** Provides test service configuration. */
-    private static ServiceConfiguration serviceCfg(String svcName, int perClusterCnt, int perNodeCnt) {
+    private static ServiceConfiguration serviceCfg(Service srvc, int perClusterCnt, int perNodeCnt) {
         ServiceConfiguration svcCfg = new ServiceConfiguration();
 
-        svcCfg.setName(svcName);
-        svcCfg.setService(MyServiceFactory.create());
+        svcCfg.setName(SRVC_NAME);
+        svcCfg.setService(srvc);
         svcCfg.setMaxPerNodeCount(perNodeCnt);
         svcCfg.setTotalCount(perClusterCnt);
         svcCfg.setStatisticsEnabled(true);

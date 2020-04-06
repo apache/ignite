@@ -552,7 +552,12 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> deployMultiple(ClusterGroup prj, String name, Service srvc, int totalCnt,
         int maxPerNodeCnt) {
-        ServiceConfiguration cfg = serviceConfiguration(name, srvc, totalCnt, maxPerNodeCnt);
+        ServiceConfiguration cfg = new ServiceConfiguration();
+
+        cfg.setName(name);
+        cfg.setService(srvc);
+        cfg.setTotalCount(totalCnt);
+        cfg.setMaxPerNodeCount(maxPerNodeCnt);
 
         return deployAll(prj, Collections.singleton(cfg));
     }
@@ -562,10 +567,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         Object affKey) {
         A.notNull(affKey, "affKey");
 
-        ServiceConfiguration cfg = serviceConfiguration(name, srvc, 1, 1);
+        ServiceConfiguration cfg = new ServiceConfiguration();
 
+        cfg.setName(name);
+        cfg.setService(srvc);
         cfg.setCacheName(cacheName);
         cfg.setAffinityKey(affKey);
+        cfg.setTotalCount(1);
+        cfg.setMaxPerNodeCount(1);
 
         // Ignore projection here.
         return deployAll(Collections.singleton(cfg), null);
