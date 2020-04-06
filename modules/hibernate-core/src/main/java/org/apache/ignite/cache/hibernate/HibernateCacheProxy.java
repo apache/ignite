@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -665,6 +666,12 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
         return delegate.get().localPreloadPartition(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> enableIndexing(String schemaName, Collection<QueryEntity> entities)
+        throws IgniteCheckedException {
+        return delegate.get().enableIndexing(schemaName, entities);
     }
 
     /** {@inheritDoc} */

@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -1560,6 +1561,18 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         try {
             return delegate.localPreloadPartition(part);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> enableIndexing(String schemaName, Collection<QueryEntity> entities) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.enableIndexing(schemaName, entities);
         }
         finally {
             onLeave(opGate);

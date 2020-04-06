@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -254,5 +255,11 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         ctx.offheap().preloadPartition(part);
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> enableIndexing(String schemaName, Collection<QueryEntity> entities)
+        throws IgniteCheckedException {
+        return ctx.kernalContext().query().dynamicAddQueryEntities(ctx.name(), schemaName, entities);
     }
 }

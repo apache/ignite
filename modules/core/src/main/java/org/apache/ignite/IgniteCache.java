@@ -43,6 +43,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -1669,4 +1670,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
      */
     public boolean localPreloadPartition(int partition);
+
+    /**
+     * @param entities Query entities.
+     */
+    public IgniteFuture<Void> enableIndexing(String schemaName, Collection<QueryEntity> entities);
 }

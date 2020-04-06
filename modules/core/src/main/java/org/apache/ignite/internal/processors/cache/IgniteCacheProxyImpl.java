@@ -55,6 +55,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
@@ -2171,6 +2172,18 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         try {
             return delegate.localPreloadPartition(part);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> enableIndexing(String schemaName, Collection<QueryEntity> entities) {
+        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+
+        try {
+            return (IgniteFuture<Void>)createFuture(delegate.enableIndexing(schemaName, entities));
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

@@ -35,11 +35,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.h2.jdbc.JdbcSQLException;
 import org.junit.Assert;
@@ -180,7 +178,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
                 .getOrCreateCache(defaultCacheConfiguration().setName("POI"));
 
         IgniteEx ig0 = ignite(nodeIndex());
-        GridQueryProcessor qry = ig0.context().query();
 
         QueryEntity entity = new QueryEntity(Integer.class, POI.class);
         entity.setKeyFieldName("id");
@@ -201,9 +198,9 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         Collection<QueryEntity> entities = Collections.singletonList(entity);
 
-        IgniteInternalFuture<?> fut = qry.dynamicAddQueryEntities("POI", QueryUtils.DFLT_SCHEMA, entities);
+        IgniteFuture<Void> fut = cache.enableIndexing(QueryUtils.DFLT_SCHEMA, entities);
 
-        GridTestUtils.waitForAllFutures(fut);
+        fut.get();
 
         run(cache, "INSERT INTO POI(id, name) VALUES (100500, 'test')");
 
