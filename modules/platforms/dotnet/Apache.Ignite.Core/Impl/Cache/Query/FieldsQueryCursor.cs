@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="keepBinary">Keep portable flag.</param>
         /// <param name="readerFunc">The reader function.</param>
         public FieldsQueryCursor(IPlatformTargetInternal target, bool keepBinary, 
             Func<IBinaryRawReader, int, T> readerFunc)
