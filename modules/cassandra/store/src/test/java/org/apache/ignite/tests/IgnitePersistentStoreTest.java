@@ -875,7 +875,6 @@ public class IgnitePersistentStoreTest {
         return config;
     }
 
-
     /** */
     public static class PojoPerson {
         /** */
