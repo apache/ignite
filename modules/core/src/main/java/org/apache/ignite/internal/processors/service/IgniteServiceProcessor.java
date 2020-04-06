@@ -216,6 +216,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Keeps histograms to measure durations of service methods. */
     private final Map<String, Map<GridServiceMethodReflectKey, HistogramMetricImpl>> invocationHistograms
         = new ConcurrentHashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
