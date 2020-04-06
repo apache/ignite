@@ -213,6 +213,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
             AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
             AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
+            AddHandler(UnmanagedCallbackOp.NearCacheUpdate, NearCacheUpdate);
+            AddHandler(UnmanagedCallbackOp.NearCacheUpdateFromThreadLocal, NearCacheUpdateFromThreadLocal);
+            AddHandler(UnmanagedCallbackOp.OnCacheStopped, OnCacheStopped);
+            AddHandler(UnmanagedCallbackOp.OnAffinityTopologyVersionChanged, OnAffinityTopologyVersionChanged);
         }
 
         /// <summary>
@@ -368,7 +372,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
-                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong());
+                var t = _ignite.HandleRegistry.Get<CacheEntryFilterHolder>(stream.ReadLong(), true);
 
                 return t.Invoke(stream);
             }
@@ -418,6 +422,61 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             var val = marsh.Unmarshal<object>(inOutStream);
 
             return holder.Process(key, val, val != null, grid);
+        }
+        
+        /// <summary>
+        /// Updates near cache entry.
+        /// </summary>
+        /// <param name="memPtr">Memory pointer.</param>
+        /// <returns>Unused.</returns>
+        private long NearCacheUpdate(long memPtr)
+        {
+            using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+            {
+                var cacheId = stream.ReadInt();
+
+                _ignite.NearCacheManager.Update(cacheId, stream, _ignite.Marshaller);
+            }
+
+            return 0;
+        }
+        
+        /// <summary>
+        /// Updates near cache entry.
+        /// </summary>
+        private long NearCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor, void* arg)
+        {
+            int cacheId = (int)(cacheIdAndPartition & 0xFFFFFFFF);
+            int partition = (int) (cacheIdAndPartition >> 32);
+
+            _ignite.NearCacheManager.UpdateFromThreadLocal(
+                cacheId, partition, new AffinityTopologyVersion(verMajor, (int) verMinor));
+                
+            return 0;
+        }
+        
+        /// <summary>
+        /// Called on cache stop.
+        /// </summary>
+        /// <param name="cacheId">Cache id.</param>
+        private long OnCacheStopped(long cacheId)
+        {
+            _ignite.NearCacheManager.Stop((int) cacheId);
+            
+            return 0;
+        }
+        
+        /// <summary>
+        /// Called on affinity topology version change.
+        /// </summary>
+        private long OnAffinityTopologyVersionChanged(
+            long topologyVersion, long minorTopologyVersion, long unused, void* arg)
+        {
+            var affinityTopologyVersion = new AffinityTopologyVersion(topologyVersion, (int) minorTopologyVersion);
+            
+            _ignite.NearCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
+            
+            return 0;
         }
 
         #endregion

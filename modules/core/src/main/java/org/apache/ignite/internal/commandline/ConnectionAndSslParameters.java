@@ -44,6 +44,9 @@ public class ConnectionAndSslParameters {
     /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
     private long pingInterval;
 
+    /** Verbose mode. */
+    private boolean verbose;
+
     /** SSL Protocol. */
     private String sslProtocol;
 
@@ -83,6 +86,7 @@ public class ConnectionAndSslParameters {
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#getPingTimeout()}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#getPingInterval()}.
      * @param autoConfirmation Auto confirmation flag.
+     * @param verbose Verbose mode.
      * @param sslProtocol SSL Protocol.
      * @param sslCipherSuites SSL cipher suites.
      * @param sslKeyAlgorithm SSL Key Algorithm.
@@ -94,7 +98,7 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStoreType Truststore Type.
      */
     public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
-        Long pingTimeout, Long pingInterval, boolean autoConfirmation,
+        Long pingTimeout, Long pingInterval, boolean autoConfirmation, boolean verbose,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
         String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
@@ -109,6 +113,7 @@ public class ConnectionAndSslParameters {
         this.pingInterval = pingInterval;
 
         this.autoConfirmation = autoConfirmation;
+        this.verbose = verbose;
 
         this.sslProtocol = sslProtocol;
         this.sslCipherSuites = sslCipherSuites;
@@ -276,5 +281,14 @@ public class ConnectionAndSslParameters {
      */
     public void sslTrustStorePassword(char[] sslTrustStorePassword) {
         this.sslTrustStorePassword = sslTrustStorePassword;
+    }
+
+    /**
+     * Returns {@code true} if verbose mode is enabled.
+     *
+     * @return {@code True} if verbose mode is enabled.
+     */
+    public boolean verbose() {
+        return verbose;
     }
 }

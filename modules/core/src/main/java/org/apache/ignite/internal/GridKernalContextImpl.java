@@ -111,7 +111,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
@@ -468,6 +467,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
+
+    /** */
+    private final boolean igniteDaemon = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DAEMON);
 
     /**
      * No-arg constructor is required by externalization.
@@ -1052,7 +1054,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ClusterNode locNode0 = localNode();
 
         return locNode0 != null ? locNode0.isDaemon() :
-            (config().isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON));
+            (config().isDaemon() || igniteDaemon);
     }
 
     /** {@inheritDoc} */

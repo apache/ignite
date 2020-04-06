@@ -175,6 +175,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(af);
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
+            
+            var platformNear = cacheCfg.PlatformNearConfiguration;
+            Assert.AreEqual("int", platformNear.KeyTypeName);
+            Assert.AreEqual("string", platformNear.ValueTypeName);
+            Assert.IsTrue(platformNear.KeepBinary);
 
             Assert.AreEqual(new Dictionary<string, object>
             {
@@ -754,6 +759,12 @@ namespace Apache.Ignite.Core.Tests
                                 MaxMemorySize = 1024,
                                 MaxSize = 555
                             }
+                        },
+                        PlatformNearConfiguration = new PlatformNearCacheConfiguration
+                        {
+                            KeyTypeName = typeof(int).FullName,
+                            ValueTypeName = typeof(string).FullName,
+                            KeepBinary = true
                         },
                         EvictionPolicy = new LruEvictionPolicy
                         {
