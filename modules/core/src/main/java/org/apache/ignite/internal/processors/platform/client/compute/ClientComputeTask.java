@@ -97,7 +97,7 @@ class ClientComputeTask implements ClientCloseableResource {
         IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? F.alwaysTrue() : F.nodeForNodeIds(nodeIds);
         UUID subjId = ctx.securityContext() == null ? null : ctx.securityContext().subject().id();
 
-        task.setThreadContextIfNotNull(TC_SUBGRID_PREDICATE, nodePredicate);
+        task.setThreadContext(TC_SUBGRID_PREDICATE, nodePredicate);
         task.setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
         task.setThreadContext(TC_TIMEOUT, timeout);
         task.setThreadContext(TC_NO_FAILOVER, (flags & NO_FAILOVER_FLAG_MASK) != 0);

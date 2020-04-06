@@ -72,8 +72,7 @@ enum ClientOperation {
 
     /** Constructor. */
     ClientOperation(int code) {
-        this.code = code;
-        notification = false;
+        this(code, false);
     }
 
     /** Constructor. */

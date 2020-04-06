@@ -19,9 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.client.ClientClusterGroup;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -50,7 +52,7 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
 
         nodeIds.add(id);
 
-        if (ids != null)
+        if (!F.isEmpty(ids))
             nodeIds.addAll(Arrays.asList(ids));
 
         return new ClientClusterGroupImpl(nodeIds);
@@ -60,6 +62,6 @@ class ClientClusterGroupImpl implements ClientClusterGroup {
      * Gets node id's.
      */
     public Collection<UUID> nodeIds() {
-        return nodeIds == null ? null : new HashSet<>(nodeIds);
+        return nodeIds == null ? null : Collections.unmodifiableCollection(nodeIds);
     }
 }
