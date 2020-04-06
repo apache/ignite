@@ -650,6 +650,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         req.credentials(credentials());
 
+        req.userAttributes(userAttrs);
+
         return req;
     }
 
