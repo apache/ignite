@@ -4088,10 +4088,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (log.isTraceEnabled())
             log.trace("onExpired clear [key=" + key + ", entry=" + System.identityHashCode(this) + ']');
 
-        if (cctx.mvccEnabled())
-            cctx.offheap().mvccRemoveAll(this);
-        else
-            removeValue();
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            if (cctx.mvccEnabled())
+                cctx.offheap().mvccRemoveAll(this);
+            else
+                removeValue();
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
             cctx.events().addEvent(partition(),
