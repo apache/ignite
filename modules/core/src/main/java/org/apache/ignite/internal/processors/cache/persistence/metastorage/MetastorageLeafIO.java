@@ -41,14 +41,14 @@ public class MetastorageLeafIO extends BPlusLeafIO<MetastorageRow> implements Me
     ) {
         setVersion(pageAddr, 2);
 
-        MetastoragePageIOUtils.storeByOffsetV2(this, pageAddr, off, row);
+        MetastoragePageIOUtils.storeByOffset(this, pageAddr, off, row);
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<MetastorageRow> srcIo, long srcPageAddr, int srcIdx) {
         setVersion(dstPageAddr, 2);
 
-        MetastoragePageIOUtils.storeV2(this, dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
+        MetastoragePageIOUtils.store(this, dstPageAddr, dstIdx, srcIo, srcPageAddr, srcIdx);
     }
 
     /** {@inheritDoc} */
@@ -72,11 +72,11 @@ public class MetastorageLeafIO extends BPlusLeafIO<MetastorageRow> implements Me
 
     /** {@inheritDoc} */
     @Override public String getKey(long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
-        return MetastoragePageIOUtils.getKeyV2(this, pageAddr, idx, rowStore);
+        return MetastoragePageIOUtils.getKey(this, pageAddr, idx, rowStore);
     }
 
     /** {@inheritDoc} */
     @Override public MetastorageDataRow getDataRow(long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
-        return MetastoragePageIOUtils.getDataRowV2(this, pageAddr, idx, rowStore);
+        return MetastoragePageIOUtils.getDataRow(this, pageAddr, idx, rowStore);
     }
 }

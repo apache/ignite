@@ -23,9 +23,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
- * {@link MetastorageInnerIO} and {@link MetastorageLeafIO} use the same page format ut cannot explicitly share the same
- * implementation, because they are inherited from two independant abstract classes. So this util class contains that
- * implementation and should be used to avoid code duplication.
+ * {@link MetastorageInnerIO} and {@link MetastorageLeafIO} use the same page format but cannot explicitly share the
+ * same implementation, because they are inherited from two independant abstract classes. So this util class contains
+ * that implementation and should be used to avoid code duplication.
  */
 public class MetastoragePageIOUtils {
     /**
@@ -50,7 +50,7 @@ public class MetastoragePageIOUtils {
      * @see MetastorageBPlusIO#getKey(long, int, MetastorageRowStore)
      */
     public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    String getKeyV2(IO io, long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
+    String getKey(IO io, long pageAddr, int idx, MetastorageRowStore rowStore) throws IgniteCheckedException {
         int off = io.offset(idx);
         int len = PageUtils.getShort(pageAddr, off + 8);
 
@@ -74,7 +74,7 @@ public class MetastoragePageIOUtils {
      * @see MetastorageBPlusIO#getDataRow(long, int, MetastorageRowStore)
      */
     public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    MetastorageDataRow getDataRowV2(IO io, long pageAddr, int idx, MetastorageRowStore rowStore)
+    MetastorageDataRow getDataRow(IO io, long pageAddr, int idx, MetastorageRowStore rowStore)
         throws IgniteCheckedException
     {
         long link = io.getLink(pageAddr, idx);
@@ -102,7 +102,7 @@ public class MetastoragePageIOUtils {
      * @see BPlusIO#store(long, int, org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO, long, int)
      */
     public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    void storeV2(IO dstIo, long dstPageAddr, int dstIdx, BPlusIO<MetastorageRow> srcIo, long srcPageAddr, int srcIdx) {
+    void store(IO dstIo, long dstPageAddr, int dstIdx, BPlusIO<MetastorageRow> srcIo, long srcPageAddr, int srcIdx) {
         int srcOff = srcIo.offset(srcIdx);
         int dstOff = dstIo.offset(dstIdx);
 
@@ -113,7 +113,7 @@ public class MetastoragePageIOUtils {
      * @see BPlusIO#storeByOffset(long, int, Object)
      */
     public static <IO extends BPlusIO<MetastorageRow> & MetastorageBPlusIO>
-    void storeByOffsetV2(IO io, long pageAddr, int off, MetastorageRow row) {
+    void storeByOffset(IO io, long pageAddr, int off, MetastorageRow row) {
         assert row.link() != 0;
 
         PageUtils.putLong(pageAddr, off, row.link());
