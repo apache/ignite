@@ -304,8 +304,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 igniteCacheStoragePath(cctx.kernalContext().pdsFolderResolver().resolveFolders()),
                 false);
 
-            snpSndr.init();
-
             for (Integer grpId : parts.keySet()) {
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
@@ -454,16 +452,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
     /** {@inheritDoc} */
     @Override public void onCheckpointBegin(Context ctx) {
-        if (stopping()) {
+        if (stopping())
             return;
-        }
 
         // Snapshot task is now started since checkpoint write lock released.
-        if (!startedFut.onDone()) {
+        if (!startedFut.onDone())
             return;
-        }
 
         assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
+
+        wrapExceptionIfStarted(() -> snpSndr.init(processed.values().stream().mapToInt(Set::size).sum()))
+            .run();
 
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();

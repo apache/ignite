@@ -416,9 +416,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         UUID rmtNodeId = grid(1).localNode().id();
         Map<String, Integer> snpPartCRCs = new HashMap<>();
-        Map<Integer, Set<Integer>> parts = owningParts(ig0,
-            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-            rmtNodeId);
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted())
@@ -539,11 +539,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         UUID rmtNodeId = ig1.localNode().id();
 
-        snp(ig0).createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0,
-                new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-                rmtNodeId),
-                (part, grp) -> {});
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
+
+        snp(ig0).createRemoteSnapshot(rmtNodeId, parts, (part, grp) -> {});
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 

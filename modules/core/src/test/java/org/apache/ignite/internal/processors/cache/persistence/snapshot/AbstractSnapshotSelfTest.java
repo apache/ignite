@@ -379,8 +379,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void init() throws IgniteCheckedException {
-            delegate.init();
+        @Override protected void init(int partsCnt) {
+            delegate.init(partsCnt);
         }
 
         /** {@inheritDoc} */

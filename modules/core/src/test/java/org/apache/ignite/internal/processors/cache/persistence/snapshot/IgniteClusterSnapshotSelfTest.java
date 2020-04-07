@@ -505,7 +505,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    // todo remove limitation on remote snapshot for index files, array of partitions must allowed to be null
+    // todo check pme-free for better performance
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {

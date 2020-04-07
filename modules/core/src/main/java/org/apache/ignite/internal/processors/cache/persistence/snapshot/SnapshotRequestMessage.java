@@ -21,11 +21,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -53,32 +55,32 @@ public class SnapshotRequestMessage extends AbstractSnapshotMessage {
 
     /**
      * @param snpName Unique snapshot name.
-     * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshotted.
+     * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
     public SnapshotRequestMessage(String snpName, Map<Integer, Set<Integer>> parts) {
         super(snpName);
 
         assert parts != null && !parts.isEmpty();
 
-        this.parts = parts.entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey,
-                e -> e.getValue()
-                        .stream()
-                        .mapToInt(Integer::intValue)
-                        .toArray()));
+        this.parts = new HashMap<>();
+
+        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
+            this.parts.put(e.getKey(), U.toIntArray(e.getValue()));
     }
 
     /**
-     * @return The demanded cache group partions per each cache group.
+     * @return The demanded cache group partitions per each cache group.
      */
     public Map<Integer, Set<Integer>> parts() {
-        return parts.entrySet()
-            .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey,
-                e -> Arrays.stream(e.getValue())
-                        .boxed()
-                        .collect(Collectors.toSet())));
+        Map<Integer, Set<Integer>> res = new HashMap<>();
+
+        for (Map.Entry<Integer, int[]> e : parts.entrySet()) {
+            res.put(e.getKey(), e.getValue().length == 0 ? null : Arrays.stream(e.getValue())
+                .boxed()
+                .collect(Collectors.toSet()));
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
