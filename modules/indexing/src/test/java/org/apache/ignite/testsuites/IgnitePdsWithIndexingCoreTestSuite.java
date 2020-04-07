@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTe
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingFsyncTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverRecordLoggingLogOnlyTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
