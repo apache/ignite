@@ -94,7 +94,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 
     @Test
     public void testVerNameIdIdx_VerFilter() {
-        assertIndexInQuery("PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX", "SELECT * FROM Project WHERE ver=1");
+        assertIndexInQuery("PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX", "SELECT * FROM Project WHERE ver=1 AND name='Vasya'");
     }
 
 //    @Test

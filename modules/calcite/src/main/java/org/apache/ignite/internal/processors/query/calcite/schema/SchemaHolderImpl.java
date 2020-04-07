@@ -29,6 +29,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -99,8 +100,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     @Override public synchronized void onSqlTypeCreate(
         String schemaName,
         GridQueryTypeDescriptor typeDescriptor,
-        GridCacheContextInfo<?,?> cacheInfo
-    ) {
+        GridCacheContextInfo<?, ?> cacheInfo,
+        GridIndex pk) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         String tableName = typeDescriptor.tableName();
@@ -110,7 +111,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
 
-        schema.addTable(tableName, new IgniteTable(tableName, desc, pkCollation));
+        // TODO multiple collations handling
+        schema.addTable(tableName, new IgniteTable(tableName, desc, pkCollation, pk));
 
         rebuild();
     }
@@ -136,7 +138,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc) {
+    @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName,
+        GridQueryIndexDescriptor idxDesc, GridIndex idx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
@@ -145,7 +148,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation collation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        tbl.addIndex(idxName, collation);
+        tbl.addIndex(idxName, collation, idx);
     }
 
     /**

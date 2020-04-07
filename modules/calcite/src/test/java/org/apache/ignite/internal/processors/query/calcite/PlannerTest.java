@@ -1811,7 +1811,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** */
         private TestTable(RelDataType type) {
-            super(null, null, null);
+            super(null, null, null, null);
             protoType = RelDataTypeImpl.proto(type);
         }
 

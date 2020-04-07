@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -31,6 +32,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -46,10 +48,12 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.emptyList;
+import static org.apache.calcite.rex.RexUtil.removeCast;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
@@ -66,10 +70,17 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             EQUALS,
             LESS_THAN, GREATER_THAN,
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
+    private static final int EQUALS_MASK = 1;
+    private static final int LESS_MASK = EQUALS_MASK << 1;
+    private static final int GREATER_MASK = LESS_MASK << 1;
 
     private final List<RexNode> filters;
     private final int[] projects;
-    private final List<RexCall> indexConditions;
+    private final RexNode[] lowerIdxCondition;
+    private final RexNode[] upperIdxCondition;
+    private final IgniteTable igniteTable;
+    private final RelCollation collation;
+    private final int[] predicateMasks;
 
     /**
      * Creates a TableScan.
@@ -89,119 +100,272 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
         this.filters = filters;
         this.projects = projects;
-        indexConditions = buildIndexConditions(filters, tbl);
+        this.igniteTable = tbl.unwrap(IgniteTable.class);
+        this.collation = igniteTable.collations().isEmpty() ? RelCollations.EMPTY : igniteTable.collations().get(0);
+        this.predicateMasks = new int[collation.getFieldCollations().size()];
+        this.lowerIdxCondition = new RexNode[igniteTable.columnDescriptors().length];
+        this.upperIdxCondition = new RexNode[igniteTable.columnDescriptors().length];
+        buildIndexConditions();
+
     }
 
-    public static List<RexCall> buildIndexConditions(
-        Collection<RexNode> filters,
-        RelOptTable relOptTbl
-    ) {
-        if (!nonTrivialBoundsPossible(filters, relOptTbl))
-            return emptyList();
+    private void buildIndexConditions() {
+        if (!boundsArePossible())
+            return;
 
-        // TODO Merge OR filters result using several index cursors
-        // TODO simplify and merge overlapping conditions
-        // TODO do we always scan over index? datapages scan?
-        // TODO IN operator
-        // TODO BETWEEN
+        assert igniteTable.collations().size() <= 1 : igniteTable.collations();
+        assert !filters.isEmpty() : filters;
 
-        return findBestIndexPredicates(filters, relOptTbl);
-    }
+        RelCollation collation = igniteTable.collations().get(0);
+        Map<Integer, RelFieldCollation> idxCols = new HashMap<>(collation.getFieldCollations().size());
+        for (RelFieldCollation fc : collation.getFieldCollations())
+            idxCols.put(fc.getFieldIndex(), fc);
 
-    public static List<RexCall>  findBestIndexPredicates(Collection<RexNode> filters, RelOptTable relOptTbl) {
-        List<RelCollation> idxCollations = relOptTbl.getCollationList();
-        RelCollation idxCollation = idxCollations.get(0);
+        int cols = igniteTable.columnDescriptors().length;
+
         List<RexNode> predicatesConjunction = RexUtil.flattenAnd(filters);
-        double bestSelectivity = 1.0;
-        List<RexCall> bestPreds = new ArrayList<>();
 
-        for (RelFieldCollation fldCollation : idxCollation.getFieldCollations()) {
-            double curSelectivity = bestSelectivity;
-            RexCall curPred = null;
-            for (RexNode exp : predicatesConjunction) {
-                if (!suitableForIndex(exp, bestPreds))
-                    continue;
+//        if (predicatesConjunction.isAlwaysTrue() || predicatesConjunction.isAlwaysFalse())
+//            return; // TODO handle alwaysFalse and alwaysTrue.
 
-                RexCall call = (RexCall)exp;
+        Map<Integer, List<RexCall>> fieldsToPredicates = new HashMap<>(predicatesConjunction.size());
 
-                RexInputRef colIdx = extractInputRef(call); // TODO different types of predicates
+        for (RexNode rexNode : predicatesConjunction) {
+            if (!isBinaryComparison(rexNode))
+                continue;
 
-                if (colIdx.getIndex() != fldCollation.getFieldIndex())
-                    continue;
+            RexCall predCall = (RexCall)rexNode;
+            RexInputRef inputRef = (RexInputRef)extractOperand(predCall, true);
 
-                double sel = guessSelectivity(call) * curSelectivity;
+            if (inputRef == null) // TODO handle this situation
+                continue;
 
-                if (curSelectivity > sel) {
-                    curSelectivity = sel;
-                    curPred = call;
-                }
-            }
-            if (curPred == null)
-                return bestPreds;
+            int constraintFldIdx = inputRef.getIndex();
 
-            bestPreds.add(curPred);
-            bestSelectivity = curSelectivity;
+            List<RexCall> fldPreds = fieldsToPredicates
+                .computeIfAbsent(constraintFldIdx, k -> new ArrayList<>(predicatesConjunction.size()));
 
-            if (!curPred.isA(EQUALS))
-                break;
+            // Let RexInputRef be on the left side.
+            if (!inputRefOnTheLeft(predCall))
+                predCall = (RexCall)RexUtil.invert(getCluster().getRexBuilder(), predCall);
+
+            fldPreds.add(predCall);
         }
 
-        return bestPreds;
+        for (int i = 0; i < cols; i++) {
+            // TODO aliases or multiple collations
+            RelFieldCollation fldCollation = idxCols.get(i);
+
+            if (fldCollation == null)
+                continue; // It is not an index field.
+
+            List<RexCall> fldPreds = fieldsToPredicates.get(i);
+
+            if (F.isEmpty(fldPreds))
+                continue;
+
+            int idxInCollation = collation.getFieldCollations().indexOf(fldCollation);
+
+            boolean lowerBoundBelow = !fldCollation.getDirection().isDescending();
+
+            for (RexCall pred : fldPreds) {
+//                assert pred.getOperands().get(0) instanceof RexInputRef  &&
+//                    ((RexSlot)pred.getOperands().get(0)).getIndex() == i : pred;
+
+                RexNode cond = removeCast(pred.operands.get(1));
+
+                assert cond instanceof RexLiteral || cond instanceof RexDynamicParam : cond;
+
+                SqlOperator op = pred.getOperator();
+                switch (op.kind) {
+                    case EQUALS:
+                        predicateMasks[idxInCollation] |= EQUALS_MASK;
+                        lowerIdxCondition[i] = cond; // TODO support and merge multiple conditions on the same column.
+                        upperIdxCondition[i] = cond;
+                        break;
+
+                    case LESS_THAN:
+                    case LESS_THAN_OR_EQUAL:
+                        lowerBoundBelow = !lowerBoundBelow;
+                        // Fall through.
+
+                    case GREATER_THAN:
+                    case GREATER_THAN_OR_EQUAL:
+                        if (lowerBoundBelow) {
+                            lowerIdxCondition[i] = cond;
+                            predicateMasks[idxInCollation] |= GREATER_MASK;
+                        }
+                        else {
+                            upperIdxCondition[i] = cond;
+                            predicateMasks[idxInCollation] |= LESS_MASK;
+                        }
+                        break;
+
+                    default:
+                        throw new AssertionError("Unknown condition: " + cond);
+                }
+            }
+        }
     }
 
-    private static boolean suitableForIndex(RexNode exp, List<RexCall> bestPreds) {
-        // We can apply index conditions to simple binary comparisons only: =, >, <.
-        if (!isBinaryComparison(exp))
-            return false;
+    private boolean inputRefOnTheLeft(RexCall predCall) {
+        RexNode leftOp = predCall.getOperands().get(0);
 
-        // Using several predicates makes sens only in case of several "=" predicates: x=A AND y=B
-        if (!bestPreds.isEmpty() && !exp.isA(EQUALS))
-            return false;
+        leftOp = removeCast(leftOp);
 
-        return true;
+        return leftOp.isA(SqlKind.INPUT_REF);
     }
 
-    private static boolean nonTrivialBoundsPossible(Collection<RexNode> filters, RelOptTable relOptTbl) {
+    private boolean boundsArePossible() {
         if (F.isEmpty(filters))
             return false;
 
         if (RexUtil.flattenOr(filters).size() > 1)
             return false;
 
-        if (relOptTbl.getCollationList().isEmpty())
+        if (igniteTable.collations().isEmpty())
             return false;
 
-        if (relOptTbl.getCollationList().size() > 1) {
+        if (igniteTable.collations().size() > 1) {
             throw new UnsupportedOperationException("At most one table collation is currently supported: " +
-                "[collations=" + relOptTbl.getCollationList() + ", table=" + relOptTbl + ']');
+                "[collations=" + igniteTable.collations() + ", table=" + igniteTable + ']');
         }
         return true;
     }
 
-    private static RexInputRef extractInputRef(RexCall call) {
+    private static RexNode extractOperand(RexCall call, boolean inputRef) {
+        assert isBinaryComparison(call);
+
         RexNode leftOp = call.getOperands().get(0);
         RexNode rightOp = call.getOperands().get(1);
 
-        if (leftOp.isA(SqlKind.CAST))
-            leftOp = ((RexCall)leftOp).getOperands().get(0);
-
-        if (rightOp.isA(SqlKind.CAST))
-            rightOp = ((RexCall)rightOp).getOperands().get(0);
+        leftOp = removeCast(leftOp);
+        rightOp = removeCast(rightOp);
 
         // TODO handle correlVariable as constant?
         if (leftOp instanceof RexInputRef && (rightOp instanceof RexLiteral || rightOp instanceof RexDynamicParam))
-            return (RexInputRef)leftOp;
+            return inputRef ? leftOp : rightOp;
         else if ((leftOp instanceof RexLiteral || leftOp instanceof RexDynamicParam) && rightOp instanceof RexInputRef)
-            return (RexInputRef)rightOp;
+            return inputRef ? rightOp : leftOp;
 
         return null;
     }
 
+//    private static List<RexNode> makeListOfNulls(int cols) {
+//        List<RexNode> list = new ArrayList<>(cols);
+//        for (int i = 0; i < cols; i++)
+//            list.add(null);
+//        return list;
+//    }
+//
+//    public static List<RexNode> buildIndexConditions0(
+//        Collection<RexNode> filters,
+//        RelOptTable relOptTbl
+//    ) {
+////        if (!nonTrivialBoundsPossible0(filters, relOptTbl))
+////            return emptyList();
+//
+//        // TODO Merge OR filters result using several index cursors
+//        // TODO simplify and merge overlapping conditions
+//        // TODO do we always scan over index? datapages scan?
+//        // TODO IN operator
+//        // TODO BETWEEN
+//
+//        return findBestIndexPredicates0(filters, relOptTbl);
+//    }
+//
+//    public static List<RexNode>  findBestIndexPredicates0(Collection<RexNode> filters, RelOptTable relOptTbl) {
+//        List<RelCollation> idxCollations = relOptTbl.getCollationList();
+//        RelCollation idxCollation = idxCollations.get(0);
+//        List<RexNode> predicatesConjunction = RexUtil.flattenAnd(filters);
+//        double bestSelectivity = 1.0;
+//        List<RexCall> bestPreds = new ArrayList<>();
+//
+//        for (RelFieldCollation fldCollation : idxCollation.getFieldCollations()) {
+//            double curSelectivity = bestSelectivity;
+//            RexCall curPred = null;
+//            for (RexNode exp : predicatesConjunction) {
+//                if (!suitableForIndex(exp, bestPreds))
+//                    continue;
+//
+//                RexCall pred = (RexCall)exp;
+//
+//                RexInputRef predInputRef = extractInputRef(pred); // TODO different types of predicates
+//
+//                if (predInputRef == null)
+//                    continue;
+//
+//                int predColIdx = predInputRef.getIndex();
+//
+//                if (isKeyAlias(relOptTbl, predColIdx))
+//                    predColIdx = QueryUtils.KEY_COL;  // TODO rebuild predicate for using KEY_COL
+//
+//                if (predColIdx != fldCollation.getFieldIndex())
+//                    continue;
+//
+//                double sel = guessSelectivity(pred) * curSelectivity;
+//
+//                if (curSelectivity > sel) {
+//                    curSelectivity = sel;
+//                    curPred = pred;
+//                }
+//            }
+//            if (curPred == null)
+//                break;
+//
+//            bestPreds.add(curPred);
+//            bestSelectivity = curSelectivity;
+//
+//            if (!curPred.isA(EQUALS))
+//                break;
+//        }
+//
+//        return extractLiteralsAndParameters(bestPreds,
+//            idxCollation.getFieldCollations(),
+//            relOptTbl.getRowType().getFieldCount());
+//    }
+//
+//    public static List<RexNode> extractLiteralsAndParameters0(
+//        Collection<RexCall> predicates,
+//        List<RelFieldCollation> collations,
+//        int fieldsCount) {
+//        if (predicates.isEmpty())
+//            return emptyList();
+//
+//        List<Integer> collationCols = new ArrayList<>(collations.size());
+//        for (RelFieldCollation coll : collations)
+//            collationCols.add(coll.getFieldIndex());
+//        Mappings.target(collationCols, collationCols.size());
+//
+//        return emptyList();
+//
+////        for (RexCall call : )
+//    }
+//
+//    public static boolean isKeyAlias0(RelOptTable relOptTbl, int predColIdx) {
+//        IgniteTable igniteTbl = relOptTbl.unwrap(IgniteTable.class);
+//        TableDescriptor desc = igniteTbl.descriptor();
+//        return predColIdx == desc.keyField();
+//    }
+//
+//    private static boolean suitableForIndex0(RexNode exp, List<RexCall> bestPreds) {
+//        // We can apply index conditions to simple binary comparisons only: =, >, <.
+//        if (!isBinaryComparison(exp))
+//            return false;
+//
+//        // Using several predicates makes sens only in case of several "=" predicates: x=A AND y=B
+//        if (!bestPreds.isEmpty() && !exp.isA(EQUALS))
+//            return false;
+//
+//        return true;
+//    }
+
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .item("indexConditions", indexConditions)
+            .item("lower", Arrays.toString(lowerIdxCondition))
+            .item("upper", Arrays.toString(upperIdxCondition))
             .item("filters", filters)
-            .item("projects", projects);
+            .item("projects", Arrays.toString(projects));
     }
 
     /** {@inheritDoc} */
@@ -226,13 +390,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      */
     public int[] projects() {
         return projects;
-    }
-
-    /**
-     *
-     */
-    public List<RexCall> indexConditions() {
-        return indexConditions;
     }
 
     private static double guessSelectivity(RexNode predicate) {
@@ -286,30 +443,9 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
     }
 
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        double rows = table.getRowCount();
-        double cpu = rows;
+        double rows = estimateRowCount(mq);
 
-        if (indexConditions != null)
-            rows *= 0.1;
-//        else if (indexConditions.lower() != null || indexConditions.upper() != null)
-//            rows *= 0.5;
-
-        if (!F.isEmpty(filters)) {
-            Double selectivity = mq.getSelectivity(this, filters.get(0)); // TODO handle multiple items in filter.
-            rows *= selectivity;
-
-            if (!indexConditions.isEmpty()) {
-                Double idxPredSelectivity = mq.getSelectivity(this, indexConditions.get(0));
-
-                cpu *=  idxPredSelectivity;
-                rows *= idxPredSelectivity;
-            }
-        }
-
-//        if (!F.isEmpty(projects))
-//            rows *= 0.9;
-
-        RelOptCost cost = planner.getCostFactory().makeCost(rows, cpu, 0);
+        RelOptCost cost = planner.getCostFactory().makeCost(rows, 0, 0);
 
         System.out.println("TableScanCost==" + cost + ", filters=" + filters + ", projects=" + Arrays.toString(projects) + ", tbl=" + table.getQualifiedName());
         // TODO count projects.
@@ -318,12 +454,27 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         double rows = table.getRowCount();
-        double cpu = rows;
 
-        if (indexConditions != null)
-            rows *= 0.1;
-//        else if (indexConditions.lower() != null || indexConditions.upper() != null)
-//            rows *= 0.5;
+        for (int i = 0; i < predicateMasks.length; i++) {
+            if ((predicateMasks[i] & EQUALS_MASK) != 0) { // Handling '=' case.
+                rows *= 0.15;
+            } else if (i == 0) { // Handling '<', '>', '>=', '<=' cases.
+                if ((predicateMasks[i] & LESS_MASK) != 0)
+                    rows *= 0.5;
+                if ((predicateMasks[i] & GREATER_MASK) != 0)
+                    rows *= 0.5;
+                break;
+            }
+        }
+
+        if (!F.isEmpty(filters)) {
+            Double selectivity = mq.getSelectivity(this, filters.get(0)); // TODO handle multiple items in filter.
+            rows *= selectivity;
+        }
+
+        if (!F.isEmpty(projects))
+            rows *= 0.99; // Encourage projects merged with scans TODO do we really need this multiplication?
+
 
         if (!F.isEmpty(filters)) {
             Double selectivity = mq.getSelectivity(this, filters.get(0)); // TODO handle multiple items in filter.

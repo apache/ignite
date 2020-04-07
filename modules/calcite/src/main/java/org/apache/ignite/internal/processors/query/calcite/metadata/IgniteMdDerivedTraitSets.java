@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.core.Values;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
@@ -52,13 +53,9 @@ public class IgniteMdDerivedTraitSets implements MetadataHandler<IgniteMetadata.
         return ((RelMetadataQueryEx)mq).deriveTraitSets(rel.getInput(0));
     }
 
-//    public Set<RelTraitSet> deriveTraitSets(SingleRel rel, RelMetadataQuery mq) {
-//        return deriveTraitSets(rel.getInput(0), mq);
-//    }
-//
-//    public Set<RelTraitSet> deriveTraitSets(BiRel rel, RelMetadataQuery mq) {
-//        return deriveTraitSets(rel.getInput(0), mq);
-//    }
+    public Set<RelTraitSet> deriveTraitSets(Values rel, RelMetadataQuery mq) {
+        return F.asSet(rel.getTraitSet());
+    }
 
     public Set<RelTraitSet> deriveTraitSets(RelSubset rel, RelMetadataQuery mq) {
         List<RelNode> siblings =  deriveSiblings(rel);

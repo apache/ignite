@@ -40,7 +40,7 @@ public class TableScanPhysicalRel implements PhysicalRel {
     private Expression cond;
 
     /** */
-    private List<Expression> projects;
+    private int[] projects;
 
     /** */
     public TableScanPhysicalRel() {
@@ -77,7 +77,7 @@ public class TableScanPhysicalRel implements PhysicalRel {
     /**
      * @return Projection.
      */
-    public List<Expression> projects() {
+    public int[] projects() {
         return projects;
     }
 
@@ -99,9 +99,9 @@ public class TableScanPhysicalRel implements PhysicalRel {
             out.writeInt(0);
         }
         else {
-            out.writeInt(projects.size());
-            for (Expression project : projects)
-                out.writeObject(project);
+            out.writeInt(projects.length);
+            for (int i = 0; i < projects.length; i++)
+                out.writeInt(projects[i]);
         }
 
     }
@@ -119,10 +119,9 @@ public class TableScanPhysicalRel implements PhysicalRel {
 
         int projectsSize = in.readInt();
         if (projectsSize > 0) {
-            List<Expression> projects = new ArrayList<>(projectsSize);
+            projects = new int[projectsSize];
             for (int i = 0; i < projectsSize; i++)
-                projects.add((Expression) in.readObject());
-            this.projects = projects;
+                projects[i] = in.readInt();
         }
     }
 }

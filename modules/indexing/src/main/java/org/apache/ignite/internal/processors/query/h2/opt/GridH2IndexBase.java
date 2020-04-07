@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel;
 import org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModelMultiplier;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -39,7 +42,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Index base.
  */
-public abstract class GridH2IndexBase extends BaseIndex {
+public abstract class GridH2IndexBase extends BaseIndex implements GridIndex<H2Row> {
     /**
      * Constructor.
      *
@@ -267,5 +270,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
         IndexColumn.mapColumns(cols, tbl);
 
         return cols;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<H2Row> find(
+        H2Row lower,
+        H2Row upper,
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filterClosure
+    ) {
+        throw new UnsupportedOperationException();
     }
 }

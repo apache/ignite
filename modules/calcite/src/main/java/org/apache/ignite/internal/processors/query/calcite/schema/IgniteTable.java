@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -37,6 +36,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
@@ -50,8 +50,9 @@ import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -59,7 +60,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.TableScan;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -84,14 +84,19 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     /** */
     private final Map<String, IgniteTable> indexes = new ConcurrentHashMap<>();
 
+    /** */
+    private final GridIndex idx;
+
     /**
      * @param name Table full name.
+     * @param pk
      */
-    public IgniteTable(String name, TableDescriptor desc, RelCollation collation) {
+    public IgniteTable(String name, TableDescriptor desc, RelCollation collation,
+        GridIndex pk) {
         this.name = name;
         this.desc = desc;
         this.collations = collation == null ? emptyList() : singletonList(collation);
-
+        this.idx = pk;
         statistic = new StatisticsImpl();
     }
 
@@ -110,6 +115,16 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
         return statistic;
+    }
+
+    /** */
+    public TableDescriptor descriptor() {
+        return desc;
+    }
+
+    /** */
+    public GridIndex index() {
+        return idx;
     }
 
     /** {@inheritDoc} */
@@ -145,9 +160,11 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
      * Adds index to table.
      * @param idxName Index name.
      * @param collation Index collation.
+     * @param gridIdx Tree index
      */
-    public void addIndex(String idxName, RelCollation collation) {
-        IgniteTable idx = new IgniteTable(idxName, desc, collation);
+    public void addIndex(String idxName, RelCollation collation,
+        GridIndex gridIdx) {
+        IgniteTable idx = new IgniteTable(idxName, desc, collation, gridIdx);
 
         indexes.put(idxName, idx);
     }
@@ -198,16 +215,22 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
 
     /** {@inheritDoc} */
     @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
-        ExecutionContext execCtx = (ExecutionContext)dataCtx;
-        ExpressionFactory expFactory = execCtx.planningContext().expressionFactory();
-//        expFactory.predicate();
-//        SearchRow
-        return Linq4j.asEnumerable(new TableScan((ExecutionContext) dataCtx, desc));
+        throw new UnsupportedOperationException();
+//        ExecutionContext execCtx = (ExecutionContext)dataCtx;
+//        ExpressionFactory expFactory = execCtx.planningContext().expressionFactory();
+////        expFactory.predicate();
+////        SearchRow
+//
+//        return Linq4j.asEnumerable(new TableScan((ExecutionContext) dataCtx, desc));
     }
 
 
-    public Iterable<Object[]> scan(ExecutionContext ctx, Predicate<Object[]> filters, Function<Object[], Object[]> proj) {
-        return emptyList();
+    public Iterable<Object[]> scan(
+        ExecutionContext ctx,
+        Predicate<Object[]> filters,
+        Function<Object[], Object[]> proj,
+        List<RexCall> idxConditions) {
+        return new IndexScan(ctx, this, filters, proj, idxConditions);
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -84,11 +83,9 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
         if (rel.condition() != null)
             filters = expressionFactory.predicate(ctx, rel.condition(), rel.rowType());
 
-        Function<Object[], Object[]> proj = null;
-        if (rel.projects() != null)
-            proj = expressionFactory.project(ctx, rel.projects(), rel.rowType());
+        int[] proj = rel.projects();
 
-        Iterable<Object[]> rowsIter = tbl.scan(ctx, filters, proj);
+        Iterable<Object[]> rowsIter = null; // tbl.scan(ctx, filters, proj, ); TODO
 
         return new ScanNode(ctx, rowsIter);
     }

@@ -120,7 +120,7 @@ public class ReceiverPhysicalRel implements PhysicalRel {
 
         final int sourcesSize = in.readInt();
 
-        List<UUID> sources = new ArrayList<>(sourcesSize);
+        sources = new ArrayList<>(sourcesSize);
 
         for (int i = 0; i < sourcesSize; i++)
             sources.add((UUID) in.readObject());

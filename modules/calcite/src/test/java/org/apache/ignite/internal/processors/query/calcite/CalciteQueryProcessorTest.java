@@ -185,7 +185,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?)", 0, "Igor", 1);
+        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (55, ?, ?)", "Igor", 1);
 
         assertEquals(1, query.size());
 

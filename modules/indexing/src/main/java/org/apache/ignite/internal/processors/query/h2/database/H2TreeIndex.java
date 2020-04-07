@@ -429,6 +429,25 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
     }
 
+    @Override public GridCursor<H2Row> find(
+        H2Row lower,
+        H2Row upper,
+        BPlusTree.TreeRowClosure<H2Row, H2Row> filterClosure
+    ) {
+        try {
+            int seg = threadLocalSegment();
+
+            H2Tree tree = treeForRead(seg);
+
+           // BPlusTree.TreeRowClosure<H2Row, H2Row> filterC = filter(qryCtxRegistry.getThreadLocal());
+
+            return tree.find(lower, upper, filterClosure, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
     /** */
     private boolean isSingleRowLookup(SearchRow lower, SearchRow upper, H2Tree tree) {
         return !cctx.mvccEnabled() && indexType.isPrimaryKey() && lower != null && upper != null &&
