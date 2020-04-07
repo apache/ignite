@@ -877,28 +877,5 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     return true;
             }
         }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append("AtomicBitSet[arr=[");
-
-            int iMax = arr.length() - 1;
-
-            for (int idx = 0; ; idx++) {
-                sb.append(Integer.toBinaryString(arr.get(idx)));
-
-                if (idx == iMax) {
-                    return sb.append(']')
-                        .append(", size=")
-                        .append(size)
-                        .append(']')
-                        .toString();
-                }
-
-                sb.append(',').append(' ');
-            }
-        }
     }
 }

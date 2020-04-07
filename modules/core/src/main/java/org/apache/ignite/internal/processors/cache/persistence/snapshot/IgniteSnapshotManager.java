@@ -768,7 +768,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 U.delete(snpDir);
         }
         catch (IOException e) {
-            U.error(null, "Snapshot deletion failed with an error", e);
+            throw new IgniteException(e);
         }
     }
 
@@ -865,7 +865,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             removeLastMetaStorageKey();
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
 
