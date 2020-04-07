@@ -42,7 +42,7 @@ public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     /** {@inheritDoc} */
     @Override public int[] getDefaultTokens() {
         return new int[]{
-            TokenTypes.METHOD_DEF,
+            TokenTypes.METHOD_DEF
         };
     }
 
