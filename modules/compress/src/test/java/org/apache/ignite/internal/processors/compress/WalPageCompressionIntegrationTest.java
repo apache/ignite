@@ -51,8 +51,7 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
     /**
      * @throws Exception If failed.
      */
-    @Override
-    protected void doTestPageCompression() throws Exception {
+    @Override protected void doTestPageCompression() throws Exception {
         // Ignite instance with compressed WAL page records.
         IgniteEx ignite0 = startGrid(0);
 

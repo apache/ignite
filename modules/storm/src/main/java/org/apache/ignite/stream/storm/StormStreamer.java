@@ -203,8 +203,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      * @param topologyContext Context topology in storm.
      * @param collector Output collector.
      */
-    @Override
-    public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
+    @Override public void prepare(Map map, TopologyContext topologyContext, OutputCollector collector) {
         start();
 
         this.collector = collector;
@@ -216,8 +215,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      * @param tuple Storm tuple.
      */
     @SuppressWarnings("unchecked")
-    @Override
-    public void execute(Tuple tuple) {
+    @Override public void execute(Tuple tuple) {
         if (stopped)
             return;
 
@@ -243,8 +241,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     /**
      * Cleans up the streamer when the bolt is going to shutdown.
      */
-    @Override
-    public void cleanup() {
+    @Override public void cleanup() {
         stop();
     }
 
@@ -254,8 +251,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      *
      * @param declarer OutputFieldsDeclarer.
      */
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    @Override public void declareOutputFields(OutputFieldsDeclarer declarer) {
         // No-op.
     }
 
@@ -264,8 +260,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      *
      * @return Configurations.
      */
-    @Override
-    public Map<String, Object> getComponentConfiguration() {
+    @Override public Map<String, Object> getComponentConfiguration() {
         return null;
     }
 
