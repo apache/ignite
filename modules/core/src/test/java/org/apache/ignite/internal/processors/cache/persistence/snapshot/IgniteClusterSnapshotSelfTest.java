@@ -537,11 +537,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             FileIO delegate = this.delegate.create(file, modes);
 
-            if (pred.test(file)) {
-                System.out.println(">>>>> HALT");
-
+            if (pred.test(file))
                 Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
-            }
 
             return delegate;
         }
