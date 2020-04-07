@@ -1028,8 +1028,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             Options.CreateOpts.perms(FsPermission.getDefault())).close();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 fs.rename(file, null);
 
                 return null;
@@ -1633,8 +1632,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         final AtomicBoolean err = new AtomicBoolean();
 
         multithreaded(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 FSDataInputStream is = null;
 
                 try {

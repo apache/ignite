@@ -1199,8 +1199,7 @@ public class PlatformUtils {
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
                 new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override
-                    public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
                         String name = reader.readString();
                         int typeId = reader.readInt();
                         int fieldId = reader.readInt();

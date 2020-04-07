@@ -37,20 +37,17 @@ public class MetsatorageSearchRowImpl implements MetastorageSearchRow {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public String key() {
+    @Override public String key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public long link() {
+    @Override public long link() {
         return link;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hash() {
+    @Override public int hash() {
         return key.hashCode();
     }
 }
