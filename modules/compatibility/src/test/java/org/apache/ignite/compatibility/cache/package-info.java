@@ -16,7 +16,7 @@
  */
 
 /**
- * <!-- Package description. -->
- * Demonstrates usage of cron-based scheduler.
+ * Contains compatibility tests related to caches with persistence enabled.
  */
-package org.apache.ignite.examples.misc.schedule;
+
+package org.apache.ignite.compatibility.cache;

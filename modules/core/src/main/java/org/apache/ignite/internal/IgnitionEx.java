@@ -374,8 +374,7 @@ public class IgnitionEx {
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.
         executor.schedule(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (state(name) == IgniteState.STARTED) {
                     U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
                             " milliseconds. Killing node...");
