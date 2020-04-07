@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.IgniteCacheGroupsSqlSegmented
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlIndexConsistencyAfterInterruptTxCacheOperationTest;
 import org.apache.ignite.internal.processors.query.SqlTwoCachesInGroupWithSameEntryTest;
+import org.apache.ignite.internal.processors.query.StopNodeOnSqlQueryWithIncompatibleTypeTest;
 import org.apache.ignite.internal.processors.query.h2.StatementCacheTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.DisappearedCacheCauseRetryMessageSelfTest;
@@ -72,6 +73,8 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite 2");
+
+        suite.addTestSuite(StopNodeOnSqlQueryWithIncompatibleTypeTest.class);
 
         suite.addTestSuite(StatementCacheTest.class);
         suite.addTestSuite(SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest.class);

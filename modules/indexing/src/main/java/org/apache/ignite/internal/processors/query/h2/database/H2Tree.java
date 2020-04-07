@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
@@ -380,66 +381,71 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
         SearchRow row) throws IgniteCheckedException {
-        if (inlineSize() == 0)
-            return compareRows(getRow(io, pageAddr, idx), row);
-        else {
-            int off = io.offset(idx);
+        try {
+            if (inlineSize() == 0)
+                return compareRows(getRow(io, pageAddr, idx), row);
+            else {
+                int off = io.offset(idx);
 
-            int fieldOff = 0;
+                int fieldOff = 0;
 
-            int lastIdxUsed = 0;
+                int lastIdxUsed = 0;
 
-            for (int i = 0; i < inlineIdxs.size(); i++) {
-                InlineIndexHelper inlineIdx = inlineIdxs.get(i);
+                for (int i = 0; i < inlineIdxs.size(); i++) {
+                    InlineIndexHelper inlineIdx = inlineIdxs.get(i);
 
-                Value v2 = row.getValue(inlineIdx.columnIndex());
+                    Value v2 = row.getValue(inlineIdx.columnIndex());
 
-                if (v2 == null)
-                    return 0;
+                    if (v2 == null)
+                        return 0;
 
-                int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
+                    int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
 
-                if (c == -2)
-                    break;
+                    if (c == -2)
+                        break;
 
-                lastIdxUsed++;
+                    lastIdxUsed++;
 
-                if (c != 0)
-                    return c;
+                    if (c != 0)
+                        return c;
 
-                fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
+                    fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
 
-                if (fieldOff > inlineSize())
-                    break;
-            }
-
-            if (lastIdxUsed == cols.length)
-                return 0;
-
-            inlineSizeRecomendation(row);
-
-            SearchRow rowData = getRow(io, pageAddr, idx);
-
-            for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
-                IndexColumn col = cols[i];
-                int idx0 = col.column.getColumnId();
-
-                Value v2 = row.getValue(idx0);
-
-                if (v2 == null) {
-                    // Can't compare further.
-                    return 0;
+                    if (fieldOff > inlineSize())
+                        break;
                 }
 
-                Value v1 = rowData.getValue(idx0);
+                if (lastIdxUsed == cols.length)
+                    return 0;
 
-                int c = compareValues(v1, v2);
+                inlineSizeRecomendation(row);
 
-                if (c != 0)
-                    return InlineIndexHelper.fixSort(c, col.sortType);
+                SearchRow rowData = getRow(io, pageAddr, idx);
+
+                for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
+                    IndexColumn col = cols[i];
+                    int idx0 = col.column.getColumnId();
+
+                    Value v2 = row.getValue(idx0);
+
+                    if (v2 == null) {
+                        // Can't compare further.
+                        return 0;
+                    }
+
+                    Value v1 = rowData.getValue(idx0);
+
+                    int c = compareValues(v1, v2);
+
+                    if (c != 0)
+                        return InlineIndexHelper.fixSort(c, col.sortType);
+                }
+
+                return 0;
             }
-
-            return 0;
+        }
+        catch (DbException ex) {
+            throw new IgniteCheckedException("Rows cannot be compared", ex);
         }
     }
 
