@@ -65,6 +65,11 @@ namespace Apache.Ignite.Core.Services
         public IClusterNodeFilter NodeFilter { get; set; }
 
         /// <summary>
+        /// Enables or disables service statistics.
+        /// </summary>
+        public bool IsStatisticsEnabled { get; set; }
+
+        /// <summary>
         /// Serializes the Service configuration using IBinaryRawWriter
         /// </summary>
         /// <param name="w">IBinaryRawWriter</param>
@@ -83,6 +88,8 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject(NodeFilter);
             else
                 w.WriteObject<object>(null);
+
+             w.WriteBoolean(IsStatisticsEnabled);
         }
 
         /// <summary>
@@ -125,6 +132,8 @@ namespace Apache.Ignite.Core.Services
             {
                 // Ignore exceptions in user deserealization code.
             }
+
+            IsStatisticsEnabled = r.ReadBoolean();
         }
     }
 }

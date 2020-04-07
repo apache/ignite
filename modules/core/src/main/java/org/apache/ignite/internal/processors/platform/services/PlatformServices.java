@@ -492,6 +492,8 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (filter != null)
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
 
+        cfg.setStatisticsEnabled(reader.readBoolean());
+
         return cfg;
     }
 

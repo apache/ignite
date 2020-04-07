@@ -77,7 +77,7 @@ public class ServiceBenchmark extends JmhAbstractBenchmark implements Invocation
     public void setup() throws Exception {
         ignite = (IgniteEx)Ignition.start(configuration("grid0"));
 
-        ignite.services().deploy(ignite.services().nodeSingletonConfiguration("srv", new TestServiceImpl()));
+        ignite.services().deployNodeSingleton("srv", new TestServiceImpl());
 
         loc = ignite.services().service("srv");
 
