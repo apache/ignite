@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.marshaller.MappedName;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +24,11 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -185,11 +183,9 @@ abstract class SnapshotSender {
     }
 
     /**
-     * @throws IgniteCheckedException If initialization fails.
+     * @param partsCnt Number of objects to process.
      */
-    protected void init() throws IgniteCheckedException {
-        // No-op by default.
-    }
+    protected abstract void init(int partsCnt);
 
     /**
      * @param part Partition file to send.

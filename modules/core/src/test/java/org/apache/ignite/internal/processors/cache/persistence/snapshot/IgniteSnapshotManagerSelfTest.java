@@ -222,12 +222,12 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
             .binaryFileStoreWorkDir(cfg.getWorkDirectory());
         File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
         File snpBinWorkDir = ((CacheObjectBinaryProcessorImpl)ig.context().cacheObjects())
-            .binaryFileStoreWorkDir(mgr.snapshotDir(SNAPSHOT_NAME).getAbsolutePath());
-        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotDir(SNAPSHOT_NAME).getAbsolutePath());
+            .binaryFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
+        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
-            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotDir(SNAPSHOT_NAME)
+            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME)
                     .getAbsolutePath(),
                 nodePath,
                 false),
@@ -515,9 +515,9 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         UUID rmtNodeId = grid(1).localNode().id();
         Map<String, Integer> snpPartCRCs = new HashMap<>();
-        Map<Integer, Set<Integer>> parts = owningParts(ig0,
-            new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-            rmtNodeId);
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
         IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted())
@@ -638,11 +638,10 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
 
         UUID rmtNodeId = ig1.localNode().id();
 
-        snp(ig0).createRemoteSnapshot(rmtNodeId,
-            owningParts(ig0,
-                new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))),
-                rmtNodeId),
-                (part, grp) -> {});
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
+
+        snp(ig0).createRemoteSnapshot(rmtNodeId, parts, (part, grp) -> {});
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
@@ -940,8 +939,8 @@ public class IgniteSnapshotManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void init() throws IgniteCheckedException {
-            delegate.init();
+        @Override protected void init(int partsCnt) {
+            delegate.init(partsCnt);
         }
 
         /** {@inheritDoc} */
