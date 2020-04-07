@@ -762,7 +762,7 @@
                                 <goals>
                                     <goal>check</goal>
                                 </goals>
-                                <phase>validate</phase>
+                                <phase>compile</phase>
                                 <configuration>
                                     <consoleOutput>true</consoleOutput>
                                     <logViolationsToConsole>true</logViolationsToConsole>
@@ -776,6 +776,11 @@
                             </execution>
                         </executions>
                         <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
                             <dependency>
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>

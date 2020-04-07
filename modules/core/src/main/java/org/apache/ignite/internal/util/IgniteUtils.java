@@ -1188,8 +1188,7 @@ public abstract class IgniteUtils {
             return GRID_EVTS;
 
         List<Integer> evts = toIntList(GRID_EVTS, new P1<Integer>() {
-            @Override
-            public boolean apply(Integer i) {
+            @Override public boolean apply(Integer i) {
                 return !containsIntArray(excl, i);
             }
         });
