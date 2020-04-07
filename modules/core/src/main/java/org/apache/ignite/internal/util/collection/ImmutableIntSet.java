@@ -175,32 +175,27 @@ public class ImmutableIntSet implements IntSet {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void forEach(Consumer<? super Integer> act) {
+    @Override public void forEach(Consumer<? super Integer> act) {
         delegate.forEach(act);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean removeIf(Predicate<? super Integer> filter) {
+    @Override public boolean removeIf(Predicate<? super Integer> filter) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Spliterator<Integer> spliterator() {
+    @Override public Spliterator<Integer> spliterator() {
         return delegate.spliterator();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Stream<Integer> stream() {
+    @Override public Stream<Integer> stream() {
         return delegate.stream();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Stream<Integer> parallelStream() {
+    @Override public Stream<Integer> parallelStream() {
         return delegate.parallelStream();
     }
 }
