@@ -882,11 +882,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
 
     /** Remote snapshot future which tracks remote snapshot transmission result. */
     private class RemoteSnapshotFuture extends GridFutureAdapter<Void> {
+        /** Snapshot name to create. */
+        private final String snpName;
+
         /** Remote node id to request snapshot from. */
         private final UUID rmtNodeId;
-
-        /** Snapshot name to create on remote. */
-        private final String snpName;
 
         /** Collection of partition to be received. */
         private final Map<GroupPartitionId, FilePageStore> stores = new ConcurrentHashMap<>();
@@ -904,8 +904,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter {
          * @param partConsumer Received partition handler.
          */
         public RemoteSnapshotFuture(UUID rmtNodeId, String snpName, BiConsumer<File, GroupPartitionId> partConsumer) {
-            this.rmtNodeId = rmtNodeId;
             this.snpName = snpName;
+            this.rmtNodeId = rmtNodeId;
             this.partConsumer = partConsumer;
         }
 
