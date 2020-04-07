@@ -15,38 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.query;
-
-import org.apache.ignite.mxbean.ComputeMXBean;
-import org.apache.ignite.mxbean.QueryMXBean;
-import org.apache.ignite.mxbean.ServiceMXBean;
-import org.apache.ignite.mxbean.TransactionsMXBean;
-
 /**
- * Subcommands of the kill command.
- *
- * @see KillCommand
- * @see QueryMXBean
- * @see ComputeMXBean
- * @see TransactionsMXBean
- * @see ServiceMXBean
+ * Contains compatibility tests related to caches with persistence enabled.
  */
-public enum KillSubcommand {
-    /** Kill compute task. */
-    COMPUTE,
 
-    /** Kill transaction. */
-    TRANSACTION,
-
-    /** Kill service. */
-    SERVICE,
-
-    /** Kill sql query. */
-    SQL,
-
-    /** Kill scan query. */
-    SCAN,
-
-    /** Kill continuous query. */
-    CONTINUOUS,
-}
+package org.apache.ignite.compatibility.cache;
