@@ -920,7 +920,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param ccfg Cache configuration to find an approriate stored configuration file.
+     * @param ccfg Cache configuration to find an appropriate stored configuration file.
      * @return File of stored cache configuration or {@code null} if doesn't exists.
      */
     public List<File> configurationFiles(CacheConfiguration ccfg) {
@@ -947,8 +947,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
         Arrays.sort(files);
-
-        // todo temporary copied snapshot directories must be filtered out
 
         for (File file : files) {
             if (file.isDirectory()) {

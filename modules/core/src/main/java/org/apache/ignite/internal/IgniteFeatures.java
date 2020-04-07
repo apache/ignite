@@ -95,7 +95,7 @@ public enum IgniteFeatures {
      */
     SAFE_CLUSTER_DEACTIVATION(22),
 
-    /** Persistence caches can be snapshotted.  */
+    /** Persistence caches can be snapshot.  */
     PERSISTENCE_CACHE_SNAPSHOT(23),
 
     /** Long operations dump timeout. */

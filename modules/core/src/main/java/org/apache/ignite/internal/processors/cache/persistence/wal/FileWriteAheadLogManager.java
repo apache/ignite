@@ -1370,13 +1370,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * @return WAL working directory.
-     */
-    public File walWorkDir() {
-        return walWorkDir;
-    }
-
-    /**
      * Fills the file header for a new segment. Calling this method signals we are done with the segment and it can be
      * archived. If we don't have prepared file yet and achiever is busy this method blocks.
      *

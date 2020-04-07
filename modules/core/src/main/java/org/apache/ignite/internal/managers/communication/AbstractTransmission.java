@@ -57,7 +57,7 @@ abstract class AbstractTransmission implements Closeable {
         int chunkSize
     ) {
         A.notNull(meta, "Initial file meta cannot be null");
-        A.notNullOrEmpty(meta.name(), "Trasmisson name cannot be empty or null");
+        A.notNullOrEmpty(meta.name(), "Transmission name cannot be empty or null");
         A.ensure(meta.offset() >= 0, "File start position cannot be negative");
         A.ensure(meta.count() >= 0, "Total number of bytes to transfer can't be less than zero");
         A.notNull(stopChecker, "Process stop checker cannot be null");

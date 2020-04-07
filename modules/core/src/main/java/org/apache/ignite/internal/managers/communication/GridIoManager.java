@@ -3180,13 +3180,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /**
-         * @return {@code true} if sender's session is currently active.
-         */
-        public boolean opened() {
-            return senderStopFlags.containsKey(sesKey);
-        }
-
-        /**
          * @param file Source file to send to remote.
          * @param params Additional file params.
          * @param plc The policy of handling data on remote.

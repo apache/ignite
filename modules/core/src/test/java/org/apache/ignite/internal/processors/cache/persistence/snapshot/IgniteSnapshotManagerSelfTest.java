@@ -195,8 +195,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             cctx.localNodeId(),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
-                @Override
-                public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(slowCopy);
 
@@ -648,8 +647,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSender(SNAPSHOT_NAME)) {
-                @Override
-                public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(cpLatch);
 
