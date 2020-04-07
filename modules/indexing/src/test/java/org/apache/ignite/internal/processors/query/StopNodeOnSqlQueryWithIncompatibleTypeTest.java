@@ -54,7 +54,6 @@ public class StopNodeOnSqlQueryWithIncompatibleTypeTest extends AbstractIndexing
     }
 
     /**
-     * Test local query execution.
      */
     public void test() {
         sql("CREATE TABLE TEST (ID INT PRIMARY KEY, val_int INT, VAL_OBJ OTHER)");
