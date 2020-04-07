@@ -36,6 +36,7 @@ public class FunctionsManager {
     private static HashMap<String, Object> funcs;
 
     static {
+        // Extract from H2 the set of available functions.
         try {
             Field fldFUNCTIONS = Function.class.getDeclaredField("FUNCTIONS");
 
@@ -60,17 +61,24 @@ public class FunctionsManager {
     }
 
     /**
+     * Listener of changes the SQL parameter 'disabled functions'.
      *
+     * @param paramName Parameter name (unused)
+     * @param oldDisabledFuncs Old set of disabled functions.
+     * @param newDisabledFuncs New set of disabled functions.
      */
-    private void updateDisabledFunctions(String s, HashSet<String> oldFuncs, HashSet<String> newFuncs) {
-        if (newFuncs != null)
-            removeFunctions(newFuncs);
+    private void updateDisabledFunctions(
+        String paramName,
+        HashSet<String> oldDisabledFuncs,
+        HashSet<String> newDisabledFuncs) {
+        if (newDisabledFuncs != null)
+            removeFunctions(newDisabledFuncs);
         else
             removeFunctions(DistributedSqlConfiguration.DFLT_DISABLED_FUNCS);
     }
 
     /**
-     *
+     * @param funcNames Set of function that must be removed from original functions set.
      */
     private static void removeFunctions(Set<String> funcNames) {
         funcs.putAll(origFuncs);
