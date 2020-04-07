@@ -20,109 +20,81 @@ package org.apache.ignite.tools.checkstyle;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
-import com.puppycrawl.tools.checkstyle.utils.CommonUtil;
+
+import static com.puppycrawl.tools.checkstyle.api.TokenTypes.ANNOTATIONS;
+import static com.puppycrawl.tools.checkstyle.api.TokenTypes.DOT;
+import static com.puppycrawl.tools.checkstyle.api.TokenTypes.IDENT;
+import static com.puppycrawl.tools.checkstyle.api.TokenTypes.METHOD_DEF;
+import static com.puppycrawl.tools.checkstyle.api.TokenTypes.MODIFIERS;
+import static com.puppycrawl.tools.checkstyle.utils.CommonUtil.EMPTY_INT_ARRAY;
 
 /**
- * <p>
  * Checks that {@code @Override} annotations are located on the same line with target method declarartions.
- * </p>
  */
 public class OverrideAnnotationOnTheSameLineCheck extends AbstractCheck {
     /** Different line error message. */
-    public static final String DIFF_LINE_ERR_MSG =
+    private static final String DIFF_LINE_ERR_MSG =
         "@Override annotation on a different line than the target method declaration!";
-
-    /** No method declaration error message. */
-    public static final String NO_METHOD_ERR_MSG =
-        "No method declaration atfer @Override annotation!";
-
-    /** */
-    public static final String OVERRIDE = "Override";
 
     /** {@inheritDoc} */
     @Override public int[] getDefaultTokens() {
-        return new int[]{
-            TokenTypes.METHOD_DEF
+        return new int[] {
+            METHOD_DEF
         };
     }
 
     /** {@inheritDoc} */
     @Override public int[] getAcceptableTokens() {
-        return CommonUtil.EMPTY_INT_ARRAY;
+        return EMPTY_INT_ARRAY;
     }
 
     /** {@inheritDoc} */
     @Override public int[] getRequiredTokens() {
-        return CommonUtil.EMPTY_INT_ARRAY;
+        return EMPTY_INT_ARRAY;
     }
 
     /** {@inheritDoc} */
     @Override public void visitToken(DetailAST ast) {
-        DetailAST nodeWithAnnotations = ast;
+        DetailAST node = ast.findFirstToken(MODIFIERS);
 
-        if (ast.getType() == TokenTypes.TYPECAST)
-            nodeWithAnnotations = ast.findFirstToken(TokenTypes.TYPE);
+        if (node == null)
+            node = ast.findFirstToken(ANNOTATIONS);
 
-        DetailAST modifiersNode = nodeWithAnnotations.findFirstToken(TokenTypes.MODIFIERS);
+        if (node == null)
+            return;
 
-        if (modifiersNode == null)
-            modifiersNode = nodeWithAnnotations.findFirstToken(TokenTypes.ANNOTATIONS);
-
-        if (modifiersNode != null) {
-            for (DetailAST annotationNode = modifiersNode.getFirstChild();
-                 annotationNode != null;
-                 annotationNode = annotationNode.getNextSibling()) {
-                if (annotationNode.getType() == TokenTypes.ANNOTATION
-                    && OVERRIDE.equals(getAnnotationName(annotationNode))
-                    && onDifferentLines(annotationNode))
-                    log(annotationNode.getLineNo(), DIFF_LINE_ERR_MSG, getAnnotationName(annotationNode));
-            }
+        for (node = node.getFirstChild(); node != null; node = node.getNextSibling()) {
+            if (node.getType() == TokenTypes.ANNOTATION &&
+                Override.class.getSimpleName().equals(annotationName(node)) &&
+                node.getLineNo() != nextNode(node).getLineNo())
+                log(node.getLineNo(), DIFF_LINE_ERR_MSG, annotationName(node));
         }
     }
 
     /**
      * Finds next node of ast tree.
      *
-     * @param node {@code DetailAST} Current node
+     * @param node {@code DetailAST} Current node.
      * @return {@code DetailAST} Node that is next to given.
      */
-    private static DetailAST getNextNode(DetailAST node) {
+    private DetailAST nextNode(DetailAST node) {
         DetailAST nextNode = node.getNextSibling();
 
-        if (nextNode == null)
-            nextNode = node.getParent().getNextSibling();
-
-        return nextNode;
+        return nextNode != null ? nextNode : node.getParent().getNextSibling();
     }
 
     /**
      * Returns the name of the given annotation.
      *
-     * @param annotation {@code DetailAST} Annotation node.
-     * @return {@code String} Annotation name.
+     * @param annotation Annotation node.
+     * @return Annotation name.
      */
-    private static String getAnnotationName(DetailAST annotation) {
-        DetailAST identNode = annotation.findFirstToken(TokenTypes.IDENT);
+    private String annotationName(DetailAST annotation) {
+        DetailAST identNode = annotation.findFirstToken(IDENT);
 
         if (identNode == null)
-            identNode = annotation.findFirstToken(TokenTypes.DOT).getLastChild();
+            identNode = annotation.findFirstToken(DOT).getLastChild();
 
         return identNode.getText();
-    }
-
-    /**
-     * Checks whether or not annotation is located on a different line than the target method declaration.
-     *
-     * @param annotationNode {@code DetailAST} Annotation node.
-     * @return {@code true} if annotation is located on a different line than the target method declaration or
-     * {@code false} otherwise.
-     */
-    private boolean onDifferentLines(DetailAST annotationNode){
-        DetailAST nextNode = getNextNode(annotationNode);
-
-        if(nextNode == null)
-            log(annotationNode.getLineNo(), NO_METHOD_ERR_MSG, getAnnotationName(annotationNode));
-
-        return annotationNode.getLineNo() != nextNode.getLineNo();
     }
 }
