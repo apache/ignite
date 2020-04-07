@@ -123,12 +123,12 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             .binaryFileStoreWorkDir(cfg.getWorkDirectory());
         File marshWorkDir = mappingFileStoreWorkDir(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
         File snpBinWorkDir = ((CacheObjectBinaryProcessorImpl)ig.context().cacheObjects())
-            .binaryFileStoreWorkDir(mgr.snapshotDir(SNAPSHOT_NAME).getAbsolutePath());
-        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotDir(SNAPSHOT_NAME).getAbsolutePath());
+            .binaryFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
+        File snpMarshWorkDir = mappingFileStoreWorkDir(mgr.snapshotLocalDir(SNAPSHOT_NAME).getAbsolutePath());
 
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(cacheWorkDir);
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(
-            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotDir(SNAPSHOT_NAME)
+            FilePageStoreManager.cacheWorkDir(U.resolveWorkDirectory(mgr.snapshotLocalDir(SNAPSHOT_NAME)
                     .getAbsolutePath(),
                 nodePath,
                 false),

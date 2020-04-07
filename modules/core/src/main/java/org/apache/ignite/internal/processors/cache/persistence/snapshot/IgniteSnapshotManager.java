@@ -273,7 +273,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private DiscoveryEventListener discoLsnr;
 
     /** Cluster snapshot operation requested by user. */
-    private ClusterSnapshotFuture clusterSnpFut;
+    private GridFutureAdapter<Void> clusterSnpFut;
 
     /** Current snapshot operation on local node. */
     private volatile SnapshotOperationRequest clusterSnpRq;
@@ -776,7 +776,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Snapshot name.
      * @return Local snapshot directory for snapshot with given name.
      */
-    public File snapshotDir(String snpName) {
+    public File snapshotLocalDir(String snpName) {
         assert locSnpDir != null;
 
         return new File(locSnpDir, snpName);
@@ -861,7 +861,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         try {
             if (req.hasErr)
-                deleteSnapshot(snapshotDir(req.snpName), pdsSettings.folderName());
+                deleteSnapshot(snapshotLocalDir(req.snpName), pdsSettings.folderName());
 
             removeLastMetaStorageKey();
         }
@@ -952,7 +952,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "The baseline topology is not configured for cluster."));
         }
 
-        ClusterSnapshotFuture snpFut0;
+        GridFutureAdapter<Void> snpFut0;
 
         synchronized (snpOpMux) {
             if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
@@ -969,7 +969,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
                     "Snapshot with given name already exists."));
 
-            snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
+            snpFut0 = new GridFutureAdapter<>();
 
             clusterSnpFut = snpFut0;
         }
@@ -982,7 +982,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-        startSnpProc.start(snpFut0.id, new SnapshotOperationRequest(cctx.localNodeId(),
+        startSnpProc.start(UUID.randomUUID(), new SnapshotOperationRequest(cctx.localNodeId(),
             name,
             grps,
             new HashSet<>(F.viewReadOnly(srvNodes,
@@ -1021,7 +1021,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (File tmp : snapshotTmpDir().listFiles())
             U.delete(tmp);
 
-        deleteSnapshot(snapshotDir(snpName), pdsSettings.folderName());
+        deleteSnapshot(snapshotLocalDir(snpName), pdsSettings.folderName());
 
         if (log.isInfoEnabled()) {
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
@@ -1268,45 +1268,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Paths.get(cfg.getSnapshotPath());
     }
 
-    /** Base snapshot future for local and remote snapshots. */
-    private static class SnapshotFuture extends GridFutureAdapter<Void> {
-        @GridToStringInclude
-        /** Snapshot name to create. */
-        protected final String snpName;
-
-        /**
-         * @param snpName Snapshot name to create.
-         */
-        public SnapshotFuture(String snpName) {
-            this.snpName = snpName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SnapshotFuture future = (SnapshotFuture)o;
-
-            return Objects.equals(snpName, future.snpName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(snpName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SnapshotFuture.class, this);
-        }
-    }
-
     /** Remote snapshot future which tracks remote snapshot transmission result. */
-    private class RemoteSnapshotFuture extends SnapshotFuture {
+    private class RemoteSnapshotFuture extends GridFutureAdapter<Void> {
+        /** Snapshot name to create. */
+        private final String snpName;
+
         /** Remote node id to request snapshot from. */
         private final UUID rmtNodeId;
 
@@ -1319,15 +1285,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Counter which show how many partitions left to be received. */
         private int partsLeft = -1;
 
-        /** Last seen pair of group id and partition id to receive. */
-        private GroupPartitionId lastPair;
-
         /**
          * @param partConsumer Received partition handler.
          */
         public RemoteSnapshotFuture(UUID rmtNodeId, String snpName, BiConsumer<File, GroupPartitionId> partConsumer) {
-            super(snpName);
-
+            this.snpName = snpName;
             this.rmtNodeId = rmtNodeId;
             this.partConsumer = partConsumer;
         }
@@ -1605,7 +1567,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             super(IgniteSnapshotManager.this.log, snpRunner);
 
             this.snpName = snpName;
-            snpLocDir = snapshotDir(snpName);
+            snpLocDir = snapshotLocalDir(snpName);
             pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
         }
 
@@ -1917,29 +1879,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SnapshotStartDiscoveryMessage.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ClusterSnapshotFuture extends SnapshotFuture {
-        /** Initial request id. */
-        private final UUID id;
-
-        /**
-         * @param id Initial request id.
-         * @param snpName Snapshot name.
-         */
-        public ClusterSnapshotFuture(UUID id, String snpName) {
-            super(snpName);
-
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ClusterSnapshotFuture.class, this, super.toString());
         }
     }
 }

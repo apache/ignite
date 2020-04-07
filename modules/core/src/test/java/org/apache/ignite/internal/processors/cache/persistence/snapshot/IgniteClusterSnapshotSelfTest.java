@@ -102,7 +102,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         // Start node not in baseline.
         IgniteEx notBltIgnite = startGrid(grids);
-        File locSnpDir = snp(notBltIgnite).snapshotDir(SNAPSHOT_NAME);
+        File locSnpDir = snp(notBltIgnite).snapshotLocalDir(SNAPSHOT_NAME);
         String notBltDirName = folderName(notBltIgnite);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>(txCacheName)
@@ -262,7 +262,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         fut.get();
 
         assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + grid4Dir,
-            !searchDirectoryRecursively(snp(ignite).snapshotDir(SNAPSHOT_NAME).toPath(), grid4Dir).isPresent());
+            !searchDirectoryRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(), grid4Dir).isPresent());
     }
 
     /** @throws Exception If fails. */
@@ -313,7 +313,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        File locSnpDir = snp(ignite).snapshotDir(SNAPSHOT_NAME);
+        File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
         String dirNameIgnite0 = folderName(ignite);
 
         IgniteSnapshotManager mgr1 = snp(grid(1));
@@ -380,7 +380,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         String grid0Dir = folderName(ignite);
         String grid1Dir = folderName(grid(1));
-        File locSnpDir = snp(ignite).snapshotDir(SNAPSHOT_NAME);
+        File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
 
         jvm = true;
 
