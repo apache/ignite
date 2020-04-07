@@ -21,11 +21,14 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
@@ -44,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -57,6 +61,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -119,6 +124,20 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteFilter rel) {
         Predicate<Object[]> predicate = expressionFactory.predicate(ctx, rel.getCondition(), rel.getRowType());
+        FilterNode node = new FilterNode(ctx, predicate);
+        node.register(visit(rel.getInput()));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteHashFilter rel) {
+        RelTarget target = rel.target();
+
+        assert target != null && target.mapping() != null && !F.isEmpty(target.mapping().assignments());
+
+        Predicate<Object[]> predicate = partitionFilter(rel.distribution(), target.mapping().assignments().size());
+
         FilterNode node = new FilterNode(ctx, predicate);
         node.register(visit(rel.getInput()));
 
@@ -240,6 +259,24 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** */
     private Node<Object[]> visit(RelNode rel) {
         return visit((IgniteRel) rel);
+    }
+
+    /** */
+    private Predicate<Object[]> partitionFilter(IgniteDistribution distr, int partitions) {
+        assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
+        assert !F.isEmpty(ctx.partitions());
+
+        boolean[] filter = new boolean[partitions];
+
+        for (int part : ctx.partitions())
+            filter[part] = true;
+
+        DistributionFunction function = distr.function();
+        ImmutableIntList keys = distr.getKeys();
+
+        ToIntFunction<Object> partFunction = function.partitionFunction(partitionService, partitions, keys);
+
+        return o -> filter[partFunction.applyAsInt(o)];
     }
 
     /** */

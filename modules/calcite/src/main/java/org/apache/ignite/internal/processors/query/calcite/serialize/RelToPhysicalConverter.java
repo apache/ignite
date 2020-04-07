@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -27,9 +28,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToExpTran
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggCallExp;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -42,8 +45,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Converts RelNode tree to physical rel tree.
@@ -81,6 +86,19 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     @Override public PhysicalRel visit(IgniteFilter rel) {
         return new FilterPhysicalRel(DataType.fromType(rel.getRowType()),
             rexTranslator.translate(rel.getCondition()), visit((IgniteRel) rel.getInput()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public PhysicalRel visit(IgniteHashFilter rel) {
+        IgniteDistribution distr = rel.distribution();
+        RelTarget target = rel.target();
+
+        assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
+        assert target != null && target.mapping() != null && !F.isEmpty(target.mapping().assignments());
+
+        int partitions = target.mapping().assignments().size();
+
+        return new HashFilterPhysicalRel(distr.function(), distr.getKeys(), partitions, visit((IgniteRel) rel.getInput()));
     }
 
     /** {@inheritDoc} */

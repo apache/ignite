@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -92,6 +93,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteFilter(cluster, rel.getTraitSet(), input, rel.getCondition());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteHashFilter rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteHashFilter(cluster, rel.getTraitSet(), input);
     }
 
     /** {@inheritDoc} */
