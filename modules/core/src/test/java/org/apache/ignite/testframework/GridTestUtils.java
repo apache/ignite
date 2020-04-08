@@ -148,6 +148,15 @@ public final class GridTestUtils {
         }
 
         /**
+         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
+         *
+         * @param msg Intercepted discovery message.
+         */
+        public void handleProcessedDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            // No-op.
+        }
+
+        /**
          * @param ignite Ignite.
          */
         public void ignite(IgniteEx ignite) {
@@ -178,7 +187,11 @@ public final class GridTestUtils {
         @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
 
-            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            hook.handleProcessedDiscoveryMessage(spiCustomMsg);
+
+            return fut;
         }
 
         /** {@inheritDoc} */

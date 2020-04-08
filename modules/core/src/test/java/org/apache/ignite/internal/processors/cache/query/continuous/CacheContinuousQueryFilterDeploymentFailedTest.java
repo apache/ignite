@@ -17,16 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -36,22 +33,22 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
+import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Tests the behavior of continuous query registration in case the remote node failed to obtain the filter deployment.
@@ -61,18 +58,30 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     private static final String EXT_FILTER_FACTORY_CLS =
         "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory";
 
-    /** Counter of nodes that finished processing of {@link StopRoutineDiscoveryMessage}. */
-    private final AtomicInteger stopRoutineMsgCntr = new AtomicInteger();
+    /** Latch that indicates whether {@link StopRoutineDiscoveryMessage} was processed by all nodes. */
+    private volatile CountDownLatch stopRoutineMsgProcessed;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DiscoverySpi spi = new TcpDiscoverySpi() {
-            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                super.setListener(lsnr == null ? null : new TestDiscoverySpiListener(lsnr, stopRoutineMsgCntr));
+        DiscoveryHook discoveryHook = new DiscoveryHook() {
+            @Override public void handleProcessedDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+                DiscoveryCustomMessage customMsg = msg == null ?
+                    null : (DiscoveryCustomMessage)U.field(msg, "delegate");
+
+                if (customMsg instanceof StopRoutineDiscoveryMessage)
+                    stopRoutineMsgProcessed.countDown();
             }
         };
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi() {
+            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
+                super.setListener(DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
+            }
+        };
+
+        spi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
         cfg.setNetworkTimeout(1000);
@@ -95,7 +104,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         ignite.cluster().state(ACTIVE);
 
-        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        client.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
@@ -107,73 +116,20 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         qry.setRemoteFilterFactory(rmtFilterFactory);
 
+        stopRoutineMsgProcessed = new CountDownLatch(3);
+
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof GridDeploymentRequest);
 
-        assertThrowsAnyCause(
-            log,
-            () -> client.cache(DEFAULT_CACHE_NAME).query(qry),
-            CacheException.class,
-            "Failed to start continuous query."
-        );
+        assertThrowsWithCause(() -> client.cache(DEFAULT_CACHE_NAME).query(qry), CacheException.class);
 
-        checkContinuousQueryAborted();
-    }
-
-    /**
-     * Awaits handling of stop routine message on all cluster nodes and checks that CQ registraition was fully aborted.
-     */
-    private void checkContinuousQueryAborted() throws Exception {
         List<Ignite> grids = G.allGrids();
 
-        GridTestUtils.waitForCondition(() -> stopRoutineMsgCntr.get() == grids.size(), getTestTimeout());
+        assertTrue(stopRoutineMsgProcessed.await(getTestTimeout(), MILLISECONDS));
 
-        assertTrue(grids.stream().allMatch(ignite -> {
-            SystemView<ContinuousQueryView> locQrys = ((IgniteEx)ignite).context().systemView().view(CQ_SYS_VIEW);
+        assertTrue(grids.stream().allMatch(g -> {
+            SystemView<ContinuousQueryView> locQrys = ((IgniteEx)g).context().systemView().view(CQ_SYS_VIEW);
 
             return locQrys.size() == 0;
         }));
-    }
-
-    /**
-     * Wrapper for {@link DiscoverySpiListener} with ability to update specified counter for every handled
-     * {@link StopRoutineDiscoveryMessage}.
-     */
-    private static class TestDiscoverySpiListener implements DiscoverySpiListener {
-        /** Listener to which all calls is delegated. */
-        private final DiscoverySpiListener lsnr;
-
-        /** Counter of handled {@link StopRoutineDiscoveryMessage}. */
-        private final AtomicInteger cntr;
-
-        /** */
-        private TestDiscoverySpiListener(DiscoverySpiListener lsnr, AtomicInteger cntr) {
-            this.lsnr = lsnr;
-            this.cntr = cntr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onLocalNodeInitialized(ClusterNode locNode) {
-            lsnr.onLocalNodeInitialized(locNode);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(
-            int type,
-            long topVer,
-            ClusterNode node,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable Map<Long, Collection<ClusterNode>> topHist,
-            @Nullable DiscoverySpiCustomMessage data
-        ) {
-            IgniteFuture<?> fut = lsnr.onDiscovery(type, topVer, node, topSnapshot, topHist, data);
-
-            DiscoveryCustomMessage customMsg = data == null ?
-                null : (DiscoveryCustomMessage)U.field(data, "delegate");
-
-            if (customMsg instanceof StopRoutineDiscoveryMessage)
-                cntr.incrementAndGet();
-
-            return fut;
-        }
     }
 }
