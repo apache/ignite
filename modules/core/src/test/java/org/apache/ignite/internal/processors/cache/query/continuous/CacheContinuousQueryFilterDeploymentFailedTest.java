@@ -51,10 +51,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * Tests the behavior of continuous query registration in case the remote node failed to obtain the filter deployment.
  */
 public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAbstractTest {
-    /** The name of the CQ filter factory class. Its obtaining on a non-local node requires P2P class loading. */
-    private static final String EXT_FILTER_FACTORY_CLS =
-        "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory";
-
     /** Number of test nodes. */
     private static final int NODES_CNT = 3;
 
@@ -109,7 +105,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         Class<Factory<CacheEntryEventFilter<Integer, Integer>>> rmtFilterFactoryCls =
             (Class<Factory<CacheEntryEventFilter<Integer, Integer>>>)getExternalClassLoader()
-                .loadClass(EXT_FILTER_FACTORY_CLS);
+                .loadClass("org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory");
 
         qry.setRemoteFilterFactory(rmtFilterFactoryCls.newInstance());
 
