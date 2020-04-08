@@ -374,8 +374,7 @@ public class IgnitionEx {
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.
         executor.schedule(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (state(name) == IgniteState.STARTED) {
                     U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
                             " milliseconds. Killing node...");
@@ -1961,13 +1960,15 @@ public class IgnitionEx {
                 buildIdxExecSvc = new IgniteThreadPoolExecutor(
                     "build-idx-runner",
                     cfg.getIgniteInstanceName(),
-                    0,
                     buildIdxThreadPoolSize,
-                    0,
+                    buildIdxThreadPoolSize,
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<>(),
                     GridIoPolicy.UNDEFINED,
                     oomeHnd
                 );
+
+                buildIdxExecSvc.allowCoreThreadTimeOut(true);
             }
 
             validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");

@@ -23,13 +23,14 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Near;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
 
     /// <summary>
     /// Non-generic binary filter wrapper.
     /// </summary>
-    internal class CacheEntryFilterHolder : IBinaryWriteAware
+    internal sealed class CacheEntryFilterHolder : IBinaryWriteAware
     {
         /** Wrapped ICacheEntryFilter */
         private readonly object _pred;
@@ -42,7 +43,10 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** Grid. */
         private readonly Marshaller _marsh;
-        
+
+        /** Near cache. When not null, only the key is passed to the filter. */
+        private INearCache _nearCache;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryFilterHolder" /> class.
         /// </summary>
@@ -74,7 +78,27 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             var rawReader = _marsh.StartUnmarshal(input, _keepBinary).GetRawReader();
 
-            return _invoker(rawReader.ReadObject<object>(), rawReader.ReadObject<object>()) ? 1 : 0;
+            var key = rawReader.ReadObject<object>();
+            var hasVal = rawReader.ReadBoolean();
+            object val;
+
+            if (hasVal)
+            {
+                val = rawReader.ReadObject<object>();
+            }
+            else
+            {
+                // Near cache on primary node is always up-to-date with actual cache entry in Java,
+                // so we can use value from near cache for filtering.
+                if (_nearCache == null || !_nearCache.TryGetValue(key, out val))
+                {
+                    // Request value from Java.
+                    // This should be rare, because primary keys are always in .NET Near Cache.
+                    val = _marsh.Ignite.GetJavaThreadLocal();
+                }
+            }
+
+            return _invoker(key, val) ? 1 : 0;
         }
 
         /** <inheritdoc /> */
@@ -134,9 +158,15 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 Debug.Assert(grid != null);
 
-                var marsh = grid.Marshaller;
+                var filterHolder = grid.Marshaller.Unmarshal<CacheEntryFilterHolder>(stream);
 
-                return marsh.Unmarshal<CacheEntryFilterHolder>(stream);
+                if (stream.ReadBool())
+                {
+                    var cacheId = stream.ReadInt();
+                    filterHolder._nearCache = grid.NearCacheManager.TryGetNearCache(cacheId);
+                }
+
+                return filterHolder;
             }
         }
     }

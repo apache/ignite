@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -111,6 +112,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -166,11 +168,13 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 
 /**
  * Partition exchange manager.
@@ -285,6 +289,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
     private volatile long rebalanceDelay;
+
+    /** Metric that shows whether cluster is in fully rebalanced state. */
+    private volatile BooleanMetricImpl rebalanced;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -489,6 +496,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+
+        MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
+
+        rebalanced = clusterReg.booleanMetric(REBALANCED,
+            "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
+            " this metric in False regardless of the real partitions state.");
     }
 
     /**
@@ -2857,6 +2870,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return blockingDurationHistogram;
     }
 
+    /** @return Metric that shows whether cluster is in fully rebalanced state. */
+    public BooleanMetricImpl clusterRebalancedMetric() {
+        return rebalanced;
+    }
+
     /**
      * Exchange future thread. All exchanges happen only by one thread and next
      * exchange will not start until previous one completes.
@@ -3377,14 +3395,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
                         int size = assignsMap.size();
 
-                        NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
+                        NavigableMap<CacheRebalanceOrder, List<Integer>> orderMap = new TreeMap<>();
 
                         for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
                             int grpId = e.getKey();
 
                             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                            int order = grp.config().getRebalanceOrder();
+                            CacheRebalanceOrder order = new CacheRebalanceOrder(
+                                grp.config().getRebalanceOrder(),
+                                grp.config().getRebalanceMode());
 
                             if (orderMap.get(order) == null)
                                 orderMap.put(order, new ArrayList<Integer>(size));
@@ -3403,7 +3423,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
-                        for (Integer order : orderMap.descendingKeySet()) {
+                        for (CacheRebalanceOrder order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
@@ -3850,6 +3870,68 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             actionsCnt.keySet().removeIf(key -> !activeObjects.contains(key));
 
             activeObjects.clear();
+        }
+    }
+
+    /**
+     * Represents a cache rebalance order that takes into account both values: rebalance order itself and rebalance mode.
+     * It is assumed SYNC caches should be rebalanced in the first place.
+     */
+    private static class CacheRebalanceOrder implements Comparable<CacheRebalanceOrder> {
+        /** Cache rebalance order. */
+        private int order;
+
+        /** Cache rebalance mode. */
+        private CacheRebalanceMode mode;
+
+        /**
+         * Creates a new instance of CacheRebalanceOrder.
+         *
+         * @param order Cache rebalance order.
+         * @param mode Cache rebalance mode.
+         */
+        public CacheRebalanceOrder(int order, CacheRebalanceMode mode) {
+            this.order = order;
+            this.mode = mode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull CacheRebalanceOrder o) {
+            if (order == o.order) {
+                if (mode == o.mode)
+                    return 0;
+
+                switch (mode) {
+                    case SYNC: return -1;
+                    case ASYNC: return o.mode == CacheRebalanceMode.SYNC ? 1 : -1;
+                    case NONE: return 1;
+                    default:
+                        throw new IllegalArgumentException("Unknown cache rebalance mode [mode=" + mode + ']');
+                }
+            }
+            else
+                return (order < o.order) ? -1 : 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            CacheRebalanceOrder order1 = (CacheRebalanceOrder)o;
+
+            if (order != order1.order)
+                return false;
+            return mode == order1.mode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = order;
+            result = 31 * result + mode.hashCode();
+            return result;
         }
     }
 }

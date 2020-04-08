@@ -57,7 +57,9 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test base for test for sql features.
@@ -349,6 +351,13 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
      */
     protected Result executeFrom(String qry, Ignite node) {
         return executeFrom(new SqlFieldsQuery(qry), node);
+    }
+
+    /**
+     * Shortcut for {@link #executeFrom(String, Ignite, String)}, that has two String arguments.
+     */
+    protected Result executeFrom(String qry, Ignite node, String schema) {
+        return executeFrom(new SqlFieldsQuery(qry).setSchema(schema), node);
     }
 
     /**
@@ -1246,6 +1255,36 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
             GridTestUtils.assertThrows(log,
                 () -> executeFrom(distributedJoinQry(false, qry), node),
                 IgniteSQLException.class, "Failed to parse query.");
+        });
+    }
+
+    /**
+     * Init rule for expected exception
+     */
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
+
+    /**
+     * Check schema for validation
+     */
+    @Test
+    public void testCheckEmptySchema() {
+        expectedEx.expect(IgniteSQLException.class);
+        expectedEx.expectMessage("Failed to set schema for DB connection. " +
+                "Schema name could not be an empty string"
+        );
+
+        String sqlQuery = "SELECT * FROM Employee limit 1";
+
+        testAllNodes(node -> {
+            executeFrom(sqlQuery, node, "");
+            executeFrom(sqlQuery, node, " ");
+            assertTrue("Check valid schema",
+                    executeFrom(sqlQuery, node, "PUBLIC").values().stream().count() > 0
+            );
+            assertTrue("Check null schema",
+                    executeFrom(sqlQuery, node, null).values().stream().count() > 0
+            );
         });
     }
 

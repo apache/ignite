@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -48,6 +49,12 @@ import org.jetbrains.annotations.NotNull;
  * Communication channel with failover and partition awareness.
  */
 final class ReliableChannel implements AutoCloseable {
+    /** Timeout to wait for executor service to shutdown (in milliseconds). */
+    private static final long EXECUTOR_SHUTDOWN_TIMEOUT = 10_000L;
+
+    /** Async runner thread name. */
+    static final String ASYNC_RUNNER_THREAD_NAME = "thin-client-channel-async-runner";
+
     /** Channel factory. */
     private final Function<ClientChannelConfiguration, ClientChannel> chFactory;
 
@@ -70,7 +77,11 @@ final class ReliableChannel implements AutoCloseable {
     private final ExecutorService asyncRunner = Executors.newSingleThreadExecutor(
         new ThreadFactory() {
             @Override public Thread newThread(@NotNull Runnable r) {
-                return new Thread(r, "thin-client-channel-async-runner");
+                Thread thread = new Thread(r, ASYNC_RUNNER_THREAD_NAME);
+
+                thread.setDaemon(true);
+
+                return thread;
             }
         }
     );
@@ -82,7 +93,7 @@ final class ReliableChannel implements AutoCloseable {
     private final AtomicBoolean affinityUpdateInProgress = new AtomicBoolean();
 
     /** Channel is closed. */
-    private boolean closed;
+    private volatile boolean closed;
 
     /**
      * Constructor.
@@ -136,6 +147,15 @@ final class ReliableChannel implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public synchronized void close() {
         closed = true;
+
+        asyncRunner.shutdown();
+
+        try {
+            asyncRunner.awaitTermination(EXECUTOR_SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException ignore) {
+            // No-op.
+        }
 
         for (ClientChannelHolder hld : channels)
             hld.closeChannel();
@@ -363,8 +383,8 @@ final class ReliableChannel implements AutoCloseable {
                     scheduledChannelsReinit.set(false);
 
                     for (ClientChannelHolder hld : channels) {
-                        if (scheduledChannelsReinit.get())
-                            return; // New reinit task scheduled.
+                        if (scheduledChannelsReinit.get() || closed)
+                            return; // New reinit task scheduled or channel is closed.
 
                         try {
                             hld.getOrCreateChannel(true);

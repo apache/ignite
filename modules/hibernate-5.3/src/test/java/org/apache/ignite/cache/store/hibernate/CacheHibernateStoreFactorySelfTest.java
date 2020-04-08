@@ -96,8 +96,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     @Test
     public void testIncorrectBeanConfiguration() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 String path = MODULE_PATH + "/src/test/config/factory-incorrect-store-cache.xml";
                 try (Ignite ignite = Ignition.start(path)) {
                     ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheStoreFactory().create();
@@ -230,8 +229,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
         @Override public void close() throws HibernateException {
         }
 
-        @Override
-        public Map<String, Object> getProperties() {
+        @Override public Map<String, Object> getProperties() {
             return null;
         }
 
@@ -245,23 +243,19 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
             return null;
         }
 
-        @Override
-        public PersistenceUnitUtil getPersistenceUnitUtil() {
+        @Override public PersistenceUnitUtil getPersistenceUnitUtil() {
             return null;
         }
 
-        @Override
-        public void addNamedQuery(String name, Query query) {
+        @Override public void addNamedQuery(String name, Query query) {
 
         }
 
-        @Override
-        public <T> T unwrap(Class<T> cls) {
+        @Override public <T> T unwrap(Class<T> cls) {
             return null;
         }
 
-        @Override
-        public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
+        @Override public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
 
         }
 
@@ -290,43 +284,35 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
             return null;
         }
 
-        @Override
-        public <T> List<EntityGraph<? super T>> findEntityGraphsByType(Class<T> aClass) {
+        @Override public <T> List<EntityGraph<? super T>> findEntityGraphsByType(Class<T> aClass) {
             return null;
         }
 
-        @Override
-        public EntityManager createEntityManager() {
+        @Override public EntityManager createEntityManager() {
             return null;
         }
 
-        @Override
-        public EntityManager createEntityManager(Map map) {
+        @Override public EntityManager createEntityManager(Map map) {
             return null;
         }
 
-        @Override
-        public EntityManager createEntityManager(SynchronizationType synchronizationType) {
+        @Override public EntityManager createEntityManager(SynchronizationType synchronizationType) {
             return null;
         }
 
-        @Override
-        public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
+        @Override public EntityManager createEntityManager(SynchronizationType synchronizationType, Map map) {
             return null;
         }
 
-        @Override
-        public CriteriaBuilder getCriteriaBuilder() {
+        @Override public CriteriaBuilder getCriteriaBuilder() {
             return null;
         }
 
-        @Override
-        public Metamodel getMetamodel() {
+        @Override public Metamodel getMetamodel() {
             return null;
         }
 
-        @Override
-        public boolean isOpen() {
+        @Override public boolean isOpen() {
             return false;
         }
     }

@@ -48,6 +48,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -125,6 +127,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -307,12 +310,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             perf.add(msg, true);
 
-        if (cfg.getCacheMode() == PARTITIONED) {
+        if (cfg.getCacheMode() == PARTITIONED)
             perf.add("Disable near cache (set 'nearConfiguration' to null)", cfg.getNearConfiguration() == null);
-
-            if (cfg.getAffinity() != null)
-                perf.add("Decrease number of backups (set 'backups' to 0)", cfg.getBackups() == 0);
-        }
 
         // Suppress warning if at least one ATOMIC cache found.
         perf.add("Enable ATOMIC mode if not using transactions (set 'atomicityMode' to ATOMIC)",
@@ -1231,6 +1230,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
+        PlatformCacheManager platformMgr = ctx.platform().cacheManager();
 
         if (cfgStore == null)
             storeMgr.initialize(cfgStore, sesHolders);
@@ -1267,7 +1267,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             drMgr,
             rslvrMgr,
             pluginMgr,
-            affMgr
+            affMgr,
+            platformMgr
         );
 
         cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -1370,6 +1371,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * 5. CacheContinuousQueryManager (note, that we start it for DHT cache though).
              * 6. GridCacheDgcManager
              * 7. GridCacheTtlManager.
+             * 8. PlatformCacheManager.
              * ===============================================
              */
             evictMgr = cfg.isOnheapCacheEnabled() ? new GridCacheEvictionManager() : new CacheOffheapEvictionManager();
@@ -1404,7 +1406,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 drMgr,
                 rslvrMgr,
                 pluginMgr,
-                affMgr
+                affMgr,
+                platformMgr
             );
 
             cacheCtx.cacheObjectContext(cacheObjCtx);
@@ -5416,6 +5419,54 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(EnableStatisticsFuture.class, this);
+        }
+    }
+
+    /**
+     * The reason why this class is not removed is backward compatibility
+     * in the case of using local caches with native persistence.
+     */
+    @Deprecated
+    private static class LocalAffinityFunction implements AffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private static final org.apache.ignite.internal.processors.affinity.LocalAffinityFunction DELEGATE =
+            new org.apache.ignite.internal.processors.affinity.LocalAffinityFunction();
+
+        /**
+         * Should not be directly used.
+         */
+        LocalAffinityFunction() throws IgniteCheckedException {
+            throw new IgniteCheckedException("This class should not be directly instantiated. Please use "
+                + org.apache.ignite.internal.processors.affinity.LocalAffinityFunction.class.getCanonicalName()
+                + " instead.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            return DELEGATE.assignPartitions(affCtx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            DELEGATE.reset();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            return DELEGATE.partitions();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            return DELEGATE.partition(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNode(UUID nodeId) {
+            DELEGATE.removeNode(nodeId);
         }
     }
 }

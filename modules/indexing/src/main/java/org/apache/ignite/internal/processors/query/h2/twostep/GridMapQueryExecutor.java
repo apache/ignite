@@ -49,7 +49,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSet;
-import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -307,6 +307,8 @@ public class GridMapQueryExecutor {
 
         PartitionReservation reserved = null;
 
+        QueryContext qctx = null;
+
         try {
             if (topVer != null) {
                 // Reserve primary for topology version or explicit partitions.
@@ -339,21 +341,18 @@ public class GridMapQueryExecutor {
                 );
             }
 
-            QueryContext qctx = new QueryContext(
+            qctx = new QueryContext(
                 segmentId,
                 h2.backupFilter(topVer, parts),
                 distributedJoinCtx,
                 mvccSnapshot,
                 reserved,
-                true
-            );
+                true);
 
             qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, lazy, qctx);
 
             // qctx is set, we have to release reservations inside of it.
             reserved = null;
-
-            qryCtxRegistry.setThreadLocal(qctx);
 
             if (distributedJoinCtx != null)
                 qryCtxRegistry.setShared(node.id(), reqId, qctx);
@@ -375,16 +374,17 @@ public class GridMapQueryExecutor {
             boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             for (GridCacheSqlQuery qry : qrys) {
-                H2ConnectionWrapper connWrp = h2.connections().connectionForThread();
+                H2PooledConnection conn = h2.connections().connection(schemaName);
 
                 H2Utils.setupConnection(
-                    connWrp.connection(schemaName),
+                    conn,
+                    qctx,
                     distributedJoins,
                     enforceJoinOrder,
                     lazy
                 );
 
-                MapQueryResult res = new MapQueryResult(h2, mainCctx, node.id(), qry, params, connWrp, log);
+                MapQueryResult res = new MapQueryResult(h2, mainCctx, node.id(), qry, params, conn, log);
 
                 qryResults.addResult(qryIdx, res);
 
@@ -396,14 +396,9 @@ public class GridMapQueryExecutor {
                         String sql = qry.query();
                         Collection<Object> params0 = F.asList(qry.parameters(params));
 
-                        PreparedStatement stmt;
-
-                        try {
-                            stmt = h2.connections().prepareStatement(connWrp.connection(), sql);
-                        }
-                        catch (SQLException e) {
-                            throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-                        }
+                        PreparedStatement stmt = conn.prepareStatement(sql, H2StatementCache.queryFlags(
+                            distributedJoins,
+                            enforceJoinOrder));
 
                         H2Utils.bindParameters(stmt, params0);
 
@@ -411,9 +406,8 @@ public class GridMapQueryExecutor {
 
                         ResultSet rs = h2.executeSqlQueryWithTimer(
                             stmt,
-                            connWrp.connection(),
+                            conn,
                             sql,
-                            params0,
                             timeout,
                             qryResults.queryCancel(qryIdx),
                             dataPageScanEnabled,
@@ -486,12 +480,12 @@ public class GridMapQueryExecutor {
                 qryResults.close();
             }
             else
-                releaseReservations();
+                releaseReservations(qctx);
 
             if (e instanceof QueryCancelledException)
                 sendError(node, reqId, e);
             else {
-                JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
+                SQLException sqlEx = X.cause(e, SQLException.class);
 
                 if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                     sendQueryCancel(node, reqId);
@@ -526,8 +520,6 @@ public class GridMapQueryExecutor {
         finally {
             if (reserved != null)
                 reserved.release();
-
-            qryCtxRegistry.clearThreadLocal();
         }
     }
 
@@ -541,13 +533,11 @@ public class GridMapQueryExecutor {
 
     /**
      * Releases reserved partitions.
+     *
+     * @param qctx Query context.
      */
-    private void releaseReservations() {
-        QueryContext qctx = qryCtxRegistry.getThreadLocal();
-
-        if (qctx != null) { // No-op if already released.
-            qryCtxRegistry.clearThreadLocal();
-
+    private void releaseReservations(QueryContext qctx) {
+        if (qctx != null) {
             if (qctx.distributedJoinContext() == null)
                 qctx.clearContext(false);
         }
@@ -754,13 +744,6 @@ public class GridMapQueryExecutor {
             sendQueryCancel(node, reqId);
         else {
             try {
-                QueryContext qctxReduce = qryCtxRegistry.getThreadLocal();
-
-                if (qctxReduce != null)
-                    qryCtxRegistry.clearThreadLocal();
-
-                qryCtxRegistry.setThreadLocal(qryResults.queryContext());
-
                 MapQueryResult res = qryResults.result(req.query());
 
                 assert res != null;
@@ -787,11 +770,6 @@ public class GridMapQueryExecutor {
                         sendNextPage(node, msg);
                 }
                 finally {
-                    qryCtxRegistry.clearThreadLocal();
-
-                    if (qctxReduce != null)
-                        qryCtxRegistry.setThreadLocal(qctxReduce);
-
                     try {
                         res.unlockTables();
                     }
@@ -806,7 +784,7 @@ public class GridMapQueryExecutor {
                 if (retryEx != null)
                     sendError(node, reqId, retryEx);
                 else {
-                    JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
+                    SQLException sqlEx = X.cause(e, SQLException.class);
 
                     if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                         sendQueryCancel(node, reqId);
