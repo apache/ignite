@@ -111,7 +111,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         forceCheckpoint();
 
-        disableCheckpoints(G.allGrids());
+        enableCheckpoints(G.allGrids(), false);
 
         injectTestSystemOut();
 
@@ -143,7 +143,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerClusterPer
 
         forceCheckpoint();
 
-        disableCheckpoints(G.allGrids());
+        enableCheckpoints(G.allGrids(), false);
 
         injectTestSystemOut();
 
