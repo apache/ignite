@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         {
             Name = reader.ReadString();
             JavaTypeName = reader.ReadString();
-            Type = GetDotNetType(JavaTypeName);
+            Type = JavaTypes.GetDotNetType(JavaTypeName);
         }
 
         /** <inheritdoc /> */
@@ -46,18 +46,5 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
 
         /** <inheritdoc /> */
         public Type Type { get; private set; }
-
-        /// <summary>
-        ///  Gets .NET type that corresponds to specified Java type name.
-        /// </summary>
-        /// <param name="javaTypeName">Name of the java type.</param>
-        /// <returns></returns>
-        private static Type GetDotNetType(string javaTypeName)
-        {
-            var dotNetType = JavaTypes.GetDotNetType(javaTypeName);
-            if (dotNetType == null && javaTypeName == "java.lang.Object") dotNetType = typeof(object);
-
-            return dotNetType;
-        }
     }
 }

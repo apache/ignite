@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         }
 
         /** <inheritdoc /> */
-        public IList<IQueryCursorField> Fields 
+        public IList<IQueryCursorField> Fields
         {
             get
             {
@@ -103,11 +103,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
                     var metadata = Target.OutStream(
                         OpGetFieldsMeta,
                         reader => reader.ReadCollectionRaw(stream =>
-                            new QueryCursorField(stream) as IQueryCursorField))
-                        ?? new List<IQueryCursorField>();
+                            new QueryCursorField(stream) as IQueryCursorField));
 
-                    _fieldsMeta = new ReadOnlyCollection<IQueryCursorField>(
-                        metadata as List<IQueryCursorField> ?? metadata.ToList());
+                    _fieldsMeta = new ReadOnlyCollection<IQueryCursorField>(metadata ?? new List<IQueryCursorField>());
                 }
 
                 return _fieldsMeta;

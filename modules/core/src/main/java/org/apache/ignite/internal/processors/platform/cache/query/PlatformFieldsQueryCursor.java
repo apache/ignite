@@ -30,32 +30,25 @@ import java.util.List;
  * Interop cursor for fields query.
  */
 public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<?>> {
-    /**
-     * Gets field names.
-     */
+    /** Gets field names. */
     private static final int OP_GET_FIELD_NAMES = 7;
 
-    /**
-     * Gets field types.
-     */
+    /** Gets field types. */
     private static final int OP_GET_FIELDS_META = 8;
 
     /**
      * Constructor.
      *
      * @param platformCtx Platform context.
-     * @param cursor      Backing cursor.
-     * @param batchSize   Batch size.
+     * @param cursor Backing cursor.
+     * @param batchSize Batch size.
      */
     public PlatformFieldsQueryCursor(PlatformContext platformCtx, QueryCursorEx<List<?>> cursor, int batchSize) {
         super(platformCtx, cursor, batchSize);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void write(BinaryRawWriterEx writer, List vals) {
+    /** {@inheritDoc} */
+    @Override protected void write(BinaryRawWriterEx writer, List vals) {
         assert vals != null;
 
         int rowSizePos = writer.reserveInt();
@@ -70,11 +63,8 @@ public class PlatformFieldsQueryCursor extends PlatformAbstractQueryCursor<List<
         writer.writeInt(rowSizePos, rowEndPos - rowSizePos);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_GET_FIELD_NAMES) {
             FieldsQueryCursor fq = (FieldsQueryCursor) cursor();
 
