@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,13 +30,10 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -45,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.Ignition.allGrids;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
@@ -101,13 +98,13 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     @Test
     @SuppressWarnings({"ThrowableNotThrown"})
     public void testContinuousQueryFilterDeploymentFailed() throws Exception {
-        IgniteEx ignite = startGrids(NODE_CNT - 1);
+        IgniteEx srv = startGrids(NODE_CNT - 1);
 
-        IgniteEx client = startClientGrid(2);
+        IgniteEx cli = startClientGrid(2);
 
-        ignite.cluster().state(ACTIVE);
+        srv.cluster().state(ACTIVE);
 
-        client.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        IgniteCache<Integer, Integer> cache = cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
@@ -115,22 +112,15 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
             (Class<Factory<CacheEntryEventFilter<Integer, Integer>>>)getExternalClassLoader()
                 .loadClass(EXT_FILTER_FACTORY_CLS);
 
-        Factory<CacheEntryEventFilter<Integer, Integer>> rmtFilterFactory = rmtFilterFactoryCls.newInstance();
-
-        qry.setRemoteFilterFactory(rmtFilterFactory);
+        qry.setRemoteFilterFactory(rmtFilterFactoryCls.newInstance());
 
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof GridDeploymentRequest);
 
-        assertThrowsWithCause(() -> client.cache(DEFAULT_CACHE_NAME).query(qry), CacheException.class);
-
-        List<Ignite> grids = G.allGrids();
+        assertThrowsWithCause(() -> cache.query(qry), CacheException.class);
 
         assertTrue(stopRoutineLatch.await(getTestTimeout(), MILLISECONDS));
 
-        assertTrue(grids.stream().allMatch(g -> {
-            SystemView<ContinuousQueryView> locQrys = ((IgniteEx)g).context().systemView().view(CQ_SYS_VIEW);
-
-            return locQrys.size() == 0;
-        }));
+        assertTrue(allGrids().stream().allMatch(g ->
+            ((IgniteEx)g).context().systemView().view(CQ_SYS_VIEW).size() == 0));
     }
 }
