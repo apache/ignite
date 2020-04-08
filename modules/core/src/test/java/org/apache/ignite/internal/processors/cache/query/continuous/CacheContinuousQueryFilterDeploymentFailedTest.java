@@ -62,7 +62,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     private static final int NODE_CNT = 3;
 
     /** Latch that indicates whether {@link StopRoutineDiscoveryMessage} was processed by all nodes. */
-    private final CountDownLatch stopRoutineMsgProcessed = new CountDownLatch(NODE_CNT);
+    private final CountDownLatch stopRoutineLatch = new CountDownLatch(NODE_CNT);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,7 +74,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
                     null : (DiscoveryCustomMessage)U.field(msg, "delegate");
 
                 if (customMsg instanceof StopRoutineDiscoveryMessage)
-                    stopRoutineMsgProcessed.countDown();
+                    stopRoutineLatch.countDown();
             }
         };
 
@@ -125,7 +125,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         List<Ignite> grids = G.allGrids();
 
-        assertTrue(stopRoutineMsgProcessed.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(stopRoutineLatch.await(getTestTimeout(), MILLISECONDS));
 
         assertTrue(grids.stream().allMatch(g -> {
             SystemView<ContinuousQueryView> locQrys = ((IgniteEx)g).context().systemView().view(CQ_SYS_VIEW);
