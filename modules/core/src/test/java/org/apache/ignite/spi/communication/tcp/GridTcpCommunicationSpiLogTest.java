@@ -139,6 +139,15 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test covers use case when communication timeout happens on client node,
+     * but connection still alive on the server side. On the next get operation,
+     * client node tries to establish connection to the server and receives "already connected" error.
+     * After that server node executes {@link TcpCommunicationSpi#closeConnections(UUID)}}
+     * and closes existing connection on the server side. As result client node successfully
+     * establishes connection on the next retry. Test expects that "The session change request was offered"
+     * and "The node client was replaced" messages would be printed in the log on the first attempt.
+     * And after that "The session request will be processed" and "The client was removed"
+     * would be printed during processing.
      * @throws Exception If failed.
      */
     public void testClientHalfOpenedConnectionDebugLogMessage() throws Exception {
