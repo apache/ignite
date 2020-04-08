@@ -99,10 +99,7 @@ public enum IgniteFeatures {
     SAFE_CLUSTER_DEACTIVATION(22),
 
     /** Long operations dump timeout. */
-    LONG_OPERATIONS_DUMP_TIMEOUT(30),
-
-    /** Inverse connection: sending a request over discovery to establish a communication connection. */
-    INVERSE_TCP_CONNECTION(35);
+    LONG_OPERATIONS_DUMP_TIMEOUT(30);
 
     /**
      * Unique feature identifier.
@@ -174,24 +171,6 @@ public enum IgniteFeatures {
         }
 
         return true;
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @param feature Feature to check.
-     *
-     * @return {@code True} if all nodes in the cluster support given feature.
-     */
-    public static boolean allNodesSupport(GridKernalContext ctx, IgniteFeatures feature) {
-        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
-
-        if (discoSpi instanceof IgniteDiscoverySpi)
-            return ((IgniteDiscoverySpi)discoSpi).allNodesSupport(feature);
-        else {
-            Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
-
-            return allNodesSupports(nodes, feature);
-        }
     }
 
     /**

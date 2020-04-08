@@ -150,7 +150,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_SYSTEM;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IO_TEST;
 import static org.apache.ignite.internal.IgniteFeatures.CHANNEL_COMMUNICATION;
-import static org.apache.ignite.internal.IgniteFeatures.INVERSE_TCP_CONNECTION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
@@ -2141,17 +2140,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** */
     private long getInverseConnectionWaitTimeout() {
         return ctx.config().getFailureDetectionTimeout();
-    }
-
-    /**
-     * Remote client node and all server nodes must support {@link IgniteFeatures#INVERSE_TCP_CONNECTION} in order to
-     * establish connection from the other side.
-     */
-    private boolean inverseTcpConnectionFeatureIsSupported(ClusterNode node) {
-        if (!IgniteFeatures.nodeSupports(node, INVERSE_TCP_CONNECTION))
-            return false;
-
-        return IgniteFeatures.allNodesSupport(ctx, INVERSE_TCP_CONNECTION);
     }
 
     /**
@@ -4439,14 +4427,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
          * @param e Exception indicating that node is unreachable.
          */
         public void handleInverseConnection(ClusterNode node, NodeUnreachableException e) {
-            if (!inverseTcpConnectionFeatureIsSupported(node)) {
-                IgniteSpiException spiE = new IgniteSpiException(e);
-
-                e.fut.onDone(spiE);
-
-                throw spiE;
-            }
-
             TcpCommunicationSpi tcpCommSpi = getTcpCommunicationSpi();
 
             if (isPairedConnection(node, tcpCommSpi)) {
