@@ -47,9 +47,7 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.contains("client"))
-            cfg.setClientMode(true);
-        else
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
             cfg.setGridLogger(srvTestLog);
 
         return cfg;
@@ -82,14 +80,15 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
 
         LogListener logLsnr1 = LogListener.matches("The node client is going to reserve a connection")
             .atLeast(1)
-            .atMost(1)
             .build();
 
         srvTestLog.registerListener(logLsnr0);
         srvTestLog.registerListener(logLsnr1);
 
-        Ignite srv = startGrid("server");
-        Ignite client = startGrid("client");
+        Ignite srv = startGrid(0);
+        Ignite client = startClientGrid(1);
+
+        U.sleep(1000);
 
         assertTrue(logLsnr0.check());
         assertTrue(logLsnr1.check());
@@ -106,10 +105,12 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
 
         srvTestLog.registerListener(logLsnr0);
 
-        Ignite srv = startGrid("server");
-        Ignite client = startGrid("client");
+        Ignite srv = startGrid(0);
+        Ignite client = startGrid(1);
 
         client.close();
+
+        U.sleep(1000);
 
         assertTrue(logLsnr0.check());
     }
@@ -125,12 +126,14 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
 
         srvTestLog.registerListener(logLsnr0);
 
-        Ignite srv = startGrid("server");
-        Ignite client = startGrid("client");
+        Ignite srv = startGrid(0);
+        Ignite client = startGrid(1);
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi) ((IgniteEx)srv).context().config().getCommunicationSpi();
 
         commSpi.closeConnections(client.cluster().localNode().id());
+
+        U.sleep(1000);
 
         assertTrue(logLsnr0.check());
     }
@@ -164,8 +167,8 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
         srvTestLog.registerListener(logLsnr2);
         srvTestLog.registerListener(logLsnr3);
 
-        Ignite srv = startGrid("server");
-        Ignite client = startGrid("client");
+        Ignite srv = startGrid(0);
+        Ignite client = startClientGrid(1);
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache("TEST");
 
@@ -202,6 +205,8 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
             lsnr.onDisconnected(((GridTcpNioCommunicationClient)commClient).session(), new IOException("Test exception"));
 
         cache.get(1);
+
+        U.sleep(1000);
 
         assertTrue(logLsnr0.check());
         assertTrue(logLsnr1.check());
