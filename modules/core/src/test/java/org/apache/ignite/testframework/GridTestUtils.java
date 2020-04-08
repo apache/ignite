@@ -152,7 +152,7 @@ public final class GridTestUtils {
          *
          * @param msg Intercepted discovery message.
          */
-        public void handleProcessedDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
             // No-op.
         }
 
@@ -189,7 +189,7 @@ public final class GridTestUtils {
 
             IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
 
-            hook.handleProcessedDiscoveryMessage(spiCustomMsg);
+            hook.afterDiscovery(spiCustomMsg);
 
             return fut;
         }

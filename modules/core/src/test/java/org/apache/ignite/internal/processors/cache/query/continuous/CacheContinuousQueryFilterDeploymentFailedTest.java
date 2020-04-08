@@ -69,7 +69,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DiscoveryHook discoveryHook = new DiscoveryHook() {
-            @Override public void handleProcessedDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void afterDiscovery(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ?
                     null : (DiscoveryCustomMessage)U.field(msg, "delegate");
 
