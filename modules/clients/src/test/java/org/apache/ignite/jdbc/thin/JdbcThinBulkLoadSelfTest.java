@@ -110,7 +110,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE4 =
         Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched4.csv")).getAbsolutePath();
 
-    /** /** A CSV file with one record and unmatched quote in the quoted field content. */
+    /** A CSV file with one record and unmatched quote in the quoted field content. */
     private static final String BULKLOAD_ONE_LINE_CSV_FILE_UNMATCHED_QUOTE5 =
         Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1_unmatched5.csv")).getAbsolutePath();
 
@@ -995,13 +995,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }
 
         assertEquals(recCnt, cnt);
-    }
-
-    /**
-     *
-     */
-    private void checkCSVEntryContent(ResultSet rs) {
-
     }
 
     /**
