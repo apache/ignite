@@ -104,7 +104,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         srv.cluster().state(ACTIVE);
 
-        IgniteCache<Integer, Integer> cache = cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        IgniteCache<Integer, Integer> cache = cli.createCache(DEFAULT_CACHE_NAME);
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
