@@ -44,10 +44,13 @@ import org.jetbrains.annotations.Nullable;
 public class NodeUnreachableException extends IgniteSpiException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
     /** */
     public final UUID nodeId;
+
     /** */
     public final int connIdx;
+
     /** */
     public final transient GridFutureAdapter<?> fut;
 
