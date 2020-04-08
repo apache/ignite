@@ -84,7 +84,6 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
         spi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setNetworkTimeout(1000);
         cfg.setDiscoverySpi(spi);
 
         return cfg;
