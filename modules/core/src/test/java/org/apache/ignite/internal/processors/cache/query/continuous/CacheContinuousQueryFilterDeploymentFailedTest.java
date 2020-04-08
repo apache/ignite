@@ -59,7 +59,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
         "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory";
 
     /** Latch that indicates whether {@link StopRoutineDiscoveryMessage} was processed by all nodes. */
-    private volatile CountDownLatch stopRoutineMsgProcessed;
+    private final CountDownLatch stopRoutineMsgProcessed = new CountDownLatch(3);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -115,8 +115,6 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
         Factory<CacheEntryEventFilter<Integer, Integer>> rmtFilterFactory = rmtFilterFactoryCls.newInstance();
 
         qry.setRemoteFilterFactory(rmtFilterFactory);
-
-        stopRoutineMsgProcessed = new CountDownLatch(3);
 
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof GridDeploymentRequest);
 
