@@ -24,6 +24,7 @@ import java.nio.file.OpenOption;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -32,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -62,6 +64,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.startedBySnapshot;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -106,7 +109,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         String notBltDirName = folderName(notBltIgnite);
 
         IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>(txCacheName)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false)
+                .setPartitions(CACHE_PARTS_COUNT)));
 
         for (int idx = 0; idx < CACHE_KEYS_RANGE; idx++) {
             cache.put(txKey.incrementAndGet(), -1);
@@ -119,11 +124,23 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         ignite.context().cache().context().exchange().registerExchangeAwareComponent(new PartitionsExchangeAware() {
             /** {@inheritDoc} */
+            @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                if (fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT)
+                    return;
+
+                // First discovery custom event will be a snapshot operation.
+                assertTrue(startedBySnapshot(fut));
+                assertTrue("Snapshot must use pme-free exchange", fut.context().exchangeFreeSwitch());
+            }
+
+            /** {@inheritDoc} */
             @Override public void onInitAfterTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                 if (fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT)
                     return;
 
                 DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)fut.firstEvent()).customMessage();
+
+                assertNotNull(msg);
 
                 if (msg instanceof SnapshotDiscoveryMessage)
                     loadLatch.countDown();
@@ -153,6 +170,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         try {
             IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(snpName);
+
+            U.await(loadLatch, 10, TimeUnit.SECONDS);
 
             fut.get();
         }

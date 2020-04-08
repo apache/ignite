@@ -31,6 +31,7 @@ import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
 import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.startedBySnapshot;
 
 /**
  *
@@ -76,9 +77,10 @@ public class ExchangeContext {
             log.warning("Current topology does not support the PME-free switch. Please check all nodes support" +
                 " this feature and it was not explicitly disabled by IGNITE_PME_FREE_SWITCH_DISABLED JVM option.");
 
+        boolean requirePmeFree = (fut.wasRebalanced() && fut.isBaselineNodeFailed()) || startedBySnapshot(fut);
+
         if (!compatibilityNode &&
-            fut.wasRebalanced() &&
-            fut.isBaselineNodeFailed() &&
+            requirePmeFree &&
             allNodesSupportsPmeFreeSwitch) {
             exchangeFreeSwitch = true;
             merge = false;

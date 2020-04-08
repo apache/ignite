@@ -993,7 +993,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             log.info("Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']');
 
         return new IgniteFutureImpl<>(snpFut0);
-
     }
 
     /** {@inheritDoc} */
@@ -1027,6 +1026,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             log.info("Previous attempt to create snapshot fail due to the local node crash. All resources " +
                 "related to snapshot operation have been deleted: " + snpName);
         }
+    }
+
+    /**
+     * @param fut Exchange future.
+     * @return {@code true} if exchange started by snapshot operation.
+     */
+    public static boolean startedBySnapshot(GridDhtPartitionsExchangeFuture fut) {
+        return !fut.firstEvent().eventNode().isClient() &&
+            fut.firstEvent().type() == EVT_DISCOVERY_CUSTOM_EVT &&
+            ((DiscoveryCustomEvent)fut.firstEvent()).customMessage() instanceof SnapshotStartDiscoveryMessage;
     }
 
     /** {@inheritDoc} */
