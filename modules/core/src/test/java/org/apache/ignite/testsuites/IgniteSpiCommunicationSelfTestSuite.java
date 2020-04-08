@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.msgtimelogging.CacheMessagesT
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConcurrentConnectSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiConfigSelfTest;
+import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiLogTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedSelfTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiMultithreadedShmemTest;
 import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiRecoveryAckSelfTest;
@@ -100,6 +101,8 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteTcpCommunicationConnectOnInitTest.class));
 
         suite.addTest(new TestSuite(TooManyOpenFilesTcpCommunicationSpiTest.class));
+
+        suite.addTest(new TestSuite(GridTcpCommunicationSpiLogTest.class));
 
         return suite;
     }
