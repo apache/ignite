@@ -41,6 +41,8 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -125,8 +127,12 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
         GridTestUtils.waitForCondition(() -> stopRoutineMsgCntr.get() == grids.size(), getTestTimeout());
 
-        assertTrue(grids.stream().allMatch(ignite ->
-            0 == ((IgniteEx)ignite).context().systemView().view(CQ_SYS_VIEW).size()));
+        assertTrue(grids.stream().allMatch(ignite -> {
+            SystemView<ContinuousQueryView> locQrys = ((IgniteEx)ignite).context().systemView().view(CQ_SYS_VIEW);
+
+            return locQrys.size() == 0;
+        }));
+
     }
 
     /**
