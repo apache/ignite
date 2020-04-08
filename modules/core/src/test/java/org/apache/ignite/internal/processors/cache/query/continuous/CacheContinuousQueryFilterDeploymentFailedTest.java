@@ -42,7 +42,6 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.Ignition.allGrids;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -93,11 +92,9 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     @Test
     @SuppressWarnings({"ThrowableNotThrown"})
     public void testContinuousQueryFilterDeploymentFailed() throws Exception {
-        IgniteEx srv = startGrids(NODES_CNT - 1);
+        startGrids(NODES_CNT - 1);
 
         IgniteEx cli = startClientGrid(NODES_CNT - 1);
-
-        srv.cluster().state(ACTIVE);
 
         IgniteCache<Integer, Integer> cache = cli.createCache(DEFAULT_CACHE_NAME);
 
