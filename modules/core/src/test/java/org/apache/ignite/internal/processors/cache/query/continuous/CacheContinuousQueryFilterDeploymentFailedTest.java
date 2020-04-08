@@ -23,7 +23,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -75,7 +75,7 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
             }
         };
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi() {
+        TcpDiscoverySpi spi = new TestTcpDiscoverySpi() {
             @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
                 super.setListener(DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
             }
