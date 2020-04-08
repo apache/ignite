@@ -46,7 +46,7 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 # we use the same versions as in vagrant/base.sh
 ARG IGNITE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG ARCHIVE_NAME="apache-ignite-2.8.0-bin.zip"
-RUN mkdir -p "/opt/ignite-2.8.0" && chmod a+rw /opt/ignite-2.8.0 && cd /opt/ignite-2.8.0 && curl -s "$IGNITE_MIRROR/ignite/2.8.0/$ARCHIVE_NAME" > /opt/ignite-2.8.0/$ARCHIVE_NAME && unzip /opt/ignite-2.8.0/$ARCHIVE_NAME -d /opt/ignite-2.8.0/
+RUN mkdir -p "/opt/ignite-2.8.0" && chmod a+rw /opt/ignite-2.8.0 && cd /opt/ignite-2.8.0 && curl -s "$IGNITE_MIRROR/ignite/2.8.0/$ARCHIVE_NAME" > /opt/$ARCHIVE_NAME && unzip /opt/$ARCHIVE_NAME
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
