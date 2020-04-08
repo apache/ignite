@@ -56,10 +56,10 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
         "org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilterFactory";
 
     /** Number of test nodes. */
-    private static final int NODE_CNT = 3;
+    private static final int NODES_CNT = 3;
 
     /** Latch that indicates whether {@link StopRoutineDiscoveryMessage} was processed by all nodes. */
-    private final CountDownLatch stopRoutineLatch = new CountDownLatch(NODE_CNT);
+    private final CountDownLatch stopRoutineLatch = new CountDownLatch(NODES_CNT);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -98,9 +98,9 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     @Test
     @SuppressWarnings({"ThrowableNotThrown"})
     public void testContinuousQueryFilterDeploymentFailed() throws Exception {
-        IgniteEx srv = startGrids(NODE_CNT - 1);
+        IgniteEx srv = startGrids(NODES_CNT - 1);
 
-        IgniteEx cli = startClientGrid(2);
+        IgniteEx cli = startClientGrid(NODES_CNT - 1);
 
         srv.cluster().state(ACTIVE);
 
