@@ -46,7 +46,7 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 # we use the same versions as in vagrant/base.sh
 ARG IGNITE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG ARCHIVE_NAME="apache-ignite-2.8.0-bin.zip"
-RUN mkdir -p "/opt/ignite-2.8.0" && chmod a+rw /opt/ignite-2.8.0 && cd /opt/ignite-2.8.0 && curl -s "$IGNITE_MIRROR/ignite/2.8.0/$ARCHIVE_NAME" > /opt/$ARCHIVE_NAME && unzip /opt/$ARCHIVE_NAME
+RUN mkdir -p "/opt/ignite-2.8.0" && chmod a+rw /opt/ignite-2.8.0 && cd /opt && curl -s "$IGNITE_MIRROR/ignite/2.8.0/$ARCHIVE_NAME" > /opt/$ARCHIVE_NAME && unzip /opt/
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
@@ -61,3 +61,6 @@ RUN useradd -ms /bin/bash ducker && mkdir -p /home/ducker/ && rsync -aiq /root/.
 USER ducker
 
 CMD sudo service ssh start && tail -f /dev/null
+
+# Container port exposure
+EXPOSE 11211 47100 47500 49112 10800 8080
