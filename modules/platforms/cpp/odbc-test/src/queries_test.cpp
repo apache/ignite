@@ -922,7 +922,7 @@ BOOST_AUTO_TEST_CASE(TestInsertSelect)
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        std::string expectedStr = getTestString(selectedRecordsNum);
+        std::string expectedStr = GetTestString(selectedRecordsNum);
         int64_t expectedKey = selectedRecordsNum + 1;
 
         BOOST_CHECK_EQUAL(key, expectedKey);
@@ -999,7 +999,7 @@ BOOST_AUTO_TEST_CASE(TestInsertUpdateSelect)
         if (expectedKey == 42)
             expectedStr = "Updated value";
         else
-            expectedStr = getTestString(selectedRecordsNum);
+            expectedStr = GetTestString(selectedRecordsNum);
 
         BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
 
@@ -1066,7 +1066,7 @@ BOOST_AUTO_TEST_CASE(TestInsertDeleteSelect)
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         int64_t expectedKey = (selectedRecordsNum + 1) * 2;
-        std::string expectedStr = getTestString(expectedKey - 1);
+        std::string expectedStr = GetTestString(expectedKey - 1);
 
         BOOST_CHECK_EQUAL(key, expectedKey);
         BOOST_CHECK_EQUAL(std::string(strField, strFieldLen), expectedStr);
@@ -1127,7 +1127,7 @@ BOOST_AUTO_TEST_CASE(TestInsertMergeSelect)
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
-        std::string expectedStr = getTestString(selectedRecordsNum);
+        std::string expectedStr = GetTestString(selectedRecordsNum);
         int64_t expectedKey = selectedRecordsNum + 1;
 
         BOOST_CHECK_EQUAL(key, expectedKey);
