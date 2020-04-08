@@ -691,58 +691,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             UpdatePlan plan = dml.plan();
 
-            Object[] params = args != null ? args : X.EMPTY_OBJECT_ARRAY;
+            Iterator<List<?>> iter = new GridQueryCacheObjectsIterator(updateQueryRows(schemaName, plan, args),
+                objectContext(), true);
 
-            Iterator<List<?>> iter0;
+            if (!iter.hasNext())
+                return 0;
 
-            if (!F.isEmpty(plan.selectQuery())) {
-                SqlFieldsQuery selectQry = new SqlFieldsQuery(plan.selectQuery())
-                    .setArgs(params)
-                    .setLocal(true);
+            IgniteBiTuple<?, ?> t = plan.processRow(iter.next());
 
-                QueryParserResult selectParseRes = parser.parse(schemaName, selectQry, false);
+            if (!iter.hasNext()) {
+                streamer.addData(t.getKey(), t.getValue());
 
-                GridQueryFieldsResult res = executeSelectLocal(
-                    selectParseRes.queryDescriptor(),
-                    selectParseRes.queryParameters(),
-                    selectParseRes.select(),
-                    null,
-                    null,
-                    null,
-                    false,
-                    0
-                );
-
-                iter0 = res.iterator();
+                return 1;
             }
-            else
-                iter0 = plan.createRows(params).iterator();
-
-            Iterator<List<?>> iter = new GridQueryCacheObjectsIterator(iter0, objectContext(), true);
-
-            Map<Object, Object> rows = null;
-
-            while (iter.hasNext()) {
-                List<?> row = iter.next();
-
-                IgniteBiTuple<?, ?> t = plan.processRow(row);
-
-                if (rows == null) {
-                    if (iter.hasNext())
-                        rows = new LinkedHashMap<>(plan.rowCount());
-                    else {
-                        streamer.addData(t.getKey(), t.getValue());
-
-                        return 1;
-                    }
-                }
+            else {
+                Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
 
                 rows.put(t.getKey(), t.getValue());
+
+                while (iter.hasNext()) {
+                    List<?> row = iter.next();
+
+                    t = plan.processRow(row);
+
+                    rows.put(t.getKey(), t.getValue());
+                }
+
+                streamer.addData(rows);
+
+                return rows.size();
             }
-
-            streamer.addData(rows);
-
-            return rows.size();
         }
         catch (IgniteException | IgniteCheckedException e) {
             failReason = e;
@@ -752,6 +730,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             runningQryMgr.unregister(qryId, failReason);
         }
+    }
+
+    /**
+     * Calculates rows for update query.
+     *
+     * @param schemaName Schema name.
+     * @param plan Update plan.
+     * @param args Statement arguments.
+     * @return Rows for update.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Iterator<List<?>> updateQueryRows(String schemaName, UpdatePlan plan, Object[] args) throws IgniteCheckedException {
+        Object[] params = args != null ? args : X.EMPTY_OBJECT_ARRAY;
+
+        if (!F.isEmpty(plan.selectQuery())) {
+            SqlFieldsQuery selectQry = new SqlFieldsQuery(plan.selectQuery())
+                .setArgs(params)
+                .setLocal(true);
+
+            QueryParserResult selectParseRes = parser.parse(schemaName, selectQry, false);
+
+            GridQueryFieldsResult res = executeSelectLocal(
+                selectParseRes.queryDescriptor(),
+                selectParseRes.queryParameters(),
+                selectParseRes.select(),
+                null,
+                null,
+                null,
+                false,
+                0
+            );
+
+            return res.iterator();
+        } else
+            return plan.createRows(params).iterator();
     }
 
     /**
