@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 /**
  * ODBC query get params meta request.
  */
-public class OdbcQueryGetParamsMetaRequest extends OdbcQueryGetQueryMetaRequest {
+public class OdbcQueryGetResultsetMetaRequest extends OdbcQueryGetQueryMetaRequest {
     /**
      * @param schema Schema.
      * @param query SQL Query.
      */
-    public OdbcQueryGetParamsMetaRequest(String schema, String query) {
-        super(META_PARAMS, schema, query);
+    public OdbcQueryGetResultsetMetaRequest(String schema, String query) {
+        super(META_RESULTSET, schema, query);
     }
 }
