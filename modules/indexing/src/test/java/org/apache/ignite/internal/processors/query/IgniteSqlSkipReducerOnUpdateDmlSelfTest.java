@@ -258,7 +258,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
                 return cache.query(new SqlFieldsQueryEx("UPDATE Person SET name = Fail(name)", false)
                     .setSkipReducerOnUpdate(true));
             }
-        }, CacheException.class, "Failed to execute SQL query");
+        }, CacheException.class, "Failed to run SQL update query.");
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
@@ -1185,6 +1186,79 @@ public class PlatformCallbackGateway {
 
             return PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
                     PlatformCallbackOp.PluginCallbackInLongLongOutLong, callbackId, outPtr, inPtr, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Updates near cache data.
+     *
+     * @param memPtr Ptr to a stream with serialized data.
+     */
+    public void nearCacheUpdate(long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.NearCacheUpdate, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Updates near cache data.
+     *
+     * @param cacheIdAndPartition Cache id and partition.
+     * @param verMajor Affinity version.
+     * @param verMinor Affinity version minor part.
+     */
+    public void nearCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.NearCacheUpdateFromThreadLocal,
+                    cacheIdAndPartition, verMajor, verMinor, null);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies about cache stop.
+     *
+     * @param cacheId Cache id.
+     */
+    public void onCacheStopped(int cacheId) {
+        // Ignore cache stop during grid stop.
+        if (!tryEnter())
+            return;
+
+        try {
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.OnCacheStopped, cacheId);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies about topology version update.
+     *
+     * @param version Affinity topology version.
+     */
+    public void onAffinityTopologyVersionChanged(AffinityTopologyVersion version) {
+        // Ignore during grid stop.
+        if (!tryEnter())
+            return;
+
+        try {
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr,
+                    PlatformCallbackOp.OnAffinityTopologyVersionChanged, version.topologyVersion(),
+                    version.minorTopologyVersion(), 0, null);
         }
         finally {
             leave();

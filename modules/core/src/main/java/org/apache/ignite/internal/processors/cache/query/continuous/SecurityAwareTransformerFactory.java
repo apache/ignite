@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
