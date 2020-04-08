@@ -44,46 +44,44 @@ public class JdbcSqlStreamingTest extends AbstractIndexingCommonTest {
 
         Driver driver = new IgniteJdbcThinDriver();
 
-        Connection conn = driver.connect("jdbc:ignite:thin://localhost", new Properties());
+        try (Connection conn = driver.connect("jdbc:ignite:thin://localhost", new Properties())) {
+            execSql(conn, "CREATE TABLE city1 (id int primary key, name varchar, name1 uuid);");
+            execSql(conn, "SET STREAMING ON ALLOW_OVERWRITE ON");
 
-        execSql(conn, "CREATE TABLE city1 (id int primary key, name varchar, name1 uuid);");
-        execSql(conn, "SET STREAMING ON ALLOW_OVERWRITE ON");
+            PreparedStatement ps = conn.prepareStatement("INSERT INTO city1 (id, name, name1) VALUES (?, ?, RANDOM_UUID())");
 
-        PreparedStatement ps = conn.prepareStatement("INSERT INTO city1 (id, name, name1) VALUES (?, ?, RANDOM_UUID())");
+            for (int i = 0; i < ROW_NUM; i++) {
+                String s1 = String.valueOf(Math.random());
 
-        for (int i = 0; i < ROW_NUM; i++) {
-            String s1 = String.valueOf(Math.random());
+                ps.setInt(1, i);
+                ps.setString(2, s1);
 
-            ps.setInt(1, i);
-            ps.setString(2, s1);
+                ps.execute();
+            }
 
-            ps.execute();
+            ps.close();
+
+            execSql(conn, "SET STREAMING OFF");
+
+            ps = conn.prepareStatement("SELECT id, name, name1 FROM city1 ORDER BY id");
+
+            ResultSet rs = ps.executeQuery();
+
+            int rowNum = 0;
+
+            while (rs.next()) {
+                assertEquals(rowNum, rs.getInt(1));
+
+                Double.parseDouble(rs.getString(2));
+                UUID.fromString(rs.getString(3));
+
+                rowNum++;
+            }
+
+            assertEquals(ROW_NUM, rowNum);
+
+            ps.close();
         }
-
-        ps.close();
-
-        execSql(conn, "SET STREAMING OFF");
-
-        ps = conn.prepareStatement("SELECT id, name, name1 FROM city1 ORDER BY id");
-
-        ResultSet rs = ps.executeQuery();
-
-        int rowNum = 0;
-
-        while (rs.next()) {
-            assertEquals(rowNum, rs.getInt(1));
-
-            Double.parseDouble(rs.getString(2));
-            UUID.fromString(rs.getString(3));
-
-            rowNum++;
-        }
-
-        assertEquals(ROW_NUM, rowNum);
-
-        ps.close();
-
-        conn.close();
     }
 
     /**
