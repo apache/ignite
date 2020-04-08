@@ -303,6 +303,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Windows NT: " + U.isWindowsNt());
         System.out.println("Is Windows 2000: " + U.isWindows2k());
         System.out.println("Is Windows 2003: " + U.isWindows2003());
+        System.out.println("Is Windows 2008: " + U.isWindows2008());
         System.out.println("Is Windows XP: " + U.isWindowsXp());
         System.out.println("Is Windows Vista: " + U.isWindowsVista());
         System.out.println("Is Linux: " + U.isLinux());
@@ -311,7 +312,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Solaris: " + U.isSolaris());
         System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
         System.out.println("Is Solaris x86: " + U.isSolarisX86());
-        System.out.println("Is Windows7: " + U.isWindows7());
+        System.out.println("Is Windows 7: " + U.isWindows7());
+        System.out.println("Is Windows 8: " + U.isWindows8());
+        System.out.println("Is Windows 8.1: " + U.isWindows81());
+        System.out.println("Is Windows 10: " + U.isWindows10());
         System.out.println("Is Sufficiently Tested OS: " + U.isSufficientlyTestedOs());
     }
 

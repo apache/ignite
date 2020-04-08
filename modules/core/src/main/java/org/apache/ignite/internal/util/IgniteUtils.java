@@ -403,6 +403,9 @@ public abstract class IgniteUtils {
     /** Indicates whether current OS is Windows 8.1. */
     private static boolean win81;
 
+    /** Indicates whether current OS is Windows 10. */
+    private static boolean win10;
+
     /** Indicates whether current OS is some version of Windows. */
     private static boolean unknownWin;
 
@@ -664,6 +667,8 @@ public abstract class IgniteUtils {
                 win81 = true;
             else if (osLow.contains("8"))
                 win8 = true;
+            else if (osLow.contains("10"))
+                win10 = true;
             else
                 unknownWin = true;
         }
@@ -6762,7 +6767,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if current OS is Windows (any versions) - {@code false} otherwise.
      */
     public static boolean isWindows() {
-        return win7 || win8 || win81 || winXp || win95 || win98 || winNt || win2k ||
+        return win7 || win8 || win81 || win10 || winXp || win95 || win98 || winNt || win2k ||
             win2003 || win2008 || winVista || unknownWin;
     }
 
@@ -6800,6 +6805,15 @@ public abstract class IgniteUtils {
      */
     public static boolean isWindows81() {
         return win81;
+    }
+
+    /**
+     * Indicates whether current OS is Windows 10.
+     *
+     * @return {@code true} if current OS is Windows 10 - {@code false} otherwise.
+     */
+    public static boolean isWindows10() {
+        return win10;
     }
 
     /**
@@ -6866,6 +6880,7 @@ public abstract class IgniteUtils {
             win7 ||
                 win8 ||
                 win81 ||
+                win10 ||
                 winXp ||
                 winVista ||
                 mac ||
