@@ -132,7 +132,6 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
 
             return locQrys.size() == 0;
         }));
-
     }
 
     /**
