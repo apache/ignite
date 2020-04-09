@@ -91,6 +91,11 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Util class for joining node validation.
  */
 public class ValidationOnNodeJoinUtils {
+    /** Template of message of conflicts of sql schema name */
+    private static final String SQL_SCHEMA_CONFLICTS_MESSAGE =
+        "Failed to join node to the active cluster, configuration conflict for cache '%s': " +
+            "schema '%s' from joining node differs to '%s'";
+
     /** Template of message of conflicts during configuration merge */
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
@@ -172,18 +177,7 @@ public class ValidationOnNodeJoinUtils {
                 if (locDesc == null)
                     continue;
 
-                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
-
-                if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
-                    if (errorMsg.length() > 0)
-                        errorMsg.append("\n");
-
-                    if (schemaPatch.hasConflicts())
-                        errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                            locDesc.cacheName(), schemaPatch.getConflictsMessage()));
-                    else
-                        errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
-                }
+                validateSqlSchema(locDesc, cacheInfo.cacheData(), isGridActive, errorMsg);
 
                 // This check must be done on join, otherwise group encryption key will be
                 // written to metastore regardless of validation check and could trigger WAL write failures.
@@ -206,6 +200,44 @@ public class ValidationOnNodeJoinUtils {
             }
         }
         return null;
+    }
+
+    /**
+     * @param locDesc Local cache descriptor.
+     * @param joinedData Joined node cache data.
+     * @param isGridActive Is grid active.
+     * @param errorMsg Error message builder.
+     */
+    static void validateSqlSchema(
+        DynamicCacheDescriptor locDesc,
+        StoredCacheData joinedData,
+        boolean isGridActive,
+        StringBuilder errorMsg
+    ) {
+        String joinedSchema = joinedData.config().getSqlSchema();
+        String locSchema = locDesc.cacheConfiguration().getSqlSchema();
+
+        // Peform checks of SQL schema. If schemas' names not equal, only valid case is if local or joined
+        // QuerySchema is empty and schema name is null (when indexing enabled dynamically).
+        if (!F.eq(joinedSchema, locSchema)
+            && (locSchema != null || !locDesc.schema().isEmpty())
+            && (joinedSchema != null || !F.isEmpty(joinedData.queryEntities()))
+        )
+            errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
+                locSchema));
+
+        QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(joinedData.queryEntities());
+
+        if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
+            if (errorMsg.length() > 0)
+                errorMsg.append("\n");
+
+            if (schemaPatch.hasConflicts())
+                errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
+                    locDesc.cacheName(), schemaPatch.getConflictsMessage()));
+            else
+                errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
+        }
     }
 
     /**

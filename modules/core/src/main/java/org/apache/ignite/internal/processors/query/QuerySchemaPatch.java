@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Query schema patch which contains {@link SchemaAbstractOperation} operations for changing query entities.
@@ -33,24 +32,36 @@ import org.jetbrains.annotations.NotNull;
  */
 public class QuerySchemaPatch {
     /** Message which described conflicts during creating this patch. */
-    private String conflictsMessage;
+    private final String conflictsMessage;
 
     /** Operations for modification query entity. */
-    private Collection<SchemaAbstractOperation> patchOperations;
+    private final Collection<SchemaAbstractOperation> patchOperations;
 
     /** Entities which should be added by whole. */
-    private Collection<QueryEntity> entityToAdd;
+    private final Collection<QueryEntity> entityToAdd;
+
+    /** Schema name to apply, if previous is null. */
+    private final String schemaName;
+
 
     /**
-     * Create patch.
+     * Create schema patch.
+     *
+     * @param patchOperations Patch operations.
+     * @param entityToAdd Entity to add.
+     * @param conflictsMessage Conflicts message.
+     * @param schemaName Schema name.
      */
     public QuerySchemaPatch(
-        @NotNull Collection<SchemaAbstractOperation> patchOperations,
-        @NotNull Collection<QueryEntity> entityToAdd,
-        String conflictsMessage) {
+        Collection<SchemaAbstractOperation> patchOperations,
+        Collection<QueryEntity> entityToAdd,
+        String conflictsMessage,
+        String schemaName
+    ) {
         this.patchOperations = patchOperations;
         this.entityToAdd = entityToAdd;
         this.conflictsMessage = conflictsMessage;
+        this.schemaName = schemaName;
     }
 
     /**
@@ -77,15 +88,22 @@ public class QuerySchemaPatch {
     /**
      * @return Patch operations for applying.
      */
-    @NotNull public Collection<SchemaAbstractOperation> getPatchOperations() {
+    public Collection<SchemaAbstractOperation> getPatchOperations() {
         return patchOperations;
     }
 
     /**
      * @return Entities which should be added by whole.
      */
-    @NotNull public Collection<QueryEntity> getEntityToAdd() {
+    public Collection<QueryEntity> getEntityToAdd() {
         return entityToAdd;
+    }
+
+    /**
+     * @return Schema name to apply, if previous is null.
+     */
+    public String schemaName() {
+        return schemaName;
     }
 
     /** {@inheritDoc} */

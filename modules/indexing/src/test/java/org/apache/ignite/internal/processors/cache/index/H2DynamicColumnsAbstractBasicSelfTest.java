@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -175,7 +176,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     @Test
     public void testAddQueryEntityDynamically() throws Exception {
         IgniteCache<Integer, POI> cache = ignite(nodeIndex())
-                .getOrCreateCache(defaultCacheConfiguration().setName("POI"));
+                .getOrCreateCache(defaultCacheConfiguration().setCacheMode(CacheMode.REPLICATED).setName("POI"));
 
         IgniteEx ig0 = ignite(nodeIndex());
 
@@ -201,6 +202,14 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         IgniteFuture<Void> fut = cache.enableIndexing(QueryUtils.DFLT_SCHEMA, entities);
 
         fut.get();
+
+        stopGrid(nodeIndex());
+
+        ig0 = startGrid(nodeIndex());
+
+        awaitPartitionMapExchange();
+
+        cache = ig0.cache("POI");
 
         run(cache, "INSERT INTO POI(id, name) VALUES (100500, 'test')");
 

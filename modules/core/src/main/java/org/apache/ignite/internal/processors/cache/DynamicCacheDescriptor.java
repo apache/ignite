@@ -29,7 +29,9 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntitiesOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -362,7 +364,30 @@ public class DynamicCacheDescriptor {
      */
     public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
         synchronized (schemaMux) {
+            if (msg.operation() instanceof SchemaAddQueryEntitiesOperation) {
+                SchemaAddQueryEntitiesOperation op = (SchemaAddQueryEntitiesOperation)msg.operation();
+
+                CacheConfiguration cacheCfg0 = new CacheConfiguration(cacheCfg);
+                cacheCfg0.setQueryEntities(op.entities());
+                cacheCfg0.setSqlSchema(op.schemaName());
+
+                cacheCfg = cacheCfg0;
+            }
+
             schema.finish(msg);
+        }
+    }
+
+    /**
+     * Make schema patch for this cache.
+     *
+     * @param cacheData Stored cache by which current schema should be expanded.
+     * @return Patch which contains operations for expanding schema of this cache.
+     * @see QuerySchemaPatch
+     */
+    public QuerySchemaPatch makeSchemaPatch(StoredCacheData cacheData) {
+        synchronized (schemaMux) {
+            return schema.makePatch(cacheData.config().getSqlSchema(), cacheData.queryEntities());
         }
     }
 
@@ -387,7 +412,21 @@ public class DynamicCacheDescriptor {
      */
     public boolean applySchemaPatch(QuerySchemaPatch patch) {
         synchronized (schemaMux) {
-            return schema.applyPatch(patch);
+            boolean shouldUpdateConfig = F.isEmpty(schema.entities());
+
+            boolean res = schema.applyPatch(patch);
+
+            if (res && shouldUpdateConfig) {
+                CacheConfiguration newCfg = new CacheConfiguration(cacheCfg);
+
+                newCfg.setQueryEntities(schema.entities());
+
+                newCfg.setSqlSchema(patch.schemaName());
+
+                cacheCfg = newCfg;
+            }
+
+            return res;
         }
     }
 

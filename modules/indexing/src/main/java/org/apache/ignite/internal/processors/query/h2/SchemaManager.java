@@ -353,6 +353,10 @@ public class SchemaManager {
         // Remove this mapping only after callback to DML proc - it needs that mapping internally
         cacheName2schema.remove(cacheName);
 
+        // Possible situation, when node join after indexing enabled dynamically to cache.
+        if (schema == null)
+            return;
+
         // Drop tables.
         Collection<H2TableDescriptor> rmvTbls = new HashSet<>();
 

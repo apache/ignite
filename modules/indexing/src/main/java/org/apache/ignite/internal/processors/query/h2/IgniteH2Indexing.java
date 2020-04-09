@@ -1910,11 +1910,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean inMemoryRebuild) {
+    @Override public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx, boolean rebuildInMemory) {
         assert nonNull(cctx);
 
-        // No data in fresh in-memory cache.
-        if (!(cctx.group().persistenceEnabled() || inMemoryRebuild))
+        // No data in fresh in-memory cache. If force, this meant that indexing is enabling dynamically.
+        if (!cctx.group().persistenceEnabled() && !rebuildInMemory)
             return null;
 
         IgnitePageStoreManager pageStore = cctx.shared().pageStore();

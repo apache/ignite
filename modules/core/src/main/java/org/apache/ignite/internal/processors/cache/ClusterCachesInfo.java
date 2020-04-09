@@ -2003,7 +2003,7 @@ public class ClusterCachesInfo {
             else if (!active && isMergeConfigSupport) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
-                QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData());
 
                 if (schemaPatch.hasConflicts()) {
                     hasSchemaPatchConflict = true;

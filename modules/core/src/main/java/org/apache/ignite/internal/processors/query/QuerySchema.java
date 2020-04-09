@@ -95,6 +95,18 @@ public class QuerySchema implements Serializable {
      * @see QuerySchemaPatch
      */
     public QuerySchemaPatch makePatch(Collection<QueryEntity> target) {
+        return makePatch(null, target);
+    }
+
+    /**
+     * Make query schema patch.
+     *
+     * @param targetSchema Schema name when it should be changed (enabling indexing dynamically).
+     * @param target Query entity list to which current schema should be expanded.
+     * @return Patch to achieve entity which is a result of merging current one and target.
+     * @see QuerySchemaPatch
+     */
+    public QuerySchemaPatch makePatch(String targetSchema, Collection<QueryEntity> target) {
         synchronized (mux) {
             Map<String, QueryEntity> localEntities = new HashMap<>();
 
@@ -128,7 +140,7 @@ public class QuerySchema implements Serializable {
                     entityToAdd.add(QueryUtils.copy(queryEntity));
             }
 
-            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());
+            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString(), targetSchema);
         }
     }
 
@@ -303,9 +315,15 @@ public class QuerySchema implements Serializable {
                     assert rmv || op0.ifExists() : "Invalid operation state [removed=" + rmv
                         + ", ifExists=" + op0.ifExists() + ']';
                 }
-            } else
-                assert op instanceof SchemaAddQueryEntitiesOperation
-                        : "Unsupported schema operation [" + op.toString() + "]";
+            }
+            else {
+                assert op instanceof SchemaAddQueryEntitiesOperation : "Unsupported schema operation [" + op.toString() + "]";
+
+                assert entities.isEmpty();
+
+                for (QueryEntity entity: ((SchemaAddQueryEntitiesOperation)op).entities())
+                    entities.add(QueryUtils.copy(entity));
+            }
         }
     }
 
@@ -315,6 +333,15 @@ public class QuerySchema implements Serializable {
     public Collection<QueryEntity> entities() {
         synchronized (mux) {
             return new ArrayList<>(entities);
+        }
+    }
+
+    /**
+     * @return {@code True} if entities is not empty.
+     */
+    public boolean isEmpty() {
+        synchronized (mux) {
+            return entities.isEmpty();
         }
     }
 

@@ -92,7 +92,12 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstract
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
-import org.apache.ignite.internal.processors.query.schema.operation.*;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntitiesOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -648,10 +653,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 err = res.get3();
             }
             else {
-                // If cache is not started yet, there is no schema. Take schema from cache descriptor and validate.
-                QuerySchema schema = cacheDesc.schema();
-
-                T2<Boolean, SchemaOperationException> res = prepareChangeOnNotStartedCache(op, schema);
+                T2<Boolean, SchemaOperationException> res = prepareChangeOnNotStartedCache(op, cacheDesc);
 
                 assert res.get1() != null;
 
@@ -1228,7 +1230,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         else if (op instanceof SchemaAddQueryEntitiesOperation) {
-
+            if (cacheNames.contains(op.cacheName()))
+                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, op.cacheName());
         }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
@@ -1265,15 +1268,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Prepare operation on non-started cache.
      *
      * @param op Operation.
-     * @param schema Known cache schema.
+     * @param desc Dynamic cache descriptor.
      * @return Result: nop flag, error.
      */
-    private T2<Boolean, SchemaOperationException> prepareChangeOnNotStartedCache(SchemaAbstractOperation op,
-        QuerySchema schema) {
+    private T2<Boolean, SchemaOperationException> prepareChangeOnNotStartedCache(
+        SchemaAbstractOperation op,
+        DynamicCacheDescriptor desc
+    ) {
         boolean nop = false;
         SchemaOperationException err = null;
 
+        if (op instanceof SchemaAddQueryEntitiesOperation) {
+            if (cacheSupportSql(desc.cacheConfiguration()))
+                err = new SchemaOperationException(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, desc.cacheName());
+
+            return new T2<>(nop, err);
+        }
+
         // Build table and index maps.
+        QuerySchema schema = desc.schema();
         Map<String, QueryEntity> tblMap = new HashMap<>();
         Map<String, T2<QueryEntity, QueryIndex>> idxMap = new HashMap<>();
 
@@ -1419,9 +1432,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     err = QueryUtils.validateDropColumn(e, fldName, colName);
                 }
             }
-        }
-        else if (op instanceof SchemaAddQueryEntitiesOperation) {
-
         }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
@@ -1602,15 +1612,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         String cacheName = op.cacheName();
 
-        ctx.cache().context().cacheContext(CU.cacheId(cacheName));
-
         GridCacheContextInfo<?, ?> cacheInfo = null;
 
         if (op instanceof SchemaAddQueryEntitiesOperation) {
             GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(CU.cacheId(cacheName));
 
             if (cctx != null)
-                cacheInfo = new GridCacheContextInfo(cctx, false);
+                cacheInfo = new GridCacheContextInfo<>(cctx, false);
 
         } else
             cacheInfo = idx.registeredCacheInfo(cacheName);
@@ -1982,9 +1990,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return {@code true} If cache configuration support SQL, {@code false} otherwise.
      */
     private boolean cacheSupportSql(CacheConfiguration cfg) {
-        return !F.isEmpty(cfg.getQueryEntities())
+        boolean res = !F.isEmpty(cfg.getQueryEntities())
             || !F.isEmpty(cfg.getSqlSchema())
             || !F.isEmpty(cfg.getSqlFunctionClasses());
+
+        // Last chance to check entities in DynamicCacheDescriptors
+        if (!res) {
+           DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cfg.getName());
+
+           if (desc != null)
+               res = res || !desc.schema().isEmpty();
+        }
+
+        return res;
     }
 
     /**
@@ -2055,7 +2073,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return true;
 
         // No indexes to rebuild when there are no QueryEntities.
-        if (!cctx.isQueryEnabled())
+        if (!cacheSupportSql(cctx.config()))
             return true;
 
         return false;
@@ -2772,8 +2790,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             String schemaName,
             Collection<QueryEntity> entities
     ) {
+        GridCacheContext<Object, Object> cctx = ctx.cache().cache(cacheName).context();
+
+        Collection<QueryEntity> entities0 = QueryUtils.normalizeQueryEntities(entities, cctx.config());
+
         SchemaAddQueryEntitiesOperation op = new SchemaAddQueryEntitiesOperation(UUID.randomUUID(), cacheName,
-                schemaName, entities);
+                schemaName, entities0);
+
         return startIndexOperationDistributed(op);
     }
 
