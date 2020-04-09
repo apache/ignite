@@ -42,12 +42,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -125,19 +123,15 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        if (discoveryHook != null) {
-            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-                @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                    super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
-                }
-            };
+        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
 
-            cfg.setDiscoverySpi(discoSpi);
+        if (discoveryHook != null) {
+            discoSpi.discoveryHooks(discoveryHook);
 
             cfg.setMetricsUpdateFrequency(1000);
         }
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
+        discoSpi.setIpFinder(sharedStaticIpFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -209,7 +203,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
             return;
 
         discoveryHook = new DiscoveryHook() {
-            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ? null
                     : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 

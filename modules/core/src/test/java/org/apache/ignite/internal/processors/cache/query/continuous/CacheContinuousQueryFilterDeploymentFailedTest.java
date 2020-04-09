@@ -31,13 +31,9 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
-import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -70,16 +66,9 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
             }
         };
 
-        TcpDiscoverySpi spi = new TestTcpDiscoverySpi() {
-            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                super.setListener(DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
-            }
-        };
-
-        spi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHooks(discoveryHook);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }

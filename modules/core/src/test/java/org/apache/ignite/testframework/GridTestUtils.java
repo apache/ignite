@@ -142,9 +142,12 @@ public final class GridTestUtils {
      */
     public static class DiscoveryHook {
         /**
-         * @param msg Message.
+         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
+         *
+         * @param msg Intercepted discovery message.
          */
-        public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
+            // No-op.
         }
 
         /**
@@ -171,25 +174,34 @@ public final class GridTestUtils {
         /** */
         private final DiscoverySpiListener delegate;
 
-        /** */
-        private final DiscoveryHook hook;
+        /** Interceptors of discovery messages. */
+        private final DiscoveryHook[] hooks;
 
         /**
          * @param delegate Delegate.
-         * @param hook Hook.
+         * @param hooks Interceptors of discovery messages.
          */
-        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
-            this.hook = hook;
+        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook[] hooks) {
+            this.hooks = hooks;
             this.delegate = delegate;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
-            hook.handleDiscoveryMessage(spiCustomMsg);
+        @Override public IgniteFuture<?> onDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable Map<Long, Collection<ClusterNode>> topHist,
+            @Nullable DiscoverySpiCustomMessage spiCustomMsg
+        ) {
+            for (DiscoveryHook hook : hooks)
+                hook.beforeDiscovery(spiCustomMsg);
 
             IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
 
-            hook.afterDiscovery(spiCustomMsg);
+            for (DiscoveryHook hook : hooks)
+                hook.afterDiscovery(spiCustomMsg);
 
             return fut;
         }
@@ -201,10 +213,10 @@ public final class GridTestUtils {
 
         /**
          * @param delegate Delegate.
-         * @param discoveryHook Discovery hook.
+         * @param discoveryHooks Interceptors of discovery messages.
          */
-        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
-            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook... discoveryHooks) {
+            return new DiscoverySpiListenerWrapper(delegate, discoveryHooks);
         }
     }
 

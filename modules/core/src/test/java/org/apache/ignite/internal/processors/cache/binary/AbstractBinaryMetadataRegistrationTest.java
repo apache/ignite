@@ -33,11 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -61,7 +59,7 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         GridTestUtils.DiscoveryHook discoveryHook = new GridTestUtils.DiscoveryHook() {
-            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ? null
                     : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
 
@@ -70,13 +68,7 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
             }
         };
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-            @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                super.setListener(GridTestUtils.DiscoverySpiListenerWrapper.wrap(lsnr, discoveryHook));
-            }
-        };
-
-        cfg.setDiscoverySpi(discoSpi);
+       ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHooks(discoveryHook);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 

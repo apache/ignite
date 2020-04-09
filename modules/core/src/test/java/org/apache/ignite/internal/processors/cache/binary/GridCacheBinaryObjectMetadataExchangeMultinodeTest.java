@@ -44,13 +44,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiListener;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
-import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -79,17 +76,12 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (applyDiscoveryHook) {
-            final DiscoveryHook hook = discoveryHook != null ? discoveryHook : new DiscoveryHook();
+        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
 
-            cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-                @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-                    super.setListener(DiscoverySpiListenerWrapper.wrap(lsnr, hook));
-                }
-            });
-        }
+        if (applyDiscoveryHook && discoveryHook != null)
+            discoSpi.discoveryHooks(discoveryHook);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
+        discoSpi.setIpFinder(sharedStaticIpFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -129,7 +121,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         discoveryHook = new DiscoveryHook() {
             private volatile IgniteEx ignite;
 
-            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
                 if (finishFut.isDone())
                     return;
 
@@ -323,7 +315,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     private Ignite startDeafClient(String clientName) throws Exception {
         applyDiscoveryHook = true;
         discoveryHook = new DiscoveryHook() {
-            @Override public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
                 DiscoveryCustomMessage customMsg = msg == null ? null
                         : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
 
