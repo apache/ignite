@@ -58,7 +58,7 @@ public class RestExecutorSelfTest {
     private static final String PATH_TO_RESOURCES = "modules/web-console/web-agent/src/test/resources/";
 
     /** JSON object mapper. */
-    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper(null);
 
     /** */
     private static final String HTTP_URI = "http://localhost:8080";
