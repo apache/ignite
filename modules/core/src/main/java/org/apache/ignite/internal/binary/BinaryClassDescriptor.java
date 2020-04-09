@@ -435,7 +435,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Type name.
      */
-    public String typeName() {
+    String typeName() {
         return typeName;
     }
 

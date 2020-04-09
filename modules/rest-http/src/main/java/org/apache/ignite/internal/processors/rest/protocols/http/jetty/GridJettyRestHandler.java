@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.InjectableValues;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -560,16 +559,12 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 default:
                     try {
-                        JsonNode tree = jsonMapper.readTree(s);
+                        InjectableValues.Std prop = new InjectableValues.Std()
+                            .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type);
 
-                        if (tree.size() != 0) {
-                            InjectableValues.Std prop = new InjectableValues.Std()
-                                .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type);
-
-                            return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(tree);
-                        }
+                        return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(s);
                     } catch (IOException e) {
-                        log.warning("Unable to parse JSON data, object will be stored as text [value=\"" + s +
+                        log.warning("Unable to parse JSON data, object will be stored as a text [value=\"" + s +
                             "\", reason=\"" + e.getMessage() + "\"]");
                     }
             }

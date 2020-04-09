@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -356,9 +355,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testPutJsonQueryEntity() throws Exception {
-        Person simple = new Person(100, "John", "Doe", 10000);
-
         String cacheName = "person";
+
+        Person simple = new Person(100, "John", "Doe", 10000);
 
         putBinary(cacheName, "300", simple);
 
@@ -371,21 +370,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         checkJson(ret, simple);
 
-        String qry = "orgId = ?";
-
         ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY,
-            "type", "Person",
+            "type", Person.class.getSimpleName(),
             "pageSize", "1",
-            "qry", qry,
+            "qry", "orgId = ?",
             "arg1", "100"
         );
 
         info("SQL command result: " + ret);
 
-        JsonNode items = validateJsonResponse(ret).get("items");
+        JsonNode res = validateJsonResponse(ret);
+
+        JsonNode items = res.get("items");
+        assertNotNull(items);
 
         assertEquals(1, items.size());
 
+        // Ensures that we don't need to close the cursor.
         assertFalse(queryCursorFound());
 
         JsonNode pair = items.get(0);
@@ -414,18 +415,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list, null);
 
         putBinary(DEFAULT_CACHE_NAME, "300", newType);
-        OuterClass result = getBinary(DEFAULT_CACHE_NAME, "300", OuterClass.class);
 
-        assertEquals(newType, result);
+        assertEquals(newType, getBinary(DEFAULT_CACHE_NAME, "300", OuterClass.class));
         assertEquals(newType, jcache().get(300));
 
-        // Sending new field - "optional".
+        // Sending "optional" (new) field for registered binary type.
         OuterClass update = new OuterClass(-1, "update", 0.7d, list, true);
 
         putBinary(DEFAULT_CACHE_NAME, "301", update);
-        result = getBinary(DEFAULT_CACHE_NAME, "301", OuterClass.class);
 
-        assertEquals(update, result);
+        assertEquals(update, getBinary(DEFAULT_CACHE_NAME, "301", OuterClass.class));
         assertEquals(update, jcache().get(301));
     }
 
@@ -436,17 +435,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     public void testPutComplexBinary() throws Exception {
         String cacheName = "complex";
 
+        DateFormat df = JSON_MAPPER.getDateFormat();
+
         Complex complex = new Complex(
             1234567,
             "String value",
             new Timestamp(Calendar.getInstance().getTime().getTime()),
-            Date.valueOf("1987-03-19"),
+            Date.valueOf("1986-04-26"),
+            df.parse(df.format(Calendar.getInstance().getTime())),
             F.asMap("key1", 1, "key2", 2),
             new int[] {1, 2, 3},
+            F.asList(11, 22, 33).toArray(new Integer[3]),
             new long[] {Long.MIN_VALUE, 0, Long.MAX_VALUE},
             F.asList(4, 5, 6),
-            F.asMap(123, null, 345, null).keySet(),
-            new byte[] {0, 1, 2},
+            F.asMap(123, null, 4567, null).keySet(),
+            new byte[] {4, 1, 2},
             new char[] {'a', 'b', 'c'},
             new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1), false)
         );
@@ -454,25 +457,28 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         putBinary(cacheName, "300", complex);
 
         assertEquals(complex, getBinary(cacheName, "300", Complex.class));
-
-        String qry = "id = ?";
+        assertEquals(complex, grid(0).cache(cacheName).get(300));
 
         String ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY,
-            "type", "Complex",
+            "type", Complex.class.getSimpleName(),
             "pageSize", "1",
-            "qry", qry,
-            "arg1", "1234567"
+            "qry", "sqlDate > ? and sqlDate < ?",
+            "arg1", "1953-03-05",
+            "arg2", "2011-03-11"
         );
 
         info("SQL command result: " + ret);
 
         JsonNode res = validateJsonResponse(ret);
 
-        assertEquals(1, res.get("items").size());
+        JsonNode items = res.get("items");
+        assertNotNull(items);
+
+        assertEquals(1, items.size());
 
         assertFalse(queryCursorFound());
 
-        JsonNode pair = res.get("items").get(0);
+        JsonNode pair = items.get(0);
         assertNotNull(pair);
 
         JsonNode val = pair.get("value");
@@ -667,7 +673,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         assertCacheOperation(ret, sqlDate.toString());
 
-        Timestamp ts = new Timestamp(utilDate.getTime());
+        Timestamp ts = Timestamp.valueOf("2004-08-26 16:47:03.141592653");
 
         jcache().put("timestampKey", ts);
 
@@ -3144,12 +3150,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         @Override public int hashCode() {
             return Objects.hash(id, name, optional, doubleVal, list);
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "OuterClass{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", doubleVal=" + doubleVal +
+                ", optional=" + optional +
+                ", list=" + list +
+                '}';
+        }
     }
 
-    /**
-     * Complex entity.
-     */
-    @JsonIgnoreProperties(ignoreUnknown = true)
+    /** Complex entity. */
     @SuppressWarnings({"InnerClassMayBeStatic", "AssignmentOrReturnOfFieldWithMutableType"})
     static class Complex implements Serializable {
         /** */
@@ -3166,28 +3180,34 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** */
         @QuerySqlField
-        private Date date;
+        private Date sqlDate;
+
+        /** */
+        private java.util.Date date;
 
         /** */
         private HashMap<String, Integer> map;
 
         /** */
-        private int[] ints;
-
-        /** */
         private long[] longs;
 
         /** */
-        private ArrayList<Integer> list;
-
-        /** */
-        private HashSet<Integer> col;
+        private int[] ints;
 
         /** */
         private byte[] bytes;
 
         /** */
         private char[] chars;
+
+        /** */
+        private Integer[] integers;
+
+        /** */
+        private ArrayList<Integer> list;
+
+        /** */
+        private HashSet<Integer> col;
 
         /** */
         private OuterClass outer;
@@ -3198,16 +3218,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        Complex(Integer id, String string, Timestamp timestamp, Date date, Map<String, Integer> map, int[] ints,
-            long[] longs, List<Integer> list, Set<Integer> col, byte[] bytes, char[] chars, OuterClass outer) {
+        Complex(Integer id, String string, Timestamp timestamp, Date sqlDate, java.util.Date date,
+            Map<String, Integer> map, int[] ints, Integer[] integers, long[] longs, List<Integer> list,
+            Set<Integer> col, byte[] bytes, char[] chars, OuterClass outer) {
             this.id = id;
             this.string = string;
             this.timestamp = timestamp;
+            this.sqlDate = sqlDate;
             this.date = date;
             this.map = new HashMap<>(map);
             this.ints = ints;
             this.longs = longs;
             this.list = new ArrayList<>(list);
+            this.integers = integers;
             this.col = new HashSet<>(col);
             this.bytes = bytes;
             this.chars = chars;
@@ -3255,8 +3278,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        public ArrayList getList() {
+        public ArrayList<Integer> getList() {
             return list;
+        }
+
+        /** */
+        public Integer[] getIntegers() {
+            return integers;
         }
 
         /** */
@@ -3270,7 +3298,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        public Date getDate() {
+        public Date getSqlDate() {
+            return sqlDate;
+        }
+
+        /** */
+        public java.util.Date getDate() {
             return date;
         }
 
@@ -3284,9 +3317,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             return Objects.equals(id, complex.id) &&
                 Objects.equals(string, complex.string) &&
                 Objects.equals(timestamp, complex.timestamp) &&
+                Objects.equals(sqlDate, complex.sqlDate) &&
                 Objects.equals(date, complex.date) &&
                 Objects.equals(map, complex.map) &&
+                Arrays.equals(longs, complex.longs) &&
                 Arrays.equals(ints, complex.ints) &&
+                Arrays.equals(bytes, complex.bytes) &&
+                Arrays.equals(chars, complex.chars) &&
+                Arrays.equals(integers, complex.integers) &&
                 Objects.equals(list, complex.list) &&
                 Objects.equals(col, complex.col) &&
                 Objects.equals(outer, complex.outer);
@@ -3294,20 +3332,28 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(id, string, timestamp, date, map, list, col, outer);
+            int result = Objects.hash(id, string, timestamp, sqlDate, date, map, list, col, outer);
+            result = 31 * result + Arrays.hashCode(longs);
             result = 31 * result + Arrays.hashCode(ints);
+            result = 31 * result + Arrays.hashCode(bytes);
+            result = 31 * result + Arrays.hashCode(chars);
+            result = 31 * result + Arrays.hashCode(integers);
             return result;
         }
 
-        /** {@inheritDoc} */
         @Override public String toString() {
             return "Complex{" +
-                "complexId=" + id +
+                "id=" + id +
                 ", string='" + string + '\'' +
                 ", timestamp=" + timestamp +
+                ", sqlDate=" + sqlDate +
                 ", date=" + date +
                 ", map=" + map +
-                ", array=" + Arrays.toString(ints) +
+                ", longs=" + Arrays.toString(longs) +
+                ", ints=" + Arrays.toString(ints) +
+                ", bytes=" + Arrays.toString(bytes) +
+                ", chars=" + Arrays.toString(chars) +
+                ", integers=" + Arrays.toString(integers) +
                 ", list=" + list +
                 ", col=" + col +
                 ", outer=" + outer +

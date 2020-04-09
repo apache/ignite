@@ -61,7 +61,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
     }
 
     /**
-     * @param ctx Defines a kernal context to enable deserialization into the Ignite binary.
+     * @param ctx Defines a kernal context to enable deserialization into the Ignite binary object.
      */
     GridJettyObjectMapper(GridKernalContext ctx) {
         super(null, new CustomSerializerProvider(), null);

@@ -58,6 +58,8 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
      * @param ctx Kernal context.
      */
     public IgniteBinaryObjectJsonDeserializer(GridKernalContext ctx) {
+        assert ctx != null;
+
         this.ctx = ctx;
     }
 
