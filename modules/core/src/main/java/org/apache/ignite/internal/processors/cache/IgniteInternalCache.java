@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
@@ -1095,6 +1096,21 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException if the key is {@code null}.
      */
     public IgniteInternalFuture<V> getAndRemoveAsync(K key);
+
+    /**
+     *
+     * @param key Key
+     * @return
+     */
+    @IgniteAsyncSupported
+    public Long ttl(K key);
+
+    /**
+     *
+     * @param key
+     * @return
+     */
+    public IgniteInternalFuture<Long> ttlAsync(K key);
 
     /**
      * Removes given key mapping from cache.

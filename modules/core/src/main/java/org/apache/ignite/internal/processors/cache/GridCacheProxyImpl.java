@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.Transaction;
@@ -1111,6 +1112,39 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             gate.leave(prev);
         }
     }
+
+    /**
+     *
+     * @param key Key
+     * @return
+     */
+    @IgniteAsyncSupported
+    @Override public Long ttl(K key) {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.ttl(key);
+        } finally {
+            gate.leave(prev);
+        }
+    }
+
+    /**
+     *
+     * @param key
+     * @return
+     */
+    @Override public IgniteInternalFuture<Long> ttlAsync(K key) {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.ttlAsync(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key)

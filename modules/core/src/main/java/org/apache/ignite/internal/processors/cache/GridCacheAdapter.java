@@ -141,15 +141,7 @@ import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -3261,6 +3253,68 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Override public String toString() {
                 return S.toString("removeAsync",
                     "key", key, true);
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public Long ttl(K key) {
+        boolean statsEnabled = ctx.statisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        A.notNull(key, "key");
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        Long ttlVal = ttl0(key);
+
+        if (statsEnabled)
+            metrics0().addRemoveAndGetTimeNanos(System.nanoTime() - start);
+
+        return ttlVal;
+    }
+
+    protected Long ttl0(final K key) {
+        GridCacheEntryEx entry = entryEx(key);
+        try {
+            return entry.ttl();
+        }
+        catch (GridCacheEntryRemovedException e) {
+            return null;
+        }
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Long> ttlAsync(K key) {
+        final boolean statsEnabled = ctx.statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        A.notNull(key, "key");
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        IgniteInternalFuture<Long> fut = ttlAsync0(key);
+
+        if (statsEnabled)
+            fut.listen(new UpdateRemoveTimeStatClosure<Long>(metrics0(), start));
+
+        return fut;
+    }
+
+    protected IgniteInternalFuture<Long> ttlAsync0(K key) {
+        return asyncOp(new AsyncOp<Long>() {
+            @Override public IgniteInternalFuture<Long> op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
+                return null; //tx.entryTtl(ctx.toCacheKeyObject(key));
+            }
+
+            @Override public String toString() {
+                return S.toString("ttlAsync0",
+                        "key", key, true);
             }
         });
     }

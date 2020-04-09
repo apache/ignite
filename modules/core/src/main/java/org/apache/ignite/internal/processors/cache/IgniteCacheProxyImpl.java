@@ -1574,6 +1574,32 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public Long ttl(K key) {
+        IgniteInternalCache<K,V> delegate = getDelegateSafe();
+
+//        try {
+            if (isAsync()) {
+                setFuture(delegate.ttlAsync(key));
+
+                return null;
+            }
+            else {
+                return delegate.ttl(key);
+            }
+//        }
+//        catch (IgniteCheckedException | IgniteException e) {
+//            throw cacheException(e);
+//        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Long> ttlAsync(K key) {
+        IgniteInternalCache<K,V> delegate = getDelegateSafe();
+
+        return createFuture(delegate.ttlAsync(key));
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
         IgniteInternalCache<K, V> delegate = getDelegateSafe();
 

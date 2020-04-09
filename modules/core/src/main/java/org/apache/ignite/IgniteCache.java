@@ -1119,6 +1119,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<V> getAndReplaceAsync(K key, V val);
 
     /**
+     *
+     * @param key Key
+     * @return
+     */
+    @IgniteAsyncSupported
+    public Long ttl(K key);
+
+    /**
+     *
+     * @param key
+     * @return
+     */
+    public IgniteFuture<Long> ttlAsync(K key);
+
+    /**
      * {@inheritDoc}
      * <p>
      * Keys are locked in the order in which they appear in key set. It is caller's responsibility to

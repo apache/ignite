@@ -1089,6 +1089,30 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override  public Long ttl(K key) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.ttl(key);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Long> ttlAsync(K key) {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.ttlAsync(key);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) throws TransactionException {
         CacheOperationGate opGate = onEnter();
 
