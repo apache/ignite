@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -15,16 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-3}
-TC_PATHS=${TC_PATHS:-./ignitetest/}
+import os.path
 
-die() {
-    echo $@
-    exit 1
-}
+from collections import namedtuple
 
-if ${SCRIPT_DIR}/ducker-ignite ssh | grep -q '(none)'; then
-    ${SCRIPT_DIR}/ducker-ignite up -n "${IGNITE_NUM_CONTAINERS}" || die "ducker-ignite up failed"
-fi
-${SCRIPT_DIR}/ducker-ignite test ${TC_PATHS} ${_DUCKTAPE_OPTIONS} || die "ducker-ignite test failed"
+def java_version(node):
+    # Determine java version on the node
+    version = -1
+    for line in node.account.ssh_capture("java -version"):
+        if line.find("version") != -1:
+            version = parse_version_str(line)
+    return version
+
+def parse_version_str(line):
+    # Parse java version string. Examples:
+    #`openjdk version "11.0.5" 2019-10-15` will return 11.
+    #`java version "1.5.0"` will return 5.
+    line = line[line.find('version \"') + 9:]
+    dot_pos = line.find(".")
+    if line[:dot_pos] == "1":
+        return int(line[dot_pos+1:line.find(".", dot_pos+1)])
+    else:
+        return int(line[:dot_pos])
