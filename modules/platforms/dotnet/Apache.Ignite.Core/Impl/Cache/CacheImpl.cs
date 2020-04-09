@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -1647,6 +1648,19 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
 
+            if (IsNear)
+            {
+                // NOTE: Users can pass a ScanQuery that has different generic arguments.
+                // We do not support this scenario for near cache scan optimization.
+                var scan = qry as ScanQuery<TK, TV>;
+
+                // Local scan with Partition can be satisfied directly from platform cache on server nodes.
+                if (scan != null && scan.Local && scan.Partition != null)
+                {
+                    return ScanNear(scan);
+                }
+            }
+
             var cursor = DoOutOpObject((int) qry.OpId, writer => qry.Write(writer, IsKeepBinary));
 
             return new QueryCursor<TK, TV>(cursor, _flagKeepBinary);
@@ -2042,6 +2056,60 @@ namespace Apache.Ignite.Core.Impl.Cache
             writer.Stream.Seek(pos, SeekOrigin.Begin);
             writer.WriteInt(count);
             writer.Stream.Seek(endPos, SeekOrigin.Begin);
+        }
+
+        /// <summary>
+        /// Reserves specified partition.
+        /// </summary>
+        private void ReservePartition(int part)
+        {
+            var reserved = Target.InLongOutLong((int) CacheOp.ReservePartition, part) == True;
+
+            if (!reserved)
+            {
+                // Java exception for Scan Query in this case is 'No queryable nodes for partition N',
+                // which is a bit confusing.
+                throw new InvalidOperationException(
+                    string.Format("Failed to reserve partition {0}, it does not belong to the local node.", part));
+            }
+        }
+
+        /// <summary>
+        /// Releases specified partition.
+        /// </summary>
+        private void ReleasePartition(int part)
+        {
+            var released = Target.InLongOutLong((int) CacheOp.ReleasePartition, part) == True;
+
+            if (!released)
+            {
+                throw new InvalidOperationException("Failed to release partition: " + part);
+            }
+        }
+
+        /// <summary>
+        /// Performs Scan query over Near Cache.
+        /// </summary>
+        private IQueryCursor<ICacheEntry<TK, TV>> ScanNear(ScanQuery<TK, TV> qry)
+        {
+            var filter = qry.Filter;
+
+            if (filter != null)
+            {
+                ResourceProcessor.Inject(filter, Marshaller.Ignite);
+            }
+
+            var part = qry.Partition;
+            Action dispose = null;
+
+            if (part != null)
+            {
+                ReservePartition((int) part);
+                
+                dispose = () => ReleasePartition((int) part);
+            }
+
+            return new NearQueryCursor<TK, TV>(_nearCache, filter, part, dispose);
         }
     }
 }
