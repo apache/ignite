@@ -111,7 +111,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
 
         LogListener expMsgsLsnr = LogListener.
             matches("Following partitions were reserved for potential history rebalance [grpId=1813188848," +
-                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").times(4).
+                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").times(3).
             andMatches("fullPartitions=[], histPartitions=[0-7]").times(2).build();
 
         LogListener unexpectedMessagesLsnr =
