@@ -2263,8 +2263,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean apply = status.needRestoreMemory();
 
-        Map<Integer, PageMemory> memPerGrp = new HashMap<>(cctx.cache().cacheGroupDescriptors().size());
-
         try {
             WALRecord startRec = !CheckpointStatus.NULL_PTR.equals(status.startPtr) || apply ? cctx.wal().read(status.startPtr) : null;
 
@@ -2354,14 +2352,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (skipRemovedIndexUpdates(groupId, partId))
                                 break;
 
-                            CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptors().get(groupId);
+                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(groupId);
 
-                            DataRegion region = cctx.database().dataRegion(desc.config().getDataRegionName());
-
-                            PageMemoryEx pageMem = (PageMemoryEx)region.pageMemory();
-
-                            if (pageMem == null)
-                                continue;
+                            assert pageMem != null : "Undefined pageMem for grpId=" + groupId;
 
                             stripedApplyPage(() -> {
                                     try {
@@ -2424,6 +2417,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         PageMemoryEx pageMem = getPageMemoryForCacheGroup(groupId);
 
+                        assert pageMem != null : "Undefined pageMem for grpId=" + groupId;
+
                         if (pageMem == null)
                             continue;
 
@@ -2448,8 +2443,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             PageMemoryEx pageMem = getPageMemoryForCacheGroup(groupId);
 
-                            if (pageMem == null)
-                                continue;
+                            assert pageMem != null : "Undefined pageMem for grpId=" + groupId;
 
                             stripedApplyPage(() -> {
                                 try {
@@ -2687,13 +2681,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException if no DataRegion is configured for a name obtained from cache descriptor.
      */
     // TODO IGNITE-12722: Get rid of GridCacheDatabaseSharedManager#getPageMemoryForCacheGroup functionality.
-    private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
+    @Nullable private PageMemoryEx getPageMemoryForCacheGroup(int grpId) throws IgniteCheckedException {
         if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
             return (PageMemoryEx)dataRegion(METASTORE_DATA_REGION_NAME).pageMemory();
-
-        // TODO IGNITE-7792 add generic mapping.
-        if (grpId == TxLog.TX_LOG_CACHE_ID)
-            return (PageMemoryEx)dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
 
         // TODO IGNITE-5075: cache descriptor can be removed.
         GridCacheSharedContext sharedCtx = context();
@@ -2943,8 +2933,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         PageMemoryEx pageMem = getPageMemoryForCacheGroup(pageDelta.groupId());
 
-                        if (pageMem == null)
-                            continue;
+                        assert pageMem != null : "Undefined pageMem for grpId=" + pageDelta.groupId();;
 
                         stripedApplyPage(() -> {
                             try {

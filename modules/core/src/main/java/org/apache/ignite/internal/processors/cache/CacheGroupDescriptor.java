@@ -102,7 +102,7 @@ public class CacheGroupDescriptor {
         boolean persistenceEnabled,
         boolean walEnabled,
         @Nullable Collection<WalStateProposeMessage> walChangeReqs,
-        CacheConfigurationEnrichment cacheCfgEnrichment
+        @Nullable CacheConfigurationEnrichment cacheCfgEnrichment
     ) {
         assert cacheCfg != null;
         assert grpId != 0;
