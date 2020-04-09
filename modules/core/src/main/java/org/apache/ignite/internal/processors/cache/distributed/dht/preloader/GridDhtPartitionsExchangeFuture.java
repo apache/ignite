@@ -2429,7 +2429,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null) {
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
 
-                cctx.exchange().clusterRebalancedMetric().value(rebalanced);
+                cctx.exchange().clusterRebalancedMetric().value(rebalanced());
             }
 
             if (log.isInfoEnabled()) {
