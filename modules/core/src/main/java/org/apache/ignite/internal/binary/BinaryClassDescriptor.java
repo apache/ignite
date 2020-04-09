@@ -421,7 +421,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Described class.
      */
-    Class<?> describedClass() {
+    public Class<?> describedClass() {
         return cls;
     }
 
@@ -435,7 +435,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Type name.
      */
-    String typeName() {
+    public String typeName() {
         return typeName;
     }
 

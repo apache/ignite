@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.InjectableValues;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,6 +50,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -159,14 +163,14 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param authChecker Authentication checking closure.
      * @param log Logger.
      */
-    GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, IgniteLogger log) {
+    GridJettyRestHandler(GridKernalContext ctx, GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, IgniteLogger log) {
         assert hnd != null;
         assert log != null;
 
         this.hnd = hnd;
         this.log = log;
         this.authChecker = authChecker;
-        this.jsonMapper = new GridJettyObjectMapper();
+        this.jsonMapper = new GridJettyObjectMapper(ctx);
 
         // Init default page and favicon.
         try {
@@ -556,12 +560,24 @@ public class GridJettyRestHandler extends AbstractHandler {
                     return IgniteUuid.fromString(s);
 
                 default:
-                    // No-op.
+                    try {
+                        JsonNode tree = jsonMapper.readTree(s);
+
+                        if (tree.size() != 0) {
+                            InjectableValues.Std prop = new InjectableValues.Std()
+                                .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type);
+
+                            return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(tree);
+                        }
+                    } catch (IOException e) {
+                        log.warning("Unable to parse JSON data, object will be stored as text [value=\"" + s +
+                            "\", reason=\"" + e.getMessage() + "\"]");
+                    }
             }
         }
         catch (Throwable e) {
             throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
-                ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]");
+                ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
         }
 
         return obj;
