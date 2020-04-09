@@ -17,23 +17,27 @@
 
 namespace Apache.Ignite.Core.Cache.Query
 {
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
+    using System;
 
     /// <summary>
-    /// Fields query cursor.
+    /// Query field descriptor. This descriptor is used to provide metadata
+    /// about fields returned in query result.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public interface IFieldsQueryCursor : IQueryCursor<IList<object>>
+    public interface IQueryCursorField
     {
         /// <summary>
-        /// Gets the field names.
+        /// Gets the field name.
         /// </summary>
-        IList<string> FieldNames { get; }
+        string Name { get; }
 
         /// <summary>
-        /// Gets fields metadata.
+        /// Gets the name of Java type for this field.
         /// </summary>
-        IList<IQueryCursorField> Fields { get; }
+        string JavaTypeName { get; }
+
+        /// <summary>
+        /// Gets the field type.
+        /// </summary>
+        Type Type { get; }
     }
 }
