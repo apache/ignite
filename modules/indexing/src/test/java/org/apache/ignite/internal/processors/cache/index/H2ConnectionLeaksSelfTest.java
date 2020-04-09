@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
-import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -97,7 +96,7 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
         latch.await();
 
-        checkConnectionLeaks();
+        checkThereAreNotUsedConnections();
     }
 
     /**
@@ -137,7 +136,7 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
         try {
             latch.await();
 
-            checkConnectionLeaks();
+            checkThereAreNotUsedConnections();
         }
         finally {
             latch2.countDown();
@@ -184,45 +183,57 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
             }, 10, "explain-threads");
 
-            checkConnectionLeaks();
+            checkThereAreNotUsedConnections();
         }
     }
 
     /**
-     * @throws Exception On error.
+     * @throws Exception On failed.
      */
-    private void checkConnectionLeaks() throws Exception {
-        boolean notLeak = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (int i = 0; i < NODE_CNT; i++) {
-                    if (!usedConnections(i).isEmpty())
-                        return false;
-                }
+    @Test
+    public void testSingleRowInsertWithNotConstantValues() throws Exception {
+        startGridAndPopulateCache(1);
 
-                return true;
-            }
-        }, 5000);
+        sql(grid(0), "CREATE TABLE TEST_F(ID INT PRIMARY KEY, TS TIMESTAMP)");
 
-        if (!notLeak) {
-            for (int i = 0; i < NODE_CNT; i++) {
-                Set<H2PooledConnection> usedConns = usedConnections(i);
+        sql(grid(0),"INSERT INTO TEST_F VALUES (?, CURRENT_TIMESTAMP())", 0);
 
-                if (!usedConnections(i).isEmpty())
-                    log.error("Not closed connections: " + usedConns);
-            }
+        checkThereAreNotUsedConnections();
 
-            fail("H2 JDBC connections leak detected. See the log above.");
-        }
+        // Check leaks after error on insert single row.
+        GridTestUtils.assertThrows(log, () ->
+                sql(grid(0), "INSERT INTO TEST_F VALUES (1/?, CURRENT_TIMESTAMP())", 0),
+            IgniteSQLException.class, "Division by zero");
+
+        checkThereAreNotUsedConnections();
     }
 
     /**
-     * @param i Node index.
-     * @return Set of used connections.
+     * @throws Exception On failed.
      */
-    private Set<H2PooledConnection> usedConnections(int i) {
-        ConnectionManager connMgr = ((IgniteH2Indexing)grid(i).context().query().getIndexing()).connections();
+    @Test
+    public void testMultipleRowsInsertWithNotConstantValues() throws Exception {
+        startGridAndPopulateCache(1);
 
-        return  GridTestUtils.getFieldValue(connMgr, "usedConns");
+        sql(grid(0), "CREATE TABLE TEST_F(ID INT PRIMARY KEY, TS TIMESTAMP)");
+
+        sql(grid(0), "INSERT INTO TEST_F VALUES " +
+                "(?, CURRENT_TIMESTAMP()), " +
+                "(?, CURRENT_TIMESTAMP()), " +
+                "(?, CURRENT_TIMESTAMP())",
+            0, 1, 2);
+
+        checkThereAreNotUsedConnections();
+
+        // Check leaks after error on insert multiple rows.
+        GridTestUtils.assertThrows(log, () -> sql(grid(0), "INSERT INTO TEST_F VALUES " +
+                    "(?, CURRENT_TIMESTAMP()), " +
+                    "(?, CURRENT_TIMESTAMP()), " +
+                    "(?, CURRENT_TIMESTAMP())",
+                3, 0, 4),
+            IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache [keys=[0]]");
+
+        checkThereAreNotUsedConnections();
     }
 
     /**
@@ -236,5 +247,11 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
 
         for (int i = 0; i < KEY_CNT; i++)
             cache.put((long)i, String.valueOf(i));
+    }
+
+    /**
+     */
+    private List<List<?>> sql(IgniteEx ign, String sql, Object... params) {
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql).setLazy(true).setArgs(params), false).getAll();
     }
 }
