@@ -15,33 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.jetbrains.annotations.NotNull;
+package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 /**
- * Represents information of a progress of a given checkpoint and
- * allows to obtain future to wait for a particular checkpoint state.
+ * BPlus row hierarchy is broken. Ideally this interface would contain only {@link #key()} method.
  */
-public interface CheckpointProgress {
-    /** */
-    public boolean inProgress();
-
-    /** */
-    public GridFutureAdapter futureFor(CheckpointState state);
+public interface MetastorageRow {
+    /**
+     * @return Link for this row.
+     */
+    public long link();
 
     /**
-     * Mark this checkpoint execution as failed.
-     *
-     * @param error Causal error of fail.
+     * @return Key string.
      */
-    public void fail(Throwable error);
+    public String key();
 
     /**
-     * Changing checkpoint state if order of state is correct.
-     *
-     * @param newState New checkpoint state.
+     * @return Key link.
      */
-    public void transitTo(@NotNull CheckpointState newState);
+    public long keyLink();
 }
