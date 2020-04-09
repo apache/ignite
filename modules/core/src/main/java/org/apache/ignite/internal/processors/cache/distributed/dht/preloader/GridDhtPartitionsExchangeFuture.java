@@ -801,7 +801,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (exchCtx.exchangeFreeSwitch()){
                 exchange = startedBySnapshot(this) ? onCustomMessageNoAffinityChange() :
-                    onExchangeFreeSwitch();
+                    onExchangeFreeSwitchOnLeft();
 
                 initCoordinatorCaches(newCrd);
             }
@@ -1419,7 +1419,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @return Exchange type.
      */
-    private ExchangeType onExchangeFreeSwitch() {
+    private ExchangeType onExchangeFreeSwitchOnLeft() {
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         assert firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED;
@@ -1526,7 +1526,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean skipWaitOnLocalJoin = localJoinExchange()
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
-        if (context().exchangeFreeSwitch())
+        if (context().exchangeFreeSwitch() && isBaselineNodeFailed())
             waitPartitionRelease(true, false);
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
