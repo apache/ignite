@@ -44,7 +44,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.DiscoveryCustomMessageHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -117,7 +116,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         final GridFutureAdapter finishFut = new GridFutureAdapter();
 
         applyDiscoveryHook = true;
-        discoveryHook = new DiscoveryCustomMessageHook() {
+        discoveryHook = new DiscoveryHook() {
             private volatile IgniteEx ignite;
 
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
@@ -310,7 +309,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
      */
     private Ignite startDeafClient(String clientName) throws Exception {
         applyDiscoveryHook = true;
-        discoveryHook = new DiscoveryCustomMessageHook() {
+        discoveryHook = new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage) {
                     if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)

@@ -42,7 +42,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.DiscoveryCustomMessageHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -201,7 +200,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         if (!tcpDiscovery())
             return;
 
-        discoveryHook = new DiscoveryCustomMessageHook() {
+        discoveryHook = new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage) {
                     if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)

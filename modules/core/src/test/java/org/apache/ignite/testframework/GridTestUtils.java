@@ -149,6 +149,17 @@ public final class GridTestUtils {
          * @param msg Intercepted discovery message.
          */
         public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
+            if (msg instanceof CustomMessageWrapper)
+                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation in case
+         * {@link DiscoveryHook#beforeDiscovery(DiscoverySpiCustomMessage)} keeps its default implementation.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
         }
 
@@ -158,6 +169,17 @@ public final class GridTestUtils {
          * @param msg Intercepted discovery message.
          */
         public void afterDiscovery(DiscoverySpiCustomMessage msg) {
+            if (msg instanceof CustomMessageWrapper)
+                afterDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage} after {@link DiscoverySpiListener#onDiscovery} completion in case
+         * {@link DiscoveryHook#afterDiscovery(DiscoveryCustomMessage)} keeps its default implementation.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void afterDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
         }
 
@@ -167,50 +189,12 @@ public final class GridTestUtils {
         public void ignite(IgniteEx ignite) {
             // No-op.
         }
-    }
-
-    /**
-     * Extended {@link DiscoveryHook} for {@link DiscoveryCustomMessage} interception.
-     */
-    public static class DiscoveryCustomMessageHook extends DiscoveryHook {
-        /** {@inheritDoc} */
-        @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-            if (!(msg instanceof CustomMessageWrapper))
-                return;
-
-            beforeDiscovery(unwrap((CustomMessageWrapper)msg));
-        }
-
-        /**
-         * Handles {@link DiscoveryCustomMessage}.
-         *
-         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
-         */
-        public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void afterDiscovery(DiscoverySpiCustomMessage msg) {
-            if (!(msg instanceof CustomMessageWrapper))
-                return;
-
-            afterDiscovery(unwrap((CustomMessageWrapper)msg));
-        }
-
-        /**
-         * Handles {@link DiscoveryCustomMessage}.
-         *
-         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
-         */
-        public void afterDiscovery(DiscoveryCustomMessage customMsg) {
-            // No-op.
-        }
 
         /**
          * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
          *
          * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
+         * @return Unwrapped {@link DiscoveryCustomMessage}.
          */
         private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
             return U.field(wrapper, "delegate");
@@ -250,8 +234,10 @@ public final class GridTestUtils {
 
             IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
 
-            for (DiscoveryHook hook : hooks)
-                hook.afterDiscovery(spiCustomMsg);
+            fut.listen(f -> {
+                for (DiscoveryHook hook : hooks)
+                    hook.afterDiscovery(spiCustomMsg);
+            });
 
             return fut;
         }
@@ -264,6 +250,7 @@ public final class GridTestUtils {
         /**
          * @param delegate Delegate.
          * @param discoveryHooks Interceptors of discovery messages.
+         * @return Wrapped {@code delegate}.
          */
         public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook... discoveryHooks) {
             return new DiscoverySpiListenerWrapper(delegate, discoveryHooks);
