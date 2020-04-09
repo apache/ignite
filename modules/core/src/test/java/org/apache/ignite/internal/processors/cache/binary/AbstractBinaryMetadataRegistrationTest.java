@@ -31,10 +31,9 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryCustomMessageHook;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -58,11 +57,8 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        GridTestUtils.DiscoveryHook discoveryHook = new GridTestUtils.DiscoveryHook() {
-            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ? null
-                    : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
-
+        DiscoveryHook discoveryHook = new DiscoveryCustomMessageHook() {
+            @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage)
                     proposeMsgNum.incrementAndGet();
             }

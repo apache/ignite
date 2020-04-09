@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
@@ -59,12 +60,15 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     }
 
     /**
-     * Sets interceptors of discovery messages.
+     * Sets interceptors of discovery messages. Note that {@link DiscoveryHook}s must be setted before
+     * {@link GridDiscoveryManager} start. Otherwise, this method call will take no effect.
      *
      * @param discoveryHooks Interceptors of discovery messages.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public void discoveryHooks(DiscoveryHook... discoveryHooks) {
+        assert lsnr == null;
+
         this.discoveryHooks = discoveryHooks;
     }
 }

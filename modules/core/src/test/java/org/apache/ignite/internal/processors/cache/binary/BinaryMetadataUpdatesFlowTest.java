@@ -37,13 +37,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryCustomMessageHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -202,11 +201,8 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         if (!tcpDiscovery())
             return;
 
-        discoveryHook = new DiscoveryHook() {
-            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ? null
-                    : (DiscoveryCustomMessage) IgniteUtils.field(msg, "delegate");
-
+        discoveryHook = new DiscoveryCustomMessageHook() {
+            @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage) {
                     if (((MetadataUpdateProposedMessage) customMsg).typeId() == BINARY_TYPE_ID)
                         GridTestUtils.setFieldValue(customMsg, "typeId", 1);

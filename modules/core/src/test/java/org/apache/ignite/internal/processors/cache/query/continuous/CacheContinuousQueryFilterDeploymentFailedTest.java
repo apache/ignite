@@ -29,9 +29,8 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryCustomMessageHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -56,11 +55,8 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DiscoveryHook discoveryHook = new DiscoveryHook() {
-            @Override public void afterDiscovery(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ?
-                    null : (DiscoveryCustomMessage)U.field(msg, "delegate");
-
+        DiscoveryHook discoveryHook = new DiscoveryCustomMessageHook() {
+            @Override public void afterDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof StopRoutineDiscoveryMessage)
                     stopRoutineLatch.countDown();
             }

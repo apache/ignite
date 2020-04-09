@@ -24,15 +24,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.DiscoveryCustomMessageHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -57,11 +56,8 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
 
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        DiscoveryHook discoveryHook = new DiscoveryHook() {
-            @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-                DiscoveryCustomMessage customMsg = msg == null ?
-                    null : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
-
+        DiscoveryHook discoveryHook = new DiscoveryCustomMessageHook() {
+            @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateAcceptedMessage) {
                     try {
                         U.sleep(50);

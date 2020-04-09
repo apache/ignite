@@ -87,6 +87,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -164,6 +166,54 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
+        }
+    }
+
+    /**
+     * Extended {@link DiscoveryHook} for {@link DiscoveryCustomMessage} interception.
+     */
+    public static class DiscoveryCustomMessageHook extends DiscoveryHook {
+        /** {@inheritDoc} */
+        @Override public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
+            if (!(msg instanceof CustomMessageWrapper))
+                return;
+
+            beforeDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage}.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterDiscovery(DiscoverySpiCustomMessage msg) {
+            if (!(msg instanceof CustomMessageWrapper))
+                return;
+
+            afterDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage}.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void afterDiscovery(DiscoveryCustomMessage customMsg) {
+            // No-op.
+        }
+
+        /**
+         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
+         *
+         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
+         */
+        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
+            return U.field(wrapper, "delegate");
         }
     }
 
