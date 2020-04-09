@@ -320,22 +320,17 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                         }
                     });
 
-                case GridBinaryMarshaller.OBJ:
                 case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.COL:
-                    Class<?> cls = getFieldClass(parentType, field);
+                case GridBinaryMarshaller.OBJ:
+                case GridBinaryMarshaller.ENUM:
+                    Class cls = getFieldClass(parentType, field);
 
-                    if (node.isArray()) {
-                        if (cls == null)
-                            cls = ArrayList.class;
-
-                        return mapper.treeToValue(node, cls);
-                    }
-
-                    if (cls == null)
+                    if (cls == null && !node.isArray())
                         throw new IOException("Unable to deserialize field [name=" + field + ", type=" + type + "]");
 
-                    return deserialize0(cls.getName(), node, mapper);
+                    //noinspection unchecked
+                    return mapper.treeToValue(node, cls == null ? ArrayList.class : cls);
             }
 
             Class<?> sysCls = BinaryUtils.FLAG_TO_CLASS.get((byte)type);

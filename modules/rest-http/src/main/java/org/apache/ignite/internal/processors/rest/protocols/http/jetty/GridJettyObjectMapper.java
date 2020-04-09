@@ -38,9 +38,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.Locale;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -267,7 +269,10 @@ public class GridJettyObjectMapper extends ObjectMapper {
                                 throw ser.mappingException("Failed convert to JSON object for circular references");
                         }
 
-                        gen.writeObjectField(name, val);
+                        if (val instanceof BinaryEnumObjectImpl)
+                            gen.writeObjectField(name, ((BinaryObject)val).enumName());
+                        else
+                            gen.writeObjectField(name, val);
                     }
 
                     gen.writeEndObject();

@@ -451,6 +451,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             F.asMap(123, null, 4567, null).keySet(),
             new byte[] {4, 1, 2},
             new char[] {'a', 'b', 'c'},
+            COLOR.GREEN,
             new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1), false)
         );
 
@@ -3163,6 +3164,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
     }
 
+    /** */
+    public enum COLOR {
+        RED,
+        GREEN,
+        BLUE
+    }
+
     /** Complex entity. */
     @SuppressWarnings({"InnerClassMayBeStatic", "AssignmentOrReturnOfFieldWithMutableType"})
     static class Complex implements Serializable {
@@ -3213,6 +3221,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         private OuterClass outer;
 
         /** */
+        private COLOR color;
+
+        /** */
         Complex() {
             // No-op.
         }
@@ -3220,7 +3231,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         /** */
         Complex(Integer id, String string, Timestamp timestamp, Date sqlDate, java.util.Date date,
             Map<String, Integer> map, int[] ints, Integer[] integers, long[] longs, List<Integer> list,
-            Set<Integer> col, byte[] bytes, char[] chars, OuterClass outer) {
+            Set<Integer> col, byte[] bytes, char[] chars, COLOR color, OuterClass outer) {
             this.id = id;
             this.string = string;
             this.timestamp = timestamp;
@@ -3234,6 +3245,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             this.col = new HashSet<>(col);
             this.bytes = bytes;
             this.chars = chars;
+            this.color = color;
             this.outer = outer;
         }
 
@@ -3307,6 +3319,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             return date;
         }
 
+        /** */
+        public COLOR getColor() {
+            return color;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
@@ -3327,12 +3344,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 Arrays.equals(integers, complex.integers) &&
                 Objects.equals(list, complex.list) &&
                 Objects.equals(col, complex.col) &&
-                Objects.equals(outer, complex.outer);
+                Objects.equals(outer, complex.outer) &&
+                color == complex.color;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(id, string, timestamp, sqlDate, date, map, list, col, outer);
+            int result = Objects.hash(id, string, timestamp, sqlDate, date, map, list, col, outer, color);
             result = 31 * result + Arrays.hashCode(longs);
             result = 31 * result + Arrays.hashCode(ints);
             result = 31 * result + Arrays.hashCode(bytes);
@@ -3341,6 +3359,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             return result;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "Complex{" +
                 "id=" + id +
@@ -3357,6 +3376,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 ", list=" + list +
                 ", col=" + col +
                 ", outer=" + outer +
+                ", color=" + color +
                 '}';
         }
     }
