@@ -17,17 +17,21 @@
 
 package org.apache.ignite.util.mbeans;
 
+import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
 import javax.management.StandardMBean;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -35,6 +39,12 @@ import org.junit.Test;
  * MBean test.
  */
 public class GridMBeanSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setMetricExporterSpi(new JmxMetricExporterSpi());
+    }
+
     /**
      * Tests correct MBean interface.
      *
@@ -185,6 +195,25 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * Tests correct MBean interface.
+     *
+     * @throws Exception Thrown if test fails.
+     */
+    @Test
+    public void testIgniteKernalReturnsValidPublicThreadPoolSize() throws Exception {
+        try {
+            IgniteEx igniteCrd = startGrid(0);
+
+            DynamicMBean igniteMBean = metricRegistry(igniteCrd.name(), null, GridMetricManager.IGNITE_METRICS);
+
+            assertEquals(IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT, igniteMBean.getAttribute("publicThreadPoolSize"));
+        }
+        finally {
+            stopGrid(0);
         }
     }
 

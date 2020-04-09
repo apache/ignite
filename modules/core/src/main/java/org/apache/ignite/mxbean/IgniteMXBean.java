@@ -148,6 +148,9 @@ public interface IgniteMXBean {
     /** */
     public String READ_ONLY_MODE_DURATION_DESC = "Duration of read-only mode enabled on cluster.";
 
+    /** */
+    public String PUBLIC_POOL_SIZE_DESC = "Public thread pool size.";
+
     /**
      * Gets string presentation of the version.
      *

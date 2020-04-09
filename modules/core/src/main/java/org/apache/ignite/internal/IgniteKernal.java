@@ -712,6 +712,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return String.valueOf(cfg.getPublicThreadPoolSize());
     }
 
+    /**
+     * Gets a public thread pool size to be used in grid.
+     *
+     * @return Thread pool size.
+     */
+    public int getPublicThreadPoolSize() {
+        assert cfg != null;
+
+        return cfg.getPublicThreadPoolSize();
+    }
+
     /** {@inheritDoc} */
     @Override public String getIgniteHome() {
         assert cfg != null;
@@ -4658,6 +4669,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         reg.register("gridLoggerFormatted", this::getGridLoggerFormatted, String.class,
             GRID_LOG_FORMATTED_DESC);
 
+        // TODO make the return value match method's name
         reg.register("executorServiceFormatted", this::getExecutorServiceFormatted, String.class,
             EXECUTOR_SRVC_FORMATTED_DESC);
 
@@ -4697,6 +4709,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         reg.register("loadBalancingSpiFormatted", this::getLoadBalancingSpiFormatted, String.class,
             LOAD_BALANCING_SPI_FORMATTED_DESC);
+
+        reg.register("publicThreadPoolSize", this::getPublicThreadPoolSize, Integer.class,
+            PUBLIC_POOL_SIZE_DESC);
     }
 
     /**
