@@ -161,15 +161,14 @@ public class GridJettyRestHandler extends AbstractHandler {
      *
      * @param hnd Handler.
      * @param authChecker Authentication checking closure.
-     * @param log Logger.
+     * @param ctx Kernal context.
      */
-    GridJettyRestHandler(GridKernalContext ctx, GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, IgniteLogger log) {
+    GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, GridKernalContext ctx) {
         assert hnd != null;
-        assert log != null;
 
         this.hnd = hnd;
-        this.log = log;
         this.authChecker = authChecker;
+        this.log = ctx.log(getClass());
         this.jsonMapper = new GridJettyObjectMapper(ctx);
 
         // Init default page and favicon.

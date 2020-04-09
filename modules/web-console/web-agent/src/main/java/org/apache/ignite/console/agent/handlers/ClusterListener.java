@@ -96,7 +96,7 @@ public class ClusterListener implements AutoCloseable {
     private static final long REFRESH_FREQ = 3000L;
 
     /** JSON object mapper. */
-    private static final ObjectMapper MAPPER = new GridJettyObjectMapper(null);
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** Latest topology snapshot. */
     private TopologySnapshot top;

@@ -66,7 +66,7 @@ public class RestExecutor implements AutoCloseable {
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
     /** JSON object mapper. */
-    private static final ObjectMapper MAPPER = new GridJettyObjectMapper(null);
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** */
     private final OkHttpClient httpClient;

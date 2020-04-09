@@ -48,7 +48,7 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
     private static final int DFLT_REST_PORT = 8091;
 
     /** JSON to java mapper. */
-    protected static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper(null);
+    protected static final ObjectMapper JSON_MAPPER = new GridJettyObjectMapper();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
