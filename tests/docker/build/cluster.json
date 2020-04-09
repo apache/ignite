@@ -37,8 +37,10 @@
         "port": 22,
         "user": "ducker"
       }
-    },
-    {
+    }
+  ]
+}
+
       "externally_routable_ip": "ducker04",
       "ssh_config": {
         "host": "ducker04",

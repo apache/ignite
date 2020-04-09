@@ -45,8 +45,11 @@ RUN echo 'PermitUserEnvironment yes' >> /etc/ssh/sshd_config
 # Install binary test dependencies.
 # we use the same versions as in vagrant/base.sh
 ARG IGNITE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
-ARG ARCHIVE_NAME="apache-ignite-2.8.0-bin.zip"
-RUN mkdir -p "/opt/ignite-2.8.0" && chmod a+rw /opt/ignite-2.8.0 && cd /opt && curl -s "$IGNITE_MIRROR/ignite/2.8.0/$ARCHIVE_NAME" > /opt/$ARCHIVE_NAME && unzip /opt/
+ARG RELEASE_NAME="apache-ignite-2.8.0-bin"
+RUN chmod a+wr /opt
+RUN curl -s "$IGNITE_MIRROR/ignite/2.8.0/$RELEASE_NAME.zip" > /opt/$RELEASE_NAME.zip
+RUN cd /opt && unzip $RELEASE_NAME.zip
+RUN chmod a+wr /opt/$RELEASE_NAME -R
 
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh

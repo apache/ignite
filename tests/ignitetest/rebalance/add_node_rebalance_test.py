@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -15,16 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-3}
-TC_PATHS=${TC_PATHS:-./ignitetest/}
+from ignitetest.tests.ignite_test import IgniteTest
 
-die() {
-    echo $@
-    exit 1
-}
 
-if ${SCRIPT_DIR}/ducker-ignite ssh | grep -q '(none)'; then
-    ${SCRIPT_DIR}/ducker-ignite up -n "${IGNITE_NUM_CONTAINERS}" || die "ducker-ignite up failed"
-fi
-${SCRIPT_DIR}/ducker-ignite test ${TC_PATHS} ${_DUCKTAPE_OPTIONS} || die "ducker-ignite test failed"
+class AddNodeRebalanceTest(IgniteTest):
+    """
+    Test performs rebalance tests.
+    """
+    def __init__(self, test_context):
+        super(IgniteTest, self).__init__(test_context)
+
+    def teardown(self):
+        self.ignite.stop()
+
+    def test_add_node(self):
+        """
+        Test performs add node rebalance test which consists of following steps:
+            * Start cluster.
+            * Put data to it via CacheDataProducer.
+            * Start one more node.
+            * Await for rebalance to finish.
+        """
+        for node in self.ignite.nodes:
+            node.account.ssh("touch /opt/hello-from-test.txt")

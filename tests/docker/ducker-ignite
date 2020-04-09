@@ -45,7 +45,7 @@ default_num_nodes=14
 default_jdk="openjdk:8"
 
 # The default ducker-ignite image name.
-default_image_name="ducker-ak"
+default_image_name="ducker-ignite"
 
 # Display a usage message on the terminal and exit.
 #
@@ -53,7 +53,7 @@ default_image_name="ducker-ak"
 usage() {
     local exit_status="${1}"
     cat <<EOF
-ducker-ak: a tool for running Apache Ignite tests inside Docker images.
+ducker-ignite: a tool for running Apache Ignite tests inside Docker images.
 
 Usage: ${script_path} [command] [options]
 
@@ -78,7 +78,7 @@ up [-n|--num-nodes NUM_NODES] [-f|--force] [docker-image]
 test [test-name(s)]
     Run a test or set of tests inside the currently active Ducker nodes.
     For example, to run the system test produce_bench_test, you would run:
-        ./tests/docker/ducker-ak test ./tests/ignitetest/test/core/rebalance_test.py
+        ./tests/docker/ducker-ignite test ./tests/ignitetest/test/core/rebalance_test.py
 
 ssh [node-name|user-name@node-name] [command]
     Log in to a running ducker container.  If node-name is not given, it prints
@@ -89,12 +89,12 @@ ssh [node-name|user-name@node-name] [command]
     shell.
 
 down [-q|--quiet] [-f|--force]
-    Tear down all the currently active ducker-ak nodes.  If --quiet is specified,
+    Tear down all the currently active ducker-ignite nodes.  If --quiet is specified,
     only error messages are printed. If --force or -f is specified, "docker rm -f"
-    will be used to remove the nodes, which kills currently running ducker-ak test.
+    will be used to remove the nodes, which kills currently running ducker-ignite test.
 
 purge [--f|--force]
-    Purge Docker images created by ducker-ak.  This will free disk space.
+    Purge Docker images created by ducker-ignite.  This will free disk space.
     If --force is set, we run 'docker rmi -f'.
 EOF
     exit "${exit_status}"
@@ -429,14 +429,14 @@ ducker_test() {
     for arg in "${@}"; do
         local regex=".*\/ignitetest\/(.*)"
         if [[ $arg =~ $regex ]]; then
-            local kpath=${BASH_REMATCH[1]}
-            args="${args} ./tests/ignitetest/${kpath}"
+            local ignpath=${BASH_REMATCH[1]}
+            args="${args} ./tests/ignitetest/${ignpath}"
         else
             args="${args} ${arg}"
         fi
     done
     must_pushd "${ignite_dir}"
-    (test -f ./gradlew || gradle) && ./gradlew systemTestLibs
+    #(test mvn) && mvn package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
     must_popd
     cmd="cd /opt/ignite-dev && ducktape --cluster-file /opt/ignite-dev/tests/docker/build/cluster.json $args"
     echo "docker exec ducker01 bash -c \"${cmd}\""

@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -15,16 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-3}
-TC_PATHS=${TC_PATHS:-./ignitetest/}
+from ducktape.tests.test import Test
 
-die() {
-    echo $@
-    exit 1
-}
 
-if ${SCRIPT_DIR}/ducker-ignite ssh | grep -q '(none)'; then
-    ${SCRIPT_DIR}/ducker-ignite up -n "${IGNITE_NUM_CONTAINERS}" || die "ducker-ignite up failed"
-fi
-${SCRIPT_DIR}/ducker-ignite test ${TC_PATHS} ${_DUCKTAPE_OPTIONS} || die "ducker-ignite test failed"
+from ignitetest.services.ignite import IgniteService
+
+
+class IgniteTest(Test):
+    """
+    Helper class that manages setting up a Ignite cluster. Use this if the
+    default settings for Ignite are sufficient for your test; any customization
+    needs to be done manually. Your run() method should call tearDown and
+    setUp. The Ignite service are available as the fields IgniteTest.ignite.
+    """
+    def __init__(self, test_context):
+        super(IgniteTest, self).__init__(test_context)
+
+        self.ignite = IgniteService(test_context, self.num_brokers)
+
+    def setUp(self):
+        self.ignite.start()
