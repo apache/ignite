@@ -144,9 +144,20 @@ public interface IgniteMXBean {
      * Gets a formatted instance of fully configured thread pool that is used in grid.
      *
      * @return Thread pool implementation that is used in grid.
+     * TODO GG-28441 make the return value match method's name
+     * @deprecated Use {@link #getPublicThreadPoolSize()} instead.
      */
+    @Deprecated
     @MXBeanDescription("Formatted instance of fully configured thread pool that is used in grid.")
     public String getExecutorServiceFormatted();
+
+    /**
+     * Gets a public thread pool size to be used in grid.
+     *
+     * @return Thread pool size.
+     */
+    @MXBeanDescription("Public thread pool size.")
+    public int getPublicThreadPoolSize();
 
     /**
      * Gets Ignite installation home folder.
