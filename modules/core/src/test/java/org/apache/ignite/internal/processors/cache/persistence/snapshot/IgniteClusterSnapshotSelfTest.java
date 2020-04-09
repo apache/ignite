@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -54,9 +56,11 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,6 +68,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotPath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.startedBySnapshot;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
@@ -71,6 +76,19 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
  * Cluster-wide snapshot test.
  */
 public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
+    /** Random instance. */
+    private static final Random R = new Random();
+
+    /** Time to wait while rebalance may happen. */
+    private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
+
+    /** Cache configuration for test. */
+    private static CacheConfiguration<Integer, Integer> txCcfg = new CacheConfiguration<Integer, Integer>("txCacheName")
+        .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+        .setBackups(2)
+        .setAffinity(new RendezvousAffinityFunction(false)
+            .setPartitions(CACHE_PARTS_COUNT));
+
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
 
@@ -91,11 +109,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testConsistentClusterSnapshotUnderLoad() throws Exception {
         int grids = 3;
-        String txCacheName = "txCache";
         String snpName = "backup23012020";
         AtomicInteger atKey = new AtomicInteger(CACHE_KEYS_RANGE);
         AtomicInteger txKey = new AtomicInteger(CACHE_KEYS_RANGE);
-        Random rand = new Random();
 
         IgniteEx ignite = startGrids(grids);
         startClientGrid();
@@ -108,10 +124,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         File locSnpDir = snp(notBltIgnite).snapshotLocalDir(SNAPSHOT_NAME);
         String notBltDirName = folderName(notBltIgnite);
 
-        IgniteCache<Integer, Integer> cache = ignite.createCache(new CacheConfiguration<Integer, Integer>(txCacheName)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false)
-                .setPartitions(CACHE_PARTS_COUNT)));
+        IgniteCache<Integer, Integer> cache = ignite.createCache(txCcfg);
 
         for (int idx = 0; idx < CACHE_KEYS_RANGE; idx++) {
             cache.put(txKey.incrementAndGet(), -1);
@@ -153,14 +166,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 U.await(loadLatch);
 
                 while (!Thread.currentThread().isInterrupted()) {
-                    int txIdx = rand.nextInt(grids);
+                    int txIdx = R.nextInt(grids);
 
                     // zero out the sign bit
-                    grid(txIdx).cache(txCacheName).put(txKey.incrementAndGet(), rand.nextInt() & Integer.MAX_VALUE);
+                    grid(txIdx).cache(txCcfg.getName()).put(txKey.incrementAndGet(), R.nextInt() & Integer.MAX_VALUE);
 
-                    int atomicIdx = rand.nextInt(grids);
+                    int atomicIdx = R.nextInt(grids);
 
-                    grid(atomicIdx).cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), rand.nextInt() & Integer.MAX_VALUE);
+                    grid(atomicIdx).cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), R.nextInt() & Integer.MAX_VALUE);
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
@@ -190,16 +203,80 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + DEFAULT_CACHE_NAME,
             CACHE_KEYS_RANGE, snpIg0.cache(DEFAULT_CACHE_NAME).size());
 
-        assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + txCacheName,
-            CACHE_KEYS_RANGE, snpIg0.cache(txCacheName).size());
+        assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + txCcfg.getName(),
+            CACHE_KEYS_RANGE, snpIg0.cache(txCcfg.getName()).size());
 
         snpIg0.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
             .forEach(e -> assertTrue("Snapshot must contains only negative values " +
                 "[cache=" + DEFAULT_CACHE_NAME + ", entry=" + e +']', (Integer)e.getValue() < 0));
 
-        snpIg0.cache(txCacheName).query(new ScanQuery<>(null))
+        snpIg0.cache(txCcfg.getName()).query(new ScanQuery<>(null))
             .forEach(e -> assertTrue("Snapshot must contains only negative values " +
-                "[cache=" + txCacheName + ", entry=" + e + ']', (Integer)e.getValue() < 0));
+                "[cache=" + txCcfg.getName() + ", entry=" + e + ']', (Integer)e.getValue() < 0));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotPrimaryBackupsTheSame() throws Exception {
+        int grids = 3;
+        AtomicInteger cacheKey = new AtomicInteger();
+
+        IgniteEx ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteInternalFuture<Long> atLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                int gId = R.nextInt(grids);
+
+                grid(gId).cache(DEFAULT_CACHE_NAME)
+                    .put(cacheKey.incrementAndGet(), 0);
+            }
+        }, 5, "atomic-cache-put-");
+
+        IgniteInternalFuture<Long> txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                int gId = R.nextInt(grids);
+
+                IgniteCache<Integer, Integer> txCache = grid(gId).getOrCreateCache(txCcfg);
+
+                try (Transaction tx = grid(gId).transactions().txStart()) {
+                    txCache.put(cacheKey.incrementAndGet(), 0);
+
+                    tx.commit();
+                }
+            }
+        }, 5, "tx-cache-put-");
+
+        try {
+            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+            fut.get();
+        }
+        finally {
+            txLoadFut.cancel();
+            atLoadFut.cancel();
+        }
+
+        stopAllGrids();
+
+        IgniteEx snpIg0 = startGridsFromSnapshot(grids, cfg -> snapshotPath(cfg).toString(), SNAPSHOT_NAME, false);
+
+        // Block whole rebalancing.
+        for (Ignite g : G.allGrids())
+            TestRecordingCommunicationSpi.spi(g).blockMessages((node, msg) -> msg instanceof GridDhtPartitionDemandMessage);
+
+        snpIg0.cluster().state(ACTIVE);
+
+        assertFalse("Primary and backup in snapshot must have the same counters. Rebalance must not happen.",
+            GridTestUtils.waitForCondition(() -> {
+                boolean hasMsgs = false;
+
+                for (Ignite g : G.allGrids())
+                    hasMsgs |= TestRecordingCommunicationSpi.spi(g).hasBlockedMessages();
+
+                return hasMsgs;
+            }, REBALANCE_AWAIT_TIME));
+
+        TestRecordingCommunicationSpi.stopBlockAll();
     }
 
     /** @throws Exception If fails. */
@@ -513,7 +590,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             stopAllGrids();
 
-            IgniteEx snp = startGridsFromSnapshot(2, cfg -> exSnpDir.getAbsolutePath(), SNAPSHOT_NAME);
+            IgniteEx snp = startGridsFromSnapshot(2, cfg -> exSnpDir.getAbsolutePath(), SNAPSHOT_NAME, true);
 
             assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
         }
@@ -523,8 +600,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             U.delete(exSnpDir);
         }
     }
-
-    // todo check pme-free for better performance
 
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {

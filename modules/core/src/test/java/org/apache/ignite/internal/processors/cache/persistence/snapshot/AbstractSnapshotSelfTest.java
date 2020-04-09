@@ -102,6 +102,29 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPartitions(CACHE_PARTS_COUNT));
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoverySpi discoSpi = new BlockingCustomMessageDiscoverySpi();
+
+        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+
+        return cfg.setConsistentId(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
+                .setCheckpointFrequency(3000)
+                .setPageSize(4096))
+            .setCacheConfiguration(dfltCacheCfg)
+            .setClusterStateOnStart(INACTIVE)
+            // Default work directory must be resolved earlier if snapshot used to start grids.
+            .setWorkDirectory(U.defaultWorkDirectory())
+            .setDiscoverySpi(discoSpi);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
@@ -136,29 +159,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new BlockingCustomMessageDiscoverySpi();
-
-        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
-
-        return cfg.setConsistentId(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
-                    .setPersistenceEnabled(true))
-                .setCheckpointFrequency(3000)
-                .setPageSize(4096))
-            .setCacheConfiguration(dfltCacheCfg)
-            .setClusterStateOnStart(INACTIVE)
-            // Default work directory must be resolved earlier if snapshot used to start grids.
-            .setWorkDirectory(U.defaultWorkDirectory())
-            .setDiscoverySpi(discoSpi);
     }
 
     /**
@@ -243,7 +243,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     protected IgniteEx startGridsFromSnapshot(int cnt, String snpName) throws Exception {
-        return startGridsFromSnapshot(cnt, cfg -> snapshotPath(cfg).toString(), snpName);
+        return startGridsFromSnapshot(cnt, cfg -> snapshotPath(cfg).toString(), snpName, true);
     }
 
     /**
@@ -255,7 +255,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      */
     protected IgniteEx startGridsFromSnapshot(int cnt,
         Function<IgniteConfiguration, String> path,
-        String snpName
+        String snpName,
+        boolean activate
     ) throws Exception {
         IgniteEx crd = null;
 
@@ -271,7 +272,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().state(ACTIVE);
+
+        if (activate)
+            crd.cluster().state(ACTIVE);
 
         return crd;
     }
