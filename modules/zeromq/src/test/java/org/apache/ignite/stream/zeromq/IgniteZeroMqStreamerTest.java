@@ -252,8 +252,7 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
          * @param evt Cache Event.
          * @return {@code true}.
          */
-        @Override
-        public boolean apply(CacheEvent evt) {
+        @Override public boolean apply(CacheEvent evt) {
             latch.countDown();
 
             return true;

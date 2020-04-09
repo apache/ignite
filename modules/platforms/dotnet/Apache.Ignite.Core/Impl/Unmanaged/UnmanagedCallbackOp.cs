@@ -85,6 +85,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         PluginProcessorStop = 62,
         PluginProcessorIgniteStop = 63,
         PluginCallbackInLongLongOutLong = 68,
-        EventLocalListenerApply = 69
+        EventLocalListenerApply = 69,
+        NearCacheUpdate = 70,
+        NearCacheUpdateFromThreadLocal = 71,
+        OnCacheStopped = 72,
+        OnAffinityTopologyVersionChanged = 73
     }
 }

@@ -247,6 +247,16 @@ namespace Apache.Ignite.Core.Impl.Services
             if (type.IsPrimitive)
                 return null;
 
+            if (type.IsArray)
+            {
+                Type elemType = type.GetElementType();
+
+                if (elemType == typeof(Guid?))
+                    return (writer, o) => writer.WriteGuidArray((Guid?[]) o);
+                else if (elemType == typeof(DateTime?))
+                    return (writer, o) => writer.WriteTimestampArray((DateTime?[]) o);
+            }
+
             var handler = BinarySystemHandlers.GetWriteHandler(type);
 
             if (handler != null)
@@ -257,6 +267,9 @@ namespace Apache.Ignite.Core.Impl.Services
 
             if (arg is ICollection)
                 return (writer, o) => writer.WriteCollection((ICollection) o);
+
+            if (arg is DateTime)
+                return (writer, o) => writer.WriteTimestamp((DateTime) o);
 
             return null;
         }

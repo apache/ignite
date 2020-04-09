@@ -1667,7 +1667,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ", time=" + U.nanosToMillis(end - start) + "ms]");
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException | IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
         }
     }
@@ -2426,8 +2426,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (super.onDone(res, err)) {
             afterLsnrCompleteFut.onDone();
 
-            if (err == null)
+            if (err == null) {
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
+
+                cctx.exchange().clusterRebalancedMetric().value(rebalanced);
+            }
 
             if (log.isInfoEnabled()) {
                 log.info("Completed partition exchange [localNode=" + cctx.localNodeId() +
@@ -3674,7 +3677,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
 
-            if (!cctx.affinity().rebalanceRequired())
+            if (!cctx.affinity().rebalanceRequired() && !deactivateCluster())
                 msg.rebalanced(true);
 
             // Lost partition detection should be done after full message is prepared otherwise in case of IGNORE policy
@@ -3905,8 +3908,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     // Do not validate read or write through caches or caches with disabled rebalance
                     // or ExpiryPolicy is set or validation is disabled.
-                    boolean eternalExpiryPolicy = grpCtx != null && (grpCtx.config().getExpiryPolicyFactory() == null
-                        || grpCtx.config().getExpiryPolicyFactory().create() instanceof EternalExpiryPolicy);
+                    boolean customExpiryPlc = Optional.ofNullable(grpCtx)
+                        .map(CacheGroupContext::caches)
+                        .orElseGet(Collections::emptyList)
+                        .stream()
+                        .anyMatch(ctx -> ctx.expiry() != null && !(ctx.expiry() instanceof EternalExpiryPolicy));
 
                     if (grpCtx == null
                         || grpCtx.config().isReadThrough()
@@ -3914,7 +3920,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         || grpCtx.config().getCacheStoreFactory() != null
                         || grpCtx.config().getRebalanceDelay() == -1
                         || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
-                        || !eternalExpiryPolicy
+                        || customExpiryPlc
                         || SKIP_PARTITION_SIZE_VALIDATION)
                         return null;
 

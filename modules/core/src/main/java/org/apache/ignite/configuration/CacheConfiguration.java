@@ -268,6 +268,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Near cache configuration. */
     private NearCacheConfiguration<K, V> nearCfg;
 
+    /** Platform near cache configuration. Enables native near cache in platforms (.NET, ...). */
+    private PlatformNearCacheConfiguration platformNearCfg;
+
     /** Default value for 'copyOnRead' flag. */
     public static final boolean DFLT_COPY_ON_READ = true;
 
@@ -486,6 +489,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         memPlcName = cc.getDataRegionName();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
+        platformNearCfg = cc.getPlatformNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
         diskPageCompression = cc.getDiskPageCompression();
@@ -772,6 +776,36 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
         this.nearCfg = nearCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets platform near cache configuration.
+     *
+     * @return Platform near cache configuration or null.
+     */
+    public PlatformNearCacheConfiguration getPlatformNearConfiguration() {
+        return platformNearCfg;
+    }
+
+    /**
+     * Sets platform near cache configuration.
+     * Enables native platform (only .NET currently) near cache when not null.
+     * Cache entries will be stored in deserialized form in native platform memory (e.g. .NET objects in CLR heap).
+     * <p>
+     * When enabled on server nodes, all primary keys will be stored in platform memory as well.
+     * <p>
+     * Same eviction policy applies to near cache entries for all keys on client nodes and
+     * non-primary keys on server nodes.
+     * <p>
+     * Enabling this can greatly improve performance for key-value operations and scan queries,
+     * at the expense of RAM usage.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setPlatformNearConfiguration(PlatformNearCacheConfiguration platformNearCfg) {
+        this.platformNearCfg = platformNearCfg;
 
         return this;
     }
@@ -1202,15 +1236,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets cache rebalance order. Rebalance order can be set to non-zero value for caches with
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
+     * Note that caches with {@link CacheRebalanceMode#SYNC SYNC} rebalancing mode are always rebalanced prior to caches
+     * with {@link CacheRebalanceMode#ASYNC ASYNC} rebalancing mode when rebalancing order is the same.
      * <p/>
-     * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
+     * The rebalance order guarantees that rebalancing for this cache will start only when rebalancing for
      * all caches with smaller rebalance order will be completed.
      * <p/>
-     * Note that cache with order {@code 0} does not participate in ordering. This means that cache with
-     * rebalance order {@code 0} will never wait for any other caches. All caches with order {@code 0} will
-     * be rebalanced right away concurrently with each other and ordered rebalance processes.
-     * <p/>
-     * If not set, cache order is 0, i.e. rebalancing is not ordered.
+     * If not set, cache order is 0.
      *
      * @return Cache rebalance order.
      */
@@ -2358,7 +2390,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setEncryptionEnabled(boolean encryptionEnabled) {
         this.encryptionEnabled = encryptionEnabled;
-        
+
         return this;
     }
 
