@@ -314,7 +314,7 @@ public class IndexStorageImpl implements IndexStorage {
     /**
      *
      */
-    private static class IndexItem {
+    public static class IndexItem {
         /** */
         private byte[] idxName;
 
@@ -330,9 +330,19 @@ public class IndexStorageImpl implements IndexStorage {
             this.pageId = pageId;
         }
 
+        /** */
+        public long pageId() {
+            return pageId;
+        }
+
+        /** */
+        public String nameString() {
+            return new String(idxName);
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "I [idxName=" + new String(idxName) + ", pageId=" + U.hexLong(pageId) + ']';
+            return "I [idxName=" + nameString() + ", pageId=" + U.hexLong(pageId) + ']';
         }
     }
 

@@ -14,35 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.tree;
-
-import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+package org.apache.ignite.development.utils.indexreader;
 
 /**
- *
+ * This class is used for index tree traversal to store each tree's items. It's useful to have different storage
+ * logic for different trees. See implementations of this interface for more info.
  */
-public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
+interface ItemStorage<T> extends Iterable<T> {
     /** */
-    public static final IOVersions<CacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareDataLeafIO(1)
-    );
+    void add(T item);
 
-    /**
-     * @param ver Page format version.
-     */
-    private CacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
-    }
+    /** */
+    boolean contains(T item);
 
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean storeCacheId() {
-        return true;
-    }
+    /** */
+    long size();
 }
