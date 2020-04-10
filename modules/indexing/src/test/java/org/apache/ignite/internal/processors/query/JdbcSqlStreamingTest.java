@@ -29,13 +29,15 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.junit.Test;
 
 /**
- *
+ * Tests behavior of SQL engine through JDBC API in streaming mode.
  */
 public class JdbcSqlStreamingTest extends AbstractIndexingCommonTest {
     /** */
     private static final int ROW_NUM = 1600;
 
     /**
+     * Tests SQL INSERT statement in streaming mode with values supplied by function call.
+     *
      * @throws Exception If failed.
      */
     @Test
