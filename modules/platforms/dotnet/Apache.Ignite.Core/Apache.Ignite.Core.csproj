@@ -92,6 +92,7 @@
     <Compile Include="Impl\Cache\Near\NearCacheManager.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
+    <Compile Include="Impl\Cache\Query\NearQueryCursor.cs" />
     <Compile Include="Impl\Client\ClientContextBase.cs" />
     <Compile Include="Impl\Client\ClientOpExtensions.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
