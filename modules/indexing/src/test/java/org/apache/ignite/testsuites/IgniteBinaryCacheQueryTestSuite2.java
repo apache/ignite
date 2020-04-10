@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.query.SqlLocalQueryConnectionAndSta
 import org.apache.ignite.internal.processors.query.SqlPartOfComplexPkLookupTest;
 import org.apache.ignite.internal.processors.query.SqlQueriesTopologyMappingTest;
 import org.apache.ignite.internal.processors.query.SqlTwoCachesInGroupWithSameEntryTest;
+import org.apache.ignite.internal.processors.query.StopNodeOnSqlQueryWithIncompatibleTypeTest;
 import org.apache.ignite.internal.processors.query.h2.CacheQueryEntityWithDateTimeApiFieldsTest;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessorTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.CacheQueryMemoryLeakTest;
@@ -84,6 +85,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    StopNodeOnSqlQueryWithIncompatibleTypeTest.class,
+
     SqlCacheStartStopTest.class,
 
     SqlIndexConsistencyAfterInterruptAtomicCacheOperationTest.class,
