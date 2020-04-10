@@ -14,35 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.development.utils.indexreader;
 
-package org.apache.ignite.internal.processors.cache.tree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
-import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import java.util.List;
 
 /**
- *
+ * Content of the deserialized page. When content is gained, we can free the page buffer.
  */
-public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
+class PageContent {
     /** */
-    public static final IOVersions<CacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareDataLeafIO(1)
-    );
+    final PageIO io;
 
-    /**
-     * @param ver Page format version.
-     */
-    private CacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
-    }
+    /** List of children page ids, or links to root pages (for meta leaf). */
+    final List<Long> linkedPageIds;
 
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
-    }
+    /** List of items (for leaf pages). */
+    final List<Object> items;
 
-    /** {@inheritDoc} */
-    @Override public boolean storeCacheId() {
-        return true;
+    /** Some info. */
+    final String info;
+
+    /** */
+    public PageContent(PageIO io, List<Long> linkedPageIds, List<Object> items, String info) {
+        this.io = io;
+        this.linkedPageIds = linkedPageIds;
+        this.items = items;
+        this.info = info;
     }
 }

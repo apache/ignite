@@ -14,35 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.development.utils.indexreader;
 
-package org.apache.ignite.internal.processors.cache.tree;
+import org.jetbrains.annotations.NotNull;
 
-import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- *
+ * Stores all index items.
  */
-public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
-    /** */
-    public static final IOVersions<CacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareDataLeafIO(1)
-    );
+class ItemsListStorage<T> implements ItemStorage<T> {
+    private final List<T> store = new LinkedList<>();
 
-    /**
-     * @param ver Page format version.
-     */
-    private CacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
+    /** {@inheritDoc} */
+    @Override public void add(T item) {
+        store.add(item);
     }
 
     /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
+    @Override public boolean contains(T item) {
+        throw new UnsupportedOperationException("'contains' operation is not supported by ItemsListStorage.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeCacheId() {
-        return true;
+    @Override public long size() {
+        return store.size();
+    }
+
+    /** {@inheritDoc} */
+    @NotNull
+    @Override public Iterator<T> iterator() {
+        return store.iterator();
     }
 }

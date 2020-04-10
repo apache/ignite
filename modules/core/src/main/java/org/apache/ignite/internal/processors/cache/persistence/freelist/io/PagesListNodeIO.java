@@ -148,7 +148,7 @@ public class PagesListNodeIO extends PageIO {
      * @param idx Item index.
      * @return Item at the given index.
      */
-    private long getAt(long pageAddr, int idx) {
+    public long getAt(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx));
     }
 

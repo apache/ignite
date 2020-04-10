@@ -14,35 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.development.utils;
 
-package org.apache.ignite.internal.processors.cache.tree;
-
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.development.utils.indexreader.IgniteIndexReaderTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- *
+ * Test suite for dev utils.
  */
-public final class DataLeafIO extends AbstractDataLeafIO {
-    /** */
-    public static final IOVersions<DataLeafIO> VERSIONS = new IOVersions<>(
-        new DataLeafIO(1)
-    );
-
-    /**
-     * @param ver Page format version.
-     */
-    private DataLeafIO(int ver) {
-        super(T_DATA_REF_LEAF, ver, 12);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return CU.UNDEFINED_CACHE_ID;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean storeCacheId() {
-        return false;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteIndexReaderTest.class
+})
+public class DevUtilsTestSuite {
 }
