@@ -292,14 +292,14 @@ public interface PlatformContext {
     public String platform();
 
     /**
-     * Gets a value indicating whether current platform supports native near cache.
+     * Gets a value indicating whether current platform supports native cache.
      *
-     * @return True when native near caching is supported; false otherwise.
+     * @return True when native caching is supported; false otherwise.
      */
-    boolean isNativeNearCacheSupported();
+    boolean isPlatformCacheSupported();
 
     /**
-     * Updates the near cache.
+     * Updates the platform cache cache.
      *
      * @param cacheId Cache id.
      * @param keyBytes Serialized key to update.
@@ -307,15 +307,15 @@ public interface PlatformContext {
      * @param part Key partition.
      * @param ver Key version.
      */
-    public void updateNearCache(int cacheId, byte[] keyBytes, byte[] valBytes, int part, AffinityTopologyVersion ver);
+    public void updatePlatformCache(int cacheId, byte[] keyBytes, byte[] valBytes, int part, AffinityTopologyVersion ver);
 
     /**
-     * Enables thread-local optimization for near cache update.
+     * Enables thread-local optimization for platform cache update.
      */
-    void enableThreadLocalForNearUpdate();
+    void enableThreadLocalForPlatformCacheUpdate();
 
     /**
-     * Disables thread-local optimization for near cache update.
+     * Disables thread-local optimization for platform cache update.
      */
-    void disableThreadLocalForNearUpdate();
+    void disableThreadLocalForPlatformCacheUpdate();
 }

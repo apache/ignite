@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache.Near
+namespace Apache.Ignite.Core.Impl.Cache.Platform
 {
     using System;
     using System.Diagnostics;
@@ -27,25 +27,25 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Manages <see cref="NearCache{TK,TV}"/> instances.
+    /// Manages <see cref="PlatformCache{TK,TV}"/> instances.
     /// Multiple <see cref="CacheImpl{TK,TV}"/> instances can exist for a given cache, and all of them share the same
-    /// <see cref="NearCache{TK,TV}"/> instance.
+    /// <see cref="PlatformCache{TK,TV}"/> instance.
     /// </summary>
-    [DebuggerDisplay("NearCacheManager [IgniteInstanceName={_ignite.GetIgnite().Name}]")]
-    internal class NearCacheManager
+    [DebuggerDisplay("PlatformCacheManager [IgniteInstanceName={_ignite.GetIgnite().Name}]")]
+    internal class PlatformCacheManager
     {
         /// <summary>
-        /// Holds thread-local key/val pair to be used for updating Near Cache .
+        /// Holds thread-local key/val pair to be used for updating platform cache.
         /// </summary>
         internal static readonly ThreadLocal<object> ThreadLocalPair = new ThreadLocal<object>();
         
         /// <summary>
-        /// Near caches per cache id.
+        /// Platform caches per cache id.
         /// Multiple <see cref="CacheImpl{TK,TV}"/> instances can point to the same Ignite cache,
-        /// and share one <see cref="NearCache{TK,TV}"/> instance. 
+        /// and share one <see cref="PlatformCache{TK,TV}"/> instance. 
         /// </summary> 
-        private readonly CopyOnWriteConcurrentDictionary<int, INearCache> _nearCaches
-            = new CopyOnWriteConcurrentDictionary<int, INearCache>();
+        private readonly CopyOnWriteConcurrentDictionary<int, IPlatformCache> _caches
+            = new CopyOnWriteConcurrentDictionary<int, IPlatformCache>();
 
         /// <summary>
         /// Ignite.
@@ -58,10 +58,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         private volatile object _affinityTopologyVersion;
         
         /// <summary>
-        /// Initializes a new instance of the <see cref="NearCacheManager"/> class. 
+        /// Initializes a new instance of the <see cref="PlatformCacheManager"/> class. 
         /// </summary>
         /// <param name="ignite">Ignite.</param>
-        public NearCacheManager(IIgniteInternal ignite)
+        public PlatformCacheManager(IIgniteInternal ignite)
         {
             Debug.Assert(ignite != null);
 
@@ -70,57 +70,57 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         }
 
         /// <summary>
-        /// Gets or creates the near cache.
+        /// Gets or creates the platform cache.
         /// </summary>
-        public INearCache GetOrCreateNearCache(CacheConfiguration cacheConfiguration)
+        public IPlatformCache GetOrCreatePlatformCache(CacheConfiguration cacheConfiguration)
         {
             Debug.Assert(cacheConfiguration != null);
 
             var cacheId = BinaryUtils.GetCacheId(cacheConfiguration.Name);
             
-            return _nearCaches.GetOrAdd(cacheId, _ => CreateNearCache(cacheConfiguration));
+            return _caches.GetOrAdd(cacheId, _ => CreatePlatformCache(cacheConfiguration));
         }
 
         /// <summary>
-        /// Gets near cache when it exists.
+        /// Gets platform cache when it exists.
         /// </summary>
-        public INearCache TryGetNearCache(int cacheId)
+        public IPlatformCache TryGetPlatformCache(int cacheId)
         {
-            INearCache nearCache;
-            return _nearCaches.TryGetValue(cacheId, out nearCache) ? nearCache : null;
+            IPlatformCache platformCache;
+            return _caches.TryGetValue(cacheId, out platformCache) ? platformCache : null;
         }
         
         /// <summary>
-        /// Reads cache entry from a stream and updates the near cache.
+        /// Reads cache entry from a stream and updates the platform cache.
         /// </summary>
         public void Update(int cacheId, IBinaryStream stream, Marshaller marshaller)
         {
-            var nearCache = _nearCaches.GetOrAdd(cacheId, 
-                _ => CreateNearCache(_ignite.GetCacheConfiguration(cacheId)));
+            var cache = _caches.GetOrAdd(cacheId, 
+                _ => CreatePlatformCache(_ignite.GetCacheConfiguration(cacheId)));
             
-            nearCache.Update(stream, marshaller);
+            cache.Update(stream, marshaller);
         }
 
         /// <summary>
-        /// Updates near cache from <see cref="ThreadLocalPair"/>.
+        /// Updates platform cache from <see cref="ThreadLocalPair"/>.
         /// </summary>
         public void UpdateFromThreadLocal(int cacheId, int partition, AffinityTopologyVersion affinityTopologyVersion)
         {
-            var nearCache = TryGetNearCache(cacheId);
+            var cache = TryGetPlatformCache(cacheId);
 
-            if (nearCache != null)
+            if (cache != null)
             {
-                nearCache.UpdateFromThreadLocal(partition, affinityTopologyVersion);
+                cache.UpdateFromThreadLocal(partition, affinityTopologyVersion);
             }
         }
 
         /// <summary>
-        /// Stops near cache.
+        /// Stops platform cache.
         /// </summary>
         public void Stop(int cacheId)
         {
-            INearCache cache;
-            if (_nearCaches.Remove(cacheId, out cache))
+            IPlatformCache cache;
+            if (_caches.Remove(cacheId, out cache))
             {
                 cache.Stop();
             }
@@ -135,16 +135,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         }
         
         /// <summary>
-        /// Creates near cache.
+        /// Creates platform cache.
         /// </summary>
-        private INearCache CreateNearCache(CacheConfiguration cacheConfiguration)
+        private IPlatformCache CreatePlatformCache(CacheConfiguration cacheConfiguration)
         {
-            var nearCfg = cacheConfiguration.PlatformNearConfiguration;
-            Debug.Assert(nearCfg != null);
+            var platformCfg = cacheConfiguration.PlatformCacheConfiguration;
+            Debug.Assert(platformCfg != null);
             
             Func<object> affinityTopologyVersionFunc = () => _affinityTopologyVersion;
             var affinity = _ignite.GetAffinity(cacheConfiguration.Name);
-            var keepBinary = nearCfg.KeepBinary;
+            var keepBinary = platformCfg.KeepBinary;
 
             TypeResolver resolver = null;
             Func<string, string, Type> resolve = (typeName, fieldName) =>
@@ -164,24 +164,24 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
                 if (resolved == null)
                 {
                     throw new InvalidOperationException(string.Format(
-                        "Can not create .NET Near Cache: {0}.{1} is invalid. Failed to resolve type: '{2}'", 
-                        typeof(PlatformNearCacheConfiguration).Name, fieldName, typeName));
+                        "Can not create .NET Platform Cache: {0}.{1} is invalid. Failed to resolve type: '{2}'", 
+                        typeof(PlatformCacheConfiguration).Name, fieldName, typeName));
                 }
 
                 return resolved;
             };
 
-            var keyType = resolve(nearCfg.KeyTypeName, "KeyTypeName");
-            var valType = resolve(nearCfg.ValueTypeName, "ValueTypeName");
-
-            var cacheType = typeof(NearCache<,>).MakeGenericType(keyType, valType);
-            var nearCache = Activator.CreateInstance(
+            var keyType = resolve(platformCfg.KeyTypeName, "KeyTypeName");
+            var valType = resolve(platformCfg.ValueTypeName, "ValueTypeName");
+            var cacheType = typeof(PlatformCache<,>).MakeGenericType(keyType, valType);
+            
+            var platformCache = Activator.CreateInstance(
                 cacheType, 
                 affinityTopologyVersionFunc, 
                 affinity,
                 keepBinary);
             
-            return (INearCache) nearCache;
+            return (IPlatformCache) platformCache;
         }
         
         /// <summary>
@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         /// </summary>
         private void OnClientDisconnected(object sender, EventArgs e)
         {
-            foreach (var cache in _nearCaches)
+            foreach (var cache in _caches)
             {
                 cache.Value.Clear();
             }
