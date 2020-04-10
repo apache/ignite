@@ -46,6 +46,7 @@ public class JdbcSqlStreamingTest extends AbstractIndexingCommonTest {
 
         try (Connection conn = driver.connect("jdbc:ignite:thin://localhost", new Properties())) {
             execSql(conn, "CREATE TABLE city1 (id int primary key, name varchar, name1 uuid);");
+
             execSql(conn, "SET STREAMING ON ALLOW_OVERWRITE ON");
 
             PreparedStatement ps = conn.prepareStatement("INSERT INTO city1 (id, name, name1) VALUES (?, ?, RANDOM_UUID())");
@@ -54,6 +55,7 @@ public class JdbcSqlStreamingTest extends AbstractIndexingCommonTest {
                 String s1 = String.valueOf(Math.random());
 
                 ps.setInt(1, i);
+
                 ps.setString(2, s1);
 
                 ps.execute();
@@ -73,6 +75,7 @@ public class JdbcSqlStreamingTest extends AbstractIndexingCommonTest {
                 assertEquals(rowNum, rs.getInt(1));
 
                 Double.parseDouble(rs.getString(2));
+
                 UUID.fromString(rs.getString(3));
 
                 rowNum++;
@@ -93,6 +96,7 @@ public class JdbcSqlStreamingTest extends AbstractIndexingCommonTest {
         PreparedStatement ps = conn.prepareStatement(sql);
 
         ps.execute();
+
         ps.close();
     }
 }
