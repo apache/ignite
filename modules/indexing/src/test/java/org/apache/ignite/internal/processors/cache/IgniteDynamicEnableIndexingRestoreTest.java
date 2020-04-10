@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -210,44 +209,6 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         }
     }
 
-    @Test
-    public void failScenario() throws Exception{
-        performTestWithIndexingFailure(false);
-    }
-
-    @Test
-    public void successScenario() throws Exception{
-        performTestWithIndexingFailure(true);
-    }
-
-
-    private void performTestWithIndexingFailure(boolean restart) throws Exception {
-        {
-            IgniteEx ig = startGrids(2);
-
-            ig.cluster().state(ClusterState.ACTIVE);
-
-            IgniteCache<?, ?> cache = ig.createCache(testCacheConfiguration(POI_CACHE_NAME));
-
-            fillTestData(ig);
-
-            cache.enableIndexing(POI_SCHEMA_NAME, testQueryEntities()).get();
-
-            cache.indexReadyFuture().get();
-
-            if (restart) {
-                stopAllGrids();
-
-                ig = startGrids(2);
-
-                ig.cluster().state(ClusterState.ACTIVE);
-            }
-
-            performQueryingIntegrityCheck(ig);
-
-        }
-    }
-
     /** */
     private void prepareTestGrid() throws Exception {
             IgniteEx ig = startGrids(2);
@@ -276,7 +237,6 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
         assertEquals(NUM_ENTRIES, res.size());
 
-        // Corrupted tree when delete when NAME_IDX;
         cache.query(new SqlFieldsQuery(String.format("DELETE FROM %s WHERE _key = %s", POI_TABLE_NAME, "100"))
             .setSchema(POI_SCHEMA_NAME)).getAll();
 
@@ -318,24 +278,6 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
                     .setField(LONGITUDE_FIELD_NAME, rnd.nextDouble(), Double.class)
                     .build();
 
-                s.addData(i, bo);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private void fillTestData(
-        Ignite ig,
-        Function<Ignite, BinaryObject> producer,
-        boolean allowOverwrite
-    ) {
-        try (IgniteDataStreamer<Object, Object> s = ig.dataStreamer(POI_CACHE_NAME)) {
-            s.allowOverwrite(allowOverwrite);
-
-            for (int i = 0; i < 500; i++) {
-                BinaryObject bo = producer.apply(ig);
                 s.addData(i, bo);
             }
         }
