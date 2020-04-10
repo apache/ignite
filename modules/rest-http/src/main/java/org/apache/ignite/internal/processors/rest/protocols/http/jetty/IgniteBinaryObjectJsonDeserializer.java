@@ -23,14 +23,10 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -246,98 +242,39 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          * @throws IOException if failed.
          */
         private Object readValue(int type, String field, JsonNode node, BinaryTypeImpl parentType) throws IOException {
+            Class<?> baseCls = typeClass(type, field, node, parentType);
+
+            if (baseCls != null)
+                return mapper.treeToValue(node, baseCls);
+
+            return deserialize0(parentType.fieldTypeName(field), node, mapper);
+        }
+
+        /**
+         * @param type Field type.
+         * @param field Field name.
+         * @param node JSON node.
+         * @param parentType Parent type.
+         * @return Class.
+         * @throws IOException if failed.
+         */
+        private Class<?> typeClass(int type, String field, JsonNode node, BinaryTypeImpl parentType) throws IOException {
             switch (type) {
-                case GridBinaryMarshaller.BYTE:
-                    return (byte)node.shortValue();
-
-                case GridBinaryMarshaller.SHORT:
-                    return node.shortValue();
-
-                case GridBinaryMarshaller.INT:
-                    return node.intValue();
-
-                case GridBinaryMarshaller.LONG:
-                    return node.longValue();
-
-                case GridBinaryMarshaller.FLOAT:
-                    return node.floatValue();
-
-                case GridBinaryMarshaller.DOUBLE:
-                    return node.doubleValue();
-
-                case GridBinaryMarshaller.DECIMAL:
-                    return node.decimalValue();
-
-                case GridBinaryMarshaller.STRING:
-                    return node.asText();
-
                 case GridBinaryMarshaller.MAP:
-                    return mapper.treeToValue(node, Map.class);
-
-                case GridBinaryMarshaller.BYTE_ARR:
-                    return node.binaryValue();
-
-                case GridBinaryMarshaller.SHORT_ARR:
-                    return toArray(type, node, JsonNode::shortValue);
-
-                case GridBinaryMarshaller.INT_ARR:
-                    return toArray(type, node, JsonNode::intValue);
-
-                case GridBinaryMarshaller.LONG_ARR:
-                    return toArray(type, node, JsonNode::longValue);
-
-                case GridBinaryMarshaller.FLOAT_ARR:
-                    return toArray(type, node, JsonNode::floatValue);
-
-                case GridBinaryMarshaller.DOUBLE_ARR:
-                    return toArray(type, node, JsonNode::doubleValue);
-
-                case GridBinaryMarshaller.DECIMAL_ARR:
-                    return toArray(type, node, JsonNode::decimalValue);
-
-                case GridBinaryMarshaller.BOOLEAN_ARR:
-                    return toArray(type, node, JsonNode::booleanValue);
-
-                case GridBinaryMarshaller.CHAR_ARR:
-                    return node.asText().toCharArray();
-
-                case GridBinaryMarshaller.UUID_ARR:
-                    return toArray(type, node, n -> UUID.fromString(n.asText()));
-
-                case GridBinaryMarshaller.STRING_ARR:
-                    return toArray(type, node, JsonNode::asText);
-
-                case GridBinaryMarshaller.TIMESTAMP_ARR:
-                    return toArray(type, node, n -> Timestamp.valueOf(n.textValue()));
-
-                case GridBinaryMarshaller.DATE_ARR:
-                    return toArray(type, node, n -> {
-                        try {
-                            return mapper.treeToValue(n, java.util.Date.class);
-                        }
-                        catch (IOException e) {
-                            throw new IllegalArgumentException("Unable to parse date [field=" + field + "]", e);
-                        }
-                    });
-
+                    return Map.class;
                 case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.COL:
                 case GridBinaryMarshaller.OBJ:
                 case GridBinaryMarshaller.ENUM:
-                    Class cls = getFieldClass(parentType, field);
+                    Class<?> baseCls = getFieldClass(parentType, field);
 
-                    if (cls == null && !node.isArray())
+                    if (baseCls == null && !node.isArray())
                         throw new IOException("Unable to deserialize field [name=" + field + ", type=" + type + "]");
 
-                    //noinspection unchecked
-                    return mapper.treeToValue(node, cls == null ? ArrayList.class : cls);
+                    return baseCls == null ? ArrayList.class : baseCls;
+                default:
+                    return BinaryUtils.FLAG_TO_CLASS.get((byte)type);
             }
-
-            Class<?> sysCls = BinaryUtils.FLAG_TO_CLASS.get((byte)type);
-
-            String typeName = sysCls == null ? parentType.fieldTypeName(field) : sysCls.getName();
-
-            return deserialize0(typeName, node, mapper);
         }
 
         /**
@@ -358,28 +295,6 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             }
 
             return null;
-        }
-
-        /**
-         * Fill array using JSON node elements.
-         *
-         * @param typeId Binary type ID.
-         * @param jsonNode JSON node.
-         * @param mapFunc Function to extract data from JSON element.
-         * @param <T> Array element type.
-         * @return Resulting array.
-         */
-        private <T> Object toArray(int typeId, JsonNode jsonNode, Function<JsonNode, T> mapFunc) {
-            Class<?> arrCls = BinaryUtils.FLAG_TO_CLASS.get((byte)typeId);
-
-            assert arrCls != null : typeId;
-
-            Object arr = Array.newInstance(arrCls.getComponentType(), jsonNode.size());
-
-            for (int i = 0; i < jsonNode.size(); i++)
-                Array.set(arr, i, mapFunc.apply(jsonNode.get(i)));
-
-            return arr;
         }
     }
 }

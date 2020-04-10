@@ -897,6 +897,11 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
+                String keepBinary = (String)params.get("keepBinary");
+
+                if (keepBinary != null)
+                    restReq0.keepBinary(Boolean.parseBoolean(keepBinary));
+
                 String distributedJoins = (String)params.get("distributedJoins");
 
                 if (distributedJoins != null)

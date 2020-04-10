@@ -31,9 +31,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -370,30 +374,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         checkJson(ret, simple);
 
-        ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY,
+        JsonNode val = queryBinary(
+            cacheName,
             "type", Person.class.getSimpleName(),
             "pageSize", "1",
             "qry", "orgId = ?",
-            "arg1", "100"
+            "arg1", String.valueOf(simple.getOrganizationId())
         );
-
-        info("SQL command result: " + ret);
-
-        JsonNode res = validateJsonResponse(ret);
-
-        JsonNode items = res.get("items");
-        assertNotNull(items);
-
-        assertEquals(1, items.size());
-
-        // Ensures that we don't need to close the cursor.
-        assertFalse(queryCursorFound());
-
-        JsonNode pair = items.get(0);
-        assertNotNull(pair);
-
-        JsonNode val = pair.get("value");
-        assertNotNull(val);
 
         assertEquals(simple.getOrganizationId().intValue(), val.get("orgId").intValue());
         assertEquals(simple.getSalary(), val.get("salary").doubleValue());
@@ -410,32 +397,71 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testPutUnregistered() throws Exception {
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("id", Long.class.getName());
+        fields.put("name", String.class.getName());
+        fields.put("doubleVal", Double.class.getName());
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("testCache");
+
+        String valType = "SomeNewType";
+
+        ccfg.setQueryEntities(
+            Collections.singletonList(
+                new QueryEntity()
+                    .setKeyType("java.lang.Integer")
+                    .setValueType(valType)
+                    .setFields(fields)
+                    .setIndexes(Collections.singleton(new QueryIndex("id"))))
+        );
+
+        IgniteCache cache = grid(0).createCache(ccfg);
+
         List<Integer> list = F.asList(1, 2, 3);
 
         OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list, null);
 
-        putBinary(DEFAULT_CACHE_NAME, "300", newType);
+        putBinary(cache.getName(), "300", newType, valType);
 
-        assertEquals(newType, getBinary(DEFAULT_CACHE_NAME, "300", OuterClass.class));
-        assertEquals(newType, jcache().get(300));
+        assertEquals(newType, getBinary(cache.getName(), "300", OuterClass.class));
 
         // Sending "optional" (new) field for registered binary type.
-        OuterClass update = new OuterClass(-1, "update", 0.7d, list, true);
+        OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list, true);
 
-        putBinary(DEFAULT_CACHE_NAME, "301", update);
+        putBinary(cache.getName(), "301", newTypeUpdate, valType);
 
-        assertEquals(update, getBinary(DEFAULT_CACHE_NAME, "301", OuterClass.class));
-        assertEquals(update, jcache().get(301));
+        assertEquals(newTypeUpdate, getBinary(cache.getName(), "301", OuterClass.class));
+
+        // Check query result.
+        JsonNode res = queryBinary(
+            cache.getName(),
+            "type", valType,
+            "pageSize", "1",
+            "keepBinary", "true",
+            "qry", "id = ?",
+            "arg1", String.valueOf(newTypeUpdate.getId())
+        );
+
+        assertEquals(newTypeUpdate, JSON_MAPPER.treeToValue(res, OuterClass.class));
+
+        grid(0).destroyCache(ccfg.getName());
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testPutComplexBinary() throws Exception {
+    public void testPutComplexObject() throws Exception {
         String cacheName = "complex";
 
         DateFormat df = JSON_MAPPER.getDateFormat();
+
+        OuterClass[] objects = new OuterClass[3];
+
+        objects[0] = new OuterClass(111, "out-0", 0.7d, F.asList(9, 1), false);
+        objects[1] = new OuterClass(112, "out-1", 0.1d, F.asList(9, 1), false);
+        objects[2] = new OuterClass(113, "out-2", 0.3d, F.asList(9, 1), false);
 
         Complex complex = new Complex(
             1234567,
@@ -452,7 +478,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             new byte[] {4, 1, 2},
             new char[] {'a', 'b', 'c'},
             COLOR.GREEN,
-            new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1), false)
+            new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1), false),
+            objects
         );
 
         putBinary(cacheName, "300", complex);
@@ -460,7 +487,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertEquals(complex, getBinary(cacheName, "300", Complex.class));
         assertEquals(complex, grid(0).cache(cacheName).get(300));
 
-        String ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY,
+        // Check query result.
+        JsonNode res = queryBinary(
+            cacheName,
             "type", Complex.class.getSimpleName(),
             "pageSize", "1",
             "qry", "sqlDate > ? and sqlDate < ?",
@@ -468,26 +497,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             "arg2", "2011-03-11"
         );
 
-        info("SQL command result: " + ret);
-
-        JsonNode res = validateJsonResponse(ret);
-
-        JsonNode items = res.get("items");
-        assertNotNull(items);
-
-        assertEquals(1, items.size());
-
-        assertFalse(queryCursorFound());
-
-        JsonNode pair = items.get(0);
-        assertNotNull(pair);
-
-        JsonNode val = pair.get("value");
-        assertNotNull(val);
-
-        Complex result = JSON_MAPPER.treeToValue(val, Complex.class);
-
-        assertEquals(complex, result);
+        assertEquals(complex, JSON_MAPPER.treeToValue(res, Complex.class));
     }
 
     /**
@@ -2938,6 +2948,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     private void putBinary(String cacheName, String key, Object obj) throws Exception {
+        putBinary(cacheName, key, obj, obj.getClass().getName());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param key Cache key.
+     * @param obj Cache value.
+     * @param type Cache value type.
+     * @throws Exception If failed.
+     */
+    private void putBinary(String cacheName, String key, Object obj, String type) throws Exception {
         String json = JSON_MAPPER.writeValueAsString(obj);
 
         info("Put: " + json);
@@ -2945,7 +2966,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         String ret = content(cacheName, GridRestCommand.CACHE_PUT,
             "keyType", "int",
             "key", key,
-            "valueType", obj.getClass().getName(),
+            "valueType", type,
             "val", json
         );
 
@@ -2973,6 +2994,35 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         JsonNode res = assertResponseSucceeded(ret, false);
 
         return JSON_MAPPER.treeToValue(res, cls);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param params Query parameters.
+     * @return Json query result.
+     * @throws Exception If failed.
+     */
+    private JsonNode queryBinary(String cacheName, String ... params) throws Exception {
+        String ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY, params);
+
+        info("SQL command result: " + ret);
+
+        JsonNode res = validateJsonResponse(ret);
+
+        JsonNode items = res.get("items");
+        assertNotNull(items);
+
+        assertEquals(1, items.size());
+
+        assertFalse(queryCursorFound());
+
+        JsonNode pair = items.get(0);
+        assertNotNull(pair);
+
+        JsonNode val = pair.get("value");
+        assertNotNull(val);
+
+        return val;
     }
 
     /**
@@ -3197,6 +3247,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         private HashMap<String, Integer> map;
 
         /** */
+        private OuterClass[] objects;
+
+        /** */
         private long[] longs;
 
         /** */
@@ -3231,7 +3284,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         /** */
         Complex(Integer id, String string, Timestamp timestamp, Date sqlDate, java.util.Date date,
             Map<String, Integer> map, int[] ints, Integer[] integers, long[] longs, List<Integer> list,
-            Set<Integer> col, byte[] bytes, char[] chars, COLOR color, OuterClass outer) {
+            Set<Integer> col, byte[] bytes, char[] chars, COLOR color, OuterClass outer, OuterClass[] objects) {
             this.id = id;
             this.string = string;
             this.timestamp = timestamp;
@@ -3247,6 +3300,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             this.chars = chars;
             this.color = color;
             this.outer = outer;
+            this.objects = objects;
+        }
+
+        /** */
+        public OuterClass[] getObjects() {
+            return objects;
         }
 
         /** */
