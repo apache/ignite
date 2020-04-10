@@ -58,6 +58,18 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
             "copy from 'into' into Person (_key, age, firstName, lastName) format csv")
             .nextCommand();
 
+        new SqlParser(null,
+            "copy from 'into' into Person (_key, age, firstName, lastName) format csv delimiter ','")
+            .nextCommand();
+
+        assertParseError(null,
+            "copy from 'into' into Person (_key, age, firstName, lastName) format csv delimiter '\"'",
+            "Invalid delimiter or quote chars: delim is '\"', quote char is '\"'");
+
+        assertParseError(null,
+            "copy from 'into' into Person (_key, age, firstName, lastName) format csv delimiter ',.'",
+            "Delimiter or quote chars must consist of single character: delim is ',.', quote char is '\"'");
+
         assertParseError(null,
             "copy from 'any.file' to Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"TO\" (expected: \"INTO\")");
