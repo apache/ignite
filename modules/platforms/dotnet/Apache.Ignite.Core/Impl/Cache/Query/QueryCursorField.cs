@@ -15,25 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Query
+namespace Apache.Ignite.Core.Impl.Cache.Query
 {
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
+    using System;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Fields query cursor.
+    /// Query cursor field implementation.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public interface IFieldsQueryCursor : IQueryCursor<IList<object>>
+    internal class QueryCursorField : IQueryCursorField
     {
         /// <summary>
-        /// Gets the field names.
+        /// Initializes a new instance of the <see cref="QueryCursorField"/> class.
         /// </summary>
-        IList<string> FieldNames { get; }
+        /// <param name="reader">The reader.</param>
+        public QueryCursorField(IBinaryRawReader reader)
+        {
+            Name = reader.ReadString();
+            JavaTypeName = reader.ReadString();
+            Type = JavaTypes.GetDotNetType(JavaTypeName);
+        }
 
-        /// <summary>
-        /// Gets fields metadata.
-        /// </summary>
-        IList<IQueryCursorField> Fields { get; }
+        /** <inheritdoc /> */
+        public string Name { get; private set; }
+
+        /** <inheritdoc /> */
+        public string JavaTypeName { get; private set; }
+
+        /** <inheritdoc /> */
+        public Type Type { get; private set; }
     }
 }

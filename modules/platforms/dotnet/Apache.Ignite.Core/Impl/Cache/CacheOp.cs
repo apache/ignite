@@ -115,6 +115,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         SizeLongLoc = 92,
         EnableStatistics = 93,
         ClearStatistics = 94,
-        PutWithNear = 95
+        PutWithNear = 95,
+        ReservePartition = 96,
+        ReleasePartition = 97
     }
 }

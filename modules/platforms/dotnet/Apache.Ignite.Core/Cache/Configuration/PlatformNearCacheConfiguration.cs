@@ -18,9 +18,31 @@
 namespace Apache.Ignite.Core.Cache.Configuration
 {
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Native .NET near cache configuration.
+    /// <para />
+    /// Enables native .NET near cache. Cache entries will be stored in deserialized form in CLR heap.
+    /// <para />
+    /// When enabled on server nodes, all primary keys will be stored in platform memory as well.
+    /// <para />
+    /// Same eviction policy applies to near cache entries for all keys on client nodes and
+    /// non-primary keys on server nodes.
+    /// <para />
+    /// Enabling this can greatly improve performance for key-value operations and scan queries,
+    /// at the expense of RAM usage.
+    /// <para />
+    /// Supported operations (async counterparts included):
+    /// <list type="bullet">
+    /// <item><term><see cref="ICache{TK,TV}.Get"/>, <see cref="ICache{TK,TV}.TryGet"/></term></item>
+    /// <item><term><see cref="ICache{TK,TV}.GetAll"/></term></item>
+    /// <item><term><see cref="ICache{TK,TV}.ContainsKey"/>, <see cref="ICache{TK,TV}.ContainsKeys"/></term></item>
+    /// <item><term><see cref="ICache{TK,TV}.LocalPeek"/>, <see cref="ICache{TK,TV}.TryLocalPeek"/></term></item>
+    /// <item><term><see cref="ICache{TK,TV}.GetLocalEntries"/></term></item>
+    /// <item><term><see cref="ICache{TK,TV}.GetLocalSize"/></term></item>
+    /// <item><term><see cref="ICache{TK,TV}.Query(QueryBase)"/> with <see cref="ScanQuery{TK,TV}"/></term></item>
+    /// </list>
     /// </summary>
     public class PlatformNearCacheConfiguration
     {
