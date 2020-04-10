@@ -149,6 +149,8 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
     }
 
     /**
+     * Inserts data using built-in function for column value.
+     *
      * @param batch Batch mode flag.
      * @throws Exception if failed.
      */
