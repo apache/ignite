@@ -39,7 +39,7 @@ public class InvalidServerTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName,
-        AbstractTestSecurityPluginProvider pluginProv) throws Exception {
+            AbstractTestSecurityPluginProvider pluginProv) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName, pluginProv);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
