@@ -68,8 +68,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotPath;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.startedBySnapshot;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -142,7 +142,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                     return;
 
                 // First discovery custom event will be a snapshot operation.
-                assertTrue(startedBySnapshot(fut));
+                assertTrue(isSnapshotOperation(fut.firstEvent()));
                 assertTrue("Snapshot must use pme-free exchange", fut.context().exchangeFreeSwitch());
             }
 

@@ -64,6 +64,7 @@ import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1029,13 +1030,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param fut Exchange future.
+     * @param evt Discovery event to check.
      * @return {@code true} if exchange started by snapshot operation.
      */
-    public static boolean startedBySnapshot(GridDhtPartitionsExchangeFuture fut) {
-        return !fut.firstEvent().eventNode().isClient() &&
-            fut.firstEvent().type() == EVT_DISCOVERY_CUSTOM_EVT &&
-            ((DiscoveryCustomEvent)fut.firstEvent()).customMessage() instanceof SnapshotStartDiscoveryMessage;
+    public static boolean isSnapshotOperation(DiscoveryEvent evt) {
+        return !evt.eventNode().isClient() &&
+            evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+            ((DiscoveryCustomEvent)evt).customMessage() instanceof SnapshotStartDiscoveryMessage;
     }
 
     /** {@inheritDoc} */

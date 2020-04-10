@@ -140,7 +140,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.startedBySnapshot;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -800,7 +800,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             ExchangeType exchange;
 
             if (exchCtx.exchangeFreeSwitch()){
-                exchange = startedBySnapshot(this) ? onCustomMessageNoAffinityChange() :
+                exchange = isSnapshotOperation(firstDiscoEvt) ? onCustomMessageNoAffinityChange() :
                     onExchangeFreeSwitchOnLeft();
 
                 initCoordinatorCaches(newCrd);
@@ -3970,7 +3970,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     Set<Integer> parts;
 
                     if (exchCtx.exchangeFreeSwitch()) {
-                        assert !startedBySnapshot(this) : "Not allowed for taking snapshots: " + this;
+                        assert !isSnapshotOperation(firstDiscoEvt) : "Not allowed for taking snapshots: " + this;
 
                         // Previous topology to resolve failed primaries set.
                         AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
