@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -54,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
@@ -114,41 +111,28 @@ public class MarshallerContextImpl implements MarshallerContext {
         try {
             ClassLoader ldr = U.gridClassLoader();
 
-            Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
+            MarshallerUtils.processSystemClasses(ldr, plugins, clsName -> {
+                int typeId = clsName.hashCode();
 
-            boolean foundClsNames = false;
+                MappedName oldClsName;
 
-            while (urls.hasMoreElements()) {
-                processResource(urls.nextElement());
+                if ((oldClsName = sysTypesMap.put(typeId, new MappedName(clsName, true))) != null) {
+                    if (!oldClsName.className().equals(clsName))
+                        throw new IgniteException(
+                            "Duplicate type ID [id="
+                                + typeId
+                                + ", oldClsName="
+                                + oldClsName
+                                + ", clsName="
+                                + clsName + ']');
+                }
 
-                foundClsNames = true;
-            }
-
-            if (!foundClsNames)
-                throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                    "[file=" + CLS_NAMES_FILE + ", ldr=" + ldr + ']');
-
-            URL jdkClsNames = ldr.getResource(JDK_CLS_NAMES_FILE);
-
-            if (jdkClsNames == null)
-                throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                    "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ldr + ']');
-
-            processResource(jdkClsNames);
+                sysTypesSet.add(clsName);
+            });
 
             checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(GridDhtPartitionMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
-
-            if (plugins != null && !plugins.isEmpty()) {
-                for (PluginProvider plugin : plugins) {
-                    Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
-                        + ".classnames.properties");
-
-                    while (pluginUrls.hasMoreElements())
-                        processResource(pluginUrls.nextElement());
-                }
-            }
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -222,40 +206,6 @@ public class MarshallerContextImpl implements MarshallerContext {
                 "[clsName=" + clsName + ", fileName=" + fileName + ", ldr=" + ldr + ']');
     }
 
-    /**
-     * @param url Resource URL.
-     * @throws IOException In case of error.
-     */
-    private void processResource(URL url) throws IOException {
-        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
-            String line;
-
-            while ((line = rdr.readLine()) != null) {
-                if (line.isEmpty() || line.startsWith("#"))
-                    continue;
-
-                String clsName = line.trim();
-
-                int typeId = clsName.hashCode();
-
-                MappedName oldClsName;
-
-                if ((oldClsName = sysTypesMap.put(typeId, new MappedName(clsName, true))) != null) {
-                    if (!oldClsName.className().equals(clsName))
-                        throw new IgniteException(
-                                "Duplicate type ID [id="
-                                        + typeId
-                                        + ", oldClsName="
-                                        + oldClsName
-                                        + ", clsName="
-                                        + clsName + ']');
-                }
-
-                sysTypesSet.add(clsName);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean registerClassName(
         byte platformId,
@@ -307,8 +257,8 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+    @Override public boolean registerClassName(byte platformId, int typeId, String clsName)
+        throws IgniteCheckedException {
         return registerClassName(platformId, typeId, clsName, false);
     }
 

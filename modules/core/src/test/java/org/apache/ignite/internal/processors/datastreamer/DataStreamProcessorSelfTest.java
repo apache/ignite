@@ -790,8 +790,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             assertTrue(c.localSize() == 0);
 
             multithreaded(new Callable<Void>() {
-                @Override
-                public Void call() throws Exception {
+                @Override public Void call() throws Exception {
                     ldr.flush();
 
                     assertEquals(9, c.size());

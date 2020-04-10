@@ -167,7 +167,7 @@ class DmsDataWriterWorker extends GridWorker {
                         for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
                             DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
 
-                            long histItemVer = fullNodeData.ver.id + i - (len - 1);
+                            long histItemVer = fullNodeData.ver.id() + i - (len - 1);
 
                             metastorage.write(historyItemKey(histItemVer), histItem);
                         }
@@ -201,14 +201,14 @@ class DmsDataWriterWorker extends GridWorker {
 
     /** */
     private void applyUpdate(DistributedMetaStorageHistoryItem histItem) throws IgniteCheckedException {
-        metastorage.write(historyItemKey(workerDmsVer.id + 1), histItem);
+        metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
 
         workerDmsVer = workerDmsVer.nextVersion(histItem);
 
         metastorage.write(versionKey(), workerDmsVer);
 
-        for (int i = 0, len = histItem.keys.length; i < len; i++)
-            write(histItem.keys[i], histItem.valBytesArray[i]);
+        for (int i = 0, len = histItem.keys().length; i < len; i++)
+            write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
     }
 
     /** */
@@ -229,31 +229,31 @@ class DmsDataWriterWorker extends GridWorker {
             }
             else {
                 DistributedMetaStorageHistoryItem histItem =
-                    (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id + 1));
+                    (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id() + 1));
 
                 if (histItem != null) {
                     workerDmsVer = storedVer.nextVersion(histItem);
 
                     metastorage.write(versionKey(), workerDmsVer);
 
-                    for (int i = 0, len = histItem.keys.length; i < len; i++)
-                        write(histItem.keys[i], histItem.valBytesArray[i]);
+                    for (int i = 0, len = histItem.keys().length; i < len; i++)
+                        write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
                 }
                 else {
                     workerDmsVer = storedVer;
 
-                    histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id));
+                    histItem = (DistributedMetaStorageHistoryItem)metastorage.read(historyItemKey(storedVer.id()));
 
                     if (histItem != null) {
                         boolean equal = true;
 
-                        for (int i = 0, len = histItem.keys.length; i < len; i++) {
-                            byte[] valBytes = metastorage.readRaw(localKey(histItem.keys[i]));
+                        for (int i = 0, len = histItem.keys().length; i < len; i++) {
+                            byte[] valBytes = metastorage.readRaw(localKey(histItem.keys()[i]));
 
-                            if (!equal || !Arrays.equals(valBytes, histItem.valBytesArray[i])) {
+                            if (!equal || !Arrays.equals(valBytes, histItem.valuesBytesArray()[i])) {
                                 equal = false;
 
-                                write(histItem.keys[i], histItem.valBytesArray[i]);
+                                write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
                             }
                         }
                     }

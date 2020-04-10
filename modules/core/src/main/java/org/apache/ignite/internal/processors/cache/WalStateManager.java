@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -291,13 +291,28 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Change WAL mode.
+     *
+     * @param cacheNames Cache names.
+     * @param enabled Enabled flag.
+     * @return Future completed when operation finished.
+     */
+    public IgniteInternalFuture<Boolean> changeWalMode(Collection<String> cacheNames, boolean enabled) {
+        cctx.tm().checkEmptyTransactions(() ->
+            String.format("Cache WAL mode cannot be changed within lock or transaction " +
+                    "[cacheNames=%s, walEnabled=%s]", cacheNames, enabled));
+
+        return init(cacheNames, enabled);
+    }
+
+    /**
      * Initiate WAL mode change operation.
      *
      * @param cacheNames Cache names.
      * @param enabled Enabled flag.
      * @return Future completed when operation finished.
      */
-    public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
+    private IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
         if (!enabled && prohibitDisabling)
             return errorFuture("WAL disabling is prohibited.");
 

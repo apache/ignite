@@ -6470,8 +6470,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 try {
                     // Set socket options.
-                    sock.setKeepAlive(true);
-                    sock.setTcpNoDelay(true);
+                    spi.configureSocketOptions(sock);
 
                     int timeout = sock.getSoTimeout();
 
@@ -8003,7 +8002,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return addToQueue;
             }
         }
-
 
         /**
          * @param laps Number of discovery ring laps passed by the message.

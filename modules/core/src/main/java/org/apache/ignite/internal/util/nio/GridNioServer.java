@@ -149,20 +149,6 @@ public class GridNioServer<T> {
     /** */
     public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
 
-    /**
-     *
-     */
-    static {
-        // This is a workaround for JDK bug (NPE in Selector.open()).
-        // http://bugs.sun.com/view_bug.do?bug_id=6427854
-        try {
-            Selector.open().close();
-        }
-        catch (IOException ignored) {
-            // No-op.
-        }
-    }
-
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;
 
@@ -244,7 +230,6 @@ public class GridNioServer<T> {
 
     /** Outbound messages queue size. */
     @Nullable private final LongAdderMetric outboundMessagesQueueSizeMetric;
-
 
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();

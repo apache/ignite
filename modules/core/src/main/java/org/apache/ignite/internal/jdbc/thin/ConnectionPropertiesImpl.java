@@ -181,6 +181,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
+    /** Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt; which returns user attributes. */
+    private StringProperty userAttrsFactory = new StringProperty("userAttributesFactory",
+        "Custom class name that implements Factory<Map<String, String>> (user attributes)", null, null, false, null);
+
     /** User name to authenticate the client on the server side. */
     private StringProperty user = new StringProperty(
         "user", "User name to authenticate the client on the server side", null, null, false, null);
@@ -237,6 +241,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
+        userAttrsFactory,
         user, passwd,
         dataPageScanEnabled,
             partitionAwareness,
@@ -621,6 +626,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setConnectionTimeout(@Nullable Integer timeout) throws SQLException {
         connTimeout.setValue(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getUserAttributesFactory() {
+        return userAttrsFactory.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUserAttributesFactory(String cls) {
+        userAttrsFactory.setValue(cls);
     }
 
     /**

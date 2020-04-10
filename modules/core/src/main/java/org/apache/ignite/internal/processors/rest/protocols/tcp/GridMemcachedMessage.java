@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -190,6 +191,16 @@ public class GridMemcachedMessage implements GridClientMessage {
 
     /** {@inheritDoc} */
     @Override public void sessionToken(byte[] sesTok) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, String> userAttributes() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void userAttributes(Map<String, String> userAttrs) {
         // No-op.
     }
 

@@ -27,6 +27,8 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.Random;
 import javax.cache.integration.CacheLoaderException;
+import org.apache.commons.dbcp.DelegatingConnection;
+import org.apache.commons.dbcp.DelegatingPreparedStatement;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.cache.store.jdbc.model.Gender;
@@ -59,6 +61,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /** Person count. */
     private static final int PERSON_CNT = 100000;
 
+    /** Fetch size. */
+    public static final int FETCH_SZ = 42;
+
     /** Test cache name. */
     private static final String CACHE_NAME = "test-cache";
 
@@ -73,6 +78,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
     /** Flag indicating that classes for values available on class path or not. */
     private static boolean noValClasses;
+
+    /** Flag indicating that fetch size should be checked. */
+    private static boolean checkFetchSize;
 
     /** Batch size to load in parallel. */
     private static int parallelLoadThreshold;
@@ -89,7 +97,20 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws SQLException if failed to connect.
      */
     protected Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
+        return new DelegatingConnection(DriverManager.getConnection(DFLT_CONN_URL, "sa", "")) {
+            /** {@inheritDoc} */
+            @Override public PreparedStatement prepareStatement(String sql) throws SQLException {
+                return new DelegatingPreparedStatement(this, super.prepareStatement(sql)) {
+                    /** {@inheritDoc} */
+                    @Override public ResultSet executeQuery() throws SQLException {
+                        if (checkFetchSize)
+                            assertEquals(FETCH_SZ, getFetchSize());
+
+                        return super.executeQuery();
+                    }
+                };
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -223,7 +244,12 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         cc.setStoreKeepBinary(storeKeepBinary());
 
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();
-        storeFactory.setDialect(new H2Dialect());
+
+        H2Dialect dialect = new H2Dialect();
+
+        dialect.setFetchSize(FETCH_SZ);
+
+        storeFactory.setDialect(dialect);
         storeFactory.setTypes(storeTypes());
         storeFactory.setDataSourceFactory(new H2DataSourceFactory()); // H2 DataSource factory.
         storeFactory.setSqlEscapeAll(sqlEscapeAll());
@@ -319,7 +345,11 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     protected void checkCacheLoad() {
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 
+        checkFetchSize = true;
+
         c1.loadCache(null);
+
+        checkFetchSize = false;
 
         assertEquals(ORGANIZATION_CNT + PERSON_CNT, c1.size());
     }
@@ -330,7 +360,11 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     protected void checkCacheLoadWithSql() {
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 
+        checkFetchSize = true;
+
         c1.loadCache(null, "org.apache.ignite.cache.store.jdbc.model.PersonKey", "select id, org_id, name, birthday, gender from Person");
+
+        checkFetchSize = false;
 
         assertEquals(PERSON_CNT, c1.size());
     }
@@ -587,6 +621,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 
         try {
+            checkFetchSize = true;
+
             c1.loadCache(null, "PersonKeyWrong", "SELECT * FROM Person");
         }
         catch (CacheLoaderException e) {
@@ -595,6 +631,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertTrue("Unexpected exception: " + msg,
                 ("Provided key type is not found in store or cache configuration " +
                     "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]").equals(msg));
+        } finally {
+            checkFetchSize = false;
         }
     }
 }

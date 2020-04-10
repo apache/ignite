@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -72,7 +71,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-581")
     @Test
     public void testTransformTransactionalNoBackups() throws Exception {
         // Test works too long and fails.
@@ -83,7 +81,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-581")
     @Test
     public void testTransformTransactionalOneBackup() throws Exception {
         // Test works too long and fails.
@@ -143,7 +140,10 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     private static class Transform implements EntryProcessor<Integer, TestObject, Void>, Serializable {
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, TestObject> entry, Object... args) {
-            entry.setValue(new TestObject());
+            if (entry.getKey() < 100)
+                assertNotNull(entry.getValue());
+            else
+                assertNull(entry.getValue());
 
             return null;
         }
@@ -167,7 +167,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            assert !failDeserialization;
+            // No-op.
         }
     }
 }

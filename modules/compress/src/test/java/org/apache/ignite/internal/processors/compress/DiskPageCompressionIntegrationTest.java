@@ -85,8 +85,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     /**
      * @throws Exception If failed.
      */
-    @Override
-    protected void doTestPageCompression() throws Exception {
+    @Override protected void doTestPageCompression() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);

@@ -926,40 +926,46 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return true;
 
                 while (true) {
-                    if (cur == null) {
-                        if (dataIt.hasNext()) {
-                            CacheDataStore ds = dataIt.next();
+                    try {
+                        if (cur == null) {
+                            if (dataIt.hasNext()) {
+                                CacheDataStore ds = dataIt.next();
 
-                            curPart = ds.partId();
+                                curPart = ds.partId();
 
-                            // Data page scan is disabled by default for scan queries.
-                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998
-                            CacheDataTree.setDataPageScanEnabled(false);
+                                // Data page scan is disabled by default for scan queries.
+                                // TODO https://issues.apache.org/jira/browse/IGNITE-11998
+                                CacheDataTree.setDataPageScanEnabled(false);
 
-                            try {
-                                if (mvccSnapshot == null)
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
-                                else {
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ?
-                                        ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                try {
+                                    if (mvccSnapshot == null)
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
+                                    else {
+                                        cur = cacheId == CU.UNDEFINED_CACHE_ID ?
+                                            ds.cursor(mvccSnapshot) : ds.cursor(cacheId, mvccSnapshot);
+                                    }
+                                }
+                                finally {
+                                    CacheDataTree.setDataPageScanEnabled(false);
                                 }
                             }
-                            finally {
-                                CacheDataTree.setDataPageScanEnabled(false);
-                            }
+                            else
+                                break;
+                        }
+
+                        if (cur.next()) {
+                            next = cur.get();
+                            next.key().partition(curPart);
+
+                            break;
                         }
                         else
-                            break;
+                            cur = null;
                     }
-
-                    if (cur.next()) {
-                        next = cur.get();
-                        next.key().partition(curPart);
-
-                        break;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteCheckedException("Failed to get next data row due to underlying cursor " +
+                            "invalidation", ex);
                     }
-                    else
-                        cur = null;
                 }
 
                 return next != null;
@@ -2946,6 +2952,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void markDestroyed() {
+            dataTree.markDestroyed();
+        }
+
+        /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
@@ -3040,6 +3051,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void resetUpdateCounter() {
             pCntr.reset();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetInitialUpdateCounter() {
+            pCntr.resetInitialCounter();
         }
 
         /** {@inheritDoc} */
