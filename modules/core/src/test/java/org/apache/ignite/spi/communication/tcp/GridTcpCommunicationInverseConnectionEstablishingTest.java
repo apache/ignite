@@ -80,7 +80,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     private boolean clientMode;
 
     /** */
-    private EnvironmentType envType = EnvironmentType.STAND_ALONE;
+    private EnvironmentType envType = EnvironmentType.STANDALONE;
 
     /** */
     private CacheConfiguration ccfg;
@@ -124,7 +124,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     }
 
     /**
-     * Verifies that server successfully connects to "unreachable" client with {@code EnvironmentType.VIRTUALIZED} hint.
+     * Verifies that server successfully connects to "unreachable" client with {@link EnvironmentType#VIRTUALIZED} hint.
      *
      * @throws Exception If failed.
      */
@@ -137,7 +137,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
     }
 
     /**
-     * Verifies that server successfully connects to "unreachable" client with {@code EnvironmentType.STAND_ALONE} hint.
+     * Verifies that server successfully connects to "unreachable" client with {@link EnvironmentType#STANDALONE} hint.
      *
      * @throws Exception If failed.
      */
@@ -146,7 +146,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UNREACHABLE_DESTINATION.set(UNREACHABLE_IP);
         RESPOND_TO_INVERSE_REQUEST.set(true);
 
-        executeCacheTestWithUnreachableClient(EnvironmentType.STAND_ALONE);
+        executeCacheTestWithUnreachableClient(EnvironmentType.STANDALONE);
     }
 
     /**
@@ -172,7 +172,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         UNREACHABLE_DESTINATION.set(UNRESOLVED_HOST);
         RESPOND_TO_INVERSE_REQUEST.set(true);
 
-        executeCacheTestWithUnreachableClient(EnvironmentType.STAND_ALONE);
+        executeCacheTestWithUnreachableClient(EnvironmentType.STANDALONE);
     }
 
     /**
@@ -187,7 +187,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         startGrid(0).cluster().active(true);
 
         startGrid(1, cfg -> {
-            cfg.setEnvironmentType(EnvironmentType.STAND_ALONE);
+            cfg.setEnvironmentType(EnvironmentType.STANDALONE);
 
             cfg.setClientMode(true);
 
@@ -261,7 +261,7 @@ public class GridTcpCommunicationInverseConnectionEstablishingTest extends GridC
         startGrids(SRVS_NUM);
 
         clientMode = true;
-        envType = EnvironmentType.STAND_ALONE;
+        envType = EnvironmentType.STANDALONE;
 
         startGrid(SRVS_NUM);
 

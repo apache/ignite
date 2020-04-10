@@ -32,7 +32,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public enum EnvironmentType {
     /** Default value. */
-    STAND_ALONE,
+    STANDALONE,
 
     /** */
     VIRTUALIZED;

@@ -259,8 +259,8 @@ public class IgniteConfiguration {
     /** Default query timeout. */
     public static final long DFLT_QRY_TIMEOUT = 0;
 
-    /** Default value of environment type is {@link EnvironmentType#STAND_ALONE}. */
-    private static final EnvironmentType DFLT_ENV_TYPE = EnvironmentType.STAND_ALONE;
+    /** Default value of environment type is {@link EnvironmentType#STANDALONE}. */
+    private static final EnvironmentType DFLT_ENV_TYPE = EnvironmentType.STANDALONE;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
