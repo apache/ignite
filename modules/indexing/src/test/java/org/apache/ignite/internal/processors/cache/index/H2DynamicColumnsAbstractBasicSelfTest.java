@@ -181,7 +181,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         IgniteEx ig0 = ignite(nodeIndex());
 
         QueryEntity entity = new QueryEntity(Integer.class, POI.class);
-        entity.setKeyFieldName("id");
 
         int NUM_OF_POI = 1000;
 
@@ -211,16 +210,16 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         cache = ig0.cache("POI");
 
-        run(cache, "INSERT INTO POI(id, name) VALUES (100500, 'test')");
+        run(cache, "INSERT INTO POI(_key, id, name) VALUES (100500, 100500, 'test')");
 
-        run(cache, "UPDATE POI set name = 'poi_100500', latitude = 0.0, longitude = 0.0 where id = 0");
+        run(cache, "UPDATE POI SET name = 'poi_100500', latitude = 0.0, longitude = 0.0 WHERE _key = 100500");
+
+        run(cache, "DELETE FROM POI WHERE _key = 100500");
 
         List<List<?>> res = cache.query(new SqlFieldsQuery("SELECT * FROM POI").setSchema(QueryUtils.DFLT_SCHEMA)).getAll();
 
-        assertEquals(NUM_OF_POI + 1, cache.size(CachePeekMode.PRIMARY));
-        assertEquals("poi_100500", cache.get(0).name());
-        assertEquals("test", cache.get(100500).name());
-        assertEquals(NUM_OF_POI + 1, res.size());
+        assertEquals(NUM_OF_POI, cache.size(CachePeekMode.PRIMARY));
+        assertEquals(NUM_OF_POI, res.size());
 
 
         POI poi = new POI();

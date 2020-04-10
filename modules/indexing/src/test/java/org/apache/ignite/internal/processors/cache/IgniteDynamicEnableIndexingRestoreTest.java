@@ -210,6 +210,44 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         }
     }
 
+    @Test
+    public void failScenario() throws Exception{
+        performTestWithIndexingFailure(false);
+    }
+
+    @Test
+    public void successScenario() throws Exception{
+        performTestWithIndexingFailure(true);
+    }
+
+
+    private void performTestWithIndexingFailure(boolean restart) throws Exception {
+        {
+            IgniteEx ig = startGrids(2);
+
+            ig.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<?, ?> cache = ig.createCache(testCacheConfiguration(POI_CACHE_NAME));
+
+            fillTestData(ig);
+
+            cache.enableIndexing(POI_SCHEMA_NAME, testQueryEntities()).get();
+
+            cache.indexReadyFuture().get();
+
+            if (restart) {
+                stopAllGrids();
+
+                ig = startGrids(2);
+
+                ig.cluster().state(ClusterState.ACTIVE);
+            }
+
+            performQueryingIntegrityCheck(ig);
+
+        }
+    }
+
     /** */
     private void prepareTestGrid() throws Exception {
             IgniteEx ig = startGrids(2);
@@ -255,14 +293,13 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         assertNotNull(cache.get(100));
 
         cache.query(new SqlFieldsQuery(
-            String.format("UPDATE %s SET %s = '%s' WHERE _KEY = 100", POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")//,
-                //NAME_FIELD_NAME, "test")
+            String.format("UPDATE %s SET %s = '%s' WHERE _KEY = 100", POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")
         ).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
 
-        //assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE name = 'POI_10'",
-        //    NAME_FIELD_IDX_NAME);
+        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE name = 'POI_10'",
+            NAME_FIELD_IDX_NAME);
     }
 
 
@@ -346,9 +383,9 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
         fields.put(LATITUDE_FIELD_NAME, Double.class.getName());
         fields.put(LONGITUDE_FIELD_NAME, Double.class.getName());
 
-        //  Collection<QueryIndex> indices = Collections.singletonList(
-        //      new QueryIndex(NAME_FIELD_NAME).setName(NAME_FIELD_IDX_NAME)
-        //  );
+        Collection<QueryIndex> indices = Collections.singletonList(
+          new QueryIndex(NAME_FIELD_NAME).setName(NAME_FIELD_IDX_NAME)
+        );
 
         return Collections.singletonList(
             new QueryEntity()
@@ -356,7 +393,7 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
                 .setValueType(POI_CLASS_NAME)
                 .setTableName(POI_TABLE_NAME)
                 .setFields(fields)
-        //        .setIndexes(indices)
+                .setIndexes(indices)
         );
     }
 }
