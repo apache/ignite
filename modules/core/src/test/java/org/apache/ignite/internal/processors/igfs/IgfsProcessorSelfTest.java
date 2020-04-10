@@ -491,8 +491,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         // Move under itself.
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 igfs.rename(path("/A/B1/C1"), path("/A/B1/C1/D/E/C2"));
 
                 return null;

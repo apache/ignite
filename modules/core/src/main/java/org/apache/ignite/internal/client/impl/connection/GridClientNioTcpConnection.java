@@ -834,24 +834,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<Boolean> currentState(
-        UUID destNodeId
-    ) throws GridClientClosedException, GridClientConnectionResetException {
-        GridClientFutureAdapter<Boolean> resFut = new GridClientFutureAdapter<>();
-
-        state(destNodeId).listen(fut -> {
-            try {
-                resFut.onDone(ClusterState.active(fut.get()));
-            }
-            catch (GridClientException e) {
-                resFut.onDone(e);
-            }
-        });
-
-        return resFut;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientFuture<ClusterState> state(
         UUID destNodeId
     ) throws GridClientClosedException, GridClientConnectionResetException {

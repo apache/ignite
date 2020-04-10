@@ -15,31 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
-
-import java.util.concurrent.atomic.AtomicInteger;
+package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 /**
- * Provider for counters of checkpoint writes progress.
+ * BPlus row hierarchy is broken. Ideally this interface would contain only {@link #key()} method.
  */
-public interface CheckpointWriteProgressSupplier {
+public interface MetastorageRow {
     /**
-     * @return Counter for written checkpoint pages. Not <code>null</code> only if checkpoint is running.
+     * @return Link for this row.
      */
-    public AtomicInteger writtenPagesCounter();
+    public long link();
 
     /**
-     * @return Counter for fsynced checkpoint pages. Not  <code>null</code> only if checkpoint is running.
+     * @return Key string.
      */
-    public AtomicInteger syncedPagesCounter();
+    public String key();
 
     /**
-     * @return Counter for evicted pages during current checkpoint. Not <code>null</code> only if checkpoint is running.
+     * @return Key link.
      */
-    public AtomicInteger evictedPagesCntr();
-
-    /**
-     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
-     */
-    public int currentCheckpointPagesCount();
+    public long keyLink();
 }

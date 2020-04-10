@@ -94,7 +94,9 @@ public class HibernateL2CacheExample {
 
     /** Caches' names. */
     private static final String USER_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User";
+
     private static final String USER_POSTS_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User.posts";
+
     private static final String POST_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.Post";
 
     /**

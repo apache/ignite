@@ -1109,8 +1109,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 checkQueryPlan(persPart,
                     false,
                     0,
-                    sql,
-                    "persPartAff", "persPart", "orgRepl");
+                    sql);
 
                 checkQueryFails(persPart, sql, true);
 

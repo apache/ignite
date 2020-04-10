@@ -15,42 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
+package org.apache.ignite.tests.p2p;
+
+import java.io.Serializable;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
- *
+ * Test predicate for scan queries in p2p deployment tests.
  */
-public class MetsatorageSearchRowImpl implements MetastorageSearchRow {
+@SuppressWarnings("unused")
+public class P2PTestPredicate extends GridCacheIdMessage implements GridCacheDeployable, IgniteBiPredicate, Serializable {
     /** */
-    private final String key;
+    private static final long serialVersionUID = 0L;
 
-    /** */
-    private final long link;
-
-    /**
-     * @param key Key.
-     * @param link Link.
-     */
-    public MetsatorageSearchRowImpl(String key, long link) {
-        this.key = key;
-        this.link = link;
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public String key() {
-        return key;
+    @Override public boolean apply(Object o, Object o2) {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public long link() {
-        return link;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public int hash() {
-        return key.hashCode();
+    @Override public short directType() {
+        return 0;
     }
 }

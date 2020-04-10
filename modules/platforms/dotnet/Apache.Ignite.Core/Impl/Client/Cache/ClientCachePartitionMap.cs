@@ -26,28 +26,22 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// </summary>
     internal class ClientCachePartitionMap
     {
-        /** Cache id. */
-        private readonly int _cacheId;
-
         /** Array of node id per partition. */
         private readonly IList<Guid> _partitionNodeIds;
 
         /** Key configuration. */
         private readonly IDictionary<int, int> _keyConfiguration;
 
-        public ClientCachePartitionMap(int cacheId, IList<Guid> partitionNodeIds,
+        /// <summary>
+        /// Initializes a new instance of <see cref="ClientCachePartitionMap"/>.
+        /// </summary>
+        public ClientCachePartitionMap(IList<Guid> partitionNodeIds,
             IDictionary<int, int> keyConfiguration)
         {
             Debug.Assert(partitionNodeIds != null && partitionNodeIds.Count > 0);
 
-            _cacheId = cacheId;
             _keyConfiguration = keyConfiguration;
             _partitionNodeIds = partitionNodeIds;
-        }
-
-        public int CacheId
-        {
-            get { return _cacheId; }
         }
 
         /// <summary>

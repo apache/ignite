@@ -15,34 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
-import java.sql.ResultSet;
-
-/**
- * Special key/value iterator based on database result set.
- */
-public class H2KeyValueIterator<K, V> extends H2ResultSetIterator<IgniteBiTuple<K, V>> {
+/** */
+public class MetastorageRowStoreEntry extends SimpleDataRow {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param data Data array.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected H2KeyValueIterator(ResultSet data) throws IgniteCheckedException {
-        super(data);
+    public MetastorageRowStoreEntry(byte[] val) {
+        super(0L, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
+            PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION, val);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteBiTuple<K, V> createRow() {
-        K key = (K)row[0];
-        V val = (V)row[1];
-
-        return new IgniteBiTuple<>(key, val);
+    @Override public IOVersions<? extends AbstractDataPageIO<?>> ioVersions() {
+        return MetastoreDataPageIO.VERSIONS;
     }
 }

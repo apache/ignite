@@ -344,6 +344,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
             KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
+            
+            if (reader.ReadBoolean())
+            {
+                PlatformNearConfiguration = new PlatformNearCacheConfiguration(reader);
+            }
 
             var count = reader.ReadInt();
 
@@ -449,6 +454,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
 
             writer.WriteCollectionRaw(KeyConfiguration);
+            
+            if (PlatformNearConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                PlatformNearConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
 
             if (PluginConfigurations != null)
             {
@@ -932,5 +947,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [DefaultValue(DefaultEncryptionEnabled)]
         public bool EncryptionEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets platform near cache configuration.
+        /// More details: <see cref="PlatformNearConfiguration"/>. 
+        /// </summary>
+        public PlatformNearCacheConfiguration PlatformNearConfiguration { get; set; }
     }
 }

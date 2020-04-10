@@ -15,18 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 
 /**
- * Represents information of a progress of a given checkpoint and
- * allows to obtain future to wait for a particular checkpoint state.
+ * Compute MXBean interface.
  */
-public interface CheckpointProgress {
-    /** */
-    public boolean inProgress();
-
-    /** */
-    public GridFutureAdapter futureFor(CheckpointState state);
+public interface ComputeMXBean {
+    /**
+     * Kills compute task by the session idenitifier.
+     *
+     * @param sesId Session id.
+     * @see ComputeTaskView#sessionId()
+     * @see ComputeJobView#sessionId()
+     */
+    @MXBeanDescription("Kills compute task by the session idenitifier.")
+    public void cancel(
+        @MXBeanParameter(name = "sesId", description = "Session identifier.") String sesId
+    );
 }
