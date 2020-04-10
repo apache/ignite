@@ -154,8 +154,7 @@ public final class GridTestUtils {
         }
 
         /**
-         * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation in case
-         * {@link DiscoveryHook#beforeDiscovery(DiscoverySpiCustomMessage)} keeps its default implementation.
+         * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
          *
          * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
          */
@@ -174,8 +173,7 @@ public final class GridTestUtils {
         }
 
         /**
-         * Handles {@link DiscoveryCustomMessage} after {@link DiscoverySpiListener#onDiscovery} completion in case
-         * {@link DiscoveryHook#afterDiscovery(DiscoveryCustomMessage)} keeps its default implementation.
+         * Handles {@link DiscoveryCustomMessage} after {@link DiscoverySpiListener#onDiscovery} completion.
          *
          * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
          */
@@ -250,7 +248,6 @@ public final class GridTestUtils {
         /**
          * @param delegate Delegate.
          * @param discoveryHooks Interceptors of discovery messages.
-         * @return Wrapped {@code delegate}.
          */
         public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook... discoveryHooks) {
             return new DiscoverySpiListenerWrapper(delegate, discoveryHooks);
