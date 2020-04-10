@@ -20,19 +20,19 @@ from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
-from ignitetest.version import DEV_VERSION
+from ignitetest.ignite_utils.ignite_config import IgniteConfig
+from ignitetest.ignite_utils.ignite_path import IgnitePathResolverMixin
+from ignitetest.version import DEV_BRANCH
 
 
-class IgniteService(Service):
+class IgniteService(IgnitePathResolverMixin, Service):
     PERSISTENT_ROOT = "/mnt/ignite"
+    WORK_DIR = os.path.join(PERSISTENT_ROOT, "work")
     CONFIG_FILE = os.path.join(PERSISTENT_ROOT, "ignite-config.xml")
     HEAP_DUMP_FILE = os.path.join(PERSISTENT_ROOT, "ignite-heap.bin")
     STDOUT_STDERR_CAPTURE = os.path.join(PERSISTENT_ROOT, "console.log")
 
-    def __init__(self,
-                 context,
-                 num_nodes,
-                 version=DEV_VERSION):
+    def __init__(self, context, num_nodes=3, version=DEV_BRANCH):
         """
         :param context: test context
         :param num_nodes: number of Ignite nodes.
@@ -40,6 +40,7 @@ class IgniteService(Service):
         Service.__init__(self, context, num_nodes)
 
         self.log_level = "DEBUG"
+        self.config = IgniteConfig()
 
         for node in self.nodes:
             node.version = version
@@ -64,14 +65,15 @@ class IgniteService(Service):
                IgniteService.STDOUT_STDERR_CAPTURE)
         return cmd
 
-    def start_node(self, node, timeout_sec=60):
+    def start_node(self, node, timeout_sec=180):
         node.account.mkdirs(IgniteService.PERSISTENT_ROOT)
+        node.account.create_file(IgniteService.CONFIG_FILE, self.config.render(IgniteService.WORK_DIR))
 
         cmd = self.start_cmd(node)
         self.logger.debug("Attempting to start IgniteService on %s with command: %s" % (str(node.account), cmd))
         with node.account.monitor_log(IgniteService.STDOUT_STDERR_CAPTURE) as monitor:
             node.account.ssh(cmd)
-            monitor.wait_until("Ignite\s*Server.*started", timeout_sec=timeout_sec, backoff_sec=.25,
+            monitor.wait_until("Topology snapshot", timeout_sec=timeout_sec, backoff_sec=.25,
                                err_msg="Ignite server didn't finish startup in %d seconds" % timeout_sec)
 
         if len(self.pids(node)) == 0:
@@ -111,3 +113,6 @@ class IgniteService(Service):
         node.account.kill_java_processes(self.java_class_name(),
                                          clean_shutdown=False, allow_fail=True)
         node.account.ssh("sudo rm -rf -- %s" % IgniteService.PERSISTENT_ROOT, allow_fail=False)
+
+    def java_class_name(self):
+        return "org.apache.ignite.startup.cmdline.CommandLineStartup"

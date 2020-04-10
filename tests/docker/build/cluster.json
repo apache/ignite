@@ -37,124 +37,12 @@
         "port": 22,
         "user": "ducker"
       }
-    }
-  ]
-}
-
+    },
+    {
       "externally_routable_ip": "ducker04",
       "ssh_config": {
         "host": "ducker04",
         "hostname": "ducker04",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker05",
-      "ssh_config": {
-        "host": "ducker05",
-        "hostname": "ducker05",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker06",
-      "ssh_config": {
-        "host": "ducker06",
-        "hostname": "ducker06",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker07",
-      "ssh_config": {
-        "host": "ducker07",
-        "hostname": "ducker07",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker08",
-      "ssh_config": {
-        "host": "ducker08",
-        "hostname": "ducker08",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker09",
-      "ssh_config": {
-        "host": "ducker09",
-        "hostname": "ducker09",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker10",
-      "ssh_config": {
-        "host": "ducker10",
-        "hostname": "ducker10",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker11",
-      "ssh_config": {
-        "host": "ducker11",
-        "hostname": "ducker11",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker12",
-      "ssh_config": {
-        "host": "ducker12",
-        "hostname": "ducker12",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker13",
-      "ssh_config": {
-        "host": "ducker13",
-        "hostname": "ducker13",
-        "identityfile": "/home/ducker/.ssh/id_rsa",
-        "password": "",
-        "port": 22,
-        "user": "ducker"
-      }
-    },
-    {
-      "externally_routable_ip": "ducker14",
-      "ssh_config": {
-        "host": "ducker14",
-        "hostname": "ducker14",
         "identityfile": "/home/ducker/.ssh/id_rsa",
         "password": "",
         "port": 22,
