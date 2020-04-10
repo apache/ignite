@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -68,7 +69,6 @@ import java.util.function.ToLongFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -159,8 +159,8 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueue;
+import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -3634,11 +3634,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 try {
                                     asyncRunner.execute(write);
                                 }
-                                catch (RejectedExecutionException ignore) {
-                                    // Run the task synchronously.
-                                    updateHeartbeat();
-
-                                    write.run();
+                                catch (RejectedExecutionException e) {
+                                    handleRejectiedExecutionException(e);
                                 }
                             }
                         }
@@ -3673,23 +3670,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         tracker.onFsyncStart();
 
                         if (!skipSync) {
-                            for (Map.Entry<PageStore, LongAdder> updStoreEntry : updStores.entrySet()) {
-                                if (shutdownNow) {
-                                    chp.progress.fail(new NodeStoppingException("Node is stopping."));
+                            syncUpdatedStores(updStores);
 
-                                    return;
-                                }
+                            if (shutdownNow) {
+                                chp.progress.fail(new NodeStoppingException("Node is stopping."));
 
-                                blockingSectionBegin();
-
-                                try {
-                                    updStoreEntry.getKey().sync();
-                                }
-                                finally {
-                                    blockingSectionEnd();
-                                }
-
-                                currentProgress().updateSyncedPages(updStoreEntry.getValue().intValue());
+                                return;
                             }
                         }
                     }
@@ -3740,6 +3726,75 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     chp.progress.fail(e);
 
                 cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
+        }
+
+        /** */
+        private void syncUpdatedStores(
+            ConcurrentLinkedHashMap<PageStore, LongAdder> updStores
+        ) throws IgniteCheckedException {
+            if (asyncRunner == null) {
+                for (Map.Entry<PageStore, LongAdder> updStoreEntry : updStores.entrySet()) {
+                    if (shutdownNow)
+                        return;
+
+                    blockingSectionBegin();
+
+                    try {
+                        updStoreEntry.getKey().sync();
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
+
+                    currentProgress().updateSyncedPages(updStoreEntry.getValue().intValue());
+                }
+            }
+            else {
+                int checkpointThreads = persistenceCfg.getCheckpointThreads();
+
+                CountDownFuture doneFut = new CountDownFuture(checkpointThreads);
+
+                BlockingQueue<Map.Entry<PageStore, LongAdder>> queue = new LinkedBlockingQueue<>(updStores.entrySet());
+
+                for (int i = 0; i < checkpointThreads; i++) {
+                    asyncRunner.execute(() -> {
+                        Map.Entry<PageStore, LongAdder> updStoreEntry = queue.poll();
+
+                        boolean err = false;
+
+                        try {
+                            while (updStoreEntry != null) {
+                                if (shutdownNow)
+                                    return;
+
+                                blockingSectionBegin();
+
+                                try {
+                                    updStoreEntry.getKey().sync();
+                                }
+                                finally {
+                                    blockingSectionEnd();
+                                }
+
+                                currentProgress().updateSyncedPages(updStoreEntry.getValue().intValue());
+
+                                updStoreEntry = queue.poll();
+                            }
+                        }
+                        catch (Throwable t) {
+                            err = true;
+
+                            doneFut.onDone(t);
+                        }
+                        finally {
+                            if (!err)
+                                doneFut.onDone();
+                        }
+                    });
+                }
+
+                doneFut.get();
             }
         }
 
@@ -3832,9 +3887,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     try {
                         asyncRunner.execute(destroyPartTask);
                     }
-                    catch (RejectedExecutionException ignore) {
-                        // Run the task synchronously.
-                        destroyPartTask.run();
+                    catch (RejectedExecutionException e) {
+                        handleRejectiedExecutionException(e);
                     }
                 }
                 else
@@ -4209,9 +4263,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         grpHandleFut.add(res);
                     }
                     catch (RejectedExecutionException e) {
-                        assert false : "Task should never be rejected by async runner";
-
-                        throw new IgniteException(e); //to protect from disabled asserts and call to failure handler
+                        handleRejectiedExecutionException(e);
                     }
             }
 
@@ -4355,6 +4407,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         * {@link RejectedExecutionException} cannot be thrown by {@link #asyncRunner} but this handler still exists
+         * just in case.
+         */
+        private void handleRejectiedExecutionException(RejectedExecutionException e) {
+            assert false : "Task should never be rejected by async runner";
+
+            throw new IgniteException(e); //to protect from disabled asserts and call to failure handler
+        }
+
+        /**
          * Context with information about current snapshots.
          */
         private class DbCheckpointContextImpl implements DbCheckpointListener.Context {
@@ -4405,7 +4467,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         pendingTaskFuture.add(res);
                     }
                     catch (RejectedExecutionException e) {
-                        assert false : "A task should never be rejected by async runner";
+                        handleRejectiedExecutionException(e);
                     }
                 };
             }
