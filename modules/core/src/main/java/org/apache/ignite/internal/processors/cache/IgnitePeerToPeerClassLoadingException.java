@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,26 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache;
 
-namespace Apache.Ignite.Core.Cache.Query
-{
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
+import org.apache.ignite.IgniteCheckedException;
 
-    /// <summary>
-    /// Fields query cursor.
-    /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public interface IFieldsQueryCursor : IQueryCursor<IList<object>>
-    {
-        /// <summary>
-        /// Gets the field names.
-        /// </summary>
-        IList<string> FieldNames { get; }
+/**
+ * This exception is thrown in communication-related cases when it is impossible to load class from any peer.
+ */
+public class IgnitePeerToPeerClassLoadingException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        /// <summary>
-        /// Gets fields metadata.
-        /// </summary>
-        IList<IQueryCursorField> Fields { get; }
+    /** */
+    public IgnitePeerToPeerClassLoadingException(String s) {
+        super(s);
     }
 }

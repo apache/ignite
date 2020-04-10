@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Transactions;
@@ -30,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
@@ -574,6 +576,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             Assert.AreEqual(11, clientCache[1]);
         }
 
+        /// <summary>
+        /// Tests that scan query uses near cache to pass values to <see cref="ScanQuery{TK,TV}.Filter"/> when possible.
+        /// </summary>
         [Test]
         public void TestScanQueryFilterUsesValueFromNearCache(
             [Values(CacheTestMode.ServerLocal, CacheTestMode.ServerRemote, CacheTestMode.Client)] CacheTestMode mode)
@@ -594,6 +599,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             Assert.AreEqual(count, res.Count());
         }
 
+        /// <summary>
+        /// Tests that scan query falls back to deserialized value from Java when near cache value is missing.
+        /// </summary>
         [Test]
         public void TestScanQueryFilterUsesFallbackValueWhenNotInNearCache(
             [Values(CacheTestMode.ServerLocal, CacheTestMode.ServerRemote, CacheTestMode.Client)] CacheTestMode mode)
@@ -625,6 +633,211 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             var res = cache.Query(new ScanQuery<int, Foo>(filter));
             
             Assert.AreEqual(count, res.Count());
+        }
+
+        /// <summary>
+        /// Tests that local scan query uses near cache directly, avoiding Java roundtrip. 
+        /// </summary>
+        [Test]
+        public void TestLocalScanQueryUsesKeysAndValuesFromNearCache([Values(true, false)] bool withFilter,
+            [Values(true, false)] bool withPartition)
+        {
+            var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Foo(x)));
+
+            var qry = new ScanQuery<int, Foo>
+            {
+                Local = true,
+                Filter = withFilter 
+                    ? new ScanQueryNearCacheFilter
+                    {
+                        CacheName = cache.Name
+                    }
+                    : null,
+                Partition = withPartition 
+                    ? _grid.GetAffinity(cache.Name).GetPartition(TestUtils.GetPrimaryKey(_grid, cache.Name)) 
+                    : (int?) null
+            };
+            
+            var res = cache.Query(qry);
+
+            foreach (var entry in res)
+            {
+                var localValue = cache.LocalPeek(entry.Key, CachePeekMode.PlatformNear);
+                
+                if (withPartition)
+                {
+                    // Local scan with partition works directly through platform cache.
+                    Assert.AreSame(entry.Value, localValue);
+                }
+                else
+                {
+                    // Local scan without partition works through Java.
+                    Assert.AreNotSame(entry.Value, localValue);
+                }
+            }
+
+            if (withPartition)
+            {
+                Assert.Throws<ObjectDisposedException>(() => res.GetAll());
+            }
+        }
+
+        /// <summary>
+        /// Tests that local scan query reserves the partition when <see cref="ScanQuery{TK,TV}.Partition"/> is set. 
+        /// </summary>
+        [Test]
+        public void TestLocalScanQueryWithPartitionReservesPartitionAndReleasesItOnDispose()
+        {
+            var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
+            
+            var key = TestUtils.GetPrimaryKey(_grid, cache.Name);
+            var part = _grid.GetAffinity(cache.Name).GetPartition(key);
+
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Foo(x)));
+            
+            var qry = new ScanQuery<int, Foo>
+            {
+                Local = true,
+                Partition = part
+            };
+
+            Func<bool> isReserved = () => IsPartitionReserved(_grid, cache.Name, part);
+            
+            Assert.IsFalse(isReserved());
+
+            // Full iteration.
+            using (var cursor = cache.Query(qry))
+            {
+                Assert.IsTrue(isReserved());
+
+                using (var enumerator = cursor.GetEnumerator())
+                {
+                    Assert.IsTrue(isReserved());
+                    
+                    while (enumerator.MoveNext())
+                    {
+                        Assert.IsTrue(isReserved());
+                    }
+                    
+                    Assert.IsFalse(isReserved());
+                }
+                
+                Assert.IsFalse(isReserved());
+            }
+            
+            Assert.IsFalse(isReserved());
+            
+            // Partial iteration with LINQ.
+            using (var cursor = cache.Query(qry))
+            {
+                Assert.IsTrue(isReserved());
+
+                var item = cursor.FirstOrDefault();
+                Assert.IsNotNull(item);
+
+                // Released because LINQ disposes the iterator. 
+                Assert.IsFalse(isReserved());
+            }
+            
+            // Partial iteration.
+            using (var cursor = cache.Query(qry))
+            {
+                Assert.IsTrue(isReserved());
+
+                var moved = cursor.GetEnumerator().MoveNext();
+                Assert.IsTrue(moved);
+
+                Assert.IsTrue(isReserved());
+            }
+            
+            Assert.IsFalse(isReserved());
+            
+            // GetAll without using block.
+            using (var cursor = cache.Query(qry))
+            {
+                Assert.IsTrue(isReserved());
+
+                var res = cursor.GetAll();
+                Assert.IsNotEmpty(res);
+
+                Assert.IsFalse(isReserved());
+            }
+            
+            // Exception in filter.
+            qry.Filter = new ScanQueryNearCacheFilter {FailKey = key};
+            
+            using (var cursor = cache.Query(qry))
+            {
+                Assert.IsTrue(isReserved());
+
+                Assert.Throws<SecurityException>(() => cursor.GetAll());
+
+                Assert.IsFalse(isReserved());
+            }
+        }
+
+        /// <summary>
+        /// Tests that invalid <see cref="ScanQuery{TK,TV}.Partition"/> causes correct exception.
+        /// </summary>
+        [Test]
+        public void TestLocalScanQueryWithInvalidPartitionId()
+        {
+            var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
+            var qry = new ScanQuery<int, Foo> {Local = true, Partition = 1024};
+            
+            var ex = Assert.Throws<IgniteException>(() => cache.Query(qry));
+            
+            Assert.AreEqual("Invalid partition number: 1024", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests that local scan query throws an exception when <see cref="ScanQuery{TK,TV}.Partition"/> is specified,
+        /// but that partition can not be reserved (belongs to remote node).
+        /// </summary>
+        [Test]
+        public void TestLocalScanQueryWithPartitionThrowsOnRemoteKeys()
+        {
+            var cache = GetCache<int, Foo>(CacheTestMode.ServerLocal);
+            
+            var partition = _grid2.GetAffinity(cache.Name)
+                .GetPrimaryPartitions(_grid2.GetCluster().GetLocalNode())
+                .First();
+            
+            var qry = new ScanQuery<int, Foo>
+            {
+                Local = true,
+                Partition = partition
+            };
+
+            var ex = Assert.Throws<InvalidOperationException>(() => cache.Query(qry).GetAll());
+            
+            Assert.AreEqual(
+                string.Format("Failed to reserve partition {0}, it does not belong to the local node.", partition), 
+                ex.Message);
+        }
+        
+        /// <summary>
+        /// Tests local scan query on client node.
+        /// </summary>
+        [Test]
+        public void TestLocalScanQueryFromClientNode()
+        {
+            var cache = _grid.CreateCache<int, Foo>(TestUtils.TestName);
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Foo(x)));
+
+            var clientCache = _client.CreateNearCache<int, Foo>(cache.Name, new NearCacheConfiguration(),
+                new PlatformNearCacheConfiguration());
+            
+            // Promote key to near cache.
+            clientCache.Get(2);
+            
+            var res = clientCache.Query(new ScanQuery<int, Foo> {Local = true}).GetAll();
+
+            // Local scan on client node returns empty collection.
+            Assert.AreEqual(1, clientCache.GetLocalSize(CachePeekMode.Near));
+            Assert.AreEqual(1, clientCache.GetLocalSize(CachePeekMode.PlatformNear));
+            Assert.IsEmpty(res);
         }
 
         /// <summary>
@@ -1358,6 +1571,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
         private void WaitForRebalance()
         {
             TestUtils.WaitForTrueCondition(() => _grid2.GetAffinity(CacheName).MapKeyToNode(1).IsLocal, 2000);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether specified partition is reserved.
+        /// </summary>
+        private static bool IsPartitionReserved(IIgnite ignite, string cacheName, int part)
+        {
+            const string taskName = "org.apache.ignite.platform.PlatformIsPartitionReservedTask";
+
+            return ignite.GetCompute().ExecuteJavaTask<bool>(taskName, new object[] {cacheName, part});
         }
 
         /** */
