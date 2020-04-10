@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
@@ -545,9 +546,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
                             if (recoverState != null) {
-                                io.setPartitionState(pageAddr, (byte) recoverState.intValue());
+                                changed = io.setPartitionState(pageAddr, (byte)recoverState.intValue());
 
-                                changed = updateState(part, recoverState);
+                                updateState(part, recoverState);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Restored partition state (from WAL) " +
@@ -555,9 +556,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                         ", updCntr=" + part.initialUpdateCounter() + "]");
                             }
                             else {
-                                int stateId = (int) io.getPartitionState(pageAddr);
+                                int stateId = io.getPartitionState(pageAddr);
 
-                                changed = updateState(part, stateId);
+                                updateState(part, stateId);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Restored partition state (from page memory) " +
@@ -604,20 +605,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * @param part Partition to restore state for.
      * @param stateId State enum ordinal.
-     * @return Updated flag.
      */
-    private boolean updateState(GridDhtLocalPartition part, int stateId) {
+    private void updateState(GridDhtLocalPartition part, int stateId) {
         if (stateId != -1) {
             GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
 
             assert state != null;
 
-            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
-
-            return true;
+            part.restoreState(state == EVICTED ? RENTING : state);
         }
-
-        return false;
     }
 
     /**

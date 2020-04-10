@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,16 +17,17 @@
 
 package org.apache.ignite.events;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_STATE_CHANGE_STARTED;
 
 /**
- * Cluster activation event.
+ * Cluster state change started event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design Ignite keeps all events generated on the local node locally and it provides
@@ -56,40 +57,50 @@ import org.jetbrains.annotations.Nullable;
  * by using {@link IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
  * events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
- * @see EventType#EVT_CLUSTER_ACTIVATED
- * @see EventType#EVT_CLUSTER_DEACTIVATED
- * @deprecated Use {@link ClusterStateChangeEvent} instead.
+ * @see EventType#EVT_CLUSTER_STATE_CHANGE_STARTED
  */
-@Deprecated
-public class ClusterActivationEvent extends EventAdapter {
+public class ClusterStateChangeStartedEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Baseline nodes. */
-    private final Collection<BaselineNode> baselineNodes;
+    /** Previous cluster state. */
+    private final ClusterState prevState;
+
+    /** New cluster state. */
+    private final ClusterState state;
 
     /**
-     * Creates activation event with given parameters.
-     *
+     * @param prevState Previous cluster state.
+     * @param state New cluster state.
      * @param node Node.
      * @param msg Optional event message.
-     * @param type Event type.
-     * @param baselineNodes Baseline nodes.
      */
-    public ClusterActivationEvent(ClusterNode node, String msg, int type, Collection<BaselineNode> baselineNodes) {
-        super(node, msg, type);
+    public ClusterStateChangeStartedEvent(
+        ClusterState prevState,
+        ClusterState state,
+        ClusterNode node,
+        String msg
+    ) {
+        super(node, msg, EVT_CLUSTER_STATE_CHANGE_STARTED);
 
-        assert baselineNodes != null;
+        A.notNull(prevState, "prevState");
+        A.notNull(state, "state");
 
-        this.baselineNodes = baselineNodes;
+        this.state = state;
+        this.prevState = prevState;
     }
 
     /**
-     * Gets baseline nodes.
-     *
-     * @return Baseline nodes.
+     * @return Previous cluster state.
      */
-    public @Nullable Collection<BaselineNode> baselineNodes() {
-        return baselineNodes;
+    public ClusterState previousState() {
+        return prevState;
+    }
+
+    /**
+     * @return New cluster state.
+     */
+    public ClusterState state() {
+        return state;
     }
 }

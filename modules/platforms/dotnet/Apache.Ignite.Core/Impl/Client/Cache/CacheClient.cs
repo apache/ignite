@@ -872,7 +872,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             QueryBase.WriteQueryArgs(writer, qry.Arguments);
 
             // .NET client does not discern between different statements for now.
-            // We cound have ExecuteNonQuery method, which uses StatementType.Update, for example.
+            // We could have ExecuteNonQuery method, which uses StatementType.Update, for example.
             writer.WriteByte((byte)StatementType.Any);
 
             writer.WriteBoolean(qry.EnableDistributedJoins);
