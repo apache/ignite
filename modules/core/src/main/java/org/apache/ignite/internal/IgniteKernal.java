@@ -644,6 +644,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public int getPublicThreadPoolSize() {
+        assert cfg != null;
+
+        return cfg.getPublicThreadPoolSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public String getIgniteHome() {
         assert cfg != null;
 
