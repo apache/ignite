@@ -39,7 +39,7 @@ docker_build_memory_limit="3200m"
 docker_run_memory_limit="2000m"
 
 # The default number of cluster nodes to bring up if a number is not specified.
-default_num_nodes=14
+default_num_nodes=4
 
 # The default OpenJDK base image.
 default_jdk="openjdk:8"
@@ -369,6 +369,8 @@ attempting to start new ones."
 generate_cluster_json_file() {
     local num_nodes="${1}"
     local path="${2}"
+    rm ${path}
+    touch ${path}
     exec 3<> "${path}"
 cat<<EOF >&3
 {

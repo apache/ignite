@@ -13,26 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ignitetest.tests.ignite_test import IgniteTest
+"""
+This module renders Ignite config and all related artifacts
+"""
 
 
-class AddNodeRebalanceTest(IgniteTest):
-    """
-    Test performs rebalance tests.
-    """
-    def __init__(self, test_context):
-        super(IgniteTest, self).__init__(test_context)
+class IgniteConfig:
+    def __init__(self, project="ignite"):
+        self.project = project
 
-    def teardown(self):
-        self.ignite.stop()
+    def render(self, work_dir):
+        return """<?xml version="1.0" encoding="UTF-8"?>
 
-    def test_add_node(self):
-        """
-        Test performs add node rebalance test which consists of following steps:
-            * Start cluster.
-            * Put data to it via CacheDataProducer.
-            * Start one more node.
-            * Await for rebalance to finish.
-        """
-        for node in self.ignite.nodes:
-            node.account.ssh("touch /opt/hello-from-test.txt")
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="workDirectory" value="{0}" />
+    </bean>
+</beans>
+        """.format(work_dir)

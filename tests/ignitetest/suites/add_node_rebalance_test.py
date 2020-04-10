@@ -15,21 +15,32 @@
 
 from ducktape.tests.test import Test
 
+from ignitetest.services.ignite.ignite import IgniteService
 
-from ignitetest.services.ignite import IgniteService
 
-
-class IgniteTest(Test):
+class AddNodeRebalanceTest(Test):
     """
-    Helper class that manages setting up a Ignite cluster. Use this if the
-    default settings for Ignite are sufficient for your test; any customization
-    needs to be done manually. Your run() method should call tearDown and
-    setUp. The Ignite service are available as the fields IgniteTest.ignite.
+    Test performs rebalance tests.
     """
     def __init__(self, test_context):
-        super(IgniteTest, self).__init__(test_context)
-
-        self.ignite = IgniteService(test_context, self.num_brokers)
+        super(AddNodeRebalanceTest, self).__init__(test_context=test_context)
+        self.ignite = IgniteService(test_context)
 
     def setUp(self):
         self.ignite.start()
+
+    def teardown(self):
+        self.ignite.stop()
+
+    def test_add_node(self):
+        """
+        Test performs add node rebalance test which consists of following steps:
+            * Start cluster.
+            * Put data to it via CacheDataProducer.
+            * Start one more node.
+            * Await for rebalance to finish.
+        """
+        self.logger.info("Start add node rebalance test.")
+
+        for node in self.ignite.nodes:
+            node.account.ssh("touch /opt/hello-from-test.txt")
