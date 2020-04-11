@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
-    /// Native .NET near cache configuration.
+    /// Native .NET cache configuration.
     /// <para />
-    /// Enables native .NET near cache. Cache entries will be stored in deserialized form in CLR heap.
+    /// Enables native .NET cache. Cache entries will be stored in deserialized form in CLR heap.
     /// <para />
     /// When enabled on server nodes, all primary keys will be stored in platform memory as well.
     /// <para />
@@ -44,20 +44,20 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <item><term><see cref="ICache{TK,TV}.Query(QueryBase)"/> with <see cref="ScanQuery{TK,TV}"/></term></item>
     /// </list>
     /// </summary>
-    public class PlatformNearCacheConfiguration
+    public class PlatformCacheConfiguration
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="PlatformCacheConfiguration"/> class.
         /// </summary>
-        public PlatformNearCacheConfiguration()
+        public PlatformCacheConfiguration()
         {
             // No-op.
         }
         
         /// <summary>
-        /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="PlatformCacheConfiguration"/> class.
         /// </summary>
-        internal PlatformNearCacheConfiguration(IBinaryRawReader reader)
+        internal PlatformCacheConfiguration(IBinaryRawReader reader)
         {
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public string ValueTypeName { get; set; }
         
         /// <summary>
-        /// Gets or sets a value indicating whether platform near cache should store keys and values in binary form.
+        /// Gets or sets a value indicating whether platform cache should store keys and values in binary form.
         /// </summary>
         public bool KeepBinary { get; set; }
 

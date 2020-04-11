@@ -103,33 +103,36 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\DataRegionMetricsTest.cs" Link="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\MemoryMetricsTest.cs" Link="Cache\MemoryMetricsTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\CacheNearCreateDestroy.cs">
-      <Link>Cache\Near\CacheNearCreateDestroy.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\CacheNearTest.cs">
-      <Link>Cache\Near\CacheNearTest.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\CacheNearTopologyChangeTest.cs">
-      <Link>Cache\Near\CacheNearTopologyChangeTest.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\FailingCacheStore.cs">
-      <Link>Cache\Near\FailingCacheStore.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\Foo.cs">
-      <Link>Cache\Near\Foo.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\ScanQueryNearCacheFilter.cs">
-      <Link>Cache\Near\ScanQueryNearCacheFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\ScanQueryNoNearCacheFilter.cs">
-      <Link>Cache\Near\ScanQueryNoNearCacheFilter.cs</Link>
-    </Compile>
-    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Near\StoreNoNearCacheFilter.cs">
-      <Link>Cache\Near\StoreNoNearCacheFilter.cs</Link>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NearCacheTest.cs">
+      <Link>Cache\NearCacheTest.cs</Link>
     </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableCacheEntryProcessor.cs" Link="Cache\NonSerializableCacheEntryProcessor.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\NonSerializableException.cs" Link="Cache\NonSerializableException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\PersistenceTest.cs" Link="Cache\PersistenceTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\FailingCacheStore.cs">
+      <Link>Cache\Platform\FailingCacheStore.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\Foo.cs">
+      <Link>Cache\Platform\Foo.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\PlatformCacheTest.cs">
+      <Link>Cache\Platform\PlatformCacheTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\PlatformCacheTestCreateDestroy.cs">
+      <Link>Cache\Platform\PlatformCacheTestCreateDestroy.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\PlatformCacheTopologyChangeTest.cs">
+      <Link>Cache\Platform\PlatformCacheTopologyChangeTest.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\ScanQueryNoPlatformCacheFilter.cs">
+      <Link>Cache\Platform\ScanQueryNoPlatformCacheFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\ScanQueryPlatformCacheFilter.cs">
+      <Link>Cache\Platform\ScanQueryPlatformCacheFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Platform\StoreNoPlatformCacheFilter.cs">
+      <Link>Cache\Platform\StoreNoPlatformCacheFilter.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheDmlQueriesTest.cs" Link="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheDmlQueriesTestSimpleName.cs" Link="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\Query\CacheQueriesCodeConfigurationTest.cs" Link="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />

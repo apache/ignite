@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache.Near
+namespace Apache.Ignite.Core.Impl.Cache.Platform
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
@@ -24,23 +24,23 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Non-generic near cache facade.
+    /// Non-generic platform cache facade.
     /// </summary>
-    internal interface INearCache
+    internal interface IPlatformCache
     {
         /// <summary>
-        /// Gets a value indicating whether near cache has been stopped.
+        /// Gets a value indicating whether platform cache has been stopped.
         /// Happens during normal cache destroy, or after client reconnect with full cluster restart.
         /// </summary>
         bool IsStopped { get; }
 
         /// <summary>
-        /// Reads cache key and value from a stream and updates near cache.
+        /// Reads cache key and value from a stream and updates platform cache.
         /// </summary>
         void Update(IBinaryStream stream, Marshaller marshaller);
 
         /// <summary>
-        /// Updates near cache using data from <see cref="SetThreadLocalPair{TK,TV}"/>.
+        /// Updates platform cache using data from <see cref="SetThreadLocalPair{TK,TV}"/>.
         /// </summary>
         void UpdateFromThreadLocal(int partition, AffinityTopologyVersion affinityTopologyVersion);
 
