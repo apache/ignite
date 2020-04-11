@@ -414,8 +414,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                 update(val, expireTime, ttl, ver, true);
 
-                // Special case for Platform near cache: start tracking near entry.
-                updatePlatformNearCache(val, topVer);
+                // Special case for platform cache: start tracking near entry.
+                updatePlatformCache(val, topVer);
 
                 if (cctx.deferredDelete() && !isInternal()) {
                     boolean deleted = val == null;
@@ -759,7 +759,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override public void onMarkedObsolete() {
         // GridCacheMapEntry.onMarkedObsolete is called immediately after performing operation for any non-primary key.
-        updatePlatformNearCache(null, null);
+        updatePlatformCache(null, null);
     }
 
     /**

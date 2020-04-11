@@ -1193,15 +1193,15 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * Updates near cache data.
+     * Updates platform cache data.
      *
      * @param memPtr Ptr to a stream with serialized data.
      */
-    public void nearCacheUpdate(long memPtr) {
+    public void platformCacheUpdate(long memPtr) {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.NearCacheUpdate, memPtr);
+            PlatformCallbackUtils.inLongOutLong(envPtr, PlatformCallbackOp.PlatformCacheUpdate, memPtr);
         }
         finally {
             leave();
@@ -1209,17 +1209,17 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * Updates near cache data.
+     * Updates platform cache data.
      *
      * @param cacheIdAndPartition Cache id and partition.
      * @param verMajor Affinity version.
      * @param verMinor Affinity version minor part.
      */
-    public void nearCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor) {
+    public void platformCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor) {
         enter();
 
         try {
-            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.NearCacheUpdateFromThreadLocal,
+            PlatformCallbackUtils.inLongLongLongObjectOutLong(envPtr, PlatformCallbackOp.PlatformCacheUpdateFromThreadLocal,
                     cacheIdAndPartition, verMajor, verMinor, null);
         }
         finally {

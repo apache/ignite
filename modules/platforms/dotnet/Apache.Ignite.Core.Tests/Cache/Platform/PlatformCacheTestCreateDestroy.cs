@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Near
+namespace Apache.Ignite.Core.Tests.Cache.Platform
 {
     using System;
     using System.Linq;
@@ -25,9 +25,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
     using NUnit.Framework;
 
     /// <summary>
-    /// Near cache tests: check create / destroy cache scenarios.
+    /// Platform cache tests: check create / destroy cache scenarios.
     /// </summary>
-    public class CacheNearTestCreateDestroy : IEventListener<CacheEvent>
+    public class PlatformCacheTestCreateDestroy
     {
         /** */
         private IIgnite _grid;
@@ -38,9 +38,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
         /** */
         private IIgnite _client;
         
-        /** */
-        private volatile CacheEvent _lastEvent;
-
         /// <summary>
         /// Fixture set up.
         /// </summary>
@@ -82,99 +79,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
         }
 
         /// <summary>
-        /// Tests the created near cache.
+        /// Tests that platform cache data is cleared when underlying cache is destroyed.
         /// </summary>
         [Test]
-        public void TestCreateNearCache(
-            [Values(CacheMode.Partitioned, CacheMode.Replicated)]
-            CacheMode cacheMode,
-            [Values(CacheAtomicityMode.Atomic, CacheAtomicityMode.Transactional)]
-            CacheAtomicityMode atomicityMode)
-        {
-            var cacheName = string.Format("dyn_cache_{0}_{1}", cacheMode, atomicityMode);
-
-            var cfg = new CacheConfiguration(cacheName)
-            {
-                AtomicityMode = atomicityMode,
-                CacheMode = cacheMode
-            };
-
-            var cache = _grid.CreateCache<int, int>(cfg);
-            cache[1] = 1;
-
-            var nearCacheConfiguration = new NearCacheConfiguration();
-            var nearCache = _client.CreateNearCache<int, int>(cacheName, nearCacheConfiguration);
-            Assert.AreEqual(1, nearCache[1]);
-
-            // Create when exists.
-            nearCache = _client.CreateNearCache<int, int>(cacheName, nearCacheConfiguration);
-            Assert.AreEqual(1, nearCache[1]);
-
-            // Update entry.
-            cache[1] = 2;
-            Assert.True(TestUtils.WaitForCondition(() => nearCache[1] == 2, 300));
-
-            // Update through near.
-            nearCache[1] = 3;
-            Assert.AreEqual(3, nearCache[1]);
-
-            // Remove.
-            cache.Remove(1);
-            Assert.True(TestUtils.WaitForCondition(() => !nearCache.ContainsKey(1), 300));
-        }
-
-        /// <summary>
-        /// Tests near cache on the client node.
-        /// </summary>
-        [Test]
-        public void TestCreateNearCacheOnClientNode()
-        {
-            const string cacheName = "client_cache";
-
-            _client.CreateCache<int, int>(cacheName);
-
-            // Near cache can't be started on client node
-            Assert.Throws<CacheException>(
-                () => _client.CreateNearCache<int, int>(cacheName, new NearCacheConfiguration()));
-        }
-
-        /// <summary>
-        /// Tests near cache on the client node.
-        /// </summary>
-        [Test]
-        public void TestCreateCacheWithNearConfigOnClientNode()
-        {
-            const string cacheName = "client_with_near_cache";
-
-            var cache = _client.CreateCache<int, int>(new CacheConfiguration(cacheName),
-                new NearCacheConfiguration());
-
-            AssertCacheIsNear(cache);
-
-            cache[1] = 1;
-            Assert.AreEqual(1, cache[1]);
-
-            var cache2 = _client.GetOrCreateCache<int, int>(new CacheConfiguration(cacheName), 
-                new NearCacheConfiguration());
-
-            Assert.AreEqual(1, cache2[1]);
-
-            cache[1] = 2;
-            Assert.AreEqual(2, cache2[1]);
-        }
-        
-        /// <summary>
-        /// Tests that near cache data is cleared when underlying cache is destroyed.
-        /// </summary>
-        [Test]
-        public void TestDestroyCacheClearsNearCacheData(
+        public void TestDestroyCacheClearsPlatformCacheData(
             [Values(CacheTestMode.ServerLocal, CacheTestMode.ServerRemote, CacheTestMode.Client)] CacheTestMode mode)
         {
             var cfg = new CacheConfiguration
             {
                 Name = TestUtils.TestName + mode,
                 NearConfiguration = new NearCacheConfiguration(),
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration()
+                PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
 
             var ignite = GetIgnite(mode);
@@ -192,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
         }
 
         /// <summary>
-        /// Tests that near cache data is cleared when cache is destroyed and then created again with the same name.
+        /// Tests that platform cache data is cleared when cache is destroyed and then created again with the same name.
         /// </summary>
         [Test]
         public void TestCreateWithSameNameAfterDestroyClearsOldData(
@@ -202,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             {
                 Name = TestUtils.TestName + mode,
                 NearConfiguration = new NearCacheConfiguration(),
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration()
+                PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
 
             var ignite = GetIgnite(mode);
@@ -213,53 +128,53 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             ignite.DestroyCache(cache.Name);
             
             cache = ignite.CreateCache<int, int>(cfg, new NearCacheConfiguration());
-            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.PlatformNear));
+            Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Platform));
         }
 
         /// <summary>
-        /// Tests that platform near cache can be started on a given client node only, avoiding server near cache.
+        /// Tests that platform cache can be started on a given client node only, avoiding server platform cache.
         /// Checks different overloads of CreateCache/GetOrCreateCache.
         /// </summary>
         [Test]
-        public void TestClientOnlyPlatformNearCache()
+        public void TestClientOnlyPlatformCache()
         {
             var cache = _grid.CreateCache<int, int>(TestUtils.TestName);
             cache[1] = 2;
             
             var clientCache = _client.CreateNearCache<int, int>(cache.Name, new NearCacheConfiguration(), 
-                new PlatformNearCacheConfiguration());
+                new PlatformCacheConfiguration());
             
             Assert.AreEqual(2, clientCache[1]);
-            Assert.AreEqual(1, clientCache.GetLocalSize(CachePeekMode.PlatformNear));
+            Assert.AreEqual(1, clientCache.GetLocalSize(CachePeekMode.Platform));
 
             var clientCache2 = _client.GetOrCreateNearCache<int, int>(cache.Name, new NearCacheConfiguration(),
-                new PlatformNearCacheConfiguration());
+                new PlatformCacheConfiguration());
             
             Assert.AreEqual(2, clientCache2[1]);
-            Assert.AreEqual(1, clientCache2.GetLocalSize(CachePeekMode.PlatformNear));
+            Assert.AreEqual(1, clientCache2.GetLocalSize(CachePeekMode.Platform));
 
             var clientCache3 = _client.CreateCache<int, int>(new CacheConfiguration(cache.Name + "3"), 
-                new NearCacheConfiguration(), new PlatformNearCacheConfiguration());
+                new NearCacheConfiguration(), new PlatformCacheConfiguration());
 
             clientCache3[1] = 2;
-            Assert.AreEqual(2, clientCache3.LocalPeek(1, CachePeekMode.PlatformNear));
+            Assert.AreEqual(2, clientCache3.LocalPeek(1, CachePeekMode.Platform));
             
             var clientCache4 = _client.GetOrCreateCache<int, int>(new CacheConfiguration(cache.Name + "4"), 
-                new NearCacheConfiguration(), new PlatformNearCacheConfiguration());
+                new NearCacheConfiguration(), new PlatformCacheConfiguration());
 
             clientCache4[1] = 2;
-            Assert.AreEqual(2, clientCache4.LocalPeek(1, CachePeekMode.PlatformNear));
+            Assert.AreEqual(2, clientCache4.LocalPeek(1, CachePeekMode.Platform));
         }
 
         /// <summary>
-        /// Tests that Java near cache is not necessary for .NET near cache to function on server nodes.
+        /// Tests that Java near cache is not necessary for .NET platform cache to function on server nodes.
         /// </summary>
         [Test]
-        public void TestPlatformNearCacheOnServerWithoutJavaNearCache()
+        public void TestPlatformCacheOnServerWithoutJavaNearCache()
         {
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration()
+                PlatformCacheConfiguration = new PlatformCacheConfiguration()
             };
 
             var cache1 = _grid.CreateCache<int, Foo>(cfg);
@@ -267,26 +182,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             
             var key = TestUtils.GetPrimaryKey(_grid, cfg.Name);
             
-            // Not in near on non-primary node.
+            // Not in platform cache on non-primary node.
             cache2[key] = new Foo(key);
             Assert.AreEqual(key, cache2[key].Bar);
             
-            Assert.AreEqual(0, cache2.GetLocalEntries(CachePeekMode.PlatformNear).Count());
+            Assert.AreEqual(0, cache2.GetLocalEntries(CachePeekMode.Platform).Count());
             
-            // In near on primary node.
-            Assert.AreEqual(key, cache1.GetLocalEntries(CachePeekMode.PlatformNear).Single().Key);
+            // In platform cache on primary node.
+            Assert.AreEqual(key, cache1.GetLocalEntries(CachePeekMode.Platform).Single().Key);
         }
 
         /// <summary>
         /// Tests that invalid config is handled properly.
         /// </summary>
         [Test]
-        public void TestCreateNearCacheWithInvalidKeyValueTypeNames([Values(true, false)] bool client, 
+        public void TestCreatePlatformCacheWithInvalidKeyValueTypeNames([Values(true, false)] bool client, 
             [Values(true, false)] bool keyOrValue)
         {
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration
+                PlatformCacheConfiguration = new PlatformCacheConfiguration
                 {
                     KeyTypeName = keyOrValue ? "invalid" : null,
                     ValueTypeName = keyOrValue ? null : "invalid"
@@ -298,43 +213,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
             var err = Assert.Throws<InvalidOperationException>(() => ignite.CreateCache<int, int>(cfg));
 
             var expectedMessage = string.Format(
-                "Can not create .NET Near Cache: PlatformNearCacheConfiguration.{0} is invalid. " +
+                "Can not create .NET Platform Cache: PlatformCacheConfiguration.{0} is invalid. " +
                 "Failed to resolve type: 'invalid'", keyOrValue ? "KeyTypeName" : "ValueTypeName");
             
             Assert.AreEqual(expectedMessage, err.Message);
         }
         
         /// <summary>
-        /// Asserts the cache is near.
-        /// </summary>
-        private void AssertCacheIsNear(ICache<int, int> cache)
-        {
-            var events = cache.Ignite.GetEvents();
-            events.LocalListen(this, EventType.CacheEntryCreated);
-
-            _lastEvent = null;
-            cache[-1] = int.MinValue;
-
-            TestUtils.WaitForCondition(() => _lastEvent != null, 500);
-            Assert.IsNotNull(_lastEvent);
-            Assert.IsTrue(_lastEvent.IsNear);
-
-            events.StopLocalListen(this, EventType.CacheEntryCreated);
-        }
-
-        /// <summary>
         /// Gets Ignite instance for mode.
         /// </summary>
         private IIgnite GetIgnite(CacheTestMode mode)
         {
             return new[] {_grid, _grid2, _client}[(int) mode];
-        }
-
-        /** <inheritdoc /> */
-        public bool Invoke(CacheEvent evt)
-        {
-            _lastEvent = evt;
-            return true;
         }
         
         /** */
