@@ -20,16 +20,18 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -37,15 +39,20 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * JSON deserializer for ignite binary object.
+ * JSON deserializer into the Ignite binary object.
  */
-public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryObjectImpl> {
+public class IgniteBinaryObjectJsonDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer {
     /** Property name to set binary type name. */
     public static final String BINARY_TYPE_PROPERTY = "binaryTypeName";
+
+    /** Property name to set cache name. */
+    public static final String CACHE_NAME_PROPERTY = "cacheName";
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -62,40 +69,85 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
     /** {@inheritDoc} */
     @Override public BinaryObjectImpl deserialize(JsonParser parser, DeserializationContext dCtx) throws IOException {
         String type = (String)dCtx.findInjectableValue(BINARY_TYPE_PROPERTY, null, null);
+        String cacheName = (String)dCtx.findInjectableValue(CACHE_NAME_PROPERTY, null, null);
 
+        assert type != null;
         assert !ctx.marshallerContext().isSystemType(type);
 
         ObjectCodec mapper = parser.getCodec();
         JsonNode jsonTree = mapper.readTree(parser);
 
-        return (BinaryObjectImpl)deserialize0(type, jsonTree, mapper);
+        return (BinaryObjectImpl)deserialize0(cacheName, type, jsonTree, mapper);
     }
 
     /**
+     * @param cacheName Cache name.
      * @param type Type name.
-     * @param jsonNode JSON node.
+     * @param node JSON node.
      * @param mapper JSON object mapper.
      * @return Deserialized object.
      * @throws IOException In case of error.
      */
-    private Object deserialize0(String type, JsonNode jsonNode, ObjectCodec mapper) throws IOException {
+    private Object deserialize0(String cacheName, String type, JsonNode node, ObjectCodec mapper) throws IOException {
         if (ctx.marshallerContext().isSystemType(type)) {
             Class<?> cls = IgniteUtils.classForName(type, null);
 
             if (cls != null)
-                return mapper.treeToValue(jsonNode, cls);
+                return mapper.treeToValue(node, cls);
         }
 
-        BinaryTypeImpl binType = (BinaryTypeImpl)ctx.cacheObjects().binary().type(type);
+        BinaryType binType = ctx.cacheObjects().binary().type(type);
 
-        JsonTreeDeserializer deserializer =
-            binType != null ? new TypedDeserializer(binType, mapper) : new UntypedDeserializer(type);
+        JsonDeserializer deserializer = binType instanceof BinaryTypeImpl ?
+            new BinaryTypeDeserializer(cacheName, (BinaryTypeImpl)binType, mapper) :
+            new JsonDeserializer(cacheName, type, mapper);
 
-        return deserializer.deserialize(jsonNode);
+        return deserializer.deserialize(node);
     }
 
-    /** */
-    private interface JsonTreeDeserializer {
+    /**
+     * JSON deserializer creates a new binary type using JSON data types.
+     */
+    private class JsonDeserializer {
+        /** New binary type name. */
+        private final String type;
+
+        /** Cache query meta. */
+        protected final Map<String, Class<?>> qryFields;
+
+        /** Cache name. */
+        protected final String cacheName;
+
+        /** JSON object mapper. */
+        protected final ObjectCodec mapper;
+
+        /**
+         * @param cacheName Cache name.
+         * @param type Type name.
+         * @param mapper JSON object mapper.
+         */
+        public JsonDeserializer(@Nullable String cacheName, String type, ObjectCodec mapper) {
+            this.type = type;
+            this.mapper = mapper;
+            this.cacheName = cacheName;
+
+            qryFields = qryFields();
+        }
+
+        /**
+         * @return Mapping from field name to its type.
+         */
+        private Map<String, Class<?>> qryFields() {
+            if (ctx.query().moduleEnabled()) {
+                QueryTypeDescriptorImpl desc = ctx.query().typeDescriptor(cacheName, type);
+
+                if (desc != null)
+                    return desc.fields();
+            }
+
+            return Collections.emptyMap();
+        }
+
         /**
          * Deserialize JSON tree.
          *
@@ -103,25 +155,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          * @return Binary object.
          * @throws IOException In case of error.
          */
-        BinaryObject deserialize(JsonNode tree) throws IOException;
-    }
-
-    /**
-     * JSON deserializer creates a new binary type using JSON data types.
-     */
-    private class UntypedDeserializer implements JsonTreeDeserializer {
-        /** New binary type name. */
-        private final String type;
-
-        /**
-         * @param type New binary type name.
-         */
-        public UntypedDeserializer(String type) {
-            this.type = type;
-        }
-
-        /** {@inheritDoc} */
-        @Override public BinaryObject deserialize(JsonNode tree) throws IOException {
+        public BinaryObject deserialize(JsonNode tree) throws IOException {
             return binaryValue(type, tree);
         }
 
@@ -140,7 +174,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                 Map.Entry<String, JsonNode> entry = itr.next();
 
                 String field = entry.getKey();
-                Object val = readValue(type, field, entry.getValue());
+                Object val = readValue(field, entry.getValue());
 
                 builder.setField(field, val);
             }
@@ -149,34 +183,42 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         }
 
         /**
-         * @param type Ignite binary type name.
          * @param field Field name.
          * @param jsonNode JSON node.
          * @return value.
          * @throws IOException In case of error.
          */
-        protected Object readValue(String type, String field, JsonNode jsonNode) throws IOException {
-            switch (jsonNode.getNodeType()) {
-                case OBJECT:
-                    return binaryValue(type + "." + field, jsonNode);
+        protected Object readValue(String field, JsonNode jsonNode) throws IOException {
+            JsonNodeType nodeType = jsonNode.getNodeType();
 
+            if (nodeType == JsonNodeType.BINARY)
+                return jsonNode.binaryValue();
+
+            if (nodeType == JsonNodeType.BOOLEAN)
+                return jsonNode.booleanValue();
+
+            Class<?> cls = qryFields.get(field.toUpperCase());
+
+            if (cls != null)
+                return mapper.treeToValue(jsonNode, cls);
+
+            switch (nodeType) {
                 case ARRAY:
                     List<Object> list = new ArrayList<>(jsonNode.size());
                     Iterator<JsonNode> itr = jsonNode.elements();
 
                     while (itr.hasNext())
-                        list.add(readValue(type, field, itr.next()));
+                        list.add(readValue(field, itr.next()));
 
                     return list;
 
-                case BINARY:
-                    return jsonNode.binaryValue();
-
-                case BOOLEAN:
-                    return jsonNode.asBoolean();
-
                 case NUMBER:
                     return jsonNode.numberValue();
+
+                case OBJECT:
+                    String newTypeName = type + "." + GridCacheUtils.capitalize(field);
+
+                    return deserialize0(cacheName, newTypeName, jsonNode, mapper);
 
                 case STRING:
                     return jsonNode.asText();
@@ -188,24 +230,25 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
     }
 
     /**
-     * JSON deserializer using the Ignite binary type.
+     * JSON deserializer using the existing Ignite binary type.
      */
-    private class TypedDeserializer extends UntypedDeserializer {
-        /** JSON object mapper. */
-        private final ObjectCodec mapper;
-
+    private class BinaryTypeDeserializer extends JsonDeserializer {
         /** Binary type. */
         private final BinaryTypeImpl binType;
 
+        /** Binary class descriptor. */
+        private final BinaryClassDescriptor binClsDesc;
+
         /**
-         * @param binType Binary type.
+         * @param cacheName Cache name.
+         * @param binaryType Binary type.
          * @param mapper JSON object mapper.
          */
-        public TypedDeserializer(BinaryTypeImpl binType, ObjectCodec mapper) {
-            super(binType.typeName());
+        public BinaryTypeDeserializer(@Nullable String cacheName, BinaryTypeImpl binaryType, ObjectCodec mapper) {
+            super(cacheName, binaryType.typeName(), mapper);
 
-            this.mapper = mapper;
-            this.binType = binType;
+            binType = binaryType;
+            binClsDesc = binaryClassDescriptor();
         }
 
         /** {@inheritDoc} */
@@ -223,7 +266,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                 BinaryFieldMetadata meta = metas.get(field);
 
                 Object val = meta != null ?
-                    readValue(meta.typeId(), field, node, binType) : readValue(binType.typeName(), field, node);
+                    readValue(meta.typeId(), field, node, binType) : readValue(field, node);
 
                 builder.setField(field, val);
             }
@@ -242,55 +285,54 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          * @throws IOException if failed.
          */
         private Object readValue(int type, String field, JsonNode node, BinaryTypeImpl parentType) throws IOException {
-            Class<?> baseCls = typeClass(type, field, node, parentType);
+            Class<?> baseCls;
 
-            if (baseCls != null)
-                return mapper.treeToValue(node, baseCls);
-
-            return deserialize0(parentType.fieldTypeName(field), node, mapper);
-        }
-
-        /**
-         * @param type Field type.
-         * @param field Field name.
-         * @param node JSON node.
-         * @param parentType Parent type.
-         * @return Class.
-         * @throws IOException if failed.
-         */
-        private Class<?> typeClass(int type, String field, JsonNode node, BinaryTypeImpl parentType) throws IOException {
             switch (type) {
                 case GridBinaryMarshaller.MAP:
-                    return Map.class;
+                    baseCls = Map.class;
+
+                    break;
                 case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.COL:
                 case GridBinaryMarshaller.OBJ:
                 case GridBinaryMarshaller.ENUM:
-                    Class<?> baseCls = getFieldClass(parentType, field);
+                    baseCls = fieldClass(field);
 
-                    if (baseCls == null && !node.isArray())
-                        throw new IOException("Unable to deserialize field [name=" + field + ", type=" + type + "]");
+                    if (baseCls == null)
+                        return readValue(field, node);
 
-                    return baseCls == null ? ArrayList.class : baseCls;
+                    break;
                 default:
-                    return BinaryUtils.FLAG_TO_CLASS.get((byte)type);
+                    baseCls = BinaryUtils.FLAG_TO_CLASS.get((byte)type);
+            }
+
+            if (baseCls != null)
+                return mapper.treeToValue(node, baseCls);
+
+            return deserialize0(cacheName, parentType.fieldTypeName(field), node, mapper);
+        }
+
+        /**
+         * @return Class descriptor for current binary type or {@code null} if the class was not found.
+         */
+        private @Nullable BinaryClassDescriptor binaryClassDescriptor() {
+            try {
+                return binType.context().descriptorForTypeId(false, binType.typeId(),null,false);
+            } catch (BinaryObjectException ignore) {
+                return null;
             }
         }
 
         /**
-         * @param type Binary type.
          * @param field Field name.
          * @return Class for the specified field or {@code null} if the class was not resolved.
          */
-        private @Nullable Class<?> getFieldClass(BinaryTypeImpl type, String field) {
+        private @Nullable Class<?> fieldClass(String field) {
             try {
-                BinaryClassDescriptor binClsDesc =
-                    type.context().descriptorForTypeId(false, type.typeId(),null,false);
-
                 if (binClsDesc != null)
                     return binClsDesc.describedClass().getDeclaredField(field).getType();
             }
-            catch (NoSuchFieldException | BinaryObjectException ignore) {
+            catch (NoSuchFieldException ignore) {
                 // No-op.
             }
 

@@ -495,12 +495,13 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /**
+     * @param cacheName Cache name.
      * @param type Optional value type.
      * @param obj Object to convert.
      * @return Converted value.
      * @throws IgniteCheckedException If failed to convert.
      */
-    private Object convert(String type, Object obj) throws IgniteCheckedException {
+    private Object convert(String cacheName, String type, Object obj) throws IgniteCheckedException {
         if (F.isEmpty(type) || obj == null)
             return obj;
 
@@ -557,10 +558,15 @@ public class GridJettyRestHandler extends AbstractHandler {
                 case "org.apache.ignite.lang.igniteuuid":
                     return IgniteUuid.fromString(s);
 
+                case "string":
+                case "java.lang.string":
+                    return s;
+
                 default:
                     try {
                         InjectableValues.Std prop = new InjectableValues.Std()
-                            .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type);
+                            .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
+                            .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
 
                         return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(s);
                     } catch (IOException e) {
@@ -706,11 +712,11 @@ public class GridJettyRestHandler extends AbstractHandler {
                 String keyType = (String)params.get("keyType");
                 String valType = (String)params.get("valueType");
 
-                restReq0.key(convert(keyType, params.get("key")));
-                restReq0.value(convert(valType, params.get("val")));
-                restReq0.value2(convert(valType, params.get("val2")));
+                restReq0.key(convert(cacheName, keyType, params.get("key")));
+                restReq0.value(convert(cacheName, valType, params.get("val")));
+                restReq0.value2(convert(cacheName, valType, params.get("val2")));
 
-                Object val1 = convert(valType, params.get("val1"));
+                Object val1 = convert(cacheName, valType, params.get("val1"));
 
                 if (val1 != null)
                     restReq0.value(val1);
@@ -721,8 +727,8 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
                     cmd == CACHE_CONTAINS_KEYS) {
-                    List<Object> keys = values(keyType, "k", params);
-                    List<Object> vals = values(valType, "v", params);
+                    List<Object> keys = values(cacheName, keyType, "k", params);
+                    List<Object> vals = values(cacheName, valType, "v", params);
 
                     if (keys.size() < vals.size())
                         throw new IgniteCheckedException("Number of keys must be greater or equals to number of values.");
@@ -770,7 +776,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.taskId((String)params.get("id"));
                 restReq0.taskName((String)params.get("name"));
 
-                restReq0.params(values(null, "p", params));
+                restReq0.params(values(null, null, "p", params));
 
                 restReq0.async(Boolean.parseBoolean((String)params.get("async")));
 
@@ -856,7 +862,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 GridRestBaselineRequest restReq0 = new GridRestBaselineRequest();
 
                 restReq0.topologyVersion(longValue("topVer", params, null));
-                restReq0.consistentIds(values(null, "consistentId", params));
+                restReq0.consistentIds(values(null, null, "consistentId", params));
 
                 restReq = restReq0;
 
@@ -886,9 +892,11 @@ public class GridJettyRestHandler extends AbstractHandler {
             case EXECUTE_SQL_FIELDS_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
+                String cacheName = (String)params.get(CACHE_NAME_PARAM);
+
                 restReq0.sqlQuery((String)params.get("qry"));
 
-                restReq0.arguments(values(null, "arg", params).toArray());
+                restReq0.arguments(values(cacheName, null, "arg", params).toArray());
 
                 restReq0.typeName((String)params.get("type"));
 
@@ -907,7 +915,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (distributedJoins != null)
                     restReq0.distributedJoins(Boolean.parseBoolean(distributedJoins));
 
-                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+                restReq0.cacheName(cacheName);
 
                 if (cmd == EXECUTE_SQL_QUERY)
                     restReq0.queryType(RestQueryRequest.QueryType.SQL);
@@ -1054,12 +1062,13 @@ public class GridJettyRestHandler extends AbstractHandler {
     /**
      * Gets values referenced by sequential keys, e.g. {@code key1...keyN}.
      *
+     * @param cacheName Cache name.
      * @param type Optional value type.
      * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
      * @param params Parameters map.
      * @return Values.
      */
-    protected List<Object> values(String type, String keyPrefix,
+    protected List<Object> values(String cacheName, String type, String keyPrefix,
         Map<String, Object> params) throws IgniteCheckedException {
         assert keyPrefix != null;
 
@@ -1069,7 +1078,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             String key = keyPrefix + i;
 
             if (params.containsKey(key))
-                vals.add(convert(type, params.get(key)));
+                vals.add(convert(cacheName, type, params.get(key)));
             else
                 break;
         }

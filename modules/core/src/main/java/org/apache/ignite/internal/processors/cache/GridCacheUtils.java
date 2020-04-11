@@ -1046,7 +1046,7 @@ public class GridCacheUtils {
      * @param str String.
      * @return String with first symbol in upper case.
      */
-    private static String capitalize(String str) {
+    public static String capitalize(String str) {
         return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 

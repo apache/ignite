@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -146,6 +147,8 @@ import org.apache.ignite.internal.visor.query.VisorRunningQueriesCollectorTaskAr
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -396,12 +399,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testPutUnregistered() throws Exception {
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
         fields.put("id", Long.class.getName());
         fields.put("name", String.class.getName());
         fields.put("doubleVal", Double.class.getName());
+        fields.put("timestamp", Timestamp.class.getName());
+        fields.put("bytes", long[].class.getName());
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("testCache");
 
@@ -421,13 +427,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         List<Integer> list = F.asList(1, 2, 3);
 
         OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list, null);
+        newType.timestamp = Timestamp.valueOf("2004-08-26 16:47:03.141592653");
+        newType.longs = new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE};
 
         putBinary(cache.getName(), "300", newType, valType);
+
+        GridTestUtils.assertThrowsWithCause(() -> cache.get(300), ClassNotFoundException.class);
 
         assertEquals(newType, getBinary(cache.getName(), "300", OuterClass.class));
 
         // Sending "optional" (new) field for registered binary type.
         OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list, true);
+        newTypeUpdate.timestamp = Timestamp.valueOf("2004-08-26 16:47:03.14");
+        newTypeUpdate.longs = new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE};
 
         putBinary(cache.getName(), "301", newTypeUpdate, valType);
 
@@ -439,8 +451,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             "type", valType,
             "pageSize", "1",
             "keepBinary", "true",
-            "qry", "id = ?",
-            "arg1", String.valueOf(newTypeUpdate.getId())
+            "qry", "timestamp < ?",
+            "arg1", "2004-08-26 16:47:03.141"
         );
 
         assertEquals(newTypeUpdate, JSON_MAPPER.treeToValue(res, OuterClass.class));
@@ -3145,6 +3157,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         private ArrayList<Integer> list;
 
         /** */
+        private Timestamp timestamp;
+
+        /** */
+        private long[] longs;
+
+        /** */
         OuterClass() {
             // No-op.
         }
@@ -3183,6 +3201,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             return list;
         }
 
+        /** */
+        public Timestamp getTimestamp() {
+            return timestamp;
+        }
+
+        /** */
+        public long[] getLongs() {
+            return longs;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
@@ -3194,12 +3222,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 Double.compare(aClass.doubleVal, doubleVal) == 0 &&
                 Objects.equals(name, aClass.name) &&
                 Objects.equals(optional, aClass.optional) &&
-                Objects.equals(list, aClass.list);
+                Objects.equals(list, aClass.list) &&
+                Objects.equals(timestamp, aClass.timestamp) &&
+                Arrays.equals(longs, aClass.longs);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(id, name, optional, doubleVal, list);
+            return Objects.hash(id, name, optional, doubleVal, list, timestamp, longs);
         }
 
         /** {@inheritDoc} */
@@ -3210,6 +3240,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 ", doubleVal=" + doubleVal +
                 ", optional=" + optional +
                 ", list=" + list +
+                ", timestamp=" + timestamp +
+                ", bytes=" + Arrays.toString(longs) +
                 '}';
         }
     }
