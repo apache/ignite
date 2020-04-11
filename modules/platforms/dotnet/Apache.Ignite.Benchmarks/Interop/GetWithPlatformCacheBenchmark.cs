@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,12 +22,12 @@ namespace Apache.Ignite.Benchmarks.Interop
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// Cache put benchmark.
+    /// Cache get benchmark with Platform Cache enabled.
     /// </summary>
-    internal class PutNearBenchmark : PlatformBenchmarkBase
+    internal class GetWithPlatformCacheBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
-        private const string CacheName = "cacheNear";
+        private const string CacheName = "cachePlatform";
 
         /** Native cache wrapper. */
         private ICache<int, Employee> _cache;
@@ -36,24 +36,29 @@ namespace Apache.Ignite.Benchmarks.Interop
         protected override void OnStarted()
         {
             base.OnStarted();
+            
+            BatchSize = 1000;
 
             _cache = Node.GetCache<int, Employee>(CacheName);
+
+            for (int i = 0; i < Emps.Length; i++)
+                _cache.Put(i, Emps[i]);
         }
 
         /** <inheritDoc /> */
         protected override void GetDescriptors(ICollection<BenchmarkOperationDescriptor> descs)
         {
-            descs.Add(BenchmarkOperationDescriptor.Create("PutNear", Put, 1));
+            descs.Add(BenchmarkOperationDescriptor.Create("GetWithPlatformCache", Get, 1));
         }
         
         /// <summary>
-        /// Cache put.
+        /// Cache get.
         /// </summary>
-        private void Put(BenchmarkState state)
+        private void Get(BenchmarkState state)
         {
-            int idx = BenchmarkUtils.GetRandomInt(Dataset);
+            var idx = BenchmarkUtils.GetRandomInt(Dataset);
 
-            _cache.Put(idx, Emps[idx]);
+            _cache.Get(idx);
         }
     }
 }

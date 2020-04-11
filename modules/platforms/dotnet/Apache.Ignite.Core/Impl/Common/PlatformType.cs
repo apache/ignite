@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// Represents an Ignite platform.
     /// </summary>
-    public enum Platform
+    internal enum PlatformType
     {
         /// <summary>
         /// Java platform.
