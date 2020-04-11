@@ -25,7 +25,7 @@ public final class BinaryMemoryAllocator {
     public static final BinaryMemoryAllocator INSTANCE = new BinaryMemoryAllocator();
 
     /** Holders. */
-    private static final ThreadLocal<BinaryMemoryAllocatorChunk> holders = new ThreadLocal<>();
+    private static final ThreadLocal<BinaryMemoryAllocatorChunk> HOLDERS = new ThreadLocal<>();
 
     /**
      * Ensures singleton.
@@ -35,10 +35,10 @@ public final class BinaryMemoryAllocator {
     }
 
     public BinaryMemoryAllocatorChunk chunk() {
-        BinaryMemoryAllocatorChunk holder = holders.get();
+        BinaryMemoryAllocatorChunk holder = HOLDERS.get();
 
         if (holder == null)
-            holders.set(holder = new BinaryMemoryAllocatorChunk());
+            HOLDERS.set(holder = new BinaryMemoryAllocatorChunk());
 
         return holder;
     }
@@ -50,7 +50,7 @@ public final class BinaryMemoryAllocator {
      * @return {@code true} if acquired {@code false} otherwise.
      */
     public boolean isAcquired() {
-        BinaryMemoryAllocatorChunk holder = holders.get();
+        BinaryMemoryAllocatorChunk holder = HOLDERS.get();
 
         return holder != null && holder.isAcquired();
     }

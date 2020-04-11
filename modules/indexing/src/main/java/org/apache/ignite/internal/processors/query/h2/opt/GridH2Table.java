@@ -92,7 +92,7 @@ public class GridH2Table extends TableBase {
     private static final long EXCLUSIVE_LOCK = -1;
 
     /** 'rebuildFromHashInProgress' field updater */
-    private static final AtomicIntegerFieldUpdater<GridH2Table> rebuildFromHashInProgressFiledUpdater =
+    private static final AtomicIntegerFieldUpdater<GridH2Table> REBUILD_FROM_HASH_IN_PROGRESS_FILED_UPDATER =
         AtomicIntegerFieldUpdater.newUpdater(GridH2Table.class, "rebuildFromHashInProgress");
 
     /** False representation */
@@ -871,7 +871,7 @@ public class GridH2Table extends TableBase {
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
-        if (rebuildFromHashInProgressFiledUpdater.compareAndSet(this, value? FALSE: TRUE, value ? TRUE: FALSE)) {
+        if (REBUILD_FROM_HASH_IN_PROGRESS_FILED_UPDATER.compareAndSet(this, value? FALSE: TRUE, value ? TRUE: FALSE)) {
             lock.writeLock().lock();
 
             try {

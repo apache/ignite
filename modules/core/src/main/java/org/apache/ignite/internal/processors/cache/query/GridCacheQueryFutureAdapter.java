@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
 public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAdapter<Collection<R>>
     implements CacheQueryFuture<R>, GridTimeoutObject {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -115,7 +115,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         this.loc = loc;
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridCacheQueryFutureAdapter.class);
 
         startTime = U.currentTimeMillis();
 

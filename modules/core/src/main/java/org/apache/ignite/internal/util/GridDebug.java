@@ -27,6 +27,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.management.ManagementFactory;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,17 +47,17 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDebug {
     /** */
-    private static final AtomicReference<ConcurrentLinkedQueue<Item>> que =
+    private static final AtomicReference<ConcurrentLinkedQueue<Item>> QUE =
         new AtomicReference<>(new ConcurrentLinkedQueue<Item>());
 
     /** */
     private static final SimpleDateFormat DEBUG_DATE_FMT = new SimpleDateFormat("HH:mm:ss,SSS");
 
     /** */
-    private static final FileOutputStream out;
+    private static final FileOutputStream FOS;
 
     /** */
-    private static final Charset charset = Charset.forName("UTF-8");
+    private static final Charset CHARSET = StandardCharsets.UTF_8;
 
     /** */
     private static volatile long start;
@@ -92,14 +93,14 @@ public class GridDebug {
             assert !log.exists();
 
             try {
-                out = new FileOutputStream(log, false);
+                FOS = new FileOutputStream(log, false);
             }
             catch (FileNotFoundException e) {
                 throw new IllegalStateException(e);
             }
         }
         else
-            out = null;
+            FOS = null;
     }
 
     /**
@@ -108,7 +109,7 @@ public class GridDebug {
      * @return Items queue.
      */
     public static ConcurrentLinkedQueue<Item> queue() {
-        return que.get();
+        return QUE.get();
     }
 
     /**
@@ -130,8 +131,8 @@ public class GridDebug {
         Thread th = Thread.currentThread();
 
         try {
-            out.write((formatEntry(System.currentTimeMillis(), th.getName(), th.getId(), x) + "\n").getBytes(charset));
-            out.flush();
+            FOS.write((formatEntry(System.currentTimeMillis(), th.getName(), th.getId(), x) + "\n").getBytes(CHARSET));
+            FOS.flush();
         }
         catch (IOException e) {
             throw new IllegalStateException(e);
@@ -144,7 +145,7 @@ public class GridDebug {
      * @param x Debugging data.
      */
     public static void debug(Object ... x) {
-        ConcurrentLinkedQueue<Item> q = que.get();
+        ConcurrentLinkedQueue<Item> q = QUE.get();
 
         if (q != null)
             q.add(new Item(x));
@@ -154,7 +155,7 @@ public class GridDebug {
      * Hangs for 5 minutes if stopped.
      */
     public static void hangIfStopped() {
-        if (que.get() == null)
+        if (QUE.get() == null)
             try {
                 Thread.sleep(300000);
             }
@@ -202,7 +203,7 @@ public class GridDebug {
      * @param n Number of last elements to dump.
      */
     public static void dumpLastAndStop(int n) {
-        ConcurrentLinkedQueue<Item> q = que.getAndSet(null);
+        ConcurrentLinkedQueue<Item> q = QUE.getAndSet(null);
 
         if (q == null)
             return;
@@ -269,12 +270,12 @@ public class GridDebug {
         ConcurrentLinkedQueue<Item> q;
 
         do {
-            q = que.get();
+            q = QUE.get();
 
             if (q == null)
                 break; // Stopped.
         }
-        while (!que.compareAndSet(q, q2));
+        while (!QUE.compareAndSet(q, q2));
 
         Collection<Item> col = null;
 
@@ -298,10 +299,10 @@ public class GridDebug {
      * Reset queue to empty one.
      */
     public static void reset() {
-        ConcurrentLinkedQueue<Item> old = que.get();
+        ConcurrentLinkedQueue<Item> old = QUE.get();
 
         if (old != null) // Was not stopped.
-            que.compareAndSet(old, new ConcurrentLinkedQueue<Item>());
+            QUE.compareAndSet(old, new ConcurrentLinkedQueue<Item>());
     }
 
     /**

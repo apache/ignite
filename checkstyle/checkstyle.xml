@@ -33,6 +33,11 @@
     <module name="NewlineAtEndOfFile"/>
 
     <module name="TreeWalker">
+        <!-- Naming Checks. See: https://checkstyle.sourceforge.io/config_naming.html -->
+        <module name="ConstantName">
+            <property name="format" value="^log(ger)?$|^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
+        </module>
+
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
@@ -52,8 +57,5 @@
             <property name="allowMultipleEmptyLines" value="false" />
             <property name="allowMultipleEmptyLinesInsideClassMembers" value="false" />
         </module>
-
-        <!-- @Override annotations on the same line with a method declaration check. -->
-        <module name="org.apache.ignite.tools.checkstyle.OverrideAnnotationOnTheSameLineCheck"/>
     </module>
 </module>

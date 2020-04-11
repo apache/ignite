@@ -92,7 +92,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -234,7 +234,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         if (log == null) {
             msgLog = cctx.shared().txLockMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtColocatedLockFuture.class);
         }
 
         valMap = new ConcurrentHashMap<>();

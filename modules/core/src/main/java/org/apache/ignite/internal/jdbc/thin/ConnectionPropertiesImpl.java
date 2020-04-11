@@ -1059,7 +1059,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         private static final long serialVersionUID = 0L;
 
         /** Bool choices. */
-        private static final String [] boolChoices = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
+        private static final String [] BOOL_CHOICES = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
 
         /** Value. */
         private Boolean val;
@@ -1071,7 +1071,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param required {@code true} if the property is required.
          */
         BooleanProperty(String name, String desc, @Nullable Boolean dfltVal, boolean required) {
-            super(name, desc, dfltVal, boolChoices, required);
+            super(name, desc, dfltVal, BOOL_CHOICES, required);
 
             val = dfltVal;
         }

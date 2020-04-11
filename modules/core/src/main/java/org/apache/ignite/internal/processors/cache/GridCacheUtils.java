@@ -131,7 +131,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.IgniteCach
  */
 public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
-    public static final int cheatCacheId;
+    public static final int CHEAT_CACHE_ID;
 
     /** Each cache operation removes this amount of entries with expired TTL. */
     private static final int TTL_BATCH_SIZE = IgniteSystemProperties.getInteger(
@@ -147,15 +147,15 @@ public class GridCacheUtils {
         String cheatCache = System.getProperty("CHEAT_CACHE");
 
         if (cheatCache != null) {
-            cheatCacheId = cheatCache.hashCode();
+            CHEAT_CACHE_ID = cheatCache.hashCode();
 
-            if (cheatCacheId == 0)
+            if (CHEAT_CACHE_ID == 0)
                 throw new RuntimeException();
 
-            System.out.println(">>> Cheat cache ID [id=" + cheatCacheId + ", name=" + cheatCache + ']');
+            System.out.println(">>> Cheat cache ID [id=" + CHEAT_CACHE_ID + ", name=" + cheatCache + ']');
         }
         else
-            cheatCacheId = 0;
+            CHEAT_CACHE_ID = 0;
     }
 
     /**
@@ -169,7 +169,7 @@ public class GridCacheUtils {
      */
     @Deprecated
     public static boolean cheatCache(int id) {
-        return cheatCacheId != 0 && id == cheatCacheId;
+        return CHEAT_CACHE_ID != 0 && id == CHEAT_CACHE_ID;
     }
 
     /**  Hadoop syste cache name. */
@@ -333,7 +333,7 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final IgniteClosure tx2key = new C1<IgniteTxEntry, Object>() {
+    private static final IgniteClosure TX_2_KEY = new C1<IgniteTxEntry, Object>() {
         @Override public Object apply(IgniteTxEntry e) {
             return e.key();
         }
@@ -343,20 +343,8 @@ public class GridCacheUtils {
         }
     };
 
-    /** Transaction entry to key. */
-    private static final IgniteClosure txCol2key = new C1<Collection<IgniteTxEntry>, Collection<Object>>() {
-        @SuppressWarnings( {"unchecked"})
-        @Override public Collection<Object> apply(Collection<IgniteTxEntry> e) {
-            return F.viewReadOnly(e, tx2key);
-        }
-
-        @Override public String toString() {
-            return "Cache transaction entry collection to key collection converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
+    private static final IgniteClosure TX_2_XID_VER = new C1<IgniteInternalTx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteInternalTx tx) {
             return tx.xidVersion();
         }
@@ -366,15 +354,8 @@ public class GridCacheUtils {
         }
     };
 
-    /** Converts tx entry to entry. */
-    private static final IgniteClosure tx2entry = new C1<IgniteTxEntry, GridCacheEntryEx>() {
-        @Override public GridCacheEntryEx apply(IgniteTxEntry e) {
-            return e.cached();
-        }
-    };
-
     /** Transaction entry to key. */
-    private static final IgniteClosure entry2key = new C1<GridCacheEntryEx, KeyCacheObject>() {
+    private static final IgniteClosure ENTRY_2_KEY = new C1<GridCacheEntryEx, KeyCacheObject>() {
         @Override public KeyCacheObject apply(GridCacheEntryEx e) {
             return e.key();
         }
@@ -385,7 +366,7 @@ public class GridCacheUtils {
     };
 
     /** Transaction entry to key. */
-    private static final IgniteClosure info2key = new C1<GridCacheEntryInfo, Object>() {
+    private static final IgniteClosure INFO_2_KEY = new C1<GridCacheEntryInfo, Object>() {
         @Override public Object apply(GridCacheEntryInfo e) {
             return e.key();
         }
@@ -538,7 +519,7 @@ public class GridCacheUtils {
      * @return Closure which converts transaction entry xid to XID version.
      */
     public static IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
+        return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)TX_2_XID_VER;
     }
 
     /**
@@ -546,14 +527,14 @@ public class GridCacheUtils {
      */
     @SuppressWarnings({"unchecked"})
     public static IgniteClosure<GridCacheEntryEx, KeyCacheObject> entry2Key() {
-        return entry2key;
+        return ENTRY_2_KEY;
     }
 
     /**
      * @return Closure that converts entry info to key.
      */
     public static <K, V> IgniteClosure<GridCacheEntryInfo, K> info2Key() {
-        return (IgniteClosure<GridCacheEntryInfo, K>)info2key;
+        return (IgniteClosure<GridCacheEntryInfo, K>)INFO_2_KEY;
     }
 
     /**

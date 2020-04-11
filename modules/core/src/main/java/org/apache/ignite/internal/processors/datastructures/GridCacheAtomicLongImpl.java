@@ -45,7 +45,7 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
+    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> STASH =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
                 return new IgniteBiTuple<>();
@@ -258,7 +258,7 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<GridKernalContext, String> t = stash.get();
+        IgniteBiTuple<GridKernalContext, String> t = STASH.get();
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(in.readUTF());
@@ -272,7 +272,7 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
      */
     private Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<GridKernalContext, String> t = stash.get();
+            IgniteBiTuple<GridKernalContext, String> t = STASH.get();
 
             return t.get1().dataStructures().atomicLong(t.get2(), null, 0L, false);
         }
@@ -280,7 +280,7 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

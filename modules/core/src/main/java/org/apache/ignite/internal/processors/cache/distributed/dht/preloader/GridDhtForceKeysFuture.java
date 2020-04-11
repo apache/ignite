@@ -75,7 +75,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -128,7 +128,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         top = cctx.dht().topology();
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtForceKeysFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtForceKeysFuture.class);
     }
 
     /**

@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TOTAL
  */
 public class ClusterMetricsImpl implements ClusterMetrics {
     /** */
-    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+    private static final RuntimeMXBean RT_MX_BEAN = ManagementFactory.getRuntimeMXBean();
 
     /** Job metrics. */
     private volatile GridJobMetrics jobMetrics;
@@ -474,7 +474,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getStartTime() {
-        return rt.getStartTime();
+        return RT_MX_BEAN.getStartTime();
     }
 
     /** {@inheritDoc} */

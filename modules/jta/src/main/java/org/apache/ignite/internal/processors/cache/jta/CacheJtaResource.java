@@ -42,7 +42,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  */
 final class CacheJtaResource implements XAResource, Synchronization {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** */
     private static IgniteLogger log;
@@ -71,7 +71,7 @@ final class CacheJtaResource implements XAResource, Synchronization {
         this.ctx = ctx;
 
         if (log == null)
-            log = U.logger(ctx, logRef, CacheJtaResource.class);
+            log = U.logger(ctx, LOG_REF, CacheJtaResource.class);
     }
 
     /** {@inheritDoc} */

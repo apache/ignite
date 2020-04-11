@@ -135,7 +135,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String, String>>() {
+    private static final ThreadLocal<IgniteBiTuple<String, String>> STASH = new ThreadLocal<IgniteBiTuple<String, String>>() {
         @Override protected IgniteBiTuple<String, String> initialValue() {
             return new IgniteBiTuple<>();
         }
@@ -2363,7 +2363,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<String, String> t = stash.get();
+        IgniteBiTuple<String, String> t = STASH.get();
 
         t.set1(U.readString(in));
         t.set2(U.readString(in));
@@ -2377,7 +2377,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<String, String> t = stash.get();
+            IgniteBiTuple<String, String> t = STASH.get();
 
             IgniteKernal grid = IgnitionEx.localIgnite();
 
@@ -2392,7 +2392,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

@@ -74,11 +74,11 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
     /** Number of instances to cache */
     private static final int CACHED_LONGS = 512;
 
-    /** Value used as divisor in {@link #nativeLongCache}. Native longs divisible by this value will be cached. */
+    /** Value used as divisor in {@link #NATIVE_LONG_CACHE}. Native longs divisible by this value will be cached. */
     private static final int NL_CACHE_DIVISOR = 4096;
 
     /** Native long instance cache. */
-    private static final AtomicReferenceArray<NativeLong> nativeLongCache = new AtomicReferenceArray<>(CACHED_LONGS);
+    private static final AtomicReferenceArray<NativeLong> NATIVE_LONG_CACHE = new AtomicReferenceArray<>(CACHED_LONGS);
 
     /**
      * Creates Direct File IO.
@@ -466,14 +466,14 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         if (val % NL_CACHE_DIVISOR == 0 && val < CACHED_LONGS * NL_CACHE_DIVISOR) {
             int cacheIdx = (int)(val / NL_CACHE_DIVISOR);
 
-            NativeLong curCached = nativeLongCache.get(cacheIdx);
+            NativeLong curCached = NATIVE_LONG_CACHE.get(cacheIdx);
 
             if (curCached != null)
                 return curCached;
 
             NativeLong nl = new NativeLong(val);
 
-            nativeLongCache.compareAndSet(cacheIdx, null, nl);
+            NATIVE_LONG_CACHE.compareAndSet(cacheIdx, null, nl);
 
             return nl;
         }

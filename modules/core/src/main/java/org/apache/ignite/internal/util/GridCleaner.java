@@ -32,32 +32,32 @@ public class GridCleaner {
     private static final String JAVA9_CLEANER_CLASS_NAME = "java.lang.ref.Cleaner";
 
     /** Cleaner class. */
-    private static final Class<?> cls;
+    private static final Class<?> CLS;
 
     /** Cleaner object. */
-    private static final Object instance;
+    private static final Object INSTANCE;
 
     /** Cleaner register method. */
-    private static final Method initMtd;
+    private static final Method INIT_MTD;
 
     static {
-        cls = findCleanerClass();
+        CLS = findCleanerClass();
 
         try {
             String mtdName;
 
-            if (JAVA9_CLEANER_CLASS_NAME.equals(cls.getName())) {
-                instance = cls.getMethod("create").invoke(null);
+            if (JAVA9_CLEANER_CLASS_NAME.equals(CLS.getName())) {
+                INSTANCE = CLS.getMethod("create").invoke(null);
 
                 mtdName = "register";
             }
             else {
-                instance = null;
+                INSTANCE = null;
 
                 mtdName = "create";
             }
 
-            initMtd = cls.getMethod(mtdName, Object.class, Runnable.class);
+            INIT_MTD = CLS.getMethod(mtdName, Object.class, Runnable.class);
         }
         catch (ReflectiveOperationException e) {
             throw new ExceptionInInitializerError(e);
@@ -90,7 +90,7 @@ public class GridCleaner {
      */
     public static Object create(Object obj, Runnable act) {
         try {
-            return initMtd.invoke(instance, obj, act);
+            return INIT_MTD.invoke(INSTANCE, obj, act);
         }
         catch (ReflectiveOperationException e) {
             throw new IgniteException(e);

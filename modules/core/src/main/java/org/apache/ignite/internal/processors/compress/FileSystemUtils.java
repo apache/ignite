@@ -31,7 +31,7 @@ public final class FileSystemUtils {
         "org.apache.ignite.internal.processors.compress.NativeFileSystemLinux";
 
     /** */
-    private static final NativeFileSystem fs;
+    private static final NativeFileSystem FS;
 
     /** */
     private static volatile Throwable err;
@@ -50,7 +50,7 @@ public final class FileSystemUtils {
             err = e;
         }
 
-        fs = x;
+        FS = x;
     }
 
     /**
@@ -58,7 +58,7 @@ public final class FileSystemUtils {
     public static void checkSupported() {
         Throwable e = err;
 
-        if (e != null || fs == null)
+        if (e != null || FS == null)
             throw new IgniteException("Native file system API is not supported on " + U.osString(), e);
     }
 
@@ -67,7 +67,7 @@ public final class FileSystemUtils {
      * @return File system block size or negative value if not supported.
      */
     public static int getFileSystemBlockSize(Path path) {
-        return fs == null ? -1 : fs.getFileSystemBlockSize(path);
+        return FS == null ? -1 : FS.getFileSystemBlockSize(path);
     }
 
     /**
@@ -75,7 +75,7 @@ public final class FileSystemUtils {
      * @return File system block size or negative value if not supported.
      */
     public static int getFileSystemBlockSize(int fd) {
-        return fs == null ? -1 : fs.getFileSystemBlockSize(fd);
+        return FS == null ? -1 : FS.getFileSystemBlockSize(fd);
     }
 
     /**
@@ -90,7 +90,7 @@ public final class FileSystemUtils {
      *          value if not supported.
      */
     public static long getSparseFileSize(int fd) {
-        return fs == null ? -1 : fs.getSparseFileSize(fd);
+        return FS == null ? -1 : FS.getSparseFileSize(fd);
     }
 
     /**
@@ -122,7 +122,7 @@ public final class FileSystemUtils {
         len = len / fsBlockSize * fsBlockSize;
 
         if (len > 0)
-            fs.punchHole(fd, off, len);
+            FS.punchHole(fd, off, len);
 
         return len;
     }

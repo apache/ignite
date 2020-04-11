@@ -51,7 +51,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     private static final Object CANCELLED = new Object();
 
     /** */
-    private static final AtomicReferenceFieldUpdater<GridFutureAdapter, Object> stateUpdater =
+    private static final AtomicReferenceFieldUpdater<GridFutureAdapter, Object> STATE_UPDATER =
         AtomicReferenceFieldUpdater.newUpdater(GridFutureAdapter.class, Object.class, "state");
 
     /*
@@ -324,7 +324,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
      * @return {@code True} if success
      */
     private boolean compareAndSetState(Object exp, Object newState) {
-        return stateUpdater.compareAndSet(this, exp, newState);
+        return STATE_UPDATER.compareAndSet(this, exp, newState);
     }
 
     /**

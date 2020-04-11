@@ -92,7 +92,7 @@ public class MetricUtils {
      * the actual value was not equal to the expected value.
      */
     public static boolean compareAndSet(AtomicLongMetric m, long expect, long update) {
-        return AtomicLongMetric.updater.compareAndSet(m, expect, update);
+        return AtomicLongMetric.UPDATER.compareAndSet(m, expect, update);
     }
 
     /**
@@ -104,7 +104,7 @@ public class MetricUtils {
     public static void setIfLess(AtomicLongMetric m, long update) {
         long v = m.value();
 
-        while (v > update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
+        while (v > update && !AtomicLongMetric.UPDATER.compareAndSet(m, v, update))
             v = m.value();
     }
 
@@ -117,7 +117,7 @@ public class MetricUtils {
     public static void setIfGreater(AtomicLongMetric m, long update) {
         long v = m.value();
 
-        while (v < update && !AtomicLongMetric.updater.compareAndSet(m, v, update))
+        while (v < update && !AtomicLongMetric.UPDATER.compareAndSet(m, v, update))
             v = m.value();
     }
 

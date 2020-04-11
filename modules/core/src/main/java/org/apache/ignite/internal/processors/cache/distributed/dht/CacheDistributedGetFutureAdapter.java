@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public abstract class CacheDistributedGetFutureAdapter<K, V>
     extends GridCacheCompoundIdentityFuture<Map<K, V>> implements CacheGetFuture {
     /** Logger reference. */
-    protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    protected static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -184,7 +184,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
      */
     protected void initLogger(Class<?> aclass){
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, aclass);
+            log = U.logger(cctx.kernalContext(), LOG_REF, aclass);
     }
 
     /** {@inheritDoc} */

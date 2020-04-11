@@ -57,7 +57,7 @@ public abstract class AbstractLSQR {
     }
 
     /** The smallest representable positive number such that 1.0 + eps != 1.0. */
-    private static final double eps = EPSILON;
+    private static final double EPS = EPSILON;
 
     /** BLAS (Basic Linear Algebra Subprograms) instance. */
     private static BLAS blas = BLAS.getInstance();
@@ -249,8 +249,8 @@ public abstract class AbstractLSQR {
             // Now use these norms to estimate certain other quantities,
             // some of which will be small near a solution.
             double test1 = rnorm / bnorm;
-            double test2 = arnorm / (anorm * rnorm + eps);
-            double test3 = 1 / (acond + eps);
+            double test2 = arnorm / (anorm * rnorm + EPS);
+            double test3 = 1 / (acond + EPS);
             t1 = test1 / (1 + anorm * xnorm / bnorm);
             double rtol = btol + atol * anorm * xnorm / bnorm;
 

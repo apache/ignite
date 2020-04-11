@@ -196,7 +196,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         + 16 /* version */ + 20 /* key */ + 16 /* value */;
 
     /** Static logger to avoid re-creation. Made static for test purpose. */
-    protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    protected static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     protected static volatile IgniteLogger log;
@@ -252,7 +252,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         KeyCacheObject key
     ) {
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheMapEntry.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridCacheMapEntry.class);
 
         key = (KeyCacheObject)cctx.kernalContext().cacheObjects().prepareForCache(key, cctx);
 

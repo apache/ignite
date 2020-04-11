@@ -64,7 +64,7 @@ public class CacheManager implements javax.cache.CacheManager {
     private static final String CACHE_CONFIGURATION = "CacheConfiguration";
 
     /** */
-    private static final AtomicInteger igniteCnt = new AtomicInteger();
+    private static final AtomicInteger IGNITE_CNT = new AtomicInteger();
 
     /** */
     private final URI uri;
@@ -108,7 +108,7 @@ public class CacheManager implements javax.cache.CacheManager {
                     cfg.setDiscoverySpi(discoSpi);
                 }
 
-                cfg.setIgniteInstanceName("CacheManager_" + igniteCnt.getAndIncrement());
+                cfg.setIgniteInstanceName("CacheManager_" + IGNITE_CNT.getAndIncrement());
 
                 cfg.setClassLoader(clsLdr);
 

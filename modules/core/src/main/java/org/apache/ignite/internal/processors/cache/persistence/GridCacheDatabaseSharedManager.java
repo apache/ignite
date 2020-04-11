@@ -4825,7 +4825,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public static class FileLockHolder implements AutoCloseable {
         /** Lock file name. */
-        private static final String lockFileName = "lock";
+        private static final String LOCK_FILE_NAME = "lock";
 
         /** File. */
         private File file;
@@ -4847,7 +4847,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public FileLockHolder(String path, @NotNull GridKernalContext ctx, IgniteLogger log) {
             try {
-                file = Paths.get(path, lockFileName).toFile();
+                file = Paths.get(path, LOCK_FILE_NAME).toFile();
 
                 lockFile = new RandomAccessFile(file, "rw");
 

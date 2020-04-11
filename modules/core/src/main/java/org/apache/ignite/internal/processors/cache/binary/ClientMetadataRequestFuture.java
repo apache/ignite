@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  */
 final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdateResult> {
     /** */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** */
     private static IgniteLogger log;
@@ -83,7 +83,7 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
         this.syncMap = syncMap;
 
         if (log == null)
-            log = U.logger(ctx, logRef, ClientMetadataRequestFuture.class);
+            log = U.logger(ctx, LOG_REF, ClientMetadataRequestFuture.class);
     }
 
     /** */

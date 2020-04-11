@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCacheEntryInfo>
     implements GridDhtFuture<GridCacheEntryInfo> {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -172,7 +172,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         ver = cctx.versions().next();
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtGetSingleFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtGetSingleFuture.class);
     }
 
     /**

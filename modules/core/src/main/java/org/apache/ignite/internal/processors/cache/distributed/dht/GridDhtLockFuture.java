@@ -92,7 +92,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -264,7 +264,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         if (log == null) {
             msgLog = cctx.shared().txLockMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtLockFuture.class);
         }
 
         if (tx != null) {

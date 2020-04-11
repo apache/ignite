@@ -201,7 +201,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private static final IgniteProductVersion PRELOAD_PARTITION_SINCE = IgniteProductVersion.fromString("2.7.0");
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
+    private static final ThreadLocal<IgniteBiTuple<String, String>> STASH = new ThreadLocal<IgniteBiTuple<String,
         String>>() {
         @Override protected IgniteBiTuple<String, String> initialValue() {
             return new IgniteBiTuple<>();
@@ -4690,7 +4690,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<String, String> t = stash.get();
+        IgniteBiTuple<String, String> t = STASH.get();
 
         t.set1(U.readString(in));
         t.set2(U.readString(in));
@@ -4704,7 +4704,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<String, String> t = stash.get();
+            IgniteBiTuple<String, String> t = STASH.get();
 
             return IgnitionEx.localIgnite().cachex(t.get2());
         }
@@ -4712,7 +4712,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

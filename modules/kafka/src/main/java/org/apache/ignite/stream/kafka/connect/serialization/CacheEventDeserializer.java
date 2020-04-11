@@ -31,7 +31,7 @@ import org.apache.kafka.common.serialization.Deserializer;
  */
 public class CacheEventDeserializer implements Deserializer<CacheEvent> {
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller MARSH = new JdkMarshaller();
 
     /** {@inheritDoc} */
     @Override public void configure(Map<String, ?> map, boolean b) {
@@ -41,7 +41,7 @@ public class CacheEventDeserializer implements Deserializer<CacheEvent> {
     /** {@inheritDoc} */
     @Override public CacheEvent deserialize(String topic, byte[] bytes) {
         try {
-            return U.unmarshal(marsh, bytes, getClass().getClassLoader());
+            return U.unmarshal(MARSH, bytes, getClass().getClassLoader());
         }
         catch (IgniteCheckedException e) {
             throw new SerializationException("Failed to deserialize cache event!", e);

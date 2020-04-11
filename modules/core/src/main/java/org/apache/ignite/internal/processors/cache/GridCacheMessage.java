@@ -56,7 +56,7 @@ public abstract class GridCacheMessage implements Message {
     public static final String CACHE_MSG_INDEX_FIELD_NAME = "CACHE_MSG_IDX";
 
     /** Message index id. */
-    private static final AtomicInteger msgIdx = new AtomicInteger();
+    private static final AtomicInteger MSG_IDX = new AtomicInteger();
 
     /** Null message ID. */
     private static final long NULL_MSG_ID = -1;
@@ -111,7 +111,7 @@ public abstract class GridCacheMessage implements Message {
      * @return Message ID.
      */
     public static int nextIndexId() {
-        return msgIdx.getAndIncrement();
+        return MSG_IDX.getAndIncrement();
     }
 
     /**

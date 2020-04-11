@@ -111,7 +111,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     private static final String QUERY_TOPIC_PREFIX = "QUERY";
 
     /** Message ID generator. */
-    private static final AtomicLong idGen = new AtomicLong();
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */
     private static final int MAX_STORED_PENDING_MESSAGES = 100;
@@ -1204,7 +1204,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (msg.messageId() < 0)
             // Generate and set message ID.
-            msg.messageId(idGen.incrementAndGet());
+            msg.messageId(ID_GEN.incrementAndGet());
 
         if (destNodeId == null || !cctx.localNodeId().equals(destNodeId)) {
             msg.prepareMarshal(cctx);
@@ -1346,7 +1346,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @return ID that auto-grows based on local counter and counters received from other nodes.
      */
     public long nextIoId() {
-        return idGen.incrementAndGet();
+        return ID_GEN.incrementAndGet();
     }
 
     /**

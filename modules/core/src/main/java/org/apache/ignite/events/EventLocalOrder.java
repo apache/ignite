@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 final class EventLocalOrder {
     /** Generator implementation. */
-    private static final AtomicLong gen = new AtomicLong(0);
+    private static final AtomicLong GEN = new AtomicLong(0);
 
     /**
      * No-arg constructor enforces the singleton.
@@ -39,6 +39,6 @@ final class EventLocalOrder {
      * @return Next atomically incremented local event order.
      */
     public static long nextOrder() {
-        return gen.getAndIncrement();
+        return GEN.getAndIncrement();
     }
 }

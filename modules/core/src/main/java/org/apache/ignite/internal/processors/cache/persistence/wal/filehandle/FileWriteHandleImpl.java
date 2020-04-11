@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 @SuppressWarnings("SignalWithoutCorrespondingAwait")
 class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle {
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
-    private static final Method force0 = findNonPublicMethod(
+    private static final Method FORCE_0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
         java.io.FileDescriptor.class, long.class, long.class
     );
@@ -76,15 +76,15 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         AtomicLongFieldUpdater.newUpdater(FileWriteHandleImpl.class, "written");
 
     /** {@link MappedByteBuffer#mappingOffset()}. */
-    private static final Method mappingOffset = findNonPublicMethod(MappedByteBuffer.class, "mappingOffset");
+    private static final Method MAPPING_OFFSET = findNonPublicMethod(MappedByteBuffer.class, "mappingOffset");
 
     /** {@link MappedByteBuffer#mappingAddress(long)}. */
-    private static final Method mappingAddress = findNonPublicMethod(
+    private static final Method MAPPING_ADDRESS = findNonPublicMethod(
         MappedByteBuffer.class, "mappingAddress", long.class
     );
 
     /** {@link MappedByteBuffer#fd} */
-    private static final Field fd = findField(MappedByteBuffer.class, "fd");
+    private static final Field FD = findField(MappedByteBuffer.class, "fd");
 
     /** Page size. */
     private static final int PAGE_SIZE = GridUnsafe.pageSize();
@@ -447,17 +447,17 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      */
     private void fsync(MappedByteBuffer buf, int off, int len) throws IgniteCheckedException {
         try {
-            long mappedOff = (Long)mappingOffset.invoke(buf);
+            long mappedOff = (Long)MAPPING_OFFSET.invoke(buf);
 
             assert mappedOff == 0 : mappedOff;
 
-            long addr = (Long)mappingAddress.invoke(buf, mappedOff);
+            long addr = (Long)MAPPING_ADDRESS.invoke(buf, mappedOff);
 
             long delta = (addr + off) % PAGE_SIZE;
 
             long alignedAddr = (addr + off) - delta;
 
-            force0.invoke(buf, fd.get(buf), alignedAddr, len + delta);
+            FORCE_0.invoke(buf, FD.get(buf), alignedAddr, len + delta);
         }
         catch (IllegalAccessException | InvocationTargetException e) {
             throw new IgniteCheckedException(e);

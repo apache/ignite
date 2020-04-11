@@ -60,7 +60,7 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
     private static final int READY_LATCH_STATE = 2;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
+    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> STASH =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
                 return new IgniteBiTuple<>();
@@ -297,7 +297,7 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<GridKernalContext, String> t = stash.get();
+        IgniteBiTuple<GridKernalContext, String> t = STASH.get();
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(in.readUTF());
@@ -311,7 +311,7 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
      */
     private Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<GridKernalContext, String> t = stash.get();
+            IgniteBiTuple<GridKernalContext, String> t = STASH.get();
 
             return t.get1().dataStructures().countDownLatch(t.get2(), null, 0, false, false);
         }
@@ -319,7 +319,7 @@ public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridClientThreadFactory implements ThreadFactory {
     /** Pool number. */
-    private static final AtomicInteger poolCtr = new AtomicInteger(1);
+    private static final AtomicInteger POOL_CTR = new AtomicInteger(1);
 
     /** Thread number. */
     private final AtomicInteger threadCtr = new AtomicInteger(1);
@@ -46,7 +46,7 @@ public class GridClientThreadFactory implements ThreadFactory {
     public GridClientThreadFactory(String name, boolean daemon) {
         this.daemon = daemon;
 
-        prefix = "ignite-client-" + name + "-" + poolCtr.getAndIncrement() + "-";
+        prefix = "ignite-client-" + name + "-" + POOL_CTR.getAndIncrement() + "-";
     }
 
     /** {@inheritDoc} */

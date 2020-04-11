@@ -488,7 +488,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     @QuerySqlFunction(alias = "check_scan_flag")
     public static boolean checkScanFlagFromSql(Boolean exp, boolean res) {
-        assertEquals(exp != FALSE, CacheDataTree.isDataPageScanEnabled());
+        assertEquals(exp != FALSE, CacheDataTree.getDataPageScanEnabled());
 
         return res;
     }

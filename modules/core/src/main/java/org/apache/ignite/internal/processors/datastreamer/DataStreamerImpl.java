@@ -158,7 +158,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final int DFLT_MAX_REMAP_CNT = 32;
 
     /** Log reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -303,7 +303,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         this.cacheObjProc = ctx.cacheObjects();
 
         if (log == null)
-            log = U.logger(ctx, logRef, DataStreamerImpl.class);
+            log = U.logger(ctx, LOG_REF, DataStreamerImpl.class);
 
         CacheConfiguration ccfg = ctx.cache().cacheConfiguration(cacheName);
 

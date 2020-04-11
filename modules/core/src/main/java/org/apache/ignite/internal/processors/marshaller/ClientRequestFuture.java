@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  */
 final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult> {
     /** */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** */
     private static IgniteLogger log;
@@ -82,7 +82,7 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
         this.syncMap = syncMap;
 
         if (log == null)
-            log = U.logger(ctx, logRef, ClientRequestFuture.class);
+            log = U.logger(ctx, LOG_REF, ClientRequestFuture.class);
     }
 
     /**

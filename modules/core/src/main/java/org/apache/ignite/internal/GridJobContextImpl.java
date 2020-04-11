@@ -46,7 +46,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -290,7 +290,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
         assert ctx != null;
 
         if (log == null)
-            log = U.logger(ctx, logRef, GridJobContextImpl.class);
+            log = U.logger(ctx, LOG_REF, GridJobContextImpl.class);
 
         return log;
     }

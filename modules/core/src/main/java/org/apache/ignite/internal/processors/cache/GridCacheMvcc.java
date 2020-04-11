@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridCacheMvcc {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static volatile IgniteLogger log;
@@ -94,7 +94,7 @@ public final class GridCacheMvcc {
         this.cctx = cctx;
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheMvcc.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridCacheMvcc.class);
     }
 
     /**

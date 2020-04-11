@@ -59,7 +59,7 @@ public class H2TableScanIndex extends H2ScanIndex<GridH2IndexBase> {
         boolean rebuildFromHashInProgress = tbl.rebuildFromHashInProgress();
 
         if (hashIdx != null) {
-            return rebuildFromHashInProgress || CacheDataTree.isDataPageScanEnabled() ?
+            return rebuildFromHashInProgress || CacheDataTree.getDataPageScanEnabled() ?
                 hashIdx : super.delegate();
         }
         else {

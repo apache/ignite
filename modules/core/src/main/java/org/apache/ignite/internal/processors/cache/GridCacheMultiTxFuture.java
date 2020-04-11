@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolean> {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -49,7 +49,7 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
      */
     public GridCacheMultiTxFuture(GridCacheContext<K, V> cctx) {
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheMultiTxFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridCacheMultiTxFuture.class);
     }
 
     /**

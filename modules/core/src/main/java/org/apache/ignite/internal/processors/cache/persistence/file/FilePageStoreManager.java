@@ -1275,7 +1275,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private Set<GridWorker> workers = new GridConcurrentHashSet<>();
 
         /** */
-        private static final AtomicLong workerCounter = new AtomicLong(0);
+        private static final AtomicLong WORKER_COUNTER = new AtomicLong(0);
 
         /** */
         public LongOperationAsyncExecutor(String igniteInstanceName, IgniteLogger log) {
@@ -1291,7 +1291,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * @param runnable long operation
          */
         public void async(Runnable runnable) {
-            String workerName = "async-file-store-cleanup-task-" + workerCounter.getAndIncrement();
+            String workerName = "async-file-store-cleanup-task-" + WORKER_COUNTER.getAndIncrement();
 
             GridWorker worker = new GridWorker(igniteInstanceName, workerName, log) {
                 @Override protected void body() {

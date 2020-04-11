@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class AtomicLongMetric extends AbstractMetric implements LongMetric {
     /** Field updater. */
-    static final AtomicLongFieldUpdater<AtomicLongMetric> updater =
+    static final AtomicLongFieldUpdater<AtomicLongMetric> UPDATER =
         AtomicLongFieldUpdater.newUpdater(AtomicLongMetric.class, "val");
 
     /** Field value. */
@@ -47,7 +47,7 @@ public class AtomicLongMetric extends AbstractMetric implements LongMetric {
      * @param x Value to be added.
      */
     public void add(long x) {
-        updater.getAndAdd(this, x);
+        UPDATER.getAndAdd(this, x);
     }
 
     /** Adds 1 to the metric. */
@@ -62,7 +62,7 @@ public class AtomicLongMetric extends AbstractMetric implements LongMetric {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        updater.set(this, 0);
+        UPDATER.set(this, 0);
     }
 
     /** {@inheritDoc} */

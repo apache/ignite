@@ -82,7 +82,7 @@ public class CassandraSessionImpl implements CassandraSession {
     private volatile int refCnt;
 
     /** Storage for the session prepared statements */
-    private static final Map<String, WrappedPreparedStatement> sesStatements = new HashMap<>();
+    private static final Map<String, WrappedPreparedStatement> SES_STATEMENTS = new HashMap<>();
 
     /** Number of records to immediately fetch in CQL statement execution. */
     private Integer fetchSize;
@@ -573,8 +573,8 @@ public class CassandraSessionImpl implements CassandraSession {
             return this.wrapperSes;
         }
 
-        synchronized (sesStatements) {
-            sesStatements.clear();
+        synchronized (SES_STATEMENTS) {
+            SES_STATEMENTS.clear();
         }
 
         try {
@@ -626,8 +626,8 @@ public class CassandraSessionImpl implements CassandraSession {
         incrementSessionRefs();
 
         try {
-            synchronized (sesStatements) {
-                WrappedPreparedStatement wrapper = sesStatements.get(statement);
+            synchronized (SES_STATEMENTS) {
+                WrappedPreparedStatement wrapper = SES_STATEMENTS.get(statement);
 
                 if (wrapper != null) {
                     // Prepared statement is still actual, cause it was created with the current Cassandra session.
@@ -635,7 +635,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         return wrapper;
                     // Prepared statement is not actual anymore, cause it was created with the previous Cassandra session.
                     else
-                        sesStatements.remove(statement);
+                        SES_STATEMENTS.remove(statement);
                 }
             }
 
@@ -647,8 +647,8 @@ public class CassandraSessionImpl implements CassandraSession {
 
                     WrappedPreparedStatement prepStatement = ses.prepare(statement);
 
-                    synchronized (sesStatements) {
-                        sesStatements.put(statement, prepStatement);
+                    synchronized (SES_STATEMENTS) {
+                        SES_STATEMENTS.put(statement, prepStatement);
                     }
 
                     return prepStatement;

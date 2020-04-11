@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public final class GridClassLoaderCache {
     /** Fields cache. */
-    private static final ConcurrentMap<Class<?>, ClassLoader> cache =
+    private static final ConcurrentMap<Class<?>, ClassLoader> CACHE =
         new ConcurrentHashMap<>();
 
     /**
@@ -38,10 +38,10 @@ public final class GridClassLoaderCache {
      * @return ClassLoader for the class.
      */
     public static ClassLoader classLoader(Class<?> cls) {
-        ClassLoader cached = cache.get(cls);
+        ClassLoader cached = CACHE.get(cls);
 
         if (cached == null) {
-            ClassLoader old = cache.putIfAbsent(cls, cached = detectClassLoader(cls));
+            ClassLoader old = CACHE.putIfAbsent(cls, cached = detectClassLoader(cls));
 
             if (old != null)
                 cached = old;
@@ -56,9 +56,9 @@ public final class GridClassLoaderCache {
     public static void onUndeployed(ClassLoader ldr) {
         assert ldr != null;
 
-        for (Map.Entry<Class<?>, ClassLoader> e : cache.entrySet()) {
+        for (Map.Entry<Class<?>, ClassLoader> e : CACHE.entrySet()) {
             if (e.getValue().equals(ldr))
-                cache.remove(e.getKey(), ldr);
+                CACHE.remove(e.getKey(), ldr);
         }
     }
 
@@ -108,9 +108,9 @@ public final class GridClassLoaderCache {
     public static void printMemoryStats() {
         X.println(">>>");
         X.println(">>> GridClassLoaderCache memory stats:");
-        X.println(" Cache size: " + cache.size());
+        X.println(" Cache size: " + CACHE.size());
 
-        for (Map.Entry<Class<?>, ClassLoader> e : cache.entrySet())
+        for (Map.Entry<Class<?>, ClassLoader> e : CACHE.entrySet())
             X.println(" " + e.getKey() + " : " + e.getValue());
     }
 
@@ -118,7 +118,7 @@ public final class GridClassLoaderCache {
      * Intended for test purposes only.
      */
     public static void clear() {
-        cache.clear();
+        CACHE.clear();
     }
 
     /**

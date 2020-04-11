@@ -48,13 +48,13 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
  */
 public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffinityAssignmentResponse> {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
 
     /** */
-    private static final AtomicLong idGen = new AtomicLong();
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */
     private final GridCacheSharedContext ctx;
@@ -94,7 +94,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         this.grpId = grpId;
         this.ctx = ctx;
 
-        id = idGen.getAndIncrement();
+        id = ID_GEN.getAndIncrement();
 
         Collection<ClusterNode> availableNodes = discoCache.cacheGroupAffinityNodes(grpId);
 
@@ -110,7 +110,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         this.availableNodes = tmp;
 
         if (log == null)
-            log = U.logger(ctx.kernalContext(), logRef, GridDhtAssignmentFetchFuture.class);
+            log = U.logger(ctx.kernalContext(), LOG_REF, GridDhtAssignmentFetchFuture.class);
     }
 
     /**

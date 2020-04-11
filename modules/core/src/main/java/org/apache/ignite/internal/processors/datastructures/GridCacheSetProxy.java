@@ -49,7 +49,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<T3<GridKernalContext, String, String>> stash =
+    private static final ThreadLocal<T3<GridKernalContext, String, String>> STASH =
         new ThreadLocal<T3<GridKernalContext, String, String>>() {
             @Override protected T3<GridKernalContext, String, String> initialValue() {
                 return new T3<>();
@@ -464,7 +464,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        T3<GridKernalContext, String, String> t = stash.get();
+        T3<GridKernalContext, String, String> t = STASH.get();
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(U.readString(in));
@@ -479,7 +479,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            T3<GridKernalContext, String, String> t = stash.get();
+            T3<GridKernalContext, String, String> t = STASH.get();
 
             return t.get1().dataStructures().set(t.get2(), t.get3(), null);
         }
@@ -487,7 +487,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

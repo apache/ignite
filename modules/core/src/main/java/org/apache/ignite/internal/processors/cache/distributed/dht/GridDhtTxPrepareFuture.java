@@ -118,7 +118,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Error updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxPrepareFuture, Throwable> ERR_UPD =
@@ -250,7 +250,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         if (log == null) {
             msgLog = cctx.txPrepareMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtTxPrepareFuture.class);
         }
 
         dhtMap = tx.dhtMap();

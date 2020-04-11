@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 public final class GridAnnotationsCache {
     /** Annotation cache. */
     private static final ConcurrentMap<Class<?>,
-        ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>>> anns =
+        ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>>> ANN_MAP =
         new ConcurrentHashMap<>();
 
     /**
@@ -40,10 +40,10 @@ public final class GridAnnotationsCache {
      * @return Annotation (or {@code null}).
      */
     @Nullable public static <T extends Annotation> T getAnnotation(Class<?> cls, Class<T> annCls) {
-        ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> clsAnns = anns.get(cls);
+        ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> clsAnns = ANN_MAP.get(cls);
 
         if (clsAnns == null) {
-            ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> old = anns.putIfAbsent(cls,
+            ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> old = ANN_MAP.putIfAbsent(cls,
                 clsAnns = new ConcurrentHashMap<>());
 
             if (old != null)
@@ -67,9 +67,9 @@ public final class GridAnnotationsCache {
     public static void onUndeployed(ClassLoader ldr) {
         assert ldr != null;
 
-        for (Class<?> cls : anns.keySet()) {
+        for (Class<?> cls : ANN_MAP.keySet()) {
             if (ldr.equals(cls.getClassLoader()))
-                anns.remove(cls);
+                ANN_MAP.remove(cls);
         }
     }
 

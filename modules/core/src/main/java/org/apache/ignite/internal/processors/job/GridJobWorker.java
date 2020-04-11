@@ -94,7 +94,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     };
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** */
     private final long createTime;
@@ -238,7 +238,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         if (job != null)
             this.job = job;
 
-        log = U.logger(ctx, logRef, this);
+        log = U.logger(ctx, LOG_REF, this);
 
         marsh = ctx.config().getMarshaller();
 

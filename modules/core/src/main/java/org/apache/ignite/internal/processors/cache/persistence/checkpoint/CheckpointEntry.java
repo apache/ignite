@@ -229,7 +229,7 @@ public class CheckpointEntry {
      */
     public static class GroupStateLazyStore {
         /** */
-        private static final AtomicIntegerFieldUpdater<GroupStateLazyStore> initGuardUpdater =
+        private static final AtomicIntegerFieldUpdater<GroupStateLazyStore> INIT_GUARD_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(GroupStateLazyStore.class, "initGuard");
 
         /** Cache states. Initialized lazily. */
@@ -330,7 +330,7 @@ public class CheckpointEntry {
             GridCacheSharedContext cctx,
             WALPointer ptr
         ) throws IgniteCheckedException {
-            if (initGuardUpdater.compareAndSet(this, 0, 1)) {
+            if (INIT_GUARD_UPDATER.compareAndSet(this, 0, 1)) {
                 try (WALIterator it = cctx.wal().replay(ptr)) {
                     if (it.hasNextX()) {
                         IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();

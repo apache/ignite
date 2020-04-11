@@ -389,13 +389,13 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     /** */
     static class Lz4 {
         /** */
-        static final LZ4Factory factory = LZ4Factory.fastestInstance();
+        static final LZ4Factory FACTORY = LZ4Factory.fastestInstance();
 
         /** */
-        static final LZ4FastDecompressor decompressor = factory.fastDecompressor();
+        static final LZ4FastDecompressor DECOMPRESSOR = FACTORY.fastDecompressor();
 
         /** */
-        static final LZ4Compressor fastCompressor = factory.fastCompressor();
+        static final LZ4Compressor FAST_COMPRESSOR = FACTORY.fastCompressor();
 
         /**
          * @param level Compression level.
@@ -403,7 +403,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          */
         static LZ4Compressor getCompressor(int level) {
             assert level >= 0 && level <= 17: level;
-            return level == 0 ? fastCompressor : factory.highCompressor(level);
+            return level == 0 ? FAST_COMPRESSOR : FACTORY.highCompressor(level);
         }
 
         /**
@@ -411,7 +411,7 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          * @param dst Destination buffer.
          */
         static void decompress(ByteBuffer page, ByteBuffer dst) {
-            decompressor.decompress(page, dst);
+            DECOMPRESSOR.decompress(page, dst);
         }
     }
 

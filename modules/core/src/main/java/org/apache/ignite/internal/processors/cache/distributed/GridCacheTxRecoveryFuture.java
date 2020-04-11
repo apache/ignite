@@ -53,7 +53,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -107,7 +107,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
         if (log == null) {
             msgLog = cctx.txRecoveryMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridCacheTxRecoveryFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridCacheTxRecoveryFuture.class);
         }
 
         nodes = new GridLeanMap<>();

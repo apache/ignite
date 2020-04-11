@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER
  */
 public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
-    private static final Collection<GridRestCommand> commands =
+    private static final Collection<GridRestCommand> COMMANDS =
         U.sealList(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE, CLUSTER_CURRENT_STATE, CLUSTER_ACTIVE, CLUSTER_INACTIVE);
 
     /**
@@ -53,7 +53,7 @@ public class GridChangeStateCommandHandler extends GridRestCommandHandlerAdapter
 
     /** {@inheritDoc} */
     @Override public Collection<GridRestCommand> supportedCommands() {
-        return commands;
+        return COMMANDS;
     }
 
     /** {@inheritDoc} */

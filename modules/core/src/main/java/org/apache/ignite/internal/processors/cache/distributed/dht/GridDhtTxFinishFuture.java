@@ -68,7 +68,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Error updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxFinishFuture, Throwable> ERR_UPD =
@@ -122,7 +122,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
         if (log == null) {
             msgLog = cctx.txFinishMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtTxFinishFuture.class);
         }
     }
 

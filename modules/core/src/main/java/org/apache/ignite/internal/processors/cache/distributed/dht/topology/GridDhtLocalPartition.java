@@ -107,7 +107,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private final long rmvdEntryTtl;
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static volatile IgniteLogger log;
@@ -188,7 +188,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         this.ctx = ctx;
         this.grp = grp;
 
-        log = U.logger(ctx.kernalContext(), logRef, this);
+        log = U.logger(ctx.kernalContext(), LOG_REF, this);
 
         if (grp.sharedGroup()) {
             singleCacheEntryMap = null;

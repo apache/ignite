@@ -68,7 +68,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     private static Boolean lastFindWithDataPageScan;
 
     /** */
-    private static final ThreadLocal<Boolean> dataPageScanEnabled =
+    private static final ThreadLocal<Boolean> DATA_PAGE_SCAN_ENABLED =
         ThreadLocal.withInitial(() -> false);
 
     /** */
@@ -125,14 +125,14 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param enabled {code true} If enabled.
      */
     public static void setDataPageScanEnabled(boolean enabled) {
-        dataPageScanEnabled.set(enabled);
+        DATA_PAGE_SCAN_ENABLED.set(enabled);
     }
 
     /**
      * @return {@code true} If data page scan is enabled.
      */
-    public static boolean isDataPageScanEnabled() {
-        return dataPageScanEnabled.get();
+    public static boolean getDataPageScanEnabled() {
+        return DATA_PAGE_SCAN_ENABLED.get();
     }
 
     /**
@@ -156,7 +156,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         if (lower == null
                 && upper == null
                 && grp.persistenceEnabled()
-                && dataPageScanEnabled.get()
+                && DATA_PAGE_SCAN_ENABLED.get()
                 && (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 

@@ -154,7 +154,7 @@ public class CommandProcessor {
     private final IgniteLogger log;
 
     /** Is backward compatible handling of UUID through DDL enabled. */
-    private static final boolean handleUuidAsByte =
+    private static final boolean HANDLE_UUID_AS_BYTE =
             IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_UUID_DDL_BYTE_FORMAT, false);
 
     /** Query cancel request counter. */
@@ -1184,7 +1184,7 @@ public class CommandProcessor {
 
         switch (type) {
             case Value.UUID :
-                if (!handleUuidAsByte)
+                if (!HANDLE_UUID_AS_BYTE)
                     return UUID.class.getName();
 
             default:

@@ -130,7 +130,7 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  */
 public class BinaryContext {
     /** System loader. */
-    private static final ClassLoader sysLdr = U.gridClassLoader();
+    private static final ClassLoader SYS_LDR = U.gridClassLoader();
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -745,7 +745,7 @@ public class BinaryContext {
             return desc;
 
         if (ldr == null)
-            ldr = sysLdr;
+            ldr = SYS_LDR;
 
         Class cls;
 
@@ -756,14 +756,14 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
+            if (userType && !ldr.equals(SYS_LDR) && (desc = descriptorForTypeId(true, typeId, SYS_LDR, registerMeta)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
+            if (userType && !ldr.equals(SYS_LDR) && (desc = descriptorForTypeId(true, typeId, SYS_LDR, registerMeta)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);

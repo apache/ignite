@@ -109,7 +109,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
 
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller MARSH = new JdkMarshaller();
 
     /** Connection URL. */
     private String connUrl = DFLT_CONN_URL;
@@ -562,7 +562,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return U.marshal(marsh, obj);
+        return U.marshal(MARSH, obj);
     }
 
     /**
@@ -577,7 +577,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return U.unmarshal(marsh, bytes, getClass().getClassLoader());
+        return U.unmarshal(MARSH, bytes, getClass().getClassLoader());
     }
 
     /**

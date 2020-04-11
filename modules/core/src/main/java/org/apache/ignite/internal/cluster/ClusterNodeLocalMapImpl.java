@@ -49,7 +49,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap<K, V> imple
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    private static final ThreadLocal<String> STASH = new ThreadLocal<>();
 
     /** */
     private GridKernalContext ctx;
@@ -78,7 +78,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap<K, V> imple
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set(U.readString(in));
+        STASH.set(U.readString(in));
     }
 
     /**
@@ -95,7 +95,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap<K, V> imple
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

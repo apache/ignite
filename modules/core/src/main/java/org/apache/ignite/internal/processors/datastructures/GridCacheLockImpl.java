@@ -70,7 +70,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    private static final ThreadLocal<String> STASH = new ThreadLocal<>();
 
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
@@ -1430,7 +1430,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        stash.set(in.readUTF());
+        STASH.set(in.readUTF());
     }
 
     /**
@@ -1440,7 +1440,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
      * @throws ObjectStreamException Thrown in case of unmarshalling error.
      */
     private Object readResolve() throws ObjectStreamException {
-        String name = stash.get();
+        String name = STASH.get();
 
         assert name != null;
 
@@ -1461,7 +1461,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

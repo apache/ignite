@@ -31,7 +31,7 @@ import org.apache.kafka.common.serialization.Serializer;
  */
 public class CacheEventSerializer implements Serializer<CacheEvent> {
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller MARSH = new JdkMarshaller();
 
     /** {@inheritDoc} */
     @Override public void configure(Map<String, ?> map, boolean b) {
@@ -41,7 +41,7 @@ public class CacheEventSerializer implements Serializer<CacheEvent> {
     /** {@inheritDoc} */
     @Override public byte[] serialize(String topic, CacheEvent event) {
         try {
-            return U.marshal(marsh, event);
+            return U.marshal(MARSH, event);
         }
         catch (IgniteCheckedException e) {
             throw new SerializationException("Failed to serialize cache event!", e);

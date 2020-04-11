@@ -65,7 +65,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
     protected static IgniteLogger log;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     protected static IgniteLogger msgLog;
@@ -115,7 +115,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridDhtAtomicUpdateFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridDhtAtomicUpdateFuture.class);
         }
     }
 
