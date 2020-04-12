@@ -159,8 +159,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
-import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
@@ -2495,7 +2495,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * in the test. https://ggsystems.atlassian.net/browse/GG-25182
      */
     protected void clearGridToStringClassCache() {
-        ((Map)getFieldValueHierarchy(S.class, "classCache")).clear();
+        ((Map)getFieldValueHierarchy(S.class, "CLASS_CACHE")).clear();
     }
 
     /**
