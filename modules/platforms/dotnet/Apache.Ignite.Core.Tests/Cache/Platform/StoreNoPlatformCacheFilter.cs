@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Near
+namespace Apache.Ignite.Core.Tests.Cache.Platform
 {
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
-    /// Entry filter for cache store: ensures that values do not come from Platform Near Cache.
+    /// Entry filter for cache store: ensures that values do not come from platform cache.
     /// </summary>
-    public class StoreNoNearCacheFilter : ICacheEntryFilter<int, Foo>
+    public class StoreNoPlatformCacheFilter : ICacheEntryFilter<int, Foo>
     {
         /// <summary>
         /// Gets or sets the cache name.
@@ -38,10 +38,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Near
         {
             var cache = Ignite.GetCache<int, Foo>(CacheName);
 
-            var nearVal = cache.LocalPeek(entry.Key);
+            var platformVal = cache.LocalPeek(entry.Key);
 
-            Assert.AreNotSame(nearVal, entry.Value);
-            Assert.AreNotEqual(nearVal.Bar, entry.Value.Bar);
+            Assert.AreNotSame(platformVal, entry.Value);
+            Assert.AreNotEqual(platformVal.Bar, entry.Value.Bar);
 
             return Ignite.GetAffinity(CacheName).IsPrimary(Ignite.GetCluster().GetLocalNode(), entry.Key);
         }

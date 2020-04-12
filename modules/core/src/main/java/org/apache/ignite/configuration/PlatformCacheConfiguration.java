@@ -22,11 +22,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import java.io.Serializable;
 
 /**
- * Platform near cache configuration.
+ * Platform cache configuration.
  * <p>
- * Additional near caching mechanism on platform side (.NET).
+ * Additional caching mechanism on platform side (.NET).
  */
-public class PlatformNearCacheConfiguration implements Serializable {
+public class PlatformCacheConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class PlatformNearCacheConfiguration implements Serializable {
      * @param keyTypeName Key type name.
      * @return {@code this} for chaining.
      */
-    public PlatformNearCacheConfiguration setKeyTypeName(String keyTypeName) {
+    public PlatformCacheConfiguration setKeyTypeName(String keyTypeName) {
         this.keyTypeName = keyTypeName;
 
         return this;
@@ -79,14 +79,14 @@ public class PlatformNearCacheConfiguration implements Serializable {
      * @param valueTypeName Key type name.
      * @return {@code this} for chaining.
      */
-    public PlatformNearCacheConfiguration setValueTypeName(String valueTypeName) {
+    public PlatformCacheConfiguration setValueTypeName(String valueTypeName) {
         this.valueTypeName = valueTypeName;
 
         return this;
     }
 
     /**
-     * Gets a value indicating whether platform near cache should store keys and values in binary form.
+     * Gets a value indicating whether platform cache should store keys and values in binary form.
      *
      * @return Whether binary mode is enabled.
      */
@@ -95,12 +95,12 @@ public class PlatformNearCacheConfiguration implements Serializable {
     }
 
     /**
-     * Sets a value indicating whether platform near cache should store keys and values in binary form.
+     * Sets a value indicating whether platform cache should store keys and values in binary form.
      *
      * @param keepBinary Whether binary mode is enabled.
      * @return {@code this} for chaining.
      */
-    public PlatformNearCacheConfiguration setKeepBinary(boolean keepBinary) {
+    public PlatformCacheConfiguration setKeepBinary(boolean keepBinary) {
         this.keepBinary = keepBinary;
 
         return this;
@@ -108,6 +108,6 @@ public class PlatformNearCacheConfiguration implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlatformNearCacheConfiguration.class, this, super.toString());
+        return S.toString(PlatformCacheConfiguration.class, this, super.toString());
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache.Near
+namespace Apache.Ignite.Core.Impl.Cache.Platform
 {
     using System;
     using System.Collections.Concurrent;
@@ -27,9 +27,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
-    /// Holds near cache data for a given cache, serves one or more <see cref="CacheImpl{TK,TV}"/> instances.
+    /// Holds platform cache data for a given cache, serves one or more <see cref="CacheImpl{TK,TV}"/> instances.
     /// </summary>
-    internal sealed class NearCache<TK, TV> : INearCache
+    internal sealed class PlatformCache<TK, TV> : IPlatformCache
     {
         /** Affinity. */
         private readonly CacheAffinityImpl _affinity;
@@ -38,23 +38,23 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         private readonly bool _keepBinary;
 
         /** Topology version func. Returns boxed <see cref="AffinityTopologyVersion"/>.
-         * Boxed copy is passed directly to <see cref="NearCacheEntry{T}"/>, avoiding extra allocations.
+         * Boxed copy is passed directly to <see cref="PlatformCacheEntry{T}"/>, avoiding extra allocations.
          * This way for every unique <see cref="AffinityTopologyVersion"/> we only have one boxed copy,
-         * and we can update <see cref="NearCacheEntry{T}.Version"/> atomically without locks. */
+         * and we can update <see cref="PlatformCacheEntry{T}.Version"/> atomically without locks. */
         private readonly Func<object> _affinityTopologyVersionFunc;
 
         /** Underlying map. */
-        private readonly ConcurrentDictionary<TK, NearCacheEntry<TV>> _map = 
-            new ConcurrentDictionary<TK, NearCacheEntry<TV>>();
+        private readonly ConcurrentDictionary<TK, PlatformCacheEntry<TV>> _map = 
+            new ConcurrentDictionary<TK, PlatformCacheEntry<TV>>();
 
         /** Stopped flag. */
         private volatile bool _stopped;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="NearCache{TK, TV}"/> class.
-        /// Called via reflection from <see cref="NearCacheManager.CreateNearCache"/>. 
+        /// Initializes a new instance of the <see cref="PlatformCache{TK,TV}"/> class.
+        /// Called via reflection from <see cref="PlatformCacheManager.CreatePlatformCache"/>. 
         /// </summary>
-        public NearCache(Func<object> affinityTopologyVersionFunc, CacheAffinityImpl affinity, bool keepBinary)
+        public PlatformCache(Func<object> affinityTopologyVersionFunc, CacheAffinityImpl affinity, bool keepBinary)
         {
             _affinityTopologyVersionFunc = affinityTopologyVersionFunc;
             _affinity = affinity;
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
                 return false;
             }
 
-            NearCacheEntry<TV> entry;
+            PlatformCacheEntry<TV> entry;
             var key0 = (TK) (object) key;
             
             if (_map.TryGetValue(key0, out entry))
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
 
                 // Remove invalid entry to free up memory.
                 // NOTE: We may end up removing a good entry that was inserted concurrently,
-                // but this does not violate correctness, only causes a potential near cache miss.
+                // but this does not violate correctness, only causes a potential platform cache miss.
                 _map.TryRemove(key0, out entry);
             }
 
@@ -148,11 +148,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
                 var part = stream.ReadInt();
                 var ver = new AffinityTopologyVersion(stream.ReadLong(), stream.ReadInt());
 
-                _map[key] = new NearCacheEntry<TV>(val, GetBoxedAffinityTopologyVersion(ver), part);
+                _map[key] = new PlatformCacheEntry<TV>(val, GetBoxedAffinityTopologyVersion(ver), part);
             }
             else
             {
-                NearCacheEntry<TV> unused;
+                PlatformCacheEntry<TV> unused;
                 _map.TryRemove(key, out unused);
             }
         }
@@ -165,9 +165,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
                 return;
             }
 
-            var pair = (KeyValuePair<TK, TV>) NearCacheManager.ThreadLocalPair.Value;
+            var pair = (KeyValuePair<TK, TV>) PlatformCacheManager.ThreadLocalPair.Value;
 
-            _map[pair.Key] = new NearCacheEntry<TV>(
+            _map[pair.Key] = new PlatformCacheEntry<TV>(
                 pair.Value,
                 GetBoxedAffinityTopologyVersion(affinityTopologyVersion),
                 partition);
@@ -189,17 +189,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         /** <inheritdoc /> */
         public void SetThreadLocalPair<TKey, TVal>(TKey key, TVal val)
         {
-            NearCacheManager.ThreadLocalPair.Value = new KeyValuePair<TK, TV>((TK) (object) key, (TV) (object) val);
+            PlatformCacheManager.ThreadLocalPair.Value = new KeyValuePair<TK, TV>((TK) (object) key, (TV) (object) val);
         }
 
         /** <inheritdoc /> */
         public void ResetThreadLocalPair()
         {
-            NearCacheManager.ThreadLocalPair.Value = null;
+            PlatformCacheManager.ThreadLocalPair.Value = null;
         }
 
         /** <inheritdoc /> */
-        public IEnumerable<ICacheEntry<TKey, TVal>> GetEntries<TKey, TVal>()
+        public IEnumerable<ICacheEntry<TKey, TVal>> GetEntries<TKey, TVal>(int? partition)
         {
             if (_stopped)
             {
@@ -208,6 +208,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
 
             foreach (var e in _map)
             {
+                if (partition != null && e.Value.Partition != partition)
+                {
+                    continue;
+                }
+
                 if (!IsValid(e.Value))
                 {
                     continue;
@@ -227,7 +232,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Near
         /// <param name="entry">Entry to validate.</param>
         /// <typeparam name="TVal">Value type.</typeparam>
         /// <returns>True if entry is valid and can be returned to the user; false otherwise.</returns>
-        private bool IsValid<TVal>(NearCacheEntry<TVal> entry)
+        private bool IsValid<TVal>(PlatformCacheEntry<TVal> entry)
         {
             // See comments on _affinityTopologyVersionFunc about boxed copy approach. 
             var currentVerBoxed = _affinityTopologyVersionFunc();
