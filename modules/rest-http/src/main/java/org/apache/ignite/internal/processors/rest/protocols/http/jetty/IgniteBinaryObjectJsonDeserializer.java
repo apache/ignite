@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import java.io.IOException;
@@ -47,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * JSON deserializer into the Ignite binary object.
  */
-public class IgniteBinaryObjectJsonDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer {
+public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer {
     /** Property name to set binary type name. */
     public static final String BINARY_TYPE_PROPERTY = "binaryTypeName";
 
@@ -98,9 +99,9 @@ public class IgniteBinaryObjectJsonDeserializer extends com.fasterxml.jackson.da
 
         BinaryType binType = ctx.cacheObjects().binary().type(type);
 
-        JsonDeserializer deserializer = binType instanceof BinaryTypeImpl ?
+        Deserializer deserializer = binType instanceof BinaryTypeImpl ?
             new BinaryTypeDeserializer(cacheName, (BinaryTypeImpl)binType, mapper) :
-            new JsonDeserializer(cacheName, type, mapper);
+            new Deserializer(cacheName, type, mapper);
 
         return deserializer.deserialize(node);
     }
@@ -108,7 +109,7 @@ public class IgniteBinaryObjectJsonDeserializer extends com.fasterxml.jackson.da
     /**
      * JSON deserializer creates a new binary type using JSON data types.
      */
-    private class JsonDeserializer {
+    private class Deserializer {
         /** New binary type name. */
         private final String type;
 
@@ -126,7 +127,7 @@ public class IgniteBinaryObjectJsonDeserializer extends com.fasterxml.jackson.da
          * @param type Type name.
          * @param mapper JSON object mapper.
          */
-        public JsonDeserializer(@Nullable String cacheName, String type, ObjectCodec mapper) {
+        public Deserializer(@Nullable String cacheName, String type, ObjectCodec mapper) {
             this.type = type;
             this.mapper = mapper;
             this.cacheName = cacheName;
@@ -232,7 +233,7 @@ public class IgniteBinaryObjectJsonDeserializer extends com.fasterxml.jackson.da
     /**
      * JSON deserializer using the existing Ignite binary type.
      */
-    private class BinaryTypeDeserializer extends JsonDeserializer {
+    private class BinaryTypeDeserializer extends Deserializer {
         /** Binary type. */
         private final BinaryTypeImpl binType;
 

@@ -495,95 +495,6 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param type Optional value type.
-     * @param obj Object to convert.
-     * @return Converted value.
-     * @throws IgniteCheckedException If failed to convert.
-     */
-    private Object convert(String cacheName, String type, Object obj) throws IgniteCheckedException {
-        if (F.isEmpty(type) || obj == null)
-            return obj;
-
-        String s = (String)obj;
-
-        try {
-            switch (type.toLowerCase()) {
-                case "boolean":
-                case "java.lang.boolean":
-                    return Boolean.valueOf(s);
-
-                case "byte":
-                case "java.lang.byte":
-                    return Byte.valueOf(s);
-
-                case "short":
-                case "java.lang.short":
-                    return Short.valueOf(s);
-
-                case "int":
-                case "integer":
-                case "java.lang.integer":
-                    return Integer.valueOf(s);
-
-                case "long":
-                case "java.lang.long":
-                    return Long.valueOf(s);
-
-                case "float":
-                case "java.lang.float":
-                    return Float.valueOf(s);
-
-                case "double":
-                case "java.lang.double":
-                    return Double.valueOf(s);
-
-                case "date":
-                case "java.sql.date":
-                    return Date.valueOf(s);
-
-                case "time":
-                case "java.sql.time":
-                    return Time.valueOf(s);
-
-                case "timestamp":
-                case "java.sql.timestamp":
-                    return Timestamp.valueOf(s);
-
-                case "uuid":
-                case "java.util.uuid":
-                    return UUID.fromString(s);
-
-                case "igniteuuid":
-                case "org.apache.ignite.lang.igniteuuid":
-                    return IgniteUuid.fromString(s);
-
-                case "string":
-                case "java.lang.string":
-                    return s;
-
-                default:
-                    try {
-                        InjectableValues.Std prop = new InjectableValues.Std()
-                            .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
-                            .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
-
-                        return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(s);
-                    } catch (IOException e) {
-                        log.warning("Unable to parse JSON data, object will be stored as a text [value=\"" + s +
-                            "\", reason=\"" + e.getMessage() + "\"]");
-                    }
-            }
-        }
-        catch (Throwable e) {
-            throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
-                ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
-        }
-
-        return obj;
-    }
-
-    /**
      * Creates REST request.
      *
      * @param cmd Command.
@@ -712,11 +623,13 @@ public class GridJettyRestHandler extends AbstractHandler {
                 String keyType = (String)params.get("keyType");
                 String valType = (String)params.get("valueType");
 
-                restReq0.key(convert(cacheName, keyType, params.get("key")));
-                restReq0.value(convert(cacheName, valType, params.get("val")));
-                restReq0.value2(convert(cacheName, valType, params.get("val2")));
+                Converter converter = new Converter(cacheName);
 
-                Object val1 = convert(cacheName, valType, params.get("val1"));
+                restReq0.key(converter.convert(keyType, params.get("key")));
+                restReq0.value(converter.convert(valType, params.get("val")));
+                restReq0.value2(converter.convert(valType, params.get("val2")));
+
+                Object val1 = converter.convert(valType, params.get("val1"));
 
                 if (val1 != null)
                     restReq0.value(val1);
@@ -727,8 +640,8 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
                     cmd == CACHE_CONTAINS_KEYS) {
-                    List<Object> keys = values(cacheName, keyType, "k", params);
-                    List<Object> vals = values(cacheName, valType, "v", params);
+                    List<Object> keys = converter.values(keyType, "k", params);
+                    List<Object> vals = converter.values(valType, "v", params);
 
                     if (keys.size() < vals.size())
                         throw new IgniteCheckedException("Number of keys must be greater or equals to number of values.");
@@ -776,7 +689,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.taskId((String)params.get("id"));
                 restReq0.taskName((String)params.get("name"));
 
-                restReq0.params(values(null, null, "p", params));
+                restReq0.params(new Converter().values(null, "p", params));
 
                 restReq0.async(Boolean.parseBoolean((String)params.get("async")));
 
@@ -862,7 +775,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 GridRestBaselineRequest restReq0 = new GridRestBaselineRequest();
 
                 restReq0.topologyVersion(longValue("topVer", params, null));
-                restReq0.consistentIds(values(null, null, "consistentId", params));
+                restReq0.consistentIds(new Converter().values(null, "consistentId", params));
 
                 restReq = restReq0;
 
@@ -896,7 +809,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.sqlQuery((String)params.get("qry"));
 
-                restReq0.arguments(values(cacheName, null, "arg", params).toArray());
+                restReq0.arguments(new Converter(cacheName).values( null, "arg", params).toArray());
 
                 restReq0.typeName((String)params.get("type"));
 
@@ -1060,33 +973,6 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /**
-     * Gets values referenced by sequential keys, e.g. {@code key1...keyN}.
-     *
-     * @param cacheName Cache name.
-     * @param type Optional value type.
-     * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
-     * @param params Parameters map.
-     * @return Values.
-     */
-    protected List<Object> values(String cacheName, String type, String keyPrefix,
-        Map<String, Object> params) throws IgniteCheckedException {
-        assert keyPrefix != null;
-
-        List<Object> vals = new LinkedList<>();
-
-        for (int i = 1; ; i++) {
-            String key = keyPrefix + i;
-
-            if (params.containsKey(key))
-                vals.add(convert(cacheName, type, params.get(key)));
-            else
-                break;
-        }
-
-        return vals;
-    }
-
-    /**
      * @param req Request.
      * @return Command.
      */
@@ -1128,6 +1014,138 @@ public class GridJettyRestHandler extends AbstractHandler {
             return ((String[])obj)[0];
 
         return null;
+    }
+
+    /** */
+    private class Converter {
+        /** Cache name. */
+        private final String cacheName;
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private Converter(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** */
+        private Converter() {
+            this(null);
+        }
+
+        /**
+         * Gets and converts values referenced by sequential keys, e.g. {@code key1...keyN}.
+         *
+         * @param type Optional value type.
+         * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
+         * @param params Parameters map.
+         * @return Values.
+         */
+        private List<Object> values(String type, String keyPrefix,
+            Map<String, Object> params) throws IgniteCheckedException {
+            assert keyPrefix != null;
+
+            List<Object> vals = new LinkedList<>();
+
+            for (int i = 1; ; i++) {
+                String key = keyPrefix + i;
+
+                if (params.containsKey(key))
+                    vals.add(convert(type, params.get(key)));
+                else
+                    break;
+            }
+
+            return vals;
+        }
+
+        /**
+         * @param type Optional value type.
+         * @param obj Object to convert.
+         * @return Converted value.
+         * @throws IgniteCheckedException If failed to convert.
+         */
+        private Object convert(String type, Object obj) throws IgniteCheckedException {
+            if (F.isEmpty(type) || obj == null)
+                return obj;
+
+            String s = (String)obj;
+
+            try {
+                switch (type.toLowerCase()) {
+                    case "boolean":
+                    case "java.lang.boolean":
+                        return Boolean.valueOf(s);
+
+                    case "byte":
+                    case "java.lang.byte":
+                        return Byte.valueOf(s);
+
+                    case "short":
+                    case "java.lang.short":
+                        return Short.valueOf(s);
+
+                    case "int":
+                    case "integer":
+                    case "java.lang.integer":
+                        return Integer.valueOf(s);
+
+                    case "long":
+                    case "java.lang.long":
+                        return Long.valueOf(s);
+
+                    case "float":
+                    case "java.lang.float":
+                        return Float.valueOf(s);
+
+                    case "double":
+                    case "java.lang.double":
+                        return Double.valueOf(s);
+
+                    case "date":
+                    case "java.sql.date":
+                        return Date.valueOf(s);
+
+                    case "time":
+                    case "java.sql.time":
+                        return Time.valueOf(s);
+
+                    case "timestamp":
+                    case "java.sql.timestamp":
+                        return Timestamp.valueOf(s);
+
+                    case "uuid":
+                    case "java.util.uuid":
+                        return UUID.fromString(s);
+
+                    case "igniteuuid":
+                    case "org.apache.ignite.lang.igniteuuid":
+                        return IgniteUuid.fromString(s);
+
+                    case "string":
+                    case "java.lang.string":
+                        return s;
+
+                    default:
+                        try {
+                            InjectableValues.Std prop = new InjectableValues.Std()
+                                .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
+                                .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
+
+                            return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(s);
+                        } catch (IOException e) {
+                            log.warning("Unable to parse JSON, object will be stored as a text " +
+                                "[type=" + type + ", value=\"" + s + "\", reason=\"" + e.getMessage() + "\"]");
+                        }
+                }
+            }
+            catch (Throwable e) {
+                throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
+                    ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
+            }
+
+            return obj;
+        }
     }
 
     /**
