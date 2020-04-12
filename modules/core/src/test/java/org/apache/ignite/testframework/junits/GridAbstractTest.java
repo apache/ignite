@@ -2801,7 +2801,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void clearStaticClassLog(Class<?> cls) {
         assertNotNull(cls);
 
-        ((AtomicReference<IgniteLogger>)getFieldValue(cls, "logRef")).set(null);
+        ((AtomicReference<IgniteLogger>)getFieldValue(cls, "LOG_REF")).set(null);
         setFieldValue(cls, "log", null);
     }
 

@@ -64,7 +64,7 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         setFieldValue(GridNearTxPrepareFutureAdapter.class, "log", null);
-        ((AtomicReference<IgniteLogger>)getFieldValue(GridNearTxPrepareFutureAdapter.class, "logRef")).set(null);
+        ((AtomicReference<IgniteLogger>)getFieldValue(GridNearTxPrepareFutureAdapter.class, "LOG_REF")).set(null);
 
         clearGridToStringClassCache();
 
