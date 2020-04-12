@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -60,19 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static final int NODES = 5;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -80,9 +67,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        Ignite client = startGrid(4);
+        Ignite client = startClientGrid(4);
 
         assertTrue(client.configuration().isClientMode());
     }

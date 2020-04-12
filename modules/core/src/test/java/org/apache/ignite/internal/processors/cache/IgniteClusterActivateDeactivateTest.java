@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -85,9 +86,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     private static final int DEFAULT_CACHES_COUNT = 2;
 
     /** */
-    boolean client;
-
-    /** */
     private ClusterState stateOnStart;
 
     /** */
@@ -117,8 +115,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         if (stateOnStart != null)
             cfg.setClusterStateOnStart(stateOnStart);
@@ -1708,7 +1704,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
     }
 
-
     /** */
     private void checkClusterState(int nodesCnt, ClusterState state) {
         for (int i = 0; i < nodesCnt; i++)
@@ -1750,18 +1745,24 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (cacheConfigs != null)
             this.ccfgs = cacheConfigs;
 
-        this.client = client;
-
-        startGrid(nodeNumber);
+        if (client)
+            startClientGrid(nodeNumber);
+        else
+            startGrid(nodeNumber);
     }
 
     /** */
     private IgniteInternalFuture<?> startNodeAsync(int nodeNumber, boolean client) {
-        this.client = client;
-
-        return runAsync(
-            () -> startGrid(nodeNumber),
-            "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber
-        );
+        return runAsync(() -> {
+            try {
+                if (client)
+                    startClientGrid(nodeNumber);
+                else
+                    startGrid(nodeNumber);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }, "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber);
     }
 }

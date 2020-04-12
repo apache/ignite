@@ -22,14 +22,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *
  */
-public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
+public class VisorValidateIndexesTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,6 +38,9 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
 
     /** Check first K elements. */
     private int checkFirst;
+
+    /** Check CRC */
+    private boolean checkCrc;
 
     /** Check through K element (skip K-1, check Kth). */
     private int checkThrough;
@@ -55,11 +58,18 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     /**
      * @param caches Caches.
      */
-    public VisorValidateIndexesTaskArg(Set<String> caches, Set<UUID> nodes, int checkFirst, int checkThrough) {
+    public VisorValidateIndexesTaskArg(
+        Set<String> caches,
+        Set<UUID> nodes,
+        int checkFirst,
+        int checkThrough,
+        boolean checkCrc
+    ) {
         this.caches = caches;
         this.checkFirst = checkFirst;
         this.checkThrough = checkThrough;
         this.nodes = nodes;
+        this.checkCrc = checkCrc;
     }
 
     /**
@@ -84,6 +94,13 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     }
 
     /**
+     * @return checkCrc.
+     */
+    public boolean сheckCrc() {
+        return checkCrc;
+    }
+
+    /**
      * @return checkThrough.
      */
     public int getCheckThrough() {
@@ -96,6 +113,7 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
         out.writeInt(checkFirst);
         out.writeInt(checkThrough);
         U.writeCollection(out, nodes);
+        out.writeBoolean(checkCrc);
     }
 
     /** {@inheritDoc} */
@@ -113,11 +131,19 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
 
         if (protoVer > V2)
             nodes = U.readSet(in);
+
+        if (protoVer >= V6)
+            checkCrc = in.readBoolean();
+    }
+
+    /** Set checkCrc */
+    protected void checkCrc(boolean checkCrc) {
+        this.checkCrc = checkCrc;
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V3;
+        return V6;
     }
 
     /** {@inheritDoc} */

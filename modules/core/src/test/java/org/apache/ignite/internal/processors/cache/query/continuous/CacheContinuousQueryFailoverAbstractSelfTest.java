@@ -127,9 +127,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     private static volatile boolean err;
 
     /** */
-    private boolean client;
-
-    /** */
     private int backups = 1;
 
     /** {@inheritDoc} */
@@ -159,8 +156,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         ccfg.setNearConfiguration(nearCacheConfiguration());
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -219,11 +214,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        Ignite qryClient = startClientGrid(SRV_NODES);
 
         IgniteCache<Object, Object> qryClnCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -289,9 +280,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
         assertFalse(top2.rebalanceFinished(new AffinityTopologyVersion(4)));
 
-        client = true;
-
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
         GridDhtPartitionTopology top3 = ((IgniteKernal)ignite3).context().cache().context().cacheContext(CU.cacheId(DEFAULT_CACHE_NAME)).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
@@ -451,11 +440,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        final Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        final Ignite qryClient = startClientGrid(SRV_NODES);
 
         Map<Integer, Long> updateCntrs = new HashMap<>();
 
@@ -552,11 +537,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        final Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        final Ignite qryClient = startClientGrid(SRV_NODES);
 
         IgniteCache<Object, Object> clnCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -660,11 +641,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        final Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        final Ignite qryClient = startClientGrid(SRV_NODES);
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -828,11 +805,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        Ignite qryClient = startClientGrid(SRV_NODES);
 
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -954,11 +927,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        Ignite qryClient = startClientGrid(SRV_NODES);
 
         IgniteCache<Object, Object> qryClientCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -1364,9 +1333,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     public void testBackupQueueCleanupClientQuery() throws Exception {
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        Ignite qryClient = startGrid(2);
+        Ignite qryClient = startClientGrid(2);
 
         CacheEventListener1 lsnr = new CacheEventListener1(false);
 
@@ -1438,9 +1405,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     public void testBackupQueueEvict() throws Exception {
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        Ignite qryClient = startGrid(2);
+        Ignite qryClient = startClientGrid(2);
 
         CacheEventListener1 lsnr = new CacheEventListener1(false);
 
@@ -1600,11 +1565,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        Ignite qryClient = startClientGrid(SRV_NODES);
 
         IgniteCache<Object, Object> qryClnCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -1660,11 +1621,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
-
-        client = false;
+        Ignite qryClient = startClientGrid(SRV_NODES);
 
         IgniteCache<Object, Object> qryClnCache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -1931,11 +1888,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        final Ignite qryCln = startGrid(SRV_NODES);
-
-        client = false;
+        final Ignite qryCln = startClientGrid(SRV_NODES);
 
         final IgniteCache<Object, Object> qryClnCache = qryCln.cache(DEFAULT_CACHE_NAME);
 
@@ -2140,9 +2093,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         startGridsMultiThreaded(SRV_NODES);
 
-        client = true;
-
-        Ignite qryClient = startGrid(SRV_NODES);
+        Ignite qryClient = startClientGrid(SRV_NODES);
 
         final IgniteCache<Object, Object> cache = qryClient.cache(DEFAULT_CACHE_NAME);
 
@@ -2153,8 +2104,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         qry.setLocalListener(lsnr);
 
         QueryCursor<?> cur = cache.query(qry);
-
-        client = false;
 
         final int SRV_IDX = SRV_NODES - 1;
 

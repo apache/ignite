@@ -22,14 +22,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -63,9 +64,7 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
 
         Random random = new Random(1);
 
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid(2);
+        Ignite client = startClientGrid(2);
 
         int ctr = 0;
 
@@ -82,9 +81,10 @@ public class BigEntryQueryTest extends GridCommonAbstractTest {
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Long.class, Value.class));
 
-            cache.putAll(LongStream.range(610026643276160000L, 610026643276170000L).boxed()
+            cache.putAll((Map) LongStream.range(610026643276160000L, 610026643276170000L).boxed()
                 .collect(Collectors.toMap(Function.identity(),
-                    t -> Value.of(new byte[(random.nextInt(16)) * 1000]))));
+                    t -> Value.of(new byte[(random.nextInt(16)) * 1000]),
+                    (a, b) -> a, TreeMap::new)));
 
             for (int i = 0; i < 10; i++) {
                 long start = 610026643276160000L;

@@ -80,7 +80,6 @@ public class MLDeployingTest extends GridCommonAbstractTest {
             .setIpFinder(new TcpDiscoveryVmIpFinder()
                 .setAddresses(Arrays.asList("127.0.0.1:47500..47509"))));
 
-        cfg.setClientMode(false);
         cfg.setPeerClassLoadingEnabled(true);
 
         return cfg;

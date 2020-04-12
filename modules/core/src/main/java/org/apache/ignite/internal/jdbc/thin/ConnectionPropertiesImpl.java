@@ -130,6 +130,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
         "SSL protocol name", null, null, false, null);
 
+    /** SSL: Supported SSL cipher suites. */
+    private StringProperty sslCipherSuites = new StringProperty("sslCipherSuites",
+        "Supported SSL ciphers", null,
+        null, false, null);
+
     /** SSL: Key algorithm name. */
     private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
         "SSL key algorithm name", "SunX509", null, false, null);
@@ -175,6 +180,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
+
+    /** Custom class name that implements Factory&lt;Map&lt;String, String&gt;&gt; which returns user attributes. */
+    private StringProperty userAttrsFactory = new StringProperty("userAttributesFactory",
+        "Custom class name that implements Factory<Map<String, String>> (user attributes)", null, null, false, null);
 
     /** User name to authenticate the client on the server side. */
     private StringProperty user = new StringProperty(
@@ -228,10 +237,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, nestedTxMode,
-        sslMode, sslProtocol, sslKeyAlgorithm,
+        sslMode, sslCipherSuites, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
+        userAttrsFactory,
         user, passwd,
         dataPageScanEnabled,
             partitionAwareness,
@@ -413,6 +423,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSslProtocol(String sslProtocol) {
         this.sslProtocol.setValue(sslProtocol);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslCipherSuites() {
+        return sslCipherSuites.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslCipherSuites(String sslCipherSuites) {
+        this.sslCipherSuites.setValue(sslCipherSuites);
     }
 
     /** {@inheritDoc} */
@@ -606,6 +626,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setConnectionTimeout(@Nullable Integer timeout) throws SQLException {
         connTimeout.setValue(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getUserAttributesFactory() {
+        return userAttrsFactory.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUserAttributesFactory(String cls) {
+        userAttrsFactory.setValue(cls);
     }
 
     /**

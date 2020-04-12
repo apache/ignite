@@ -469,6 +469,9 @@ namespace ignite
              *
              * This method should only be used on the valid instance.
              *
+             * Keys are locked in the order of iteration. It is caller's responsibility to make sure keys always follow
+             * same order. If that is not observed, calling this method in parallel <b>will lead to deadlock</b>.
+             *
              * @param begin Iterator pointing to the beggining of the key-value pair sequence.
              * @param end Iterator pointing to the end of the key-value pair sequence.
              */
@@ -1213,6 +1216,9 @@ namespace ignite
              * This method is transactional and will enlist the entry into ongoing transaction if there is one.
              *
              * This method should only be used on the valid instance.
+             *
+             * Keys are locked in the order of iteration. It is caller's responsibility to make sure keys always follow
+             * same order. If that is not observed, calling this method in parallel <b>will lead to deadlock</b>.
              *
              * @param begin Iterator pointing to the beggining of the key sequence.
              * @param end Iterator pointing to the end of the key sequence.

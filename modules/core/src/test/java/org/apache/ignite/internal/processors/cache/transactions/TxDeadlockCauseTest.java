@@ -170,9 +170,9 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override
-            public void applyx() throws IgniteCheckedException {
-                try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation, timeout, keys.size())) {
+            @Override public void applyx() throws IgniteCheckedException {
+                try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation,
+                    timeout, keys.size())) {
 
                     List<Integer> keys0 = getAndFlip(reverse) ? keys : keysReversed;
 

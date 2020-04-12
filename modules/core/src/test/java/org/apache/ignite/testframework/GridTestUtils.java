@@ -17,6 +17,11 @@
 
 package org.apache.ignite.testframework;
 
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -66,11 +71,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -148,6 +148,15 @@ public final class GridTestUtils {
         }
 
         /**
+         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
+         *
+         * @param msg Intercepted discovery message.
+         */
+        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
+            // No-op.
+        }
+
+        /**
          * @param ignite Ignite.
          */
         public void ignite(IgniteEx ignite) {
@@ -178,7 +187,11 @@ public final class GridTestUtils {
         @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
             hook.handleDiscoveryMessage(spiCustomMsg);
 
-            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            hook.afterDiscovery(spiCustomMsg);
+
+            return fut;
         }
 
         /** {@inheritDoc} */
@@ -1554,8 +1567,7 @@ public final class GridTestUtils {
         Field modifiersField = Field.class.getDeclaredField("modifiers");
 
         AccessController.doPrivileged(new PrivilegedAction() {
-            @Override
-            public Object run() {
+            @Override public Object run() {
                 modifiersField.setAccessible(true);
                 return null;
             }
@@ -2125,11 +2137,26 @@ public final class GridTestUtils {
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
-     * @param maxLen Maximal length of string
+     * @param maxLen Maximal length of string.
      * @return Random string object.
      */
     public static String randomString(Random rnd, int maxLen) {
-        int len = rnd.nextInt(maxLen);
+        return randomString(rnd, 0, maxLen);
+    }
+
+    /**
+     * Generate random alphabetical string.
+     *
+     * @param rnd Random object.
+     * @param minLen Minimum length of string.
+     * @param maxLen Maximal length of string.
+     * @return Random string object.
+     */
+    public static String randomString(Random rnd, int minLen, int maxLen) {
+        assert minLen >= 0 : "minLen >= 0";
+        assert maxLen >= minLen : "maxLen >= minLen";
+
+        int len = maxLen == minLen ? minLen : minLen + rnd.nextInt(maxLen - minLen);
 
         StringBuilder b = new StringBuilder(len);
 
@@ -2364,5 +2391,12 @@ public final class GridTestUtils {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /**
+     * @param runnableX Runnable with exception.
+     */
+    public static void suppressException(RunnableX runnableX) {
+        runnableX.run();
     }
 }

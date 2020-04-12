@@ -40,6 +40,7 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringWriter;
+import java.io.UTFDataFormatException;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.management.CompilationMXBean;
@@ -137,8 +138,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Consumer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -270,6 +271,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.Unsafe;
 
+import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
@@ -299,7 +301,16 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
+    public static final long MB = 1024L * 1024;
+
+    /** */
     public static final long GB = 1024L * 1024 * 1024;
+
+    /**
+     * String limit in bytes for {@link DataOutput#writeUTF} and
+     * {@link DataInput#readUTF()}, that use "Modified UTF-8".
+     */
+    public static final int UTF_BYTE_LIMIT = 65_535;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
@@ -1177,8 +1188,7 @@ public abstract class IgniteUtils {
             return GRID_EVTS;
 
         List<Integer> evts = toIntList(GRID_EVTS, new P1<Integer>() {
-            @Override
-            public boolean apply(Integer i) {
+            @Override public boolean apply(Integer i) {
                 return !containsIntArray(excl, i);
             }
         });
@@ -3670,6 +3680,16 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Converts size in bytes to human-readable size in megabytes.
+     *
+     * @param sizeInBytes Size of any object (file, memory region etc) in bytes.
+     * @return Size converted to megabytes.
+     */
+    public static int sizeInMegabytes(long sizeInBytes) {
+        return (int)(sizeInBytes / MB);
+    }
+
+    /**
      * Deletes file or directory with all sub-directories and files.
      *
      * @param path File or directory to delete.
@@ -4666,6 +4686,17 @@ public abstract class IgniteUtils {
     }
 
     /**
+     *
+     * @param err Whether to print to {@code System.err}.
+     * @param multiline Multiple lines string to print.
+     */
+    public static void quietMultipleLines(boolean err, String multiline) {
+        assert multiline != null;
+
+        quiet(err, multiline.split(NL));
+    }
+
+    /**
      * Prints out the message in quiet and info modes.
      *
      * @param log Logger.
@@ -5415,7 +5446,6 @@ public abstract class IgniteUtils {
         return map;
     }
 
-
     /**
      * Calculate a hashCode for an array.
      *
@@ -5688,6 +5718,29 @@ public abstract class IgniteUtils {
 
     /**
      * Writes string to output stream accounting for {@code null} values.
+     * <p>
+     * Limitation for max string lenght of {@link #UTF_BYTE_LIMIT} bytes is caused by {@link ObjectOutputStream#writeUTF}
+     * used under the hood to perform an actual write.
+     * </p>
+     * <p>
+     * If longer string is passes a {@link UTFDataFormatException} exception will be thrown.
+     * </p>
+     * <p>
+     * To write longer strings use one of two options:
+     * <ul>
+     *     <li>
+     *         {@link #writeLongString(DataOutput, String)} writes string as is converting it into binary array of UTF-8
+     *         encoded characters.
+     *         To read the value back {@link #readLongString(DataInput)} should be used.
+     *     </li>
+     *     <li>
+     *         {@link #writeCutString(DataOutput, String)} cuts passed string to {@link #UTF_BYTE_LIMIT} bytes
+     *         and then writes them without converting to byte array.
+     *         No exceptions will be thrown for string of any length; written string can be read back with regular
+     *         {@link #readString(DataInput)} method.
+     *     </li>
+     * </ul>
+     * </p>
      *
      * @param out Output stream to write to.
      * @param s String to write, possibly {@code null}.
@@ -5703,6 +5756,13 @@ public abstract class IgniteUtils {
 
     /**
      * Reads string from input stream accounting for {@code null} values.
+     *
+     * Method enables to read strings shorter than {@link #UTF_BYTE_LIMIT} bytes in UTF-8 otherwise an exception will be thrown.
+     *
+     * Strings written by {@link #writeString(DataOutput, String)} or {@link #writeCutString(DataOutput, String)}
+     * can be read by this method.
+     *
+     * @see #writeString(DataOutput, String) for more information about writing strings.
      *
      * @param in Stream to read from.
      * @return Read string, possibly {@code null}.
@@ -11545,7 +11605,7 @@ public abstract class IgniteUtils {
     private static class WriteLockTracer extends ReentrantReadWriteLock.WriteLock {
         /** */
         private static final long serialVersionUID = 0L;
-        
+
         /** */
         public WriteLockTracer(ReentrantReadWriteLock lock) {
             super(lock);
@@ -11645,5 +11705,195 @@ public abstract class IgniteUtils {
                 U.warn(log, "Listener error", e);
             }
         }
+    }
+
+    /**
+     * Stops workers from given collection and waits for their completion.
+     *
+     * @param workers Workers collection.
+     * @param cancel Wheter should cancel workers.
+     * @param log Logger.
+     */
+    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, IgniteLogger log) {
+        for (GridWorker worker : workers) {
+            try {
+                if (cancel)
+                    worker.cancel();
+
+                worker.join();
+            }
+            catch (Exception e) {
+                log.warning(String.format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+            }
+        }
+    }
+
+    /**
+     * Unquote the given string.
+     * @param s String.
+     * @return Unquoted string.
+     */
+    public static String unquote(String s) {
+        return s == null ? null : s.replaceAll("^\"|\"$", "");
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values. <br/>
+     *
+     * This method can write string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeLongString(DataOutput out, @Nullable String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(isNull(s));
+
+        if (isNull(s))
+            return;
+
+        int sLen = s.length();
+
+        // Write string length.
+        out.writeInt(sLen);
+
+        // Write byte array.
+        for (int i = 0; i < sLen; i++) {
+            char c = s.charAt(i);
+            int utfBytes = utfBytes(c);
+
+            if (utfBytes == 1)
+                out.writeByte((byte)c);
+            else if (utfBytes == 3) {
+                out.writeByte((byte)(0xE0 | (c >> 12) & 0x0F));
+                out.writeByte((byte)(0x80 | (c >> 6) & 0x3F));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+            else {
+                out.writeByte((byte)(0xC0 | ((c >> 6) & 0x1F)));
+                out.writeByte((byte)(0x80 | (c & 0x3F)));
+            }
+        }
+    }
+
+    /**
+     * Reads string from input stream accounting for {@code null} values. <br/>
+     *
+     * This method can read string of any length, no {@link #UTF_BYTE_LIMIT} limits are applied.
+     *
+     * @param in Stream to read from.
+     * @return Read string, possibly {@code null}.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static String readLongString(DataInput in) throws IOException {
+        // Check null value.
+        if (in.readBoolean())
+            return null;
+
+        // Read string length.
+        int sLen = in.readInt();
+
+        StringBuilder strBuilder = new StringBuilder(sLen);
+
+        // Read byte array.
+        for (int i = 0, b0, b1, b2; i < sLen; i++) {
+            b0 = in.readByte() & 0xff;
+
+            switch (b0 >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:   // 1 byte format: 0xxxxxxx
+                    strBuilder.append((char)b0);
+                    break;
+
+                case 12:
+                case 13:  // 2 byte format: 110xxxxx 10xxxxxx
+                    b1 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x1F) << 6) | (b1 & 0x3F)));
+                    break;
+
+                case 14:  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
+                    b1 = in.readByte();
+                    b2 = in.readByte();
+
+                    if ((b1 & 0xC0) != 0x80 || (b2 & 0xC0) != 0x80)
+                        throw new UTFDataFormatException();
+
+                    strBuilder.append((char)(((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)));
+                    break;
+
+                default:  // 10xx xxxx, 1111 xxxx
+                    throw new UTFDataFormatException();
+            }
+        }
+
+        return strBuilder.toString();
+    }
+
+    /**
+     * Writes string to output stream accounting for {@code null} values. <br/>
+     *
+     * <p>
+     *     Uses {@link ObjectOutputStream#writeUTF(String)} to write the string under the hood
+     *     but cuts strings longer than {@link #UTF_BYTE_LIMIT} to the limit to avoid {@link UTFDataFormatException}.
+     * </p>
+     *
+     * <p>
+     *     Strings written by the method can be read by {@link #readString(DataInput)}.
+     * </p>
+     *
+     * @see #writeString(DataOutput, String) for more information.
+     *
+     * @param out Output stream to write to.
+     * @param s String to write, possibly {@code null}.
+     * @throws IOException If write failed.
+     */
+    public static void writeCutString(DataOutput out, @Nullable String s) throws IOException {
+        // Write null flag.
+        out.writeBoolean(isNull(s));
+
+        if (isNull(s))
+            return;
+
+        //Conversion of string to limit.
+        for (int i = 0, bs = 0; i < s.length(); i++) {
+            if ((bs += utfBytes(s.charAt(i))) > UTF_BYTE_LIMIT) {
+                s = s.substring(0, i);
+                break;
+            }
+        }
+
+        out.writeUTF(s);
+    }
+
+    /**
+     * Get number of bytes for {@link DataOutput#writeUTF},
+     * depending on character: <br/>
+     *
+     * One byte - If a character <code>c</code> is in the range
+     * <code>&#92;u0001</code> through <code>&#92;u007f</code>.<br/>
+     *
+     * Two bytes - If a character <code>c</code> is <code>&#92;u0000</code> or
+     * is in the range <code>&#92;u0080</code> through <code>&#92;u07ff</code>.
+     * <br/>
+     *
+     * Three bytes - If a character <code>c</code> is in the range
+     * <code>&#92;u0800</code> through <code>uffff</code>.
+     *
+     * @param c Character.
+     * @return Number of bytes.
+     */
+    public static int utfBytes(char c) {
+        return (c >= 0x0001 && c <= 0x007F) ? 1 : (c > 0x07FF) ? 3 : 2;
     }
 }

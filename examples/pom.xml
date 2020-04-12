@@ -79,6 +79,24 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-opencensus</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opencensus</groupId>
+            <artifactId>opencensus-exporter-stats-prometheus</artifactId>
+            <version>${opencensus.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient_httpserver</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -98,12 +116,6 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-ml-spark-model-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml-tensorflow-model-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -208,12 +220,6 @@
                     <artifactId>ignite-spark</artifactId>
                     <version>${project.version}</version>
                 </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-ml-mleap-model-parser</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
             </dependencies>
 
             <build>
@@ -285,12 +291,6 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-spark-2.4</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-ml-mleap-model-parser</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>

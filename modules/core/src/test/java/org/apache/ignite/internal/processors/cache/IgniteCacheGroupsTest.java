@@ -139,16 +139,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private static final int ASYNC_TIMEOUT = 5000;
 
     /** */
-    private boolean client;
-
-    /** */
     private CacheConfiguration[] ccfgs;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
@@ -178,9 +173,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testCloseCache1() throws Exception {
         startGrid(0);
 
-        client = true;
-
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         IgniteCache c1 = client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 0, false));
 
@@ -1197,7 +1190,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private Map<Integer, Integer> generateDataMap(int startKey, int cnt) {
         Random rnd = ThreadLocalRandom.current();
 
-        Map<Integer, Integer> data = U.newHashMap(cnt);
+        Map<Integer, Integer> data = new TreeMap<>();
 
         for (int i = 0; i < cnt; i++)
             data.put(startKey++, rnd.nextInt());
@@ -1466,9 +1459,13 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES; i++) {
             ccfgs = cacheConfigurations(CACHES, GROUP1, "testCache1-");
 
-            client = i == NODES - 1;
+            boolean client = i == NODES - 1;
 
-            startGrid(i);
+            if (client)
+                startClientGrid(i);
+            else
+                startGrid(i);
+
         }
 
         Ignite client = ignite(NODES - 1);
@@ -2085,9 +2082,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void cacheApiTest(CacheMode cacheMode, CacheAtomicityMode atomicityMode) throws Exception {
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         int[] backups = cacheMode == REPLICATED ? new int[]{Integer.MAX_VALUE} : new int[]{0, 1, 2, 3};
 
@@ -2989,9 +2984,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         srv0.createCache(cacheConfiguration(GROUP1, "a0", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "a1", PARTITIONED, ATOMIC, 1, false));
@@ -3094,9 +3087,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(1, SRVS - 1);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         final int CACHES = 8;
 
@@ -3546,9 +3537,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testConfigurationConsistencyValidation() throws Exception {
         startGrids(2);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
 
         ignite(0).createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
 
@@ -3758,9 +3747,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < 4; i++)
             checkAffinityMappers(ignite(i));
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         checkAffinityMappers(ignite(4));
 
@@ -3830,9 +3817,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     private void continuousQueriesMultipleGroups(int srvs) throws Exception {
         Ignite srv0 = startGrids(srvs);
 
-        client = true;
-
-        Ignite client = startGrid(srvs);
+        Ignite client = startClientGrid(srvs);
 
         client.createCache(cacheConfiguration(GROUP1, "c1", PARTITIONED, ATOMIC, 1, false));
         client.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
@@ -4007,11 +3992,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        client = true;
-
-        final Ignite clientNode = startGrid(SRVS);
-
-        client = false;
+        final Ignite clientNode = startClientGrid(SRVS);
 
         final int CACHES = SF.applyLB(10, 2);
 

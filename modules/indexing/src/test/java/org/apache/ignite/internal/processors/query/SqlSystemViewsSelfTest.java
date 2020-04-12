@@ -197,7 +197,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testSchemasView() throws Exception {
         IgniteEx srv = startGrid(getConfiguration().setSqlSchemas("PREDIFINED_SCHEMA_1"));
 
-        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT").setSqlSchemas("PREDIFINED_SCHEMA_2"));
+        IgniteEx client =
+            startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT").setSqlSchemas("PREDIFINED_SCHEMA_2"));
 
         srv.createCache(cacheConfiguration("TST1"));
 
@@ -229,7 +230,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testIndexesView() throws Exception {
         IgniteEx srv = startGrid(getConfiguration());
 
-        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+        IgniteEx client = startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT"));
 
         srv.createCache(cacheConfiguration("TST1"));
 
@@ -674,8 +675,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testNodesViews() throws Exception {
         Ignite igniteSrv = startGrid(getTestIgniteInstanceName(), getConfiguration().setMetricsUpdateFrequency(500L));
 
-        Ignite igniteCli = startGrid(getTestIgniteInstanceName(1), getConfiguration().setMetricsUpdateFrequency(500L)
-            .setClientMode(true));
+        Ignite igniteCli =
+            startClientGrid(getTestIgniteInstanceName(1), getConfiguration().setMetricsUpdateFrequency(500L));
 
         startGrid(getTestIgniteInstanceName(2), getConfiguration().setMetricsUpdateFrequency(500L).setDaemon(true));
 
@@ -1289,8 +1290,8 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         Ignite ignite2 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node2"));
 
-        Ignite ignite3 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node3")
-            .setClientMode(true));
+        Ignite ignite3 =
+            startClientGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node3"));
 
         ignite0.getOrCreateCache(new CacheConfiguration<>()
             .setName("cache_atomic_part")

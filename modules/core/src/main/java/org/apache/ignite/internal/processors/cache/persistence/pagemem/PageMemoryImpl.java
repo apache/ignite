@@ -65,7 +65,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -244,7 +245,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     private ThrottlingPolicy throttlingPlc;
 
     /** Checkpoint progress provider. Null disables throttling. */
-    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+    @Nullable private final IgniteOutClosure<CheckpointProgress> cpProgressProvider;
 
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
     private volatile boolean pageReplacementWarned;
@@ -282,7 +283,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
-        @NotNull CheckpointWriteProgressSupplier cpProgressProvider
+        IgniteOutClosure<CheckpointProgress> cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;
@@ -680,8 +681,25 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
+    @Override public long acquirePage(int grpId, long pageId, AtomicBoolean pageAllocated) throws IgniteCheckedException {
+        return acquirePage(grpId, pageId, IoStatisticsHolderNoOp.INSTANCE, false, pageAllocated);
+    }
+
+    /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder,
         boolean restore) throws IgniteCheckedException {
+        return acquirePage(grpId, pageId, statHolder, restore, null);
+    }
+
+    /**
+     * @param grpId Group id.
+     * @param pageId Page id.
+     * @param statHolder Stat holder.
+     * @param restore Restore.
+     * @param pageAllocated Page allocated.
+     */
+    private long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder,
+        boolean restore, @Nullable AtomicBoolean pageAllocated) throws IgniteCheckedException {
         assert started;
 
         FullPageId fullId = new FullPageId(pageId, grpId);
@@ -738,6 +756,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             if (relPtr == INVALID_REL_PTR) {
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
+
+                if (pageAllocated != null)
+                    pageAllocated.set(true);
 
                 if (relPtr == INVALID_REL_PTR)
                     relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
@@ -1081,7 +1102,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * @return Total pages can be placed in all segments.
      */
-    public long totalPages() {
+    @Override public long totalPages() {
         if (segments == null)
             return 0;
 
@@ -1113,8 +1134,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             seg.checkpointPages = new CheckpointPages(dirtyPages, allowToReplace);
 
-            seg.dirtyPages = new GridConcurrentHashSet<>();
-            seg.dirtyPagesCntr.set(0);
+            seg.resetDirtyPages();
         }
 
         safeToUpdate.set(true);
@@ -2078,6 +2098,15 @@ public class PageMemoryImpl implements PageMemoryEx {
          */
         private long borrowOrAllocateFreePage(long pageId) {
             return pool.borrowOrAllocateFreePage(PageIdUtils.tag(pageId));
+        }
+
+        /**
+         * Clear dirty pages collection and reset counter.
+         */
+        private void resetDirtyPages() {
+            dirtyPages = new GridConcurrentHashSet<>();
+
+            dirtyPagesCntr.set(0);
         }
 
         /**

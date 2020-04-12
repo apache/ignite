@@ -48,7 +48,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
 
         startGrids(3);
 
-        startGrid("client");
+        startClientGrid("client");
 
         populateCache(ldr);
     }
@@ -67,11 +67,8 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
         cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
 
-        if ("client".equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
+        if ("client".equals(igniteInstanceName))
             cfg.setClassLoader(ldr);
-        }
 
         return cfg;
     }

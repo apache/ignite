@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -107,8 +108,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.commandline.CommandHandler.CONFIRM_MSG;
@@ -116,6 +117,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
+import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -250,6 +252,63 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(INACTIVE, ignite.cluster().state());
 
         assertContains(log, testOut.toString(), "Command deprecated. Use --set-state instead.");
+    }
+
+    /**
+     * Test "deactivate" via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateNonPersistent() throws Exception {
+        checkDeactivateNonPersistent("--deactivate");
+    }
+
+    /**
+     * Test "set-state inactive" via control.sh when a non-persistent cache involved.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSetInactiveNonPersistent() throws Exception {
+        checkDeactivateNonPersistent("--set-state", "inactive");
+    }
+
+    /**
+     * Launches cluster deactivation. Works via control.sh when a non-persistent cache involved.
+     *
+     *  @param cmd Certain command to deactivate cluster.
+     */
+    private void checkDeactivateNonPersistent(String... cmd) throws Exception {
+        dataRegionConfiguration = new DataRegionConfiguration()
+            .setName("non-persistent-dataRegion")
+            .setPersistenceEnabled(false);
+
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().state(ACTIVE);
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+
+        ignite.createCache(new CacheConfiguration<>("non-persistent-cache")
+            .setDataRegionName("non-persistent-dataRegion"));
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
+
+        assertTrue(ignite.cluster().active());
+        assertEquals(ACTIVE, ignite.cluster().state());
+        assertContains(log, testOut.toString(), GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING);
+
+        List<String> forceCmd = new ArrayList<>(Arrays.asList(cmd));
+        forceCmd.add("--force");
+
+        assertEquals(EXIT_CODE_OK, execute(forceCmd));
+
+        assertFalse(ignite.cluster().active());
+        assertEquals(INACTIVE, ignite.cluster().state());
     }
 
     /**
@@ -543,6 +602,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
@@ -566,6 +627,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testBaselineRemove() throws Exception {
         Ignite ignite = startGrids(1);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         Ignite other = startGrid("nodeToStop");
 
         assertFalse(ignite.cluster().active());
@@ -624,6 +688,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         assertFalse(ignite.cluster().active());
 
         ignite.cluster().active(true);
@@ -634,7 +700,33 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "set", "invalidConsistentId"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "set", "invalidConsistentId"));
+    }
+
+    /**
+     * Test baseline set nodes with baseline offline node works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBaselineSetWithOfflineNode() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        //It is important to set consistent id to null for force autogeneration.
+        Ignite ignite1 = startGrid(optimize(getConfiguration(getTestIgniteInstanceName(1)).setConsistentId(null)));
+
+        assertFalse(ignite0.cluster().active());
+
+        ignite0.cluster().active(true);
+
+        Ignite other = startGrid(2);
+
+        String consistentIds = consistentIds(ignite0, ignite1, other);
+
+        ignite1.close();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "set", consistentIds));
+
+        assertEquals(3, ignite0.cluster().currentBaselineTopology().size());
     }
 
     /**
@@ -645,6 +737,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
 
         assertFalse(ignite.cluster().active());
 
@@ -1450,6 +1544,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testCacheIdleVerifyMovingParts() throws Exception {
         IgniteEx ignite = startGrids(2);
 
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+
         ignite.cluster().active(true);
 
         int parts = 32;
@@ -1889,7 +1985,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
             (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
             execute("--baseline", "set", "non-existing-node-id ," + consistentIds(ignite)));
     }
 
@@ -1930,5 +2026,67 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--yes"));
 
         assertContains(log, testOut.toString(), "LOST partitions:");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChange() throws Exception {
+        encriptionEnabled = true;
+
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(1);
+
+        ignite.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ignite, 10);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
+
+        Object res = h.getLastOperationResult();
+
+        assertEquals(ignite.encryption().getMasterKeyName(), res);
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
+
+        assertEquals(MASTER_KEY_NAME_2, ignite.encryption().getMasterKeyName());
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
+
+        res = h.getLastOperationResult();
+
+        assertEquals(MASTER_KEY_NAME_2, res);
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
+            execute("--encryption", "change_master_key", "non-existing-master-key-name"));
+
+        assertContains(log, testOut.toString(),
+            "Master key change was rejected. Unable to get the master key digest.");
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMasterKeyChangeOnInactiveCluster() throws Exception {
+        encriptionEnabled = true;
+
+        injectTestSystemOut();
+
+        Ignite ignite = startGrids(1);
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--encryption", "get_master_key_name"));
+
+        Object res = h.getLastOperationResult();
+
+        assertEquals(ignite.encryption().getMasterKeyName(), res);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--encryption", "change_master_key", MASTER_KEY_NAME_2));
+
+        assertContains(log, testOut.toString(), "Master key change was rejected. The cluster is inactive.");
     }
 }

@@ -156,8 +156,6 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
         boolean isClient = igniteInstanceName.contains(CLIENT);
 
-        cfg.setClientMode(isClient);
-
         if (!isClient) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -213,7 +211,7 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
             gridStarted = true;
         }
 
-        client = startGrid(CLIENT);
+        client = startClientGrid(CLIENT);
 
         cache = client.getOrCreateCache(CACHE_NAME);
 
@@ -243,9 +241,8 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         TransactionsMXBean tmMxBean = getMxBean(
             CLIENT,
             "Transactions",
-            TransactionsMXBean.class,
-            TransactionsMXBeanImpl.class
-        );
+            TransactionsMXBeanImpl.class,
+            TransactionsMXBean.class);
 
         if (threshold != null)
             tmMxBean.setLongTransactionTimeDumpThreshold(threshold);
@@ -349,7 +346,8 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
 
         long completionTime = System.currentTimeMillis();
 
-        ClientTxTestResult res = new ClientTxTestResult(startTime, completionTime, metricRegistry(CLIENT, null, TX_METRICS));
+        ClientTxTestResult res = new ClientTxTestResult(startTime, completionTime,
+            metricRegistry(CLIENT, null, TX_METRICS));
 
         return res;
     }
@@ -492,22 +490,20 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
      */
     @Test
     public void testJmxParametersSpreading() throws Exception {
-        startGrid(CLIENT_2);
+        startClientGrid(CLIENT_2);
 
         try {
             TransactionsMXBean tmMxBean = getMxBean(
                 CLIENT,
                 "Transactions",
-                TransactionsMXBean.class,
-                TransactionsMXBeanImpl.class
-            );
+                TransactionsMXBeanImpl.class,
+                TransactionsMXBean.class);
 
             TransactionsMXBean tmMxBean2 = getMxBean(
                 CLIENT_2,
                 "Transactions",
-                TransactionsMXBean.class,
-                TransactionsMXBeanImpl.class
-            );
+                TransactionsMXBeanImpl.class,
+                TransactionsMXBean.class);
 
             int oldLimit = tmMxBean.getTransactionTimeDumpSamplesPerSecondLimit();
             long oldThreshold = tmMxBean.getLongTransactionTimeDumpThreshold();

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.Map;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.spi.metric.HistogramMetric;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
@@ -35,27 +35,10 @@ public class MetricUtils {
     public static final String SEPARATOR = ".";
 
     /** Histogram metric last interval high bound. */
-    public static final String INF = "inf";
+    public static final String INF = "_inf";
 
-    /**
-     * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
-     * root = io - JMX tree root.
-     * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     *
-     * @param regName Metric registry name.
-     * @return Parsed names parts.
-     */
-    public static MetricName parse(String regName) {
-        int firstDot = regName.indexOf('.');
-
-        if (firstDot == -1)
-            return new MetricName(null, regName);
-
-        String grp = regName.substring(0, firstDot);
-        String beanName = regName.substring(firstDot + 1);
-
-        return new MetricName(grp, beanName);
-    }
+    /** Histogram name divider. */
+    public static final char HISTOGRAM_NAME_DIVIDER = '_';
 
     /**
      * Builds metric name. Each parameter will separated by '.' char.
@@ -71,6 +54,19 @@ public class MetricUtils {
             return names[0];
 
         return String.join(SEPARATOR, names);
+    }
+
+    /**
+     * Splits full metric name to registry name and metric name.
+     *
+     * @param name Full metric name.
+     * @return Array consist of registry name and metric name.
+     */
+    public static T2<String, String> fromFullName(String name) {
+        return new T2<> (
+            name.substring(0, name.lastIndexOf(SEPARATOR)),
+            name.substring(name.lastIndexOf(SEPARATOR) + 1)
+        );
     }
 
     /**
@@ -139,75 +135,32 @@ public class MetricUtils {
     }
 
     /**
-     * Gets histogram bucket names.
+     * Generates histogram bucket names.
      *
      * Example of metric names if bounds are 10,100:
      *  histogram_0_10 (less than 10)
      *  histogram_10_100 (between 10 and 100)
      *  histogram_100_inf (more than 100)
      *
-     * @param metric Histogram metric.
-     * @param cache Map that caches computed bucket names.
+     * @param metric Histogram metric
      * @return Histogram intervals names.
      */
-    public static String[] histogramBucketNames(HistogramMetric metric, Map<String, T2<long[], String[]>> cache) {
+    public static String[] histogramBucketNames(HistogramMetric metric) {
         String name = metric.name();
         long[] bounds = metric.bounds();
-
-        T2<long[], String[]> tuple = cache.get(name);
-
-        if (tuple != null && tuple.get1() == bounds)
-            return tuple.get2();
 
         String[] names = new String[bounds.length + 1];
 
         long min = 0;
 
         for (int i = 0; i < bounds.length; i++) {
-            names[i] = name + '_' + min + '_' + bounds[i];
+            names[i] = name + HISTOGRAM_NAME_DIVIDER + min + HISTOGRAM_NAME_DIVIDER + bounds[i];
 
             min = bounds[i];
         }
 
-        names[bounds.length] = name + '_' + min + '_' + INF;
-
-        cache.put(name, new T2<>(bounds, names));
+        names[bounds.length] = name + HISTOGRAM_NAME_DIVIDER + min + INF;
 
         return names;
-    }
-
-    /**
-     * Parsed metric registry name parts.
-     *
-     * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
-     * root = io - JMX tree root.
-     * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     */
-    public static class MetricName {
-        /** JMX group name. */
-        private String root;
-
-        /** JMX bean name. */
-        private String subName;
-
-        /** */
-        MetricName(String root, String subName) {
-            this.root = root;
-            this.subName = subName;
-        }
-
-        /**
-         * @return JMX group name.
-         */
-        public String root() {
-            return root;
-        }
-
-        /**
-         * @return JMX bean name.
-         */
-        public String subName() {
-            return subName;
-        }
     }
 }

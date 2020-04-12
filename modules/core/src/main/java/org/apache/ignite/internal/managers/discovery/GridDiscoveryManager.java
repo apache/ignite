@@ -183,9 +183,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     public static final String NODES_SYS_VIEW_DESC = "Cluster nodes";
 
-    /** Discovery cached history size. */
-    private static final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
-
     /** Predicate filtering out daemon nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_NOT_DAEMON = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
@@ -199,6 +196,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             return n.isClient();
         }
     };
+
+    /** Discovery cached history size. */
+    private final int DISCOVERY_HISTORY_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 500);
 
     /** */
     private final Object discoEvtMux = new Object();
@@ -1914,6 +1914,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean cacheGroupAffinityNode(ClusterNode node, int grpId) {
         CacheGroupAffinity aff = registeredCacheGrps.get(grpId);
 
+        if (aff == null) {
+            log.warning("Registered cache group not found for groupId=" + grpId + ". Group was destroyed.");
+
+            return false;
+        }
+
         return CU.affinityNode(node, aff.cacheFilter);
     }
 
@@ -2481,6 +2487,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             throw new UnsupportedOperationException();
 
         ((IgniteDiscoverySpi)spi).resolveCommunicationFailure(node, err);
+    }
+
+    /**
+     * Resolves by ID cluster node which is alive or has recently left the cluster.
+     *
+     * @param nodeId Node id.
+     * @return resolved node, or <code>null</code> if node not found.
+     */
+    public ClusterNode historicalNode(UUID nodeId) {
+        for (DiscoCache discoCache : discoCacheHist.descendingValues()) {
+            ClusterNode node = discoCache.node(nodeId);
+
+            if (node != null)
+                return node;
+        }
+
+        return null;
     }
 
     /** Worker for network segment checks. */

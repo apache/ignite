@@ -57,9 +57,6 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
     private static final String MVCC_CACHE = "mvccCache";
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -81,8 +78,6 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg3);
 
-        cfg.setClientMode(clientMode);
-
         return cfg;
     }
 
@@ -92,9 +87,7 @@ public class IgniteCachePrimarySyncTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        clientMode = true;
-
-        Ignite client = startGrid(SRVS);
+        Ignite client = startClientGrid(SRVS);
 
         assertTrue(client.configuration().isClientMode());
     }

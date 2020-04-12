@@ -55,8 +55,6 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (igniteInstanceName.equals(getTestIgniteInstanceName(NODE_CNT - 1))) {
-            cfg.setClientMode(true);
-
             if (!clientDiscovery())
                 ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
         }
@@ -70,7 +68,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(NODE_CNT);
+        startGrids(NODE_CNT - 1);
+        startClientGrid(NODE_CNT - 1);
     }
 
     /**

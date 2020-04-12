@@ -20,8 +20,7 @@ package org.apache.ignite.internal.benchmarks.jmh.misc;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -39,7 +38,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * Benchmarks {@link PartitionTxUpdateCounterImpl} class.
+ * Benchmarks {@link PartitionUpdateCounterTrackingImpl} class.
  */
 @State(Scope.Benchmark)
 @Fork(1)
@@ -65,7 +64,7 @@ public class JmhPartitionUpdateCounterBenchmark {
     private final AtomicLong reservedCntr = new AtomicLong();
 
     /** Partition update counter. */
-    private final PartitionUpdateCounter partCntr = new PartitionTxUpdateCounterImpl();
+    private final PartitionUpdateCounterTrackingImpl partCntr = new PartitionUpdateCounterTrackingImpl(null);
 
     /**
      * Setup.

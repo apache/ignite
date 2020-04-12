@@ -69,9 +69,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
     /** */
     private boolean newCaches = true;
 
-    /** Node client mode. */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -97,8 +94,6 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
                             .setAffinity(new RendezvousAffinityFunction(false, 32))
             );
         }
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -422,12 +417,8 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
 
         IgniteEx crd = startGrid(CRD_NONE);
 
-        client = true;
-
         // Start several clients.
-        IgniteEx clientNode = (IgniteEx) startGridsMultiThreaded(2, 2);
-
-        client = false;
+        IgniteEx clientNode = (IgniteEx)startClientGridsMultiThreaded(2, 2);
 
         awaitPartitionMapExchange();
 

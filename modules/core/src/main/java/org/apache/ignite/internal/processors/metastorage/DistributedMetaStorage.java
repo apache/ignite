@@ -43,9 +43,19 @@ public interface DistributedMetaStorage extends ReadableDistributedMetaStorage {
      *
      * @param key The key.
      * @param val Value to write. Must not be null.
+     * @return Future with the operation result.
      * @throws IgniteCheckedException In case of marshalling error or some other unexpected exception.
      */
     GridFutureAdapter<?> writeAsync(@NotNull String key, @NotNull Serializable val) throws IgniteCheckedException;
+
+    /**
+     * Remove value from distributed metastorage asynchronously.
+     *
+     * @param key The key.
+     * @return Future with the operation result.
+     * @throws IgniteCheckedException In case of marshalling error or some other unexpected exception.
+     */
+    GridFutureAdapter<?> removeAsync(@NotNull String key) throws IgniteCheckedException;
 
     /**
      * Remove value from distributed metastorage.

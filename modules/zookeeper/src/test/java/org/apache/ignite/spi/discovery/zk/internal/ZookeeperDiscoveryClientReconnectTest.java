@@ -58,9 +58,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
     public void testReconnectServersRestart_3() throws Exception {
         startGrid(0);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(5, 5);
+        startClientGridsMultiThreaded(5, 5);
 
         stopGrid(getTestIgniteInstanceName(0), true, false);
 
@@ -75,9 +73,10 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
             @Override public Void call() throws Exception {
                 int threadIdx = idx.getAndIncrement();
 
-                helper.clientModeThreadLocal(threadIdx != srvIdx && ThreadLocalRandom.current().nextBoolean());
-
-                startGrid(threadIdx);
+                if (threadIdx != srvIdx && ThreadLocalRandom.current().nextBoolean())
+                    startClientGrid(threadIdx);
+                else
+                    startGrid(threadIdx);
 
                 return null;
             }
@@ -97,11 +96,7 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
     public void testReconnectServersRestart_4() throws Exception {
         startGrid(0);
 
-        helper.clientMode(true);
-
-        IgniteEx client = startGrid(1);
-
-        helper.clientMode(false);
+        IgniteEx client = startClientGrid(1);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -142,13 +137,9 @@ public class ZookeeperDiscoveryClientReconnectTest extends ZookeeperDiscoverySpi
 
         startGridsMultiThreaded(srvs);
 
-        helper.clientMode(true);
-
         final int CLIENTS = 10;
 
-        startGridsMultiThreaded(srvs, CLIENTS);
-
-        helper.clientMode(false);
+        startClientGridsMultiThreaded(srvs, CLIENTS);
 
         long stopTime = System.currentTimeMillis() + 30_000;
 

@@ -62,7 +62,7 @@ public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPer
                 .appendCachePermissions(CACHE_NAME, CACHE_PUT, CACHE_READ)
                 .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), true);
 
-        srvNode.cluster().active(true);
+        awaitPartitionMapExchange();
 
         Stream.of(srvNode, clientNode).forEach(n ->
             operations(n).forEach(c -> {

@@ -45,13 +45,10 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
@@ -62,9 +59,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Ensures that SQL queries are executed in a dedicated thread pool.
  */
 public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
-    /** Class rule. */
-    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
-
     /** Name of the cache for test */
     private static final String CACHE_NAME = "query_pool_test";
 
@@ -94,10 +88,6 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         ccfg.setName(CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
-
         cfg.setIndexingSpi(new TestIndexingSpi());
 
         if (nonNull(qryPoolSize))
@@ -123,7 +113,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
         startGrid("server");
 
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             // We do this in order to have 1 row in results of select - function is called once per each row of result.
@@ -154,7 +144,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     public void testScanQueryUsesDedicatedThreadPool() throws Exception {
         startGrid("server");
 
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             cache.put(0, 0);
@@ -180,7 +170,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
         startGrid("server");
 
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Byte, Byte> cache = client.cache(CACHE_NAME);
 
             for (byte b = 0; b < Byte.MAX_VALUE; ++b)
@@ -243,7 +233,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         startGrid("server");
 
-        IgniteEx clientNode = startGrid("client");
+        IgniteEx clientNode = startClientGrid("client");
 
         IgniteCache<Integer, Integer> cache = clientNode.cache(CACHE_NAME);
         cache.put(0, 0);

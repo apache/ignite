@@ -20,10 +20,13 @@ package org.apache.ignite.events;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
+ * <b>This is an experimental API.</b>
+ * <p>
  * Event indicates a consistency violation.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
@@ -57,6 +60,7 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  *
  * @see EventType#EVT_CONSISTENCY_VIOLATION
  */
+@IgniteExperimental
 public class CacheConsistencyViolationEvent<K, V> extends EventAdapter {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;

@@ -70,9 +70,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
-    /** Session. */
-    private final GridNioSession ses;
-
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
 
@@ -104,17 +101,15 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /**
      * Constructor.
-     *  @param ctx Kernal Context.
-     * @param ses Session.
+     * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
+    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
         super(ctx, connId);
 
-        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
@@ -132,7 +127,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
@@ -174,6 +170,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
+
+            userAttrs = reader.readMap();
         }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {
@@ -190,7 +188,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(user, passwd);
+            actx = authenticate(ses.certificates(), user, passwd);
         }
 
         parser = new JdbcMessageParser(ctx, ver);

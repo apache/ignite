@@ -46,8 +46,6 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
 
         c.setDataStorageConfiguration(memCfg);
 
-        c.setClientMode(igniteInstanceName.startsWith("client"));
-
         TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
         spi.setIdleConnectionTimeout(Integer.MAX_VALUE);
 
@@ -71,11 +69,11 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
     public void test() throws Exception {
         IgniteEx svr = startGrid(0);
 
-        Ignite c1 = startGrid("client1");
+        Ignite c1 = startClientGrid("client1");
 
         assertTrue(c1.configuration().isClientMode());
 
-        Ignite c2 = startGrid("client2");
+        Ignite c2 = startClientGrid("client2");
 
         assertTrue(c2.configuration().isClientMode());
 

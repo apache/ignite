@@ -52,11 +52,8 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(2))) {
-            cfg.setClientMode(true);
-
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(2)))
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        }
 
         return cfg;
     }
@@ -97,7 +94,7 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
 
                     iter++;
 
-                    try (Ignite ignite = startGrid(2)) {
+                    try (Ignite ignite = startClientGrid(2)) {
                         assertTrue(ignite.configuration().isClientMode());
                     }
                 }

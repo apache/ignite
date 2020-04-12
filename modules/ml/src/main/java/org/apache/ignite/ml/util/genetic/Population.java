@@ -138,7 +138,6 @@ public class Population {
         return Double.NaN;
     }
 
-
     /**
      * Returns the size of population.
      */

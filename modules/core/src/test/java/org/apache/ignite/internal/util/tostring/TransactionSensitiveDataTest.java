@@ -59,9 +59,6 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
     /** Node count. */
     private static final int NODE_COUNT = 2;
 
-    /** Create a client node. */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -90,7 +87,6 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
             .setGridLogger(testLog)
-            .setClientMode(client)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setCacheConfiguration(
                 new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -215,13 +211,9 @@ public class TransactionSensitiveDataTest extends GridCommonAbstractTest {
     private void checkSensitiveDataDuringNodeLeft(BiConsumer<String, String> check) throws Exception {
         assert nonNull(check);
 
-        client = false;
-
         startGrids(NODE_COUNT);
 
-        client = true;
-
-        IgniteEx clientNode = startGrid(NODE_COUNT);
+        IgniteEx clientNode = startClientGrid(NODE_COUNT);
 
         awaitPartitionMapExchange();
 

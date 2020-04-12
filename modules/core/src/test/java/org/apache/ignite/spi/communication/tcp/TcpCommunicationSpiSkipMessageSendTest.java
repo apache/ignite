@@ -75,9 +75,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.contains("client"))
-            cfg.setClientMode(true);
-        else {
+        if (!igniteInstanceName.contains("client")) {
             FifoQueueCollisionSpi collisionSpi = new FifoQueueCollisionSpi();
 
             collisionSpi.setParallelJobsNumber(1);
@@ -110,7 +108,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     public void testClientSegmented() throws Exception {
         startGrid("server");
 
-        Ignite client = startGrid("client");
+        Ignite client = startClientGrid("client");
 
         CountDownLatch clientDisconnected = new CountDownLatch(1);
         CountDownLatch clientSegmented = new CountDownLatch(1);

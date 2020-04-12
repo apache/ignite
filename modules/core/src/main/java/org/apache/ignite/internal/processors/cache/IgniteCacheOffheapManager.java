@@ -1040,6 +1040,11 @@ public interface IgniteCacheOffheapManager {
         public void destroy() throws IgniteCheckedException;
 
         /**
+         * Mark store as destroyed.
+         */
+        public void markDestroyed() throws IgniteCheckedException;
+
+        /**
          * Clears all the records associated with logical cache with given ID.
          *
          * @param cacheId Cache ID.
@@ -1086,9 +1091,14 @@ public interface IgniteCacheOffheapManager {
         public void preload() throws IgniteCheckedException;
 
         /**
-         * Reset counters for partition.
+         * Reset counter for partition.
          */
         void resetUpdateCounter();
+
+        /**
+         * Reset the initial value of the partition counter.
+         */
+        void resetInitialUpdateCounter();
 
         /**
          * Partition storage.

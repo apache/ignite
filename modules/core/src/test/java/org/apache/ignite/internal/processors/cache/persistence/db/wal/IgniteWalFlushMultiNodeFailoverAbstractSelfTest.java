@@ -50,7 +50,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assume;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
@@ -95,16 +94,12 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -181,6 +176,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     private void failWhilePut(boolean failWhileStart) throws Exception {
         Ignite ig = startGrids(gridCount());
 
+        ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().active(true);
 
         IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);

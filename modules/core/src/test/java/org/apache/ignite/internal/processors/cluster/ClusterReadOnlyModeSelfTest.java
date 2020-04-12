@@ -64,7 +64,6 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
         return super.getConfiguration(igniteInstanceName)
             .setConsistentId(igniteInstanceName)
             .setFailureHandler(new StopNodeFailureHandler())
-            .setClientMode("client".equals(igniteInstanceName))
             .setCacheConfiguration(cacheConfigurations())
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
@@ -226,7 +225,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
     @Test
     public void testReadOnlyFromClient() throws Exception {
         startGrids(1);
-        startGrid("client");
+        startClientGrid("client");
 
         grid(0).cluster().state(ACTIVE);
 

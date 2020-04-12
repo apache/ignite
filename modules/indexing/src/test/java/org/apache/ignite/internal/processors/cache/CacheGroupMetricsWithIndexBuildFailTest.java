@@ -39,11 +39,9 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.INDEX_REBUILDING_PARALLELISM;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -59,17 +57,13 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration().setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024))
             )
-        );
-
-        cfg.setIndexingSpi(new TestIndexingSpi());
-
-        return cfg;
+            .setIndexingSpi(new TestIndexingSpi())
+            .setBuildIndexThreadPoolSize(4);
     }
 
     /**
@@ -100,7 +94,6 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
     /** */
     @Test
-    @WithSystemProperty(key = INDEX_REBUILDING_PARALLELISM, value = "4")
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 

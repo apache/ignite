@@ -45,9 +45,6 @@ import org.junit.Test;
  */
 public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private int selectors;
 
     /** {@inheritDoc} */
@@ -62,8 +59,6 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
-
-        cfg.setClientMode(client);
 
         if (sslEnabled())
             cfg.setSslContextFactory(GridTestUtils.sslFactory());
@@ -116,9 +111,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(SRVS);
 
-            client = true;
-
-            final Ignite client = startGrid(SRVS);
+            final Ignite client = startClientGrid(SRVS);
 
             for (int i = 0; i < SRVS; i++) {
                 ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
@@ -210,10 +203,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         try {
             startGridsMultiThreaded(5);
-
-            client = true;
-
-            startGridsMultiThreaded(5, 5);
+            startClientGridsMultiThreaded(5, 5);
 
             for (int i = 0; i < 5; i++) {
                 log.info("Iteration: " + i);

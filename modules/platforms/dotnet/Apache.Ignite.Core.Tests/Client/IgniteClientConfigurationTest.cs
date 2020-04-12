@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSchemaValidation()
         {
-            var xml = File.ReadAllText("Config\\Client\\IgniteClientConfiguration.xml");
+            var xml = File.ReadAllText(Path.Combine("Config", "Client", "IgniteClientConfiguration.xml"));
             var xmlns = "http://ignite.apache.org/schema/dotnet/IgniteClientConfigurationSection";
             var schemaFile = "IgniteClientConfigurationSection.xsd";
 

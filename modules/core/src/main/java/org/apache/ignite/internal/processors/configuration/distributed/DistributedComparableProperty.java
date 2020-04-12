@@ -23,7 +23,7 @@ import java.util.Objects;
 /**
  * Implementation of {@link DistributedProperty} for {@link Comparable}.
  */
-public class DistributedComparableProperty<T extends Comparable<T> & Serializable> extends DistributedProperty<T> {
+public class DistributedComparableProperty<T extends Comparable<T> & Serializable> extends SimpleDistributedProperty<T> {
 
     /** {@inheritDoc} */
     DistributedComparableProperty(String name) {

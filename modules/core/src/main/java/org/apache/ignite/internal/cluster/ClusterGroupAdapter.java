@@ -44,6 +44,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteEventsImpl;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteMessagingImpl;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -769,7 +770,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         private boolean clients;
 
         /** Injected Ignite instance. */
-        private transient IgniteKernal ignite;
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
 
         /**
          * @param cacheName Cache name.
@@ -799,13 +801,6 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 return true;
 
             return false;
-        }
-
-        /** */
-        @IgniteInstanceResource
-        private void ignite(Ignite ignite) {
-            if (ignite != null)
-                this.ignite = ignite instanceof IgniteKernal ? (IgniteKernal)ignite : IgnitionEx.gridx(ignite.name());
         }
     }
 

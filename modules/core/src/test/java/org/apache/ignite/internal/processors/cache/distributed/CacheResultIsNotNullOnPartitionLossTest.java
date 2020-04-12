@@ -58,9 +58,6 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     /** Number of cache entries to insert into the test cache. */
     private static final int CACHE_ENTRIES_CNT = 60;
 
-    /** True if {@link #getConfiguration(String)} is expected to configure client node on next invocations. */
-    private boolean isClient;
-
     /** Client Ignite instance. */
     private IgniteEx client;
 
@@ -79,9 +76,6 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
                 .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
         );
 
-        if (isClient)
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -98,9 +92,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
         for (Integer i : list)
             startGrid(i);
 
-        isClient = true;
-
-        client = startGrid(CLIENT_IDX);
+        client = startClientGrid(CLIENT_IDX);
 
         try (IgniteDataStreamer<Integer, Integer> dataStreamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
             dataStreamer.allowOverwrite(true);

@@ -45,16 +45,11 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     private static final IgnitePredicate<ClusterNode> CLIENT_FILTER = (IgnitePredicate<ClusterNode>)ClusterNode::isClient;
 
     /** */
-    private static boolean client;
-
-    /** */
     private static ServiceConfiguration srvcCfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         if (srvcCfg != null)
             cfg.setServiceConfiguration(srvcCfg);
@@ -70,7 +65,6 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        client = false;
         srvcCfg = null;
 
         cleanPersistenceDir();
@@ -152,10 +146,8 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
         for (int i = 0; i < srvsNum; i++)
             startGrid(i);
 
-        client = true;
-
         for (int i = 0; i < clientsNum; i++)
-            startGrid(srvsNum + i);
+            startClientGrid(srvsNum + i);
 
         Ignite ignite = grid(0);
 

@@ -48,10 +48,9 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -63,20 +62,6 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -355,9 +340,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
                     Thread.sleep(10);
 
-                    client = true;
-
-                    Ignite cl = startGrid("client0");
+                    Ignite cl = startClientGrid("client0");
 
                     IgniteCache<Object, Object> atomicCache = cl.cache(CACHE_NAME_PREFIX + '0');
                     IgniteCache<Object, Object> txCache = cl.cache(CACHE_NAME_PREFIX + '1');

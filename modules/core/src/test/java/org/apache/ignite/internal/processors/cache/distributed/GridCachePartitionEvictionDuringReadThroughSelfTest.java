@@ -91,8 +91,7 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
         final AtomicBoolean done = new AtomicBoolean();
 
         IgniteInternalFuture<Long> gridAndCacheAccessFut = GridTestUtils.runMultiThreadedAsync(new Callable<Integer>() {
-            @Override
-            public Integer call() throws Exception {
+            @Override public Integer call() throws Exception {
                 final Set<Integer> keysSet = new LinkedHashSet<>();
 
                 keysSet.add(1);

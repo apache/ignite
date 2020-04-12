@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * Thin Client connection context.
@@ -62,11 +63,15 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.6.0. Added: Expiration Policy configuration. */
     public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
 
+    /** Version 1.7.0. Added: User attributes support. */
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_6_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_7_0,
         VER_1_6_0,
         VER_1_5_0,
         VER_1_4_0,
@@ -151,12 +156,16 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
         boolean hasMore;
 
         String user = null;
         String pwd = null;
+
+        if (ver.compareTo(VER_1_7_0) >= 0)
+            userAttrs = reader.readMap();
 
         if (ver.compareTo(VER_1_1_0) >= 0) {
             try {
@@ -172,7 +181,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(user, pwd);
+        AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
 
         currentVer = ver;
 

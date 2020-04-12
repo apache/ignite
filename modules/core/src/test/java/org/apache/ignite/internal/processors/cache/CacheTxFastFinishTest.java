@@ -50,9 +50,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class CacheTxFastFinishTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private boolean nearCache;
 
     /** {@inheritDoc} */
@@ -70,8 +67,6 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
             ccfg.setNearConfiguration(new NearCacheConfiguration());
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -111,14 +106,10 @@ public class CacheTxFastFinishTest extends GridCommonAbstractTest {
 
         fastFinishTx(ignite(0));
 
-        client = true;
-
-        startGrid(1);
+        startClientGrid(1);
 
         for (int i = 0; i < 2; i++)
             fastFinishTx(ignite(i));
-
-        client = false;
 
         startGrid(2);
 

@@ -17,17 +17,11 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessControlException;
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -110,13 +104,15 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
     /** */
     @Test
     public void testDoPrivilegedIgniteCallable() throws Exception {
-        checkCallable(clientCompute(), callable("TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC));
+        checkCallable(clientCompute(),
+            callable(srcTmpDir, "TestDoPrivilegedIgniteCallable", CALLABLE_DO_PRIVELEGED_SRC));
     }
 
     /** */
     @Test
     public void testSecurityUtilsCallable() throws Exception {
-        checkCallable(clientCompute(), callable("TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC));
+        checkCallable(clientCompute(),
+            callable(srcTmpDir, "TestSecurityUtilsCallable", CALLABLE_SECURITY_UTILS_SRC));
     }
 
     /** */
@@ -143,32 +139,6 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
         assertEquals(System.getProperty("user.home"), c.call());
 
         assertThrowsWithCause(() -> compute.broadcast(c), AccessControlException.class);
-    }
-
-    /** */
-    IgniteCallable<String> callable(String clsName, String src) {
-        try {
-            Files.createDirectories(srcTmpDir);
-
-            File srcFile = new File(srcTmpDir.toFile(), clsName + ".java");
-
-            Path srcFilePath = Files.write(srcFile.toPath(), src.getBytes(StandardCharsets.UTF_8));
-
-            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-
-            compiler.run(null, null, null, srcFilePath.toString());
-
-            assertTrue("Failed to remove source file.", srcFile.delete());
-
-            URLClassLoader clsLdr = new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
-
-            Class<?> cls = clsLdr.loadClass(clsName);
-
-            return (IgniteCallable<String>)cls.newInstance();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /** */

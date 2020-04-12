@@ -56,9 +56,6 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
         return params;
     }
 
-    /** Client mode. */
-    private boolean clientMode;
-
     /** Persistence enabled. */
     @Parameterized.Parameter
     public boolean persistenceEnabled;
@@ -68,8 +65,6 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         if (persistenceEnabled)
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -122,9 +117,7 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
         if (persistenceEnabled)
             crd.cluster().active(true);
 
-        clientMode = true;
-
-        startGrid(3);
+        startClientGrid(3);
 
         crd.getOrCreateCaches(Lists.newArrayList(
             onlyOnNode(0),
@@ -153,9 +146,7 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
         if (persistenceEnabled)
             otherNode.cluster().active(true);
 
-        clientMode = true;
-
-        startGrid(3);
+        startClientGrid(3);
 
         otherNode.getOrCreateCaches(Lists.newArrayList(
             onlyOnNode(0),
@@ -182,9 +173,7 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
         if (persistenceEnabled)
             crd.cluster().active(true);
 
-        clientMode = true;
-
-        IgniteEx clientNode = startGrid(3);
+        IgniteEx clientNode = startClientGrid(3);
 
         clientNode.getOrCreateCaches(Lists.newArrayList(
             onlyOnNode(0),
@@ -205,15 +194,11 @@ public class CacheConfigurationSerializationOnExchangeTest extends GridCommonAbs
      * Restart nodes and check caches.
      */
     private void restartNodesAndCheck() throws Exception {
-        clientMode = false;
-
         stopAllGrids();
 
         startGridsMultiThreaded(3);
 
-        clientMode = true;
-
-        startGrid(3);
+        startClientGrid(3);
 
         awaitPartitionMapExchange();
 

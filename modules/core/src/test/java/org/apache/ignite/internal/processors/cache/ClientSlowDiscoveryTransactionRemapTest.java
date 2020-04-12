@@ -371,8 +371,6 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
     /** */
     @Before
     public void before() throws Exception {
-        clientMode = true;
-
         NodeJoinInterceptingDiscoverySpi clientDiscoSpi = new NodeJoinInterceptingDiscoverySpi();
 
         clientDiscoSpiBlock = new CountDownLatch(1);
@@ -385,14 +383,14 @@ public class ClientSlowDiscoveryTransactionRemapTest extends ClientSlowDiscovery
 
         discoverySpiSupplier = () -> clientDiscoSpi;
 
-        clnt = startGrid(1);
+        clnt = startClientGrid(1);
 
         for (int k = 0; k < 64; k++)
             clnt.cache(CACHE_NAME).put(k, 0);
 
         discoverySpiSupplier = TcpDiscoverySpi::new;
 
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /** */

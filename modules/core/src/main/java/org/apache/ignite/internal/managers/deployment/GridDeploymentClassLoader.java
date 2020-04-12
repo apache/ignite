@@ -47,6 +47,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
+
 /**
  * Class loader that is able to resolve task subclasses and resources
  * by requesting remote node. Every class that could not be resolved
@@ -61,6 +63,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
     static {
         Permissions perms = new Permissions();
+
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE));
+        perms.add(new RuntimePermission("accessClassInPackage." + IGNITE_INTERNAL_PACKAGE + ".*"));
 
         perms.setReadOnly();
 

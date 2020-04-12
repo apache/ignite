@@ -47,9 +47,13 @@ import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -81,7 +85,7 @@ import static org.apache.ignite.internal.processors.platform.client.ClientConnec
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "WeakerAccess"})
+@SuppressWarnings({"unchecked", "WeakerAccess", "rawtypes"})
 public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_CLEAR = 1;
@@ -352,6 +356,21 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_SIZE_LONG_LOC = 92;
+
+    /** */
+    public static final int OP_ENABLE_STATISTICS = 93;
+
+    /** */
+    public static final int OP_CLEAR_STATISTICS = 94;
+
+    /** */
+    private static final int OP_PUT_WITH_PLATFORM_CACHE = 95;
+    
+    /** */
+    private static final int OP_RESERVE_PARTITION = 96;
+
+    /** */
+    private static final int OP_RELEASE_PARTITION = 97;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -814,6 +833,17 @@ public class PlatformCache extends PlatformAbstractTarget {
                         return part != null ? cache.localSizeLong(part, modes) : cache.localSizeLong(modes);
 
                 }
+
+                case OP_PUT_WITH_PLATFORM_CACHE:
+                    platformCtx.enableThreadLocalForPlatformCacheUpdate();
+
+                    try {
+                        cache.put(reader.readObjectDetached(), reader.readObjectDetached());
+                    } finally {
+                        platformCtx.disableThreadLocalForPlatformCacheUpdate();
+                    }
+
+                    return TRUE;
             }
         }
         catch (Exception e) {
@@ -1175,6 +1205,33 @@ public class PlatformCache extends PlatformAbstractTarget {
                 cache.preloadPartition((int)val);
 
                 return TRUE;
+
+            case OP_ENABLE_STATISTICS:
+                cache.enableStatistics(val == TRUE);
+
+                return TRUE;
+
+            case OP_CLEAR_STATISTICS:
+                cache.clearStatistics();
+
+                return TRUE;
+
+            case OP_RESERVE_PARTITION: {
+                GridDhtLocalPartition locPart = getLocalPartition((int)val);
+
+                return locPart != null && locPart.reserve() ? TRUE : FALSE;
+            }
+
+            case OP_RELEASE_PARTITION: {
+                GridDhtLocalPartition locPart = getLocalPartition((int)val);
+
+                if (locPart != null) {
+                    locPart.release();
+                    return TRUE;
+                }
+
+                return FALSE;
+            }
         }
         return super.processInLongOutLong(type, val);
     }
@@ -1600,6 +1657,25 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeDouble(metrics.averageTime());
         writer.writeInt(metrics.executions());
         writer.writeInt(metrics.fails());
+    }
+
+    /**
+     * Gets local partition.
+     *
+     * @param part Partition id.
+     * @return Partition when local, null otherwise.
+     */
+    private GridDhtLocalPartition getLocalPartition(int part) throws IgniteCheckedException {
+        GridCacheContext cctx = cache.context();
+
+        if (part < 0 || part >= cctx.affinity().partitions())
+            throw new IgniteCheckedException("Invalid partition number: " + part);
+
+        GridDhtPartitionTopology top = cctx.topology();
+
+        AffinityTopologyVersion ver = top.readyTopologyVersion();
+
+        return top.localPartition(part, ver, false);
     }
 
     /**

@@ -74,7 +74,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
             }
         });
 
-        final Ignite client = startGrid(getConfiguration().setClientMode(true));
+        final Ignite client = startClientGrid(getConfiguration());
 
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 

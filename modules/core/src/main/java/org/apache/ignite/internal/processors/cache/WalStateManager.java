@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -69,6 +69,8 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
 
 /**
  * Write-ahead log state manager. Manages WAL enable and disable.
@@ -289,13 +291,28 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Change WAL mode.
+     *
+     * @param cacheNames Cache names.
+     * @param enabled Enabled flag.
+     * @return Future completed when operation finished.
+     */
+    public IgniteInternalFuture<Boolean> changeWalMode(Collection<String> cacheNames, boolean enabled) {
+        cctx.tm().checkEmptyTransactions(() ->
+            String.format("Cache WAL mode cannot be changed within lock or transaction " +
+                    "[cacheNames=%s, walEnabled=%s]", cacheNames, enabled));
+
+        return init(cacheNames, enabled);
+    }
+
+    /**
      * Initiate WAL mode change operation.
      *
      * @param cacheNames Cache names.
      * @param enabled Enabled flag.
      * @return Future completed when operation finished.
      */
-    public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
+    private IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
         if (!enabled && prohibitDisabling)
             return errorFuture("WAL disabling is prohibited.");
 
@@ -455,7 +472,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         try {
             if (hasNonEmptyOwning && !grpsToEnableWal.isEmpty())
-                triggerCheckpoint("wal-local-state-change-" + topVer).finishFuture().get();
+                triggerCheckpoint("wal-local-state-change-" + topVer).futureFor(FINISHED).get();
         }
         catch (IgniteCheckedException ex) {
             throw new IgniteException(ex);
@@ -501,12 +518,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Pending updates in groups with disabled WAL are not protected from crash.
             // Need to trigger checkpoint for attempt to persist them.
-            CheckpointFuture cpFut = triggerCheckpoint("wal-local-state-changed-rebalance-finished-" + topVer);
+            CheckpointProgress cpFut = triggerCheckpoint("wal-local-state-changed-rebalance-finished-" + topVer);
 
             assert cpFut != null;
 
             // It's safe to switch partitions to owning state only if checkpoint was successfully finished.
-            cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
+            cpFut.futureFor(FINISHED).listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) {
                     if (X.hasCause(future.error(), NodeStoppingException.class))
                         return;
@@ -671,12 +688,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         res = new WalStateResult(msg, false);
                     else {
                         // Initiate a checkpoint.
-                        CheckpointFuture cpFut = triggerCheckpoint("wal-state-change-grp-" + msg.groupId());
+                        CheckpointProgress cpFut = triggerCheckpoint("wal-state-change-grp-" + msg.groupId());
 
                         if (cpFut != null) {
                             try {
                                 // Wait for checkpoint mark synchronously before releasing the control.
-                                cpFut.beginFuture().get();
+                                cpFut.futureFor(LOCK_RELEASED).get();
 
                                 if (msg.enable()) {
                                     grpCtx.globalWalEnabled(true);
@@ -1065,7 +1082,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      * @return Checkpoint future or {@code null} if failed to get checkpointer.
      */
-    @Nullable private CheckpointFuture triggerCheckpoint(String msg) {
+    @Nullable private CheckpointProgress triggerCheckpoint(String msg) {
         return cctx.database().forceCheckpoint(msg);
     }
 
@@ -1076,14 +1093,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Orignial message which triggered the process.
      * @return Result.
      */
-    private WalStateResult awaitCheckpoint(CheckpointFuture cpFut, WalStateProposeMessage msg) {
+    private WalStateResult awaitCheckpoint(CheckpointProgress cpFut, WalStateProposeMessage msg) {
         WalStateResult res;
 
         try {
             assert msg.affinityNode();
 
             if (cpFut != null)
-                cpFut.finishFuture().get();
+                cpFut.futureFor(FINISHED).get();
 
             res = new WalStateResult(msg, true);
         }
@@ -1139,14 +1156,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         private final WalStateProposeMessage msg;
 
         /** Checkpoint future. */
-        private final CheckpointFuture cpFut;
+        private final CheckpointProgress cpFut;
 
         /**
          * Constructor.
          *
          * @param msg Propose message.
          */
-        private WalStateChangeWorker(WalStateProposeMessage msg, CheckpointFuture cpFut) {
+        private WalStateChangeWorker(WalStateProposeMessage msg, CheckpointProgress cpFut) {
             super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
 
             this.msg = msg;

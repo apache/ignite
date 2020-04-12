@@ -95,9 +95,7 @@
         <module>modules/ml</module>
         <module>modules/ml/spark-model-parser</module>
         <module>modules/ml/xgboost-model-parser</module>
-        <module>modules/ml/tensorflow-model-parser</module>
         <module>modules/ml/h2o-model-parser</module>
-        <module>modules/tensorflow</module>
         <module>modules/opencensus</module>
     </modules>
 
@@ -121,7 +119,6 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
-                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
@@ -559,7 +556,6 @@
             </activation>
 
             <modules>
-                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
                 <module>modules/visor-console</module>
@@ -569,9 +565,13 @@
 
         <profile>
             <id>spark-2.4</id>
+
+            <activation>
+                <property><name>!scala-2.10</name></property>
+            </activation>
+
             <modules>
                 <module>modules/spark-2.4</module>
-                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar</module>
             </modules>
         </profile>

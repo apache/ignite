@@ -179,7 +179,8 @@ public class TxLog implements DbCheckpointListener {
                     reuseListRoot,
                     isNew,
                     txLogReuseListLockLsnr,
-                    ctx
+                    ctx,
+                    null
                 );
 
                 tree = new TxLogTree(

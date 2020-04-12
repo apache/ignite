@@ -70,17 +70,11 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
 
-    /** */
-    private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
-
-        if (igniteInstanceName.equals(NO_CACHE_IGNITE_INSTANCE_NAME))
-            cfg.setClientMode(true);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 

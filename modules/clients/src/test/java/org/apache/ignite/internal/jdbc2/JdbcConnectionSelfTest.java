@@ -45,9 +45,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** Daemon node flag. */
     private boolean daemon;
 
-    /** Client node flag. */
-    private boolean client;
-
     /**
      * @return Config URL to use in test.
      */
@@ -62,8 +59,6 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration(CUSTOM_CACHE_NAME));
 
         cfg.setDaemon(daemon);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -150,9 +145,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClientNodeId() throws Exception {
-        client = true;
-
-        IgniteEx client = (IgniteEx)startGrid();
+        IgniteEx client = startClientGrid();
 
         UUID clientId = client.localNode().id();
 

@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
+import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
@@ -35,8 +37,6 @@ import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.tree.randomforest.RandomForestClassifierTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
-import org.apache.ignite.ml.util.MLSandboxDatasets;
-import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Example represents a solution for the task of wine classification based on a

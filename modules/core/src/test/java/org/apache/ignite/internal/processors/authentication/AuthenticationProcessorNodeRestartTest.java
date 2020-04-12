@@ -54,9 +54,6 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestIgniteInstanceIndex(igniteInstanceName) == CLI_NODE)
-            cfg.setClientMode(true);
-
         cfg.setAuthenticationEnabled(true);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -87,7 +84,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
-        startGrids(NODES_COUNT);
+        startGrids(NODES_COUNT - 1);
+        startClientGrid(CLI_NODE);
 
         grid(0).cluster().active(true);
 

@@ -38,6 +38,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -1832,26 +1833,46 @@ public class GridToStringBuilder {
      * @param col Collection of integers.
      * @return Compacted string representation of given collections.
      */
-    public static String compact(@NotNull Collection<Integer> col) {
+    public static String compact(Collection<Integer> col) {
+        return compact(col, i -> i + 1);
+    }
+
+    /**
+     * Returns sorted and compacted string representation of given {@code col}.
+     * Two nearby numbers are compacted to one continuous segment.
+     * E.g. collection of [1, 2, 3, 5, 6, 7, 10] with
+     * {@code nextValFun = i -> i + 1} will be compacted to [1-3, 5-7, 10].
+     *
+     * @param col Collection of numbers.
+     * @param nextValFun Function to get nearby number.
+     * @return Compacted string representation of given collections.
+     */
+    public static <T extends Number & Comparable<? super T>> String compact(
+        Collection<T> col,
+        Function<T, T> nextValFun
+    ) {
+        assert nonNull(col);
+        assert nonNull(nextValFun);
+
         if (col.isEmpty())
             return "[]";
 
         SB sb = new SB();
         sb.a('[');
 
-        List<Integer> l = new ArrayList<>(col);
+        List<T> l = new ArrayList<>(col);
         Collections.sort(l);
 
-        int left = l.get(0), right = left;
+        T left = l.get(0), right = left;
         for (int i = 1; i < l.size(); i++) {
-            int val = l.get(i);
+            T val = l.get(i);
 
-            if (right == val || right + 1 == val) {
+            if (right.compareTo(val) == 0 || nextValFun.apply(right).compareTo(val) == 0) {
                 right = val;
                 continue;
             }
 
-            if (left == right)
+            if (left.compareTo(right) == 0)
                 sb.a(left);
             else
                 sb.a(left).a('-').a(right);
@@ -1861,7 +1882,7 @@ public class GridToStringBuilder {
             left = right = val;
         }
 
-        if (left == right)
+        if (left.compareTo(right) == 0)
             sb.a(left);
         else
             sb.a(left).a('-').a(right);

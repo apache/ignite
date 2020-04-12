@@ -46,7 +46,7 @@ public class H2IndexesSystemViewTest extends GridCommonAbstractTest {
     public void testIndexesView() throws Exception {
         IgniteEx srv = startGrid(getConfiguration());
 
-        IgniteEx client = startGrid(getConfiguration().setClientMode(true).setIgniteInstanceName("CLIENT"));
+        IgniteEx client = startClientGrid(getConfiguration().setIgniteInstanceName("CLIENT"));
 
         execSql("CREATE TABLE PUBLIC.AFF_CACHE (ID1 INT, ID2 INT, GEOM GEOMETRY, PRIMARY KEY (ID1))");
 

@@ -163,7 +163,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
     public void testRejectCacheStartOnClientDuringRotation() throws Exception {
         IgniteEx srv = startGrid(GRID_0);
 
-        IgniteEx client = startGrid(getConfiguration("client").setClientMode(true));
+        IgniteEx client = startClientGrid(getConfiguration("client"));
 
         srv.cluster().active(true);
 

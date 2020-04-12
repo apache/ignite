@@ -62,6 +62,9 @@ public class CommonArgParser {
     /** */
     static final String CMD_PING_TIMEOUT = "--ping-timeout";
 
+    /** Verbose mode. */
+    public static final String CMD_VERBOSE = "--verbose";
+
     // SSL configuration section
 
     /** */
@@ -102,6 +105,7 @@ public class CommonArgParser {
         AUX_COMMANDS.add(CMD_USER);
 
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+        AUX_COMMANDS.add(CMD_VERBOSE);
 
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
@@ -140,6 +144,7 @@ public class CommonArgParser {
         list.add(optional(CMD_PASSWORD, "PASSWORD"));
         list.add(optional(CMD_PING_INTERVAL, "PING_INTERVAL"));
         list.add(optional(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+        list.add(optional(CMD_VERBOSE));
         list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
         list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
         list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
@@ -174,6 +179,8 @@ public class CommonArgParser {
         Long pingTimeout = DFLT_PING_TIMEOUT;
 
         boolean autoConfirmation = false;
+
+        boolean verbose = false;
 
         String sslProtocol = DFLT_SSL_PROTOCOL;
 
@@ -310,6 +317,10 @@ public class CommonArgParser {
 
                         break;
 
+                    case CMD_VERBOSE:
+                        verbose = true;
+                        break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
@@ -320,7 +331,7 @@ public class CommonArgParser {
             throw new IllegalArgumentException("No action was specified");
 
         return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
-                pingTimeout, pingInterval, autoConfirmation,
+                pingTimeout, pingInterval, autoConfirmation, verbose,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
                 sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);

@@ -31,6 +31,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -47,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,7 +56,11 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
+import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 
 /**
  *
@@ -81,16 +86,13 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheC != null ?
             cacheC.apply(igniteInstanceName) : new CacheConfiguration[] {cacheConfiguration()});
 
+        cfg.setClusterStateOnStart(ClusterState.INACTIVE);
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
 
-        if (persistence) {
-            drCfg.setPersistenceEnabled(true);
-
-            cfg.setActiveOnStart(false);
-            cfg.setAutoActivationEnabled(false);
-        }
+        drCfg.setPersistenceEnabled(persistence);
 
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
@@ -135,24 +137,54 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks Partition Exchange happen in case of baseline auto-adjust (in-memory cluster). It's not possible to
-     * perform switch since primaries may change.
+     * Checks PME happen in case of baseline auto-adjust (in-memory cluster). It's not possible to perform switch since
+     * primaries may change.
      */
     @Test
     public void testNonBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
-        testNodeLeftOnFullyRebalancedCluster();
+        testNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.NONE);
     }
 
     /**
-     * Checks Partition Exchange is absent in case of fixed baseline. It's possible to perform switch since primaries
-     * can't change.
+     * Checks PME is absent in case of fixed baseline. It's possible to perform switch since primaries can't change.
      */
     @Test
     public void testBaselineNodeLeftOnFullyRebalancedCluster() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.NONE);
+    }
+
+    /**
+     * Checks PME is absent/present with all nodes except first one supports PME-free switch.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledFirstNode() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.FIRST);
+    }
+
+    /**
+     * Checks PME is absent/present with all nodes except midlle one supports PME-free switch.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledMiddleNode() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.MIDDLE);
+    }
+
+    /**
+     * Checks PME is absent/present with all nodes except last one supports PME-free switch.
+     */
+    @Test
+    public void testBaselineNodeLeftOnFullyRebalancedClusterPmeFreeDisabledLastNode() throws Exception {
+        testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode.LAST);
+    }
+
+    /**
+     * Checks PME is absent/present in case of persistence enabled.
+     */
+    private void testBaselineNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode order) throws Exception {
         persistence = true;
 
         try {
-            testNodeLeftOnFullyRebalancedCluster();
+            testNodeLeftOnFullyRebalancedCluster(order);
         }
         finally {
             persistence = false;
@@ -160,35 +192,74 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Starts node with PME-free feature explicitly disabled.
+     */
+    private void startNodeWithPmeFreeSwitchDisabled() throws Exception {
+        try {
+            System.setProperty(IGNITE_PME_FREE_SWITCH_DISABLED, "true");
+
+            Ignite ignite = startGrid(G.allGrids().size());
+
+            assertFalse(nodeSupports(ignite.cluster().localNode(), PME_FREE_SWITCH));
+        }
+        finally {
+            System.clearProperty(IGNITE_PME_FREE_SWITCH_DISABLED);
+        }
+    }
+
+    /**
      * Checks node left PME absent/present on fully rebalanced topology (Latest PME == LAA).
      */
-    private void testNodeLeftOnFullyRebalancedCluster() throws Exception {
+    private void testNodeLeftOnFullyRebalancedCluster(PmeFreeSwitchDisabledNode disabled) throws Exception {
         int nodes = 10;
 
-        Ignite ignite = startGridsMultiThreaded(nodes, true);
+        switch (disabled) {
+            case FIRST:
+                startNodeWithPmeFreeSwitchDisabled();
 
-        ignite.cluster().active(true);
+                startGridsMultiThreaded(1, nodes - 1);
 
-        AtomicLong cnt = new AtomicLong();
+                break;
 
-        for (int i = 0; i < nodes; i++) {
-            TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+            case MIDDLE:
+                startGridsMultiThreaded(0, (nodes / 2) - 1);
 
-            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message msg) {
-                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                        cnt.incrementAndGet();
+                startNodeWithPmeFreeSwitchDisabled();
 
-                    if (!persistence)
-                        return false;
+                int started = G.allGrids().size();
 
-                    return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                        msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                }
-            });
+                startGridsMultiThreaded(started, nodes - started);
+
+                break;
+
+            case LAST:
+                startGridsMultiThreaded(0, nodes - 1);
+
+                startNodeWithPmeFreeSwitchDisabled();
+
+                break;
+
+            case NONE:
+                startGridsMultiThreaded(0, nodes);
+
+                break;
+
+            default:
+                throw new UnsupportedOperationException();
         }
+
+        assertEquals(nodes, G.allGrids().size());
+
+        assertEquals(ClusterState.INACTIVE, grid(0).cluster().state());
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        awaitPartitionMapExchange();
+
+        AtomicLong singleCnt = new AtomicLong();
+        AtomicLong fullCnt = new AtomicLong();
+
+        startPmeMessagesCounting(nodes, singleCnt, fullCnt);
 
         Random r = new Random();
 
@@ -197,13 +268,41 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange(true, true, null, true);
 
-            assertEquals(persistence ? 0 /*PME absent*/ : (nodes - 1) /*regular PME*/, cnt.get());
-
             IgniteEx alive = (IgniteEx)G.allGrids().get(0);
 
             assertTrue(alive.context().cache().context().exchange().lastFinishedFuture().rebalanced());
 
-            cnt.set(0);
+            boolean pmeFreeSwitch = persistence && allNodesSupports(alive.cluster().nodes(), PME_FREE_SWITCH);
+
+            assertEquals(pmeFreeSwitch ? 0 : (nodes - 1), singleCnt.get());
+            assertEquals(pmeFreeSwitch ? 0 : (nodes - 1), fullCnt.get());
+
+            singleCnt.set(0);
+            fullCnt.set(0);
+        }
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param signleCnt Counter for GridDhtPartitionsSingleMessage.
+     * @param fullCnt Counter for GridDhtPartitionsFullMessage.
+     */
+    private void startPmeMessagesCounting(int nodes, AtomicLong signleCnt, AtomicLong fullCnt) {
+        for (int i = 0; i < nodes; i++) {
+            TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+            spi.closure(new IgniteBiInClosure<ClusterNode, Message>() {
+                @Override public void apply(ClusterNode node, Message msg) {
+                    if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        signleCnt.incrementAndGet();
+
+                    if (msg.getClass().equals(GridDhtPartitionsFullMessage.class) &&
+                        ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
+                        fullCnt.incrementAndGet();
+                }
+            });
         }
     }
 
@@ -258,25 +357,12 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             int nodes = 4;
 
-            startGridsMultiThreaded(nodes, true).cluster().active(true);
+            startGridsMultiThreaded(nodes);
 
-            AtomicLong cnt = new AtomicLong();
+            AtomicLong singleCnt = new AtomicLong();
+            AtomicLong fullCnt = new AtomicLong();
 
-            for (int i = 0; i < nodes; i++) {
-                TestRecordingCommunicationSpi spi =
-                    (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-
-                spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                    @Override public boolean apply(ClusterNode node, Message msg) {
-                        if (msg.getClass().equals(GridDhtPartitionsSingleMessage.class) &&
-                            ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null)
-                            cnt.incrementAndGet();
-
-                        return msg.getClass().equals(GridDhtPartitionsSingleMessage.class) ||
-                            msg.getClass().equals(GridDhtPartitionsFullMessage.class);
-                    }
-                });
-            }
+            startPmeMessagesCounting(nodes, singleCnt, fullCnt);
 
             Random r = new Random();
 
@@ -457,7 +543,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             assertEquals(nodes - 1, pmeFreeCnt);
 
-            assertEquals(0, cnt.get());
+            assertEquals(0, singleCnt.get());
+            assertEquals(0, fullCnt.get());
         }
         finally {
             persistence = false;
@@ -598,5 +685,22 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             return res;
         }
+    }
+
+    /**
+     * Specifies node to start with IGNITE_PME_FREE_SWITCH_DISABLED JVM option.
+     */
+    private enum PmeFreeSwitchDisabledNode {
+        /** First. */
+        FIRST,
+
+        /** Middle. */
+        MIDDLE,
+
+        /** Last. */
+        LAST,
+
+        /** None. */
+        NONE
     }
 }

@@ -1472,7 +1472,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd.isQuery()) {
+        if (err == null && hnd.isQuery()) {
             GridCacheProcessor proc = ctx.cache();
 
             if (proc != null) {

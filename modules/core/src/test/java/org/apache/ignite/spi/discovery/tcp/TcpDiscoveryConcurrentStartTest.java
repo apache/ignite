@@ -32,16 +32,11 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int TOP_SIZE = 3;
 
-    /** */
-    private static volatile boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration();
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -49,11 +44,6 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return Long.MAX_VALUE;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        client = false;
     }
 
     /**
@@ -78,17 +68,13 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     public void testConcurrentStartClients() throws Exception {
         for (int i = 0; i < 20; i++) {
             try {
-                client = false;
-
                 startGrid(0);
-
-                client = true;
 
                 final AtomicInteger gridIdx = new AtomicInteger(1);
 
                 GridTestUtils.runMultiThreaded(new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
-                            startGrid(gridIdx.getAndIncrement());
+                            startClientGrid(gridIdx.getAndIncrement());
 
                             return null;
                         }

@@ -19,10 +19,13 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PME_FREE_SWITCH_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
 /**
@@ -80,7 +83,20 @@ public enum IgniteFeatures {
     PME_FREE_SWITCH(19),
 
     /** Master key change. See {@link GridEncryptionManager#changeMasterKey(String)}. */
-    MASTER_KEY_CHANGE(20);
+    MASTER_KEY_CHANGE(20),
+
+    /** ContinuousQuery with security subject id support. */
+    CONT_QRY_SECURITY_AWARE(21),
+
+    /**
+     * Preventing loss of in-memory data when deactivating the cluster.
+     *
+     * @see ClusterState#INACTIVE
+     */
+    SAFE_CLUSTER_DEACTIVATION(22),
+
+    /** Long operations dump timeout. */
+    LONG_OPERATIONS_DUMP_TIMEOUT(30);
 
     /**
      * Unique feature identifier.
@@ -163,6 +179,9 @@ public enum IgniteFeatures {
         final BitSet set = new BitSet();
 
         for (IgniteFeatures value : IgniteFeatures.values()) {
+            if (value == PME_FREE_SWITCH && getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
+                continue;
+
             final int featureId = value.getFeatureId();
 
             assert !set.get(featureId) : "Duplicate feature ID found for [" + value + "] having same ID ["

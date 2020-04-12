@@ -17,18 +17,13 @@
 
 package org.apache.ignite.failure;
 
-import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
@@ -240,13 +235,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     private FailureHandlingMxBean getMBean() throws Exception {
-        ObjectName name = U.makeMBeanName(getTestIgniteInstanceName(0), "Kernal",
-            FailureHandlingMxBeanImpl.class.getSimpleName());
-
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-        assertTrue(srv.isRegistered(name));
-
-        return MBeanServerInvocationHandler.newProxyInstance(srv, name, FailureHandlingMxBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(0), "Kernal",
+            FailureHandlingMxBeanImpl.class, FailureHandlingMxBean.class);
     }
 }

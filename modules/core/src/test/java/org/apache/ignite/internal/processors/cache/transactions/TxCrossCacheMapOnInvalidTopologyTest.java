@@ -81,7 +81,6 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setClientMode("client".equals(igniteInstanceName));
         cfg.setCacheConfiguration(cacheConfiguration(CACHE1), cacheConfiguration(CACHE2).setRebalanceOrder(10));
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().setPageSize(1024).
@@ -151,7 +150,7 @@ public class TxCrossCacheMapOnInvalidTopologyTest extends GridCommonAbstractTest
 
             awaitPartitionMapExchange();
 
-            IgniteEx client = startGrid("client");
+            IgniteEx client = startClientGrid("client");
             assertNotNull(client.cache(CACHE1));
             assertNotNull(client.cache(CACHE2));
 

@@ -107,7 +107,6 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             sqlSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(sqlSpi);
-        cfg.setClientMode(igniteInstanceName.startsWith("client"));
 
         return cfg;
     }
@@ -405,6 +404,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "CACHE_GROUPS",
             "CACHES",
             "TASKS",
+            "JOBS",
             "SQL_QUERIES_HISTORY",
             "NODES",
             "SCHEMAS",
@@ -678,8 +678,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testScanQuery() throws Exception {
-        try(IgniteEx client1 = startGrid("client-1");
-            IgniteEx client2 = startGrid("client-2")) {
+        try(IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
 
             IgniteCache<Integer, Integer> cache1 = client1.createCache(
                 new CacheConfiguration<Integer, Integer>("cache1")

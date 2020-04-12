@@ -62,7 +62,7 @@ public class TxOnCachesStartTest extends GridCommonAbstractTest {
     public void testTransactionCloseOnCachesStartAndStop() throws Exception {
         Ignite srv =  startGrids(5);
 
-        IgniteEx client1 = startGrid(getConfiguration("client-1").setClientMode(true));
+        IgniteEx client1 = startClientGrid(getConfiguration("client-1"));
 
         srv.cluster().active(true);
 

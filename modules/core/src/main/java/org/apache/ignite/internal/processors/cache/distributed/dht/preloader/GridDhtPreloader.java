@@ -158,7 +158,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         if (!grp.affinity().cachedVersions().contains(rebTopVer)) {
             assert rebTopVer.compareTo(grp.localStartVersion()) <= 0 :
-                "Empty hisroty allowed only for newly started cache group [rebTopVer=" + rebTopVer +
+                "Empty history allowed only for newly started cache group [rebTopVer=" + rebTopVer +
                     ", localStartTopVer=" + grp.localStartVersion() + ']';
 
             return true; // Required, since no history info available.
@@ -202,7 +202,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partitions; p++) {
-            if (ctx.exchange().hasPendingExchange()) {
+            if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchId);
@@ -239,6 +239,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part.awaitDestroy();
 
                     part = top.localPartition(p, topVer, true);
+
+                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
+
+                    part.resetUpdateCounter();
                 }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;

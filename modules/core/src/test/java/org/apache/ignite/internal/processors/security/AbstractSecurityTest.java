@@ -25,8 +25,6 @@ import java.util.concurrent.TimeoutException;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
@@ -65,13 +63,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
         AbstractTestSecurityPluginProvider pluginProv) throws Exception {
 
         return getConfiguration(instanceName)
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setPersistenceEnabled(true)
-                    )
-            )
-            .setAuthenticationEnabled(true)
             .setPluginProviders(pluginProv);
     }
 

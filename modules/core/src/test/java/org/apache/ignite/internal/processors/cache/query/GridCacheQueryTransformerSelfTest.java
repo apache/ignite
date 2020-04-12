@@ -25,7 +25,6 @@ import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -60,15 +59,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-
-        try {
-            Ignition.setClientMode(true);
-
-            startGrid();
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        startClientGrid();
     }
 
     /**

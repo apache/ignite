@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils.IgniteRunnableX;
@@ -55,36 +56,21 @@ public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemot
 
         startClientAllowAll(CLNT_ENDPOINT);
 
-        G.allGrids().get(0).cluster().active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void setupVerifier(Verifier verifier) {
-        verifier
-            .expect(SRV_RUN, 1)
-            .expect(CLNT_RUN, 1)
-            .expect(SRV_CHECK, 2)
-            .expect(CLNT_CHECK, 2)
-            .expect(SRV_ENDPOINT, 4)
-            .expect(CLNT_ENDPOINT, 4);
+        G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
     @Test
     public void test() {
-        IgniteRunnableX operation = () -> {
-            VERIFIER.register();
+        runAndCheck((IgniteRunnableX)() -> {
+                Ignite loc = Ignition.localIgnite();
 
-            Ignite loc = Ignition.localIgnite();
+                for (UUID nodeId : nodesToCheckIds()) {
+                    ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
 
-            for (UUID nodeId : nodesToCheck()) {
-                ExecutorService svc = loc.executorService(loc.cluster().forNodeId(nodeId));
-
-                svc.submit((Runnable) createRunner()).get();
+                    svc.submit((Runnable)operationCheck()).get();
+                }
             }
-        };
-
-        runAndCheck(grid(SRV_INITIATOR), operation);
-        runAndCheck(grid(CLNT_INITIATOR), operation);
+        );
     }
 }

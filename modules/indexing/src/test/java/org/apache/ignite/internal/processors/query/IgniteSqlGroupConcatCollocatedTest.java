@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -63,14 +63,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
-
-        Ignition.setClientMode(true);
-        try {
-            startGrid(CLIENT);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        startClientGrid(CLIENT);
 
         IgniteCache c = grid(CLIENT).cache(CACHE_NAME);
 
@@ -119,6 +112,31 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
                     "[str=" + str + ", val=" + s , str.contains(s));
             }
         }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGroupConcatSeparator() {
+        IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
+
+        List<List<Object>> res = c.query(
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0 SEPARATOR '.') from Value WHERE id < ?  group by grp")
+                .setCollocated(true).setArgs(KEY_BASE_FOR_DUPLICATES)).getAll();
+
+        List<List<Object>> expRes = Arrays.asList(
+            Arrays.asList(1, "A"),
+            Arrays.asList(2, "C.B"),
+            Arrays.asList(3, "E.D.F"),
+            Arrays.asList(4, "J.G.I.H"),
+            Arrays.asList(5, "O.L.N.K.M"),
+            Arrays.asList(6, "Q.S.U.P.R.T"));
+
+        assertEquals(res.size(), expRes.size());
+
+        for (int i = 0; i < res.size(); i++)
+            assertEqualsCollections(expRes.get(i), res.get(i));
     }
 
     /**
