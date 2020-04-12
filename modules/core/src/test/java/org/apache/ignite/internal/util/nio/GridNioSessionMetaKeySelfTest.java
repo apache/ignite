@@ -33,7 +33,7 @@ public class GridNioSessionMetaKeySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNextRandomKey() throws Exception {
-        AtomicInteger keyGen = U.staticField(GridNioSessionMetaKey.class, "keyGen");
+        AtomicInteger keyGen = U.staticField(GridNioSessionMetaKey.class, "KEY_GEN");
 
         int initVal = keyGen.get();
 

@@ -164,7 +164,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
      * @throws Exception if something wrong.
      */
     private Set<String> igniteUtilsCachedClasses() throws Exception {
-        Field f = IgniteUtils.class.getDeclaredField("classCache");
+        Field f = IgniteUtils.class.getDeclaredField("CLASS_CACHE");
 
         f.setAccessible(true);
 
