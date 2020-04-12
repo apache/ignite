@@ -89,7 +89,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
     /** Manages first and last test execution. */
     @SuppressWarnings({"TransientFieldInNonSerializableClass"})
-    @ClassRule public static transient RuleChain firstLastTestRule
+    @ClassRule public static final transient RuleChain FIRST_LAST_TEST_RULE
         = RuleChain.outerRule(FIRST_LAST_TEST_RULE_SPI).around(GridAbstractTest.FIRST_LAST_TEST_RULE);
 
     /** */
