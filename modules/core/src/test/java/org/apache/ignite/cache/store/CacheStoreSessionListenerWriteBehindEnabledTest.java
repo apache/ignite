@@ -61,13 +61,13 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     private static final int WRITE_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** */
-    private static final List<OperationType> operations = Collections.synchronizedList(new ArrayList<OperationType>());
+    private static final List<OperationType> OPERATIONS = Collections.synchronizedList(new ArrayList<OperationType>());
 
     /** */
-    private static final AtomicInteger entryCnt = new AtomicInteger();
+    private static final AtomicInteger ENTRY_CNT = new AtomicInteger();
 
     /** */
-    private static final AtomicInteger uninitializedListenerCnt = new AtomicInteger();
+    private static final AtomicInteger UNINITIALIZED_LISTENER_CNT = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -106,11 +106,11 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        operations.clear();
+        OPERATIONS.clear();
 
-        entryCnt.set(0);
+        ENTRY_CNT.set(0);
 
-        uninitializedListenerCnt.set(0);
+        UNINITIALIZED_LISTENER_CNT.set(0);
     }
 
     /**
@@ -187,7 +187,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
             for (int i = 0; i < nUploaders; ++i)
                 uploaders[i].get();
 
-            assertEquals("Uninitialized cache store session listener.", 0, uninitializedListenerCnt.get());
+            assertEquals("Uninitialized cache store session listener.", 0, UNINITIALIZED_LISTENER_CNT.get());
         }
         finally {
             cache.destroy();
@@ -242,13 +242,13 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
             // Wait for GridCacheWriteBehindStore
             Thread.sleep(WRITE_BEHIND_FLUSH_FREQUENCY * 4);
 
-            assertEquals(CNT, entryCnt.get());
+            assertEquals(CNT, ENTRY_CNT.get());
 
-            assertEquals("Uninitialized cache store session listener.", 0, uninitializedListenerCnt.get());
+            assertEquals("Uninitialized cache store session listener.", 0, UNINITIALIZED_LISTENER_CNT.get());
 
-            checkOpCount(operations, OperationType.SESSION_START, startedSessions);
+            checkOpCount(OPERATIONS, OperationType.SESSION_START, startedSessions);
 
-            checkOpCount(operations, OperationType.SESSION_END, startedSessions);
+            checkOpCount(OPERATIONS, OperationType.SESSION_END, startedSessions);
         }
         catch (InterruptedException e) {
             throw new IgniteException("Failed to wait for the GridCacheWriteBehindStore due to interruption.", e);
@@ -304,7 +304,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
     public static class TestCacheStoreSessionListener extends CacheJdbcStoreSessionListener {
         /** {@inheritDoc} */
         @Override public void onSessionStart(CacheStoreSession ses) {
-            operations.add(OperationType.SESSION_START);
+            OPERATIONS.add(OperationType.SESSION_START);
 
             if (ses.attachment() == null)
                 ses.attach(new Object());
@@ -312,7 +312,7 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
 
         /** {@inheritDoc} */
         @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
-            operations.add(OperationType.SESSION_END);
+            OPERATIONS.add(OperationType.SESSION_END);
 
             ses.attach(null);
         }
@@ -331,40 +331,40 @@ public class CacheStoreSessionListenerWriteBehindEnabledTest extends GridCacheAb
 
         /** {@inheritDoc} */
         @Override public Object load(Object key) throws CacheLoaderException {
-            entryCnt.getAndIncrement();
+            ENTRY_CNT.getAndIncrement();
 
             if (ses.attachment() == null)
-                uninitializedListenerCnt.incrementAndGet();
+                UNINITIALIZED_LISTENER_CNT.incrementAndGet();
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
-            entryCnt.addAndGet(entries.size());
+            ENTRY_CNT.addAndGet(entries.size());
 
             if (ses.attachment() == null)
-                uninitializedListenerCnt.incrementAndGet();
+                UNINITIALIZED_LISTENER_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry entry) throws CacheWriterException {
             if (ses.attachment() == null)
-                uninitializedListenerCnt.incrementAndGet();
+                UNINITIALIZED_LISTENER_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void deleteAll(Collection<?> keys) {
-            entryCnt.addAndGet(keys.size());
+            ENTRY_CNT.addAndGet(keys.size());
 
             if (ses.attachment() == null)
-                uninitializedListenerCnt.incrementAndGet();
+                UNINITIALIZED_LISTENER_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
             if (ses.attachment() == null)
-                uninitializedListenerCnt.incrementAndGet();
+                UNINITIALIZED_LISTENER_CNT.incrementAndGet();
         }
     }
 

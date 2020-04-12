@@ -62,16 +62,16 @@ public class GridBasicPerformanceTest {
     private static final Random RAND = new Random();
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** Lock. */
-    private static final Lock lock = new ReentrantLock();
+    private static final Lock LOCK = new ReentrantLock();
 
     /** Condition. */
-    private static final Condition cond = lock.newCondition();
+    private static final Condition COND = LOCK.newCondition();
 
     /** */
-    private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private static final ReadWriteLock RW_LOCK = new ReentrantReadWriteLock();
 
     /** Test variable. */
     private static int n;
@@ -93,14 +93,14 @@ public class GridBasicPerformanceTest {
     };
 
     /** Map. */
-    private static final ConcurrentMap<Long, GridTuple<Integer>> map =
+    private static final ConcurrentMap<Long, GridTuple<Integer>> MAP =
         new ConcurrentHashMap<>();
 
     /**
      * Initialize per-thread map.
      */
     static {
-        map.put(Thread.currentThread().getId(), new GridTuple<>(0));
+        MAP.put(Thread.currentThread().getId(), new GridTuple<>(0));
     }
 
     /**
@@ -310,7 +310,7 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            synchronized (mux) {
+            synchronized (MUX) {
                 n += 2;
             }
         }
@@ -329,8 +329,8 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            synchronized (mux) {
-                synchronized (mux) {
+            synchronized (MUX) {
+                synchronized (MUX) {
                     n += 2;
                 }
             }
@@ -388,7 +388,7 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (long i = 0; i < MAX; i++) {
-            GridTuple<Integer> v = map.get(Thread.currentThread().getId());
+            GridTuple<Integer> v = MAP.get(Thread.currentThread().getId());
 
             v.set(v.get() + 2);
         }
@@ -408,10 +408,10 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            synchronized (mux) {
+            synchronized (MUX) {
                 n += 2;
 
-                mux.notifyAll();
+                MUX.notifyAll();
             }
         }
 
@@ -429,13 +429,13 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            lock.lock();
+            LOCK.lock();
 
             try {
                 n += 2;
             }
             finally {
-                lock.unlock();
+                LOCK.unlock();
             }
         }
 
@@ -453,13 +453,13 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            lock.tryLock();
+            LOCK.tryLock();
 
             try {
                 n += 2;
             }
             finally {
-                lock.unlock();
+                LOCK.unlock();
             }
         }
 
@@ -477,20 +477,20 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            lock.lock();
+            LOCK.lock();
 
             try {
-                lock.lock();
+                LOCK.lock();
 
                 try {
                     n += 2;
                 }
                 finally {
-                    lock.unlock();
+                    LOCK.unlock();
                 }
             }
             finally {
-                lock.unlock();
+                LOCK.unlock();
             }
         }
 
@@ -509,15 +509,15 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            lock.lock();
+            LOCK.lock();
 
             try {
                 n += 2;
 
-                cond.signalAll();
+                COND.signalAll();
             }
             finally {
-                lock.unlock();
+                LOCK.unlock();
             }
         }
 
@@ -535,13 +535,13 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            rwLock.readLock().lock();
+            RW_LOCK.readLock().lock();
 
             try {
                 n += 2;
             }
             finally {
-                rwLock.readLock().unlock();
+                RW_LOCK.readLock().unlock();
             }
         }
 
@@ -559,13 +559,13 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            rwLock.readLock().tryLock(200, TimeUnit.MILLISECONDS);
+            RW_LOCK.readLock().tryLock(200, TimeUnit.MILLISECONDS);
 
             try {
                 n += 2;
             }
             finally {
-                rwLock.readLock().unlock();
+                RW_LOCK.readLock().unlock();
             }
         }
 
@@ -583,13 +583,13 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            rwLock.readLock().lockInterruptibly();
+            RW_LOCK.readLock().lockInterruptibly();
 
             try {
                 n += 2;
             }
             finally {
-                rwLock.readLock().unlock();
+                RW_LOCK.readLock().unlock();
             }
         }
 
@@ -607,13 +607,13 @@ public class GridBasicPerformanceTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < MAX; i++) {
-            rwLock.writeLock().lock();
+            RW_LOCK.writeLock().lock();
 
             try {
                 n += 2;
             }
             finally {
-                rwLock.writeLock().unlock();
+                RW_LOCK.writeLock().unlock();
             }
         }
 

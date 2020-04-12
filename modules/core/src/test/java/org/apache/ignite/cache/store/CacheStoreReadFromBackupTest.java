@@ -50,7 +50,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "cache";
 
     /** */
-    private static final Map<Integer, String> storeMap = new ConcurrentHashMap<>();
+    private static final Map<Integer, String> STORE_MAP = new ConcurrentHashMap<>();
 
     /** */
     private CacheMode cacheMode = REPLICATED;
@@ -160,7 +160,7 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkReadSingleFromBackup() throws Exception {
-        storeMap.put(1, "val-1");
+        STORE_MAP.put(1, "val-1");
 
         IgniteCache<Integer, String> cache0 = grid(0).cache(CACHE_NAME);
         IgniteCache<Integer, String> cache1 = grid(1).cache(CACHE_NAME);
@@ -182,18 +182,18 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
      */
     private void checkReadAllFromBackup() throws Exception {
         for (int i = 0; i < 100; i++)
-            storeMap.put(i, String.valueOf(i));
+            STORE_MAP.put(i, String.valueOf(i));
 
         IgniteCache<Integer, String> cache0 = grid(0).cache(CACHE_NAME);
         IgniteCache<Integer, String> cache1 = grid(1).cache(CACHE_NAME);
 
-        assertEquals(storeMap.size(), cache0.getAll(storeMap.keySet()).size());
-        assertEquals(storeMap.size(), cache1.getAll(storeMap.keySet()).size());
+        assertEquals(STORE_MAP.size(), cache0.getAll(STORE_MAP.keySet()).size());
+        assertEquals(STORE_MAP.size(), cache1.getAll(STORE_MAP.keySet()).size());
 
         Affinity<Integer> aff = grid(0).affinity(CACHE_NAME);
         ClusterNode node0 = grid(0).cluster().localNode();
 
-        for (Integer key : storeMap.keySet()) {
+        for (Integer key : STORE_MAP.keySet()) {
             if (aff.isPrimary(node0, key)) {
                 assertNotNull(cache0.localPeek(key, PRIMARY));
                 assertNotNull(cache1.localPeek(key, BACKUP));
@@ -215,24 +215,24 @@ public class CacheStoreReadFromBackupTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, String> clo, Object... args) {
-            for (Map.Entry<Integer, String> e : storeMap.entrySet())
+            for (Map.Entry<Integer, String> e : STORE_MAP.entrySet())
                 clo.apply(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public String load(Integer key) {
-            return storeMap.get(key);
+            return STORE_MAP.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends String> entry) {
-            storeMap.put(entry.getKey(), entry.getValue());
+            STORE_MAP.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
         @Override public void delete(Object key) {
-            storeMap.remove(key);
+            STORE_MAP.remove(key);
         }
 
         /** {@inheritDoc} */

@@ -43,7 +43,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstractTest {
     /** Job counter. */
-    private static final AtomicInteger cntr = new AtomicInteger(0);
+    private static final AtomicInteger CNTR = new AtomicInteger(0);
 
     /** */
     private static final int GRID_CNT = 4;
@@ -133,7 +133,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
                         cache.put(key, arr);
 
-                        int c = cntr.getAndIncrement();
+                        int c = CNTR.getAndIncrement();
 
                         if (c % 50 == 0)
                             X.println("Executing transaction [i=" + i + ", c=" + c + ']');

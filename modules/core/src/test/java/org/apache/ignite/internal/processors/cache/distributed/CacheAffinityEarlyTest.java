@@ -44,10 +44,10 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
     private volatile boolean stopped;
 
     /** Iteration. */
-    private static final int iters = 10;
+    private static final int ITERS = 10;
 
     /** Concurrent. */
-    private static final boolean concurrent = true;
+    private static final boolean CONCURRENT = true;
 
     /** Futs. */
     private Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT);
@@ -71,9 +71,9 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStartNodes() throws Exception {
-        for (int i = 0; i < iters; i++) {
+        for (int i = 0; i < ITERS; i++) {
             try {
-                log.info("Iteration: " + (i + 1) + '/' + iters);
+                log.info("Iteration: " + (i + 1) + '/' + ITERS);
 
                 doTest();
             }
@@ -92,7 +92,7 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             final int idx = i;
 
-            final Ignite grid = concurrent ? null : startGrid(idx);
+            final Ignite grid = CONCURRENT ? null : startGrid(idx);
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {

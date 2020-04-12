@@ -46,7 +46,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final AtomicReference<UUID> nodeId = new AtomicReference<>();
+    private static final AtomicReference<UUID> NODE_ID = new AtomicReference<>();
 
     /** */
     private static int GRID_CNT = 5;
@@ -166,29 +166,29 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++) {
-            nodeId.set(null);
+            NODE_ID.set(null);
 
             grid(0).compute().affinityRun(DEFAULT_CACHE_NAME, new TestObject(i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public void run() {
-                    nodeId.set(ignite.configuration().getNodeId());
+                    NODE_ID.set(ignite.configuration().getNodeId());
                 }
             });
 
-            assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
+            assertEquals(aff.mapKeyToNode(i).id(), NODE_ID.get());
 
             grid(0).compute().affinityRun(DEFAULT_CACHE_NAME, new AffinityKey(0, i), new IgniteRunnable() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public void run() {
-                    nodeId.set(ignite.configuration().getNodeId());
+                    NODE_ID.set(ignite.configuration().getNodeId());
                 }
             });
 
-            assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
+            assertEquals(aff.mapKeyToNode(i).id(), NODE_ID.get());
         }
     }
 
@@ -200,20 +200,20 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         Affinity<Object> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++) {
-            nodeId.set(null);
+            NODE_ID.set(null);
 
             grid(0).compute().affinityCall(DEFAULT_CACHE_NAME, new TestObject(i), new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
                 @Override public Object call() {
-                    nodeId.set(ignite.configuration().getNodeId());
+                    NODE_ID.set(ignite.configuration().getNodeId());
 
                     return null;
                 }
             });
 
-            assertEquals(aff.mapKeyToNode(i).id(), nodeId.get());
+            assertEquals(aff.mapKeyToNode(i).id(), NODE_ID.get());
         }
     }
 

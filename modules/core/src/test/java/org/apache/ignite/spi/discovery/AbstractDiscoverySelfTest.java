@@ -61,19 +61,19 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     private static final String HTTP_ADAPTOR_MBEAN_NAME = "mbeanAdaptor:protocol=HTTP";
 
     /** */
-    protected static final List<DiscoverySpi> spis = new ArrayList<>();
+    protected static final List<DiscoverySpi> SPIS = new ArrayList<>();
 
     /** */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** */
-    private static final List<HttpAdaptor> httpAdaptors = new ArrayList<>();
+    private static final List<HttpAdaptor> HTTP_ADAPTORS = new ArrayList<>();
 
     /** */
     private static long spiStartTime;
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     private static final String TEST_ATTRIBUTE_NAME = "test.node.prop";
@@ -93,14 +93,14 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     @SuppressWarnings({"UnconditionalWait"})
     @Test
     public void testDiscovery() throws Exception {
-        assert spis.size() > 1;
+        assert SPIS.size() > 1;
         assert spiStartTime > 0;
-        assert spiRsrcs.size() == getSpiCount();
+        assert SPI_RSRCS.size() == getSpiCount();
 
         boolean isAllDiscovered = false;
 
         while (!isAllDiscovered) {
-            for (DiscoverySpi spi : spis) {
+            for (DiscoverySpi spi : SPIS) {
                 if (spi.getRemoteNodes().size() < (getSpiCount() - 1)) {
                     isAllDiscovered = false;
 
@@ -109,7 +109,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 isAllDiscovered = true;
 
-                for (IgniteTestResources rscrs : spiRsrcs) {
+                for (IgniteTestResources rscrs : SPI_RSRCS) {
                     UUID nodeId = rscrs.getNodeId();
 
                     if (!nodeId.equals(spi.getLocalNode().id())) {
@@ -127,7 +127,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             else {
                 if (System.currentTimeMillis() > spiStartTime + getMaxDiscoveryTime()) {
                     for (int i = 0; i < getSpiCount(); i++) {
-                        DiscoverySpi spi = spis.get(i);
+                        DiscoverySpi spi = SPIS.get(i);
 
                         info("Remote nodes [spiIdx=" + i + ", nodes=" + spi.getRemoteNodes() + ']');
                     }
@@ -135,8 +135,8 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     fail("Nodes were not discovered.");
                 }
                 else {
-                    synchronized (mux) {
-                        mux.wait(getMaxDiscoveryTime());
+                    synchronized (MUX) {
+                        MUX.wait(getMaxDiscoveryTime());
                     }
                 }
             }
@@ -187,7 +187,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
         long metricsStartTime = System.currentTimeMillis();
 
-        for (DiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : SPIS) {
             DiscoveryListener metricsUpdateLsnr = new DiscoveryListener();
 
             spi.setListener(metricsUpdateLsnr);
@@ -213,7 +213,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             else {
                 if (System.currentTimeMillis() > metricsStartTime + getMaxMetricsWaitTime()) {
                     for (int i = 0; i < getSpiCount(); i++) {
-                        DiscoverySpi spi = spis.get(i);
+                        DiscoverySpi spi = SPIS.get(i);
 
                         info("Remote nodes [spiIdx=" + i + ", nodes=" + spi.getRemoteNodes() + ']');
                     }
@@ -221,8 +221,8 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     fail("SPI Metrics not updated.");
                 }
                 else {
-                    synchronized (mux) {
-                        mux.wait(getMaxMetricsWaitTime());
+                    synchronized (MUX) {
+                        MUX.wait(getMaxMetricsWaitTime());
                     }
                 }
             }
@@ -240,7 +240,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
         int i = 0;
 
-        for (final DiscoverySpi spi : spis) {
+        for (final DiscoverySpi spi : SPIS) {
             final AtomicInteger spiCnt = new AtomicInteger(0);
 
             DiscoverySpiListener locMetricsUpdateLsnr = new DiscoverySpiListener() {
@@ -296,7 +296,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      */
     @Test
     public void testLocalNode() {
-        for (DiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : SPIS) {
             ClusterNode loc = spi.getLocalNode();
 
             Collection<ClusterNode> rmt = spi.getRemoteNodes();
@@ -310,12 +310,12 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      */
     @Test
     public void testNodeAttributes() {
-        for (DiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : SPIS) {
             assert !spi.getRemoteNodes().isEmpty() : "No remote nodes found in Spi.";
 
             Collection<UUID> nodeIds = new HashSet<>();
 
-            for (IgniteTestResources rsrc : spiRsrcs)
+            for (IgniteTestResources rsrc : SPI_RSRCS)
                 nodeIds.add(rsrc.getNodeId());
 
             for (ClusterNode node : spi.getRemoteNodes()) {
@@ -324,19 +324,19 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                     if (attr == null || !(attr instanceof String)) {
                         fail("Node does not contains attribute [attr=" + TEST_ATTRIBUTE_NAME + ", nodeId=" +
-                            node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
+                            node.id() + ", spiIdx=" + SPIS.indexOf(spi) + ']');
                     }
                     else if (!"true".equals(attr)) {
                         fail("Attribute value is wrong [attr=" + TEST_ATTRIBUTE_NAME + ", value=" + attr + ", nodeId=" +
-                            node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
+                            node.id() + ", spiIdx=" + SPIS.indexOf(spi) + ']');
                     }
                     else {
                         info("Node contains attribute [attr=" + TEST_ATTRIBUTE_NAME + ", value=" + attr + ", nodeId=" +
-                            node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
+                            node.id() + ", spiIdx=" + SPIS.indexOf(spi) + ']');
                     }
                 }
                 else
-                    error("Discovered unknown node [node=" + node + ", spiIdx=" + spis.indexOf(spi) + ']');
+                    error("Discovered unknown node [node=" + node + ", spiIdx=" + SPIS.indexOf(spi) + ']');
             }
         }
     }
@@ -346,14 +346,14 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      */
     @Test
     public void testPing() {
-        for (DiscoverySpi spi : spis) {
-            for (IgniteTestResources rscrs : spiRsrcs) {
+        for (DiscoverySpi spi : SPIS) {
+            for (IgniteTestResources rscrs : SPI_RSRCS) {
                 UUID nodeId = rscrs.getNodeId();
 
                 if (spi.pingNode(nodeId))
-                    info("Ping node success [nodeId=" + nodeId + ", spiIdx=" + spis.indexOf(spi) + ']');
+                    info("Ping node success [nodeId=" + nodeId + ", spiIdx=" + SPIS.indexOf(spi) + ']');
                 else
-                    fail("Ping node error [nodeId=" + nodeId + ", spiIdx=" + spis.indexOf(spi) + ']');
+                    fail("Ping node error [nodeId=" + nodeId + ", spiIdx=" + SPIS.indexOf(spi) + ']');
             }
         }
     }
@@ -365,14 +365,14 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      */
     @Test
     public void testNodeSerialize() throws Exception {
-        for (DiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : SPIS) {
             ClusterNode node = spi.getLocalNode();
 
             assert node != null;
 
             writeObject(node);
 
-            info("Serialize node success [nodeId=" + node.id() + ", spiIdx=" + spis.indexOf(spi) + ']');
+            info("Serialize node success [nodeId=" + node.id() + ", spiIdx=" + SPIS.indexOf(spi) + ']');
         }
     }
 
@@ -433,8 +433,8 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     ) {
                         info("Discovery event [type=" + type + ", node=" + node + ']');
 
-                        synchronized (mux) {
-                            mux.notifyAll();
+                        synchronized (MUX) {
+                            MUX.notifyAll();
                         }
 
                         return new IgniteFinishedFutureImpl<>();
@@ -466,9 +466,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 spi.spiStart(getTestIgniteInstanceName() + i);
 
-                spis.add(spi);
+                SPIS.add(spi);
 
-                spiRsrcs.add(rsrcMgr);
+                SPI_RSRCS.add(rsrcMgr);
 
                 // Force to use test context instead of default dummy context.
                 spi.onContextInitialized(ctx);
@@ -498,23 +498,23 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
         adaptor.start();
 
-        httpAdaptors.add(adaptor);
+        HTTP_ADAPTORS.add(adaptor);
 
         return srv;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        assert spis.size() > 1;
-        assert spis.size() == spiRsrcs.size();
+        assert SPIS.size() > 1;
+        assert SPIS.size() == SPI_RSRCS.size();
 
-        for (DiscoverySpi spi : spis) {
+        for (DiscoverySpi spi : SPIS) {
             spi.setListener(null);
 
             spi.spiStop();
         }
 
-        for (IgniteTestResources rscrs : spiRsrcs) {
+        for (IgniteTestResources rscrs : SPI_RSRCS) {
             MBeanServer mBeanSrv = rscrs.getMBeanServer();
 
             mBeanSrv.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
@@ -522,13 +522,13 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             rscrs.stopThreads();
         }
 
-        for (HttpAdaptor adaptor : httpAdaptors)
+        for (HttpAdaptor adaptor : HTTP_ADAPTORS)
             adaptor.stop();
 
         // Clear.
-        spis.clear();
-        spiRsrcs.clear();
-        httpAdaptors.clear();
+        SPIS.clear();
+        SPI_RSRCS.clear();
+        HTTP_ADAPTORS.clear();
 
         spiStartTime = 0;
     }

@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDsiPerfJob extends ComputeJobAdapter {
     /** */
-    private static final ConcurrentMap<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> timers =
+    private static final ConcurrentMap<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> TIMERS =
         new ConcurrentHashMap<>();
 
     /** */
@@ -58,7 +58,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     private static final long PRINT_FREQ = 10000;
 
     /** */
-    private static final GridAtomicLong lastPrint = new GridAtomicLong();
+    private static final GridAtomicLong LAST_PRINT = new GridAtomicLong();
 
     /** */
     private static final long MAX = 5000;
@@ -142,10 +142,10 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @param name Timer name to start.
      */
     private void startTimer(String name) {
-        ConcurrentMap<String, T3<Long, Long, Long>> m = timers.get(Thread.currentThread());
+        ConcurrentMap<String, T3<Long, Long, Long>> m = TIMERS.get(Thread.currentThread());
 
         if (m == null) {
-            ConcurrentMap<String, T3<Long, Long, Long>> old = timers.putIfAbsent(Thread.currentThread(),
+            ConcurrentMap<String, T3<Long, Long, Long>> old = TIMERS.putIfAbsent(Thread.currentThread(),
                 m = new ConcurrentHashMap<>());
 
             if (old != null)
@@ -170,7 +170,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     private void stopTimer(String name) {
-        ConcurrentMap<String, T3<Long, Long, Long>> m = timers.get(Thread.currentThread());
+        ConcurrentMap<String, T3<Long, Long, Long>> m = TIMERS.get(Thread.currentThread());
 
         T3<Long, Long, Long> t = m.get(name);
 
@@ -189,10 +189,10 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     private void printTimers() {
         long now = System.currentTimeMillis();
 
-        if (lastPrint.get() + PRINT_FREQ < now && lastPrint.setIfGreater(now)) {
+        if (LAST_PRINT.get() + PRINT_FREQ < now && LAST_PRINT.setIfGreater(now)) {
             Map<String, Long> maxes = new HashMap<>();
 
-            for (Map.Entry<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> e1 : timers.entrySet()) {
+            for (Map.Entry<Thread, ConcurrentMap<String, T3<Long, Long, Long>>> e1 : TIMERS.entrySet()) {
                 for (Map.Entry<String, T3<Long, Long, Long>> e2 : e1.getValue().entrySet()) {
                     T3<Long, Long, Long> t = e2.getValue();
 

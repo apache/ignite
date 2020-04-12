@@ -60,7 +60,7 @@ import org.junit.Test;
  */
 public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstractTest {
     /** Total pages. */
-    private static final int totalPages = 512;
+    private static final int TOTAL_PAGES = 512;
 
     /** Cache name. */
     private final String cacheName = "cache";
@@ -185,7 +185,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
      * @return count of pages to test. Note complexity of test is N^2.
      */
     protected int getTotalPagesToTest() {
-        return totalPages;
+        return TOTAL_PAGES;
     }
 
     /**

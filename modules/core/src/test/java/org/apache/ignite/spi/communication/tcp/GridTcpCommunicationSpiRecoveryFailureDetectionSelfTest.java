@@ -49,7 +49,7 @@ public class GridTcpCommunicationSpiRecoveryFailureDetectionSelfTest extends Gri
      */
     @Test
     public void testFailureDetectionEnabled() throws Exception {
-        for (TcpCommunicationSpi spi: spis) {
+        for (TcpCommunicationSpi spi: SPIS) {
             assertTrue(spi.failureDetectionTimeoutEnabled());
             assertTrue(spi.failureDetectionTimeout() == IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT);
         }

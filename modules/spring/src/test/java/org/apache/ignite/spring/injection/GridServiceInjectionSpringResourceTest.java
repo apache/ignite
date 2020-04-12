@@ -61,7 +61,7 @@ public class GridServiceInjectionSpringResourceTest extends GridCommonAbstractTe
     private static FileSystem FS = FileSystems.getDefault();
 
     /** */
-    private static final String springCfgFileTemplate = "spring-resource.tmpl.xml";
+    private static final String SPRING_CFG_FILE_TEMPLATE = "spring-resource.tmpl.xml";
 
     /** */
     private static String springCfgFileOutTmplName = "spring-resource.xml-";
@@ -131,7 +131,7 @@ public class GridServiceInjectionSpringResourceTest extends GridCommonAbstractTe
     private void generateConfigXmls(int nodes) throws IOException {
         StringBuilder cfg = new StringBuilder();
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(springCfgFileTemplate)))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(SPRING_CFG_FILE_TEMPLATE)))) {
             while (true) {
                 String str = br.readLine();
 

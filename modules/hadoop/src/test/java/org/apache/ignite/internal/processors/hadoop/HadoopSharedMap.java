@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class HadoopSharedMap {
     /** */
-    private static final ConcurrentMap<String, HadoopSharedMap> maps = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, HadoopSharedMap> MAPS = new ConcurrentHashMap<>();
 
     /** */
     private final ConcurrentMap<String, Object> map = new ConcurrentHashMap<>();
@@ -55,12 +55,12 @@ public class HadoopSharedMap {
      * @return Map of static fields.
      */
     public static HadoopSharedMap map(Class<?> cls) {
-        HadoopSharedMap m = maps.get(cls.getName());
+        HadoopSharedMap m = MAPS.get(cls.getName());
 
         if (m != null)
             return m;
 
-        HadoopSharedMap old = maps.putIfAbsent(cls.getName(), m = new HadoopSharedMap());
+        HadoopSharedMap old = MAPS.putIfAbsent(cls.getName(), m = new HadoopSharedMap());
 
         return old == null ? m : old;
     }

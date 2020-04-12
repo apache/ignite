@@ -60,7 +60,7 @@ public class ClientTestRestServer {
     private static final byte[] EMPTY_SES_TOKEN = new byte[] {};
 
     /** */
-    private static final Collection<GridClientNodeBean> top = new ArrayList<>();
+    private static final Collection<GridClientNodeBean> TOP = new ArrayList<>();
 
     /**
      *
@@ -74,7 +74,7 @@ public class ClientTestRestServer {
             node.setTcpPort(port);
             node.setTcpAddresses(Arrays.asList("127.0.0.1"));
 
-            top.add(node);
+            TOP.add(node);
         }
     }
 
@@ -257,7 +257,7 @@ public class ClientTestRestServer {
             else if (msg instanceof GridClientTopologyRequest) {
                 GridClientResponse res = makeResponseFor(msg);
 
-                res.result(top);
+                res.result(TOP);
 
                 ses.send(res);
             }

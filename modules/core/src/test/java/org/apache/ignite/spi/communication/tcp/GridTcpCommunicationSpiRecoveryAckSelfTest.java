@@ -61,13 +61,13 @@ import org.junit.Test;
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationSpi<Message>> extends GridSpiAbstractTest<T> {
     /** */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** */
-    protected static final List<TcpCommunicationSpi> spis = new ArrayList<>();
+    protected static final List<TcpCommunicationSpi> SPIS = new ArrayList<>();
 
     /** */
-    protected static final List<ClusterNode> nodes = new ArrayList<>();
+    protected static final List<ClusterNode> NODES = new ArrayList<>();
 
     /** */
     private static GridTimeoutProcessor timeoutProcessor;
@@ -137,11 +137,11 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
         createSpis(ackCnt, idleTimeout, TcpCommunicationSpi.DFLT_MSG_QUEUE_LIMIT);
 
         try {
-            TcpCommunicationSpi spi0 = spis.get(0);
-            TcpCommunicationSpi spi1 = spis.get(1);
+            TcpCommunicationSpi spi0 = SPIS.get(0);
+            TcpCommunicationSpi spi1 = SPIS.get(1);
 
-            ClusterNode node0 = nodes.get(0);
-            ClusterNode node1 = nodes.get(1);
+            ClusterNode node0 = NODES.get(0);
+            ClusterNode node1 = NODES.get(1);
 
             int msgId = 0;
 
@@ -164,7 +164,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
                 final long totAcked0 = totAcked;
 
-                for (TcpCommunicationSpi spi : spis) {
+                for (TcpCommunicationSpi spi : SPIS) {
                     GridNioServer<?> srv = U.field(spi, "nioSrvr");
 
                     final Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
@@ -209,7 +209,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
                 final int expMsgs0 = expMsgs;
 
-                for (TcpCommunicationSpi spi : spis) {
+                for (TcpCommunicationSpi spi : SPIS) {
                     final TestListener lsnr = (TestListener)spi.getListener();
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -267,11 +267,11 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void checkOverflow() throws Exception {
-        TcpCommunicationSpi spi0 = spis.get(0);
-        TcpCommunicationSpi spi1 = spis.get(1);
+        TcpCommunicationSpi spi0 = SPIS.get(0);
+        TcpCommunicationSpi spi1 = SPIS.get(1);
 
-        ClusterNode node0 = nodes.get(0);
-        ClusterNode node1 = nodes.get(1);
+        ClusterNode node0 = NODES.get(0);
+        ClusterNode node1 = NODES.get(1);
 
         final GridNioServer<?> srv1 = U.field(spi1, "nioSrvr");
 
@@ -377,9 +377,9 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void startSpis(int ackCnt, int idleTimeout, int queueLimit) throws Exception {
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
@@ -412,7 +412,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             ctx.timeoutProcessor(timeoutProcessor);
 
-            spiRsrcs.add(rsrcs);
+            SPI_RSRCS.add(rsrcs);
 
             rsrcs.inject(spi);
 
@@ -424,11 +424,11 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             node.order(i);
 
-            nodes.add(node);
+            NODES.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
-            spis.add(spi);
+            SPIS.add(spi);
 
             spi.onContextInitialized(ctx);
 
@@ -437,7 +437,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         // For each context set remote nodes.
         for (Map.Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (ClusterNode n : nodes) {
+            for (ClusterNode n : NODES) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }
@@ -487,7 +487,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             timeoutProcessor = null;
         }
 
-        for (CommunicationSpi<Message> spi : spis) {
+        for (CommunicationSpi<Message> spi : SPIS) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -495,11 +495,11 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : SPI_RSRCS)
             rsrcs.stopThreads();
 
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
     }
 }

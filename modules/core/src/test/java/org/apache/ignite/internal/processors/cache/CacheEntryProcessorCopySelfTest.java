@@ -50,7 +50,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
     private static final int[] EMPTY_ARR = new int[0];
 
     /** Deserializations counter. */
-    private static final AtomicInteger cnt = new AtomicInteger();
+    private static final AtomicInteger CNT = new AtomicInteger();
 
     /** p2p enabled. */
     private boolean p2pEnabled;
@@ -137,7 +137,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
 
             cache.get(0);
 
-            cnt.set(0);
+            CNT.set(0);
 
             cache.invoke(0, new CacheEntryProcessor<Integer, Value, Object>() {
                 @Override public Object process(MutableEntry<Integer, Value> entry, Object... args) {
@@ -162,7 +162,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
 
             entry.touch();
 
-            int actCnt = cnt.get();
+            int actCnt = CNT.get();
 
             if (obj instanceof BinaryObject)
                 if (cpOnRead)
@@ -220,7 +220,7 @@ public class CacheEntryProcessorCopySelfTest extends GridCommonAbstractTest {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             i = in.readInt();
 
-            cnt.incrementAndGet();
+            CNT.incrementAndGet();
         }
     }
 }

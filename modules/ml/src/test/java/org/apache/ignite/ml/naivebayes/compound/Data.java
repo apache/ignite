@@ -33,10 +33,10 @@ final class Data {
     static final double LABEL_2 = 2.;
 
     /** Labels. */
-    static final double[] labels = {LABEL_1, LABEL_2};
+    static final double[] LABELS = {LABEL_1, LABEL_2};
 
     /** */
-    static final Map<Integer, double[]> data = new HashMap<>();
+    static final Map<Integer, double[]> DATA = new HashMap<>();
 
     /** Means for gaussian data part. */
     static double[][] means;
@@ -54,15 +54,15 @@ final class Data {
     static double[][][] probabilities;
 
     static {
-        data.put(0, new double[] {6, 180, 12, 0, 0, 1, 1, 1, LABEL_1});
-        data.put(1, new double[] {5.92, 190, 11, 1, 0, 1, 1, 0, LABEL_1});
-        data.put(2, new double[] {5.58, 170, 12, 1, 1, 0, 0, 1, LABEL_1});
-        data.put(3, new double[] {5.92, 165, 10, 1, 1, 0, 0, 0, LABEL_1});
+        DATA.put(0, new double[] {6, 180, 12, 0, 0, 1, 1, 1, LABEL_1});
+        DATA.put(1, new double[] {5.92, 190, 11, 1, 0, 1, 1, 0, LABEL_1});
+        DATA.put(2, new double[] {5.58, 170, 12, 1, 1, 0, 0, 1, LABEL_1});
+        DATA.put(3, new double[] {5.92, 165, 10, 1, 1, 0, 0, 0, LABEL_1});
 
-        data.put(4, new double[] {5, 100, 6, 1, 0, 0, 1, 1, LABEL_2});
-        data.put(5, new double[] {5.5, 150, 8, 1, 1, 0, 0, 1, LABEL_2});
-        data.put(6, new double[] {5.42, 130, 7, 1, 1, 1, 1, 0, LABEL_2});
-        data.put(7, new double[] {5.75, 150, 9, 1, 1, 0, 1, 0, LABEL_2});
+        DATA.put(4, new double[] {5, 100, 6, 1, 0, 0, 1, 1, LABEL_2});
+        DATA.put(5, new double[] {5.5, 150, 8, 1, 1, 0, 0, 1, LABEL_2});
+        DATA.put(6, new double[] {5.42, 130, 7, 1, 1, 1, 1, 0, LABEL_2});
+        DATA.put(7, new double[] {5.75, 150, 9, 1, 1, 0, 1, 0, LABEL_2});
 
         classProbabilities = new double[] {.5, .5};
 

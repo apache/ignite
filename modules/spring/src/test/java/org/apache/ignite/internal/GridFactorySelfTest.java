@@ -85,7 +85,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 @GridCommonTest(group = "NonDistributed Kernal Self")
 public class GridFactorySelfTest extends GridCommonAbstractTest {
     /** */
-    private static final AtomicInteger cnt = new AtomicInteger();
+    private static final AtomicInteger CNT = new AtomicInteger();
 
     /** Concurrency. */
     private static final int CONCURRENCY = 10;
@@ -106,7 +106,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cnt.set(0);
+        CNT.set(0);
     }
 
     /**

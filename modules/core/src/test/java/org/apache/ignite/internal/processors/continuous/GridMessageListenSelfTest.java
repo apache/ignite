@@ -73,19 +73,19 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static boolean include;
 
     /** */
-    private static final List<UUID> allNodes = new ArrayList<>();
+    private static final List<UUID> ALL_NODES = new ArrayList<>();
 
     /** */
-    private static final List<UUID> rmtNodes = new ArrayList<>();
+    private static final List<UUID> RMT_NODES = new ArrayList<>();
 
     /** */
-    private static final List<UUID> incNodes = new ArrayList<>();
+    private static final List<UUID> INC_NODES = new ArrayList<>();
 
     /** */
-    private static final Collection<UUID> nodes = new GridConcurrentHashSet<>();
+    private static final Collection<UUID> NODES = new GridConcurrentHashSet<>();
 
     /** */
-    private static final AtomicInteger cnt = new AtomicInteger();
+    private static final AtomicInteger CNT = new AtomicInteger();
 
     /** */
     private static CountDownLatch latch;
@@ -102,8 +102,8 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        nodes.clear();
-        cnt.set(0);
+        NODES.clear();
+        CNT.set(0);
 
         include = true;
 
@@ -115,25 +115,25 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         startGrid(GRID_CNT - 1);
 
-        allNodes.clear();
-        rmtNodes.clear();
-        incNodes.clear();
+        ALL_NODES.clear();
+        RMT_NODES.clear();
+        INC_NODES.clear();
 
         for (int i = 0; i < GRID_CNT; i++) {
             UUID id = grid(i).localNode().id();
 
-            allNodes.add(id);
+            ALL_NODES.add(id);
 
             if (i != 0)
-                rmtNodes.add(id);
+                RMT_NODES.add(id);
 
             if (i != GRID_CNT - 1)
-                incNodes.add(id);
+                INC_NODES.add(id);
         }
 
-        Collections.sort(allNodes);
-        Collections.sort(rmtNodes);
-        Collections.sort(incNodes);
+        Collections.sort(ALL_NODES);
+        Collections.sort(RMT_NODES);
+        Collections.sort(INC_NODES);
     }
 
     /** {@inheritDoc} */
@@ -157,9 +157,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         // Make sure that no more messages received than expected.
         U.sleep(500);
 
-        assertEquals(MSG_CNT * GRID_CNT, cnt.get());
+        assertEquals(MSG_CNT * GRID_CNT, CNT.get());
 
-        checkNodes(allNodes);
+        checkNodes(ALL_NODES);
     }
 
     /**
@@ -178,9 +178,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
         // Make sure that no more messages received than expected.
         U.sleep(500);
 
-        assertEquals(MSG_CNT * GRID_CNT, cnt.get());
+        assertEquals(MSG_CNT * GRID_CNT, CNT.get());
 
-        checkNodes(allNodes);
+        checkNodes(ALL_NODES);
     }
 
     /**
@@ -198,15 +198,15 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         Thread.sleep(500);
 
-        int expCnt = cnt.get();
+        int expCnt = CNT.get();
 
         send();
 
         Thread.sleep(1000);
 
-        assertEquals(expCnt, cnt.get());
+        assertEquals(expCnt, CNT.get());
 
-        checkNodes(allNodes);
+        checkNodes(ALL_NODES);
     }
 
     /**
@@ -224,9 +224,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
         Thread.sleep(500);
 
-        assertEquals(MSG_CNT * (GRID_CNT - 1), cnt.get());
+        assertEquals(MSG_CNT * (GRID_CNT - 1), CNT.get());
 
-        checkNodes(rmtNodes);
+        checkNodes(RMT_NODES);
     }
 
     /**
@@ -247,9 +247,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             Thread.sleep(500);
 
-            assertEquals(MSG_CNT * (GRID_CNT + 1), cnt.get());
+            assertEquals(MSG_CNT * (GRID_CNT + 1), CNT.get());
 
-            List<UUID> allNodes0 = new ArrayList<>(allNodes);
+            List<UUID> allNodes0 = new ArrayList<>(ALL_NODES);
 
             allNodes0.add(g.cluster().localNode().id());
 
@@ -286,9 +286,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             Thread.sleep(500);
 
-            assertEquals(MSG_CNT * GRID_CNT, cnt.get());
+            assertEquals(MSG_CNT * GRID_CNT, CNT.get());
 
-            List<UUID> incNodes0 = new ArrayList<>(incNodes);
+            List<UUID> incNodes0 = new ArrayList<>(INC_NODES);
 
             incNodes0.add(g.cluster().localNode().id());
 
@@ -365,9 +365,9 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
 
             Thread.sleep(500);
 
-            assertEquals(MSG_CNT * (GRID_CNT + 1), cnt.get());
+            assertEquals(MSG_CNT * (GRID_CNT + 1), CNT.get());
 
-            List<UUID> allNodes0 = new ArrayList<>(allNodes);
+            List<UUID> allNodes0 = new ArrayList<>(ALL_NODES);
 
             allNodes0.add(g.cluster().localNode().id());
 
@@ -432,7 +432,7 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
      * @param expNodes Expected nodes.
      */
     private void checkNodes(List<UUID> expNodes) {
-        List<UUID> nodes0 = new ArrayList<>(nodes);
+        List<UUID> nodes0 = new ArrayList<>(NODES);
 
         Collections.sort(nodes0);
 
@@ -470,8 +470,8 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
             assertEquals(sourceNodeId, nodeId);
             assertEquals(MSG, msg);
 
-            nodes.add(ignite.configuration().getNodeId());
-            cnt.incrementAndGet();
+            NODES.add(ignite.configuration().getNodeId());
+            CNT.incrementAndGet();
             latch.countDown();
 
             return ret;
@@ -501,8 +501,8 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
             assertEquals(sourceNodeId, nodeId);
             assertEquals(MSG, msg);
 
-            nodes.add(locNodeId);
-            cnt.incrementAndGet();
+            NODES.add(locNodeId);
+            CNT.incrementAndGet();
             latch.countDown();
         }
     }

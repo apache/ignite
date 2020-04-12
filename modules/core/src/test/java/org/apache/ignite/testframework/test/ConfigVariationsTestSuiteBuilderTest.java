@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
@@ -139,18 +138,18 @@ public class ConfigVariationsTestSuiteBuilderTest {
     @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteBasic.class)
     public static class TestSuiteBasic {
         /** **/
-        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+        private static final AtomicBoolean ALREADY_RUN = new AtomicBoolean(false);
 
         /** */
         @BeforeClass
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            Assume.assumeFalse("This test already has run.", ALREADY_RUN.getAndSet(true));
         }
 
         /** */
         @AfterClass
         public static void verify() {
-            assertEquals(1, SuiteBasic.cntr.get());
+            assertEquals(1, SuiteBasic.CNTR.get());
         }
     }
 
@@ -158,18 +157,18 @@ public class ConfigVariationsTestSuiteBuilderTest {
     @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteWithIgnored.class)
     public static class TestSuiteWithIgnored {
         /** **/
-        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+        private static final AtomicBoolean ALREADY_RUN = new AtomicBoolean(false);
 
         /** */
         @BeforeClass
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            Assume.assumeFalse("This test already has run.", ALREADY_RUN.getAndSet(true));
         }
 
         /** */
         @AfterClass
         public static void verify() {
-            assertEquals(8, SuiteWithIgnored.cntr.get());
+            assertEquals(8, SuiteWithIgnored.CNTR.get());
         }
     }
 
@@ -177,18 +176,18 @@ public class ConfigVariationsTestSuiteBuilderTest {
     @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteWithExtendsIgnored.class)
     public static class TestSuiteWithExtendsIgnored {
         /** **/
-        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+        private static final AtomicBoolean ALREADY_RUN = new AtomicBoolean(false);
 
         /** */
         @BeforeClass
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            Assume.assumeFalse("This test already has run.", ALREADY_RUN.getAndSet(true));
         }
 
         /** */
         @AfterClass
         public static void verify() {
-            assertEquals(4, SuiteWithExtendsIgnored.cntr.get());
+            assertEquals(4, SuiteWithExtendsIgnored.CNTR.get());
         }
     }
 
@@ -196,19 +195,19 @@ public class ConfigVariationsTestSuiteBuilderTest {
     @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteDummy.class)
     public static class TestSuiteDummy {
         /** **/
-        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+        private static final AtomicBoolean ALREADY_RUN = new AtomicBoolean(false);
 
         /** */
         @BeforeClass
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            Assume.assumeFalse("This test already has run.", ALREADY_RUN.getAndSet(true));
         }
     }
 
     /** */
     public static class SuiteBasic extends Suite {
         /** */
-        private static final AtomicInteger cntr = new AtomicInteger(0);
+        private static final AtomicInteger CNTR = new AtomicInteger(0);
 
         /** */
         public SuiteBasic(Class<?> cls) throws InitializationError {
@@ -217,7 +216,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            cntr.getAndIncrement();
+            CNTR.getAndIncrement();
 
             super.runChild(runner, ntf);
         }
@@ -226,7 +225,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class SuiteWithIgnored extends Suite {
         /** */
-        private static final AtomicInteger cntr = new AtomicInteger(0);
+        private static final AtomicInteger CNTR = new AtomicInteger(0);
 
         /**
          *
@@ -239,7 +238,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            cntr.getAndIncrement();
+            CNTR.getAndIncrement();
 
             super.runChild(runner, ntf);
         }
@@ -248,7 +247,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** */
     public static class SuiteWithExtendsIgnored extends Suite {
         /** */
-        private static final AtomicInteger cntr = new AtomicInteger(0);
+        private static final AtomicInteger CNTR = new AtomicInteger(0);
 
         /** */
         public SuiteWithExtendsIgnored(Class<?> cls) throws InitializationError {
@@ -257,7 +256,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            cntr.getAndIncrement();
+            CNTR.getAndIncrement();
 
             super.runChild(runner, ntf);
         }
@@ -303,7 +302,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @Test
         public void testDummyExecution() throws Exception {
             runInAllDataModes(new TestRunnable() {
-                @SuppressWarnings("deprecation")
                 @Override public void run() throws Exception {
                     info("Running dummy test.");
 
@@ -329,12 +327,12 @@ public class ConfigVariationsTestSuiteBuilderTest {
     @RunWith(SuiteCacheParams.class)
     public static class TestSuiteCacheParams {
         /** **/
-        private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
+        private static final AtomicBoolean ALREADY_RUN = new AtomicBoolean(false);
 
         /** */
         @BeforeClass
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            Assume.assumeFalse("This test already has run.", ALREADY_RUN.getAndSet(true));
         }
     }
 
@@ -386,13 +384,13 @@ public class ConfigVariationsTestSuiteBuilderTest {
     /** Test for legacy lifecycle methods. */
     public static class LegacyLifecycleTest extends IgniteCacheConfigVariationsAbstractTest {
         /** */
-        private static final AtomicInteger stageCnt = new AtomicInteger(0);
+        private static final AtomicInteger STAGE_CNT = new AtomicInteger(0);
 
         /** */
-        private static final AtomicInteger testInstCnt = new AtomicInteger(0);
+        private static final AtomicInteger TEST_INST_CNT = new AtomicInteger(0);
 
         /** IMPL NOTE new instances may be created rather arbitrarily, eg per every test case. */
-        private final int testClsId = testInstCnt.getAndIncrement();
+        private final int testClsId = TEST_INST_CNT.getAndIncrement();
 
         /** {@inheritDoc} */
         @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -432,14 +430,12 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @Test
         public void test1() {
             processStage("test1", 2, 3);
-            U.warn(null, ">>> inside test 1"); // todo remove
         }
 
         /** */
         @Test
         public void test2() {
             processStage("test2", 2, 3);
-            U.warn(null, ">>> inside test 1"); // todo remove
         }
 
         /** {@inheritDoc} */
@@ -458,9 +454,9 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         private void processStage(String desc, int exp, int update) {
-            Assert.assertEquals(desc + " at test class id " + testClsId, exp, stageCnt.get());
+            Assert.assertEquals(desc + " at test class id " + testClsId, exp, STAGE_CNT.get());
 
-            stageCnt.set(update);
+            STAGE_CNT.set(update);
         }
     }
 

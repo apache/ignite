@@ -31,7 +31,7 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.ml.naivebayes.compound.Data.binarizedDataThresholds;
 import static org.apache.ignite.ml.naivebayes.compound.Data.classProbabilities;
-import static org.apache.ignite.ml.naivebayes.compound.Data.data;
+import static org.apache.ignite.ml.naivebayes.compound.Data.DATA;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -59,7 +59,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void test() {
         CompoundNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(DATA, parts),
                 new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 

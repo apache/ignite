@@ -89,7 +89,7 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, Object... args) {
-            loadCacheCnt.incrementAndGet();
+            LOAD_CACHE_CNT.incrementAndGet();
 
             checkTransaction();
             checkConnection();
@@ -97,7 +97,7 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
-            loadCnt.incrementAndGet();
+            LOAD_CNT.incrementAndGet();
 
             checkTransaction();
             checkConnection();
@@ -108,12 +108,12 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry)
             throws CacheWriterException {
-            writeCnt.incrementAndGet();
+            WRITE_CNT.incrementAndGet();
 
             checkTransaction();
             checkConnection();
 
-            if (write.get()) {
+            if (WRITE.get()) {
                 String table;
 
                 switch (ses.cacheName()) {
@@ -123,7 +123,7 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
                         break;
 
                     case "cache2":
-                        if (fail.get())
+                        if (FAIL.get())
                             throw new CacheWriterException("Expected failure.");
 
                         table = "Table2";
@@ -141,7 +141,7 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
-            deleteCnt.incrementAndGet();
+            DELETE_CNT.incrementAndGet();
 
             checkTransaction();
             checkConnection();
@@ -196,7 +196,7 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
             else {
                 assertSame(conn, sesConn);
 
-                reuseCnt.incrementAndGet();
+                REUSE_CNT.incrementAndGet();
             }
         }
     }

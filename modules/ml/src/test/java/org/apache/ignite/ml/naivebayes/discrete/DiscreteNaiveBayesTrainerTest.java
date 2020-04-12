@@ -38,45 +38,45 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     private static final double LABEL_2 = 2.;
 
     /** Binary data. */
-    private static final Map<Integer, double[]> binarizedData = new HashMap<>();
+    private static final Map<Integer, double[]> BINARIZED_DATA = new HashMap<>();
 
     /** Data. */
-    private static final Map<Integer, double[]> data = new HashMap<>();
+    private static final Map<Integer, double[]> DATA = new HashMap<>();
 
     /** */
-    private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+    private static final double[][] BINARIZED_DATA_THRESHOLDS = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
     /** */
-    private static final double[][] thresholds = new double[][] {{4, 8}, {.5}, {.3, .4, .5}, {250, 500, 750}};
+    private static final double[][] THRESHOLDS = new double[][] {{4, 8}, {.5}, {.3, .4, .5}, {250, 500, 750}};
 
     static {
-        binarizedData.put(0, new double[] {0, 0, 1, 1, 1, LABEL_1});
-        binarizedData.put(1, new double[] {1, 0, 1, 1, 0, LABEL_1});
-        binarizedData.put(2, new double[] {1, 1, 0, 0, 1, LABEL_1});
-        binarizedData.put(3, new double[] {1, 1, 0, 0, 0, LABEL_1});
-        binarizedData.put(4, new double[] {0, 1, 0, 0, 1, LABEL_1});
-        binarizedData.put(5, new double[] {0, 0, 0, 1, 0, LABEL_1});
+        BINARIZED_DATA.put(0, new double[] {0, 0, 1, 1, 1, LABEL_1});
+        BINARIZED_DATA.put(1, new double[] {1, 0, 1, 1, 0, LABEL_1});
+        BINARIZED_DATA.put(2, new double[] {1, 1, 0, 0, 1, LABEL_1});
+        BINARIZED_DATA.put(3, new double[] {1, 1, 0, 0, 0, LABEL_1});
+        BINARIZED_DATA.put(4, new double[] {0, 1, 0, 0, 1, LABEL_1});
+        BINARIZED_DATA.put(5, new double[] {0, 0, 0, 1, 0, LABEL_1});
 
-        binarizedData.put(6, new double[] {1, 0, 0, 1, 1, LABEL_2});
-        binarizedData.put(7, new double[] {1, 1, 0, 0, 1, LABEL_2});
-        binarizedData.put(8, new double[] {1, 1, 1, 1, 0, LABEL_2});
-        binarizedData.put(9, new double[] {1, 1, 0, 1, 0, LABEL_2});
-        binarizedData.put(10, new double[] {1, 1, 0, 1, 1, LABEL_2});
-        binarizedData.put(11, new double[] {1, 0, 1, 1, 0, LABEL_2});
-        binarizedData.put(12, new double[] {1, 0, 1, 0, 0, LABEL_2});
+        BINARIZED_DATA.put(6, new double[] {1, 0, 0, 1, 1, LABEL_2});
+        BINARIZED_DATA.put(7, new double[] {1, 1, 0, 0, 1, LABEL_2});
+        BINARIZED_DATA.put(8, new double[] {1, 1, 1, 1, 0, LABEL_2});
+        BINARIZED_DATA.put(9, new double[] {1, 1, 0, 1, 0, LABEL_2});
+        BINARIZED_DATA.put(10, new double[] {1, 1, 0, 1, 1, LABEL_2});
+        BINARIZED_DATA.put(11, new double[] {1, 0, 1, 1, 0, LABEL_2});
+        BINARIZED_DATA.put(12, new double[] {1, 0, 1, 0, 0, LABEL_2});
 
-        data.put(0, new double[] {2, 0, .34, 123, LABEL_1});
-        data.put(1, new double[] {8, 0, .37, 561, LABEL_1});
-        data.put(2, new double[] {5, 1, .01, 678, LABEL_1});
-        data.put(3, new double[] {2, 1, .32, 453, LABEL_1});
-        data.put(4, new double[] {7, 1, .67, 980, LABEL_1});
-        data.put(5, new double[] {2, 1, .69, 912, LABEL_1});
-        data.put(6, new double[] {8, 0, .43, 453, LABEL_1});
-        data.put(7, new double[] {2, 0, .45, 752, LABEL_1});
-        data.put(8, new double[] {7, 1, .01, 132, LABEL_2});
-        data.put(9, new double[] {2, 1, .68, 169, LABEL_2});
-        data.put(10, new double[] {8, 0, .43, 453, LABEL_2});
-        data.put(11, new double[] {2, 1, .45, 748, LABEL_2});
+        DATA.put(0, new double[] {2, 0, .34, 123, LABEL_1});
+        DATA.put(1, new double[] {8, 0, .37, 561, LABEL_1});
+        DATA.put(2, new double[] {5, 1, .01, 678, LABEL_1});
+        DATA.put(3, new double[] {2, 1, .32, 453, LABEL_1});
+        DATA.put(4, new double[] {7, 1, .67, 980, LABEL_1});
+        DATA.put(5, new double[] {2, 1, .69, 912, LABEL_1});
+        DATA.put(6, new double[] {8, 0, .43, 453, LABEL_1});
+        DATA.put(7, new double[] {2, 0, .45, 752, LABEL_1});
+        DATA.put(8, new double[] {7, 1, .01, 132, LABEL_2});
+        DATA.put(9, new double[] {2, 1, .68, 169, LABEL_2});
+        DATA.put(10, new double[] {8, 0, .43, 453, LABEL_2});
+        DATA.put(11, new double[] {2, 1, .45, 748, LABEL_2});
     }
 
     /** Trainer under test. */
@@ -85,7 +85,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     /** Initialization {@code DiscreteNaiveBayesTrainer}. */
     @Before
     public void createTrainer() {
-        trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(binarizedDatathresholds);
+        trainer = new DiscreteNaiveBayesTrainer().setBucketThresholds(BINARIZED_DATA_THRESHOLDS);
     }
 
     /** Test. */
@@ -93,11 +93,11 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsCorrectLabelProbalities() {
 
         DiscreteNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(binarizedData, parts),
+            new LocalDatasetBuilder<>(BINARIZED_DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        double[] expectedProbabilities = {6. / binarizedData.size(), 7. / binarizedData.size()};
+        double[] expectedProbabilities = {6. / BINARIZED_DATA.size(), 7. / BINARIZED_DATA.size()};
         Assert.assertArrayEquals(expectedProbabilities, mdl.getClsProbabilities(), PRECISION);
     }
 
@@ -105,11 +105,11 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void testReturnsEquivalentProbalitiesWhenSetEquiprobableClasses_() {
         DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
-            .setBucketThresholds(binarizedDatathresholds)
+            .setBucketThresholds(BINARIZED_DATA_THRESHOLDS)
             .withEquiprobableClasses();
 
         DiscreteNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(binarizedData, parts),
+            new LocalDatasetBuilder<>(BINARIZED_DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -121,11 +121,11 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsPresetProbalitiesWhenSetPriorProbabilities() {
         double[] priorProbabilities = new double[] {.35, .65};
         DiscreteNaiveBayesTrainer trainer = new DiscreteNaiveBayesTrainer()
-            .setBucketThresholds(binarizedDatathresholds)
+            .setBucketThresholds(BINARIZED_DATA_THRESHOLDS)
             .setPriorProbabilities(priorProbabilities);
 
         DiscreteNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(binarizedData, parts),
+            new LocalDatasetBuilder<>(BINARIZED_DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -141,7 +141,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         };
 
         DiscreteNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(binarizedData, parts),
+            new LocalDatasetBuilder<>(BINARIZED_DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -168,9 +168,9 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
         };
 
         DiscreteNaiveBayesModel mdl = trainer
-            .setBucketThresholds(thresholds)
+            .setBucketThresholds(THRESHOLDS)
             .fit(
-                new LocalDatasetBuilder<>(data, parts),
+                new LocalDatasetBuilder<>(DATA, parts),
                 new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
             );
 

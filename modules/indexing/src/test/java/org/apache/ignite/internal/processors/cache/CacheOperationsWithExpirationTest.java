@@ -193,7 +193,7 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
         TYPE3;
 
         /** */
-        static final EnumType1[] vals = EnumType1.values();
+        static final EnumType1[] VALS = EnumType1.values();
     }
 
     /**
@@ -210,7 +210,7 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
         TYPE4;
 
         /** */
-        static final EnumType2[] vals = EnumType2.values();
+        static final EnumType2[] VALS = EnumType2.values();
     }
 
     /**
@@ -273,8 +273,8 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
             key3 = strVal;
             date1 = new Date(rnd);
             date2 = new Date(U.currentTimeMillis());
-            type1 = EnumType1.vals[rnd % EnumType1.vals.length];
-            type2 = EnumType2.vals[rnd % EnumType2.vals.length];
+            type1 = EnumType1.VALS[rnd % EnumType1.VALS.length];
+            type2 = EnumType2.VALS[rnd % EnumType2.VALS.length];
             byteVal1 = (byte)rnd;
             byteVal2 = (byte)rnd;
         }

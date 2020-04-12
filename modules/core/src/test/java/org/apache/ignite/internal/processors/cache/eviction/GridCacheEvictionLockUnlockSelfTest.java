@@ -50,10 +50,10 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     private static CountDownLatch evictLatch;
 
     /** Evict counter. */
-    private static final AtomicInteger evictCnt = new AtomicInteger();
+    private static final AtomicInteger EVICT_CNT = new AtomicInteger();
 
     /** Touch counter. */
-    private static final AtomicInteger touchCnt = new AtomicInteger();
+    private static final AtomicInteger TOUCH_CNT = new AtomicInteger();
 
     /** Cache mode. */
     private CacheMode mode;
@@ -146,8 +146,8 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
                 assertTrue(evictLatch.await(3, SECONDS));
 
-                assertEquals(gridCnt, evictCnt.get());
-                assertEquals(gridCnt, touchCnt.get());
+                assertEquals(gridCnt, EVICT_CNT.get());
+                assertEquals(gridCnt, TOUCH_CNT.get());
 
                 for (int j = 0; j < gridCnt; j++)
                     assertEquals(0, jcache(j).size());
@@ -162,8 +162,8 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     private void reset() throws Exception {
         evictLatch = new CountDownLatch(gridCnt);
 
-        evictCnt.set(0);
-        touchCnt.set(0);
+        EVICT_CNT.set(0);
+        TOUCH_CNT.set(0);
     }
 
     /** Eviction event listener. */
@@ -172,7 +172,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
         @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_CACHE_ENTRY_EVICTED;
 
-            evictCnt.incrementAndGet();
+            EVICT_CNT.incrementAndGet();
 
             evictLatch.countDown();
 
@@ -184,7 +184,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     private static class EvictionPolicy implements org.apache.ignite.cache.eviction.EvictionPolicy<Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public void onEntryAccessed(boolean rmv, EvictableEntry<Object, Object> entry) {
-            touchCnt.incrementAndGet();
+            TOUCH_CNT.incrementAndGet();
 
             entry.evict();
         }

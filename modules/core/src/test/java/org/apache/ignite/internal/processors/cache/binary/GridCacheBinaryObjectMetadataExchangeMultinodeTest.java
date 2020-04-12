@@ -73,7 +73,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     private static final long MAX_AWAIT = 9_000;
 
     /** */
-    private static final AtomicInteger metadataReqsCounter = new AtomicInteger(0);
+    private static final AtomicInteger METADATA_REQS_CNTR = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -311,7 +311,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             }
         });
 
-        assertEquals(metadataReqsCounter.get(), 2);
+        assertEquals(METADATA_REQS_CNTR.get(), 2);
     }
 
     /**
@@ -355,7 +355,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 new Thread(new Runnable() {
                     @Override public void run() {
-                        metadataReqsCounter.incrementAndGet();
+                        METADATA_REQS_CNTR.incrementAndGet();
                         stopGrid(nodeIdToStop, true);
                     }
                 }).start();
@@ -373,7 +373,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
 
         GridMessageListener wrapper = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                metadataReqsCounter.incrementAndGet();
+                METADATA_REQS_CNTR.incrementAndGet();
                 delegate.onMessage(nodeId, msg, plc);
             }
         };

@@ -38,10 +38,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public final class GridTestSafeThreadFactory implements ThreadFactory {
     /** Collection to hold all started threads across the JVM. */
-    private static final BlockingQueue<Thread> startedThreads = new LinkedBlockingQueue<>();
+    private static final BlockingQueue<Thread> STARTED_THREADS = new LinkedBlockingQueue<>();
 
     /* Lock protection of the started across the JVM threads collection. */
-    private static final GridBusyLock startedThreadsLock = new GridBusyLock();
+    private static final GridBusyLock STARTED_THREADS_LOCK = new GridBusyLock();
 
     /** Threads name prefix. */
     private final String threadName;
@@ -102,18 +102,18 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
                 super.onFinished();
 
                 // No need to acquire lock here since it is a concurrent collection.
-                startedThreads.remove(this);
+                STARTED_THREADS.remove(this);
             }
         };
 
         // Add this thread into the collection of managed threads.
-        startedThreadsLock.enterBusy();
+        STARTED_THREADS_LOCK.enterBusy();
 
         try {
-            startedThreads.add(thread);
+            STARTED_THREADS.add(thread);
         }
         finally {
-            startedThreadsLock.leaveBusy();
+            STARTED_THREADS_LOCK.leaveBusy();
         }
 
         // Register new thread in this factory.
@@ -175,16 +175,16 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
      * @param log Logger.
      */
     static void stopAllThreads(IgniteLogger log) {
-        startedThreadsLock.block();
+        STARTED_THREADS_LOCK.block();
 
         List<Thread> all;
 
         try {
-            all = new ArrayList<>(startedThreads.size());
-            startedThreads.drainTo(all);
+            all = new ArrayList<>(STARTED_THREADS.size());
+            STARTED_THREADS.drainTo(all);
         }
         finally {
-            startedThreadsLock.unblock();
+            STARTED_THREADS_LOCK.unblock();
         }
 
         boolean aliveThreads = F.forAny(

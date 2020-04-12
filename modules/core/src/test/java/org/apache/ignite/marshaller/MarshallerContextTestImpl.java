@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class MarshallerContextTestImpl extends MarshallerContextImpl {
     /** */
-    private static final ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Integer, String> MAP = new ConcurrentHashMap<>();
 
     /** */
     private final Collection<String> excluded;
@@ -68,7 +68,7 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
      * @return Internal map.
      */
     public ConcurrentMap<Integer, String> internalMap() {
-        return map;
+        return MAP;
     }
 
     /** {@inheritDoc} */
@@ -76,7 +76,7 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
         if (excluded != null && excluded.contains(clsName))
             return false;
 
-        String oldClsName = map.putIfAbsent(typeId, clsName);
+        String oldClsName = MAP.putIfAbsent(typeId, clsName);
 
         if (oldClsName != null && !oldClsName.equals(clsName))
             throw new IgniteCheckedException("Duplicate ID [id=" + typeId + ", oldClsName=" + oldClsName + ", clsName=" +
@@ -90,7 +90,7 @@ public class MarshallerContextTestImpl extends MarshallerContextImpl {
             byte platformId,
             int typeId
     ) throws ClassNotFoundException, IgniteCheckedException {
-        String clsName = map.get(typeId);
+        String clsName = MAP.get(typeId);
 
         return (clsName == null) ? super.getClassName(platformId, typeId) : clsName;
     }

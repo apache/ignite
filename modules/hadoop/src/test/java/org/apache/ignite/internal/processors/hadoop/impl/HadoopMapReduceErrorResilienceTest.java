@@ -107,7 +107,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
 
             IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
 
-            generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow);
+            generateTestFile(inFile.toString(), "red", RED, "blue", BLUE, "green", GREEN, "yellow", YELLOW);
 
             boolean useNewMapper = (useNewBits & 1) == 0;
             boolean useNewCombiner = (useNewBits & 2) == 0;
@@ -143,7 +143,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
     private void doTestWithErrorSimulator(HadoopErrorSimulator sim, IgfsPath inFile, boolean useNewMapper,
         boolean useNewCombiner, boolean useNewReducer) throws Exception {
         // Set real simulating error simulator:
-        assertTrue(HadoopErrorSimulator.setInstance(HadoopErrorSimulator.noopInstance, sim));
+        assertTrue(HadoopErrorSimulator.setInstance(HadoopErrorSimulator.NOOP_INSTANCE, sim));
 
         try {
             // Expect failure there:
@@ -155,7 +155,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
         }
 
         // Set no-op error simulator:
-        assertTrue(HadoopErrorSimulator.setInstance(sim, HadoopErrorSimulator.noopInstance));
+        assertTrue(HadoopErrorSimulator.setInstance(sim, HadoopErrorSimulator.NOOP_INSTANCE));
 
         // Expect success there:
         doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);

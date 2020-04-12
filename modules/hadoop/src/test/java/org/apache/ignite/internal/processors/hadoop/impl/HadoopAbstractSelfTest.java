@@ -51,13 +51,13 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
 
     /** IGFS name. */
-    protected static final String igfsName = "test";
+    protected static final String IGFS_NAME = "test";
 
     /** IGFS block size. */
-    protected static final int igfsBlockSize = 1024;
+    protected static final int IGFS_BLOCK_SIZE = 1024;
 
     /** IGFS block group size. */
-    protected static final int igfsBlockGroupSize = 8;
+    protected static final int IGFS_BLOCK_GROUP_SIZE = 8;
 
     /** Initial REST port. */
     private static int restPort = REST_PORT;
@@ -169,8 +169,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     public FileSystemConfiguration igfsConfiguration() throws Exception {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
-        cfg.setName(igfsName);
-        cfg.setBlockSize(igfsBlockSize);
+        cfg.setName(IGFS_NAME);
+        cfg.setBlockSize(IGFS_BLOCK_SIZE);
         cfg.setDataCacheConfiguration(dataCacheConfiguration());
         cfg.setMetaCacheConfiguration(metaCacheConfiguration());
         cfg.setFragmentizerEnabled(false);
@@ -199,7 +199,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(igfsBlockGroupSize));
+        cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(IGFS_BLOCK_GROUP_SIZE));
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;
@@ -242,6 +242,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS scheme for test.
      */
     protected String igfsScheme() {
-        return "igfs://" + igfsName + "@/";
+        return "igfs://" + IGFS_NAME + "@/";
     }
 }

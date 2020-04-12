@@ -51,7 +51,7 @@ public class IgniteTestResources {
     public static final String MARSH_CLASS_NAME = "test.marshaller.class";
 
     /** */
-    private static final IgniteLogger rootLog = new GridTestLog4jLogger(false);
+    private static final IgniteLogger ROOT_LOG = new GridTestLog4jLogger(false);
 
     /** */
     private final IgniteLogger log;
@@ -90,9 +90,9 @@ public class IgniteTestResources {
     /** */
     public IgniteTestResources() {
         if (SensitiveInfoTestLoggerProxy.TEST_SENSITIVE)
-            log = new SensitiveInfoTestLoggerProxy(rootLog.getLogger(getClass()), null, null, null);
+            log = new SensitiveInfoTestLoggerProxy(ROOT_LOG.getLogger(getClass()), null, null, null);
         else
-            log = rootLog.getLogger(getClass());
+            log = ROOT_LOG.getLogger(getClass());
 
         this.jmx = prepareMBeanServer();
 
@@ -106,7 +106,7 @@ public class IgniteTestResources {
      */
     public IgniteTestResources(IgniteConfiguration cfg) {
         this.cfg = cfg;
-        this.log = rootLog.getLogger(getClass());
+        this.log = ROOT_LOG.getLogger(getClass());
         this.jmx = prepareMBeanServer();
         this.ctx = new GridTestKernalContext(log, this.cfg);
         this.rsrcProc = new GridResourceProcessor(ctx);
@@ -119,7 +119,7 @@ public class IgniteTestResources {
         assert jmx != null;
 
         this.jmx = jmx;
-        this.log = rootLog.getLogger(getClass());
+        this.log = ROOT_LOG.getLogger(getClass());
         this.ctx = new GridTestKernalContext(log);
         this.rsrcProc = new GridResourceProcessor(ctx);
     }
@@ -219,7 +219,7 @@ public class IgniteTestResources {
      * @return Logger for specified class.
      */
     public static IgniteLogger getLogger(Class<?> cls) {
-        return rootLog.getLogger(cls);
+        return ROOT_LOG.getLogger(cls);
     }
 
     /**

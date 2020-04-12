@@ -37,7 +37,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final UUID nodeId = UUID.randomUUID();
+    private static final UUID NODE_ID = UUID.randomUUID();
 
     /** Grid. */
     private IgniteKernal grid;
@@ -804,7 +804,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheVersion serOrder,
         boolean read) {
         return mvcc.addLocal(e,
-            nodeId,
+            NODE_ID,
             null,
             1,
             ver,

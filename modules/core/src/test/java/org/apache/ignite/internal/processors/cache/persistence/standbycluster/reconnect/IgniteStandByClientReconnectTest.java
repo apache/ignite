@@ -36,9 +36,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         info(">>>> star grid");
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -58,7 +58,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         client.createCache(ccfgDynamicWithFilter);
 
-        info(">>>> dynamic start [" + ccfgDynamicName + ", " + ccfgDynamicWithFilterName + "]");
+        info(">>>> dynamic start [" + CCFG_DYNAMIC_NAME + ", " + CCFG_DYNAMIC_WITH_FILTER_NAME + "]");
 
         assertTrue(ig1.cluster().active());
         assertTrue(ig2.cluster().active());
@@ -75,11 +75,11 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         info(">>>> stop servers");
 
-        stopGrid(node2);
+        stopGrid(NODE_2);
 
         disconnectedLatch.await();
 
-        ig2 = startGrid(getConfiguration(node2));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         info(">>>> activate new servers");
 
@@ -118,9 +118,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         info(">>>> star grid");
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -136,7 +136,7 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
         checkDescriptors(ig2, staticCacheNames);
         checkDescriptors(client, staticCacheNames);
 
-        info(">>>> dynamic start [" + ccfgDynamicName + ", " + ccfgDynamicWithFilterName + "]");
+        info(">>>> dynamic start [" + CCFG_DYNAMIC_NAME + ", " + CCFG_DYNAMIC_WITH_FILTER_NAME + "]");
 
         client.createCache(ccfgDynamic);
 
@@ -155,9 +155,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         addDisconnectListener(disconnectedLatch, reconnectedLatch);
 
-        info(">>>> stop " + node2);
+        info(">>>> stop " + NODE_2);
 
-        stopGrid(node2);
+        stopGrid(NODE_2);
 
         disconnectedLatch.await();
 
@@ -165,9 +165,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         activateLatch.countDown();
 
-        info(">>>> restart " + node2);
+        info(">>>> restart " + NODE_2);
 
-        ig2 = startGrid(getConfiguration(node2));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         reconnectedLatch.await();
 
@@ -197,9 +197,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         startNodes(activateLatch);
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -210,11 +210,11 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         addDisconnectListener(disconnectedLatch, reconnectedLatch);
 
-        stopGrid(node2);
+        stopGrid(NODE_2);
 
         disconnectedLatch.await();
 
-        ig2 = startGrid(getConfiguration(node2));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         ig1.cluster().active(true);
 
@@ -253,9 +253,9 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
     public void testInActiveClientReconnectToInActiveCluster() throws Exception {
         startNodes(null);
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -266,11 +266,11 @@ public class IgniteStandByClientReconnectTest extends IgniteAbstractStandByClien
 
         addDisconnectListener(disconnectedLatch, reconnectedLatch);
 
-        stopGrid(node2);
+        stopGrid(NODE_2);
 
         disconnectedLatch.await();
 
-        ig2 = startGrid(getConfiguration(node2));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         reconnectedLatch.await();
 

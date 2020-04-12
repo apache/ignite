@@ -88,7 +88,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     private static volatile boolean quiet0;
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** Logger implementation. */
     @GridToStringExclude
@@ -284,7 +284,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
             return;
         }
 
-        synchronized (mux) {
+        synchronized (MUX) {
             if (inited) {
                 if (implInitC != null)
                     // Do not init.

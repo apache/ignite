@@ -69,10 +69,10 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private static final int WAIT_TIMEOUT = 30000;
 
     /** Utility static variable. */
-    private static final AtomicInteger cnt = new AtomicInteger(0);
+    private static final AtomicInteger CNT = new AtomicInteger(0);
 
     /** Mutex. */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** Projection. */
     private ClusterGroup prj;
@@ -129,7 +129,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     @Override protected void beforeTest() throws Exception {
         prj = projection();
 
-        cnt.set(0);
+        CNT.set(0);
     }
 
     /**
@@ -314,10 +314,10 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
                     @Override public boolean apply(Event evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
-                        synchronized (mux) {
+                        synchronized (MUX) {
                             cnt.incrementAndGet();
 
-                            mux.notifyAll();
+                            MUX.notifyAll();
                         }
 
                         return true;
@@ -607,8 +607,8 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
 
         long threshold = System.currentTimeMillis() + WAIT_TIMEOUT;
 
-        do synchronized (mux) {
-            mux.wait(sleep);
+        do synchronized (MUX) {
+            MUX.wait(sleep);
         }
         while (fut != null && !fut.isDone() && !fut.isCancelled() && threshold > System.currentTimeMillis());
 
@@ -629,11 +629,11 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
         long time;
 
         while (threshold > (time = System.currentTimeMillis()))
-            synchronized (mux) {
+            synchronized (MUX) {
                 if (cnt.get() == val)
                     break;
 
-                mux.wait(threshold - time);
+                MUX.wait(threshold - time);
             }
 
         assert cnt.get() == val;
@@ -645,7 +645,7 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private void checkActiveFutures() throws Exception {
         assertEquals(0, compute(prj).activeTaskFutures().size());
 
-        cnt.set(0);
+        CNT.set(0);
 
         Collection<IgniteFuture<Object>> futsList = new ArrayList<>();
 
@@ -663,10 +663,10 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
             futsList.add(fut);
         }
 
-        synchronized (mux) {
-            cnt.incrementAndGet();
+        synchronized (MUX) {
+            CNT.incrementAndGet();
 
-            mux.notifyAll();
+            MUX.notifyAll();
         }
 
         for (IgniteFuture<Object> fut : futsList)
@@ -711,9 +711,9 @@ public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest im
     private static class TestWaitCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
-            synchronized (mux) {
-                while (cnt.get() == 0)
-                    mux.wait();
+            synchronized (MUX) {
+                while (CNT.get() == 0)
+                    MUX.wait();
             }
 
             return null;

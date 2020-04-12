@@ -39,7 +39,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
     /** */
-    private static final AtomicInteger consistentIdCtr = new AtomicInteger();
+    private static final AtomicInteger CONSISTENT_ID_CTR = new AtomicInteger();
 
     /** */
     private String addr;
@@ -54,7 +54,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     private UUID id;
 
     /** String objects as a consistent Id is closer to real case than Integer */
-    private Object consistentId = "Node_" + consistentIdCtr.incrementAndGet();
+    private Object consistentId = "Node_" + CONSISTENT_ID_CTR.incrementAndGet();
 
     /** */
     private ClusterMetrics metrics;

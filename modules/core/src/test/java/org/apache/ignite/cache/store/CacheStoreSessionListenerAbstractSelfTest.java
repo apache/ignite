@@ -42,25 +42,25 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     protected static final String URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
     /** */
-    protected static final AtomicInteger loadCacheCnt = new AtomicInteger();
+    protected static final AtomicInteger LOAD_CACHE_CNT = new AtomicInteger();
 
     /** */
-    protected static final AtomicInteger loadCnt = new AtomicInteger();
+    protected static final AtomicInteger LOAD_CNT = new AtomicInteger();
 
     /** */
-    protected static final AtomicInteger writeCnt = new AtomicInteger();
+    protected static final AtomicInteger WRITE_CNT = new AtomicInteger();
 
     /** */
-    protected static final AtomicInteger deleteCnt = new AtomicInteger();
+    protected static final AtomicInteger DELETE_CNT = new AtomicInteger();
 
     /** */
-    protected static final AtomicInteger reuseCnt = new AtomicInteger();
+    protected static final AtomicInteger REUSE_CNT = new AtomicInteger();
 
     /** */
-    protected static final AtomicBoolean write = new AtomicBoolean();
+    protected static final AtomicBoolean WRITE = new AtomicBoolean();
 
     /** */
-    protected static final AtomicBoolean fail = new AtomicBoolean();
+    protected static final AtomicBoolean FAIL = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -77,14 +77,14 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
             conn.createStatement().executeUpdate("CREATE TABLE Table2 (id INT AUTO_INCREMENT, key INT, value INT)");
         }
 
-        loadCacheCnt.set(0);
-        loadCnt.set(0);
-        writeCnt.set(0);
-        deleteCnt.set(0);
-        reuseCnt.set(0);
+        LOAD_CACHE_CNT.set(0);
+        LOAD_CNT.set(0);
+        WRITE_CNT.set(0);
+        DELETE_CNT.set(0);
+        REUSE_CNT.set(0);
 
-        write.set(false);
-        fail.set(false);
+        WRITE.set(false);
+        FAIL.set(false);
     }
 
     /**
@@ -106,11 +106,11 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
             cache.destroy();
         }
 
-        assertEquals(3, loadCacheCnt.get());
-        assertEquals(1, loadCnt.get());
-        assertEquals(1, writeCnt.get());
-        assertEquals(1, deleteCnt.get());
-        assertEquals(0, reuseCnt.get());
+        assertEquals(3, LOAD_CACHE_CNT.get());
+        assertEquals(1, LOAD_CNT.get());
+        assertEquals(1, WRITE_CNT.get());
+        assertEquals(1, DELETE_CNT.get());
+        assertEquals(0, REUSE_CNT.get());
     }
 
     /**
@@ -132,11 +132,11 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
             cache.destroy();
         }
 
-        assertEquals(3, loadCacheCnt.get());
-        assertEquals(1, loadCnt.get());
-        assertEquals(1, writeCnt.get());
-        assertEquals(1, deleteCnt.get());
-        assertEquals(0, reuseCnt.get());
+        assertEquals(3, LOAD_CACHE_CNT.get());
+        assertEquals(1, LOAD_CNT.get());
+        assertEquals(1, WRITE_CNT.get());
+        assertEquals(1, DELETE_CNT.get());
+        assertEquals(0, REUSE_CNT.get());
     }
 
     /**
@@ -160,9 +160,9 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
             cache.destroy();
         }
 
-        assertEquals(2, writeCnt.get());
-        assertEquals(2, deleteCnt.get());
-        assertEquals(3, reuseCnt.get());
+        assertEquals(2, WRITE_CNT.get());
+        assertEquals(2, DELETE_CNT.get());
+        assertEquals(3, REUSE_CNT.get());
     }
 
     /**
@@ -189,9 +189,9 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
             cache2.destroy();
         }
 
-        assertEquals(2, writeCnt.get());
-        assertEquals(2, deleteCnt.get());
-        assertEquals(3, reuseCnt.get());
+        assertEquals(2, WRITE_CNT.get());
+        assertEquals(2, DELETE_CNT.get());
+        assertEquals(3, REUSE_CNT.get());
     }
 
     /**
@@ -199,7 +199,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      */
     @Test
     public void testCommit() throws Exception {
-        write.set(true);
+        WRITE.set(true);
 
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);
@@ -229,8 +229,8 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      */
     @Test
     public void testRollback() throws Exception {
-        write.set(true);
-        fail.set(true);
+        WRITE.set(true);
+        FAIL.set(true);
 
         CacheConfiguration<Integer, Integer> cfg1 = cacheConfiguration("cache1", CacheAtomicityMode.TRANSACTIONAL);
         CacheConfiguration<Integer, Integer> cfg2 = cacheConfiguration("cache2", CacheAtomicityMode.TRANSACTIONAL);

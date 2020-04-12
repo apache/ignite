@@ -45,19 +45,19 @@ import static org.apache.ignite.internal.util.IgniteUtils.field;
  */
 public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
     /** Cache 1. */
-    protected static final String cache1 = "cache1";
+    protected static final String CACHE_1 = "cache1";
 
     /** Cache 2. */
-    protected static final String cache2 = "cache2";
+    protected static final String CACHE_2 = "cache2";
 
     /** */
-    protected static final String cache3 = "cache3";
+    protected static final String CACHE_3 = "cache3";
 
     /** */
-    protected static final String cache4 = "cache4";
+    protected static final String CACHE_4 = "cache4";
 
     /** */
-    private static final String cache5 = "cache5";
+    private static final String CACHE_5 = "cache5";
 
     /** Caches info. */
     private static final String CACHES_INFO = "cachesInfo";
@@ -262,7 +262,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration atomicCfg() {
-        return new CacheConfiguration(cache1)
+        return new CacheConfiguration(CACHE_1)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC);
     }
 
@@ -271,7 +271,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
      *
      */
     protected CacheConfiguration transactionCfg() {
-        return new CacheConfiguration(cache2)
+        return new CacheConfiguration(CACHE_2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
@@ -327,34 +327,34 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         private IgniteConfiguration nodeCfg;
 
         /** State default. */
-        private static final Boolean stateDefault = new Boolean(true);
+        private static final Boolean STATE_DEFAULT = Boolean.TRUE;
 
         /** State. */
-        private Boolean state = stateDefault;
+        private Boolean state = STATE_DEFAULT;
 
         /** Noop. */
-        private static final Runnable Noop = new Runnable() {
+        private static final Runnable NOOP = new Runnable() {
             @Override public void run() {
             }
         };
 
         /** After cluster started. */
-        private Runnable afterClusterStarted = Noop;
+        private Runnable afterClusterStarted = NOOP;
 
         /** After node join. */
-        private Runnable afterNodeJoin = Noop;
+        private Runnable afterNodeJoin = NOOP;
 
         /** After activate. */
-        private Runnable afterActivate = Noop;
+        private Runnable afterActivate = NOOP;
 
         /** After de activate. */
-        private Runnable afterDeActivate = Noop;
+        private Runnable afterDeActivate = NOOP;
 
         /** */
         private IgniteCallable<List<CacheConfiguration>> dynamicCacheStart =
             new IgniteCallable<List<CacheConfiguration>>() {
                 @Override public List<CacheConfiguration> call() throws Exception {
-                    return Arrays.asList(new CacheConfiguration(cache4), new CacheConfiguration(cache5));
+                    return Arrays.asList(new CacheConfiguration(CACHE_4), new CacheConfiguration(CACHE_5));
                 }
             };
 
@@ -362,18 +362,18 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         private IgniteCallable<List<String>> dynamicCacheStop =
             new IgniteCallable<List<String>>() {
                 @Override public List<String> call() throws Exception {
-                    return Arrays.asList(cache4, cache5);
+                    return Arrays.asList(CACHE_4, CACHE_5);
                 }
             };
 
         /** */
-        private Runnable afterDynamicCacheStarted = Noop;
+        private Runnable afterDynamicCacheStarted = NOOP;
 
         /** */
-        private Runnable afterDynamicCacheStopped = Noop;
+        private Runnable afterDynamicCacheStopped = NOOP;
 
         /** End. */
-        private Runnable end = Noop;
+        private Runnable end = NOOP;
 
         /**
          * @param cfgs Configurations.
@@ -576,7 +576,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
          */
         public void execute() throws Exception {
             try {
-                if (state == stateDefault)
+                if (state == STATE_DEFAULT)
                     fail("State after join must be specific. See JoinNodeTestPlanBuilder.stateAfterJoin(boolean).");
 
                 System.out.println(strPlanBuilder.append("********************").toString());
@@ -651,8 +651,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                         if (ig.context().discovery().localNode().isClient())
                             return;
 
-                        Assert.assertNotNull(ig.context().cache().cache(cache4));
-                        Assert.assertNotNull(ig.context().cache().cache(cache5));
+                        Assert.assertNotNull(ig.context().cache().cache(CACHE_4));
+                        Assert.assertNotNull(ig.context().cache().cache(CACHE_5));
 
                     }
                 });
@@ -670,8 +670,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                         if (ig.context().discovery().localNode().isClient())
                             return;
 
-                        Assert.assertNull(ig.context().cache().cache(cache4));
-                        Assert.assertNull(ig.context().cache().cache(cache5));
+                        Assert.assertNull(ig.context().cache().cache(CACHE_4));
+                        Assert.assertNull(ig.context().cache().cache(CACHE_5));
 
                     }
                 });
@@ -754,8 +754,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     Assert.assertTrue(desc.containsKey(CU.UTILITY_CACHE_NAME));
 
-                    Assert.assertNull(ig.context().cache().cache(cache1));
-                    Assert.assertNull(ig.context().cache().cache(cache2));
+                    Assert.assertNull(ig.context().cache().cache(CACHE_1));
+                    Assert.assertNull(ig.context().cache().cache(CACHE_2));
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
@@ -772,8 +772,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         public Runnable checkCacheEmpty() {
             return onAllNode(new IgniteInClosure<IgniteEx>() {
                 @Override public void apply(IgniteEx ig) {
-                    Assert.assertNull(ig.context().cache().cache(cache1));
-                    Assert.assertNull(ig.context().cache().cache(cache2));
+                    Assert.assertNull(ig.context().cache().cache(CACHE_1));
+                    Assert.assertNull(ig.context().cache().cache(CACHE_2));
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
@@ -795,19 +795,19 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                     Assert.assertEquals(3, desc.size());
 
                     Assert.assertTrue(desc.containsKey(CU.UTILITY_CACHE_NAME));
-                    Assert.assertTrue(desc.containsKey(cache1));
-                    Assert.assertTrue(desc.containsKey(cache2));
+                    Assert.assertTrue(desc.containsKey(CACHE_1));
+                    Assert.assertTrue(desc.containsKey(CACHE_2));
 
-                    Assert.assertNotNull(ig.context().cache().cache(cache1));
-                    Assert.assertNotNull(ig.context().cache().cache(cache2));
+                    Assert.assertNotNull(ig.context().cache().cache(CACHE_1));
+                    Assert.assertNotNull(ig.context().cache().cache(CACHE_2));
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
                     Assert.assertEquals(3, caches.size());
 
                     Assert.assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
-                    Assert.assertTrue(caches.containsKey(cache1));
-                    Assert.assertTrue(caches.containsKey(cache2));
+                    Assert.assertTrue(caches.containsKey(CACHE_1));
+                    Assert.assertTrue(caches.containsKey(CACHE_2));
                 }
             });
         }

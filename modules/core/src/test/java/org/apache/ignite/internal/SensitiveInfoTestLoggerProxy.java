@@ -70,7 +70,7 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     private static final long serialVersionUID = 0L;
 
     /** Whether or not to log grid name. */
-    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
+    private static final boolean LOG_GRID_NAME = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /** Test sensitive mode. */
     public static final boolean TEST_SENSITIVE = System.getProperty(IGNITE_LOG_TEST_SENSITIVE) != null;
@@ -341,7 +341,7 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
      * @return Enriched message or the original one.
      */
     private String enrich(@Nullable String m) {
-        return logGridName && m != null ? "<" + gridName + '-' + id8 + "> " + m : m;
+        return LOG_GRID_NAME && m != null ? "<" + gridName + '-' + id8 + "> " + m : m;
     }
 
     /**

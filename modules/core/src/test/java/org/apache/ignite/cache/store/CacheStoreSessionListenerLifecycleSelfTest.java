@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final Queue<String> evts = new ConcurrentLinkedDeque<>();
+    private static final Queue<String> EVTS = new ConcurrentLinkedDeque<>();
 
     /** */
     @Before
@@ -66,7 +66,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        evts.clear();
+        EVTS.clear();
     }
 
     /**
@@ -82,7 +82,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
         }
 
         assertEqualsCollections(Arrays.asList("Shared 1 START", "Shared 2 START", "Shared 1 STOP", "Shared 2 STOP"),
-            evts);
+            EVTS);
     }
 
     /**
@@ -145,7 +145,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
 
             "Shared 1 STOP",
             "Shared 2 STOP"
-        ), evts);
+        ), EVTS);
     }
 
     /**
@@ -221,7 +221,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             "cache-0 2 STOP",
             "Shared 1 STOP",
             "Shared 2 STOP"
-        ), evts);
+        ), EVTS);
     }
 
     /**
@@ -297,7 +297,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             "cache-1 2 STOP",
             "Shared 1 STOP",
             "Shared 2 STOP"
-        ), evts);
+        ), EVTS);
     }
 
     /**
@@ -335,28 +335,28 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
         @Override public void start() throws IgniteException {
             assertNotNull(ignite);
 
-            evts.add(name + " START");
+            EVTS.add(name + " START");
         }
 
         /** {@inheritDoc} */
         @Override public void stop() throws IgniteException {
             assertNotNull(ignite);
 
-            evts.add(name + " STOP");
+            EVTS.add(name + " STOP");
         }
 
         /** {@inheritDoc} */
         @Override public void onSessionStart(CacheStoreSession ses) {
             assertNotNull(ignite);
 
-            evts.add(name + " SESSION START " + ses.cacheName());
+            EVTS.add(name + " SESSION START " + ses.cacheName());
         }
 
         /** {@inheritDoc} */
         @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
             assertNotNull(ignite);
 
-            evts.add(name + " SESSION END " + ses.cacheName());
+            EVTS.add(name + " SESSION END " + ses.cacheName());
         }
     }
 

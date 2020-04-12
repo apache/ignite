@@ -38,7 +38,7 @@ public class LocalIgniteCluster implements AutoCloseable {
     private static final String HOST = "127.0.0.1";
 
     /** Randomizer. */
-    private static final Random rnd = new Random();
+    private static final Random RND = new Random();
 
     /** Servers. */
     private final List<Ignite> srvs = new ArrayList<>();
@@ -90,7 +90,7 @@ public class LocalIgniteCluster implements AutoCloseable {
         if (srvs.isEmpty())
             throw new IllegalStateException("Cannot remove node from empty cluster");
 
-        Ignite srv = srvs.get(rnd.nextInt(srvs.size()));
+        Ignite srv = srvs.get(RND.nextInt(srvs.size()));
 
         IgniteConfiguration cfg = srv.configuration();
 
@@ -113,7 +113,7 @@ public class LocalIgniteCluster implements AutoCloseable {
         if (failedCfgs.isEmpty())
             throw new IllegalStateException("Cannot restore nodes in healthy cluster");
 
-        NodeConfiguration nodeCfg = failedCfgs.get(rnd.nextInt(failedCfgs.size()));
+        NodeConfiguration nodeCfg = failedCfgs.get(RND.nextInt(failedCfgs.size()));
 
         Ignite ignite = Ignition.start(getConfiguration(nodeCfg));
 

@@ -172,7 +172,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
      */
     class IndexCorruptionFailoverScenario implements FailoverScenario {
         /** Failed node index. */
-        static final int failedNodeIdx = 1;
+        static final int FAILED_NODE_IDX = 1;
 
         /**
          * Predicate that will choose an instance of {@link BPlusTree} and page operation to make further failover in
@@ -200,7 +200,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             BPlusTree.testHndWrapper = (tree, hnd) -> {
                 final IgniteEx locIgnite = (IgniteEx)Ignition.localIgnite();
 
-                if (getTestIgniteInstanceIndex(locIgnite.name()) != failedNodeIdx)
+                if (getTestIgniteInstanceIndex(locIgnite.name()) != FAILED_NODE_IDX)
                     return hnd;
 
                 if (treeCorruptionPred.apply(hnd, tree)) {
@@ -256,7 +256,7 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             // Wait until node with corrupted index will left cluster.
             GridTestUtils.waitForCondition(() -> {
                 try {
-                    grid(failedNodeIdx);
+                    grid(FAILED_NODE_IDX);
                 }
                 catch (IgniteIllegalStateException e) {
                     return true;
@@ -266,10 +266,10 @@ public class TransactionIntegrityWithPrimaryIndexCorruptionTest extends Abstract
             }, getTestTimeout());
 
             // Failed node should be stopped.
-            GridTestUtils.assertThrows(log, () -> grid(failedNodeIdx), IgniteIllegalStateException.class, null);
+            GridTestUtils.assertThrows(log, () -> grid(FAILED_NODE_IDX), IgniteIllegalStateException.class, null);
 
             // Re-start failed node.
-            startGrid(failedNodeIdx);
+            startGrid(FAILED_NODE_IDX);
 
             awaitPartitionMapExchange();
         }

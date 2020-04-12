@@ -61,10 +61,10 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     protected static final String SERVER2 = "server2";
 
     /** */
-    protected static final AtomicBoolean fail = new AtomicBoolean(false);
+    protected static final AtomicBoolean FAIL = new AtomicBoolean(false);
 
     /** */
-    protected static final AtomicBoolean filterOn = new AtomicBoolean(false);
+    protected static final AtomicBoolean FILTER_ON = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -97,9 +97,9 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        fail.set(false);
+        FAIL.set(false);
 
-        filterOn.set(false);
+        FILTER_ON.set(false);
     }
 
     /**
@@ -115,7 +115,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testPartitionWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, ATOMIC, true));
     }
@@ -141,7 +141,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testPartitionTxWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL, true));
     }
@@ -159,7 +159,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testPartitionTxNoBackupWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL, true));
     }
@@ -185,7 +185,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testReplicatedTxWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL, true));
     }
@@ -205,7 +205,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testPartitionMvccTxWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT, true));
     }
@@ -223,7 +223,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testPartitionMvccTxNoBackupWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(PARTITIONED, 0, TRANSACTIONAL_SNAPSHOT, true));
     }
@@ -241,7 +241,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
      */
     @Test
     public void testReplicatedMvccTxWithFilter() throws Exception {
-        filterOn.set(true);
+        FILTER_ON.set(true);
 
         checkBackupAcknowledgeMessage(cacheConfiguration(REPLICATED, 1, TRANSACTIONAL_SNAPSHOT, true));
     }
@@ -271,7 +271,7 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
             for (int i = 0; i < GridTestUtils.SF.applyLB(10000, 1000); i++)
                 cache.put(i, i);
 
-            assertFalse(GridTestUtils.waitForCondition(fail::get, 1300L));
+            assertFalse(GridTestUtils.waitForCondition(FAIL::get, 1300L));
         }
         finally {
             if (qry != null)
@@ -335,10 +335,10 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, Message msg, IgniteRunnable msgC) {
-            if (check || (periodicCheck && filterOn.get())) {
+            if (check || (periodicCheck && FILTER_ON.get())) {
                 if (msg instanceof GridIoMessage &&
                     ((GridIoMessage)msg).message() instanceof CacheContinuousQueryBatchAck)
-                    fail.set(true);
+                    FAIL.set(true);
             }
 
             super.notifyListener(sndId, msg, msgC);

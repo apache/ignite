@@ -77,13 +77,13 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     private static final int ITERS = 50;
 
     /** */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** */
-    protected static final List<CommunicationSpi<Message>> spis = new ArrayList<>();
+    protected static final List<CommunicationSpi<Message>> SPIS = new ArrayList<>();
 
     /** */
-    protected static final List<ClusterNode> nodes = new ArrayList<>();
+    protected static final List<ClusterNode> NODES = new ArrayList<>();
 
     /** */
     private static GridTimeoutProcessor timeoutProcessor;
@@ -291,11 +291,11 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                             Thread.currentThread().setName("Test thread [idx=" + idx0 + ", grid=" + (idx0 % 2) + ']');
 
-                            CommunicationSpi<Message> spi = spis.get(idx0 % 2);
+                            CommunicationSpi<Message> spi = SPIS.get(idx0 % 2);
 
-                            ClusterNode srcNode = nodes.get(idx0 % 2);
+                            ClusterNode srcNode = NODES.get(idx0 % 2);
 
-                            ClusterNode dstNode = nodes.get((idx0 + 1) % 2);
+                            ClusterNode dstNode = NODES.get((idx0 + 1) % 2);
 
                             if (sleep) {
                                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -348,7 +348,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                     assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-                    for (CommunicationSpi<?> spi : spis) {
+                    for (CommunicationSpi<?> spi : SPIS) {
                         ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
                         assertEquals(1, clients.size());
@@ -407,9 +407,9 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private void startSpis(MessageListener lsnr) throws Exception {
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
@@ -448,7 +448,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
             info(">>> Initialized context: nodeId=" + ctx.localNode().id());
 
-            spiRsrcs.add(rsrcs);
+            SPI_RSRCS.add(rsrcs);
 
             rsrcs.inject(spi);
 
@@ -467,11 +467,11 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
             node.setAttributes(spi.getNodeAttributes());
 
-            nodes.add(node);
+            NODES.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
-            spis.add(spi);
+            SPIS.add(spi);
 
             spi.onContextInitialized(ctx);
 
@@ -480,7 +480,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
         // For each context set remote nodes.
         for (Map.Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (ClusterNode n : nodes) {
+            for (ClusterNode n : NODES) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }
@@ -528,7 +528,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             timeoutProcessor = null;
         }
 
-        for (CommunicationSpi<Message> spi : spis) {
+        for (CommunicationSpi<Message> spi : SPIS) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -536,7 +536,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : SPI_RSRCS)
             rsrcs.stopThreads();
     }
 

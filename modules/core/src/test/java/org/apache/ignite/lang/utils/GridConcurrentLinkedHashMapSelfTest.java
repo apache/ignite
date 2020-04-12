@@ -43,7 +43,7 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
     private static final int INSERTS_COUNT = 10000;
 
     /** Random used for key generation. */
-    private static final Random rnd = new Random();
+    private static final Random RND = new Random();
 
     /**
      *
@@ -116,9 +116,9 @@ public class GridConcurrentLinkedHashMapSelfTest extends GridCommonAbstractTest 
         Map<Integer, String> map = new LinkedHashMap<>(10, 0.75f);
 
         for (int i = 0; i < INSERTS_COUNT; i++) {
-            int key = rnd.nextInt(KEYS_UPPER_BOUND);
+            int key = RND.nextInt(KEYS_UPPER_BOUND);
 
-            if (rnd.nextBoolean()) {
+            if (RND.nextBoolean()) {
                 tst.put(key, "value" + key);
                 map.put(key, "value" + key);
             }

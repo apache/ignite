@@ -85,16 +85,16 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     private final boolean useShmem;
 
     /** SPI resources. */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** SPIs */
-    private static final Map<UUID, CommunicationSpi<Message>> spis = new ConcurrentHashMap<>();
+    private static final Map<UUID, CommunicationSpi<Message>> SPIS = new ConcurrentHashMap<>();
 
     /** Listeners. */
-    private static final Map<UUID, MessageListener> lsnrs = new HashMap<>();
+    private static final Map<UUID, MessageListener> LSNRS = new HashMap<>();
 
     /** Initialized nodes */
-    private static final List<ClusterNode> nodes = new ArrayList<>();
+    private static final List<ClusterNode> NODES = new ArrayList<>();
 
     /** */
     private static GridTimeoutProcessor timeoutProcessor;
@@ -194,7 +194,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         reject = false;
 
-        assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
+        assertEquals("Invalid listener count", getSpiCount(), LSNRS.size());
 
         final ConcurrentMap<UUID, Deque<GridTestMessage>> msgs = new ConcurrentHashMap<>();
 
@@ -215,7 +215,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
                         GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
-                        spis.get(from.id()).sendMessage(to, msg);
+                        SPIS.get(from.id()).sendMessage(to, msg);
 
                         Deque<GridTestMessage> queue = msgs.get(to.id());
 
@@ -251,7 +251,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             Deque<GridTestMessage> sent = e.getValue();
 
-            MessageListener lsnr = lsnrs.get(to);
+            MessageListener lsnr = LSNRS.get(to);
 
             Deque<GridTestMessage> rcvd = lsnr.receivedMsgs();
 
@@ -311,11 +311,11 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                             info(">>> Running iteration " + i);
 
                         try {
-                            for (ClusterNode node : nodes) {
+                            for (ClusterNode node : NODES) {
                                 Message msg =
                                     new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
 
-                                spis.get(from.id()).sendMessage(node, msg);
+                                SPIS.get(from.id()).sendMessage(node, msg);
                             }
                         }
                         catch (IgniteException e) {
@@ -344,7 +344,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
                     while (run.get() && !Thread.currentThread().isInterrupted()) {
                         U.sleep(interval * 3 / 2);
 
-                        ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.consistentId(), to.id());
+                        ((TcpCommunicationSpi)SPIS.get(from.id())).onNodeLeft(to.consistentId(), to.id());
                     }
                 }
                 catch (IgniteInterruptedCheckedException ignored) {
@@ -360,7 +360,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         fut2.get();
 
         // Wait when all messages are acknowledged to do not break next tests' logic.
-        for (CommunicationSpi<Message> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : SPIS.values()) {
             GridNioServer srv = U.field(spi, "nioSrvr");
 
             Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
@@ -391,7 +391,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         info(">>> Starting pass through performance test. <<<");
 
-        assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
+        assertEquals("Invalid listener count", getSpiCount(), LSNRS.size());
 
         final AtomicInteger cntr = new AtomicInteger();
 
@@ -402,11 +402,11 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    ClusterNode from = nodes.get(0);
+                    ClusterNode from = NODES.get(0);
 
-                    ClusterNode to = nodes.get(1);
+                    ClusterNode to = NODES.get(1);
 
-                    CommunicationSpi<Message> spi = spis.get(from.id());
+                    CommunicationSpi<Message> spi = SPIS.get(from.id());
 
                     while (cntr.getAndIncrement() < msgCnt) {
                         GridTestMessage msg = new GridTestMessage(from.id(), msgId.getAndIncrement(), 0);
@@ -436,9 +436,9 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
      * @return Node.
      */
     private ClusterNode randomNode(Random rnd) {
-        int idx = rnd.nextInt(nodes.size());
+        int idx = rnd.nextInt(NODES.size());
 
-        return nodes.get(idx);
+        return NODES.get(idx);
     }
 
     /**
@@ -465,10 +465,10 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
-        lsnrs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
+        LSNRS.clear();
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
@@ -507,7 +507,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             info(">>> Initialized context: nodeId=" + ctx.localNode().id());
 
-            spiRsrcs.add(rsrcs);
+            SPI_RSRCS.add(rsrcs);
 
             rsrcs.inject(spi);
 
@@ -515,18 +515,18 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             spi.setListener(lsnr);
 
-            lsnrs.put(rsrcs.getNodeId(), lsnr);
+            LSNRS.put(rsrcs.getNodeId(), lsnr);
 
-            info("Lsnrs: " + lsnrs);
+            info("Lsnrs: " + LSNRS);
 
             node.setAttributes(spi.getNodeAttributes());
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
 
-            nodes.add(node);
+            NODES.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
-            spis.put(rsrcs.getNodeId(), spi);
+            SPIS.put(rsrcs.getNodeId(), spi);
 
             spi.onContextInitialized(ctx);
 
@@ -535,7 +535,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         // For each context set remote nodes.
         for (Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (ClusterNode n : nodes) {
+            for (ClusterNode n : NODES) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }
@@ -548,12 +548,12 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (MessageListener lsnr : lsnrs.values()) {
+        for (MessageListener lsnr : LSNRS.values()) {
             lsnr.rcvdMsgs.clear();
             lsnr.rmtMsgCnt.set(0);
         }
 
-        for (CommunicationSpi spi : spis.values()) {
+        for (CommunicationSpi spi : SPIS.values()) {
             final ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(spi, "clients");
 
             assert GridTestUtils.waitForCondition(new PA() {
@@ -581,7 +581,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
             timeoutProcessor = null;
         }
 
-        for (CommunicationSpi<Message> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : SPIS.values()) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -589,12 +589,12 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : SPI_RSRCS)
             rsrcs.stopThreads();
 
-        lsnrs.clear();
-        spiRsrcs.clear();
-        spis.clear();
-        nodes.clear();
+        LSNRS.clear();
+        SPI_RSRCS.clear();
+        SPIS.clear();
+        NODES.clear();
     }
 }

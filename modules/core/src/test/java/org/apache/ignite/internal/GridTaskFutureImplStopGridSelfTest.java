@@ -55,7 +55,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     private static CountDownLatch startSignal = new CountDownLatch(SPLIT_COUNT);
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     private static int cnt;
@@ -80,8 +80,8 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
             fut.listen(new CI1<IgniteFuture>() {
                 @SuppressWarnings({"NakedNotify"})
                 @Override public void apply(IgniteFuture gridFut) {
-                    synchronized (mux) {
-                        mux.notifyAll();
+                    synchronized (MUX) {
+                        MUX.notifyAll();
                     }
                 }
             });
@@ -118,9 +118,9 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
             long delta = WAIT_TIME;
             long end = System.currentTimeMillis() + delta;
 
-            synchronized (mux) {
+            synchronized (MUX) {
                 while (cnt < SPLIT_COUNT && delta > 0) {
-                    mux.wait(delta);
+                    MUX.wait(delta);
 
                     delta = end - System.currentTimeMillis();
                 }
@@ -200,10 +200,10 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
 
             startSignal.countDown();
 
-            synchronized (mux) {
+            synchronized (MUX) {
                 cnt++;
 
-                mux.notifyAll();
+                MUX.notifyAll();
             }
 
             try {

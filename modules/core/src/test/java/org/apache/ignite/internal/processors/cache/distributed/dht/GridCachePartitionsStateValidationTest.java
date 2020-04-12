@@ -243,10 +243,10 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
      */
     private static class SingleMessageInterceptorCommunicationSpi extends TcpCommunicationSpi {
         /** */
-        private static final List<GridDhtPartitionsSingleMessage> messages = new CopyOnWriteArrayList<>();
+        private static final List<GridDhtPartitionsSingleMessage> MSGS = new CopyOnWriteArrayList<>();
 
         /** Future completes when {@link #singleMessagesThreshold} messages are sent to coordinator. */
-        private static final GridFutureAdapter allSingleMessagesSent = new GridFutureAdapter();
+        private static final GridFutureAdapter ALL_SINGLE_MESSAGES_SENT = new GridFutureAdapter();
 
         /** A number of single messages we're waiting for send. */
         private final int singleMessagesThreshold;
@@ -268,10 +268,10 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
                 // We're interesting for only exchange messages and when node is stopped.
                 if (singleMsg.exchangeId() != null && singleMsg.exchangeId().isLeft() && !singleMsg.client()) {
-                    messages.add(singleMsg);
+                    MSGS.add(singleMsg);
 
-                    if (messages.size() == singleMessagesThreshold)
-                        allSingleMessagesSent.onDone();
+                    if (MSGS.size() == singleMessagesThreshold)
+                        ALL_SINGLE_MESSAGES_SENT.onDone();
                 }
             }
 
@@ -288,13 +288,13 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         /** */
         public void clear() {
-            messages.clear();
-            allSingleMessagesSent.reset();
+            MSGS.clear();
+            ALL_SINGLE_MESSAGES_SENT.reset();
         }
 
         /** */
         public List<GridDhtPartitionsSingleMessage> getMessages() {
-            return Collections.unmodifiableList(messages);
+            return Collections.unmodifiableList(MSGS);
         }
 
         /** */
@@ -309,7 +309,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         /** */
         public void waitUntilAllSingleMessagesAreSent() throws IgniteCheckedException {
-            allSingleMessagesSent.get();
+            ALL_SINGLE_MESSAGES_SENT.get();
         }
     }
 }

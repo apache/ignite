@@ -32,13 +32,13 @@ public class Config {
     /** Name of the cache created by default in the cluster. */
     public static final String DEFAULT_CACHE_NAME = "default";
 
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder().setShared(true);
+    private static final TcpDiscoveryIpFinder TCP_DISCOVERY_IP_FINDER = new TcpDiscoveryVmIpFinder().setShared(true);
 
     /** */
     public static IgniteConfiguration getServerConfiguration() {
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
 
-        discoverySpi.setIpFinder(ipFinder);
+        discoverySpi.setIpFinder(TCP_DISCOVERY_IP_FINDER);
 
         IgniteConfiguration igniteCfg = new IgniteConfiguration();
 

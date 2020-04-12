@@ -101,7 +101,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static final ConcurrentMap<Object, Object> INTERCEPTED_OBJECTS = new ConcurrentHashMap<>();
 
     /** */
-    private static final Map<String, HashMapStore> cacheStores = new HashMap<>();
+    private static final Map<String, HashMapStore> CACHE_STORES = new HashMap<>();
 
     /** */
     public static final String ROUTER_LOG_CFG = "modules/core/src/test/config/log4j-test.xml";
@@ -148,8 +148,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         client = null;
 
-        synchronized (cacheStores) {
-            for (HashMapStore cacheStore : cacheStores.values())
+        synchronized (CACHE_STORES) {
+            for (HashMapStore cacheStore : CACHE_STORES.values())
                 cacheStore.map.clear();
         }
 
@@ -269,11 +269,11 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheStoreFactory(new Factory<CacheStore>() {
             @Override public CacheStore create() {
-                synchronized (cacheStores) {
-                    HashMapStore cacheStore = cacheStores.get(cacheName);
+                synchronized (CACHE_STORES) {
+                    HashMapStore cacheStore = CACHE_STORES.get(cacheName);
 
                     if (cacheStore == null)
-                        cacheStores.put(cacheName, cacheStore = new HashMapStore());
+                        CACHE_STORES.put(cacheName, cacheStore = new HashMapStore());
 
                     return cacheStore;
                 }

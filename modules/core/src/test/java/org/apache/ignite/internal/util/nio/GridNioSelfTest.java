@@ -67,7 +67,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     private static final int START_PORT = 55443;
 
     /** Message id provider. */
-    private static final AtomicInteger idProvider = new AtomicInteger(1);
+    private static final AtomicInteger ID_PROVIDER = new AtomicInteger(1);
 
     /** Message count per thread in reconnect test. This count should not be too large due to TIME_WAIT sock status. */
     private static final int RECONNECT_MSG_CNT = 100;
@@ -779,7 +779,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                             try {
                                 client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
-                                MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
+                                MessageWithId msg = new MessageWithId(ID_PROVIDER.getAndIncrement());
 
                                 byte[] data = serializeMessage(msg);
 
@@ -859,7 +859,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDeliveryDuration() throws Exception {
-        idProvider.set(1);
+        ID_PROVIDER.set(1);
 
         CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
 
@@ -882,7 +882,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                         client = createClient(U.getLocalHost(), srvr.port(), U.getLocalHost());
 
                         while (cntr.getAndIncrement() < MSG_CNT * THREAD_CNT) {
-                            MessageWithId msg = new MessageWithId(idProvider.getAndIncrement());
+                            MessageWithId msg = new MessageWithId(ID_PROVIDER.getAndIncrement());
 
                             byte[] data = serializeMessage(msg);
 

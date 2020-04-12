@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridCommonAbstractTest {
     /** Cache store. */
-    private static final GridCacheTestStore store = new GridCacheTestStore();
+    private static final GridCacheTestStore STORE = new GridCacheTestStore();
 
     /**
      *
@@ -60,14 +60,14 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        store.resetTimestamp();
+        STORE.resetTimestamp();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         jcache().clear();
 
-        store.reset();
+        STORE.reset();
     }
 
     /** @return Caching mode. */
@@ -87,7 +87,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         cc.setAtomicityMode(atomicityMode());
         cc.setRebalanceMode(SYNC);
 
-        cc.setCacheStoreFactory(singletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(STORE));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);

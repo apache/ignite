@@ -54,7 +54,7 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     private static final int THREAD_CNT = 64;
 
     /** */
-    private static final AtomicInteger idxGen = new AtomicInteger();
+    private static final AtomicInteger IDX_GEN = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -127,7 +127,7 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
         IgniteInternalFuture<?> f = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    int threadId = idxGen.getAndIncrement() % 2;
+                    int threadId = IDX_GEN.getAndIncrement() % 2;
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

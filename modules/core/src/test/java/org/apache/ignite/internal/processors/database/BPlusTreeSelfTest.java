@@ -136,7 +136,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private ReuseList reuseList;
 
     /** */
-    private static final Collection<Long> rmvdIds = new GridConcurrentHashSet<>();
+    private static final Collection<Long> RMVD_IDS = new GridConcurrentHashSet<>();
 
     /** Stop. */
     private final AtomicBoolean stop = new AtomicBoolean();
@@ -1036,7 +1036,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                         assertEquals(Long.valueOf(idx), tree.remove((long)idx));
 
                         if (canGetRow)
-                            rmvdIds.add((long)idx);
+                            RMVD_IDS.add((long)idx);
                     }
 
                     return null;
@@ -1048,7 +1048,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             tree.validateTree();
         }
         finally {
-            rmvdIds.clear();
+            RMVD_IDS.clear();
         }
     }
 
@@ -2895,7 +2895,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @param row Row.
          */
         private void checkNotRemoved(Long row) {
-            if (rmvdIds.contains(row))
+            if (RMVD_IDS.contains(row))
                 fail("Removed row: " + row);
         }
 

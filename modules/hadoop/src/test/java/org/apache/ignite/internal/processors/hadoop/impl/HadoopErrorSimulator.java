@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class HadoopErrorSimulator {
     /** No-op singleton instance. */
-    public static final HadoopErrorSimulator noopInstance = new HadoopErrorSimulator();
+    public static final HadoopErrorSimulator NOOP_INSTANCE = new HadoopErrorSimulator();
 
     /** Instance ref. */
-    private static final AtomicReference<HadoopErrorSimulator> ref = new AtomicReference<>(noopInstance);
+    private static final AtomicReference<HadoopErrorSimulator> REF = new AtomicReference<>(NOOP_INSTANCE);
 
     /**
      * Creates simulator of given kind with given stage bits.
@@ -40,7 +40,7 @@ public class HadoopErrorSimulator {
     public static HadoopErrorSimulator create(Kind kind, int bits) {
         switch (kind) {
             case Noop:
-                return noopInstance;
+                return NOOP_INSTANCE;
             case Runtime:
                 return new RuntimeExceptionBitHadoopErrorSimulator(bits);
             case IOException:
@@ -56,14 +56,14 @@ public class HadoopErrorSimulator {
      * Gets the error simulator instance.
      */
     public static HadoopErrorSimulator instance() {
-        return ref.get();
+        return REF.get();
     }
 
     /**
      * Sets instance.
      */
     public static boolean setInstance(HadoopErrorSimulator expect, HadoopErrorSimulator update) {
-        return ref.compareAndSet(expect, update);
+        return REF.compareAndSet(expect, update);
     }
 
     /**

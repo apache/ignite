@@ -48,7 +48,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
     private static final int ATTEMPTS_NUM = 3;
 
     /** Node failure occurs. */
-    private static final AtomicBoolean failure = new AtomicBoolean(false);
+    private static final AtomicBoolean FAILURE = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -64,7 +64,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
         cfg.setFailureHandler(new AbstractFailureHandler() {
             /** {@inheritDoc} */
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-                failure.set(true);
+                FAILURE.set(true);
 
                 // Do not invalidate a node context.
                 return false;
@@ -137,11 +137,11 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
                     "Exception has been thrown, but the exception type is unexpected [exc=" + e + ']',
                     X.hasCause(e, IgniteOutOfMemoryException.class));
 
-                assertTrue("Failure handler should be called due to IOOM.", failure.get());
+                assertTrue("Failure handler should be called due to IOOM.", FAILURE.get());
             }
 
             // Let's check that the cache can be cleared without any errors.
-            failure.set(false);
+            FAILURE.set(false);
 
             try {
                 cache.clear();
@@ -150,7 +150,7 @@ public class CacheIgniteOutOfMemoryExceptionTest extends GridCommonAbstractTest 
                 fail("Clearing the cache should not trigger any exception [exc=" + e +']');
             }
 
-            assertFalse("Failure handler should not be called during clearing the cache.", failure.get());
+            assertFalse("Failure handler should not be called during clearing the cache.", FAILURE.get());
         }
     }
 }

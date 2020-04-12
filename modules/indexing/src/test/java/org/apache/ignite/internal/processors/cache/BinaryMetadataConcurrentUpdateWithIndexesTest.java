@@ -133,7 +133,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     private ThreadLocal<Boolean> delayMetadataUpdateThreadLoc = new ThreadLocal<>();
 
     /** Latch for waiting local metadata update. */
-    public static final CountDownLatch localMetaUpdatedLatch = new CountDownLatch(1);
+    public static final CountDownLatch LOCAL_META_UPDATED_LATCH = new CountDownLatch(1);
 
     /** */
     @Test
@@ -166,7 +166,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
             @Override public void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata) {
                 // Delay one of updates until schema is locally updated on propose message.
                 if (delayMetadataUpdateThreadLoc.get() != null)
-                    await(localMetaUpdatedLatch, 5000);
+                    await(LOCAL_META_UPDATED_LATCH, 5000);
             }
         });
 
@@ -273,7 +273,7 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
             doSleep(3000);
 
             // Unblock second metadata update.
-            localMetaUpdatedLatch.countDown();
+            LOCAL_META_UPDATED_LATCH.countDown();
 
             // Give some time for tx to complete (success or fail). fut2 will throw an error if tx has failed on commit.
             doSleep(3000);

@@ -38,7 +38,7 @@ public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
     protected static final String DFLT_CFG = "examples/config/example-ignite.xml";
 
     /** */
-    private static final Properties rmtCfgs = new Properties();
+    private static final Properties RMT_CFGS = new Properties();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -53,15 +53,15 @@ public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
     protected final void startRemoteNodes() throws Exception {
         String name = getName().replaceFirst("test", "");
 
-        if (rmtCfgs.isEmpty()) {
+        if (RMT_CFGS.isEmpty()) {
             info("Loading remote configs properties from file: " + RMT_NODE_CFGS);
 
             try (FileReader reader = new FileReader(U.resolveIgnitePath(RMT_NODE_CFGS))) {
-                rmtCfgs.load(reader);
+                RMT_CFGS.load(reader);
             }
         }
 
-        String cfg = rmtCfgs.getProperty(name, defaultConfig());
+        String cfg = RMT_CFGS.getProperty(name, defaultConfig());
 
         info("Config for remote nodes [name=" + name + ", cfg=" + cfg + ", dflt=" + defaultConfig() + "]");
 

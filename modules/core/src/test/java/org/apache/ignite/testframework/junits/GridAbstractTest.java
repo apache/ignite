@@ -192,13 +192,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
-    private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
+    private static final transient Map<Class<?>, IgniteTestResources> TESTS = new ConcurrentHashMap<>();
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Sustains {@link #beforeTestsStarted()} and {@link #afterTestsStopped()} methods execution.*/
-    @ClassRule public static final TestRule firstLastTestRule = RuleChain
+    @ClassRule public static final TestRule FIRST_LAST_TEST_RULE = RuleChain
         .outerRule(new SystemPropertiesRule())
         .around(new BeforeFirstAndAfterLastTestRule());
 
@@ -212,7 +212,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     };
 
     /** Classes for which you want to clear the static log. */
-    private static final Collection<Class<?>> clearStaticLogClasses = newSetFromMap(new ConcurrentHashMap<>());
+    private static final Collection<Class<?>> CLEAR_STATIC_LOG_CLASSES = newSetFromMap(new ConcurrentHashMap<>());
 
     /** Allows easy repeating for test. */
     @Rule public transient RepeatRule repeatRule = new RepeatRule();
@@ -282,7 +282,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    private static final ConcurrentMap<UUID, Object> serializedObj = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<UUID, Object> SERIALIZED_OBJ = new ConcurrentHashMap<>();
 
     /** */
     protected GridAbstractTest() throws IgniteCheckedException {
@@ -351,8 +351,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        clearStaticLogClasses.forEach(this::clearStaticClassLog);
-        clearStaticLogClasses.clear();
+        CLEAR_STATIC_LOG_CLASSES.forEach(this::clearStaticClassLog);
+        CLEAR_STATIC_LOG_CLASSES.clear();
     }
 
     /**
@@ -702,7 +702,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
         finally {
             if (!keepSerializedObjects())
-                serializedObj.clear();
+                SERIALIZED_OBJ.clear();
 
             Thread.currentThread().setContextClassLoader(clsLdr);
 
@@ -1949,14 +1949,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
 
         // Remove resources.
-        tests.remove(getClass());
+        TESTS.remove(getClass());
 
         // Remove resources cached in static, if any.
         GridClassLoaderCache.clear();
         U.clearClassCache();
         MarshallerExclusions.clearCache();
         BinaryEnumCache.clear();
-        serializedObj.clear();
+        SERIALIZED_OBJ.clear();
 
         if (err!= null)
             throw err;
@@ -2182,10 +2182,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Test resources.
      */
     private synchronized IgniteTestResources getIgniteTestResources() throws IgniteCheckedException {
-        IgniteTestResources rsrcs = tests.get(getClass());
+        IgniteTestResources rsrcs = TESTS.get(getClass());
 
         if (rsrcs == null)
-            tests.put(getClass(), rsrcs = new IgniteTestResources());
+            TESTS.put(getClass(), rsrcs = new IgniteTestResources());
 
         return rsrcs;
     }
@@ -2304,7 +2304,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @return If {@code true} serialized objects placed to {@link #serializedObj}
+     * @return If {@code true} serialized objects placed to {@link #SERIALIZED_OBJ}
      * are not cleared after each test execution.
      *
      * Setting this flag to true is need when some serialized objects are need to be shared between all tests in class.
@@ -2394,7 +2394,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static Object supressSerialization(Object obj) {
         SerializableProxy res = new SerializableProxy(UUID.randomUUID());
 
-        serializedObj.put(res.uuid, obj);
+        SERIALIZED_OBJ.put(res.uuid, obj);
 
         return res;
     }
@@ -2565,7 +2565,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
          *
          */
         protected Object readResolve() throws ObjectStreamException {
-            Object res = serializedObj.get(uuid);
+            Object res = SERIALIZED_OBJ.get(uuid);
 
             assert res != null
                 : "Failed to find serializable proxy with uuid=" + uuid
@@ -2789,7 +2789,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected void clearStaticLog(Class<?> cls) {
         assertNotNull(cls);
 
-        clearStaticLogClasses.add(cls);
+        CLEAR_STATIC_LOG_CLASSES.add(cls);
         clearStaticClassLog(cls);
     }
 

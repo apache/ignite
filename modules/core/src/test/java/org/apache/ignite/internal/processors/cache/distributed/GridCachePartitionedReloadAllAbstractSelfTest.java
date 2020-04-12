@@ -53,7 +53,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private static final int BACKUP_CNT = 1;
 
     /** Map where dummy cache store values are stored. */
-    private static final Map<Integer, String> map = new ConcurrentHashMap<>();
+    private static final Map<Integer, String> MAP = new ConcurrentHashMap<>();
 
     /** Collection of caches, one per grid node. */
     private static List<IgniteCache<Integer, String>> caches;
@@ -123,7 +123,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        map.clear();
+        MAP.clear();
     }
 
     /**
@@ -140,7 +140,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                 Object... args) {
                 X.println("Loading all on: " + caches.indexOf(((IgniteKernal)g).<Integer, String>getCache(DEFAULT_CACHE_NAME)));
 
-                for (Map.Entry<Integer, String> e : map.entrySet())
+                for (Map.Entry<Integer, String> e : MAP.entrySet())
                     c.apply(e.getKey(), e.getValue());
             }
 
@@ -148,7 +148,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                 X.println("Loading on: " + caches.indexOf(((IgniteKernal)g)
                     .<Integer, String>getCache(DEFAULT_CACHE_NAME)) + " key=" + key);
 
-                return map.get(key);
+                return MAP.get(key);
             }
 
             @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends String> e) {
@@ -173,21 +173,21 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
             info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) +  ", keys=" + keys + "]");
 
             for (Integer key : keys)
-                map.put(key, "val" + key);
+                MAP.put(key, "val" + key);
         }
 
         CompletionListenerFuture fut = new CompletionListenerFuture();
 
-        caches.get(0).loadAll(map.keySet(), false, fut);
+        caches.get(0).loadAll(MAP.keySet(), false, fut);
 
         fut.get();
 
         Affinity aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         for (IgniteCache<Integer, String> cache : caches) {
-            for (Integer key : map.keySet()) {
+            for (Integer key : MAP.keySet()) {
                 if (aff.isPrimaryOrBackup(grid(caches.indexOf(cache)).localNode(), key))
-                    assertEquals(map.get(key), cache.localPeek(key));
+                    assertEquals(MAP.get(key), cache.localPeek(key));
                 else
                     assertNull(cache.localPeek(key));
             }

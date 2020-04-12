@@ -28,7 +28,7 @@ public class RendezvousAffinityFunctionBackupFilterSelfTest extends AffinityFunc
     @Override protected AffinityFunction affinityFunction() {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
 
-        aff.setBackupFilter(backupFilter);
+        aff.setBackupFilter(BACKUP_FILTER);
 
         return aff;
     }
@@ -37,7 +37,7 @@ public class RendezvousAffinityFunctionBackupFilterSelfTest extends AffinityFunc
     @Override protected AffinityFunction affinityFunctionWithAffinityBackupFilter(String attributeName) {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false);
 
-        aff.setAffinityBackupFilter(affinityBackupFilter);
+        aff.setAffinityBackupFilter(AFFINITY_BACKUP_FILTER);
 
         return aff;
     }

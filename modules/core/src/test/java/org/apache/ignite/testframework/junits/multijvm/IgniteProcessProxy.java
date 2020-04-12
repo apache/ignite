@@ -106,7 +106,7 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public class IgniteProcessProxy implements IgniteEx {
     /** Grid proxies. */
-    private static final transient ConcurrentMap<String, IgniteProcessProxy> gridProxies = new ConcurrentHashMap<>();
+    private static final transient ConcurrentMap<String, IgniteProcessProxy> GRID_PROXIES = new ConcurrentHashMap<>();
 
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
@@ -200,7 +200,7 @@ public class IgniteProcessProxy implements IgniteEx {
         if (locJvmGrid != null)
             assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
 
-        IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getIgniteInstanceName(), this);
+        IgniteProcessProxy prevVal = GRID_PROXIES.putIfAbsent(cfg.getIgniteInstanceName(), this);
 
         if (prevVal != null) {
             remoteCompute().run(new StopGridTask(cfg.getIgniteInstanceName(), true));
@@ -311,12 +311,12 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return Instance by name or exception wiil be thrown.
      */
     public static IgniteProcessProxy ignite(String igniteInstanceName) {
-        IgniteProcessProxy res = gridProxies.get(igniteInstanceName);
+        IgniteProcessProxy res = GRID_PROXIES.get(igniteInstanceName);
 
         if (res == null)
             throw new IgniteIllegalStateException("Grid instance was not properly started " +
                 "or was already stopped: " + igniteInstanceName + ". All known grid instances: " +
-                gridProxies.keySet());
+                GRID_PROXIES.keySet());
 
         return res;
     }
@@ -329,7 +329,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @throws Exception In case of the node stopping error.
      */
     public static void stop(String igniteInstanceName, boolean cancel) throws Exception {
-        final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+        final IgniteProcessProxy proxy = GRID_PROXIES.get(igniteInstanceName);
 
         if (proxy != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
@@ -362,7 +362,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
             proxy.getProcess().kill();
 
-            gridProxies.remove(igniteInstanceName, proxy);
+            GRID_PROXIES.remove(igniteInstanceName, proxy);
         }
     }
 
@@ -374,7 +374,7 @@ public class IgniteProcessProxy implements IgniteEx {
     public static void kill(String igniteInstanceName) {
         A.notNull(igniteInstanceName, "igniteInstanceName");
 
-        IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+        IgniteProcessProxy proxy = GRID_PROXIES.get(igniteInstanceName);
 
         if (proxy == null)
             return;
@@ -389,7 +389,7 @@ public class IgniteProcessProxy implements IgniteEx {
             U.error(proxy.log, "Exception while killing " + igniteInstanceName, e);
         }
 
-        gridProxies.remove(igniteInstanceName, proxy);
+        GRID_PROXIES.remove(igniteInstanceName, proxy);
     }
 
     /**
@@ -401,7 +401,7 @@ public class IgniteProcessProxy implements IgniteEx {
     public static Ignite ignite(UUID locNodeId) {
         A.notNull(locNodeId, "locNodeId");
 
-        for (IgniteProcessProxy ignite : gridProxies.values()) {
+        for (IgniteProcessProxy ignite : GRID_PROXIES.values()) {
             if (ignite.getId().equals(locNodeId))
                 return ignite;
         }
@@ -414,7 +414,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * Kill all running processes.
      */
     public static void killAll() {
-        for (IgniteProcessProxy ignite : gridProxies.values()) {
+        for (IgniteProcessProxy ignite : GRID_PROXIES.values()) {
             try {
                 ignite.getProcess().kill();
             }
@@ -423,7 +423,7 @@ public class IgniteProcessProxy implements IgniteEx {
             }
         }
 
-        gridProxies.clear();
+        GRID_PROXIES.clear();
     }
 
     /**
@@ -446,7 +446,7 @@ public class IgniteProcessProxy implements IgniteEx {
     public void kill() throws Exception {
         getProcess().kill();
 
-        gridProxies.remove(cfg.getGridName(), this);
+        GRID_PROXIES.remove(cfg.getGridName(), this);
     }
 
     /** {@inheritDoc} */

@@ -66,10 +66,10 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     private static final int KEYS_CNT = 50000;
 
     /** Stop load flag. */
-    private static final AtomicBoolean stop = new AtomicBoolean();
+    private static final AtomicBoolean STOP = new AtomicBoolean();
 
     /** Error. */
-    private static final AtomicReference<Throwable> err = new AtomicReference<>();
+    private static final AtomicReference<Throwable> ERR = new AtomicReference<>();
 
     /**
      * @return Grid count.
@@ -84,8 +84,8 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
 
         cfg.setFailureHandler(new AbstractFailureHandler() {
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-                err.compareAndSet(null, failureCtx.error());
-                stop.set(true);
+                ERR.compareAndSet(null, failureCtx.error());
+                STOP.set(true);
                 return false;
             }
         });
@@ -119,9 +119,9 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        stop.set(false);
+        STOP.set(false);
 
-        err.set(null);
+        ERR.set(null);
 
         startGrids(gridCount());
     }
@@ -161,7 +161,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             ThreadLocalRandom rnd0 = ThreadLocalRandom.current();
 
-            while (!stop.get()) {
+            while (!STOP.get()) {
                 Ignite ig = null;
 
                 while (ig == null) {
@@ -216,7 +216,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
             U.sleep(500);
         }
 
-        stop.set(true);
+        STOP.set(true);
 
         while (true){
             try {
@@ -245,7 +245,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
 
         Assert.assertTrue(String.valueOf(successGet.get()), successGet.get() > 50);
 
-        Throwable e = err.get();
+        Throwable e = ERR.get();
 
         if (e != null) {
             log.error("Test failed", e);

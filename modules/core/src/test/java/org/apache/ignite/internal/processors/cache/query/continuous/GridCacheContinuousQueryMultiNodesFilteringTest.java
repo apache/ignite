@@ -69,7 +69,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     public static final int KEYS = 2_000;
 
     /** Cache entry operations' counts. */
-    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, AtomicInteger> OP_COUNTS = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -107,17 +107,17 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return opCounts.get("qry"  + i0 + "_total").get() == expTotal;
+                    return OP_COUNTS.get("qry"  + i0 + "_total").get() == expTotal;
                 }
             }, 5000);
 
-            int partInserts = opCounts.get("part" + i + "_ins").get();
-            int replInserts = opCounts.get("repl" + i + "_ins").get();
-            int partUpdates = opCounts.get("part" + i + "_upd").get();
-            int replUpdates = opCounts.get("repl" + i + "_upd").get();
-            int partRemoves = opCounts.get("part" + i + "_rmv").get();
-            int replRemoves = opCounts.get("repl" + i + "_rmv").get();
-            int totalQryOps = opCounts.get("qry"  + i + "_total").get();
+            int partInserts = OP_COUNTS.get("part" + i + "_ins").get();
+            int replInserts = OP_COUNTS.get("repl" + i + "_ins").get();
+            int partUpdates = OP_COUNTS.get("part" + i + "_upd").get();
+            int replUpdates = OP_COUNTS.get("repl" + i + "_upd").get();
+            int partRemoves = OP_COUNTS.get("part" + i + "_rmv").get();
+            int replRemoves = OP_COUNTS.get("repl" + i + "_rmv").get();
+            int totalQryOps = OP_COUNTS.get("qry"  + i + "_total").get();
 
             assertEquals(i, partInserts);
             assertEquals(i, replInserts);
@@ -252,9 +252,9 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         IgniteCache partCache = node.createCache(defaultCacheConfiguration().setName("part" + idx)
             .setCacheMode(PARTITIONED).setBackups(1).setNodeFilter(nodeFilter));
 
-        opCounts.put(partCacheName + "_ins", new AtomicInteger());
-        opCounts.put(partCacheName + "_upd", new AtomicInteger());
-        opCounts.put(partCacheName + "_rmv", new AtomicInteger());
+        OP_COUNTS.put(partCacheName + "_ins", new AtomicInteger());
+        OP_COUNTS.put(partCacheName + "_upd", new AtomicInteger());
+        OP_COUNTS.put(partCacheName + "_rmv", new AtomicInteger());
 
         partCache.registerCacheEntryListener(new ListenerConfiguration(partCacheName, ListenerConfiguration.Op.INSERT));
         partCache.registerCacheEntryListener(new ListenerConfiguration(partCacheName, ListenerConfiguration.Op.UPDATE));
@@ -265,22 +265,22 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         IgniteCache replCache = node.createCache(defaultCacheConfiguration().setName("repl" + idx)
             .setCacheMode(REPLICATED).setNodeFilter(nodeFilter));
 
-        opCounts.put(replCacheName + "_ins", new AtomicInteger());
-        opCounts.put(replCacheName + "_upd", new AtomicInteger());
-        opCounts.put(replCacheName + "_rmv", new AtomicInteger());
+        OP_COUNTS.put(replCacheName + "_ins", new AtomicInteger());
+        OP_COUNTS.put(replCacheName + "_upd", new AtomicInteger());
+        OP_COUNTS.put(replCacheName + "_rmv", new AtomicInteger());
 
         replCache.registerCacheEntryListener(new ListenerConfiguration(replCacheName, ListenerConfiguration.Op.INSERT));
         replCache.registerCacheEntryListener(new ListenerConfiguration(replCacheName, ListenerConfiguration.Op.UPDATE));
         replCache.registerCacheEntryListener(new ListenerConfiguration(replCacheName, ListenerConfiguration.Op.REMOVE));
 
-        opCounts.put("qry" + idx + "_total", new AtomicInteger());
+        OP_COUNTS.put("qry" + idx + "_total", new AtomicInteger());
 
         ContinuousQuery qry = new ContinuousQuery();
         qry.setRemoteFilterFactory(new EntryEventFilterFactory(idx));
         qry.setLocalListener(new CacheEntryUpdatedListener() {
             /** {@inheritDoc} */
             @Override public void onUpdated(Iterable evts) {
-                opCounts.get("qry" + idx + "_total").incrementAndGet();
+                OP_COUNTS.get("qry" + idx + "_total").incrementAndGet();
             }
         });
 
@@ -335,7 +335,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
                                 /** {@inheritDoc} */
                                 @Override public void onCreated(Iterable iterable) {
                                     for (Object evt : iterable)
-                                        opCounts.get(cacheName + "_ins").getAndIncrement();
+                                        OP_COUNTS.get(cacheName + "_ins").getAndIncrement();
                                 }
                             };
                         case UPDATE:
@@ -343,7 +343,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
                                 /** {@inheritDoc} */
                                 @Override public void onUpdated(Iterable iterable) {
                                     for (Object evt : iterable)
-                                        opCounts.get(cacheName + "_upd").getAndIncrement();
+                                        OP_COUNTS.get(cacheName + "_upd").getAndIncrement();
                                 }
                             };
                         case REMOVE:
@@ -351,7 +351,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
                                 /** {@inheritDoc} */
                                 @Override public void onRemoved(Iterable iterable) {
                                     for (Object evt : iterable)
-                                        opCounts.get(cacheName + "_rmv").getAndIncrement();
+                                        OP_COUNTS.get(cacheName + "_rmv").getAndIncrement();
                                 }
                             };
                         default:

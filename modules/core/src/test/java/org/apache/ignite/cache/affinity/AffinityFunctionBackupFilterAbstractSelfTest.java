@@ -54,7 +54,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
     private int backups = 1;
 
     /** Test backup filter. */
-    protected static final IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter =
+    protected static final IgniteBiPredicate<ClusterNode, ClusterNode> BACKUP_FILTER =
         new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode primary, ClusterNode backup) {
                 assert primary != null : "primary is null";
@@ -65,7 +65,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
         };
 
     /** Test backup filter. */
-    protected static final IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter =
+    protected static final IgniteBiPredicate<ClusterNode, List<ClusterNode>> AFFINITY_BACKUP_FILTER =
         new IgniteBiPredicate<ClusterNode, List<ClusterNode>>() {
             @Override public boolean apply(ClusterNode node, List<ClusterNode> assigned) {
                 assert node != null : "primary is null";

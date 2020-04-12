@@ -46,28 +46,28 @@ import org.junit.Test;
  */
 public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int locPort1 = 47500;
+    private static final int LOC_PORT_1 = 47500;
 
     /** */
-    private static final int locPort2 = 48500;
+    private static final int LOC_PORT_2 = 48500;
 
     /** */
-    private static final int extPort1 = 10000;
+    private static final int EXT_PORT_1 = 10000;
 
     /** */
-    private static final int extPort2 = 20000;
+    private static final int EXT_PORT_2 = 20000;
 
     /** */
-    private static final int commLocPort1 = 47100;
+    private static final int COMM_LOC_PORT_1 = 47100;
 
     /** */
-    private static final int commLocPort2 = 48100;
+    private static final int COMM_LOC_PORT_2 = 48100;
 
     /** */
-    private static final int commExtPort1 = 10100;
+    private static final int COMM_EXT_PORT_1 = 10100;
 
     /** */
-    private static final int commExtPort2 = 20100;
+    private static final int COMM_EXT_PORT_2 = 20100;
 
     /** */
     private AddressResolver rslvr;
@@ -80,9 +80,9 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         if (ipFinderUseLocPorts)
-            ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + locPort1, "127.0.0.1:" + locPort2));
+            ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + LOC_PORT_1, "127.0.0.1:" + LOC_PORT_2));
         else
-            ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + extPort1, "127.0.0.1:" + extPort2));
+            ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + EXT_PORT_1, "127.0.0.1:" + EXT_PORT_2));
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -90,12 +90,12 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         final int commLocPort;
 
         if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
-            locPort = locPort1;
-            commLocPort = commLocPort1;
+            locPort = LOC_PORT_1;
+            commLocPort = COMM_LOC_PORT_1;
         }
         else if (getTestIgniteInstanceName(1).equals(igniteInstanceName)) {
-            locPort = locPort2;
-            commLocPort = commLocPort2;
+            locPort = LOC_PORT_2;
+            commLocPort = COMM_LOC_PORT_2;
         }
         else
             throw new IllegalArgumentException("Unknown Ignite instance name");
@@ -145,10 +145,10 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     public void testCustomResolver() throws Exception {
         final Map<InetSocketAddress, Collection<InetSocketAddress>> map = new HashMap<>();
 
-        map.put(new InetSocketAddress("127.0.0.1", locPort1), F.asList(new InetSocketAddress("127.0.0.1", extPort1)));
-        map.put(new InetSocketAddress("127.0.0.1", commLocPort1), F.asList(new InetSocketAddress("127.0.0.1", commExtPort1)));
-        map.put(new InetSocketAddress("127.0.0.1", locPort2), F.asList(new InetSocketAddress("127.0.0.1", extPort2)));
-        map.put(new InetSocketAddress("127.0.0.1", commLocPort2), F.asList(new InetSocketAddress("127.0.0.1", commExtPort2)));
+        map.put(new InetSocketAddress("127.0.0.1", LOC_PORT_1), F.asList(new InetSocketAddress("127.0.0.1", EXT_PORT_1)));
+        map.put(new InetSocketAddress("127.0.0.1", COMM_LOC_PORT_1), F.asList(new InetSocketAddress("127.0.0.1", COMM_EXT_PORT_1)));
+        map.put(new InetSocketAddress("127.0.0.1", LOC_PORT_2), F.asList(new InetSocketAddress("127.0.0.1", EXT_PORT_2)));
+        map.put(new InetSocketAddress("127.0.0.1", COMM_LOC_PORT_2), F.asList(new InetSocketAddress("127.0.0.1", COMM_EXT_PORT_2)));
 
         rslvr = new AddressResolver() {
             @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
@@ -166,10 +166,10 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     public void testBasicResolverMapPorts() throws Exception {
         Map<String, String> map = new HashMap<>();
 
-        map.put("127.0.0.1:" + locPort1, "127.0.0.1:" + extPort1);
-        map.put("127.0.0.1:" + commLocPort1, "127.0.0.1:" + commExtPort1);
-        map.put("127.0.0.1:" + locPort2, "127.0.0.1:" + extPort2);
-        map.put("127.0.0.1:" + commLocPort2, "127.0.0.1:" + commExtPort2);
+        map.put("127.0.0.1:" + LOC_PORT_1, "127.0.0.1:" + EXT_PORT_1);
+        map.put("127.0.0.1:" + COMM_LOC_PORT_1, "127.0.0.1:" + COMM_EXT_PORT_1);
+        map.put("127.0.0.1:" + LOC_PORT_2, "127.0.0.1:" + EXT_PORT_2);
+        map.put("127.0.0.1:" + COMM_LOC_PORT_2, "127.0.0.1:" + COMM_EXT_PORT_2);
 
         rslvr = new BasicAddressResolver(map);
 
@@ -347,10 +347,10 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         InetAddress locHost = InetAddress.getByName("127.0.0.1");
 
         try (
-            GridTcpForwarder tcpForward1 = new GridTcpForwarder(locHost, extPort1, locHost, locPort1, log);
-            GridTcpForwarder tcpForward2 = new GridTcpForwarder(locHost, extPort2, locHost, locPort2, log);
-            GridTcpForwarder tcpForward3 = new GridTcpForwarder(locHost, commExtPort1, locHost, commLocPort1, log);
-            GridTcpForwarder tcpForward4 = new GridTcpForwarder(locHost, commExtPort2, locHost, commLocPort2, log);
+            GridTcpForwarder tcpForward1 = new GridTcpForwarder(locHost, EXT_PORT_1, locHost, LOC_PORT_1, log);
+            GridTcpForwarder tcpForward2 = new GridTcpForwarder(locHost, EXT_PORT_2, locHost, LOC_PORT_2, log);
+            GridTcpForwarder tcpForward3 = new GridTcpForwarder(locHost, COMM_EXT_PORT_1, locHost, COMM_LOC_PORT_1, log);
+            GridTcpForwarder tcpForward4 = new GridTcpForwarder(locHost, COMM_EXT_PORT_2, locHost, COMM_LOC_PORT_2, log);
 
             Ignite g1 = startGrid(0);
             Ignite g2 = startGrid(1)

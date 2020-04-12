@@ -60,19 +60,19 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     private static long msgId = 1;
 
     /** */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** */
-    private static final Map<UUID, Set<UUID>> msgDestMap = new HashMap<>();
+    private static final Map<UUID, Set<UUID>> MSG_DEST_MAP = new HashMap<>();
 
     /** */
-    protected static final Map<UUID, CommunicationSpi<Message>> spis = new HashMap<>();
+    protected static final Map<UUID, CommunicationSpi<Message>> SPIS = new HashMap<>();
 
     /** */
-    protected static final Collection<ClusterNode> nodes = new ArrayList<>();
+    protected static final Collection<ClusterNode> NODES = new ArrayList<>();
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     private static GridTimeoutProcessor timeoutProcessor;
@@ -107,9 +107,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                 if (!testMsg.getSourceNodeId().equals(nodeId))
                     fail("Listener nodeId not equals to message nodeId.");
 
-                synchronized (mux) {
+                synchronized (MUX) {
                     // Get list of all recipients for the message.
-                    Set<UUID> recipients = msgDestMap.get(testMsg.getSourceNodeId());
+                    Set<UUID> recipients = MSG_DEST_MAP.get(testMsg.getSourceNodeId());
 
                     if (recipients != null) {
                         // Remove this node from a list of recipients.
@@ -119,10 +119,10 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                         // If all recipients received their messages,
                         // remove source nodes from sent messages map.
                         if (recipients.isEmpty())
-                            msgDestMap.remove(testMsg.getSourceNodeId());
+                            MSG_DEST_MAP.remove(testMsg.getSourceNodeId());
 
-                        if (msgDestMap.isEmpty())
-                            mux.notifyAll();
+                        if (MSG_DEST_MAP.isEmpty())
+                            MUX.notifyAll();
                     }
                     else
                         fail("Received unknown message [locNodeId=" + locNodeId + ", msg=" + testMsg + ']');
@@ -148,15 +148,15 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     public void testSendToOneNode() throws Exception {
         info(">>> Starting send to one node test. <<<");
 
-        msgDestMap.clear();
+        MSG_DEST_MAP.clear();
 
-        for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
-            for (ClusterNode node : nodes) {
-                synchronized (mux) {
-                    if (!msgDestMap.containsKey(entry.getKey()))
-                        msgDestMap.put(entry.getKey(), new HashSet<>());
+        for (Entry<UUID, CommunicationSpi<Message>> entry : SPIS.entrySet()) {
+            for (ClusterNode node : NODES) {
+                synchronized (MUX) {
+                    if (!MSG_DEST_MAP.containsKey(entry.getKey()))
+                        MSG_DEST_MAP.put(entry.getKey(), new HashSet<>());
 
-                    msgDestMap.get(entry.getKey()).add(node.id());
+                    MSG_DEST_MAP.get(entry.getKey()).add(node.id());
                 }
 
                 entry.getValue().sendMessage(node, new GridTestMessage(entry.getKey(), msgId++, 0));
@@ -166,21 +166,21 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         long now = System.currentTimeMillis();
         long endTime = now + getMaxTransmitMessagesTime();
 
-        synchronized (mux) {
-            while (now < endTime && !msgDestMap.isEmpty()) {
-                mux.wait(endTime - now);
+        synchronized (MUX) {
+            while (now < endTime && !MSG_DEST_MAP.isEmpty()) {
+                MUX.wait(endTime - now);
 
                 now = System.currentTimeMillis();
             }
 
-            if (!msgDestMap.isEmpty()) {
-                for (Entry<UUID, Set<UUID>> entry : msgDestMap.entrySet()) {
+            if (!MSG_DEST_MAP.isEmpty()) {
+                for (Entry<UUID, Set<UUID>> entry : MSG_DEST_MAP.entrySet()) {
                     error("Failed to receive all messages [sender=" + entry.getKey() +
                         ", dest=" + entry.getValue() + ']');
                 }
             }
 
-            assert msgDestMap.isEmpty() : "Some messages were not received.";
+            assert MSG_DEST_MAP.isEmpty() : "Some messages were not received.";
         }
     }
 
@@ -189,20 +189,20 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      */
     @Test
     public void testSendToManyNodes() throws Exception {
-        msgDestMap.clear();
+        MSG_DEST_MAP.clear();
 
         // Send message from each SPI to all SPI's, including itself.
-        for (Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+        for (Entry<UUID, CommunicationSpi<Message>> entry : SPIS.entrySet()) {
             UUID sndId = entry.getKey();
 
             CommunicationSpi<Message> commSpi = entry.getValue();
 
-            for (ClusterNode node : nodes) {
-                synchronized (mux) {
-                    if (!msgDestMap.containsKey(sndId))
-                        msgDestMap.put(sndId, new HashSet<>());
+            for (ClusterNode node : NODES) {
+                synchronized (MUX) {
+                    if (!MSG_DEST_MAP.containsKey(sndId))
+                        MSG_DEST_MAP.put(sndId, new HashSet<>());
 
-                    msgDestMap.get(sndId).add(node.id());
+                    MSG_DEST_MAP.get(sndId).add(node.id());
                 }
 
                 commSpi.sendMessage(node, new GridTestMessage(sndId, msgId++, 0));
@@ -212,21 +212,21 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         long now = System.currentTimeMillis();
         long endTime = now + getMaxTransmitMessagesTime();
 
-        synchronized (mux) {
-            while (now < endTime && !msgDestMap.isEmpty()) {
-                mux.wait(endTime - now);
+        synchronized (MUX) {
+            while (now < endTime && !MSG_DEST_MAP.isEmpty()) {
+                MUX.wait(endTime - now);
 
                 now = System.currentTimeMillis();
             }
 
-            if (!msgDestMap.isEmpty()) {
-                for (Entry<UUID, Set<UUID>> entry : msgDestMap.entrySet()) {
+            if (!MSG_DEST_MAP.isEmpty()) {
+                for (Entry<UUID, Set<UUID>> entry : MSG_DEST_MAP.entrySet()) {
                     error("Failed to receive all messages [sender=" + entry.getKey() +
                         ", dest=" + entry.getValue() + ']');
                 }
             }
 
-            assert msgDestMap.isEmpty() : "Some messages were not received.";
+            assert MSG_DEST_MAP.isEmpty() : "Some messages were not received.";
         }
     }
 
@@ -280,9 +280,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void startSpis() throws Exception {
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
@@ -317,7 +317,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             info(">>> Initialized context: nodeId=" + ctx.localNode().id());
 
-            spiRsrcs.add(rsrcs);
+            SPI_RSRCS.add(rsrcs);
 
             rsrcs.inject(spi);
 
@@ -339,11 +339,11 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             node.order(i + 1);
 
-            nodes.add(node);
+            NODES.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
-            spis.put(rsrcs.getNodeId(), spi);
+            SPIS.put(rsrcs.getNodeId(), spi);
 
             spi.onContextInitialized(ctx);
 
@@ -352,7 +352,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
         // For each context set remote nodes.
         for (Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (ClusterNode n : nodes) {
+            for (ClusterNode n : NODES) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }
@@ -369,7 +369,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             timeoutProcessor = null;
         }
 
-        for (CommunicationSpi<Message> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : SPIS.values()) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -377,7 +377,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : SPI_RSRCS)
             rsrcs.stopThreads();
     }
 }

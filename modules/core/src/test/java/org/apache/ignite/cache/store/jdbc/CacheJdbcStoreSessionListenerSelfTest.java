@@ -80,14 +80,14 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, Object... args) {
-            loadCacheCnt.incrementAndGet();
+            LOAD_CACHE_CNT.incrementAndGet();
 
             checkConnection();
         }
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
-            loadCnt.incrementAndGet();
+            LOAD_CNT.incrementAndGet();
 
             checkConnection();
 
@@ -97,11 +97,11 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry)
             throws CacheWriterException {
-            writeCnt.incrementAndGet();
+            WRITE_CNT.incrementAndGet();
 
             checkConnection();
 
-            if (write.get()) {
+            if (WRITE.get()) {
                 Connection conn = ses.attachment();
 
                 try {
@@ -114,7 +114,7 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
                             break;
 
                         case "cache2":
-                            if (fail.get())
+                            if (FAIL.get())
                                 throw new CacheWriterException("Expected failure.");
 
                             table = "Table2";
@@ -141,7 +141,7 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
-            deleteCnt.incrementAndGet();
+            DELETE_CNT.incrementAndGet();
 
             checkConnection();
         }
@@ -182,7 +182,7 @@ public class CacheJdbcStoreSessionListenerSelfTest extends CacheStoreSessionList
             else {
                 assertSame(conn, sesConn);
 
-                reuseCnt.incrementAndGet();
+                REUSE_CNT.incrementAndGet();
             }
         }
     }

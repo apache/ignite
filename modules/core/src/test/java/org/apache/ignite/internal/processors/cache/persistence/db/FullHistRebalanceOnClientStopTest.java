@@ -201,13 +201,13 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
         private static boolean topVersForFull = false;
 
         /** Lock object. */
-        private static final Object mux = new Object();
+        private static final Object MUX = new Object();
 
         /**
          * @return {@code true} if WAL rebalance has been used.
          */
         static boolean histRebalances() {
-            synchronized (mux) {
+            synchronized (MUX) {
                 return topVersForHist;
             }
         }
@@ -216,7 +216,7 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
          * @return {@code true} if full rebalance has been used.
          */
         static boolean fullRebalances() {
-            synchronized (mux) {
+            synchronized (MUX) {
                 return topVersForFull;
             }
         }
@@ -225,7 +225,7 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
          * Cleans all rebalances histories.
          */
         public static void cleanup() {
-            synchronized (mux) {
+            synchronized (MUX) {
                 topVersForHist = false;
                 topVersForFull = false;
             }
@@ -239,13 +239,13 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
                 IgniteDhtDemandedPartitionsMap map = demandMsg.partitions();
 
                 if (!map.historicalMap().isEmpty()) {
-                    synchronized (mux) {
+                    synchronized (MUX) {
                         topVersForHist = true;
                     }
                 }
 
                 if (!map.fullSet().isEmpty()) {
-                    synchronized (mux) {
+                    synchronized (MUX) {
                         topVersForFull = true;
                     }
                 }

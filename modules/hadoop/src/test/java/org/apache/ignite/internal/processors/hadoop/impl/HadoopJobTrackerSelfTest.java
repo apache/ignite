@@ -46,10 +46,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.latch;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.mapExecCnt;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.reduceExecCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.COMBINE_EXEC_CNT;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.LATCH;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.MAP_EXEC_CNT;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.REDUCE_EXEC_CNT;
 
 /**
  * Job tracker self test.
@@ -73,16 +73,16 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        latch.put("mapAwaitLatch", new CountDownLatch(1));
-        latch.put("reduceAwaitLatch", new CountDownLatch(1));
-        latch.put("combineAwaitLatch", new CountDownLatch(1));
+        LATCH.put("mapAwaitLatch", new CountDownLatch(1));
+        LATCH.put("reduceAwaitLatch", new CountDownLatch(1));
+        LATCH.put("combineAwaitLatch", new CountDownLatch(1));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        mapExecCnt.set(0);
-        combineExecCnt.set(0);
-        reduceExecCnt.set(0);
+        MAP_EXEC_CNT.set(0);
+        COMBINE_EXEC_CNT.set(0);
+        REDUCE_EXEC_CNT.set(0);
     }
 
     /** {@inheritDoc} */
@@ -122,25 +122,25 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             info("Releasing map latch.");
 
-            latch.get("mapAwaitLatch").countDown();
+            LATCH.get("mapAwaitLatch").countDown();
 
             checkStatus(jobId, false);
 
             info("Releasing reduce latch.");
 
-            latch.get("reduceAwaitLatch").countDown();
+            LATCH.get("reduceAwaitLatch").countDown();
 
             checkStatus(jobId, true);
 
-            assertEquals(10, mapExecCnt.get());
-            assertEquals(0, combineExecCnt.get());
-            assertEquals(1, reduceExecCnt.get());
+            assertEquals(10, MAP_EXEC_CNT.get());
+            assertEquals(0, COMBINE_EXEC_CNT.get());
+            assertEquals(1, REDUCE_EXEC_CNT.get());
         }
         finally {
             // Safety.
-            latch.get("mapAwaitLatch").countDown();
-            latch.get("combineAwaitLatch").countDown();
-            latch.get("reduceAwaitLatch").countDown();
+            LATCH.get("mapAwaitLatch").countDown();
+            LATCH.get("combineAwaitLatch").countDown();
+            LATCH.get("reduceAwaitLatch").countDown();
         }
     }
 
@@ -170,7 +170,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             info("Releasing map latch.");
 
-            latch.get("mapAwaitLatch").countDown();
+            LATCH.get("mapAwaitLatch").countDown();
 
             checkStatus(jobId, false);
 
@@ -179,29 +179,29 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
 
             U.sleep(50);
 
-            assertEquals(0, reduceExecCnt.get());
+            assertEquals(0, REDUCE_EXEC_CNT.get());
 
             info("Releasing combiner latch.");
 
-            latch.get("combineAwaitLatch").countDown();
+            LATCH.get("combineAwaitLatch").countDown();
 
             checkStatus(jobId, false);
 
             info("Releasing reduce latch.");
 
-            latch.get("reduceAwaitLatch").countDown();
+            LATCH.get("reduceAwaitLatch").countDown();
 
             checkStatus(jobId, true);
 
-            assertEquals(10, mapExecCnt.get());
-            assertEquals(10, combineExecCnt.get());
-            assertEquals(1, reduceExecCnt.get());
+            assertEquals(10, MAP_EXEC_CNT.get());
+            assertEquals(10, COMBINE_EXEC_CNT.get());
+            assertEquals(1, REDUCE_EXEC_CNT.get());
         }
         finally {
             // Safety.
-            latch.get("mapAwaitLatch").countDown();
-            latch.get("combineAwaitLatch").countDown();
-            latch.get("reduceAwaitLatch").countDown();
+            LATCH.get("mapAwaitLatch").countDown();
+            LATCH.get("combineAwaitLatch").countDown();
+            LATCH.get("reduceAwaitLatch").countDown();
         }
     }
 
@@ -289,9 +289,9 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         @Override public void run(Context ctx) throws IOException, InterruptedException {
             System.out.println("Running task: " + ctx.getTaskAttemptID().getTaskID().getId());
 
-            latch.get("mapAwaitLatch").await();
+            LATCH.get("mapAwaitLatch").await();
 
-            mapExecCnt.incrementAndGet();
+            MAP_EXEC_CNT.incrementAndGet();
 
             System.out.println("Completed task: " + ctx.getTaskAttemptID().getTaskID().getId());
         }
@@ -304,9 +304,9 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         @Override public void run(Context ctx) throws IOException, InterruptedException {
             System.out.println("Running task: " + ctx.getTaskAttemptID().getTaskID().getId());
 
-            latch.get("reduceAwaitLatch").await();
+            LATCH.get("reduceAwaitLatch").await();
 
-            reduceExecCnt.incrementAndGet();
+            REDUCE_EXEC_CNT.incrementAndGet();
 
             System.out.println("Completed task: " + ctx.getTaskAttemptID().getTaskID().getId());
         }
@@ -319,9 +319,9 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
         @Override public void run(Context ctx) throws IOException, InterruptedException {
             System.out.println("Running task: " + ctx.getTaskAttemptID().getTaskID().getId());
 
-            latch.get("combineAwaitLatch").await();
+            LATCH.get("combineAwaitLatch").await();
 
-            combineExecCnt.incrementAndGet();
+            COMBINE_EXEC_CNT.incrementAndGet();
 
             System.out.println("Completed task: " + ctx.getTaskAttemptID().getTaskID().getId());
         }

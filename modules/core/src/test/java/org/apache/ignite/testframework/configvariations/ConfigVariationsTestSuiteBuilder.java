@@ -41,10 +41,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ConfigVariationsTestSuiteBuilder {
     /** */
-    private static final AtomicInteger cntr = new AtomicInteger(0);
+    private static final AtomicInteger CNTR = new AtomicInteger(0);
 
     /** */
-    private static final Map<String, VariationsTestsConfig> cfgs = new ConcurrentHashMap<>();
+    private static final Map<String, VariationsTestsConfig> CFGS = new ConcurrentHashMap<>();
 
     /** */
     private ConfigParameter<IgniteConfiguration>[][] igniteParams =
@@ -96,7 +96,7 @@ public class ConfigVariationsTestSuiteBuilder {
     /** Invoked by reflection in {@link #makeTestClass(String, VariationsTestsConfig)}. */
     @SuppressWarnings("unused")
     public static VariationsTestsConfig getCfg(String key) {
-        return cfgs.get(key);
+        return CFGS.get(key);
     }
 
     /**
@@ -412,11 +412,11 @@ public class ConfigVariationsTestSuiteBuilder {
      * @return Test class.
      */
     private Class<?> makeTestClass(String pkg, VariationsTestsConfig cfg) {
-        int idx = cntr.getAndIncrement();
+        int idx = CNTR.getAndIncrement();
 
         String clsName = cls.getSimpleName() + "_" + idx;
 
-        cfgs.put(clsName, cfg);
+        CFGS.put(clsName, cfg);
 
         ClassPool cp = ClassPool.getDefault();
         cp.insertClassPath(new ClassClassPath(ConfigVariationsTestSuiteBuilder.class));

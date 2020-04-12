@@ -69,7 +69,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     private static final int CP_BUF_SIZE = 20 * 1024 * 1024;
 
     /** Slow checkpoint enabled. */
-    private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(false);
+    private static final AtomicBoolean SLOW_CHECKPOINT_ENABLED = new AtomicBoolean(false);
 
     /** Checkpoint park nanos. */
     private static final int CHECKPOINT_PARK_NANOS = 50_000_000;
@@ -81,7 +81,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     private static final int PAGES_TOUCHED_UNDER_CP_LOCK = 20;
 
     /** Slop load flag. */
-    private static final AtomicBoolean stop = new AtomicBoolean(false);
+    private static final AtomicBoolean STOP = new AtomicBoolean(false);
 
     /** Checkpoint threads. */
     private int checkpointThreads;
@@ -116,9 +116,9 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        stop.set(false);
+        STOP.set(false);
 
-        slowCheckpointEnabled.set(false);
+        SLOW_CHECKPOINT_ENABLED.set(false);
 
         stopAllGrids();
 
@@ -127,9 +127,9 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stop.set(true);
+        STOP.set(true);
 
-        slowCheckpointEnabled.set(false);
+        SLOW_CHECKPOINT_ENABLED.set(false);
 
         stopAllGrids();
 
@@ -189,7 +189,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
             streamer.flush();
         }
 
-        slowCheckpointEnabled.set(true);
+        SLOW_CHECKPOINT_ENABLED.set(true);
         log.info(">>> Slow checkpoints enabled");
 
         db.enableCheckpoints(true).get();
@@ -200,7 +200,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
             @Override public void run() {
                 int loops = 0;
 
-                while (!stop.get()) {
+                while (!STOP.get()) {
                     if (loops % 10 == 0 && loops > 0 && loops < 500 || loops % 500 == 0 && loops >= 500)
                         log.info("Successfully completed " + loops + " loops");
 
@@ -258,7 +258,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                         }
 
                         // Emulate writes to trigger throttling.
-                        for (int i = PAGES_TOUCHED_UNDER_CP_LOCK / 2; i < PAGES_TOUCHED_UNDER_CP_LOCK && !stop.get(); i++) {
+                        for (int i = PAGES_TOUCHED_UNDER_CP_LOCK / 2; i < PAGES_TOUCHED_UNDER_CP_LOCK && !STOP.get(); i++) {
                             FullPageId fpid = pickedPages.get(i);
 
                             long page = pageMem.acquirePage(fpid.groupId(), fpid.pageId());
@@ -297,14 +297,14 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         Thread.sleep(10_000); // Await for the start of throttling.
 
-        slowCheckpointEnabled.set(false);
+        SLOW_CHECKPOINT_ENABLED.set(false);
         log.info(">>> Slow checkpoints disabled");
 
         assertFalse(fail.get());
 
         forceCheckpoint(); // Previous checkpoint should eventually finish.
 
-        stop.set(true);
+        STOP.set(true);
 
         fut.get();
 
@@ -353,7 +353,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
                  * Parks current checkpoint thread if slow mode is enabled.
                  */
                 private void parkIfNeeded() {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                    if (SLOW_CHECKPOINT_ENABLED.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
                 }
 

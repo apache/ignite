@@ -41,12 +41,12 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
     @Test
     public void testFailoverWithDiscoWorkerTermination() throws Exception {
         doTestTransferAmount(new FailoverScenario() {
-            static final int failedNodeIdx = 1;
+            static final int FAILED_NODE_IDX = 1;
 
             /** {@inheritDoc}. */
             @Override public void afterFirstTransaction() throws Exception {
                 // Terminate disco-event-worker thread on one node.
-                WorkersControlMXBean bean = getMxBean(getTestIgniteInstanceName(failedNodeIdx), "Kernal",
+                WorkersControlMXBean bean = getMxBean(getTestIgniteInstanceName(FAILED_NODE_IDX), "Kernal",
                     WorkersControlMXBeanImpl.class, WorkersControlMXBean.class);
 
                 bean.terminateWorker(
@@ -62,7 +62,7 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
                 // Wait until node with death worker will left cluster.
                 GridTestUtils.waitForCondition(() -> {
                     try {
-                        grid(failedNodeIdx);
+                        grid(FAILED_NODE_IDX);
                     }
                     catch (IgniteIllegalStateException e) {
                         return true;
@@ -72,10 +72,10 @@ public class TransactionIntegrityWithSystemWorkerDeathTest extends AbstractTrans
                 }, getTestTimeout());
 
                 // Failed node should be stopped.
-                GridTestUtils.assertThrows(log, () -> grid(failedNodeIdx), IgniteIllegalStateException.class, "");
+                GridTestUtils.assertThrows(log, () -> grid(FAILED_NODE_IDX), IgniteIllegalStateException.class, "");
 
                 // Re-start failed node.
-                startGrid(failedNodeIdx);
+                startGrid(FAILED_NODE_IDX);
 
                 awaitPartitionMapExchange();
             }

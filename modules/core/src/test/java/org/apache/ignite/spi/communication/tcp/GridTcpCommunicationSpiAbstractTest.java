@@ -88,7 +88,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         super.testSendToManyNodes();
 
         // Test idle clients remove.
-        for (CommunicationSpi<Message> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : SPIS.values()) {
             ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
             assertEquals(getSpiCount() - 1, clients.size());
@@ -103,10 +103,10 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     @Test
     public void testCheckConnection1() {
         for (int i = 0; i < 100; i++) {
-            for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+            for (Map.Entry<UUID, CommunicationSpi<Message>> entry : SPIS.entrySet()) {
                 TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
 
-                List<ClusterNode> checkNodes = new ArrayList<>(nodes);
+                List<ClusterNode> checkNodes = new ArrayList<>(NODES);
 
                 assert checkNodes.size() > 1;
 
@@ -125,18 +125,18 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
      */
     @Test
     public void testCheckConnection2() throws Exception {
-        final int THREADS = spis.size();
+        final int THREADS = SPIS.size();
 
         final CyclicBarrier b = new CyclicBarrier(THREADS);
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : SPIS.entrySet()) {
             final TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    List<ClusterNode> checkNodes = new ArrayList<>(nodes);
+                    List<ClusterNode> checkNodes = new ArrayList<>(NODES);
 
                     assert checkNodes.size() > 1;
 
@@ -164,7 +164,7 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (CommunicationSpi<Message> spi : spis.values()) {
+        for (CommunicationSpi<Message> spi : SPIS.values()) {
             ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(spi, "clients");
 
             for (int i = 0; i < 20; i++) {

@@ -27,7 +27,7 @@ import static java.util.Arrays.asList;
 import static org.apache.ignite.ml.naivebayes.compound.Data.LABEL_2;
 import static org.apache.ignite.ml.naivebayes.compound.Data.binarizedDataThresholds;
 import static org.apache.ignite.ml.naivebayes.compound.Data.classProbabilities;
-import static org.apache.ignite.ml.naivebayes.compound.Data.labels;
+import static org.apache.ignite.ml.naivebayes.compound.Data.LABELS;
 import static org.apache.ignite.ml.naivebayes.compound.Data.means;
 import static org.apache.ignite.ml.naivebayes.compound.Data.probabilities;
 import static org.apache.ignite.ml.naivebayes.compound.Data.variances;
@@ -42,13 +42,13 @@ public class CompoundNaiveBayesModelTest {
     @Test
     public void testPredictOnlyGauss() {
         GaussianNaiveBayesModel gaussianModel =
-            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
+            new GaussianNaiveBayesModel(means, variances, classProbabilities, LABELS, null);
 
         Vector observation = VectorUtils.of(6, 130, 8);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .withPriorProbabilities(classProbabilities)
-            .withLabels(labels)
+            .withLabels(LABELS)
             .withGaussianModel(gaussianModel);
 
         assertEquals(LABEL_2, model.predict(observation), PRECISION);
@@ -58,13 +58,13 @@ public class CompoundNaiveBayesModelTest {
     @Test
     public void testPredictOnlyDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, LABELS, binarizedDataThresholds, null);
 
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .withPriorProbabilities(classProbabilities)
-            .withLabels(labels)
+            .withLabels(LABELS)
             .withDiscreteModel(discreteModel);
 
         assertEquals(LABEL_2, model.predict(observation), PRECISION);
@@ -74,14 +74,14 @@ public class CompoundNaiveBayesModelTest {
     @Test
     public void testPredictGaussAndDiscrete() {
         DiscreteNaiveBayesModel discreteMdl =
-            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, LABELS, binarizedDataThresholds, null);
 
         GaussianNaiveBayesModel gaussianMdl =
-            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
+            new GaussianNaiveBayesModel(means, variances, classProbabilities, LABELS, null);
 
         CompoundNaiveBayesModel mdl = new CompoundNaiveBayesModel()
             .withPriorProbabilities(classProbabilities)
-            .withLabels(labels)
+            .withLabels(LABELS)
             .withGaussianModel(gaussianMdl)
             .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
             .withDiscreteModel(discreteMdl)

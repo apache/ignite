@@ -43,7 +43,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     private static final int WRITE_FROM_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** Run time is 24 hours. */
-    private static final long runTime = 24L * 60 * 60 * 60 * 1000;
+    private static final long RUN_TIME = 24L * 60 * 60 * 60 * 1000;
 
     /** Specify if test keys should be randomly generated. */
     private boolean rndKeys;
@@ -55,7 +55,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     private int threadCnt;
 
     /** No-op cache store. */
-    private static final CacheStore store = new CacheStoreAdapter() {
+    private static final CacheStore STORE = new CacheStoreAdapter() {
         /** {@inheritDoc} */
         @Override public Object load(Object key) {
             return null;
@@ -110,7 +110,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setCacheStoreFactory(singletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(STORE));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -176,7 +176,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
 
         long prevPutCnt = 0;
 
-        while (System.currentTimeMillis() - start < runTime) {
+        while (System.currentTimeMillis() - start < RUN_TIME) {
             // Print stats every minute.
             U.sleep(60 * 1000);
 

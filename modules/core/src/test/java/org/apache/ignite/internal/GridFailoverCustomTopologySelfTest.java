@@ -52,7 +52,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     private final AtomicInteger failCnt = new AtomicInteger(0);
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     public GridFailoverCustomTopologySelfTest() {
@@ -98,10 +98,10 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
             try {
                 ComputeTaskFuture<String> fut;
 
-                synchronized(mux){
+                synchronized(MUX){
                     fut = ignite1.compute().executeAsync(JobTask.class, null);
 
-                    mux.wait();
+                    MUX.wait();
                 }
 
                 stopAndCancelGrid(2);
@@ -171,8 +171,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                     if (!nodeId.equals(argument(0))) {
                         try {
-                            synchronized(mux) {
-                                mux.notifyAll();
+                            synchronized(MUX) {
+                                MUX.notifyAll();
                             }
 
                             Thread.sleep(Integer.MAX_VALUE);

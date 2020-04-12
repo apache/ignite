@@ -46,7 +46,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     private static final long DURATION = 8 * 60 * 60 * 1000;
 
     /** */
-    private static final AtomicInteger idx = new AtomicInteger();
+    private static final AtomicInteger IDX = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -118,7 +118,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
                 long seqVal = seq.incrementAndGet();
 
-                int curIdx = idx.incrementAndGet();
+                int curIdx = IDX.incrementAndGet();
 
                 if (curIdx % 1000 == 0)
                     info("Sequence value [seq=" + seqVal + ", idx=" + curIdx + ']');

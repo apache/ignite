@@ -76,7 +76,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
 
     // TODO: change this value to ip of remote node running testRunReceiver
     /** Address of remote machine running receive test. */
-    private static final String remoteAddr = "172.1.1.36";
+    private static final String REMOTE_ADDR = "172.1.1.36";
 
     /** */
     public GridTcpCommunicationSpiLanLoadTest() {
@@ -241,7 +241,7 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
         remoteNode.setAttributes(attrs);
 
         remoteNode.setAttribute(U.spiAttribute(spi, TcpCommunicationSpi.ATTR_ADDRS),
-            Collections.singleton(remoteAddr));
+            Collections.singleton(REMOTE_ADDR));
 
         ctx.remoteNodes().add(remoteNode);
     }

@@ -54,13 +54,13 @@ import org.junit.Test;
 @GridCommonTest(group = "Kernal Self")
 public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     private static final int SPLIT_COUNT = 2;
 
     /** */
-    private static final long maxJobExecTime = 10000;
+    private static final long MAX_JOB_EXEC_TIME = 10000;
 
     /** */
     private static int cancelCnt;
@@ -87,14 +87,14 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         ignite.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
 
         ComputeTaskFuture<?> res0 =
-            executeAsync(ignite.compute().withTimeout(maxJobExecTime * 2), GridCancelTestTask.class.getName(), null);
+            executeAsync(ignite.compute().withTimeout(MAX_JOB_EXEC_TIME * 2), GridCancelTestTask.class.getName(), null);
 
         try {
             Object res = res0.get();
 
             info("Cancel test result: " + res);
 
-            synchronized (mux) {
+            synchronized (MUX) {
                 // Every execute must be called.
                 assert execCnt <= SPLIT_COUNT : "Invalid execute count: " + execCnt;
 
@@ -198,12 +198,12 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
 
         /** */
         public GridCancelTestJob() {
-            thresholdTime = System.currentTimeMillis() + maxJobExecTime;
+            thresholdTime = System.currentTimeMillis() + MAX_JOB_EXEC_TIME;
         }
 
         /** {@inheritDoc} */
         @Override public Serializable execute() {
-            synchronized (mux) {
+            synchronized (MUX) {
                 execCnt++;
             }
 
@@ -213,9 +213,9 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
             long now = System.currentTimeMillis();
 
             while (!isCancelled && now < thresholdTime) {
-                synchronized (mux) {
+                synchronized (MUX) {
                     try {
-                        mux.wait(thresholdTime - now);
+                        MUX.wait(thresholdTime - now);
                     }
                     catch (InterruptedException ignored) {
                         // No-op.
@@ -225,19 +225,19 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                 now = System.currentTimeMillis();
             }
 
-            synchronized (mux) {
+            synchronized (MUX) {
                 return isCancelled ? 1 : 0;
             }
         }
 
         /** {@inheritDoc} */
         @Override public void cancel() {
-            synchronized (mux) {
+            synchronized (MUX) {
                 isCancelled = true;
 
                 cancelCnt++;
 
-                mux.notifyAll();
+                MUX.notifyAll();
             }
 
             log.warning("Job cancelled: " + jobCtx.getJobId());
@@ -259,7 +259,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
             Collection<CollisionJobContext> activeJobs = ctx.activeJobs();
             Collection<CollisionJobContext> waitJobs = ctx.waitingJobs();
 
-            synchronized (mux) {
+            synchronized (MUX) {
                 colResolutionCnt++;
             }
 

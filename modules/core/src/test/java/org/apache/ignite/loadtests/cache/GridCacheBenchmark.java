@@ -48,7 +48,7 @@ public class GridCacheBenchmark {
     private static final String CACHE = "partitioned";
 
     /** Counter. */
-    private static final AtomicLong cntr = new AtomicLong();
+    private static final AtomicLong CNTR = new AtomicLong();
 
     /** */
     private static final int LOG_MOD = 500000;
@@ -76,7 +76,7 @@ public class GridCacheBenchmark {
 
                 assert cache != null;
 
-                cntr.set(0);
+                CNTR.set(0);
 
                 final AtomicLong opCnt = new AtomicLong();
 
@@ -84,7 +84,7 @@ public class GridCacheBenchmark {
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        long keyVal = cntr.incrementAndGet();
+                        long keyVal = CNTR.incrementAndGet();
 
                         cache.put(keyVal % 100000, keyVal);
 
@@ -97,7 +97,7 @@ public class GridCacheBenchmark {
                     }
                 }, THREADS, WARM_UP_TIME);
 
-                cntr.set(0);
+                CNTR.set(0);
 
                 opCnt.set(0);
 
@@ -105,7 +105,7 @@ public class GridCacheBenchmark {
 
                 GridLoadTestUtils.runMultithreadedInLoop(new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        long keyVal = cntr.incrementAndGet();
+                        long keyVal = CNTR.incrementAndGet();
 
                         Long old = cache.get(keyVal % 100000);
 
@@ -122,7 +122,7 @@ public class GridCacheBenchmark {
 
                 System.gc();
 
-                cntr.set(0);
+                CNTR.set(0);
 
                 opCnt.set(0);
 
@@ -131,7 +131,7 @@ public class GridCacheBenchmark {
                 long durPutx = GridLoadTestUtils.measureTime(new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         while (true) {
-                            long keyVal = cntr.incrementAndGet();
+                            long keyVal = CNTR.incrementAndGet();
 
                             if (keyVal >= PUT_CNT)
                                 break;
@@ -155,7 +155,7 @@ public class GridCacheBenchmark {
 
                 System.gc();
 
-                cntr.set(0);
+                CNTR.set(0);
 
                 opCnt.set(0);
 
@@ -164,7 +164,7 @@ public class GridCacheBenchmark {
                 long durGet = GridLoadTestUtils.measureTime(new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         while (true) {
-                            long keyVal = cntr.incrementAndGet();
+                            long keyVal = CNTR.incrementAndGet();
 
                             if (keyVal >= PUT_CNT)
                                 break;

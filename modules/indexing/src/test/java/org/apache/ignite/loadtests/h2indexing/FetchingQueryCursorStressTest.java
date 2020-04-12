@@ -61,7 +61,7 @@ public class FetchingQueryCursorStressTest {
     /** */
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
-    public static final AtomicReference<Exception> error = new AtomicReference<>();
+    public static final AtomicReference<Exception> ERROR = new AtomicReference<>();
 
     /**
      * Entry point.
@@ -87,8 +87,8 @@ public class FetchingQueryCursorStressTest {
             for (Thread t : threads)
                 t.join();
 
-            if(error.get()!=null)
-                throw error.get();
+            if(ERROR.get()!=null)
+                throw ERROR.get();
         }
         finally {
             Ignition.stopAll(false);
@@ -218,7 +218,7 @@ public class FetchingQueryCursorStressTest {
             System.out.println("Executor started: " + Thread.currentThread().getName());
 
             try {
-                while (error.get()==null && !Thread.currentThread().isInterrupted()) {
+                while (ERROR.get()==null && !Thread.currentThread().isInterrupted()) {
                     long start = System.nanoTime();
 
                     SqlFieldsQuery qry = new SqlFieldsQuery(query);
@@ -239,7 +239,7 @@ public class FetchingQueryCursorStressTest {
                 }
             }
             catch (CacheException ex){
-                error.compareAndSet(null, ex);
+                ERROR.compareAndSet(null, ex);
             }
         }
     }
@@ -250,7 +250,7 @@ public class FetchingQueryCursorStressTest {
     private static class ThroughputPrinter implements Runnable {
         /** {@inheritDoc} */
         @Override public void run() {
-            while (error.get()==null) {
+            while (ERROR.get()==null) {
                 long before = CNT.get();
                 long beforeTime = System.currentTimeMillis();
 

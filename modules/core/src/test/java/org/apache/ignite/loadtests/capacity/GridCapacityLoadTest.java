@@ -32,7 +32,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  */
 public class GridCapacityLoadTest {
     /** Heap usage. */
-    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
+    private static final MemoryMXBean MEM = ManagementFactory.getMemoryMXBean();
 
     /**
      * Main method.
@@ -50,7 +50,7 @@ public class GridCapacityLoadTest {
         try (Ignite g = G.start(cfg)) {
             IgniteCache<Integer, Integer> c = g.cache("test-cache");
 
-            long init = mem.getHeapMemoryUsage().getUsed();
+            long init = MEM.getHeapMemoryUsage().getUsed();
 
             printHeap(init);
 
@@ -75,7 +75,7 @@ public class GridCapacityLoadTest {
 
             printHeap(init);
 
-            MemoryUsage heap = mem.getHeapMemoryUsage();
+            MemoryUsage heap = MEM.getHeapMemoryUsage();
 
             long used = heap.getUsed() - init;
 
@@ -86,7 +86,7 @@ public class GridCapacityLoadTest {
     }
 
     private static void printHeap(long init) {
-        MemoryUsage heap = mem.getHeapMemoryUsage();
+        MemoryUsage heap = MEM.getHeapMemoryUsage();
 
         long max = heap.getMax() - init;
         long used = heap.getUsed() - init;

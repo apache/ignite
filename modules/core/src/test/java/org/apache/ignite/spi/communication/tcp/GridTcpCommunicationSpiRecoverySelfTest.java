@@ -66,13 +66,13 @@ import org.junit.Test;
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<Message>> extends GridSpiAbstractTest<T> {
     /** */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** */
-    protected static final List<TcpCommunicationSpi> spis = new ArrayList<>();
+    protected static final List<TcpCommunicationSpi> SPIS = new ArrayList<>();
 
     /** */
-    protected static final List<ClusterNode> nodes = new ArrayList<>();
+    protected static final List<ClusterNode> NODES = new ArrayList<>();
 
     /** */
     private static final int SPI_CNT = 2;
@@ -210,14 +210,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
      * @throws Exception If failed.
      */
     private void checkBlockListener() throws Exception {
-        TcpCommunicationSpi spi0 = spis.get(0);
-        TcpCommunicationSpi spi1 = spis.get(1);
+        TcpCommunicationSpi spi0 = SPIS.get(0);
+        TcpCommunicationSpi spi1 = SPIS.get(1);
 
         final TestListener lsnr0 = (TestListener)spi0.getListener();
         final TestListener lsnr1 = (TestListener)spi1.getListener();
 
-        ClusterNode node0 = nodes.get(0);
-        ClusterNode node1 = nodes.get(1);
+        ClusterNode node0 = NODES.get(0);
+        ClusterNode node1 = NODES.get(1);
 
         lsnr1.block();
 
@@ -283,13 +283,13 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
         createSpis();
 
         try {
-            final TcpCommunicationSpi spi0 = spis.get(0);
-            final TcpCommunicationSpi spi1 = spis.get(1);
+            final TcpCommunicationSpi spi0 = SPIS.get(0);
+            final TcpCommunicationSpi spi1 = SPIS.get(1);
 
             final TestListener lsnr1 = (TestListener)spi1.getListener();
 
-            final ClusterNode node0 = nodes.get(0);
-            final ClusterNode node1 = nodes.get(1);
+            final ClusterNode node0 = NODES.get(0);
+            final ClusterNode node1 = NODES.get(1);
 
             final AtomicInteger msgId = new AtomicInteger();
 
@@ -402,14 +402,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
         createSpis();
 
         try {
-            final TcpCommunicationSpi spi0 = spis.get(0);
-            final TcpCommunicationSpi spi1 = spis.get(1);
+            final TcpCommunicationSpi spi0 = SPIS.get(0);
+            final TcpCommunicationSpi spi1 = SPIS.get(1);
 
             final TestListener lsnr0 = (TestListener)spi0.getListener();
             final TestListener lsnr1 = (TestListener)spi1.getListener();
 
-            final ClusterNode node0 = nodes.get(0);
-            final ClusterNode node1 = nodes.get(1);
+            final ClusterNode node0 = NODES.get(0);
+            final ClusterNode node1 = NODES.get(1);
 
             final AtomicInteger msgId = new AtomicInteger();
 
@@ -538,13 +538,13 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
         createSpis();
 
         try {
-            final TcpCommunicationSpi spi0 = spis.get(0);
-            final TcpCommunicationSpi spi1 = spis.get(1);
+            final TcpCommunicationSpi spi0 = SPIS.get(0);
+            final TcpCommunicationSpi spi1 = SPIS.get(1);
 
             final TestListener lsnr1 = (TestListener)spi1.getListener();
 
-            final ClusterNode node0 = nodes.get(0);
-            final ClusterNode node1 = nodes.get(1);
+            final ClusterNode node0 = NODES.get(0);
+            final ClusterNode node1 = NODES.get(1);
 
             final AtomicInteger msgId = new AtomicInteger();
 
@@ -720,9 +720,9 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
      * @throws Exception If failed.
      */
     private void startSpis() throws Exception {
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
@@ -757,7 +757,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
 
             ctx.timeoutProcessor(timeoutProcessor);
 
-            spiRsrcs.add(rsrcs);
+            SPI_RSRCS.add(rsrcs);
 
             rsrcs.inject(spi);
 
@@ -776,11 +776,11 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
 
             node.setAttributes(spi.getNodeAttributes());
 
-            nodes.add(node);
+            NODES.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
-            spis.add(spi);
+            SPIS.add(spi);
 
             spi.onContextInitialized(ctx);
 
@@ -789,7 +789,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
 
         // For each context set remote nodes.
         for (Map.Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (ClusterNode n : nodes) {
+            for (ClusterNode n : NODES) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }
@@ -836,7 +836,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             timeoutProcessor = null;
         }
 
-        for (CommunicationSpi<Message> spi : spis) {
+        for (CommunicationSpi<Message> spi : SPIS) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -844,11 +844,11 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : SPI_RSRCS)
             rsrcs.stopThreads();
 
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
     }
 }

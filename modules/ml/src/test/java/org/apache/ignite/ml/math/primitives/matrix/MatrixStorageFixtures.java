@@ -32,14 +32,14 @@ import org.jetbrains.annotations.NotNull;
  */
 class MatrixStorageFixtures {
     /** */
-    private static final List<Supplier<Iterable<MatrixStorage>>> suppliers = Collections.singletonList(
+    private static final List<Supplier<Iterable<MatrixStorage>>> SUPPLIERS = Collections.singletonList(
         (Supplier<Iterable<MatrixStorage>>)SparseLocalMatrixStorageFixture::new
     );
 
     /** */
     void consumeSampleStorages(BiConsumer<Integer, Integer> paramsConsumer,
         BiConsumer<MatrixStorage, String> consumer) {
-        for (Supplier<Iterable<MatrixStorage>> fixtureSupplier : suppliers) {
+        for (Supplier<Iterable<MatrixStorage>> fixtureSupplier : SUPPLIERS) {
             final Iterable<MatrixStorage> fixture = fixtureSupplier.get();
 
             for (MatrixStorage matrixStorage : fixture) {

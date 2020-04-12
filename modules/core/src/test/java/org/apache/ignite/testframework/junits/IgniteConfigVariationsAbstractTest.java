@@ -59,7 +59,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected static int testedNodeIdx;
 
     /** */
-    private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
+    private static final File WORK_DIR = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
     /**
      * Dummy initial stub to just let people launch test classes not from suite.
@@ -101,7 +101,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
             Ignition.stopAll(true);
 
-            FileUtils.deleteDirectory(workDir);
+            FileUtils.deleteDirectory(WORK_DIR);
 
             info("Ignite's 'work' directory has been cleaned.");
 
@@ -138,7 +138,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
                 stopAllGrids();
 
-                FileUtils.deleteDirectory(workDir);
+                FileUtils.deleteDirectory(WORK_DIR);
 
                 info("Ignite's 'work' directory has been cleaned.");
 
@@ -196,7 +196,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         IgniteConfiguration resCfg = testsCfg.configurationFactory().getConfiguration(igniteInstanceName, cfg);
 
-        resCfg.setWorkDirectory(workDir.getAbsolutePath());
+        resCfg.setWorkDirectory(WORK_DIR.getAbsolutePath());
 
         if (testsCfg.withClients())
             resCfg.setClientMode(expectedClient(igniteInstanceName));

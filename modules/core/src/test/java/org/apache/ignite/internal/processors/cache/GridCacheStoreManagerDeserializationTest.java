@@ -58,7 +58,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstractTest {
     /** Cache store. */
-    protected static final GridCacheLocalTestStore store = new GridCacheLocalTestStore();
+    protected static final GridCacheLocalTestStore STORE = new GridCacheLocalTestStore();
 
     /** Test cache name. */
     protected static final String CACHE_NAME = "cache_name";
@@ -111,7 +111,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         cc.setRebalanceMode(SYNC);
 
-        cc.setCacheStoreFactory(singletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(STORE));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -129,7 +129,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        store.map.clear();
+        STORE.map.clear();
     }
 
     /** {@inheritDoc} */
@@ -153,12 +153,12 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         cache.destroy();
         cache.close();
 
-        assert store.map.containsKey(testObj);
+        assert STORE.map.containsKey(testObj);
 
         final IgniteCache<TestObj, TestObj> cache2 = grid.createCache(CACHE_NAME);
 
         assert testObj.equals(cache2.get(testObj));
-        assert store.map.containsKey(testObj);
+        assert STORE.map.containsKey(testObj);
     }
 
     /**
@@ -193,7 +193,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
         streamer.future().get();
 
-        assert store.map.size() == itemsNum;
+        assert STORE.map.size() == itemsNum;
 
         startGrid("binaryGrid2");
         startGrid("binaryGrid3");
@@ -216,19 +216,19 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
         final BinaryObject key = streamBinaryData(grid);
 
         assert cache.containsKey(key);
-        assert store.map.containsKey(key);
+        assert STORE.map.containsKey(key);
 
         cache.destroy();
         cache.close();
 
-        assert store.map.containsKey(key);
+        assert STORE.map.containsKey(key);
 
         final IgniteCache<BinaryObject, BinaryObject> cache2 = grid.createCache(CACHE_NAME).withKeepBinary();
 
         final BinaryObject loaded = cache2.get(key);
 
         assertSame(loaded, key);
-        assertTrue(store.map.containsKey(key));
+        assertTrue(STORE.map.containsKey(key));
     }
 
     /**

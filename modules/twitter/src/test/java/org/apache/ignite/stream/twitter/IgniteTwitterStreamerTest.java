@@ -57,7 +57,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
     private static final String MOCK_TWEET_PATH = "/tweet/mock";
 
     /** Sample tweet. */
-    private static final String tweet = "{\"id\":647375831971590144,\"text\":\"sample tweet to test streamer\"}\n";
+    private static final String TWEET = "{\"id\":647375831971590144,\"text\":\"sample tweet to test streamer\"}\n";
 
     /** Constructor. */
     public IgniteTwitterStreamerTest() {
@@ -94,7 +94,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
         mockSrv.start();
 
         stubFor(get(urlMatching("/1.1" + MOCK_TWEET_PATH + ".*")).willReturn(aResponse().
-            withHeader("Content-Type", "text/plain").withBody(tweet.length() + "\n" + tweet)));
+            withHeader("Content-Type", "text/plain").withBody(TWEET.length() + "\n" + TWEET)));
     }
 
     /** */
@@ -170,7 +170,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
 
         // Checking cache content after streaming finished.
 
-        Status status = TwitterObjectFactory.createStatus(tweet);
+        Status status = TwitterObjectFactory.createStatus(TWEET);
 
         IgniteCache<Long, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 

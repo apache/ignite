@@ -445,7 +445,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values less than 50.
      */
-    protected static final IgnitePredicate<Cache.Entry<String, Integer>> lt50 =
+    protected static final IgnitePredicate<Cache.Entry<String, Integer>> LT_50 =
         new P1<Cache.Entry<String, Integer>>() {
             @Override public boolean apply(Cache.Entry<String, Integer> entry) {
                 Integer i = entry.getValue();
@@ -457,7 +457,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values greater or equal than 100.
      */
-    protected static final IgnitePredicate<Cache.Entry<String, Integer>> gte100 =
+    protected static final IgnitePredicate<Cache.Entry<String, Integer>> GTE_100 =
         new P1<Cache.Entry<String, Integer>>() {
             @Override public boolean apply(Cache.Entry<String, Integer> entry) {
                 Integer i = entry.getValue();
@@ -473,7 +473,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Filters cache entry projections leaving only ones with values greater or equal than 200.
      */
-    protected static final IgnitePredicate<Cache.Entry<String, Integer>> gte200 =
+    protected static final IgnitePredicate<Cache.Entry<String, Integer>> GTE_200 =
         new P1<Cache.Entry<String, Integer>>() {
             @Override public boolean apply(Cache.Entry<String, Integer> entry) {
                 Integer i = entry.getValue();

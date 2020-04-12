@@ -53,7 +53,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     private static final int VAL = 1;
 
     /** */
-    private static final AtomicBoolean received = new AtomicBoolean();
+    private static final AtomicBoolean RECEIVED = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -87,7 +87,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     }
 
     @Override protected void beforeTest() throws Exception {
-        received.set(false);
+        RECEIVED.set(false);
     }
 
     /**
@@ -174,10 +174,10 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"BusyWait"})
     private boolean await() throws Exception {
-        info("Checking flag: " + System.identityHashCode(received));
+        info("Checking flag: " + System.identityHashCode(RECEIVED));
 
         for (int i = 0; i < 3; i++) {
-            if (received.get())
+            if (RECEIVED.get())
                 return true;
 
             info("Flag is false.");
@@ -185,12 +185,12 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
             Thread.sleep(500);
         }
 
-        return received.get();
+        return RECEIVED.get();
     }
 
     /**
      * Puts value to primary node and registers listener
-     * that sets {@link #received} flag to {@code true}
+     * that sets {@link #RECEIVED} flag to {@code true}
      * if {@link GridNearGetRequest} was received on primary node.
      *
      * @throws Exception If failed.
@@ -213,9 +213,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
                             info("Received message from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
                             if (msg instanceof GridNearSingleGetRequest) {
-                                info("Setting flag: " + System.identityHashCode(received));
+                                info("Setting flag: " + System.identityHashCode(RECEIVED));
 
-                                received.set(true);
+                                RECEIVED.set(true);
                             }
                         }
                     }

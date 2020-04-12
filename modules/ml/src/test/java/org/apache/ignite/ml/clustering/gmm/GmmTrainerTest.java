@@ -33,15 +33,15 @@ import org.junit.Test;
  */
 public class GmmTrainerTest extends TrainerTest {
     /** Data. */
-    private static final Map<Integer, double[]> data = new HashMap<>();
+    private static final Map<Integer, double[]> DATA = new HashMap<>();
 
     static {
-        data.put(0, new double[] {1.0, 1.0, 1.0});
-        data.put(1, new double[] {1.0, 2.0, 1.0});
-        data.put(2, new double[] {2.0, 1.0, 1.0});
-        data.put(3, new double[] {-1.0, -1.0, 2.0});
-        data.put(4, new double[] {-1.0, -2.0, 2.0});
-        data.put(5, new double[] {-2.0, -1.0, 2.0});
+        DATA.put(0, new double[] {1.0, 1.0, 1.0});
+        DATA.put(1, new double[] {1.0, 2.0, 1.0});
+        DATA.put(2, new double[] {2.0, 1.0, 1.0});
+        DATA.put(3, new double[] {-1.0, -1.0, 2.0});
+        DATA.put(4, new double[] {-1.0, -2.0, 2.0});
+        DATA.put(5, new double[] {-2.0, -1.0, 2.0});
     }
 
     /** */
@@ -53,7 +53,7 @@ public class GmmTrainerTest extends TrainerTest {
                 VectorUtils.of(-1.0, -2.0)));
 
         GmmModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -89,7 +89,7 @@ public class GmmTrainerTest extends TrainerTest {
                 VectorUtils.of(-1.0, -2.0)));
 
         GmmModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 

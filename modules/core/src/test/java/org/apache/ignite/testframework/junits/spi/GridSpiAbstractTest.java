@@ -70,10 +70,10 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
     /** */
-    private static final Map<Class<?>, TestData<?>> tests = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, TestData<?>> TESTS = new ConcurrentHashMap<>();
 
     /** */
-    private static final TestRule firstLastTestRuleSpi = (base, description) -> new Statement() {
+    private static final TestRule FIRST_LAST_TEST_RULE_SPI = (base, description) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             GridSpiAbstractTest testClsInstance = (GridSpiAbstractTest)description.getTestClass().newInstance();
             try {
@@ -90,7 +90,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /** Manages first and last test execution. */
     @SuppressWarnings({"TransientFieldInNonSerializableClass"})
     @ClassRule public static transient RuleChain firstLastTestRule
-        = RuleChain.outerRule(firstLastTestRuleSpi).around(GridAbstractTest.firstLastTestRule);
+        = RuleChain.outerRule(FIRST_LAST_TEST_RULE_SPI).around(GridAbstractTest.FIRST_LAST_TEST_RULE);
 
     /** */
     private final boolean autoStart;
@@ -123,10 +123,10 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @return Test data.
      */
     protected TestData<T> getTestData() throws IgniteCheckedException {
-        TestData<T> data = (TestData<T>)tests.get(getClass());
+        TestData<T> data = (TestData<T>)TESTS.get(getClass());
 
         if (data == null)
-            tests.put(getClass(), data = new TestData<>());
+            TESTS.put(getClass(), data = new TestData<>());
 
         return data;
     }
@@ -142,7 +142,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     private void resetTestData() throws Exception {
-        tests.put(getClass(), new TestData<T>());
+        TESTS.put(getClass(), new TestData<T>());
     }
 
     /** {@inheritDoc} */

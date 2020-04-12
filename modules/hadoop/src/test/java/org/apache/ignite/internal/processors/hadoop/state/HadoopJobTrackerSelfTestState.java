@@ -29,17 +29,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HadoopJobTrackerSelfTestState {
     /** */
-    private static final HadoopSharedMap m = HadoopSharedMap.map(HadoopJobTrackerSelfTestState.class);
+    private static final HadoopSharedMap M = HadoopSharedMap.map(HadoopJobTrackerSelfTestState.class);
 
     /** Map task execution count. */
-    public static final AtomicInteger mapExecCnt = m.put("mapExecCnt", new AtomicInteger());
+    public static final AtomicInteger MAP_EXEC_CNT = M.put("mapExecCnt", new AtomicInteger());
 
     /** Reduce task execution count. */
-    public static final AtomicInteger reduceExecCnt = m.put("reduceExecCnt", new AtomicInteger());
+    public static final AtomicInteger REDUCE_EXEC_CNT = M.put("reduceExecCnt", new AtomicInteger());
 
     /** Reduce task execution count. */
-    public static final AtomicInteger combineExecCnt = m.put("combineExecCnt", new AtomicInteger());
+    public static final AtomicInteger COMBINE_EXEC_CNT = M.put("combineExecCnt", new AtomicInteger());
 
     /** */
-    public static final Map<String, CountDownLatch> latch = m.put("latch", new HashMap<String, CountDownLatch>());
+    public static final Map<String, CountDownLatch> LATCH = M.put("latch", new HashMap<String, CountDownLatch>());
 }

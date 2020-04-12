@@ -64,12 +64,12 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
         cache.put(testObj, testObj);
 
         assert testObj.equals(cache.get(testObj));
-        assert store.map.containsKey(testObj);
+        assert STORE.map.containsKey(testObj);
 
         cache.remove(testObj);
 
         assert cache.get(testObj) == null;
-        assert !store.map.containsKey(testObj);
+        assert !STORE.map.containsKey(testObj);
     }
 
     /**
@@ -94,11 +94,11 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
         cache.put(entity, entity);
 
         assert entity.equals(cache.get(entity));
-        assert store.map.containsKey(entity);
+        assert STORE.map.containsKey(entity);
 
         cache.remove(entity);
 
         assert cache.get(entity) == null;
-        assert !store.map.containsKey(entity);
+        assert !STORE.map.containsKey(entity);
     }
 }

@@ -32,26 +32,26 @@ public class DummyService implements Service {
     private static final long serialVersionUID = 0L;
 
     /** Inited counter per service. */
-    public static final ConcurrentMap<String, AtomicInteger> started = new ConcurrentHashMap<>();
+    public static final ConcurrentMap<String, AtomicInteger> STARTED = new ConcurrentHashMap<>();
 
     /** Started counter per service. */
-    public static final ConcurrentMap<String, AtomicInteger> inited = new ConcurrentHashMap<>();
+    public static final ConcurrentMap<String, AtomicInteger> INITED = new ConcurrentHashMap<>();
 
     /** Latches per service. */
-    private static final ConcurrentMap<String, CountDownLatch> exeLatches = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, CountDownLatch> EXE_LATCHES = new ConcurrentHashMap<>();
 
     /** Cancel latches per service. */
-    private static final ConcurrentMap<String, CountDownLatch> cancelLatches = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, CountDownLatch> CANCEL_LATCHES = new ConcurrentHashMap<>();
 
     /** Cancelled flags per service. */
-    private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, AtomicInteger> CANCELLED = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void cancel(ServiceContext ctx) {
-        AtomicInteger cntr = cancelled.get(ctx.name());
+        AtomicInteger cntr = CANCELLED.get(ctx.name());
 
         if (cntr == null) {
-            AtomicInteger old = cancelled.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
+            AtomicInteger old = CANCELLED.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
 
             if (old != null)
                 cntr = old;
@@ -59,7 +59,7 @@ public class DummyService implements Service {
 
         cntr.incrementAndGet();
 
-        CountDownLatch latch = cancelLatches.get(ctx.name());
+        CountDownLatch latch = CANCEL_LATCHES.get(ctx.name());
 
         if (latch != null)
             latch.countDown();
@@ -69,10 +69,10 @@ public class DummyService implements Service {
 
     /** {@inheritDoc} */
     @Override public void init(ServiceContext ctx) throws Exception {
-        AtomicInteger cntr = inited.get(ctx.name());
+        AtomicInteger cntr = INITED.get(ctx.name());
 
         if (cntr == null) {
-            AtomicInteger old = inited.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
+            AtomicInteger old = INITED.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
 
             if (old != null)
                 cntr = old;
@@ -85,10 +85,10 @@ public class DummyService implements Service {
 
     /** {@inheritDoc} */
     @Override public void execute(ServiceContext ctx) {
-        AtomicInteger cntr = started.get(ctx.name());
+        AtomicInteger cntr = STARTED.get(ctx.name());
 
         if (cntr == null) {
-            AtomicInteger old = started.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
+            AtomicInteger old = STARTED.putIfAbsent(ctx.name(), cntr = new AtomicInteger());
 
             if (old != null)
                 cntr = old;
@@ -98,7 +98,7 @@ public class DummyService implements Service {
 
         System.out.println("Executing service: " + ctx.name());
 
-        CountDownLatch latch = exeLatches.get(ctx.name());
+        CountDownLatch latch = EXE_LATCHES.get(ctx.name());
 
         if (latch != null)
             latch.countDown();
@@ -109,7 +109,7 @@ public class DummyService implements Service {
      * @return Cancelled flag.
      */
     public static int cancelled(String name) {
-        AtomicInteger cntr = cancelled.get(name);
+        AtomicInteger cntr = CANCELLED.get(name);
 
         return cntr == null ? 0 : cntr.get();
     }
@@ -119,7 +119,7 @@ public class DummyService implements Service {
      * @return Started counter.
      */
     public static int started(String name) {
-        AtomicInteger cntr = started.get(name);
+        AtomicInteger cntr = STARTED.get(name);
 
         return cntr == null ? 0 : cntr.get();
     }
@@ -130,9 +130,9 @@ public class DummyService implements Service {
     public static void reset() {
         System.out.println("Resetting dummy service.");
 
-        started.clear();
-        exeLatches.clear();
-        cancelled.clear();
+        STARTED.clear();
+        EXE_LATCHES.clear();
+        CANCELLED.clear();
     }
 
     /**
@@ -140,7 +140,7 @@ public class DummyService implements Service {
      * @param latch Count down latch.
      */
     public static void exeLatch(String name, CountDownLatch latch) {
-        exeLatches.put(name, latch);
+        EXE_LATCHES.put(name, latch);
     }
 
     /**
@@ -148,6 +148,6 @@ public class DummyService implements Service {
      * @param latch Cancel latch.
      */
     public static void cancelLatch(String name, CountDownLatch latch) {
-        cancelLatches.put(name, latch);
+        CANCEL_LATCHES.put(name, latch);
     }
 }

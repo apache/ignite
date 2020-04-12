@@ -57,7 +57,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     private static IgfsEx igfs;
 
     /** */
-    private static final String igfsName = "igfs";
+    private static final String IGFS_NAME = "igfs";
 
     /** */
     private static File testWorkDir;
@@ -228,7 +228,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost("127.0.0.1"); // Avoid connecting to other nodes.
 
-        igfs = (IgfsEx) Ignition.start(cfg).fileSystem(igfsName);
+        igfs = (IgfsEx) Ignition.start(cfg).fileSystem(IGFS_NAME);
     }
 
     /** {@inheritDoc} */

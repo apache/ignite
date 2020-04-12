@@ -69,7 +69,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private static final String TEST_REENTRANT_LOCK_NAME = "test-reentrant-lock";
 
     /** */
-    private static final CollectionConfiguration colCfg = new CollectionConfiguration();
+    private static final CollectionConfiguration COL_CFG = new CollectionConfiguration();
 
     /** Maximum added value. */
     private static final int MAX_INT = 1000;
@@ -253,7 +253,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<Ignite> queueWriteClos =
         new CIX1<Ignite>() {
             @Override public void applyx(Ignite ignite) {
-                IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
+                IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, COL_CFG);
 
                 for (int i = 0; i < operationsPerTx; i++) {
                     q.put(RAND.nextInt(MAX_INT));
@@ -270,7 +270,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<Ignite> queueReadClos =
         new CIX1<Ignite>() {
             @Override public void applyx(Ignite ignite) {
-                IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
+                IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, COL_CFG);
 
                 for (int i = 0; i < operationsPerTx; i++) {
                     q.peek();

@@ -54,12 +54,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.cancelledTasks;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.executedTasks;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.failMapperId;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.splitsCount;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.taskWorkDirs;
-import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.totalLineCnt;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.CANCELLED_TASKS;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.EXECUTED_TASKS;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.FAIL_MAPPER_ID;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.SPLITS_COUNT;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.TASK_WORK_DIRS;
+import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.TOTAL_LINE_CNT;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
@@ -90,7 +90,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid(0).fileSystem(igfsName).clear();
+        grid(0).fileSystem(IGFS_NAME).clear();
     }
 
     /** {@inheritDoc} */
@@ -115,8 +115,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         prepareFile(fileName, lineCnt);
 
-        totalLineCnt.set(0);
-        taskWorkDirs.clear();
+        TOTAL_LINE_CNT.set(0);
+        TASK_WORK_DIRS.clear();
 
         Configuration cfg = new Configuration();
 
@@ -132,8 +132,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + IGFS_NAME + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + IGFS_NAME + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -142,9 +142,9 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         fut.get();
 
-        assertEquals(lineCnt, totalLineCnt.get());
+        assertEquals(lineCnt, TOTAL_LINE_CNT.get());
 
-        assertEquals(32, taskWorkDirs.size());
+        assertEquals(32, TASK_WORK_DIRS.size());
     }
 
     /**
@@ -157,8 +157,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         prepareFile(fileName, lineCnt);
 
-        totalLineCnt.set(0);
-        taskWorkDirs.clear();
+        TOTAL_LINE_CNT.set(0);
+        TASK_WORK_DIRS.clear();
 
         Configuration cfg = new Configuration();
 
@@ -177,8 +177,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + IGFS_NAME + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + IGFS_NAME + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -188,9 +188,9 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         fut.get();
 
-        assertEquals(lineCnt, totalLineCnt.get());
+        assertEquals(lineCnt, TOTAL_LINE_CNT.get());
 
-        assertEquals(34, taskWorkDirs.size());
+        assertEquals(34, TASK_WORK_DIRS.size());
 
         for (int g = 0; g < gridCount(); g++)
             grid(g).hadoop().finishFuture(jobId).get();
@@ -217,8 +217,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(TextInputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + IGFS_NAME + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + IGFS_NAME + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -240,7 +240,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void prepareFile(String fileName, int lineCnt) throws Exception {
-        IgniteFileSystem igfs = grid(0).fileSystem(igfsName);
+        IgniteFileSystem igfs = grid(0).fileSystem(IGFS_NAME);
 
         try (OutputStream os = igfs.create(new IgfsPath(fileName), true)) {
             PrintWriter w = new PrintWriter(new OutputStreamWriter(os));
@@ -260,10 +260,10 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     private Configuration prepareJobForCancelling() throws Exception {
         prepareFile("/testFile", 1500);
 
-        executedTasks.set(0);
-        cancelledTasks.set(0);
-        failMapperId.set(0);
-        splitsCount.set(0);
+        EXECUTED_TASKS.set(0);
+        CANCELLED_TASKS.set(0);
+        FAIL_MAPPER_ID.set(0);
+        SPLITS_COUNT.set(0);
 
         Configuration cfg = new Configuration();
 
@@ -279,8 +279,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         job.setInputFormatClass(InFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@/"));
-        FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName  + "@/output/"));
+        FileInputFormat.setInputPaths(job, new Path("igfs://" + IGFS_NAME + "@/"));
+        FileOutputFormat.setOutputPath(job, new Path("igfs://" + IGFS_NAME + "@/output/"));
 
         job.setJarByClass(getClass());
 
@@ -294,9 +294,9 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         @Override public List<InputSplit> getSplits(JobContext ctx) throws IOException {
             List<InputSplit> res = super.getSplits(ctx);
 
-            splitsCount.set(res.size());
+            SPLITS_COUNT.set(res.size());
 
-            X.println("___ split of input: " + splitsCount.get());
+            X.println("___ split of input: " + SPLITS_COUNT.get());
 
             return res;
         }
@@ -315,7 +315,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return splitsCount.get() > 0;
+                return SPLITS_COUNT.get() > 0;
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -325,7 +325,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return executedTasks.get() == splitsCount.get();
+                return EXECUTED_TASKS.get() == SPLITS_COUNT.get();
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -334,7 +334,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         }
 
         // Fail mapper with id "1", cancels others
-        failMapperId.set(1);
+        FAIL_MAPPER_ID.set(1);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -344,7 +344,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
             }
         }, IgniteCheckedException.class, null);
 
-        assertEquals(executedTasks.get(), cancelledTasks.get() + 1);
+        assertEquals(EXECUTED_TASKS.get(), CANCELLED_TASKS.get() + 1);
     }
 
     /**
@@ -367,7 +367,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return splitsCount.get() > 0;
+                return SPLITS_COUNT.get() > 0;
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -377,9 +377,9 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                X.println("___ executed tasks: " + executedTasks.get());
+                X.println("___ executed tasks: " + EXECUTED_TASKS.get());
 
-                return executedTasks.get() == splitsCount.get();
+                return EXECUTED_TASKS.get() == SPLITS_COUNT.get();
             }
         }, 20000)) {
             U.dumpThreads(log);
@@ -400,7 +400,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
             }
         }, IgniteCheckedException.class, null);
 
-        assertEquals(executedTasks.get(), cancelledTasks.get());
+        assertEquals(EXECUTED_TASKS.get(), CANCELLED_TASKS.get());
 
         //Kill the same job again.
         killRes = hadoop.kill(jobId);
@@ -416,7 +416,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override protected void setup(Context ctx) throws IOException, InterruptedException {
-            mapperId = executedTasks.incrementAndGet();
+            mapperId = EXECUTED_TASKS.incrementAndGet();
         }
 
         /** {@inheritDoc} */
@@ -425,7 +425,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
                 super.run(ctx);
             }
             catch (HadoopTaskCancelledException e) {
-                cancelledTasks.incrementAndGet();
+                CANCELLED_TASKS.incrementAndGet();
 
                 throw e;
             }
@@ -433,7 +433,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         /** {@inheritDoc} */
         @Override protected void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
-            if (mapperId == failMapperId.get())
+            if (mapperId == FAIL_MAPPER_ID.get())
                 throw new IOException();
 
             Thread.sleep(1000);
@@ -470,7 +470,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
             String workDir = locFs.getWorkingDirectory().toString();
 
-            assertNull(taskWorkDirs.put(workDir, taskId));
+            assertNull(TASK_WORK_DIRS.put(workDir, taskId));
         }
 
         /** {@inheritDoc} */
@@ -478,7 +478,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
             if (ctx.getConfiguration().getBoolean(MAP_WRITE, false))
                 ctx.write(LINE_COUNT, ONE);
             else
-                totalLineCnt.incrementAndGet();
+                TOTAL_LINE_CNT.incrementAndGet();
         }
     }
 
@@ -524,7 +524,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
             String taskId = ctx.getTaskAttemptID().toString();
             String workDir = FileSystem.getLocal(ctx.getConfiguration()).getWorkingDirectory().toString();
 
-            assertNull(taskWorkDirs.put(workDir, taskId));
+            assertNull(TASK_WORK_DIRS.put(workDir, taskId));
         }
 
         /** {@inheritDoc} */
@@ -544,7 +544,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
             X.println("___ RDCR SUM: " + lineCnt);
 
-            totalLineCnt.addAndGet(lineCnt);
+            TOTAL_LINE_CNT.addAndGet(lineCnt);
         }
     }
 }

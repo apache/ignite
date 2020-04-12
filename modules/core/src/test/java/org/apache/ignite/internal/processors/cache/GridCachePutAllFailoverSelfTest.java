@@ -98,7 +98,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Filter to include only worker nodes. */
-    private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
+    private static final IgnitePredicate<ClusterNode> WORKER_NODES_FILTER = new PN() {
         @Override public boolean apply(ClusterNode n) {
              return "worker".equals(n.attribute("segment"));
         }
@@ -111,7 +111,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private final BlockingQueue<ComputeTaskFuture<?>> resQueue = new LinkedBlockingQueue<>(50);
 
     /** Test failover SPI. */
-    private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
+    private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)WORKER_NODES_FILTER);
 
     /**
      * @throws Exception If failed.
@@ -267,7 +267,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter));
+            IgniteCompute comp = compute(master.cluster().forPredicate(WORKER_NODES_FILTER));
 
             for (Integer key : testKeys) {
                 dataChunk.add(key);
@@ -461,7 +461,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter));
+            IgniteCompute comp = compute(master.cluster().forPredicate(WORKER_NODES_FILTER));
 
             for (Integer key : testKeys) {
                 ClusterNode mappedNode = master.affinity(CACHE_NAME).mapKeyToNode(key);

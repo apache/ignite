@@ -31,7 +31,7 @@ import static org.apache.ignite.ml.naivebayes.compound.Data.LABEL_1;
 import static org.apache.ignite.ml.naivebayes.compound.Data.LABEL_2;
 import static org.apache.ignite.ml.naivebayes.compound.Data.binarizedDataThresholds;
 import static org.apache.ignite.ml.naivebayes.compound.Data.classProbabilities;
-import static org.apache.ignite.ml.naivebayes.compound.Data.data;
+import static org.apache.ignite.ml.naivebayes.compound.Data.DATA;
 import static org.junit.Assert.assertEquals;
 
 /** Integration tests for Compound naive Bayes algorithm with different datasets. */
@@ -51,7 +51,7 @@ public class CompoundNaiveBayesTest {
             .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
 
         CompoundNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(DATA, 2),
                 new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 

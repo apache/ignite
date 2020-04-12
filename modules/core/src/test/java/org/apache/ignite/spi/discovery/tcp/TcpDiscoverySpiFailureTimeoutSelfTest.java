@@ -106,10 +106,10 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
      */
     @Test
     public void testFailureDetectionTimeoutDisabled() throws Exception {
-        for (int i = 2; i < spis.size(); i++) {
-            assertFalse(((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeoutEnabled());
-            assertEquals(0, ((TcpDiscoverySpi)spis.get(i)).failureDetectionTimeout());
-            assertFalse(0 == ((TcpDiscoverySpi)spis.get(i)).clientFailureDetectionTimeout());
+        for (int i = 2; i < SPIS.size(); i++) {
+            assertFalse(((TcpDiscoverySpi)SPIS.get(i)).failureDetectionTimeoutEnabled());
+            assertEquals(0, ((TcpDiscoverySpi)SPIS.get(i)).failureDetectionTimeout());
+            assertFalse(0 == ((TcpDiscoverySpi)SPIS.get(i)).clientFailureDetectionTimeout());
         }
     }
 
@@ -179,9 +179,9 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
 
             nextSpi = null;
 
-            for (int i = 1; i < spis.size(); i++)
-                if (spis.get(i).getLocalNode().id().equals(nextNode.id())) {
-                    nextSpi = (TestTcpDiscoverySpi)spis.get(i);
+            for (int i = 1; i < SPIS.size(); i++)
+                if (SPIS.get(i).getLocalNode().id().equals(nextNode.id())) {
+                    nextSpi = (TestTcpDiscoverySpi)SPIS.get(i);
                     break;
                 }
 
@@ -217,7 +217,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
      * @return SPI.
      */
     private TestTcpDiscoverySpi firstSpi() {
-        return (TestTcpDiscoverySpi)spis.get(0);
+        return (TestTcpDiscoverySpi)SPIS.get(0);
     }
 
     /**
@@ -226,7 +226,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
      * @return SPI.
      */
     private TestTcpDiscoverySpi secondSpi() {
-        return (TestTcpDiscoverySpi)spis.get(1);
+        return (TestTcpDiscoverySpi)SPIS.get(1);
     }
 
     /**

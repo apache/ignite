@@ -193,7 +193,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
     /** */
     private static class MessageCountingCommunicationSpi extends TcpCommunicationSpi {
         /** */
-        private static final AtomicInteger reqCnt = new AtomicInteger();
+        private static final AtomicInteger REQ_CNT = new AtomicInteger();
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node,
@@ -201,7 +201,7 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
             IgniteInClosure<IgniteException> ackClosure
         ) throws IgniteSpiException {
             if (msg instanceof GridIoMessage && isDeploymentRequestMessage((GridIoMessage)msg))
-                reqCnt.incrementAndGet();
+                REQ_CNT.incrementAndGet();
 
             super.sendMessage(node, msg, ackClosure);
         }
@@ -210,14 +210,14 @@ public class P2PScanQueryUndeployTest extends GridCommonAbstractTest {
          * @return Number of deployment requests.
          */
         public static int deploymentRequestCount() {
-            return reqCnt.get();
+            return REQ_CNT.get();
         }
 
         /**
          * Reset request counter.
          */
         public static void resetDeploymentRequestCounter() {
-            reqCnt.set(0);
+            REQ_CNT.set(0);
         }
 
         /**

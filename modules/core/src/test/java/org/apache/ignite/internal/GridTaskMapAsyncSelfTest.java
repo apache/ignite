@@ -88,7 +88,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<? extends ComputeJob> res = super.split(gridSize, arg);
 
-            assert mainThread != mapper;
+            assert MAIN_THREAD != mapper;
 
             return res;
         }
@@ -102,7 +102,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<? extends ComputeJob> res = super.split(gridSize, arg);
 
-            assert mainThread == mapper;
+            assert MAIN_THREAD == mapper;
 
             return res;
         }
@@ -113,7 +113,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
      */
     private abstract static class BaseTask extends ComputeTaskSplitAdapter<Object, Void> {
         /** */
-        protected static final Thread mainThread = Thread.currentThread();
+        protected static final Thread MAIN_THREAD = Thread.currentThread();
 
         /** */
         protected Thread mapper;
@@ -134,7 +134,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
                     runner = Thread.currentThread();
 
                     log.info("Runner: " + runner);
-                    log.info("Main: " + mainThread);
+                    log.info("Main: " + MAIN_THREAD);
                     log.info("Mapper: " + mapper);
 
                     return null;

@@ -66,7 +66,7 @@ public final class GridVmNodesStarter {
     private static final String OPTION_N = "n";
 
     /** */
-    private static final AtomicInteger gridCnt = new AtomicInteger();
+    private static final AtomicInteger GRID_CNT = new AtomicInteger();
 
     /**
      * Enforces singleton.
@@ -242,7 +242,7 @@ public final class GridVmNodesStarter {
         for (IgniteConfiguration cfg : (Collection<IgniteConfiguration>)cfgMap.values()) {
             res.add(cfg);
 
-            cfg.setIgniteInstanceName(IGNITE_INSTANCE_NAME_PREF + gridCnt.incrementAndGet());
+            cfg.setIgniteInstanceName(IGNITE_INSTANCE_NAME_PREF + GRID_CNT.incrementAndGet());
         }
 
         return res;

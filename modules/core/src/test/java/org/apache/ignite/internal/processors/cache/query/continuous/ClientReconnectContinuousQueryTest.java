@@ -54,16 +54,16 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     private static final int PUTS_AFTER_RECONNECT = 50;
 
     /** Recon latch. */
-    private static final CountDownLatch reconLatch = new CountDownLatch(1);
+    private static final CountDownLatch RECON_LATCH = new CountDownLatch(1);
 
     /** Discon latch. */
-    private static final CountDownLatch disconLatch = new CountDownLatch(1);
+    private static final CountDownLatch DISCON_LATCH = new CountDownLatch(1);
 
     /** Updater received. */
-    private static final CountDownLatch updaterReceived = new CountDownLatch(PUTS_BEFORE_RECONNECT);
+    private static final CountDownLatch UPDATER_RECEIVED = new CountDownLatch(PUTS_BEFORE_RECONNECT);
 
     /** Receiver after reconnect. */
-    private static final CountDownLatch receiverAfterReconnect = new CountDownLatch(PUTS_AFTER_RECONNECT);
+    private static final CountDownLatch RECEIVER_AFTER_RECONNECT = new CountDownLatch(PUTS_AFTER_RECONNECT);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -122,15 +122,15 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
             putSomeKeys(PUTS_BEFORE_RECONNECT);
 
-            info("updaterReceived Count: " + updaterReceived.getCount());
+            info("updaterReceived Count: " + UPDATER_RECEIVED.getCount());
 
-            assertTrue(updaterReceived.await(10_000, TimeUnit.MILLISECONDS));
+            assertTrue(UPDATER_RECEIVED.await(10_000, TimeUnit.MILLISECONDS));
 
             skipRead(client, true);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    assertTrue(disconLatch.await(10_000, TimeUnit.MILLISECONDS));
+                    assertTrue(DISCON_LATCH.await(10_000, TimeUnit.MILLISECONDS));
 
                     skipRead(client, false);
 
@@ -142,13 +142,13 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            assertTrue(reconLatch.await(10_000, TimeUnit.MILLISECONDS));
+            assertTrue(RECON_LATCH.await(10_000, TimeUnit.MILLISECONDS));
 
             putSomeKeys(PUTS_AFTER_RECONNECT);
 
-            info("receiverAfterReconnect Count: " + receiverAfterReconnect.getCount());
+            info("receiverAfterReconnect Count: " + RECEIVER_AFTER_RECONNECT.getCount());
 
-            assertTrue(receiverAfterReconnect.await(10_000, TimeUnit.MILLISECONDS));
+            assertTrue(RECEIVER_AFTER_RECONNECT.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             stopAllGrids();
@@ -161,7 +161,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     private static class ReconnectListener implements IgnitePredicate<Event> {
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
-            reconLatch.countDown();
+            RECON_LATCH.countDown();
 
             return false;
         }
@@ -173,7 +173,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     private static class DisconnectListener implements IgnitePredicate<Event> {
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
-            disconLatch.countDown();
+            DISCON_LATCH.countDown();
 
             return false;
         }
@@ -185,13 +185,13 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     private static class CQListener implements CacheEntryUpdatedListener {
         /** {@inheritDoc} */
         @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
-            if (reconLatch.getCount() != 0) {
+            if (RECON_LATCH.getCount() != 0) {
                 for (Object o : iterable)
-                    updaterReceived.countDown();
+                    UPDATER_RECEIVED.countDown();
             }
             else {
                 for (Object o : iterable)
-                    receiverAfterReconnect.countDown();
+                    RECEIVER_AFTER_RECONNECT.countDown();
             }
         }
     }

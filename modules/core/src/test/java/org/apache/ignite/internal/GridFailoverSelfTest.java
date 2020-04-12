@@ -49,7 +49,7 @@ import org.junit.Test;
 @GridCommonTest(group = "Kernal Self")
 public class GridFailoverSelfTest extends GridCommonAbstractTest {
     /** Initial node that job has been mapped to. */
-    private static final AtomicReference<ClusterNode> nodeRef = new AtomicReference<>(null);
+    private static final AtomicReference<ClusterNode> NODE_REF = new AtomicReference<>(null);
 
     /** */
     public GridFailoverSelfTest() {
@@ -101,7 +101,7 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
-            nodeRef.set(subgrid.get(0));
+            NODE_REF.set(subgrid.get(0));
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** Ignite instance. */
@@ -124,12 +124,12 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
                     if (fail) {
                         ses.setAttribute("fail", false);
 
-                        assert nodeRef.get().id().equals(locId);
+                        assert NODE_REF.get().id().equals(locId);
 
                         throw new IgniteException("Job exception.");
                     }
 
-                    assert !nodeRef.get().id().equals(locId);
+                    assert !NODE_REF.get().id().equals(locId);
 
                     // This job does not return any result.
                     return Integer.parseInt(this.<String>argument(0));
@@ -141,12 +141,12 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
             List<ComputeJobResult> received) {
             if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException)) {
-                assert res.getNode().id().equals(nodeRef.get().id());
+                assert res.getNode().id().equals(NODE_REF.get().id());
 
                 return ComputeJobResultPolicy.FAILOVER;
             }
 
-            assert !res.getNode().id().equals(nodeRef.get().id());
+            assert !res.getNode().id().equals(NODE_REF.get().id());
 
             return ComputeJobResultPolicy.REDUCE;
         }
@@ -155,9 +155,9 @@ public class GridFailoverSelfTest extends GridCommonAbstractTest {
         @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
-            assert nodeRef.get() != null;
+            assert NODE_REF.get() != null;
 
-            assert !results.get(0).getNode().id().equals(nodeRef.get().id()) :
+            assert !results.get(0).getNode().id().equals(NODE_REF.get().id()) :
                 "Initial node and result one are the same (should be different).";
 
             return results.get(0).getData();

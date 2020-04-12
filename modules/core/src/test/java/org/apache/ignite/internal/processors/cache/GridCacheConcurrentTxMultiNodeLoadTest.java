@@ -83,17 +83,17 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTest {
     /** Timers. */
-    private static final ConcurrentMap<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> timers =
+    private static final ConcurrentMap<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> TIMERS =
         new ConcurrentHashMap<>();
 
     /** */
     private static final long PRINT_FREQ = 10000;
 
     /** */
-    private static final GridAtomicLong lastPrint = new GridAtomicLong();
+    private static final GridAtomicLong LAST_PRINT = new GridAtomicLong();
 
     /** */
-    private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> SERVER_NODE = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             String igniteInstanceName = G.ignite(n.id()).name();
 
@@ -102,7 +102,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
     };
 
     /** */
-    private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> CLIENT_NODE = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             String igniteInstanceName = G.ignite(n.id()).name();
 
@@ -180,8 +180,8 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
             for (int i = 1; i <= clientCnt; i++)
                 startGrid("client" + i);
 
-            Collection<ClusterNode> srvrNodes = srvr1.cluster().forPredicate(serverNode).nodes();
-            Collection<ClusterNode> clientNodes = srvr1.cluster().forPredicate(clientNode).nodes();
+            Collection<ClusterNode> srvrNodes = srvr1.cluster().forPredicate(SERVER_NODE).nodes();
+            Collection<ClusterNode> clientNodes = srvr1.cluster().forPredicate(CLIENT_NODE).nodes();
 
             assert srvrNodes.size() == 2;
 
@@ -330,7 +330,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
 
                     long submitTime1 = t0;
 
-                    IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode));
+                    IgniteCompute comp = g.compute(g.cluster().forPredicate(SERVER_NODE));
 
                     ComputeTaskFuture<Void> f1 = comp.executeAsync(RequestTask.class, new Message(terminalId, nodeId));
 
@@ -489,11 +489,11 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
          * @param termId Terminal ID.
          */
         private void startTimer(String name, @Nullable IgniteUuid xid, @Nullable String key, String termId) {
-            ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> m = timers.get(Thread.currentThread());
+            ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> m = TIMERS.get(Thread.currentThread());
 
             if (m == null) {
                 ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> old =
-                    timers.putIfAbsent(Thread.currentThread(),
+                    TIMERS.putIfAbsent(Thread.currentThread(),
                         m = new ConcurrentHashMap<>());
 
                 if (old != null)
@@ -520,7 +520,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
          * @param name Timer name.
          */
         private void stopTimer(String name) {
-            ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> m = timers.get(Thread.currentThread());
+            ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>> m = TIMERS.get(Thread.currentThread());
 
             T5<Long, Long, Long, IgniteUuid, Object> t = m.get(name);
 
@@ -542,12 +542,12 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
 
             long now = System.currentTimeMillis();
 
-            if (lastPrint.get() + PRINT_FREQ < now && lastPrint.setIfGreater(now)) {
+            if (LAST_PRINT.get() + PRINT_FREQ < now && LAST_PRINT.setIfGreater(now)) {
                 Map<String, Long> maxes = new HashMap<>();
 
                 Set<AffinityKey<String>> keys = null;
 
-                for (Map.Entry<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> e1 : timers.entrySet()) {
+                for (Map.Entry<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> e1 : TIMERS.entrySet()) {
                     for (Map.Entry<String, T5<Long, Long, Long, IgniteUuid, Object>> e2 : e1.getValue().entrySet()) {
                         T5<Long, Long, Long, IgniteUuid, Object> t = e2.getValue();
 

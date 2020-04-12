@@ -62,7 +62,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
     private static CountDownLatch startSignal;
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     private GridTaskSessionAttributeTestListener lsnr = new GridTaskSessionAttributeTestListener();
@@ -171,8 +171,8 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
                             if (startSignal.await(WAIT_TIME, TimeUnit.MILLISECONDS) == false)
                                 fail();
 
-                            synchronized (mux) {
-                                mux.wait(WAIT_TIME);
+                            synchronized (MUX) {
+                                MUX.wait(WAIT_TIME);
                             }
 
                             return 1;
@@ -230,8 +230,8 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
             attrs.put(key, val);
 
-            synchronized (mux) {
-                mux.notifyAll();
+            synchronized (MUX) {
+                MUX.notifyAll();
             }
         }
 

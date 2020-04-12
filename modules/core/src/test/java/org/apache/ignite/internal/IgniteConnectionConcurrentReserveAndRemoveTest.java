@@ -57,7 +57,7 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
     /** */
     private static final class TestClosure implements IgniteCallable<Integer> {
         /** Serial version uid. */
-        private static final long serialVersionUid = 0L;
+        private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {

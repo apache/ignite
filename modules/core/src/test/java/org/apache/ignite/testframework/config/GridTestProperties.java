@@ -67,10 +67,10 @@ public final class GridTestProperties {
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
 
     /** */
-    private static final Map<String, String> dfltProps;
+    private static final Map<String, String> DFLT_PROPS;
 
     /** */
-    private static final Map<String, Map<String, String>> pathProps = new HashMap<>();
+    private static final Map<String, Map<String, String>> PATH_PROPS = new HashMap<>();
 
     /** */
     public static final String ENTRY_PROCESSOR_CLASS_NAME = "entry.processor.class";
@@ -101,7 +101,7 @@ public final class GridTestProperties {
         assert cfgFile != null && cfgFile.exists();
         assert !cfgFile.isDirectory();
 
-        dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
+        DFLT_PROPS = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
 
         if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");
@@ -148,7 +148,7 @@ public final class GridTestProperties {
      * @return Default properties.
      */
     public static synchronized Map<String, String> getDefaultProperties() {
-        return dfltProps;
+        return DFLT_PROPS;
     }
 
     /**
@@ -156,7 +156,7 @@ public final class GridTestProperties {
      * @return Default property value.
      */
     public static synchronized String getDefaultProperty(String name) {
-        return dfltProps.get(name);
+        return DFLT_PROPS.get(name);
     }
 
     /**
@@ -191,19 +191,19 @@ public final class GridTestProperties {
      * @return Properties.
      */
     public static synchronized Map<String, String> getProperties(String dir) {
-        Map<String, String> props = pathProps.get(dir);
+        Map<String, String> props = PATH_PROPS.get(dir);
 
         if (props == null) {
             props = new HashMap<>();
 
             // Load default properties.
-            props.putAll(dfltProps);
+            props.putAll(DFLT_PROPS);
 
             // Load properties from specified folder
             // potentially overriding defaults.
             loadProperties(props, dir);
 
-            pathProps.put(dir, props);
+            PATH_PROPS.put(dir, props);
         }
 
         return props;

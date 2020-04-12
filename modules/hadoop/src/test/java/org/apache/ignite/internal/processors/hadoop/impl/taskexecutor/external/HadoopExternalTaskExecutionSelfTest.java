@@ -174,7 +174,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void prepareTestFile(String filePath) throws Exception {
-        IgniteFileSystem igfs = grid(0).fileSystem(igfsName);
+        IgniteFileSystem igfs = grid(0).fileSystem(IGFS_NAME);
 
         try (IgfsOutputStream out = igfs.create(new IgfsPath(filePath), true)) {
             PrintWriter wr = new PrintWriter(new OutputStreamWriter(out));

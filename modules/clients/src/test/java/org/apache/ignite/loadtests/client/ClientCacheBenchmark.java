@@ -48,7 +48,7 @@ public class ClientCacheBenchmark {
     private static final int VALUE_LENGTH = 1024*4;
 
     /** Cached values for store. */
-    private static final byte[][] values = new byte[KEY_COUNT][];
+    private static final byte[][] VALUES = new byte[KEY_COUNT][];
 
     /** Probability of put operation. */
     private static final double WRITE_PROB = 0.2;
@@ -84,9 +84,9 @@ public class ClientCacheBenchmark {
      */
     private void initValues() {
         for (int i = 0; i < KEY_COUNT; i++) {
-            values[i] = new byte[VALUE_LENGTH];
+            VALUES[i] = new byte[VALUE_LENGTH];
 
-            rnd.nextBytes(values[i]);
+            rnd.nextBytes(VALUES[i]);
         }
     }
 
@@ -193,7 +193,7 @@ public class ClientCacheBenchmark {
          */
         private void performIteration(GridClientData data) throws GridClientException {
             if (rnd.nextDouble() <= WRITE_PROB)
-                data.put(rnd.nextInt(KEY_COUNT), values[rnd.nextInt(KEY_COUNT)]);
+                data.put(rnd.nextInt(KEY_COUNT), VALUES[rnd.nextInt(KEY_COUNT)]);
             else
                 data.get(rnd.nextInt(KEY_COUNT));
 

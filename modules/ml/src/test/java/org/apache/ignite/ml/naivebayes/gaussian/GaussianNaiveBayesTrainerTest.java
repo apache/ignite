@@ -43,27 +43,27 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     private static final double LABEL_2 = 2.;
 
     /** Data. */
-    private static final Map<Integer, double[]> data = new HashMap<>();
+    private static final Map<Integer, double[]> DATA = new HashMap<>();
 
     /** {@code LABEL_1} data. */
-    private static final Map<Integer, double[]> singleLabeldata1 = new HashMap<>();
+    private static final Map<Integer, double[]> SINGLE_LABELDATA_1 = new HashMap<>();
 
     /** {@code LABEL_2} data. */
-    private static final Map<Integer, double[]> singleLabeldata2 = new HashMap<>();
+    private static final Map<Integer, double[]> SINGLE_LABELDATA_2 = new HashMap<>();
 
     static {
-        data.put(0, new double[] {1.0, -1.0, LABEL_1});
-        data.put(1, new double[] {-1.0, 2.0, LABEL_1});
-        data.put(2, new double[] {6.0, 1.0, LABEL_1});
-        data.put(3, new double[] {-3.0, 2.0, LABEL_2});
-        data.put(4, new double[] {-5.0, -2.0, LABEL_2});
+        DATA.put(0, new double[] {1.0, -1.0, LABEL_1});
+        DATA.put(1, new double[] {-1.0, 2.0, LABEL_1});
+        DATA.put(2, new double[] {6.0, 1.0, LABEL_1});
+        DATA.put(3, new double[] {-3.0, 2.0, LABEL_2});
+        DATA.put(4, new double[] {-5.0, -2.0, LABEL_2});
 
-        singleLabeldata1.put(0, new double[] {1.0, -1.0, LABEL_1});
-        singleLabeldata1.put(1, new double[] {-1.0, 2.0, LABEL_1});
-        singleLabeldata1.put(2, new double[] {6.0, 1.0, LABEL_1});
+        SINGLE_LABELDATA_1.put(0, new double[] {1.0, -1.0, LABEL_1});
+        SINGLE_LABELDATA_1.put(1, new double[] {-1.0, 2.0, LABEL_1});
+        SINGLE_LABELDATA_1.put(2, new double[] {6.0, 1.0, LABEL_1});
 
-        singleLabeldata2.put(0, new double[] {-3.0, 2.0, LABEL_2});
-        singleLabeldata2.put(1, new double[] {-5.0, -2.0, LABEL_2});
+        SINGLE_LABELDATA_2.put(0, new double[] {-3.0, 2.0, LABEL_2});
+        SINGLE_LABELDATA_2.put(1, new double[] {-5.0, -2.0, LABEL_2});
     }
 
     /** Trainer. */
@@ -97,12 +97,12 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsCorrectLabelProbabilities() {
 
         GaussianNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertEquals(3. / data.size(), mdl.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(2. / data.size(), mdl.getClassProbabilities()[1], PRECISION);
+        Assert.assertEquals(3. / DATA.size(), mdl.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(2. / DATA.size(), mdl.getClassProbabilities()[1], PRECISION);
     }
 
     /** Test. */
@@ -112,7 +112,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
             .withEquiprobableClasses();
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -128,7 +128,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
             .setPriorProbabilities(priorProbabilities);
 
         GaussianNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(DATA, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -141,7 +141,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsCorrectMeans() {
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata1, parts),
+            new LocalDatasetBuilder<>(SINGLE_LABELDATA_1, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -153,7 +153,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsCorrectVariances() {
 
         GaussianNaiveBayesModel model = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata1, parts),
+            new LocalDatasetBuilder<>(SINGLE_LABELDATA_1, parts),
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
@@ -167,16 +167,16 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
         Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
 
         GaussianNaiveBayesModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(singleLabeldata1, parts),
+            new LocalDatasetBuilder<>(SINGLE_LABELDATA_1, parts),
             vectorizer
         );
 
         GaussianNaiveBayesModel updatedMdl = trainer.updateModel(mdl,
-            new LocalDatasetBuilder<>(singleLabeldata2, parts),
+            new LocalDatasetBuilder<>(SINGLE_LABELDATA_2, parts),
             vectorizer
         );
 
-        Assert.assertEquals(3. / data.size(), updatedMdl.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(2. / data.size(), updatedMdl.getClassProbabilities()[1], PRECISION);
+        Assert.assertEquals(3. / DATA.size(), updatedMdl.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(2. / DATA.size(), updatedMdl.getClassProbabilities()[1], PRECISION);
     }
 }

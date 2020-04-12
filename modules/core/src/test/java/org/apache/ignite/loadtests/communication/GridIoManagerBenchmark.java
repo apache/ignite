@@ -69,19 +69,19 @@ public class GridIoManagerBenchmark {
     private static final long WARM_UP_DUR = 30 * 1000;
 
     /** */
-    private static final Semaphore sem = new Semaphore(10 * 1024);
+    private static final Semaphore SEM = new Semaphore(10 * 1024);
 
     /** */
     public static final int TEST_TOPIC = 1;
 
     /** */
-    private static final LongAdder msgCntr = new LongAdder();
+    private static final LongAdder MSG_CNTR = new LongAdder();
 
     /** */
-    private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap<>();
+    private static final Map<IgniteUuid, CountDownLatch> LATCHES = new ConcurrentHashMap<>();
 
     /** */
-    private static final byte[][] arrs;
+    private static final byte[][] ARRS;
 
     /** */
     private static boolean testHeavyMsgs;
@@ -95,15 +95,15 @@ public class GridIoManagerBenchmark {
     static {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        arrs = new byte[64][];
+        ARRS = new byte[64][];
 
-        for (int i = 0; i < arrs.length; i++) {
+        for (int i = 0; i < ARRS.length; i++) {
             byte[] arr = new byte[rnd.nextInt(4096, 8192)];
 
             for (int j = 0; j < arr.length; j++)
                 arr[j] = (byte)rnd.nextInt(0, 127);
 
-            arrs[i] = arr;
+            ARRS[i] = arr;
         }
     }
 
@@ -158,7 +158,7 @@ public class GridIoManagerBenchmark {
             @Override public void run() {
                 final long initTs = System.currentTimeMillis();
                 long ts = initTs;
-                long queries = msgCntr.sum();
+                long queries = MSG_CNTR.sum();
                 GridCumulativeAverage qpsAvg = new GridCumulativeAverage();
 
                 try {
@@ -166,7 +166,7 @@ public class GridIoManagerBenchmark {
                         U.sleep(10000);
 
                         long newTs = System.currentTimeMillis();
-                        long newQueries = msgCntr.sum();
+                        long newQueries = MSG_CNTR.sum();
 
                         long executed = newQueries - queries;
                         long time = newTs - ts;
@@ -287,14 +287,14 @@ public class GridIoManagerBenchmark {
                     CountDownLatch latch = null;
 
                     if (testLatency)
-                        latches.put(msgId, latch = new CountDownLatch(1));
+                        LATCHES.put(msgId, latch = new CountDownLatch(1));
                     else
-                        sem.acquire();
+                        SEM.acquire();
 
                     io.sendToCustomTopic(
                         dst,
                         TEST_TOPIC,
-                        new GridTestMessage(msgId, testHeavyMsgs ? arrs[rnd.nextInt(arrs.length)] : null),
+                        new GridTestMessage(msgId, testHeavyMsgs ? ARRS[rnd.nextInt(ARRS.length)] : null),
                         PUBLIC_POOL);
 
                     if (testLatency && !latch.await(1000, MILLISECONDS))
@@ -335,12 +335,12 @@ public class GridIoManagerBenchmark {
     private static class SenderMessageListener implements GridMessageListener {
         /** {@inheritDoc} */
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-            msgCntr.increment();
+            MSG_CNTR.increment();
 
             if (testLatency)
-                latches.get(((GridTestMessage)msg).id()).countDown();
+                LATCHES.get(((GridTestMessage)msg).id()).countDown();
             else
-                sem.release();
+                SEM.release();
         }
     }
 }

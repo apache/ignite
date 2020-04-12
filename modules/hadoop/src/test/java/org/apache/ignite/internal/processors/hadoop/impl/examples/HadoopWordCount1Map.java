@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopErrorSimulator;
  */
 public class HadoopWordCount1Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
     /** Writable integer constant of '1' is writing as count of found words. */
-    private static final IntWritable one = new IntWritable(1);
+    private static final IntWritable ONE = new IntWritable(1);
 
     /** Writable container for writing word. */
     private Text word = new Text();
@@ -55,7 +55,7 @@ public class HadoopWordCount1Map extends MapReduceBase implements Mapper<LongWri
         while (tokenizer.hasMoreTokens()) {
             word.set(tokenizer.nextToken());
 
-            output.collect(word, one);
+            output.collect(word, ONE);
         }
 
         HadoopErrorSimulator.instance().onMap();

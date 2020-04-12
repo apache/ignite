@@ -56,77 +56,77 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     private static final TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected static final String node1 = "node1";
+    protected static final String NODE_1 = "node1";
 
     /** */
-    protected static final String node2 = "node2";
+    protected static final String NODE_2 = "node2";
 
     /** */
-    protected static final String nodeClient = "nodeClient";
+    protected static final String NODE_CLIENT = "nodeClient";
 
     /** */
-    protected static final String ccfg1staticName = "cache1static";
+    protected static final String CCFG_1_STATIC_NAME = "cache1static";
 
     /** */
-    protected static final String ccfg2staticName = "cache2static";
+    protected static final String CCFG_2_STATIC_NAME = "cache2static";
 
     /** */
-    protected static final String ccfg3staticName = "cache3static";
+    protected static final String CCFG_3_STATIC_NAME = "cache3static";
 
     /** */
-    protected static final String ccfg1staticWithFilterName = "ccfg1staticWithFilter";
+    protected static final String CCFG_1_STATIC_WITH_FILTER_NAME = "ccfg1staticWithFilter";
 
     /** */
-    protected static final String ccfg2staticWithFilterName = "ccfg2staticWithFilter";
+    protected static final String CCFG_2_STATIC_WITH_FILTER_NAME = "ccfg2staticWithFilter";
 
     /** */
-    protected static final String ccfg3staticWithFilterName = "ccfg3staticWithFilter";
+    protected static final String CCFG_3_STATIC_WITH_FILTER_NAME = "ccfg3staticWithFilter";
 
     /** */
-    protected static final String ccfgDynamicName = "ccfgDynamic";
+    protected static final String CCFG_DYNAMIC_NAME = "ccfgDynamic";
 
     /** */
-    protected static final String ccfgDynamicWithFilterName = "ccfgDynamicWithFilter";
+    protected static final String CCFG_DYNAMIC_WITH_FILTER_NAME = "ccfgDynamicWithFilter";
 
     /** */
-    protected final CacheConfiguration ccfg1static = new CacheConfiguration(ccfg1staticName);
+    protected final CacheConfiguration ccfg1static = new CacheConfiguration(CCFG_1_STATIC_NAME);
 
     /** */
-    protected final CacheConfiguration ccfg2static = new CacheConfiguration(ccfg2staticName);
+    protected final CacheConfiguration ccfg2static = new CacheConfiguration(CCFG_2_STATIC_NAME);
 
     /** */
-    protected final CacheConfiguration ccfg3static = new CacheConfiguration(ccfg3staticName);
+    protected final CacheConfiguration ccfg3static = new CacheConfiguration(CCFG_3_STATIC_NAME);
 
     /** */
     protected final CacheConfiguration ccfg1staticWithFilter =
-        new CacheConfiguration(ccfg1staticWithFilterName).setNodeFilter(new FilterNode(node2));
+        new CacheConfiguration(CCFG_1_STATIC_WITH_FILTER_NAME).setNodeFilter(new FilterNode(NODE_2));
 
     /** */
     protected final CacheConfiguration ccfg2staticWithFilter =
-        new CacheConfiguration(ccfg2staticWithFilterName).setNodeFilter(new FilterNode(nodeClient));
+        new CacheConfiguration(CCFG_2_STATIC_WITH_FILTER_NAME).setNodeFilter(new FilterNode(NODE_CLIENT));
 
     /** */
     protected final CacheConfiguration ccfg3staticWithFilter =
-        new CacheConfiguration(ccfg3staticWithFilterName).setNodeFilter(new FilterNode(node1));
+        new CacheConfiguration(CCFG_3_STATIC_WITH_FILTER_NAME).setNodeFilter(new FilterNode(NODE_1));
 
     /** */
-    protected final CacheConfiguration<Object, Object> ccfgDynamic = new CacheConfiguration<>(ccfgDynamicName);
+    protected final CacheConfiguration<Object, Object> ccfgDynamic = new CacheConfiguration<>(CCFG_DYNAMIC_NAME);
 
     /** */
     protected final CacheConfiguration<Object, Object> ccfgDynamicWithFilter =
-        new CacheConfiguration<>(ccfgDynamicWithFilterName).setNodeFilter(new FilterNode(node2));
+        new CacheConfiguration<>(CCFG_DYNAMIC_WITH_FILTER_NAME).setNodeFilter(new FilterNode(NODE_2));
 
     /** */
     protected final Set<String> staticCacheNames = Sets.newHashSet(
-        ccfg1staticName, ccfg2staticName, ccfg3staticName,
-        ccfg1staticWithFilterName, ccfg2staticWithFilterName, ccfg3staticWithFilterName
+        CCFG_1_STATIC_NAME, CCFG_2_STATIC_NAME, CCFG_3_STATIC_NAME,
+        CCFG_1_STATIC_WITH_FILTER_NAME, CCFG_2_STATIC_WITH_FILTER_NAME, CCFG_3_STATIC_WITH_FILTER_NAME
     );
 
     /** */
     protected final Set<String> allCacheNames = Sets.newHashSet(
-        ccfg1staticName, ccfg2staticName, ccfg3staticName,
-        ccfg1staticWithFilterName, ccfg2staticWithFilterName, ccfg3staticWithFilterName,
-        ccfgDynamicName, ccfgDynamicWithFilterName
+        CCFG_1_STATIC_NAME, CCFG_2_STATIC_NAME, CCFG_3_STATIC_NAME,
+        CCFG_1_STATIC_WITH_FILTER_NAME, CCFG_2_STATIC_WITH_FILTER_NAME, CCFG_3_STATIC_WITH_FILTER_NAME,
+        CCFG_DYNAMIC_NAME, CCFG_DYNAMIC_WITH_FILTER_NAME
     );
 
     /** {@inheritDoc} */
@@ -135,7 +135,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         cfg.setAutoActivationEnabled(false);
 
-        if (!nodeClient.equals(name))
+        if (!NODE_CLIENT.equals(name))
             cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(vmIpFinder));
         else {
             clientIpFinder.setAddresses(Collections.singletonList("127.0.0.1:47501"));
@@ -161,7 +161,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         final CountDownLatch disconnectedLatch,
         final CountDownLatch reconnectedLatch
     ) {
-        grid(nodeClient).events().localListen(new IgnitePredicate<Event>() {
+        grid(NODE_CLIENT).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event event) {
                 switch (event.type()) {
                     case EventType.EVT_CLIENT_NODE_DISCONNECTED:
@@ -206,13 +206,13 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
      * @throws Exception If failed.
      */
     protected void startNodes(CountDownLatch activateLatch) throws Exception {
-        IgniteConfiguration cfg1 = getConfiguration(node1)
+        IgniteConfiguration cfg1 = getConfiguration(NODE_1)
             .setCacheConfiguration(ccfg1static, ccfg1staticWithFilter);
 
-        IgniteConfiguration cfg2 = getConfiguration(node2)
+        IgniteConfiguration cfg2 = getConfiguration(NODE_2)
             .setCacheConfiguration(ccfg2static, ccfg2staticWithFilter);
 
-        IgniteConfiguration cfg3 = getConfiguration(nodeClient)
+        IgniteConfiguration cfg3 = getConfiguration(NODE_CLIENT)
             .setCacheConfiguration(ccfg3static, ccfg3staticWithFilter);
 
         if (activateLatch != null)
@@ -230,87 +230,87 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
      *
      */
     protected void checkStaticCaches() {
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
-        Assert.assertNotNull(ig1.cache(ccfg1staticName));
-        Assert.assertNotNull(ig1.cache(ccfg2staticName));
-        Assert.assertNotNull(ig1.cache(ccfg3staticName));
+        Assert.assertNotNull(ig1.cache(CCFG_1_STATIC_NAME));
+        Assert.assertNotNull(ig1.cache(CCFG_2_STATIC_NAME));
+        Assert.assertNotNull(ig1.cache(CCFG_3_STATIC_NAME));
 
-        Assert.assertNotNull(ig1.cache(ccfg1staticWithFilterName));
-        Assert.assertNotNull(ig1.cache(ccfg2staticWithFilterName));
+        Assert.assertNotNull(ig1.cache(CCFG_1_STATIC_WITH_FILTER_NAME));
+        Assert.assertNotNull(ig1.cache(CCFG_2_STATIC_WITH_FILTER_NAME));
 
-        Assert.assertNotNull(ig2.cache(ccfg1staticName));
-        Assert.assertNotNull(ig2.cache(ccfg2staticName));
-        Assert.assertNotNull(ig2.cache(ccfg3staticName));
+        Assert.assertNotNull(ig2.cache(CCFG_1_STATIC_NAME));
+        Assert.assertNotNull(ig2.cache(CCFG_2_STATIC_NAME));
+        Assert.assertNotNull(ig2.cache(CCFG_3_STATIC_NAME));
 
-        Assert.assertNotNull(ig2.cache(ccfg3staticWithFilterName));
-        Assert.assertNotNull(ig2.cache(ccfg2staticWithFilterName));
+        Assert.assertNotNull(ig2.cache(CCFG_3_STATIC_WITH_FILTER_NAME));
+        Assert.assertNotNull(ig2.cache(CCFG_2_STATIC_WITH_FILTER_NAME));
 
-        Assert.assertNotNull(client.cache(ccfg1staticName));
-        Assert.assertNotNull(client.cache(ccfg2staticName));
-        Assert.assertNotNull(client.cache(ccfg3staticName));
+        Assert.assertNotNull(client.cache(CCFG_1_STATIC_NAME));
+        Assert.assertNotNull(client.cache(CCFG_2_STATIC_NAME));
+        Assert.assertNotNull(client.cache(CCFG_3_STATIC_NAME));
 
-        Assert.assertNotNull(client.cache(ccfg3staticWithFilterName));
-        Assert.assertNotNull(client.cache(ccfg1staticWithFilterName));
+        Assert.assertNotNull(client.cache(CCFG_3_STATIC_WITH_FILTER_NAME));
+        Assert.assertNotNull(client.cache(CCFG_1_STATIC_WITH_FILTER_NAME));
     }
 
     /**
      *
      */
     protected void checkAllCaches() {
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         checkStaticCaches();
 
-        Assert.assertNotNull(ig1.cache(ccfgDynamicName));
-        Assert.assertNotNull(ig1.cache(ccfgDynamicWithFilterName));
+        Assert.assertNotNull(ig1.cache(CCFG_DYNAMIC_NAME));
+        Assert.assertNotNull(ig1.cache(CCFG_DYNAMIC_WITH_FILTER_NAME));
 
-        Assert.assertNotNull(ig2.cache(ccfgDynamicName));
+        Assert.assertNotNull(ig2.cache(CCFG_DYNAMIC_NAME));
 
-        Assert.assertNotNull(client.cache(ccfgDynamicName));
-        Assert.assertNotNull(client.cache(ccfgDynamicWithFilterName));
+        Assert.assertNotNull(client.cache(CCFG_DYNAMIC_NAME));
+        Assert.assertNotNull(client.cache(CCFG_DYNAMIC_WITH_FILTER_NAME));
     }
 
     /**
      * @param checkClientCaches Check presence of client caches, false to skip.
      */
     protected void checkOnlySystemCaches(boolean checkClientCaches) {
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
-        Assert.assertNull(ig1.cache(ccfg1staticName));
-        Assert.assertNull(ig1.cache(ccfg2staticName));
+        Assert.assertNull(ig1.cache(CCFG_1_STATIC_NAME));
+        Assert.assertNull(ig1.cache(CCFG_2_STATIC_NAME));
 
-        Assert.assertNull(ig1.cache(ccfg1staticWithFilterName));
-        Assert.assertNull(ig1.cache(ccfg2staticWithFilterName));
+        Assert.assertNull(ig1.cache(CCFG_1_STATIC_WITH_FILTER_NAME));
+        Assert.assertNull(ig1.cache(CCFG_2_STATIC_WITH_FILTER_NAME));
 
-        Assert.assertNull(ig2.cache(ccfg1staticName));
-        Assert.assertNull(ig2.cache(ccfg2staticName));
+        Assert.assertNull(ig2.cache(CCFG_1_STATIC_NAME));
+        Assert.assertNull(ig2.cache(CCFG_2_STATIC_NAME));
 
-        Assert.assertNull(ig2.cache(ccfg2staticWithFilterName));
+        Assert.assertNull(ig2.cache(CCFG_2_STATIC_WITH_FILTER_NAME));
 
-        Assert.assertNull(client.cache(ccfg1staticName));
-        Assert.assertNull(client.cache(ccfg2staticName));
+        Assert.assertNull(client.cache(CCFG_1_STATIC_NAME));
+        Assert.assertNull(client.cache(CCFG_2_STATIC_NAME));
 
-        Assert.assertNull(client.cache(ccfg1staticWithFilterName));
+        Assert.assertNull(client.cache(CCFG_1_STATIC_WITH_FILTER_NAME));
 
         if (checkClientCaches) {
-            Assert.assertNull(ig1.cache(ccfg3staticName));
+            Assert.assertNull(ig1.cache(CCFG_3_STATIC_NAME));
 
-            Assert.assertNull(ig2.cache(ccfg3staticName));
-            Assert.assertNull(ig2.cache(ccfg3staticWithFilterName));
+            Assert.assertNull(ig2.cache(CCFG_3_STATIC_NAME));
+            Assert.assertNull(ig2.cache(CCFG_3_STATIC_WITH_FILTER_NAME));
 
-            Assert.assertNull(client.cache(ccfg3staticName));
-            Assert.assertNull(client.cache(ccfg3staticWithFilterName));
+            Assert.assertNull(client.cache(CCFG_3_STATIC_NAME));
+            Assert.assertNull(client.cache(CCFG_3_STATIC_WITH_FILTER_NAME));
         }
 
         Set cachesToCheck = checkClientCaches ? Collections.emptySet()
-            : Sets.newHashSet(ccfg3staticName, ccfg3staticWithFilterName);
+            : Sets.newHashSet(CCFG_3_STATIC_NAME, CCFG_3_STATIC_WITH_FILTER_NAME);
 
         checkDescriptors(ig1, cachesToCheck);
         checkDescriptors(ig2, cachesToCheck);

@@ -57,7 +57,7 @@ public class CassandraHelper {
     private static final String EMBEDDED_CASSANDRA_YAML = "org/apache/ignite/tests/cassandra/embedded-cassandra.yaml";
 
     /** */
-    private static final ApplicationContext connectionContext = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
+    private static final ApplicationContext CONNECTION_CONTEXT = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
 
     /** */
     private static DataSource adminDataSrc;
@@ -224,7 +224,7 @@ public class CassandraHelper {
         if (adminDataSrc != null)
             return adminDataSrc;
 
-        return adminDataSrc = (DataSource)connectionContext.getBean("cassandraAdminDataSource");
+        return adminDataSrc = (DataSource)CONNECTION_CONTEXT.getBean("cassandraAdminDataSource");
     }
 
     /** */
@@ -232,7 +232,7 @@ public class CassandraHelper {
         if (regularDataSrc != null)
             return regularDataSrc;
 
-        return regularDataSrc = (DataSource)connectionContext.getBean("cassandraRegularDataSource");
+        return regularDataSrc = (DataSource)CONNECTION_CONTEXT.getBean("cassandraRegularDataSource");
     }
 
     /** */

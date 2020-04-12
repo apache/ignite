@@ -54,7 +54,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     private static final int RETRIES = 10;
 
     /** */
-    private static final AtomicInteger globalCntr = new AtomicInteger();
+    private static final AtomicInteger GLOBAL_CNTR = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -227,7 +227,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                             Map<Integer, Integer> data = new HashMap<>();
 
                             for (int i = 0; i < RETRIES; i++) {
-                                int val = globalCntr.getAndIncrement();
+                                int val = GLOBAL_CNTR.getAndIncrement();
 
                                 data.put(val, val);
                             }
@@ -262,7 +262,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
         assertEquals(THREAD_CNT, cntr);
 
-        for (int i = 0; i < globalCntr.get(); i++)
+        for (int i = 0; i < GLOBAL_CNTR.get(); i++)
             assertNotNull(c1.get(i));
     }
 }

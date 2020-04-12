@@ -31,21 +31,21 @@ public class HadoopTaskExecutionSelfTestValues {
     private static HadoopSharedMap m = HadoopSharedMap.map(HadoopTaskExecutionSelfTestValues.class);
 
     /** Line count. */
-    public static final AtomicInteger totalLineCnt = m.put("totalLineCnt", new AtomicInteger());
+    public static final AtomicInteger TOTAL_LINE_CNT = m.put("totalLineCnt", new AtomicInteger());
 
     /** Executed tasks. */
-    public static final AtomicInteger executedTasks = m.put("executedTasks", new AtomicInteger());
+    public static final AtomicInteger EXECUTED_TASKS = m.put("executedTasks", new AtomicInteger());
 
     /** Cancelled tasks. */
-    public static final AtomicInteger cancelledTasks = m.put("cancelledTasks", new AtomicInteger());
+    public static final AtomicInteger CANCELLED_TASKS = m.put("cancelledTasks", new AtomicInteger());
 
     /** Working directory of each task. */
-    public static final Map<String, String> taskWorkDirs = m.put("taskWorkDirs",
+    public static final Map<String, String> TASK_WORK_DIRS = m.put("taskWorkDirs",
         new ConcurrentHashMap<String, String>());
 
     /** Mapper id to fail. */
-    public static final AtomicInteger failMapperId = m.put("failMapperId", new AtomicInteger());
+    public static final AtomicInteger FAIL_MAPPER_ID = m.put("failMapperId", new AtomicInteger());
 
     /** Number of splits of the current input. */
-    public static final AtomicInteger splitsCount = m.put("splitsCount", new AtomicInteger());
+    public static final AtomicInteger SPLITS_COUNT = m.put("splitsCount", new AtomicInteger());
 }

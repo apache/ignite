@@ -50,13 +50,13 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     public static final String CACHE_NAME = "dummy";
 
     /** Clear DB folder after each test. May be set to false for local debug */
-    private static final boolean deleteAfter = true;
+    private static final boolean DELETE_AFTER = true;
 
     /** Clear DB folder before each test. */
-    private static final boolean deleteBefore = true;
+    private static final boolean DELETE_BEFORE = true;
 
     /** Fail test if delete of DB folder was not completed. */
-    private static final boolean failIfDeleteNotCompleted = true;
+    private static final boolean FAIL_IF_DELETE_NOT_COMPLETED = true;
 
     /** Configured consistent id. */
     private String configuredConsistentId;
@@ -83,7 +83,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        if (deleteBefore)
+        if (DELETE_BEFORE)
             deleteWorkFiles();
     }
 
@@ -91,7 +91,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        if (deleteAfter)
+        if (DELETE_AFTER)
             deleteWorkFiles();
 
         if (clearPropsAfterTest) {
@@ -119,7 +119,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
 
         ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
 
-        if (failIfDeleteNotCompleted)
+        if (FAIL_IF_DELETE_NOT_COMPLETED)
             assertTrue(ok);
     }
 

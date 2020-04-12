@@ -52,9 +52,9 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
 
             svc.hello();
 
-            assert MyServiceImpl.latch.await(2000, TimeUnit.MILLISECONDS);
+            assert MyServiceImpl.LATCH.await(2000, TimeUnit.MILLISECONDS);
 
-            assertEquals(0, MyServiceImpl.cnt.get());
+            assertEquals(0, MyServiceImpl.CNT.get());
         }
         finally {
             stopAllGrids();
@@ -72,10 +72,10 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
      */
     private static class MyServiceImpl implements MyService, Externalizable {
         /** */
-        static final AtomicInteger cnt = new AtomicInteger();
+        static final AtomicInteger CNT = new AtomicInteger();
 
         /** */
-        static final CountDownLatch latch = new CountDownLatch(1);
+        static final CountDownLatch LATCH = new CountDownLatch(1);
 
         /**
          */
@@ -87,27 +87,27 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             if (clientThread())
-                cnt.incrementAndGet();
+                CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
             if (clientThread())
-                cnt.incrementAndGet();
+                CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void execute(ServiceContext ctx) throws Exception {
             if (clientThread())
-                cnt.incrementAndGet();
+                CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
         @Override public void hello() {
             if (clientThread())
-                cnt.incrementAndGet();
+                CNT.incrementAndGet();
 
-            latch.countDown();
+            LATCH.countDown();
         }
 
         /**

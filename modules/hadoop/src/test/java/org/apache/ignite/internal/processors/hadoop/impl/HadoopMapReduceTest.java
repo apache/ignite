@@ -37,7 +37,7 @@ public class HadoopMapReduceTest extends HadoopAbstractMapReduceTest {
 
         IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
 
-        generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow );
+        generateTestFile(inFile.toString(), "red", RED, "blue", BLUE, "green", GREEN, "yellow", YELLOW);
 
         for (boolean[] apiMode: getApiModes()) {
             assert apiMode.length == 3;

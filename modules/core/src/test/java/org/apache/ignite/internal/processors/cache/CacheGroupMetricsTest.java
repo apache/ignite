@@ -126,7 +126,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
      * 8 | B P B
      * 9 | P
      */
-    private static final int[][] assignmentMapArr =
+    private static final int[][] ASSIGNMENT_MAP_ARR =
         new int[][] {{0}, {1, 2}, {2, 0, 1}, {1}, {2, 0}, {0, 1, 2}, {2}, {0, 1}, {1, 2, 0}, {0}};
 
     /** {@inheritDoc} */
@@ -288,9 +288,9 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
         assertEquals(F.asList("cache4"),
             mxBean0Grp3.get2().<ObjectMetric<List<String>>>findMetric("Caches").value());
 
-        assertEquals(arrayToAssignmentMap(assignmentMapArr), mxBean0Grp1.get2()
+        assertEquals(arrayToAssignmentMap(ASSIGNMENT_MAP_ARR), mxBean0Grp1.get2()
             .<ObjectMetric<Map<Integer, List<String>>>>findMetric("AffinityPartitionsAssignmentMap").value());
-        assertEquals(arrayToAllocationMap(assignmentMapArr), mxBean0Grp1.get2()
+        assertEquals(arrayToAllocationMap(ASSIGNMENT_MAP_ARR), mxBean0Grp1.get2()
             .<ObjectMetric<Map<Integer, List<String>>>>findMetric("OwningPartitionsAllocationMap").value());
 
         ObjectMetric<Map<Integer, List<String>>> movingPartitionsAllocationMap =

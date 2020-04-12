@@ -201,52 +201,52 @@ public final class GridTestUtils {
     }
 
     /** */
-    private static final Map<Class<?>, String> addrs = new HashMap<>();
+    private static final Map<Class<?>, String> ADDRS = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends GridAbstractTest>, Integer> mcastPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> MCAST_PORTS = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends GridAbstractTest>, Integer> discoPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> DISCO_PORTS = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends GridAbstractTest>, Integer> commPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> COMM_PORTS = new HashMap<>();
 
     /** */
     private static int[] addr;
 
     /** */
-    private static final int default_mcast_port = 50000;
+    private static final int DEFAULT_MCAST_PORT = 50000;
 
     /** */
-    private static final int max_mcast_port = 54999;
+    private static final int MAX_MCAST_PORT = 54999;
 
     /** */
-    private static final int default_comm_port = 45000;
+    private static final int DEFAULT_COMM_PORT = 45000;
 
     /** */
-    private static final int max_comm_port = 49999;
+    private static final int MAX_COMM_PORT = 49999;
 
     /** */
-    private static final int default_disco_port = 55000;
+    private static final int DEFAULT_DISCO_PORT = 55000;
 
     /** */
-    private static final int max_disco_port = 59999;
+    private static final int MAX_DISCO_PORT = 59999;
 
     /** */
-    private static int mcastPort = default_mcast_port;
+    private static int mcastPort = DEFAULT_MCAST_PORT;
 
     /** */
-    private static int discoPort = default_disco_port;
+    private static int discoPort = DEFAULT_DISCO_PORT;
 
     /** */
-    private static int commPort = default_comm_port;
+    private static int commPort = DEFAULT_COMM_PORT;
 
     /** */
-    private static final GridBusyLock busyLock = new GridBusyLock();
+    private static final GridBusyLock BUSY_LOCK = new GridBusyLock();
 
     /** */
-    public static final ConcurrentMap<IgnitePair<UUID>, IgnitePair<Queue<Message>>> msgMap = new ConcurrentHashMap<>();
+    public static final ConcurrentMap<IgnitePair<UUID>, IgnitePair<Queue<Message>>> MSG_MAP = new ConcurrentHashMap<>();
 
     /**
      * Ensure singleton.
@@ -264,10 +264,10 @@ public final class GridTestUtils {
     public static void addMessage(UUID from, UUID to, Message msg, boolean sent) {
         IgnitePair<UUID> key = new IgnitePair<>(from, to);
 
-        IgnitePair<Queue<Message>> val = msgMap.get(key);
+        IgnitePair<Queue<Message>> val = MSG_MAP.get(key);
 
         if (val == null) {
-            IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
+            IgnitePair<Queue<Message>> old = MSG_MAP.putIfAbsent(key,
                 val = new IgnitePair<Queue<Message>>(
                     new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
 
@@ -282,7 +282,7 @@ public final class GridTestUtils {
      * Dumps all messages tracked with {@link #addMessage(UUID, UUID, Message, boolean)} to std out.
      */
     public static void dumpMessages() {
-        for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : msgMap.entrySet()) {
+        for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : MSG_MAP.entrySet()) {
             U.debug("\n" + entry.getKey().get1() + " [sent to] " + entry.getKey().get2());
 
             for (Message message : entry.getValue().get1())
@@ -698,7 +698,7 @@ public final class GridTestUtils {
      * @return Next multicast port.
      */
     public static synchronized int getNextMulticastPort(Class<? extends GridAbstractTest> cls) {
-        Integer portRet = mcastPorts.get(cls);
+        Integer portRet = MCAST_PORTS.get(cls);
 
         if (portRet != null)
             return portRet;
@@ -706,8 +706,8 @@ public final class GridTestUtils {
         int startPort = mcastPort;
 
         while (true) {
-            if (mcastPort >= max_mcast_port)
-                mcastPort = default_mcast_port;
+            if (mcastPort >= MAX_MCAST_PORT)
+                mcastPort = DEFAULT_MCAST_PORT;
             else
                 mcastPort++;
 
@@ -732,7 +732,7 @@ public final class GridTestUtils {
         }
 
         // Cache port to be reused by the same test.
-        mcastPorts.put(cls, portRet);
+        MCAST_PORTS.put(cls, portRet);
 
         return portRet;
     }
@@ -745,13 +745,13 @@ public final class GridTestUtils {
      * @return Next communication port.
      */
     public static synchronized int getNextCommPort(Class<? extends GridAbstractTest> cls) {
-        Integer portRet = commPorts.get(cls);
+        Integer portRet = COMM_PORTS.get(cls);
 
         if (portRet != null)
             return portRet;
 
-        if (commPort >= max_comm_port)
-            commPort = default_comm_port;
+        if (commPort >= MAX_COMM_PORT)
+            commPort = DEFAULT_COMM_PORT;
         else
             // Reserve 10 ports per test.
             commPort += 10;
@@ -759,7 +759,7 @@ public final class GridTestUtils {
         portRet = commPort;
 
         // Cache port to be reused by the same test.
-        commPorts.put(cls, portRet);
+        COMM_PORTS.put(cls, portRet);
 
         return portRet;
     }
@@ -772,20 +772,20 @@ public final class GridTestUtils {
      * @return Next discovery port.
      */
     public static synchronized int getNextDiscoPort(Class<? extends GridAbstractTest> cls) {
-        Integer portRet = discoPorts.get(cls);
+        Integer portRet = DISCO_PORTS.get(cls);
 
         if (portRet != null)
             return portRet;
 
-        if (discoPort >= max_disco_port)
-            discoPort = default_disco_port;
+        if (discoPort >= MAX_DISCO_PORT)
+            discoPort = DEFAULT_DISCO_PORT;
         else
             discoPort += 10;
 
         portRet = discoPort;
 
         // Cache port to be reused by the same test.
-        discoPorts.put(cls, portRet);
+        DISCO_PORTS.put(cls, portRet);
 
         return portRet;
     }
@@ -795,7 +795,7 @@ public final class GridTestUtils {
      * @throws IOException If unable to find a free port.
      */
     public static int getFreeCommPort() throws IOException {
-        for (int port = default_comm_port; port < max_comm_port; port++) {
+        for (int port = DEFAULT_COMM_PORT; port < MAX_COMM_PORT; port++) {
             try (ServerSocket sock = new ServerSocket(port)) {
                 return sock.getLocalPort();
             }
@@ -815,7 +815,7 @@ public final class GridTestUtils {
      * @return Next multicast group.
      */
     public static synchronized String getNextMulticastGroup(Class<?> cls) {
-        String addrStr = addrs.get(cls);
+        String addrStr = ADDRS.get(cls);
 
         if (addrStr != null)
             return addrStr;
@@ -846,7 +846,7 @@ public final class GridTestUtils {
         addrStr = b.toString();
 
         // Cache address to be reused by the same test.
-        addrs.put(cls, addrStr);
+        ADDRS.put(cls, addrStr);
 
         return addrStr;
     }
@@ -983,7 +983,7 @@ public final class GridTestUtils {
      */
     public static long runMultiThreaded(Iterable<Callable<?>> calls, GridTestSafeThreadFactory threadFactory)
         throws Exception {
-        if (!busyLock.enterBusy())
+        if (!BUSY_LOCK.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
 
         Collection<Thread> threads = new ArrayList<>();
@@ -999,7 +999,7 @@ public final class GridTestUtils {
                 t.start();
         }
         finally {
-            busyLock.leaveBusy();
+            BUSY_LOCK.leaveBusy();
         }
 
         // Wait threads finish their job.
@@ -1063,7 +1063,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task, String threadName) {
-        if (!busyLock.enterBusy())
+        if (!BUSY_LOCK.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
 
         try {
@@ -1110,7 +1110,7 @@ public final class GridTestUtils {
             return fut;
         }
         finally {
-            busyLock.leaveBusy();
+            BUSY_LOCK.leaveBusy();
         }
     }
 
@@ -1146,13 +1146,13 @@ public final class GridTestUtils {
      * @param log Logger.
      */
     public static void stopThreads(IgniteLogger log) {
-        busyLock.block();
+        BUSY_LOCK.block();
 
         try {
             GridTestSafeThreadFactory.stopAllThreads(log);
         }
         finally {
-            busyLock.unblock();
+            BUSY_LOCK.unblock();
         }
     }
 

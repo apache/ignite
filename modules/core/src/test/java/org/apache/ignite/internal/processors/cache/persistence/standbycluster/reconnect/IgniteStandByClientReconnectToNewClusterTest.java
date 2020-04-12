@@ -39,9 +39,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> start grid");
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -57,7 +57,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         checkStaticCaches();
 
-        info(">>>> dynamic start [" + ccfgDynamicName + ", " + ccfgDynamicWithFilterName + "]");
+        info(">>>> dynamic start [" + CCFG_DYNAMIC_NAME + ", " + CCFG_DYNAMIC_WITH_FILTER_NAME + "]");
 
         client.createCache(ccfgDynamic);
 
@@ -78,13 +78,13 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> stop servers");
 
-        stopGrid(node1);
-        stopGrid(node2);
+        stopGrid(NODE_1);
+        stopGrid(NODE_2);
 
         disconnectedLatch.await();
 
-        ig1 = startGrid(getConfiguration(node1));
-        ig2 = startGrid(getConfiguration(node2));
+        ig1 = startGrid(getConfiguration(NODE_1));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         info(">>>> activate new servers");
 
@@ -117,9 +117,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> start grid");
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -135,7 +135,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         checkDescriptors(ig2, staticCacheNames);
         checkDescriptors(client, staticCacheNames);
 
-        info(">>>> dynamic start [" + ccfgDynamicName + ", " + ccfgDynamicWithFilterName + "]");
+        info(">>>> dynamic start [" + CCFG_DYNAMIC_NAME + ", " + CCFG_DYNAMIC_WITH_FILTER_NAME + "]");
 
         client.createCache(ccfgDynamic);
 
@@ -156,8 +156,8 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> stop servers");
 
-        stopGrid(node1);
-        stopGrid(node2);
+        stopGrid(NODE_1);
+        stopGrid(NODE_2);
 
         assertTrue(client.cluster().active());
 
@@ -198,9 +198,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         startNodes(activateLatch);
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -211,13 +211,13 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         addDisconnectListener(disconnectedLatch, reconnectedLatch);
 
-        stopGrid(node1);
-        stopGrid(node2);
+        stopGrid(NODE_1);
+        stopGrid(NODE_2);
 
         disconnectedLatch.await();
 
-        ig1 = startGrid(getConfiguration(node1));
-        ig2 = startGrid(getConfiguration(node2));
+        ig1 = startGrid(getConfiguration(NODE_1));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         ig1.cluster().active(true);
 
@@ -241,10 +241,10 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         client.createCache(ccfgDynamicWithFilter);
 
-        Set<String> exp2 = Sets.newHashSet(ccfg3staticName,
-            ccfg3staticWithFilterName,
-            ccfgDynamicName,
-            ccfgDynamicWithFilterName);
+        Set<String> exp2 = Sets.newHashSet(CCFG_3_STATIC_NAME,
+            CCFG_3_STATIC_WITH_FILTER_NAME,
+            CCFG_DYNAMIC_NAME,
+            CCFG_DYNAMIC_WITH_FILTER_NAME);
 
         checkDescriptors(ig1, exp2);
         checkDescriptors(ig2, exp2);
@@ -258,9 +258,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     public void testInactiveClientReconnectsToInactiveCluster() throws Exception {
         startNodes(null);
 
-        IgniteEx ig1 = grid(node1);
-        IgniteEx ig2 = grid(node2);
-        IgniteEx client = grid(nodeClient);
+        IgniteEx ig1 = grid(NODE_1);
+        IgniteEx ig2 = grid(NODE_2);
+        IgniteEx client = grid(NODE_CLIENT);
 
         assertTrue(!ig1.cluster().active());
         assertTrue(!ig2.cluster().active());
@@ -271,15 +271,15 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         addDisconnectListener(disconnectedLatch, reconnectedLatch);
 
-        stopGrid(node1);
-        stopGrid(node2);
+        stopGrid(NODE_1);
+        stopGrid(NODE_2);
 
         assertTrue(!client.cluster().active());
 
         disconnectedLatch.await();
 
-        ig1 = startGrid(getConfiguration(node1));
-        ig2 = startGrid(getConfiguration(node2));
+        ig1 = startGrid(getConfiguration(NODE_1));
+        ig2 = startGrid(getConfiguration(NODE_2));
 
         reconnectedLatch.await();
 
@@ -299,7 +299,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         client.createCache(ccfgDynamicWithFilter);
 
-        Set<String> exp2 = Sets.newHashSet(ccfgDynamicName, ccfgDynamicWithFilterName);
+        Set<String> exp2 = Sets.newHashSet(CCFG_DYNAMIC_NAME, CCFG_DYNAMIC_WITH_FILTER_NAME);
 
         checkDescriptors(ig1, exp2);
         checkDescriptors(ig2, exp2);

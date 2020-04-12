@@ -100,16 +100,16 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
     protected static final String SECONDARY_IGFS_NAME = "igfs-secondary";
 
     /** Red constant. */
-    protected static final int red = 10_000;
+    protected static final int RED = 10_000;
 
     /** Blue constant. */
-    protected static final int blue = 20_000;
+    protected static final int BLUE = 20_000;
 
     /** Green constant. */
-    protected static final int green = 15_000;
+    protected static final int GREEN = 15_000;
 
     /** Yellow constant. */
-    protected static final int yellow = 7_000;
+    protected static final int YELLOW = 7_000;
 
     /** The secondary Ignite node. */
     protected Ignite igniteSecondary;
@@ -225,10 +225,10 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
 
         assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
-            "blue\t" + blue + "\n" +
-                "green\t" + green + "\n" +
-                "red\t" + red + "\n" +
-                "yellow\t" + yellow + "\n",
+            "blue\t" + BLUE + "\n" +
+                "green\t" + GREEN + "\n" +
+                "red\t" + RED + "\n" +
+                "yellow\t" + YELLOW + "\n",
             actual
         );
     }

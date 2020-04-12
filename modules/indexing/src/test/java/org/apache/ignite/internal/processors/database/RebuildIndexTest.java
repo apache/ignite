@@ -59,7 +59,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
     private ListeningTestLogger srvLog;
 
     /** */
-    private static final Pattern idxRebuildPattert = Pattern.compile(
+    private static final Pattern IDX_REBUILD_PATTERN = Pattern.compile(
         "Details for cache rebuilding \\[name=cache_name, grpName=null].*" +
             "Scanned rows 2, visited types \\[UserValue].*" +
             "Type name=UserValue.*" +
@@ -156,7 +156,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
     private void check(boolean msgFound) throws Exception {
         srvLog = new ListeningTestLogger(false, log);
 
-        LogListener idxRebuildLsnr = LogListener.matches(idxRebuildPattert).build();
+        LogListener idxRebuildLsnr = LogListener.matches(IDX_REBUILD_PATTERN).build();
         srvLog.registerListener(idxRebuildLsnr);
 
         IgniteEx node = startGrids(2);

@@ -35,14 +35,14 @@ import org.junit.Test;
 @GridCommonTest(group = "P2P")
 public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final ClassLoader urlClsLdr1;
+    private static final ClassLoader URL_CLS_LDR_1;
 
     /** */
     static {
         String path = GridTestProperties.getProperty("p2p.uri.cls");
 
         try {
-            urlClsLdr1 = new URLClassLoader(
+            URL_CLS_LDR_1 = new URLClassLoader(
                 new URL[] { new URL(path) },
                 GridP2PNodeLeftSelfTest.class.getClassLoader());
         }
@@ -78,7 +78,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
             Ignite ignite2 = startGrid(2);
             Ignite ignite3 = startGrid(3);
 
-            Class task1 = urlClsLdr1.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
+            Class task1 = URL_CLS_LDR_1.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
 
             Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 

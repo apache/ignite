@@ -54,7 +54,7 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
     /**
      * Number of {@link MetadataUpdateProposedMessage} that have been sent since a test was start.
      */
-    private static final AtomicInteger proposeMsgNum = new AtomicInteger();
+    private static final AtomicInteger PROPOSE_MSG_NUM = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -66,7 +66,7 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
                     : (DiscoveryCustomMessage)IgniteUtils.field(msg, "delegate");
 
                 if (customMsg instanceof MetadataUpdateProposedMessage)
-                    proposeMsgNum.incrementAndGet();
+                    PROPOSE_MSG_NUM.incrementAndGet();
             }
         };
 
@@ -90,7 +90,7 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        proposeMsgNum.set(0);
+        PROPOSE_MSG_NUM.set(0);
     }
 
     /** {@inheritDoc} */
@@ -166,12 +166,12 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
         put(cache, 1, val);
 
         assertEquals("Unexpected number of MetadataUpdateProposedMessages have been received.",
-            1, proposeMsgNum.get());
+            1, PROPOSE_MSG_NUM.get());
 
         put(cache, 2, val);
 
         assertEquals("Unexpected number of MetadataUpdateProposedMessages have been received.",
-            1, proposeMsgNum.get());
+            1, PROPOSE_MSG_NUM.get());
 
         BinaryObjectBuilder builder = grid().binary().builder("OneMoreType_" + TYPES_COUNT.incrementAndGet());
 
@@ -180,7 +180,7 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
         put(cache, 3, builder.build());
 
         assertEquals("Unexpected number of MetadataUpdateProposedMessages have been received.",
-            2, proposeMsgNum.get());
+            2, PROPOSE_MSG_NUM.get());
     }
 
     /**

@@ -53,7 +53,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     private static final int WRITE_FROM_BEHIND_FLUSH_FREQUENCY = 1000;
 
     /** Cache store. */
-    private static final GridCacheTestStore store = new GridCacheTestStore();
+    private static final GridCacheTestStore STORE = new GridCacheTestStore();
 
     /**
      *
@@ -70,7 +70,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        store.resetTimestamp();
+        STORE.resetTimestamp();
     }
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         if (cache != null)
             cache.clear();
 
-        store.reset();
+        STORE.reset();
     }
 
     /** @return Caching mode. */
@@ -105,7 +105,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setCacheStoreFactory(singletonFactory(store));
+        cc.setCacheStoreFactory(singletonFactory(STORE));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setLoadPreviousValue(true);
@@ -123,7 +123,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     public void testWriteThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
-        Map<Integer, String> map = store.getMap();
+        Map<Integer, String> map = STORE.getMap();
 
         assert map.isEmpty() : map;
 
@@ -156,7 +156,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
             assert val.equals(Integer.toString(i));
         }
 
-        store.resetLastMethod();
+        STORE.resetLastMethod();
 
         tx = grid().transactions().txStart();
 
@@ -189,7 +189,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     public void testReadThrough() throws Exception {
         IgniteCache<Integer, String> cache = jcache();
 
-        Map<Integer, String> map = store.getMap();
+        Map<Integer, String> map = STORE.getMap();
 
         assert map.isEmpty();
 
@@ -330,7 +330,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         U.sleep(5 * WRITE_FROM_BEHIND_FLUSH_FREQUENCY);
 
-        Map<Integer, String> stored = store.getMap();
+        Map<Integer, String> stored = STORE.getMap();
 
         for (Map.Entry<Integer, String> entry : stored.entrySet()) {
             int key = entry.getKey();
@@ -353,7 +353,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @param mtd Expected last method value. */
     private void checkLastMethod(@Nullable String mtd) {
-        String lastMtd = store.getLastMethod();
+        String lastMtd = STORE.getLastMethod();
 
         if (mtd == null)
             assert lastMtd == null : "Last method must be null: " + lastMtd;

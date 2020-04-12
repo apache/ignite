@@ -123,7 +123,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).fileSystem(HadoopAbstractSelfTest.igfsName).clear();
+        grid(0).fileSystem(HadoopAbstractSelfTest.IGFS_NAME).clear();
 
         setupLockFile.delete();
         mapLockFile.delete();
@@ -162,7 +162,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      */
     @Test
     public void testJobCounters() throws Exception {
-        IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
+        IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.IGFS_NAME);
 
         igfs.mkdirs(new IgfsPath(PATH_INPUT));
 
@@ -194,8 +194,8 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
             job.setReducerClass(TestCountingReducer.class);
             job.setCombinerClass(TestCountingCombiner.class);
 
-            FileInputFormat.setInputPaths(job, new Path("igfs://" + igfsName + "@" + PATH_INPUT));
-            FileOutputFormat.setOutputPath(job, new Path("igfs://" + igfsName + "@" + PATH_OUTPUT));
+            FileInputFormat.setInputPaths(job, new Path("igfs://" + IGFS_NAME + "@" + PATH_INPUT));
+            FileOutputFormat.setOutputPath(job, new Path("igfs://" + IGFS_NAME + "@" + PATH_OUTPUT));
 
             job.submit();
 
@@ -288,7 +288,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void checkJobSubmit(boolean noCombiners, boolean noReducers) throws Exception {
-        IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
+        IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.IGFS_NAME);
 
         igfs.mkdirs(new IgfsPath(PATH_INPUT));
 
@@ -498,7 +498,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
         private Text word = new Text();
 
         /** Writable integer constant of '1' is writing as count of found words. */
-        private static final IntWritable one = new IntWritable(1);
+        private static final IntWritable ONE = new IntWritable(1);
 
         /** {@inheritDoc} */
         @Override public void map(Object key, Text val, Context ctx) throws IOException, InterruptedException {
@@ -510,7 +510,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
             while (wordList.hasMoreTokens()) {
                 word.set(wordList.nextToken());
 
-                ctx.write(word, one);
+                ctx.write(word, ONE);
             }
         }
     }

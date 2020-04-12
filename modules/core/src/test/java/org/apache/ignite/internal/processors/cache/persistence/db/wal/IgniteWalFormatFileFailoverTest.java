@@ -52,7 +52,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
     private static final String TEST_CACHE = "testCache";
 
     /** */
-    private static final String formatFile = "formatFile";
+    private static final String FORMAT_FILE = "formatFile";
 
     /** Fail method name reference. */
     private final AtomicReference<String> failMtdNameRef = new AtomicReference<>();
@@ -102,7 +102,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
     public void testNodeStartFailedFsync() throws Exception {
         fsync = true;
 
-        failMtdNameRef.set(formatFile);
+        failMtdNameRef.set(FORMAT_FILE);
 
         checkCause(GridTestUtils.assertThrows(log, () -> startGrid(0), IgniteCheckedException.class, null));
     }
@@ -143,7 +143,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
             setFileIOFactory(grid(1).context().cache().context().wal());
         }
 
-        failMtdNameRef.set(formatFile);
+        failMtdNameRef.set(FORMAT_FILE);
 
         grid(0).cluster().active(true);
 
@@ -194,7 +194,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
         assertNotNull(ioe.getMessage());
         assertTrue(ioe.getMessage().contains("No space left on device"));
 
-        assertTrue(isCalledFrom(ioe.getStackTrace(), formatFile));
+        assertTrue(isCalledFrom(ioe.getStackTrace(), FORMAT_FILE));
     }
 
     /** */

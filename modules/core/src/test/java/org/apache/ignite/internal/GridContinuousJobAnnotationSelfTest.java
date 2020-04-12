@@ -49,16 +49,16 @@ import org.junit.Test;
 @GridCommonTest(group = "Kernal Self")
 public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final AtomicBoolean fail = new AtomicBoolean();
+    private static final AtomicBoolean FAIL = new AtomicBoolean();
 
     /** */
-    private static final AtomicInteger afterSendCnt = new AtomicInteger();
+    private static final AtomicInteger AFTER_SEND_CNT = new AtomicInteger();
 
     /** */
-    private static final AtomicInteger beforeFailoverCnt = new AtomicInteger();
+    private static final AtomicInteger BEFORE_FAILOVER_CNT = new AtomicInteger();
 
     /** */
-    private static final AtomicReference<Exception> err = new AtomicReference<>();
+    private static final AtomicReference<Exception> ERR = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -94,11 +94,11 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
             Ignite ignite = startGrid(0);
             startGrid(1);
 
-            fail.set(true);
+            FAIL.set(true);
 
             ignite.compute().execute(TestTask.class, jobCls);
 
-            Exception e = err.get();
+            Exception e = ERR.get();
 
             if (e != null)
                 throw e;
@@ -108,8 +108,8 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
             stopGrid(1);
         }
 
-        assertEquals(2, afterSendCnt.getAndSet(0));
-        assertEquals(1, beforeFailoverCnt.getAndSet(0));
+        assertEquals(2, AFTER_SEND_CNT.getAndSet(0));
+        assertEquals(1, BEFORE_FAILOVER_CNT.getAndSet(0));
     }
 
     /** */
@@ -171,7 +171,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
             X.println("AfterSend start TestJob [this=" + this + ", identity=" + System.identityHashCode(this) +
                 ", flag=" + flag + "]");
 
-            afterSendCnt.incrementAndGet();
+            AFTER_SEND_CNT.incrementAndGet();
 
             flag = false;
 
@@ -185,7 +185,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
             X.println("BeforeFailover start TestJob [this=" + this + ", identity=" + System.identityHashCode(this) +
                 ", flag=" + flag + "]");
 
-            beforeFailoverCnt.incrementAndGet();
+            BEFORE_FAILOVER_CNT.incrementAndGet();
 
             flag = true;
 
@@ -204,11 +204,11 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
 
                 X.println(msg);
 
-                err.compareAndSet(null, new Exception(msg));
+                ERR.compareAndSet(null, new Exception(msg));
             }
 
-            if (fail.get()) {
-                fail.set(false);
+            if (FAIL.get()) {
+                FAIL.set(false);
 
                 throw new IgniteException("Expected test exception.");
             }

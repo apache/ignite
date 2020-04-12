@@ -67,7 +67,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
     private static final String VALUE = "test";
 
     /** Grid instances. */
-    private static final List<Ignite> IGNITEs = new ArrayList<>();
+    private static final List<Ignite> IGNITES = new ArrayList<>();
 
     /**
      * Start grid by default.
@@ -90,14 +90,14 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 0; i < GRID_CNT; i++)
-            IGNITEs.add(startGrid(i));
+            IGNITES.add(startGrid(i));
     }
 
     /**
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        IGNITEs.clear();
+        IGNITES.clear();
     }
 
     /**
@@ -107,10 +107,10 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            if (Ignition.state(IGNITEs.get(i).name()) == STOPPED) {
+            if (Ignition.state(IGNITES.get(i).name()) == STOPPED) {
                 info("Restarting grid: " + i);
 
-                IGNITEs.set(i, startGrid(i));
+                IGNITES.set(i, startGrid(i));
             }
 
             assert !jcache(i).isLocalLocked(KEY, false) : "Entry is locked for grid [idx=" + i + ']';
@@ -122,7 +122,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
-        return IGNITEs.get(i).cache(DEFAULT_CACHE_NAME);
+        return IGNITES.get(i).cache(DEFAULT_CACHE_NAME);
     }
 
     /**

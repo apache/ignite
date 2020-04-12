@@ -51,7 +51,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
     protected static final int ENTRY_CNT = 5000;
 
     /** */
-    protected static final Collection<Class> forbidden = new GridConcurrentHashSet<>();
+    protected static final Collection<Class> FORBIDDEN = new GridConcurrentHashSet<>();
 
     /** */
     private static AtomicReference<Exception> errEncountered = new AtomicReference<>();
@@ -84,7 +84,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        forbidden.clear();
+        FORBIDDEN.clear();
 
         Exception err = errEncountered.getAndSet(null);
 
@@ -99,14 +99,14 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
      */
     @Test
     public void testNoRebalancing() throws Exception {
-        forbidden.add(GridDhtPartitionSupplyMessage.class);
-        forbidden.add(GridDhtPartitionDemandMessage.class);
+        FORBIDDEN.add(GridDhtPartitionSupplyMessage.class);
+        FORBIDDEN.add(GridDhtPartitionDemandMessage.class);
 
         startGrids(GRID_CNT);
 
         checkInactive(GRID_CNT);
 
-        forbidden.clear();
+        FORBIDDEN.clear();
 
         grid(0).cluster().state(ACTIVE);
 
@@ -151,8 +151,8 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
 
         checkInactive(GRID_CNT);
 
-        forbidden.add(GridDhtPartitionSupplyMessage.class);
-        forbidden.add(GridDhtPartitionDemandMessage.class);
+        FORBIDDEN.add(GridDhtPartitionSupplyMessage.class);
+        FORBIDDEN.add(GridDhtPartitionDemandMessage.class);
 
         // Should stop without exchange.
         stopAllGrids();
@@ -163,8 +163,8 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
      */
     @Test
     public void testNoRebalancingWithClient() throws Exception {
-        forbidden.add(GridDhtPartitionSupplyMessage.class);
-        forbidden.add(GridDhtPartitionDemandMessage.class);
+        FORBIDDEN.add(GridDhtPartitionSupplyMessage.class);
+        FORBIDDEN.add(GridDhtPartitionDemandMessage.class);
 
         startGrids(GRID_CNT);
 
@@ -206,7 +206,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
          * @param msg Message to check.
          */
         private void checkForbidden(GridIoMessage msg) {
-            if (forbidden.contains(msg.message().getClass())) {
+            if (FORBIDDEN.contains(msg.message().getClass())) {
                 IgniteSpiException err = new IgniteSpiException("Message is forbidden for this test: " + msg.message());
 
                 // Set error in case if this exception is not visible to the user code.

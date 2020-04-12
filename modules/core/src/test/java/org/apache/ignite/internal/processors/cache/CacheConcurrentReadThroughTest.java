@@ -94,7 +94,7 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
 
             final Integer key = 1;
 
-            TestCacheStore.loadCnt.set(0);
+            TestCacheStore.LOAD_CNT.set(0);
 
             Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
@@ -120,7 +120,7 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
             log.info("Iteration [iter=" + iter + ']');
 
             assertTrue(GridTestUtils.waitForCondition(() -> {
-                int loadCnt = TestCacheStore.loadCnt.get();
+                int loadCnt = TestCacheStore.LOAD_CNT.get();
 
                 long misses = ignite(1).cache(cacheName).metrics().getCacheMisses();
 
@@ -148,11 +148,11 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
      */
     private static class TestCacheStore extends CacheStoreAdapter<Integer, Integer> {
         /** */
-        private static final AtomicInteger loadCnt = new AtomicInteger();
+        private static final AtomicInteger LOAD_CNT = new AtomicInteger();
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
-            loadCnt.incrementAndGet();
+            LOAD_CNT.incrementAndGet();
 
             try {
                 Thread.sleep(1000);
