@@ -53,7 +53,7 @@ public class H2OMojoModelParserExample {
     /**
      * Parser.
      */
-    private static final H2OMojoModelParser parser = new H2OMojoModelParser();
+    private static final H2OMojoModelParser PARSER = new H2OMojoModelParser();
 
     /**
      * Run example.
@@ -72,7 +72,7 @@ public class H2OMojoModelParserExample {
             if (testData == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + DATA_RES + "]");
 
-            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, PARSER);
                  Scanner testDataScanner = new Scanner(testData)) {
 
                 while (testDataScanner.hasNextLine()) {

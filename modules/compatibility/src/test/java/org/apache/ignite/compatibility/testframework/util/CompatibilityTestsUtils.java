@@ -39,14 +39,14 @@ public class CompatibilityTestsUtils {
      *
      * Note: needs for compatibility with Java 9.
      */
-    private static final Class bltClsLdrCls = defaultClassLoaderClass();
+    private static final Class BLT_CLS_LDR_CLS = defaultClassLoaderClass();
 
     /**
      * Url class loader field.
      *
      * Note: needs for compatibility with Java 9.
      */
-    private static final Field urlClsLdrField = urlClassLoaderField();
+    private static final Field URL_CLS_LDR_FIELD = urlClassLoaderField();
 
     /**
      * Returns URLs of class loader
@@ -58,9 +58,9 @@ public class CompatibilityTestsUtils {
             return EMPTY_URL_ARR;
         else if (clsLdr instanceof URLClassLoader)
             return ((URLClassLoader)clsLdr).getURLs();
-        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
+        else if (BLT_CLS_LDR_CLS != null && URL_CLS_LDR_FIELD != null && BLT_CLS_LDR_CLS.isAssignableFrom(clsLdr.getClass())) {
             try {
-                return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
+                return ((URLClassLoader)URL_CLS_LDR_FIELD.get(clsLdr)).getURLs();
             }
             catch (IllegalAccessException e) {
                 return EMPTY_URL_ARR;

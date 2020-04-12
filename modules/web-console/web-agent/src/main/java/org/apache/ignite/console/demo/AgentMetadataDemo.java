@@ -40,7 +40,7 @@ public class AgentMetadataDemo {
     private static final Logger log = Logger.getLogger(AgentMetadataDemo.class.getName());
 
     /** */
-    private static final AtomicBoolean initLatch = new AtomicBoolean();
+    private static final AtomicBoolean INIT_LATCH = new AtomicBoolean();
 
     /**
      * @param jdbcUrl Connection url.
@@ -54,7 +54,7 @@ public class AgentMetadataDemo {
      * Start H2 database and populate it with several tables.
      */
     public static Connection testDrive() throws SQLException {
-        if (initLatch.compareAndSet(false, true)) {
+        if (INIT_LATCH.compareAndSet(false, true)) {
             log.info("DEMO: Prepare in-memory H2 database...");
 
             try {

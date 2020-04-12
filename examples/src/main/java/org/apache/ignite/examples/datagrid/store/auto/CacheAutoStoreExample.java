@@ -52,7 +52,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  */
 public class CacheAutoStoreExample {
     /** Global person ID to use across entire example. */
-    private static final Long id = 25121642L;
+    private static final Long ID = 25121642L;
 
     /** Cache name. */
     public static final String CACHE_NAME = CacheAutoStoreExample.class.getSimpleName();
@@ -127,15 +127,15 @@ public class CacheAutoStoreExample {
             // Auto-close cache at the end of the example.
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheConfiguration())) {
                 try (Transaction tx = ignite.transactions().txStart()) {
-                    Person val = cache.get(id);
+                    Person val = cache.get(ID);
 
                     System.out.println(">>> Read value: " + val);
 
-                    val = cache.getAndPut(id, new Person(id, 1L, "Isaac", "Newton", 100.10, "English physicist and mathematician"));
+                    val = cache.getAndPut(ID, new Person(ID, 1L, "Isaac", "Newton", 100.10, "English physicist and mathematician"));
 
                     System.out.println(">>> Overwrote old value: " + val);
 
-                    val = cache.get(id);
+                    val = cache.get(ID);
 
                     System.out.println(">>> Read value: " + val);
 
@@ -143,12 +143,12 @@ public class CacheAutoStoreExample {
 
                     val.salary *= 2;
 
-                    cache.put(id, val);
+                    cache.put(ID, val);
 
                     tx.commit();
                 }
 
-                System.out.println(">>> Read value after commit: " + cache.get(id));
+                System.out.println(">>> Read value after commit: " + cache.get(ID));
 
                 cache.clear();
 

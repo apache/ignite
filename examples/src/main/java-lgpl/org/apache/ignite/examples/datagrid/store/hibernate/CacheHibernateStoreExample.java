@@ -65,7 +65,7 @@ public class CacheHibernateStoreExample {
     private static final int ENTRY_COUNT = 100_000;
 
     /** Global person ID to use across entire example. */
-    private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
+    private static final Long ID = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
     /**
      * Executes example.
@@ -144,21 +144,21 @@ public class CacheHibernateStoreExample {
      */
     private static void executeTransaction(IgniteCache<Long, Person> cache) {
         try (Transaction tx = Ignition.ignite().transactions().txStart()) {
-            Person val = cache.get(id);
+            Person val = cache.get(ID);
 
             System.out.println("Read value: " + val);
 
-            val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
+            val = cache.getAndPut(ID, new Person(ID, "Isaac", "Newton"));
 
             System.out.println("Overwrote old value: " + val);
 
-            val = cache.get(id);
+            val = cache.get(ID);
 
             System.out.println("Read value: " + val);
 
             tx.commit();
         }
 
-        System.out.println("Read value after commit: " + cache.get(id));
+        System.out.println("Read value after commit: " + cache.get(ID));
     }
 }

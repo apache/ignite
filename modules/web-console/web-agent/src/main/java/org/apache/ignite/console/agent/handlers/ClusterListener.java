@@ -125,7 +125,7 @@ public class ClusterListener implements AutoCloseable {
     private final RestExecutor restExecutor;
 
     /** */
-    private static final ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService POOL = Executors.newScheduledThreadPool(1);
 
     /** */
     private ScheduledFuture<?> refreshTask;
@@ -179,14 +179,14 @@ public class ClusterListener implements AutoCloseable {
     public void watch() {
         safeStopRefresh();
 
-        refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, REFRESH_FREQ, TimeUnit.MILLISECONDS);
+        refreshTask = POOL.scheduleWithFixedDelay(watchTask, 0L, REFRESH_FREQ, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
         refreshTask.cancel(true);
 
-        pool.shutdownNow();
+        POOL.shutdownNow();
     }
 
     /** */

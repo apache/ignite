@@ -58,7 +58,7 @@ public class XGBoostModelParserExample {
     /**
      * Parser.
      */
-    private static final XGModelParser parser = new XGModelParser();
+    private static final XGModelParser PARSER = new XGModelParser();
 
     /**
      * Run example.
@@ -81,7 +81,7 @@ public class XGBoostModelParserExample {
             if (testExpRes == null)
                 throw new IllegalArgumentException("File not found [resource_path=" + TEST_ER_RES + "]");
 
-            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
+            try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, PARSER);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
 

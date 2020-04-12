@@ -48,7 +48,7 @@ public class GBTFromSparkExample {
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/gbt";
 
     /** Learning environment. */
-    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+    public static final LearningEnvironment ENV = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
         .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
@@ -70,7 +70,7 @@ public class GBTFromSparkExample {
                 ModelsComposition mdl = (ModelsComposition)SparkModelParser.parse(
                     SPARK_MDL_PATH,
                     SupportedSparkModels.GRADIENT_BOOSTED_TREES,
-                    env
+                    ENV
                 );
 
                 System.out.println(">>> GBT: " + mdl.toString(true));

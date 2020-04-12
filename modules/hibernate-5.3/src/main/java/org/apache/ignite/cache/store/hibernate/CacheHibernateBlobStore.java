@@ -104,7 +104,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
             "org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml";
 
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller MARSH = new JdkMarshaller();
 
     /** Init guard. */
     @GridToStringExclude
@@ -509,7 +509,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return U.marshal(marsh, obj);
+        return U.marshal(MARSH, obj);
     }
 
     /**
@@ -524,7 +524,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return U.unmarshal(marsh, bytes, getClass().getClassLoader());
+        return U.unmarshal(MARSH, bytes, getClass().getClassLoader());
     }
 
     /**

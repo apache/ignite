@@ -50,7 +50,7 @@ public class LinearRegressionFromSparkExample {
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/linreg";
 
     /** Learning environment. */
-    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+    public static final LearningEnvironment ENV = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
         .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
@@ -72,7 +72,7 @@ public class LinearRegressionFromSparkExample {
                 LinearRegressionModel mdl = (LinearRegressionModel)SparkModelParser.parse(
                     SPARK_MDL_PATH,
                     SupportedSparkModels.LINEAR_REGRESSION,
-                    env
+                    ENV
                 );
 
                 System.out.println(">>> Linear regression model: " + mdl);

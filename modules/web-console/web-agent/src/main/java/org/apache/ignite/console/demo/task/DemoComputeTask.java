@@ -40,7 +40,7 @@ public class DemoComputeTask implements ComputeTask<Void, Integer>{
     private static final long serialVersionUID = 0L;
 
     /** Random generator. */
-    private static final Random rnd = new Random();
+    private static final Random RND = new Random();
 
     /** {@inheritDoc} */
     @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -48,7 +48,7 @@ public class DemoComputeTask implements ComputeTask<Void, Integer>{
         HashMap<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
         for (ClusterNode node: subgrid) {
-            for (int i = 0; i < Math.max(1, rnd.nextInt(5)); i++)
+            for (int i = 0; i < Math.max(1, RND.nextInt(5)); i++)
                 map.put(new DemoComputeJob(), node);
         }
 
@@ -85,9 +85,9 @@ public class DemoComputeTask implements ComputeTask<Void, Integer>{
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
             try {
-                Thread.sleep(rnd.nextInt(50));
+                Thread.sleep(RND.nextInt(50));
 
-                return rnd.nextInt(10000);
+                return RND.nextInt(10000);
             }
             catch (InterruptedException e) {
                 // Restore interrupt status

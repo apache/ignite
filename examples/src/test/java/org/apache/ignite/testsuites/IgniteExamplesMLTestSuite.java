@@ -51,10 +51,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 @RunWith(IgniteExamplesMLTestSuite.DynamicSuite.class)
 public class IgniteExamplesMLTestSuite {
     /** Base package to create test classes in. */
-    private static final String basePkgForTests = "org.apache.ignite.examples.ml";
+    private static final String BASE_PKG_FOR_TESTS = "org.apache.ignite.examples.ml";
 
     /** Test class name pattern. */
-    private static final String clsNamePtrn = ".*Example$";
+    private static final String CLS_NAME_PTRN = ".*Example$";
 
     /** */
     @BeforeClass
@@ -70,7 +70,7 @@ public class IgniteExamplesMLTestSuite {
      * @throws IOException, ClassNotFoundException If failed.
      */
     public static Class<?>[] suite() throws IOException, ClassNotFoundException {
-        return getClasses(basePkgForTests)
+        return getClasses(BASE_PKG_FOR_TESTS)
             .stream()
             .map(IgniteExamplesMLTestSuite::makeTestClass)
             .collect(Collectors.toList())
@@ -87,7 +87,7 @@ public class IgniteExamplesMLTestSuite {
         ClassPool cp = ClassPool.getDefault();
         cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
 
-        CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfTest");
+        CtClass cl = cp.makeClass(BASE_PKG_FOR_TESTS + "." + exampleCls.getSimpleName() + "SelfTest");
 
         try {
             cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
@@ -138,7 +138,7 @@ public class IgniteExamplesMLTestSuite {
 
         List<Class> classes = new ArrayList<>();
         for (File directory : dirs)
-            classes.addAll(findClasses(directory, pkgName, clsNamePtrn));
+            classes.addAll(findClasses(directory, pkgName, CLS_NAME_PTRN));
 
         return classes;
     }

@@ -68,12 +68,12 @@ public class DemoCancellableTask implements ComputeTask<Void, Void> {
         private static final long serialVersionUID = 0L;
 
         /** Random generator. */
-        private static final Random rnd = new Random();
+        private static final Random RND = new Random();
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
             try {
-                Thread.sleep(1000 + rnd.nextInt(60000));
+                Thread.sleep(1000 + RND.nextInt(60000));
             }
             catch (InterruptedException e) {
                 // Restore interrupt status

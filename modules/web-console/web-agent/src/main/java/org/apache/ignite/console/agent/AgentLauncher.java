@@ -106,7 +106,7 @@ public class AgentLauncher {
     /**
      * On error listener.
      */
-    private static final Emitter.Listener onError = args -> {
+    private static final Emitter.Listener ON_ERROR = args -> {
         Throwable e = (Throwable)args[0];
 
         ConnectException ce = X.cause(e, ConnectException.class);
@@ -168,12 +168,12 @@ public class AgentLauncher {
     /**
      * On disconnect listener.
      */
-    private static final Emitter.Listener onDisconnect = args -> log.error("Connection closed: {}", args);
+    private static final Emitter.Listener ON_DISCONNECT = args -> log.error("Connection closed: {}", args);
 
     /**
      * On token reset listener.
      */
-    private static final Emitter.Listener onLogWarning = args -> log.warn(String.valueOf(args[0]));
+    private static final Emitter.Listener ON_LOG_WARNING = args -> log.warn(String.valueOf(args[0]));
 
     /**
      * @param fmt Format string.
@@ -484,10 +484,10 @@ public class AgentLauncher {
 
             client
                 .on(EVENT_CONNECT, onConnect)
-                .on(EVENT_CONNECT_ERROR, onError)
-                .on(EVENT_ERROR, onError)
-                .on(EVENT_DISCONNECT, onDisconnect)
-                .on(EVENT_LOG_WARNING, onLogWarning)
+                .on(EVENT_CONNECT_ERROR, ON_ERROR)
+                .on(EVENT_ERROR, ON_ERROR)
+                .on(EVENT_DISCONNECT, ON_DISCONNECT)
+                .on(EVENT_LOG_WARNING, ON_LOG_WARNING)
                 .on(EVENT_RESET_TOKEN, res -> {
                     String tok = String.valueOf(res[0]);
 

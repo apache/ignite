@@ -85,14 +85,14 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo, Object... args) {
-            loadCacheCnt.incrementAndGet();
+            LOAD_CACHE_CNT.incrementAndGet();
 
             checkSession();
         }
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) throws CacheLoaderException {
-            loadCnt.incrementAndGet();
+            LOAD_CNT.incrementAndGet();
 
             checkSession();
 
@@ -102,11 +102,11 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry)
             throws CacheWriterException {
-            writeCnt.incrementAndGet();
+            WRITE_CNT.incrementAndGet();
 
             checkSession();
 
-            if (write.get()) {
+            if (WRITE.get()) {
                 Session hibSes = ses.attachment();
 
                 switch (ses.cacheName()) {
@@ -116,7 +116,7 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
                         break;
 
                     case "cache2":
-                        if (fail.get())
+                        if (FAIL.get())
                             throw new CacheWriterException("Expected failure.");
 
                         hibSes.save(new Table2(entry.getKey(), entry.getValue()));
@@ -131,7 +131,7 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
-            deleteCnt.incrementAndGet();
+            DELETE_CNT.incrementAndGet();
 
             checkSession();
         }
@@ -175,7 +175,7 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
             else {
                 assertSame(hibSes, sesConn);
 
-                reuseCnt.incrementAndGet();
+                REUSE_CNT.incrementAndGet();
             }
         }
     }

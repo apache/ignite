@@ -36,10 +36,10 @@ import org.apache.ignite.Ignition;
  */
 public class MemcacheRestExample {
     /** Hostname for client connection. */
-    private static final String host = "localhost";
+    private static final String HOST = "localhost";
 
     /** Port number for client connection. */
-    private static final int port = 11211;
+    private static final int PORT = 11211;
 
     /**
      * @param args Command line arguments.
@@ -54,7 +54,7 @@ public class MemcacheRestExample {
 
             IgniteCache<String, Object> cache = ignite.cache("default");
 
-            client = startMemcachedClient(host, port);
+            client = startMemcachedClient(HOST, PORT);
 
             // Put string value to cache using Memcache binary protocol.
             if (client.add("strKey", 0, "strVal").get())

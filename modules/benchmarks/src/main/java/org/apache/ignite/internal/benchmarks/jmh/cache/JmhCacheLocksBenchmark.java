@@ -40,13 +40,13 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Fork(1)
 public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     /** Fixed lock key for Ignite.reentrantLock() and IgniteCache.lock(). */
-    private static final String lockKey = "key0";
+    private static final String LOCK_KEY = "key0";
 
     /** Parameter for Ignite.reentrantLock(). */
-    private static final boolean failoverSafe = false;
+    private static final boolean FAILOVER_SAFE = false;
 
     /** Parameter for Ignite.reentrantLock(). */
-    private static final boolean fair = false;
+    private static final boolean FAIR = false;
 
     /** IgniteCache.lock() with a fixed lock key. */
     private Lock cacheLock;
@@ -77,9 +77,9 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
      */
     @Setup(Level.Trial)
     public void createLock() {
-        cacheLock = cache.lock(lockKey);
+        cacheLock = cache.lock(LOCK_KEY);
 
-        igniteLock = node.reentrantLock(lockKey, failoverSafe, fair, true);
+        igniteLock = node.reentrantLock(LOCK_KEY, FAILOVER_SAFE, FAIR, true);
     }
 
     /**

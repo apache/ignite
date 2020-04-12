@@ -85,7 +85,7 @@ import org.yardstickframework.BenchmarkUtils;
  */
 public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark {
     /** */
-    public static final int operations = Operation.values().length;
+    public static final int OPERATIONS = Operation.values().length;
 
     /***/
     public static final int CONTINUOUS_QUERY_PER_CACHE = 3;

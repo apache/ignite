@@ -80,7 +80,7 @@ public class AgentClusterDemo {
     private static final Logger log = LoggerFactory.getLogger(AgentClusterDemo.class);
 
     /** */
-    private static final AtomicBoolean initGuard = new AtomicBoolean();
+    private static final AtomicBoolean INIT_GUARD = new AtomicBoolean();
 
     /** */
     private static final String SRV_NODE_NAME = "demo-server-";
@@ -214,7 +214,7 @@ public class AgentClusterDemo {
      * Start ignite node with cacheEmployee and populate it with data.
      */
     public static CountDownLatch tryStart() {
-        if (initGuard.compareAndSet(false, true)) {
+        if (INIT_GUARD.compareAndSet(false, true)) {
             log.info("DEMO: Starting embedded nodes for demo...");
 
             System.setProperty(IGNITE_NO_ASCII, "true");
@@ -315,6 +315,6 @@ public class AgentClusterDemo {
 
         initLatch = new CountDownLatch(1);
 
-        initGuard.compareAndSet(true, false);
+        INIT_GUARD.compareAndSet(true, false);
     }
 }

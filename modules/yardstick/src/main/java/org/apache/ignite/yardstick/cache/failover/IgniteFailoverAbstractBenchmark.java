@@ -35,9 +35,9 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -54,7 +54,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
  */
 public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheAbstractBenchmark<K, V> {
     /** */
-    private static final AtomicBoolean restarterStarted = new AtomicBoolean();
+    private static final AtomicBoolean RESTARTER_STARTED = new AtomicBoolean();
 
     /** */
     private final AtomicBoolean firtsExProcessed = new AtomicBoolean();
@@ -66,7 +66,7 @@ public abstract class IgniteFailoverAbstractBenchmark<K, V> extends IgniteCacheA
 
     /** {@inheritDoc} */
     @Override public void onWarmupFinished() {
-        if (cfg.memberId() == 0 && restarterStarted.compareAndSet(false, true)) {
+        if (cfg.memberId() == 0 && RESTARTER_STARTED.compareAndSet(false, true)) {
             Thread restarterThread = new Thread(new Runnable() {
                 @Override public void run() {
                     try {

@@ -50,7 +50,7 @@ public class RandomForestRegressionFromSparkExample {
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/rfreg";
 
     /** Learning environment. */
-    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+    public static final LearningEnvironment ENV = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
         .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
@@ -72,7 +72,7 @@ public class RandomForestRegressionFromSparkExample {
                 ModelsComposition mdl = (ModelsComposition)SparkModelParser.parse(
                     SPARK_MDL_PATH,
                     SupportedSparkModels.RANDOM_FOREST_REGRESSION,
-                    env
+                    ENV
                 );
 
                 System.out.println(">>> Random Forest regression model: " + mdl);

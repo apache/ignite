@@ -95,7 +95,7 @@ public class DemoCachesLoadService implements Service {
     private static final int PARK_CNT = 10;
 
     /** */
-    private static final Random rnd = new Random();
+    private static final Random RND = new Random();
 
     /** Maximum count read/write key. */
     private final int cnt;
@@ -140,24 +140,24 @@ public class DemoCachesLoadService implements Service {
                     if (cacheEmployee != null)
                         try(Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             for (int i = 0, n = 1; i < cnt; i++, n++) {
-                                Integer id = rnd.nextInt(EMPL_CNT);
+                                Integer id = RND.nextInt(EMPL_CNT);
 
-                                Integer depId = rnd.nextInt(DEP_CNT);
+                                Integer depId = RND.nextInt(DEP_CNT);
 
-                                double r = rnd.nextDouble();
+                                double r = RND.nextDouble();
 
                                 cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
                                     "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
                                     new java.sql.Date((long)(r * range)), "Job employee #" + n,
                                     500 + AgentDemoUtils.round(r * 2000, 2)));
 
-                                if (rnd.nextBoolean())
-                                    cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
+                                if (RND.nextBoolean())
+                                    cacheEmployee.remove(RND.nextInt(EMPL_CNT));
 
-                                cacheEmployee.get(rnd.nextInt(EMPL_CNT));
+                                cacheEmployee.get(RND.nextInt(EMPL_CNT));
                             }
 
-                            if (rnd.nextInt(100) > 20)
+                            if (RND.nextInt(100) > 20)
                                 tx.commit();
                         }
                 }
@@ -175,12 +175,12 @@ public class DemoCachesLoadService implements Service {
 
                     if (cache != null)
                         for (int i = 0; i < cnt; i++) {
-                            Integer carId = rnd.nextInt(CAR_CNT);
+                            Integer carId = RND.nextInt(CAR_CNT);
 
-                            cache.put(carId, new Car(carId, rnd.nextInt(PARK_CNT), "Car #" + (i + 1)));
+                            cache.put(carId, new Car(carId, RND.nextInt(PARK_CNT), "Car #" + (i + 1)));
 
-                            if (rnd.nextBoolean())
-                                cache.remove(rnd.nextInt(CAR_CNT));
+                            if (RND.nextBoolean())
+                                cache.remove(RND.nextInt(CAR_CNT));
                         }
                 }
                 catch (IllegalStateException ignored) {
@@ -430,19 +430,19 @@ public class DemoCachesLoadService implements Service {
         IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
         for (int i = 0, n = 1; i < DEP_CNT; i++, n++) {
-            cacheDepartment.put(i, new Department(n, rnd.nextInt(CNTR_CNT), "Department #" + n));
+            cacheDepartment.put(i, new Department(n, RND.nextInt(CNTR_CNT), "Department #" + n));
 
-            double r = rnd.nextDouble();
+            double r = RND.nextDouble();
 
-            cacheEmployee.put(i, new Employee(i, rnd.nextInt(DEP_CNT), null, "First name manager #" + n,
+            cacheEmployee.put(i, new Employee(i, RND.nextInt(DEP_CNT), null, "First name manager #" + n,
                 "Last name manager #" + n, "Email manager #" + n, "Phone number manager #" + n,
                 new java.sql.Date((long)(r * range)), "Job manager #" + n, 1000 + AgentDemoUtils.round(r * 4000, 2)));
         }
 
         for (int i = 0, n = 1; i < EMPL_CNT; i++, n++) {
-            Integer depId = rnd.nextInt(DEP_CNT);
+            Integer depId = RND.nextInt(DEP_CNT);
 
-            double r = rnd.nextDouble();
+            double r = RND.nextDouble();
 
             cacheEmployee.put(i, new Employee(i, depId, depId, "First name employee #" + n,
                 "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
@@ -466,7 +466,7 @@ public class DemoCachesLoadService implements Service {
         IgniteCache<Integer, Car> cacheCar = ignite.cache(CAR_CACHE_NAME);
 
         for (int i = 0, n = 1; i < CAR_CNT; i++, n++)
-            cacheCar.put(i, new Car(i, rnd.nextInt(PARK_CNT), "Car #" + n));
+            cacheCar.put(i, new Car(i, RND.nextInt(PARK_CNT), "Car #" + n));
 
         if (ignite.log().isDebugEnabled())
             ignite.log().debug("DEMO: Finished cars population.");

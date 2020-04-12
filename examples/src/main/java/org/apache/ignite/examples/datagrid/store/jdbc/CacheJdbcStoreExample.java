@@ -62,7 +62,7 @@ public class CacheJdbcStoreExample {
     private static final int ENTRY_COUNT = 100_000;
 
     /** Global person ID to use across entire example. */
-    private static final Long id = Math.abs(UUID.randomUUID().getLeastSignificantBits());
+    private static final Long ID = Math.abs(UUID.randomUUID().getLeastSignificantBits());
 
     /**
      * Executes example.
@@ -141,34 +141,34 @@ public class CacheJdbcStoreExample {
      */
     private static void executeTransaction(IgniteCache<Long, Person> cache) {
         try (Transaction tx = Ignition.ignite().transactions().txStart()) {
-            Person val = cache.get(id);
+            Person val = cache.get(ID);
 
             System.out.println("Read value: " + val);
 
-            val = cache.getAndPut(id, new Person(id, "Isaac", "Newton"));
+            val = cache.getAndPut(ID, new Person(ID, "Isaac", "Newton"));
 
             System.out.println("Overwrote old value: " + val);
 
-            val = cache.get(id);
+            val = cache.get(ID);
 
             System.out.println("Read value: " + val);
 
             tx.commit();
         }
 
-        System.out.println("Read value after commit: " + cache.get(id));
+        System.out.println("Read value after commit: " + cache.get(ID));
 
         // Clear entry from memory, but keep it in store.
-        cache.clear(id);
+        cache.clear(ID);
 
         // Operations on this cache will not affect store.
         IgniteCache<Long, Person> cacheSkipStore = cache.withSkipStore();
 
-        System.out.println("Read value skipping store (expecting null): " + cacheSkipStore.get(id));
+        System.out.println("Read value skipping store (expecting null): " + cacheSkipStore.get(ID));
 
-        System.out.println("Read value with store lookup (expecting NOT null): " + cache.get(id));
+        System.out.println("Read value with store lookup (expecting NOT null): " + cache.get(ID));
 
         // Expecting not null, since entry should be in memory since last call.
-        System.out.println("Read value skipping store (expecting NOT null): " + cacheSkipStore.get(id));
+        System.out.println("Read value skipping store (expecting NOT null): " + cacheSkipStore.get(ID));
     }
 }

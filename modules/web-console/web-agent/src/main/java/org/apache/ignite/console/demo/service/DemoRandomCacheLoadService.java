@@ -49,7 +49,7 @@ public class DemoRandomCacheLoadService implements Service {
     private static final int RND_CNT = 1024;
 
     /** */
-    private static final Random rnd = new Random();
+    private static final Random RND = new Random();
 
     /** Maximum count read/write key. */
     private final int cnt;
@@ -86,12 +86,12 @@ public class DemoRandomCacheLoadService implements Service {
                             !DemoCachesLoadService.DEMO_CACHES.contains(cacheName) &&
                             !DFLT_SCHEMA.equalsIgnoreCase(cache.getConfiguration(CacheConfiguration.class).getSqlSchema())) {
                             for (int i = 0, n = 1; i < cnt; i++, n++) {
-                                Integer key = rnd.nextInt(RND_CNT);
-                                Integer val = rnd.nextInt(RND_CNT);
+                                Integer key = RND.nextInt(RND_CNT);
+                                Integer val = RND.nextInt(RND_CNT);
 
                                 cache.put(key, val);
 
-                                if (rnd.nextInt(100) < 30)
+                                if (RND.nextInt(100) < 30)
                                     cache.remove(key);
                             }
                         }

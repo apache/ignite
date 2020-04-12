@@ -50,7 +50,7 @@ public class DecisionTreeFromSparkExample {
         .toPath().toAbsolutePath().toString();
 
     /** Learning environment. */
-    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+    public static final LearningEnvironment ENV = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
         .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
@@ -72,7 +72,7 @@ public class DecisionTreeFromSparkExample {
                 DecisionTreeNode mdl = (DecisionTreeNode)SparkModelParser.parse(
                     SPARK_MDL_PATH,
                     SupportedSparkModels.DECISION_TREE,
-                    env
+                    ENV
                 );
 
                 System.out.println(">>> DT: " + mdl);

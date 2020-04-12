@@ -146,8 +146,8 @@ public class ANNClassificationExample {
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 
         for (int k = 0; k < 10; k++) { // multiplies the Iris dataset k times.
-            for (int i = 0; i < data.length; i++)
-                cache.put(k * 10000 + i, mutate(data[i], k));
+            for (int i = 0; i < DATA.length; i++)
+                cache.put(k * 10000 + i, mutate(DATA[i], k));
         }
 
         return cache;
@@ -169,7 +169,7 @@ public class ANNClassificationExample {
     /**
      * The Iris dataset.
      */
-    private static final double[][] data = {
+    private static final double[][] DATA = {
         {1, 5.1, 3.5, 1.4, 0.2},
         {1, 4.9, 3, 1.4, 0.2},
         {1, 4.7, 3.2, 1.3, 0.2},

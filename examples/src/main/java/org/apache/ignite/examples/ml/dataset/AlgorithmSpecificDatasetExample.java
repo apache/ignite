@@ -143,7 +143,7 @@ public class AlgorithmSpecificDatasetExample {
         /**
          * BLAS (Basic Linear Algebra Subprograms) instance.
          */
-        private static final BLAS blas = BLAS.getInstance();
+        private static final BLAS BLAS_OBJ = BLAS.getInstance();
 
         /**
          * Constructs a new instance of dataset wrapper that delegates {@code compute} actions to the actual delegate.
@@ -162,11 +162,11 @@ public class AlgorithmSpecificDatasetExample {
             return computeWithCtx((ctx, data, partIdx) -> {
                 double[] tmp = Arrays.copyOf(data.getLabels(), data.getRows());
                 int featureCols = data.getFeatures().length / data.getRows();
-                blas.dgemv("N", data.getRows(), featureCols, 1.0, data.getFeatures(),
+                BLAS_OBJ.dgemv("N", data.getRows(), featureCols, 1.0, data.getFeatures(),
                     Math.max(1, data.getRows()), x, 1, -1.0, tmp, 1);
 
                 double[] res = new double[featureCols];
-                blas.dgemv("T", data.getRows(), featureCols, 1.0, data.getFeatures(),
+                BLAS_OBJ.dgemv("T", data.getRows(), featureCols, 1.0, data.getFeatures(),
                     Math.max(1, data.getRows()), tmp, 1, 0.0, res, 1);
 
                 int iteration = ctx.getIteration();
@@ -190,7 +190,7 @@ public class AlgorithmSpecificDatasetExample {
             if (b == null)
                 return a;
 
-            blas.daxpy(a.length, 1.0, a, 1, b, 1);
+            BLAS_OBJ.daxpy(a.length, 1.0, a, 1, b, 1);
 
             return b;
         }
