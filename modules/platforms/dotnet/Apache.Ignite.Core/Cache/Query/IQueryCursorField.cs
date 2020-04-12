@@ -15,21 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Common
+namespace Apache.Ignite.Core.Cache.Query
 {
+    using System;
+
     /// <summary>
-    /// Represents an Ignite platform.
+    /// Query field descriptor. This descriptor is used to provide metadata
+    /// about fields returned in query result.
     /// </summary>
-    public enum Platform
+    public interface IQueryCursorField
     {
         /// <summary>
-        /// Java platform.
+        /// Gets the field name.
         /// </summary>
-        Java = 0,
+        string Name { get; }
 
         /// <summary>
-        /// .NET platform.
+        /// Gets the name of Java type for this field.
         /// </summary>
-        DotNet = 1
+        string JavaTypeName { get; }
+
+        /// <summary>
+        /// Gets the field type.
+        /// </summary>
+        Type Type { get; }
     }
 }

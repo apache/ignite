@@ -15,33 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache.Near
+namespace Apache.Ignite.Core.Impl.Common
 {
-    using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Resource;
-    using NUnit.Framework;
-
     /// <summary>
-    /// Scan query filter that checks whether values come from native near cache.
+    /// Represents an Ignite platform.
     /// </summary>
-    public class ScanQueryNoNearCacheFilter : ICacheEntryFilter<int, Foo>
+    internal enum PlatformType
     {
-        public string CacheName { get; set; }
-        
-        [InstanceResource]
-        public IIgnite Ignite { get; set; }
-        
-        public bool Invoke(ICacheEntry<int, Foo> entry)
-        {
-            var cache = Ignite.GetCache<int, Foo>(CacheName);
+        /// <summary>
+        /// Java platform.
+        /// </summary>
+        Java = 0,
 
-            Foo _;
-            var hasNearVal = cache.TryLocalPeek(entry.Key, out _, CachePeekMode.PlatformNear);
-
-            Assert.IsFalse(hasNearVal);
-            Assert.AreEqual(entry.Key, entry.Value.Bar);
-
-            return true;
-        }
+        /// <summary>
+        /// .NET platform.
+        /// </summary>
+        DotNet = 1
     }
 }

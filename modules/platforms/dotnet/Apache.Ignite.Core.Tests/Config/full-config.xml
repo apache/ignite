@@ -82,7 +82,7 @@
             <nearConfiguration nearStartSize='7'>
                 <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
             </nearConfiguration>
-            <platformNearConfiguration keyTypeName="int" valueTypeName="string" keepBinary="true" />
+            <platformCacheConfiguration keyTypeName="int" valueTypeName="string" keepBinary="true" />
             <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
             <expiryPolicyFactory type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+MyPolicyFactory, Apache.Ignite.Core.Tests' />
             <pluginConfigurations>

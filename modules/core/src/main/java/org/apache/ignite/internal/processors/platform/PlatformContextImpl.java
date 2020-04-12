@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -79,6 +72,14 @@ import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageF
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Implementation of platform context.
  */
@@ -88,7 +89,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     private static final Set<Integer> EVT_TYPS;
 
     /** Whether to use thread-local data to update platform near cache. */
-    private static final ThreadLocal<Boolean> NEAR_UPDATE_USE_THREAD_LOCAL = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> PLATFORM_CACHE_UPDATE_USE_THREAD_LOCAL = new ThreadLocal<>();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -594,21 +595,21 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isNativeNearCacheSupported() {
+    @Override public boolean isPlatformCacheSupported() {
         return platform.equals(PlatformUtils.PLATFORM_DOTNET);
     }
 
     /** {@inheritDoc} */
-    @Override public void updateNearCache(int cacheId, byte[] keyBytes, byte[] valBytes,
-                                          int part, AffinityTopologyVersion ver) {
-        if (!isNativeNearCacheSupported())
+    @Override public void updatePlatformCache(int cacheId, byte[] keyBytes, byte[] valBytes,
+                                              int part, AffinityTopologyVersion ver) {
+        if (!isPlatformCacheSupported())
             return;
 
-        Boolean useTls = NEAR_UPDATE_USE_THREAD_LOCAL.get();
+        Boolean useTls = PLATFORM_CACHE_UPDATE_USE_THREAD_LOCAL.get();
         if (useTls != null && useTls) {
             long cacheIdAndPartition = ((long)part << 32) + cacheId;
 
-            gateway().nearCacheUpdateFromThreadLocal(
+            gateway().platformCacheUpdateFromThreadLocal(
                     cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
 
             return;
@@ -638,18 +639,18 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
             out.synchronize();
 
-            gateway().nearCacheUpdate(mem0.pointer());
+            gateway().platformCacheUpdate(mem0.pointer());
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void enableThreadLocalForNearUpdate() {
-        NEAR_UPDATE_USE_THREAD_LOCAL.set(true);
+    @Override public void enableThreadLocalForPlatformCacheUpdate() {
+        PLATFORM_CACHE_UPDATE_USE_THREAD_LOCAL.set(true);
     }
 
     /** {@inheritDoc} */
-    @Override public void disableThreadLocalForNearUpdate() {
-        NEAR_UPDATE_USE_THREAD_LOCAL.set(false);
+    @Override public void disableThreadLocalForPlatformCacheUpdate() {
+        PLATFORM_CACHE_UPDATE_USE_THREAD_LOCAL.set(false);
     }
 
     /** {@inheritDoc} */
