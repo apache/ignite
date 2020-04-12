@@ -30,10 +30,10 @@ import sun.nio.ch.FileChannelImpl;
 
 public class MappedFile implements Closeable, DirectMemoryRegion {
     /** */
-    private static final Method map0 = U.findNonPublicMethod(FileChannelImpl.class, "map0", int.class, long.class, long.class);
+    private static final Method MAP_0 = U.findNonPublicMethod(FileChannelImpl.class, "map0", int.class, long.class, long.class);
 
     /** */
-    private static final Method unmap0 = U.findNonPublicMethod(FileChannelImpl.class, "unmap0", long.class, long.class);
+    private static final Method UNMAP_0 = U.findNonPublicMethod(FileChannelImpl.class, "unmap0", long.class, long.class);
 
     /** */
     public static final int MAP_RW = 1;
@@ -121,7 +121,7 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
      */
     public static long map(RandomAccessFile f, int mode, long start, long size) throws IOException {
         try {
-            return (Long) map0.invoke(f.getChannel(), mode, start, size);
+            return (Long) MAP_0.invoke(f.getChannel(), mode, start, size);
         }
         catch (IllegalAccessException e) {
             throw new IllegalStateException(e);
@@ -140,7 +140,7 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
      */
     public static void unmap(long addr, long size) {
         try {
-            unmap0.invoke(null, addr, size);
+            UNMAP_0.invoke(null, addr, size);
         }
         catch (IllegalAccessException e) {
             throw new IllegalStateException(e);

@@ -103,7 +103,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MARSHALL
  */
 public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridClientMessage> {
     /** Mapping of {@code GridCacheOperation} to {@code GridRestCommand}. */
-    private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> cacheCmdMap =
+    private static final Map<GridClientCacheRequest.GridCacheOperation, GridRestCommand> CACHE_CMD_MAP =
         new EnumMap<>(GridClientCacheRequest.GridCacheOperation.class);
 
     /** Supported protocol versions. */
@@ -111,17 +111,17 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
     // Fills {@code cacheCmdMap}.
     static {
-        cacheCmdMap.put(PUT, CACHE_PUT);
-        cacheCmdMap.put(PUT_ALL, CACHE_PUT_ALL);
-        cacheCmdMap.put(GET, CACHE_GET);
-        cacheCmdMap.put(GET_ALL, CACHE_GET_ALL);
-        cacheCmdMap.put(RMV, CACHE_REMOVE);
-        cacheCmdMap.put(RMV_ALL, CACHE_REMOVE_ALL);
-        cacheCmdMap.put(REPLACE, CACHE_REPLACE);
-        cacheCmdMap.put(CAS, CACHE_CAS);
-        cacheCmdMap.put(METRICS, CACHE_METRICS);
-        cacheCmdMap.put(APPEND, CACHE_APPEND);
-        cacheCmdMap.put(PREPEND, CACHE_PREPEND);
+        CACHE_CMD_MAP.put(PUT, CACHE_PUT);
+        CACHE_CMD_MAP.put(PUT_ALL, CACHE_PUT_ALL);
+        CACHE_CMD_MAP.put(GET, CACHE_GET);
+        CACHE_CMD_MAP.put(GET_ALL, CACHE_GET_ALL);
+        CACHE_CMD_MAP.put(RMV, CACHE_REMOVE);
+        CACHE_CMD_MAP.put(RMV_ALL, CACHE_REMOVE_ALL);
+        CACHE_CMD_MAP.put(REPLACE, CACHE_REPLACE);
+        CACHE_CMD_MAP.put(CAS, CACHE_CAS);
+        CACHE_CMD_MAP.put(METRICS, CACHE_METRICS);
+        CACHE_CMD_MAP.put(APPEND, CACHE_APPEND);
+        CACHE_CMD_MAP.put(PREPEND, CACHE_PREPEND);
 
         SUPP_VERS.add((short)1);
     }
@@ -332,7 +332,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             if (vals != null)
                 restCacheReq.values(new HashMap<Object, Object>(vals));
 
-            restCacheReq.command(cacheCmdMap.get(req.operation()));
+            restCacheReq.command(CACHE_CMD_MAP.get(req.operation()));
 
             restReq = restCacheReq;
         }

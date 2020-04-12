@@ -89,7 +89,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     private static final long serialVersionUID = 0L;
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Done field updater. */
     private static final AtomicIntegerFieldUpdater<GridNearLockFuture> DONE_UPD =
@@ -234,7 +234,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         entries = new ArrayList<>(keys.size());
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridNearLockFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridNearLockFuture.class);
 
         valMap = new ConcurrentHashMap<>();
 

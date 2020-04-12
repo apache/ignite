@@ -48,7 +48,7 @@ public enum GridNioSessionMetaKey {
     public static final int MAX_KEYS_CNT = 64;
 
     /** NIO session key generator. */
-    private static final AtomicInteger keyGen = new AtomicInteger(GridNioSessionMetaKey.values().length);
+    private static final AtomicInteger KEY_GEN = new AtomicInteger(GridNioSessionMetaKey.values().length);
 
     /**
      * Returns next NIO session key ordinal for non-existing enum value.
@@ -58,7 +58,7 @@ public enum GridNioSessionMetaKey {
      * @return NIO session key ordinal for non-existing enum value.
      */
     public static int nextUniqueKey() {
-        int res = keyGen.getAndIncrement();
+        int res = KEY_GEN.getAndIncrement();
 
         if (res >= MAX_KEYS_CNT)
             throw new IllegalStateException("Maximum count of NIO session keys in system is limited by: " +

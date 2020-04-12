@@ -55,11 +55,11 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
     public static final int SES_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
-    private static final AtomicIntegerFieldUpdater<SingleAddressConnectFuture> connFutDoneUpdater =
+    private static final AtomicIntegerFieldUpdater<SingleAddressConnectFuture> CONN_FUT_DONE_UPDATER =
         AtomicIntegerFieldUpdater.newUpdater(SingleAddressConnectFuture.class, "done");
 
     /** */
-    private static final AtomicIntegerFieldUpdater<MultipleAddressesConnectFuture> connResCntUpdater =
+    private static final AtomicIntegerFieldUpdater<MultipleAddressesConnectFuture> CONN_RES_CNT_UPDATER =
         AtomicIntegerFieldUpdater.newUpdater(MultipleAddressesConnectFuture.class, "resCnt");
 
     /** */
@@ -362,7 +362,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
          * @return {@code True} if result was set by this call.
          */
         public boolean finish(boolean res) {
-            if (connFutDoneUpdater.compareAndSet(this, 0, 1)) {
+            if (CONN_FUT_DONE_UPDATER.compareAndSet(this, 0, 1)) {
                 onStatusReceived(res);
 
                 return true;
@@ -493,7 +493,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                     if (resCnt0 == Integer.MAX_VALUE)
                         return;
 
-                    if (connResCntUpdater.compareAndSet(this, resCnt0, Integer.MAX_VALUE)) {
+                    if (CONN_RES_CNT_UPDATER.compareAndSet(this, resCnt0, Integer.MAX_VALUE)) {
                         receivedConnectionStatus(nodeIdx, true);
 
                         cancelFutures(); // Cancel others connects if they are still in progress.
@@ -511,7 +511,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
                     int resCnt1 = resCnt0 + 1;
 
-                    if (connResCntUpdater.compareAndSet(this, resCnt0, resCnt1)) {
+                    if (CONN_RES_CNT_UPDATER.compareAndSet(this, resCnt0, resCnt1)) {
                         if (resCnt1 == futs.length)
                             receivedConnectionStatus(nodeIdx, false);
 

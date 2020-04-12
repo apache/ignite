@@ -77,11 +77,11 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
     private static final long serialVersionUID = 0;
 
     /** */
-    private static final Class<?> onePhaseXAResourceCls;
+    private static final Class<?> ONE_PHASE_XA_RESOURCE_CLS;
 
     static {
         try {
-            onePhaseXAResourceCls = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
+            ONE_PHASE_XA_RESOURCE_CLS = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
         }
         catch (ClassNotFoundException e) {
             throw new IgniteException(e);
@@ -210,7 +210,7 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
 //            final XAResource res = new IgniteOnePhaseXAResource(xaRes);
 
             Object ibmProxy = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),
-                new Class[] {onePhaseXAResourceCls},
+                new Class[] {ONE_PHASE_XA_RESOURCE_CLS},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         return mtd.invoke(xaRes, args);

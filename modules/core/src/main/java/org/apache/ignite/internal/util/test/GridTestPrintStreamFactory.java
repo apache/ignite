@@ -24,10 +24,10 @@ import java.io.PrintStream;
  */
 public final class GridTestPrintStreamFactory {
     /** */
-    private static final PrintStream sysOut = System.out;
+    private static final PrintStream SYS_OUT = System.out;
 
     /** */
-    private static final PrintStream sysErr = System.err;
+    private static final PrintStream SYS_ERR = System.err;
 
     /** */
     private static GridTestPrintStream testOut;
@@ -54,7 +54,7 @@ public final class GridTestPrintStreamFactory {
      * @return Original standard out.
      */
     public static synchronized PrintStream getStdOut() {
-        return sysOut;
+        return SYS_OUT;
     }
 
     /**
@@ -63,7 +63,7 @@ public final class GridTestPrintStreamFactory {
      * @return Original standard error.
      */
     public static synchronized PrintStream getStdErr() {
-        return sysErr;
+        return SYS_ERR;
     }
 
     /**
@@ -75,7 +75,7 @@ public final class GridTestPrintStreamFactory {
         // Lazy initialization is required here to ensure that parent
         // thread group is picked off correctly by implementation.
         if (testOut == null)
-            testOut = new GridTestPrintStream(sysOut);
+            testOut = new GridTestPrintStream(SYS_OUT);
 
         if (outCnt == 0)
             System.setOut(testOut);
@@ -94,7 +94,7 @@ public final class GridTestPrintStreamFactory {
         // Lazy initialization is required here to ensure that parent
         // thread group is picked off correctly by implementation.
         if (testErr == null)
-            testErr = new GridTestPrintStream(sysErr);
+            testErr = new GridTestPrintStream(SYS_ERR);
 
         if (errCnt == 0)
             System.setErr(testErr);
@@ -112,7 +112,7 @@ public final class GridTestPrintStreamFactory {
         outCnt--;
 
         if (outCnt == 0)
-            System.setOut(sysOut);
+            System.setOut(SYS_OUT);
     }
 
     /**
@@ -123,6 +123,6 @@ public final class GridTestPrintStreamFactory {
         errCnt--;
 
         if (errCnt == 0)
-            System.setErr(sysErr);
+            System.setErr(SYS_ERR);
     }
 }

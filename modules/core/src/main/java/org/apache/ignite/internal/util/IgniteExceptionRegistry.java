@@ -41,7 +41,7 @@ public class IgniteExceptionRegistry {
     public static final int DEFAULT_QUEUE_SIZE = 1000;
 
     /** */
-    private static final IgniteExceptionRegistry instance = new IgniteExceptionRegistry();
+    private static final IgniteExceptionRegistry INSTANCE = new IgniteExceptionRegistry();
 
     /** */
     private int maxSize = IgniteSystemProperties.getInteger(IGNITE_EXCEPTION_REGISTRY_MAX_SIZE, DEFAULT_QUEUE_SIZE);
@@ -56,7 +56,7 @@ public class IgniteExceptionRegistry {
      * @return Registry instance.
      */
     public static IgniteExceptionRegistry get() {
-        return instance;
+        return INSTANCE;
     }
 
     /**

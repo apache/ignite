@@ -132,7 +132,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static final long serialVersionUID = 0L;
 
     /** Static logger to avoid re-creation. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Finalizing status updater. */
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
@@ -355,7 +355,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         threadId = Thread.currentThread().getId();
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, this);
+            log = U.logger(cctx.kernalContext(), LOG_REF, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }
@@ -406,7 +406,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         loc = false;
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, this);
+            log = U.logger(cctx.kernalContext(), LOG_REF, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }

@@ -39,7 +39,7 @@ public class IgniteThread extends Thread {
     public static final int GRP_IDX_UNASSIGNED = -1;
 
     /** Number of all grid threads in the system. */
-    private static final AtomicLong cntr = new AtomicLong();
+    private static final AtomicLong CNTR = new AtomicLong();
 
     /** The name of the Ignite instance this thread belongs to. */
     protected final String igniteInstanceName;
@@ -90,7 +90,7 @@ public class IgniteThread extends Thread {
      * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe, byte plc) {
-        super(r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
+        super(r, createName(CNTR.incrementAndGet(), threadName, igniteInstanceName));
 
         A.ensure(grpIdx >= -1, "grpIdx >= -1");
 

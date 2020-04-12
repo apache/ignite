@@ -48,7 +48,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     public static final UUID VM_ID = UUID.randomUUID();
 
     /** */
-    private static final AtomicLong cntGen = new AtomicLong(U.currentTimeMillis());
+    private static final AtomicLong CNT_GEN = new AtomicLong(U.currentTimeMillis());
 
     /** */
     private UUID gid;
@@ -91,7 +91,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
      * @return Last generated local ID.
      */
     public static long lastLocalId() {
-        return cntGen.get();
+        return CNT_GEN.get();
     }
 
     /**
@@ -100,7 +100,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
      * @return Newly created pseudo-random ID.
      */
     public static IgniteUuid randomUuid() {
-        return new IgniteUuid(VM_ID, cntGen.incrementAndGet());
+        return new IgniteUuid(VM_ID, CNT_GEN.incrementAndGet());
     }
 
     /**
@@ -112,7 +112,7 @@ public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<Ignite
     public static IgniteUuid fromUuid(UUID id) {
         A.notNull(id, "id");
 
-        return new IgniteUuid(id, cntGen.getAndIncrement());
+        return new IgniteUuid(id, CNT_GEN.getAndIncrement());
     }
 
     /**

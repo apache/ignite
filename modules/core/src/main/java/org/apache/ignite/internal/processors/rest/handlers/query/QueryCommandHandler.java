@@ -69,7 +69,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         CLOSE_SQL_QUERY);
 
     /** Query ID sequence. */
-    private static final AtomicLong qryIdGen = new AtomicLong();
+    private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, QueryCursorIterator> qryCurs = new ConcurrentHashMap<>();
@@ -276,7 +276,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            final long qryId = qryIdGen.getAndIncrement();
+            final long qryId = QRY_ID_GEN.getAndIncrement();
 
             try {
                 Query qry;

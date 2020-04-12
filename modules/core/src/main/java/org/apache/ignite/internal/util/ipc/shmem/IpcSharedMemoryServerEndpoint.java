@@ -92,7 +92,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private static final long GC_FREQ = 10000;
 
     /** ID generator. */
-    private static final AtomicLong tokIdxGen = new AtomicLong();
+    private static final AtomicLong TOK_IDX_GEN = new AtomicLong();
 
     /** Port to bind socket to. */
     private int port = DFLT_IPC_PORT;
@@ -385,9 +385,9 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      */
     private IgnitePair<String> inOutToken(int pid, int size) {
         while (true) {
-            long idx = tokIdxGen.get();
+            long idx = TOK_IDX_GEN.get();
 
-            if (tokIdxGen.compareAndSet(idx, idx + 2))
+            if (TOK_IDX_GEN.compareAndSet(idx, idx + 2))
                 return new IgnitePair<>(
                     new File(tokDir, TOKEN_FILE_NAME + idx + "-" + pid + "-" + size).getAbsolutePath(),
                     new File(tokDir, TOKEN_FILE_NAME + (idx + 1) + "-" + pid + "-" + size).getAbsolutePath()

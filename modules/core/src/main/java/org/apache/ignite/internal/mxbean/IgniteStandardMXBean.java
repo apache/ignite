@@ -59,20 +59,20 @@ public class IgniteStandardMXBean extends StandardMBean {
     /**
      * Objects maps from primitive classes to primitive object classes.
      */
-    private static final Map<String, Class<?>> primCls = new HashMap<>();
+    private static final Map<String, Class<?>> PRIM_CLS = new HashMap<>();
 
     /**
      * Static constructor.
      */
     static{
-        primCls.put(Boolean.TYPE.toString().toLowerCase(), Boolean.TYPE);
-        primCls.put(Character.TYPE.toString().toLowerCase(), Character.TYPE);
-        primCls.put(Byte.TYPE.toString().toLowerCase(), Byte.TYPE);
-        primCls.put(Short.TYPE.toString().toLowerCase(), Short.TYPE);
-        primCls.put(Integer.TYPE.toString().toLowerCase(), Integer.TYPE);
-        primCls.put(Long.TYPE.toString().toLowerCase(), Long.TYPE);
-        primCls.put(Float.TYPE.toString().toLowerCase(), Float.TYPE);
-        primCls.put(Double.TYPE.toString().toLowerCase(), Double.TYPE);
+        PRIM_CLS.put(Boolean.TYPE.toString().toLowerCase(), Boolean.TYPE);
+        PRIM_CLS.put(Character.TYPE.toString().toLowerCase(), Character.TYPE);
+        PRIM_CLS.put(Byte.TYPE.toString().toLowerCase(), Byte.TYPE);
+        PRIM_CLS.put(Short.TYPE.toString().toLowerCase(), Short.TYPE);
+        PRIM_CLS.put(Integer.TYPE.toString().toLowerCase(), Integer.TYPE);
+        PRIM_CLS.put(Long.TYPE.toString().toLowerCase(), Long.TYPE);
+        PRIM_CLS.put(Float.TYPE.toString().toLowerCase(), Float.TYPE);
+        PRIM_CLS.put(Double.TYPE.toString().toLowerCase(), Double.TYPE);
     }
 
     /**
@@ -292,7 +292,7 @@ public class IgniteStandardMXBean extends StandardMBean {
 
         for (int i = 0; i < signature.length; i++) {
             // Parameter type is either a primitive type or class. Try both.
-            Class<?> type = primCls.get(signature[i].getType().toLowerCase());
+            Class<?> type = PRIM_CLS.get(signature[i].getType().toLowerCase());
 
             if (type == null)
                 type = Class.forName(signature[i].getType());

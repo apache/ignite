@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFutureAdapter<Object>
     implements GridCacheAtomicFuture<Object> {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -181,7 +181,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     ) {
         if (log == null) {
             msgLog = cctx.shared().atomicMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridFutureAdapter.class);
         }
 
         this.cctx = cctx;

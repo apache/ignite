@@ -36,13 +36,13 @@ import org.springframework.aop.support.DefaultPointcutAdvisor;
  */
 public final class GridifySpringEnhancer {
     /** Spring aspect. */
-    private static final GridifySpringAspect dfltAsp = new GridifySpringAspect();
+    private static final GridifySpringAspect DFLT_ASP = new GridifySpringAspect();
 
     /** Spring aspect. */
-    private static final GridifySetToSetSpringAspect setToSetAsp = new GridifySetToSetSpringAspect();
+    private static final GridifySetToSetSpringAspect SET_TO_SET_ASP = new GridifySetToSetSpringAspect();
 
     /** Spring aspect. */
-    private static final GridifySetToValueSpringAspect setToValAsp = new GridifySetToValueSpringAspect();
+    private static final GridifySetToValueSpringAspect SET_TO_VAL_ASP = new GridifySetToValueSpringAspect();
 
     /**
      * Enforces singleton.
@@ -62,19 +62,19 @@ public final class GridifySpringEnhancer {
     public static <T> T enhance(T obj) {
         ProxyFactory proxyFac = new ProxyFactory(obj);
 
-        proxyFac.addAdvice(dfltAsp);
-        proxyFac.addAdvice(setToValAsp);
-        proxyFac.addAdvice(setToSetAsp);
+        proxyFac.addAdvice(DFLT_ASP);
+        proxyFac.addAdvice(SET_TO_VAL_ASP);
+        proxyFac.addAdvice(SET_TO_SET_ASP);
 
         while (proxyFac.getAdvisors().length > 0)
             proxyFac.removeAdvisor(0);
 
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
-            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.DFLT), dfltAsp));
+            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.DFLT), DFLT_ASP));
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
-            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.SET_TO_VALUE), setToValAsp));
+            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.SET_TO_VALUE), SET_TO_VAL_ASP));
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
-            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.SET_TO_SET), setToSetAsp));
+            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.SET_TO_SET), SET_TO_SET_ASP));
 
         return (T)proxyFac.getProxy();
     }

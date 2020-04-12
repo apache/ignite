@@ -97,7 +97,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
  */
 class TcpClientChannel implements ClientChannel {
     /** Supported protocol versions. */
-    private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+    private static final Collection<ProtocolVersion> SUPPORTED_VERS = Arrays.asList(
         V1_7_0,
         V1_6_0,
         V1_5_0,
@@ -465,7 +465,7 @@ class TcpClientChannel implements ClientChannel {
                     throw new ClientAuthenticationException(err);
                 else if (ver.equals(srvVer))
                     throw new ClientProtocolError(err);
-                else if (!supportedVers.contains(srvVer) ||
+                else if (!SUPPORTED_VERS.contains(srvVer) ||
                     (srvVer.compareTo(V1_1_0) < 0 && user != null && !user.isEmpty()))
                     // Server version is not supported by this client OR server version is less than 1.1.0 supporting
                     // authentication and authentication is required.

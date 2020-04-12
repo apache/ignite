@@ -118,7 +118,7 @@ public class ServletStartup extends HttpServlet {
     private static boolean loaded;
 
     /** Configuration file path variable name. */
-    private static final String cfgFilePathParam = "cfgFilePath";
+    private static final String CFG_FILE_PATH_PARAM = "cfgFilePath";
 
     /** */
     private Collection<String> igniteInstanceNames = new ArrayList<>();
@@ -129,10 +129,10 @@ public class ServletStartup extends HttpServlet {
         if (loaded)
             return;
 
-        String cfgFile = getServletConfig().getInitParameter(cfgFilePathParam);
+        String cfgFile = getServletConfig().getInitParameter(CFG_FILE_PATH_PARAM);
 
         if (cfgFile == null)
-            throw new ServletException("Failed to read property: " + cfgFilePathParam);
+            throw new ServletException("Failed to read property: " + CFG_FILE_PATH_PARAM);
 
         URL cfgUrl = U.resolveIgniteUrl(cfgFile);
 

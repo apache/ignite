@@ -49,7 +49,7 @@ final class MarshallerMappingFileStore {
     private static final int FILE_LOCK_TIMEOUT_MS = 5000;
 
     /** */
-    private static final GridStripedLock fileLock = new GridStripedLock(32);
+    private static final GridStripedLock FILE_LOCK = new GridStripedLock(32);
 
     /** */
     private final IgniteLogger log;
@@ -275,7 +275,7 @@ final class MarshallerMappingFileStore {
      * @return Lock instance.
      */
     private static Lock fileLock(String fileName) {
-        return fileLock.getLock(fileName.hashCode());
+        return FILE_LOCK.getLock(fileName.hashCode());
     }
 
     /**

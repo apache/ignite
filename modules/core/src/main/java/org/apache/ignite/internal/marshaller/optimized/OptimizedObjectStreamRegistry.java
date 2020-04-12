@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 class OptimizedObjectStreamRegistry {
     /** Holders. */
-    private static final ThreadLocal<StreamHolder> holders = new ThreadLocal<>();
+    private static final ThreadLocal<StreamHolder> HOLDERS = new ThreadLocal<>();
 
     /** Output streams pool. */
     private static BlockingQueue<OptimizedObjectOutputStream> outPool;
@@ -121,7 +121,7 @@ class OptimizedObjectStreamRegistry {
             assert b;
         }
         else {
-            StreamHolder holder = holders.get();
+            StreamHolder holder = HOLDERS.get();
 
             if (holder != null)
                 holder.releaseOut();
@@ -142,7 +142,7 @@ class OptimizedObjectStreamRegistry {
             assert b;
         }
         else {
-            StreamHolder holder = holders.get();
+            StreamHolder holder = HOLDERS.get();
 
             if (holder != null)
                 holder.releaseIn();
@@ -156,10 +156,10 @@ class OptimizedObjectStreamRegistry {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
     private static StreamHolder holder() throws IgniteInterruptedCheckedException {
-        StreamHolder holder = holders.get();
+        StreamHolder holder = HOLDERS.get();
 
         if (holder == null)
-            holders.set(holder = new StreamHolder());
+            HOLDERS.set(holder = new StreamHolder());
 
         return holder;
     }

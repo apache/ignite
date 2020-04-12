@@ -17,7 +17,20 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
@@ -26,20 +39,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Class loader allowing explicitly load classes without delegation to parent class loader.
@@ -64,7 +63,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private static final ClassLoader APP_CLS_LDR = HadoopClassLoader.class.getClassLoader();
 
     /** */
-    private static final Collection<URL> appJars = F.asList(IgniteUtils.classLoaderUrls(APP_CLS_LDR));
+    private static final Collection<URL> APP_JARS = F.asList(IgniteUtils.classLoaderUrls(APP_CLS_LDR));
 
     /** Mutex for native libraries initialization. */
     private static final Object LIBS_MUX = new Object();
@@ -79,7 +78,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     private static volatile Collection<URL> hadoopJars;
 
     /** */
-    private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap<>();
+    private static final Map<String, byte[]> BYTES_CACHE = new ConcurrentHashMap<>();
 
     /** Class cache. */
     private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
@@ -341,7 +340,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             if (c != null)
                 return c;
 
-            byte[] bytes = bytesCache.get(originalName);
+            byte[] bytes = BYTES_CACHE.get(originalName);
 
             if (bytes == null) {
                 InputStream in = helper.loadClassBytes(this, replaceName);
@@ -352,7 +351,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
                 bytes = helper.loadReplace(in, originalName, replaceName);
 
-                bytesCache.put(originalName, bytes);
+                BYTES_CACHE.put(originalName, bytes);
             }
 
             return defineClass(originalName, bytes, 0, bytes.length);
@@ -436,9 +435,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             throw new RuntimeException(e);
         }
 
-        ArrayList<URL> list = new ArrayList<>(hadoopJars.size() + appJars.size() + (urls == null ? 0 : urls.length));
+        ArrayList<URL> list = new ArrayList<>(hadoopJars.size() + APP_JARS.size() + (urls == null ? 0 : urls.length));
 
-        list.addAll(appJars);
+        list.addAll(APP_JARS);
         list.addAll(hadoopJars);
 
         if (!F.isEmpty(urls))

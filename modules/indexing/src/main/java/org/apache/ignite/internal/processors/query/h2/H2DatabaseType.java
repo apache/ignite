@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.util.LocalDateTimeUtils;
-import org.h2.value.DataType;
-
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.util.LocalDateTimeUtils;
+import org.h2.value.DataType;
 
 /**
  * Enum that helps to map java types to database types.
@@ -86,34 +85,34 @@ public enum H2DatabaseType {
     OTHER("OTHER");
 
     /** Map of Class to enum. */
-    private static final Map<Class<?>, H2DatabaseType> map = new HashMap<>();
+    private static final Map<Class<?>, H2DatabaseType> MAP = new HashMap<>();
 
     /*
      * Initialize map of DB types.
      */
     static {
-        map.put(int.class, INT);
-        map.put(Integer.class, INT);
-        map.put(boolean.class, BOOL);
-        map.put(Boolean.class, BOOL);
-        map.put(byte.class, TINYINT);
-        map.put(Byte.class, TINYINT);
-        map.put(short.class, SMALLINT);
-        map.put(Short.class, SMALLINT);
-        map.put(long.class, BIGINT);
-        map.put(Long.class, BIGINT);
-        map.put(BigDecimal.class, DECIMAL);
-        map.put(double.class, DOUBLE);
-        map.put(Double.class, DOUBLE);
-        map.put(float.class, REAL);
-        map.put(Float.class, REAL);
-        map.put(Time.class, TIME);
-        map.put(Timestamp.class, TIMESTAMP);
-        map.put(java.util.Date.class, TIMESTAMP);
-        map.put(java.sql.Date.class, DATE);
-        map.put(String.class, VARCHAR);
-        map.put(java.util.UUID.class, UUID);
-        map.put(byte[].class, BINARY);
+        MAP.put(int.class, INT);
+        MAP.put(Integer.class, INT);
+        MAP.put(boolean.class, BOOL);
+        MAP.put(Boolean.class, BOOL);
+        MAP.put(byte.class, TINYINT);
+        MAP.put(Byte.class, TINYINT);
+        MAP.put(short.class, SMALLINT);
+        MAP.put(Short.class, SMALLINT);
+        MAP.put(long.class, BIGINT);
+        MAP.put(Long.class, BIGINT);
+        MAP.put(BigDecimal.class, DECIMAL);
+        MAP.put(double.class, DOUBLE);
+        MAP.put(Double.class, DOUBLE);
+        MAP.put(float.class, REAL);
+        MAP.put(Float.class, REAL);
+        MAP.put(Time.class, TIME);
+        MAP.put(Timestamp.class, TIMESTAMP);
+        MAP.put(java.util.Date.class, TIMESTAMP);
+        MAP.put(java.sql.Date.class, DATE);
+        MAP.put(String.class, VARCHAR);
+        MAP.put(java.util.UUID.class, UUID);
+        MAP.put(byte[].class, BINARY);
     }
 
     /** */
@@ -135,7 +134,7 @@ public enum H2DatabaseType {
      * @return Enum value.
      */
     public static H2DatabaseType fromClass(Class<?> cls) {
-        H2DatabaseType res = map.get(cls);
+        H2DatabaseType res = MAP.get(cls);
 
         if (res != null)
             return res;

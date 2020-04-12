@@ -39,7 +39,7 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
     private static final String HASHING_ALGORITHM = "SHA-256";
 
     /** Message digest. */
-    private static final ThreadLocal<MessageDigest> digest = new ThreadLocal<>();
+    private static final ThreadLocal<MessageDigest> DIGEST = new ThreadLocal<>();
 
     /** Strategy that defines how bytes will be swapped after SHA-256. */
     private final List<Integer> shuffleStgy = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
@@ -81,15 +81,15 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
      * @return Instance of message digest.
      */
     private MessageDigest getDigest() {
-        if (digest.get() == null) {
+        if (DIGEST.get() == null) {
             try {
-                digest.set(MessageDigest.getInstance(HASHING_ALGORITHM));
+                DIGEST.set(MessageDigest.getInstance(HASHING_ALGORITHM));
             }
             catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        return digest.get();
+        return DIGEST.get();
     }
 }

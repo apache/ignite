@@ -58,8 +58,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -184,19 +184,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     public static final String REBALANCED = "Rebalanced";
 
     /** JVM interface to memory consumption info */
-    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
+    private static final MemoryMXBean MEM = ManagementFactory.getMemoryMXBean();
 
     /** */
-    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+    private static final OperatingSystemMXBean OS = ManagementFactory.getOperatingSystemMXBean();
 
     /** */
-    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+    private static final RuntimeMXBean RT = ManagementFactory.getRuntimeMXBean();
 
     /** */
-    private static final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+    private static final ThreadMXBean THREADS = ManagementFactory.getThreadMXBean();
 
     /** */
-    private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
+    private static final Collection<GarbageCollectorMXBean> GC = ManagementFactory.getGarbageCollectorMXBeans();
 
     /** Prefix for {@link HitRateMetric} configuration property name. */
     public static final String HITRATE_CFG_PREFIX = metricName("metrics", "hitrate");
@@ -245,22 +245,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "heap"));
         nonHeap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "nonheap"));
 
-        heap.update(mem.getHeapMemoryUsage());
-        nonHeap.update(mem.getNonHeapMemoryUsage());
+        heap.update(MEM.getHeapMemoryUsage());
+        nonHeap.update(MEM.getNonHeapMemoryUsage());
 
         MetricRegistry sysreg = registry(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
 
-        sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
-        sysreg.register(UP_TIME, rt::getUptime, null);
-        sysreg.register(THREAD_CNT, threads::getThreadCount, null);
-        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
-        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
-        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
-        sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
-        sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+        sysreg.register("SystemLoadAverage", OS::getSystemLoadAverage, Double.class, null);
+        sysreg.register(UP_TIME, RT::getUptime, null);
+        sysreg.register(THREAD_CNT, THREADS::getThreadCount, null);
+        sysreg.register(PEAK_THREAD_CNT, THREADS::getPeakThreadCount, null);
+        sysreg.register(TOTAL_STARTED_THREAD_CNT, THREADS::getTotalStartedThreadCount, null);
+        sysreg.register(DAEMON_THREAD_CNT, THREADS::getDaemonThreadCount, null);
+        sysreg.register("CurrentThreadCpuTime", THREADS::getCurrentThreadCpuTime, null);
+        sysreg.register("CurrentThreadUserTime", THREADS::getCurrentThreadUserTime, null);
 
         MetricRegistry pmeReg = registry(PME_METRICS);
 
@@ -724,7 +724,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         //
         // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
         try {
-            return mem.getNonHeapMemoryUsage();
+            return MEM.getNonHeapMemoryUsage();
         }
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
@@ -740,7 +740,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         // java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616
         // at java.lang.management.MemoryUsage.<init>(Unknown Source)
         try {
-            return mem.getHeapMemoryUsage();
+            return MEM.getHeapMemoryUsage();
         }
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
@@ -752,7 +752,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     private long totalSysMemory() {
         try {
-            return U.<Long>property(os, "totalPhysicalMemorySize");
+            return U.<Long>property(OS, "totalPhysicalMemorySize");
         }
         catch (RuntimeException ignored) {
             return -1;
@@ -782,14 +782,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         private double getGcCpuLoad() {
             long gcTime = 0;
 
-            for (GarbageCollectorMXBean bean : gc) {
+            for (GarbageCollectorMXBean bean : GC) {
                 long colTime = bean.getCollectionTime();
 
                 if (colTime > 0)
                     gcTime += colTime;
             }
 
-            gcTime /= os.getAvailableProcessors();
+            gcTime /= OS.getAvailableProcessors();
 
             double gc = 0;
 
@@ -811,14 +811,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                cpuTime = U.<Long>property(os, "processCpuTime");
+                cpuTime = U.<Long>property(OS, "processCpuTime");
             }
             catch (IgniteException ignored) {
                 return -1;
             }
 
             // Method reports time in nanoseconds across all processors.
-            cpuTime /= 1000000 * os.getAvailableProcessors();
+            cpuTime /= 1000000 * OS.getAvailableProcessors();
 
             double cpu = 0;
 

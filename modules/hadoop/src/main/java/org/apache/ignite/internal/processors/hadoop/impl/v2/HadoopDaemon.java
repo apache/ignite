@@ -25,7 +25,7 @@ import java.util.LinkedList;
  */
 public class HadoopDaemon extends Thread {
     /** Lock object used for synchronization. */
-    private static final Object lock = new Object();
+    private static final Object LOCK = new Object();
 
     /** Collection to hold the threads to be stopped. */
     private static Collection<HadoopDaemon> daemons = new LinkedList<>();
@@ -99,7 +99,7 @@ public class HadoopDaemon extends Thread {
      * Enqueue this thread if it should be stopped upon the task end.
      */
     private void enqueueIfNeeded() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             if (daemons == null)
                 throw new RuntimeException("Failed to create HadoopDaemon (its registry is already cleared): " +
                     "[classLoader=" + getClass().getClassLoader() + ']');
@@ -113,7 +113,7 @@ public class HadoopDaemon extends Thread {
      * Stops all the registered threads.
      */
     public static void dequeueAndStopAll() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             if (daemons != null) {
                 for (HadoopDaemon daemon : daemons)
                     daemon.interrupt();

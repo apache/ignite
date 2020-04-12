@@ -109,13 +109,13 @@ public class MvccUtils {
         new MvccSnapshotWithoutTxs(Long.MAX_VALUE, Long.MAX_VALUE, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
     /** */
-    private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
+    private static final MvccClosure<Integer> GET_VISIBLE_STATE = new GetVisibleState();
 
     /** */
-    private static final MvccClosure<Boolean> isVisible = new IsVisible();
+    private static final MvccClosure<Boolean> IS_VISIBLE = new IsVisible();
 
     /** */
-    private static final MvccClosure<MvccVersion> getNewVer = new GetNewVersion();
+    private static final MvccClosure<MvccVersion> GET_NEW_VERSION = new GetNewVersion();
 
     /**
      *
@@ -371,7 +371,7 @@ public class MvccUtils {
      */
     public static int getVisibleState(GridCacheContext cctx, long link, MvccSnapshot snapshot)
         throws IgniteCheckedException {
-        return invoke(cctx, link, getVisibleState, snapshot);
+        return invoke(cctx, link, GET_VISIBLE_STATE, snapshot);
     }
 
     /**
@@ -384,7 +384,7 @@ public class MvccUtils {
      */
     public static MvccVersion getNewVersion(GridCacheContext cctx, long link)
         throws IgniteCheckedException {
-        return invoke(cctx, link, getNewVer, null);
+        return invoke(cctx, link, GET_NEW_VERSION, null);
     }
 
     /**
@@ -571,7 +571,7 @@ public class MvccUtils {
     private static boolean isVisible(GridCacheContext cctx, long link,
         MvccSnapshot snapshot)
         throws IgniteCheckedException {
-        return invoke(cctx, link, isVisible, snapshot);
+        return invoke(cctx, link, IS_VISIBLE, snapshot);
     }
 
     /**
@@ -659,7 +659,7 @@ public class MvccUtils {
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, DataPageIO dataIo,
         long pageAddr, int itemId, int pageSize) throws IgniteCheckedException {
-        return invoke(cctx, dataIo, pageAddr, itemId, pageSize, isVisible, snapshot);
+        return invoke(cctx, dataIo, pageAddr, itemId, pageSize, IS_VISIBLE, snapshot);
     }
 
     /**

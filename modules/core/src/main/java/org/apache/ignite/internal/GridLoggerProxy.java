@@ -63,7 +63,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private Object ctgr;
 
     /** Whether or not to log Ignite instance name. */
-    private static final boolean logIgniteInstanceName = System.getProperty(IGNITE_LOG_INSTANCE_NAME) != null ||
+    private static final boolean LOG_IGNITE_INSTANCE_NAME = System.getProperty(IGNITE_LOG_INSTANCE_NAME) != null ||
         System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /**
@@ -210,7 +210,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * @return Enriched message or the original one.
      */
     private String enrich(@Nullable String m) {
-        return logIgniteInstanceName && m != null ? "<" + igniteInstanceName + '-' + id8 + "> " + m : m;
+        return LOG_IGNITE_INSTANCE_NAME && m != null ? "<" + igniteInstanceName + '-' + id8 + "> " + m : m;
     }
 
     /** {@inheritDoc} */

@@ -355,7 +355,7 @@ public abstract class IgniteUtils {
     public static final String LOCK_HOLD_MESSAGE = "ReadLock held the lock more than ";
 
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
-    private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
+    private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> P2P_FIELDS =
         new ConcurrentHashMap<>();
 
     /** Secure socket protocol to use. */
@@ -514,13 +514,13 @@ public abstract class IgniteUtils {
     static volatile long curTimeMillis = System.currentTimeMillis();
 
     /** Primitive class map. */
-    private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
+    private static final Map<String, Class<?>> PRIMITIVE_MAP = new HashMap<>(16, .5f);
 
     /** Boxed class map. */
-    private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
+    private static final Map<Class<?>, Class<?>> BOXED_CLS_MAP = new HashMap<>(16, .5f);
 
     /** Class loader used to load Ignite. */
-    private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
+    private static final ClassLoader GRID_CLASSLOADER = IgniteUtils.class.getClassLoader();
 
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
@@ -542,11 +542,11 @@ public abstract class IgniteUtils {
     static int gridCnt;
 
     /** Mutex. */
-    static final Object mux = new Object();
+    static final Object MUX = new Object();
 
     /** Exception converters. */
     private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters;
+        EXCEPTION_CONVERTERS;
 
     /** */
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddr;
@@ -555,7 +555,7 @@ public abstract class IgniteUtils {
     private static volatile IgniteBiTuple<Collection<String>, Collection<String>> cachedLocalAddrAllHostNames;
 
     /** */
-    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> CLASS_CACHE =
         new ConcurrentHashMap<>();
 
     /** */
@@ -589,7 +589,7 @@ public abstract class IgniteUtils {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
 
     /** */
-    private static final boolean assertionsEnabled;
+    private static final boolean ASSERTIONS_ENABLED;
 
     /** Empty URL array. */
     private static final URL[] EMPTY_URL_ARR = new URL[0];
@@ -598,13 +598,13 @@ public abstract class IgniteUtils {
      *
      * Note: needs for compatibility with Java 9.
      */
-    private static final Class bltClsLdrCls = defaultClassLoaderClass();
+    private static final Class BLT_CLS_LDR_CLS = defaultClassLoaderClass();
 
     /** Url class loader field.
      *
      * Note: needs for compatibility with Java 9.
      */
-    private static final Field urlClsLdrField = urlClassLoaderField();
+    private static final Field URL_CLS_LDR_FIELD = urlClassLoaderField();
 
     /** Dev only logging disabled. */
     private static boolean devOnlyLogDisabled =
@@ -631,7 +631,7 @@ public abstract class IgniteUtils {
             assertionsEnabled0 = true;
         }
         finally {
-            assertionsEnabled = assertionsEnabled0;
+            ASSERTIONS_ENABLED = assertionsEnabled0;
         }
 
         redHat = Files.exists(Paths.get("/etc/redhat-release")); // RedHat family OS (Fedora, CentOS, RedHat)
@@ -734,25 +734,25 @@ public abstract class IgniteUtils {
 
         jvm32Bit = "32".equals(jvmArchDataModel);
 
-        primitiveMap.put("byte", byte.class);
-        primitiveMap.put("short", short.class);
-        primitiveMap.put("int", int.class);
-        primitiveMap.put("long", long.class);
-        primitiveMap.put("float", float.class);
-        primitiveMap.put("double", double.class);
-        primitiveMap.put("char", char.class);
-        primitiveMap.put("boolean", boolean.class);
-        primitiveMap.put("void", void.class);
+        PRIMITIVE_MAP.put("byte", byte.class);
+        PRIMITIVE_MAP.put("short", short.class);
+        PRIMITIVE_MAP.put("int", int.class);
+        PRIMITIVE_MAP.put("long", long.class);
+        PRIMITIVE_MAP.put("float", float.class);
+        PRIMITIVE_MAP.put("double", double.class);
+        PRIMITIVE_MAP.put("char", char.class);
+        PRIMITIVE_MAP.put("boolean", boolean.class);
+        PRIMITIVE_MAP.put("void", void.class);
 
-        boxedClsMap.put(byte.class, Byte.class);
-        boxedClsMap.put(short.class, Short.class);
-        boxedClsMap.put(int.class, Integer.class);
-        boxedClsMap.put(long.class, Long.class);
-        boxedClsMap.put(float.class, Float.class);
-        boxedClsMap.put(double.class, Double.class);
-        boxedClsMap.put(char.class, Character.class);
-        boxedClsMap.put(boolean.class, Boolean.class);
-        boxedClsMap.put(void.class, Void.class);
+        BOXED_CLS_MAP.put(byte.class, Byte.class);
+        BOXED_CLS_MAP.put(short.class, Short.class);
+        BOXED_CLS_MAP.put(int.class, Integer.class);
+        BOXED_CLS_MAP.put(long.class, Long.class);
+        BOXED_CLS_MAP.put(float.class, Float.class);
+        BOXED_CLS_MAP.put(double.class, Double.class);
+        BOXED_CLS_MAP.put(char.class, Character.class);
+        BOXED_CLS_MAP.put(boolean.class, Boolean.class);
+        BOXED_CLS_MAP.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -855,7 +855,7 @@ public abstract class IgniteUtils {
             }
         }
 
-        exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+        EXCEPTION_CONVERTERS = Collections.unmodifiableMap(exceptionConverters());
 
         // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
@@ -886,7 +886,7 @@ public abstract class IgniteUtils {
      * @return The IgniteClosure mapped to this exception class, or null if none.
      */
     public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
-        return exceptionConverters.get(clazz);
+        return EXCEPTION_CONVERTERS.get(clazz);
     }
 
     /**
@@ -1038,7 +1038,7 @@ public abstract class IgniteUtils {
      * @return Ignite runtime exception.
      */
     public static Exception convertExceptionNoWrap(IgniteCheckedException e) {
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+        C1<IgniteCheckedException, IgniteException> converter = EXCEPTION_CONVERTERS.get(e.getClass());
 
         if (converter != null)
             return converter.apply(e);
@@ -1071,7 +1071,7 @@ public abstract class IgniteUtils {
             e = disconnectedErr;
         }
 
-        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+        C1<IgniteCheckedException, IgniteException> converter = EXCEPTION_CONVERTERS.get(e.getClass());
 
         if (converter != null)
             return converter.apply(e);
@@ -1662,7 +1662,7 @@ public abstract class IgniteUtils {
         Class<?> clazz;
         if (cls == null)
             clazz = dflt;
-        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = primitiveMap.get(cls)) == null) {
+        else if (!includePrimitiveTypes || cls.length() > 7 || (clazz = PRIMITIVE_MAP.get(cls)) == null) {
             try {
                 clazz = Class.forName(cls);
             }
@@ -2585,7 +2585,7 @@ public abstract class IgniteUtils {
      * @return Class loader used to load Ignite itself.
      */
     public static ClassLoader gridClassLoader() {
-        return gridClassLoader;
+        return GRID_CLASSLOADER;
     }
 
     /**
@@ -2604,11 +2604,11 @@ public abstract class IgniteUtils {
     public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
 
-        return (ldr != null && ldr != gridClassLoader) ?
+        return (ldr != null && ldr != GRID_CLASSLOADER) ?
             ldr :
             cfg.getClassLoader() != null ?
                 cfg.getClassLoader() :
-                gridClassLoader;
+                GRID_CLASSLOADER;
     }
 
     /**
@@ -3482,7 +3482,7 @@ public abstract class IgniteUtils {
      * Starts clock timer if grid is first.
      */
     public static void onGridStart() {
-        synchronized (mux) {
+        synchronized (MUX) {
             if (gridCnt == 0) {
                 assert timer == null;
 
@@ -3518,7 +3518,7 @@ public abstract class IgniteUtils {
      * @throws InterruptedException If interrupted.
      */
     public static void onGridStop() throws InterruptedException {
-        synchronized (mux) {
+        synchronized (MUX) {
             // Grid start may fail and onGridStart() does not get called.
             if (gridCnt == 0)
                 return;
@@ -6153,7 +6153,7 @@ public abstract class IgniteUtils {
         assert clsName != null;
 
         if (ldr == null)
-            ldr = gridClassLoader;
+            ldr = GRID_CLASSLOADER;
 
         String lambdaParent = U.lambdaEnclosingClassName(clsName);
 
@@ -6385,7 +6385,7 @@ public abstract class IgniteUtils {
             for (Class<?> cls = obj.getClass(); !cls.equals(Object.class); cls = cls.getSuperclass()) {
                 // Cache by class name instead of class to avoid infinite growth of the
                 // caching map in case of multiple redeployment of the same class.
-                IgniteBiTuple<Class<?>, Collection<Field>> tup = p2pFields.get(cls.getName());
+                IgniteBiTuple<Class<?>, Collection<Field>> tup = P2P_FIELDS.get(cls.getName());
 
                 boolean cached = tup != null && tup.get1().equals(cls);
 
@@ -6420,7 +6420,7 @@ public abstract class IgniteUtils {
                                     if (!cached)
                                         // Potentially replace identical value
                                         // stored by another thread.
-                                        p2pFields.put(cls.getName(), tup);
+                                        P2P_FIELDS.put(cls.getName(), tup);
 
                                     return p;
                                 }
@@ -6603,7 +6603,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if assertions enabled.
      */
     public static boolean assertionsEnabled() {
-        return assertionsEnabled;
+        return ASSERTIONS_ENABLED;
     }
 
     /**
@@ -7833,17 +7833,17 @@ public abstract class IgniteUtils {
             return EMPTY_URL_ARR;
         else if (clsLdr instanceof URLClassLoader)
             return ((URLClassLoader)clsLdr).getURLs();
-        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
+        else if (BLT_CLS_LDR_CLS != null && URL_CLS_LDR_FIELD != null && BLT_CLS_LDR_CLS.isAssignableFrom(clsLdr.getClass())) {
             try {
-                synchronized (urlClsLdrField) {
+                synchronized (URL_CLS_LDR_FIELD) {
                     // Backup accessible field state.
-                    boolean accessible = urlClsLdrField.isAccessible();
+                    boolean accessible = URL_CLS_LDR_FIELD.isAccessible();
 
                     try {
                         if (!accessible)
-                            urlClsLdrField.setAccessible(true);
+                            URL_CLS_LDR_FIELD.setAccessible(true);
 
-                        Object ucp = urlClsLdrField.get(clsLdr);
+                        Object ucp = URL_CLS_LDR_FIELD.get(clsLdr);
 
                         if (ucp instanceof URLClassLoader)
                             return ((URLClassLoader)ucp).getURLs();
@@ -7855,7 +7855,7 @@ public abstract class IgniteUtils {
                     finally {
                         // Recover accessible field state.
                         if (!accessible)
-                            urlClsLdrField.setAccessible(false);
+                            URL_CLS_LDR_FIELD.setAccessible(false);
                     }
                 }
             }
@@ -8847,7 +8847,7 @@ public abstract class IgniteUtils {
         if (!cls.isPrimitive())
             return cls;
 
-        return boxedClsMap.get(cls);
+        return BOXED_CLS_MAP.get(cls);
     }
 
     /**
@@ -8873,7 +8873,7 @@ public abstract class IgniteUtils {
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
         assert clsName != null;
 
-        Class<?> cls = primitiveMap.get(clsName);
+        Class<?> cls = PRIMITIVE_MAP.get(clsName);
 
         if (cls != null)
             return cls;
@@ -8883,12 +8883,12 @@ public abstract class IgniteUtils {
                 return ((ClassCache)ldr).getFromCache(clsName);
         }
         else
-            ldr = gridClassLoader;
+            ldr = GRID_CLASSLOADER;
 
-        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+        ConcurrentMap<String, Class> ldrMap = CLASS_CACHE.get(ldr);
 
         if (ldrMap == null) {
-            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
+            ConcurrentMap<String, Class> old = CLASS_CACHE.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
 
             if (old != null)
                 ldrMap = old;
@@ -8922,7 +8922,7 @@ public abstract class IgniteUtils {
      * @param clsName Class name of clearing class.
      */
     public static void clearClassFromClassCache(ClassLoader ldr, String clsName){
-        ConcurrentMap<String, Class> map = classCache.get(ldr);
+        ConcurrentMap<String, Class> map = CLASS_CACHE.get(ldr);
 
         if (map!=null)
             map.remove(clsName);
@@ -8934,14 +8934,14 @@ public abstract class IgniteUtils {
      * @param ldr Class loader.
      */
     public static void clearClassCache(ClassLoader ldr) {
-        classCache.remove(ldr);
+        CLASS_CACHE.remove(ldr);
     }
 
     /**
      * Completely clears class cache.
      */
     public static void clearClassCache() {
-        classCache.clear();
+        CLASS_CACHE.clear();
     }
 
     /**

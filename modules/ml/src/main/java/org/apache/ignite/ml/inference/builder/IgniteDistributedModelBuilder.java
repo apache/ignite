@@ -65,7 +65,7 @@ public class IgniteDistributedModelBuilder implements AsyncModelBuilder {
     private static final int QUEUE_CAPACITY = 100;
 
     /** Default configuration for Apache Ignite queues used in this class (request queue, response queue). */
-    private static final CollectionConfiguration queueCfg = new CollectionConfiguration();
+    private static final CollectionConfiguration QUEUE_CFG = new CollectionConfiguration();
 
     /** Ignite instance. */
     private final Ignite ignite;
@@ -161,9 +161,9 @@ public class IgniteDistributedModelBuilder implements AsyncModelBuilder {
             this.suffix = suffix;
 
             reqQueue = ignite.queue(String.format(INFERENCE_REQUEST_QUEUE_NAME_PATTERN, suffix), QUEUE_CAPACITY,
-                queueCfg);
+                QUEUE_CFG);
             resQueue = ignite.queue(String.format(INFERENCE_RESPONSE_QUEUE_NAME_PATTERN, suffix), QUEUE_CAPACITY,
-                queueCfg);
+                QUEUE_CFG);
 
             startReceiver();
             startService(reader, parser, instances, maxPerNode);
@@ -326,9 +326,9 @@ public class IgniteDistributedModelBuilder implements AsyncModelBuilder {
             Ignite ignite = Ignition.localIgnite();
 
             reqQueue = ignite.queue(String.format(INFERENCE_REQUEST_QUEUE_NAME_PATTERN, suffix), QUEUE_CAPACITY,
-                queueCfg);
+                QUEUE_CFG);
             resQueue = ignite.queue(String.format(INFERENCE_RESPONSE_QUEUE_NAME_PATTERN, suffix), QUEUE_CAPACITY,
-                queueCfg);
+                QUEUE_CFG);
 
             mdl = parser.parse(reader.read());
         }

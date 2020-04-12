@@ -37,13 +37,13 @@ public class GridPerformanceSuggestions {
     private static final String SUGGESTIONS_LINK = "https://apacheignite.readme.io/docs/jvm-and-system-tuning";
 
     /** */
-    private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
+    private static final boolean DISABLED = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
 
     /** */
-    private final Collection<String> perfs = !disabled ? new LinkedHashSet<String>() : null;
+    private final Collection<String> perfs = !DISABLED ? new LinkedHashSet<String>() : null;
 
     /** */
-    private final Collection<String> suppressed = !disabled ? new HashSet<String>() : null;
+    private final Collection<String> suppressed = !DISABLED ? new HashSet<String>() : null;
 
     /**
      * @param suggestions Suggestions to add.
@@ -65,7 +65,7 @@ public class GridPerformanceSuggestions {
      * @param suppress {@code True} to suppress this suggestion.
      */
     public synchronized void add(String sug, boolean suppress) {
-        if (disabled)
+        if (DISABLED)
             return;
 
         if (!suppress)
@@ -79,7 +79,7 @@ public class GridPerformanceSuggestions {
      * @param igniteInstanceName Ignite instance name.
      */
     public synchronized void logSuggestions(IgniteLogger log, @Nullable String igniteInstanceName) {
-        if (disabled)
+        if (DISABLED)
             return;
 
         if (!F.isEmpty(perfs) && !suppressed.containsAll(perfs)) {

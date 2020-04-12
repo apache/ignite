@@ -41,7 +41,7 @@ public class SQLFunctions {
 
     /** Default LRU model cache. */
     // TODO: IGNITE-11163: Add hart beat tracker to DistributedInfModel.
-    private static final Map<String, Model<Serializable, Serializable>> cache =
+    private static final Map<String, Model<Serializable, Serializable>> CACHE =
         new LRUCache<>(LRU_CACHE_SIZE, Model::close);
 
     static {
@@ -49,11 +49,11 @@ public class SQLFunctions {
             while (Thread.currentThread().isInterrupted())
                 LockSupport.parkNanos(CACHE_CLEAR_INTERVAL_SEC * 1_000_000_000L);
 
-            synchronized (cache) {
-                for (Model<Serializable, Serializable> mdl : cache.values())
+            synchronized (CACHE) {
+                for (Model<Serializable, Serializable> mdl : CACHE.values())
                     mdl.close();
 
-                cache.clear();
+                CACHE.clear();
             }
         });
 
@@ -73,8 +73,8 @@ public class SQLFunctions {
     public static double predict(String mdl, Double... x) {
         Model<Serializable, Serializable> infMdl;
 
-        synchronized (cache) {
-            infMdl = cache.computeIfAbsent(
+        synchronized (CACHE) {
+            infMdl = CACHE.computeIfAbsent(
                 mdl,
                 key -> IgniteModelStorageUtil.getModel(Ignition.ignite(), mdl)
             );
@@ -96,8 +96,8 @@ public class SQLFunctions {
     public static double predictRecommendation(String mdl, Integer objId, Integer subjId) {
         Model<Serializable, Serializable> infMdl;
 
-        synchronized (cache) {
-            infMdl = cache.computeIfAbsent(
+        synchronized (CACHE) {
+            infMdl = CACHE.computeIfAbsent(
                 mdl,
                 key -> IgniteModelStorageUtil.getModel(Ignition.ignite(), mdl)
             );

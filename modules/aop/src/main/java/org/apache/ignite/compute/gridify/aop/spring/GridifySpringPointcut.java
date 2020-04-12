@@ -34,7 +34,7 @@ public class GridifySpringPointcut implements Pointcut {
     /**
      * Class filter.
      */
-    private static final ClassFilter filter = new ClassFilter() {
+    private static final ClassFilter FILTER = new ClassFilter() {
         @SuppressWarnings({"RawUseOfParameterizedType"})
         @Override public boolean matches(Class cls) {
             return true;
@@ -42,7 +42,7 @@ public class GridifySpringPointcut implements Pointcut {
     };
 
     /** Method matcher. */
-    private static final MethodMatcher dfltMatcher = new GridifyMethodMatcher() {
+    private static final MethodMatcher DFLT_MATCHER = new GridifyMethodMatcher() {
         // Warning suppression is due to Spring...
         @Override public boolean matches(Method method, Class cls) {
             return cls.isAnnotationPresent(Gridify.class) || method.isAnnotationPresent(Gridify.class);
@@ -50,7 +50,7 @@ public class GridifySpringPointcut implements Pointcut {
     };
 
     /** Method matcher. */
-    private static final MethodMatcher setToValueMatcher = new GridifyMethodMatcher() {
+    private static final MethodMatcher SET_TO_VALUE_MATCHER = new GridifyMethodMatcher() {
         // Warning suppression is due to Spring...
         @Override public boolean matches(Method method, Class cls) {
             return cls.isAnnotationPresent(GridifySetToValue.class) || method.isAnnotationPresent(GridifySetToValue.class);
@@ -58,7 +58,7 @@ public class GridifySpringPointcut implements Pointcut {
     };
 
     /** Method matcher. */
-    private static final MethodMatcher setToSetMatcher = new GridifyMethodMatcher() {
+    private static final MethodMatcher SET_TO_SET_MATCHER = new GridifyMethodMatcher() {
         // Warning suppression is due to Spring...
         @Override public boolean matches(Method method, Class cls) {
             return cls.isAnnotationPresent(GridifySetToSet.class) || method.isAnnotationPresent(GridifySetToSet.class);
@@ -81,15 +81,15 @@ public class GridifySpringPointcut implements Pointcut {
 
     /** {@inheritDoc} */
     @Override public ClassFilter getClassFilter() {
-        return filter;
+        return FILTER;
     }
 
     /** {@inheritDoc} */
     @Override public MethodMatcher getMethodMatcher() {
         switch (type) {
-            case DFLT: return dfltMatcher;
-            case SET_TO_VALUE: return setToValueMatcher;
-            case SET_TO_SET: return setToSetMatcher;
+            case DFLT: return DFLT_MATCHER;
+            case SET_TO_VALUE: return SET_TO_VALUE_MATCHER;
+            case SET_TO_SET: return SET_TO_SET_MATCHER;
 
             default:
                 assert false : "Unknown pointcut type: " + type;

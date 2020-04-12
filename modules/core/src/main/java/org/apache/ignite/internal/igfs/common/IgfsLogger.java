@@ -100,14 +100,14 @@ public final class IgfsLogger {
     private static final AtomicLong CNTR = new AtomicLong();
 
     /** Loggers. */
-    private static final ConcurrentHashMap<String, IgfsLogger> loggers =
+    private static final ConcurrentHashMap<String, IgfsLogger> LOGGERS =
         new ConcurrentHashMap<>();
 
     /** Lock for atomic logger adds/removals. */
-    private static final ReadWriteLock logLock = new ReentrantReadWriteLock();
+    private static final ReadWriteLock LOG_LOCK = new ReentrantReadWriteLock();
 
     /** Predefined disabled logger. */
-    private static final IgfsLogger disabledLogger = new IgfsLogger();
+    private static final IgfsLogger DISABLED_LOGGER = new IgfsLogger();
 
     /** Logger enabled flag. */
     private boolean enabled;
@@ -160,7 +160,7 @@ public final class IgfsLogger {
      * @return Disable logger instance.
      */
     public static IgfsLogger disabledLogger() {
-        return disabledLogger;
+        return DISABLED_LOGGER;
     }
 
     /**
@@ -177,15 +177,15 @@ public final class IgfsLogger {
         if (endpoint == null)
             endpoint = "";
 
-        logLock.readLock().lock();
+        LOG_LOCK.readLock().lock();
 
         try {
-            IgfsLogger log = loggers.get(endpoint);
+            IgfsLogger log = LOGGERS.get(endpoint);
 
             if (log == null) {
                 log = new IgfsLogger(endpoint, igfsName, dir, batchSize);
 
-                IgfsLogger log0 = loggers.putIfAbsent(endpoint, log);
+                IgfsLogger log0 = LOGGERS.putIfAbsent(endpoint, log);
 
                 if (log0 != null)
                     log = log0;
@@ -196,7 +196,7 @@ public final class IgfsLogger {
             return log;
         }
         finally {
-            logLock.readLock().unlock();
+            LOG_LOCK.readLock().unlock();
         }
     }
 
@@ -431,17 +431,17 @@ public final class IgfsLogger {
         boolean close = false;
 
         if (useCnt.decrementAndGet() == 0) {
-            logLock.writeLock().lock();
+            LOG_LOCK.writeLock().lock();
 
             try {
                 if (useCnt.get() == 0) {
-                    loggers.remove(endpoint);
+                    LOGGERS.remove(endpoint);
 
                     close = true;
                 }
             }
             finally {
-                logLock.writeLock().unlock();
+                LOG_LOCK.writeLock().unlock();
             }
         }
 

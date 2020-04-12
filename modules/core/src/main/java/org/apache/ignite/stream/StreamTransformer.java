@@ -43,7 +43,7 @@ public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, E
     private static final long serialVersionUID = 0L;
 
     /** Compatibility mode flag. */
-    private static final boolean compatibilityMode =
+    private static final boolean COMPATIBILITY_MODE =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE);
 
     /** {@inheritDoc} */
@@ -59,7 +59,7 @@ public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, E
      * @return Stream transformer.
      */
     public static <K, V> StreamTransformer<K, V> from(final CacheEntryProcessor<K, V, Object> ep) {
-        if (compatibilityMode)
+        if (COMPATIBILITY_MODE)
             return new StreamTransformer<K, V>() {
                 @Override public Object process(MutableEntry<K, V> entry, Object... args) throws EntryProcessorException {
                     return ep.process(entry, args);

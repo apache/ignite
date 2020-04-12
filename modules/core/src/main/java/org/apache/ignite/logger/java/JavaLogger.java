@@ -100,7 +100,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** */
     private static volatile boolean inited;
@@ -217,7 +217,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         if (inited)
             return;
 
-        synchronized (mux) {
+        synchronized (MUX) {
             if (inited)
                 return;
 
@@ -371,7 +371,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         if (this.nodeId != null)
             return;
 
-        synchronized (mux) {
+        synchronized (MUX) {
             // Double check.
             if (this.nodeId != null)
                 return;

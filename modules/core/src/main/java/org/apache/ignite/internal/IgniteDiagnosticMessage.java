@@ -63,7 +63,7 @@ public class IgniteDiagnosticMessage implements Message {
     private static final int REQUEST_FLAG_MASK = 0x01;
 
     /** */
-    private static final ThreadLocal<DateFormat> dateFormat = new ThreadLocal<DateFormat>() {
+    private static final ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>() {
         @Override protected DateFormat initialValue() {
             return new SimpleDateFormat("HH:mm:ss.SSS");
         }
@@ -483,7 +483,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @return Time string.
      */
     private static String formatTime(long time) {
-        return dateFormat.get().format(new Date(time));
+        return DATE_FORMAT.get().format(new Date(time));
     }
 
     /** {@inheritDoc} */

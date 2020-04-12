@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class JavaLoggerFileHandler extends StreamHandler {
     /** Log manager. */
-    private static final LogManager manager = LogManager.getLogManager();
+    private static final LogManager MANAGER = LogManager.getLogManager();
 
     /** Handler delegate. */
     private volatile FileHandler delegate;
@@ -85,7 +85,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
 
         String clsName = getClass().getName();
 
-        String ptrn = manager.getProperty(clsName + ".pattern");
+        String ptrn = MANAGER.getProperty(clsName + ".pattern");
 
         if (ptrn == null)
             ptrn = "ignite-%{id8}.%g.log";
@@ -148,7 +148,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * @return Parsed property value if it is set and valid or default value otherwise.
      */
     private int getIntProperty(String name, int dfltVal) {
-        String val = manager.getProperty(name);
+        String val = MANAGER.getProperty(name);
 
         if (val == null)
             return dfltVal;
@@ -172,7 +172,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      */
     @SuppressWarnings("SimplifiableIfStatement")
     private boolean getBooleanProperty(String name, boolean dfltVal) {
-        String val = manager.getProperty(name);
+        String val = MANAGER.getProperty(name);
 
         if (val == null)
             return dfltVal;

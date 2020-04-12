@@ -35,7 +35,7 @@ public abstract class IgniteSpiThread extends IgniteThread {
     public static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite-spi");
 
     /** Number of all system threads in the system. */
-    private static final AtomicLong cntr = new AtomicLong();
+    private static final AtomicLong CNTR = new AtomicLong();
 
     /** Grid logger. */
     private final IgniteLogger log;
@@ -48,7 +48,7 @@ public abstract class IgniteSpiThread extends IgniteThread {
      * @param log Grid logger to use.
      */
     protected IgniteSpiThread(String igniteInstanceName, String name, IgniteLogger log) {
-        super(igniteInstanceName, DFLT_GRP, createName(cntr.incrementAndGet(), name, igniteInstanceName));
+        super(igniteInstanceName, DFLT_GRP, createName(CNTR.incrementAndGet(), name, igniteInstanceName));
 
         assert log != null;
 

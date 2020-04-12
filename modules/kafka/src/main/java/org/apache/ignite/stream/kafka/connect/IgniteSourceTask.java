@@ -51,7 +51,7 @@ public class IgniteSourceTask extends SourceTask {
     private static final Logger log = LoggerFactory.getLogger(IgniteSourceTask.class);
 
     /** Tasks static monitor. */
-    private static final Object lock = new Object();
+    private static final Object LOCK = new Object();
 
     /** Event buffer size. */
     private static int evtBufSize = 100000;
@@ -84,10 +84,10 @@ public class IgniteSourceTask extends SourceTask {
     private static String topics[];
 
     /** Offset. */
-    private static final Map<String, Long> offset = Collections.singletonMap("offset", 0L);
+    private static final Map<String, Long> OFFSET = Collections.singletonMap("offset", 0L);
 
     /** Partition. */
-    private static final Map<String, String> srcPartition = Collections.singletonMap("cache", null);
+    private static final Map<String, String> SRC_PARTITION = Collections.singletonMap("cache", null);
 
     /** {@inheritDoc} */
     @Override public String version() {
@@ -100,7 +100,7 @@ public class IgniteSourceTask extends SourceTask {
      * @param props Task properties.
      */
     @Override public void start(Map<String, String> props) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             // Each task has the same parameters -- avoid setting more than once.
             // Nothing to do if the task has been already started.
             if (!stopped)
@@ -164,7 +164,7 @@ public class IgniteSourceTask extends SourceTask {
                 for (CacheEvent evt : evts) {
                     // schema and keys are ignored.
                     for (String topic : topics)
-                        records.add(new SourceRecord(srcPartition, offset, topic, null, evt));
+                        records.add(new SourceRecord(SRC_PARTITION, OFFSET, topic, null, evt));
                 }
 
                 return records;

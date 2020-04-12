@@ -30,7 +30,7 @@ public final class IgniteUuidCache {
     private static final int MAX = 1024;
 
     /** Cache. */
-    private static final ConcurrentMap<UUID, UUID> cache =
+    private static final ConcurrentMap<UUID, UUID> CACHE =
         new GridBoundedConcurrentLinkedHashMap<>(MAX, 1024, 0.75f, 64, PER_SEGMENT_Q);
 
     /**
@@ -40,10 +40,10 @@ public final class IgniteUuidCache {
      * @return Cached UUID equivalent to the read one.
      */
     public static UUID onIgniteUuidRead(UUID id) {
-        UUID cached = cache.get(id);
+        UUID cached = CACHE.get(id);
 
         if (cached == null) {
-            UUID old = cache.putIfAbsent(id, cached = id);
+            UUID old = CACHE.putIfAbsent(id, cached = id);
 
             if (old != null)
                 cached = old;

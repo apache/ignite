@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 public abstract class GridNearTxPrepareFutureAdapter extends
     GridCacheCompoundFuture<Object, IgniteInternalTx> implements GridCacheVersionedFuture<IgniteInternalTx> {
     /** Logger reference. */
-    protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    protected static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Error updater. */
     protected static final AtomicReferenceFieldUpdater<GridNearTxPrepareFutureAdapter, Throwable> ERR_UPD =
@@ -111,7 +111,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         if (log == null) {
             msgLog = cctx.txFinishMessageLogger();
-            log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridNearTxPrepareFutureAdapter.class);
         }
     }
 

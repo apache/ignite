@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Supplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -94,7 +94,7 @@ public class GridToStringBuilder {
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
     /** */
-    private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
+    private static final Map<String, GridToStringClassDescriptor> CLASS_CACHE = new ConcurrentHashMap<>();
 
     /** Supplier for {@link #includeSensitive} with default behavior. */
     private static final AtomicReference<Supplier<Boolean>> INCL_SENS_SUP_REF =
@@ -1156,7 +1156,7 @@ public class GridToStringBuilder {
         catch (Exception e) {
             // Remove entry from cache to avoid potential memory leak
             // in case new class loader got loaded under the same identity hash.
-            classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
+            CLASS_CACHE.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
 
             // No other option here.
             throw new IgniteException(e);
@@ -1756,7 +1756,7 @@ public class GridToStringBuilder {
 
         GridToStringClassDescriptor cd;
 
-        cd = classCache.get(key);
+        cd = CLASS_CACHE.get(key);
 
         if (cd == null) {
             cd = new GridToStringClassDescriptor(cls);
@@ -1819,7 +1819,7 @@ public class GridToStringBuilder {
 
             cd.sortFields();
 
-            classCache.putIfAbsent(key, cd);
+            CLASS_CACHE.putIfAbsent(key, cd);
         }
 
         return cd;

@@ -84,7 +84,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         AtomicIntegerFieldUpdater.newUpdater(GridPartitionedSingleGetFuture.class, "remapCnt");
 
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Logger. */
     private static IgniteLogger log;
@@ -221,7 +221,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         futId = IgniteUuid.randomUuid();
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridPartitionedSingleGetFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridPartitionedSingleGetFuture.class);
     }
 
     /**

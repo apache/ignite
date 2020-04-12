@@ -33,7 +33,7 @@ public class QueryContext {
      * Thread local query context is used for API that doesn't support h2 Session:
      * distributed join and rowCount.
      */
-    private static final ThreadLocal<QueryContext> qctxThreaded = new ThreadLocal<>();
+    private static final ThreadLocal<QueryContext> QCTX_THREADED = new ThreadLocal<>();
 
     /** Segment ID. */
     private final int segment;
@@ -153,7 +153,7 @@ public class QueryContext {
      * @param qctx Context.
      */
     public static void threadLocal(QueryContext qctx) {
-        qctxThreaded.set(qctx);
+        QCTX_THREADED.set(qctx);
     }
 
     /**
@@ -163,7 +163,7 @@ public class QueryContext {
      * @return Thread local context.
      */
     public static QueryContext threadLocal() {
-        QueryContext qctx = qctxThreaded.get();
+        QueryContext qctx = QCTX_THREADED.get();
 
         assert Objects.nonNull(qctx);
 

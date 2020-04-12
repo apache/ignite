@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class IgfsUserContext {
     /** Thread local to hold the current user context. */
-    private static final ThreadLocal<String> userStackThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<String> USER_STACK_THREAD_LOCAL = new ThreadLocal<>();
 
     /**
      * Executes given callable in the given user context.
@@ -43,18 +43,18 @@ public abstract class IgfsUserContext {
         if (F.isEmpty(user))
             throw new IllegalArgumentException("Failed to use null or empty user name.");
 
-        final String ctxUser = userStackThreadLocal.get();
+        final String ctxUser = USER_STACK_THREAD_LOCAL.get();
 
         if (F.eq(ctxUser, user))
             return c.apply(); // correct context is already there
 
-        userStackThreadLocal.set(user);
+        USER_STACK_THREAD_LOCAL.set(user);
 
         try {
             return c.apply();
         }
         finally {
-            userStackThreadLocal.set(ctxUser);
+            USER_STACK_THREAD_LOCAL.set(ctxUser);
         }
     }
 
@@ -90,18 +90,18 @@ public abstract class IgfsUserContext {
         if (F.isEmpty(user))
             throw new IllegalArgumentException("Failed to use null or empty user name.");
 
-        final String ctxUser = userStackThreadLocal.get();
+        final String ctxUser = USER_STACK_THREAD_LOCAL.get();
 
         if (F.eq(ctxUser, user))
             return c.call(); // correct context is already there
 
-        userStackThreadLocal.set(user);
+        USER_STACK_THREAD_LOCAL.set(user);
 
         try {
             return c.call();
         }
         finally {
-            userStackThreadLocal.set(ctxUser);
+            USER_STACK_THREAD_LOCAL.set(ctxUser);
         }
     }
 
@@ -113,6 +113,6 @@ public abstract class IgfsUserContext {
      * @return The current user, may be null.
      */
     @Nullable public static String currentUser() {
-        return userStackThreadLocal.get();
+        return USER_STACK_THREAD_LOCAL.get();
     }
 }

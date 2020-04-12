@@ -71,9 +71,9 @@ import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
-import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -122,7 +122,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final ThreadLocal<String> stash = new ThreadLocal<>();
+    private static final ThreadLocal<String> STASH = new ThreadLocal<>();
 
     /*
      * Managers.
@@ -1119,7 +1119,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
         }
         finally {
-            stash.remove();
+            STASH.remove();
         }
     }
 

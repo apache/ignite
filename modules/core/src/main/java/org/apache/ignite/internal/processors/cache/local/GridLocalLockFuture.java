@@ -43,14 +43,14 @@ import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -59,7 +59,7 @@ import org.jetbrains.annotations.Nullable;
 public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Boolean>
     implements GridCacheVersionedFuture<Boolean> {
     /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+    private static final AtomicReference<IgniteLogger> LOG_REF = new AtomicReference<>();
 
     /** Error updater. */
     private static final AtomicReferenceFieldUpdater<GridLocalLockFuture, Throwable> ERR_UPD =
@@ -154,7 +154,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         entries = new ArrayList<>(keys.size());
 
         if (log == null)
-            log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
+            log = U.logger(cctx.kernalContext(), LOG_REF, GridLocalLockFuture.class);
 
         if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this)) {
             GridNearTxLocal tx0 = (GridNearTxLocal)tx;

@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 
 /**
@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
  */
 public class ReuseListImpl extends PagesList implements ReuseList {
     /** */
-    private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> bucketUpdater =
+    private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> BUCKET_UPDATER =
         AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, Stripe[].class, "bucket");
 
     /** */
@@ -113,7 +113,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override protected boolean casBucket(int bucket, Stripe[] exp, Stripe[] upd) {
-        return bucketUpdater.compareAndSet(this, exp, upd);
+        return BUCKET_UPDATER.compareAndSet(this, exp, upd);
     }
 
     /** {@inheritDoc} */

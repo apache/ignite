@@ -17,6 +17,15 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
+import java.io.DataInput;
+import java.io.File;
+import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,12 +50,12 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.hadoop.io.BytesWritablePartiallyRawComparator;
 import org.apache.ignite.hadoop.io.PartiallyRawComparator;
 import org.apache.ignite.hadoop.io.TextPartiallyRawComparator;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopExternalSplit;
-import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
@@ -74,16 +83,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
-import java.io.File;
-import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.jobLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.taskLocalDir;
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.transformException;
@@ -101,7 +100,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
     private static final boolean COMBINE_KEY_GROUPING_SUPPORTED;
 
     /** Lazy per-user file system cache used by the Hadoop task. */
-    private static final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> fsMap
+    private static final HadoopLazyConcurrentMap<FsCacheKey, FileSystem> FS_MAP
         = createHadoopLazyConcurrentMap();
 
     /** Default partial comparator mappings. */
@@ -116,7 +115,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
      * @throws IgniteCheckedException On error.
      */
     public static void close() throws IgniteCheckedException {
-        fsMap.close();
+        FS_MAP.close();
     }
 
     /** Flag is set if new context-object code is used for running the mapper. */
@@ -510,7 +509,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
         FileSystem fs;
 
         try {
-            fs = fileSystemForMrUserWithCaching(jobDir.toUri(), jobConf(), fsMap);
+            fs = fileSystemForMrUserWithCaching(jobDir.toUri(), jobConf(), FS_MAP);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);

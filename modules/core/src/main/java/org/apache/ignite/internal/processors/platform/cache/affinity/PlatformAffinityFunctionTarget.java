@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -27,8 +28,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.util.List;
 
 /**
  * Platform affinity function target:
@@ -48,7 +47,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     private final AffinityFunction baseFunc;
 
     /** Thread local to hold the current affinity function context. */
-    private static final ThreadLocal<AffinityFunctionContext> currentAffCtx = new ThreadLocal<>();
+    private static final ThreadLocal<AffinityFunctionContext> CURRENT_AFF_CTX = new ThreadLocal<>();
 
     /**
      * Constructor.
@@ -86,7 +85,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     /** {@inheritDoc} */
     @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_ASSIGN_PARTITIONS) {
-            AffinityFunctionContext affCtx = currentAffCtx.get();
+            AffinityFunctionContext affCtx = CURRENT_AFF_CTX.get();
 
             if (affCtx == null)
                 throw new IgniteException("Thread-local AffinityFunctionContext is null. " +
@@ -108,6 +107,6 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
      * @param ctx Context.
      */
     void setCurrentAffinityFunctionContext(AffinityFunctionContext ctx) {
-        currentAffCtx.set(ctx);
+        CURRENT_AFF_CTX.set(ctx);
     }
 }

@@ -44,7 +44,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class RecoveryDebug implements AutoCloseable {
     /** */
-    private static final ThreadLocal<SimpleDateFormat> sdf = new ThreadLocal<SimpleDateFormat>() {
+    private static final ThreadLocal<SimpleDateFormat> SDF = new ThreadLocal<SimpleDateFormat>() {
         /** {@inheritDoc} */
         @Override protected SimpleDateFormat initialValue() {
             SimpleDateFormat f = new SimpleDateFormat("dd-MM-yyyy-HH-mm-ss-SSS");
@@ -85,7 +85,7 @@ public class RecoveryDebug implements AutoCloseable {
                     return;
 
             File f = new File(tmpDir, "recovery-" +
-                sdf.get().format(new Date(time)) + "-" + constId  +".log");
+                SDF.get().format(new Date(time)) + "-" + constId  +".log");
 
             f.createNewFile();
 

@@ -50,7 +50,7 @@ public class JdbcMetadataInfo {
     private final GridKernalContext ctx;
 
     /** Comparator for {@link ColumnInformation} by schema then table name then column order. */
-    private static final Comparator<ColumnInformation> bySchemaThenTabNameThenColOrder = new Comparator<ColumnInformation>() {
+    private static final Comparator<ColumnInformation> BY_SCHEMA_THEN_TAB_NAME_THEN_COL_ORDER = new Comparator<ColumnInformation>() {
         @Override public int compare(ColumnInformation o1, ColumnInformation o2) {
             int schemaCmp = o1.schemaName().compareTo(o2.schemaName());
 
@@ -67,7 +67,7 @@ public class JdbcMetadataInfo {
     };
 
     /** Comparator for {@link JdbcTableMeta} by table type then schema then table name. */
-    private static final Comparator<TableInformation> byTblTypeThenSchemaThenTblName =
+    private static final Comparator<TableInformation> BY_TBL_TYPE_THEN_SCHEMA_THEN_TBL_NAME =
         new Comparator<TableInformation>() {
             @Override public int compare(TableInformation o1, TableInformation o2) {
                 int tblTypeCmp = o1.tableType().compareTo(o2.tableType());
@@ -155,7 +155,7 @@ public class JdbcMetadataInfo {
             .tablesInformation(schemaNamePtrn, tblNamePtrn, tblTypes);
 
         return tblsMeta.stream()
-            .sorted(byTblTypeThenSchemaThenTblName)
+            .sorted(BY_TBL_TYPE_THEN_SCHEMA_THEN_TBL_NAME)
             .map(t -> new JdbcTableMeta(t.schemaName(), t.tableName(), t.tableType()))
             .collect(Collectors.toList());
     }
@@ -179,7 +179,7 @@ public class JdbcMetadataInfo {
         Collection<ColumnInformation> colsInfo = ctx.query().getIndexing()
             .columnsInformation(schemaNamePtrn, tblNamePtrn, colNamePtrn);
 
-        colsInfo.stream().sorted(bySchemaThenTabNameThenColOrder)
+        colsInfo.stream().sorted(BY_SCHEMA_THEN_TAB_NAME_THEN_COL_ORDER)
             .forEachOrdered(info -> {
                 JdbcColumnMeta colMeta;
 

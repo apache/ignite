@@ -65,10 +65,10 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -159,7 +159,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     public static final int TRY_AGAIN_TAG = -1;
 
     /** Tracking io. */
-    private static final TrackingPageIO trackingIO = TrackingPageIO.VERSIONS.latest();
+    private static final TrackingPageIO TRACKING_IO = TrackingPageIO.VERSIONS.latest();
 
     /** Checkpoint pool overflow error message. */
     public static final String CHECKPOINT_POOL_OVERFLOW_ERROR_MSG = "Failed to allocate temporary buffer for checkpoint " +
@@ -521,7 +521,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         seg.writeLock().lock();
 
         boolean isTrackingPage =
-            changeTracker != null && trackingIO.trackingPageFor(pageId, realPageSize(grpId)) == pageId;
+            changeTracker != null && TRACKING_IO.trackingPageFor(pageId, realPageSize(grpId)) == pageId;
 
         try {
             long relPtr = seg.loadedPages.get(
@@ -563,7 +563,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 // We are inside segment write lock, so no other thread can pin this tracking page yet.
                 // We can modify page buffer directly.
                 if (PageIO.getType(pageAddr) == 0) {
-                    trackingIO.initNewPage(pageAddr, pageId, realPageSize(grpId));
+                    TRACKING_IO.initNewPage(pageAddr, pageId, realPageSize(grpId));
 
                     if (!ctx.wal().disabled(fullId.groupId())) {
                         if (!ctx.wal().isAlwaysWriteFullPages())
@@ -571,8 +571,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                                 new InitNewPageRecord(
                                     grpId,
                                     pageId,
-                                    trackingIO.getType(),
-                                    trackingIO.getVersion(), pageId
+                                    TRACKING_IO.getType(),
+                                    TRACKING_IO.getVersion(), pageId
                                 )
                             );
                         else {

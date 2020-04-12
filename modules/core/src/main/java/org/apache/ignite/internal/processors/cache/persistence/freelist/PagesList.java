@@ -1932,11 +1932,11 @@ public abstract class PagesList extends DataStructure {
         private final GridLongList[] stripes = new GridLongList[STRIPES_COUNT];
 
         /** Atomic updater for nextStripeIdx field. */
-        private static final AtomicIntegerFieldUpdater<PagesCache> nextStripeUpdater = AtomicIntegerFieldUpdater
+        private static final AtomicIntegerFieldUpdater<PagesCache> NEXT_STRIPE_UPDATER = AtomicIntegerFieldUpdater
             .newUpdater(PagesCache.class, "nextStripeIdx");
 
         /** Atomic updater for size field. */
-        private static final AtomicIntegerFieldUpdater<PagesCache> sizeUpdater = AtomicIntegerFieldUpdater
+        private static final AtomicIntegerFieldUpdater<PagesCache> SIZE_UPDATER = AtomicIntegerFieldUpdater
             .newUpdater(PagesCache.class, "size");
 
         /** Access counter to provide round-robin stripes polling. */
@@ -1978,7 +1978,7 @@ public abstract class PagesList extends DataStructure {
                 boolean rmvd = stripe != null && stripe.removeValue(0, pageId) >= 0;
 
                 if (rmvd) {
-                    if (sizeUpdater.decrementAndGet(this) == 0 && pagesCacheLimit != null)
+                    if (SIZE_UPDATER.decrementAndGet(this) == 0 && pagesCacheLimit != null)
                         pagesCacheLimit.incrementAndGet();
                 }
 
@@ -1996,13 +1996,13 @@ public abstract class PagesList extends DataStructure {
                 return 0L;
 
             for (int i = 0; i < STRIPES_COUNT; i++) {
-                int stripeIdx = nextStripeUpdater.getAndIncrement(this) & (STRIPES_COUNT - 1);
+                int stripeIdx = NEXT_STRIPE_UPDATER.getAndIncrement(this) & (STRIPES_COUNT - 1);
 
                 synchronized (stripeLocks[stripeIdx]) {
                     GridLongList stripe = stripes[stripeIdx];
 
                     if (stripe != null && !stripe.isEmpty()) {
-                        if (sizeUpdater.decrementAndGet(this) == 0 && pagesCacheLimit != null)
+                        if (SIZE_UPDATER.decrementAndGet(this) == 0 && pagesCacheLimit != null)
                             pagesCacheLimit.incrementAndGet();
 
                         return stripe.remove();
@@ -2055,7 +2055,7 @@ public abstract class PagesList extends DataStructure {
                         if (res == null)
                             res = new GridLongList(size);
 
-                        if (sizeUpdater.addAndGet(this, -stripe.size()) == 0 && pagesCacheLimit != null)
+                        if (SIZE_UPDATER.addAndGet(this, -stripe.size()) == 0 && pagesCacheLimit != null)
                             pagesCacheLimit.incrementAndGet();
 
                         res.addAll(stripe);
@@ -2098,7 +2098,7 @@ public abstract class PagesList extends DataStructure {
                 else {
                     stripe.add(pageId);
 
-                    if (sizeUpdater.getAndIncrement(this) == 0 && pagesCacheLimit != null)
+                    if (SIZE_UPDATER.getAndIncrement(this) == 0 && pagesCacheLimit != null)
                         pagesCacheLimit.decrementAndGet();
 
                     return true;

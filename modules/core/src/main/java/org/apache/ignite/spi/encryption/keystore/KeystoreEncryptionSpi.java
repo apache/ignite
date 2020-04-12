@@ -123,7 +123,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     protected IgniteLogger log;
 
     /** */
-    private static final ThreadLocal<Cipher> aesWithPadding = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<Cipher> AES_WITH_PADDING_TL = ThreadLocal.withInitial(() -> {
         try {
             return Cipher.getInstance(AES_WITH_PADDING);
         }
@@ -133,7 +133,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     });
 
     /** */
-    private static final ThreadLocal<Cipher> aesWithoutPadding = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<Cipher> AES_WITHOUT_PADDING_TL = ThreadLocal.withInitial(() -> {
         try {
             return Cipher.getInstance(AES_WITHOUT_PADDING);
         }
@@ -181,12 +181,12 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void encrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doEncryption(data, aesWithPadding.get(), key, res);
+        doEncryption(data, AES_WITH_PADDING_TL.get(), key, res);
     }
 
     /** {@inheritDoc} */
     @Override public void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doEncryption(data, aesWithoutPadding.get(), key, res);
+        doEncryption(data, AES_WITHOUT_PADDING_TL.get(), key, res);
     }
 
     /** {@inheritDoc} */
@@ -198,7 +198,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
-            Cipher cipher = aesWithPadding.get();
+            Cipher cipher = AES_WITH_PADDING_TL.get();
 
             cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
 
@@ -219,7 +219,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
 
-            Cipher cipher = aesWithoutPadding.get();
+            Cipher cipher = AES_WITHOUT_PADDING_TL.get();
 
             byte[] iv = new byte[cipher.getBlockSize()];
 

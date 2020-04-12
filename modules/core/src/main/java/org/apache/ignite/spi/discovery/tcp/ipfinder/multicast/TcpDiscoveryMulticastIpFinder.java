@@ -95,7 +95,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER;
 
     /** */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller MARSH = new JdkMarshaller();
 
     /** Grid logger. */
     @LoggerResource
@@ -724,7 +724,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         private AddressResponse(Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
             this.addrs = addrs;
 
-            byte[] addrsData = U.marshal(marsh, addrs);
+            byte[] addrsData = U.marshal(MARSH, addrs);
             data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
@@ -743,7 +743,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             this.data = data;
 
-            addrs = U.unmarshal(marsh, Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
+            addrs = U.unmarshal(MARSH, Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
         }
 
         /**

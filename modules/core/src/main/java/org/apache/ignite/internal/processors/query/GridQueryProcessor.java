@@ -141,7 +141,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
 
     /** */
-    private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
+    private static final ThreadLocal<AffinityTopologyVersion> REQUEST_TOP_VER = new ThreadLocal<>();
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
@@ -3176,14 +3176,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {
-        requestTopVer.set(ver);
+        REQUEST_TOP_VER.set(ver);
     }
 
     /**
      * @return Affinity topology version of the current request.
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
-        return requestTopVer.get();
+        return REQUEST_TOP_VER.get();
     }
 
     /**

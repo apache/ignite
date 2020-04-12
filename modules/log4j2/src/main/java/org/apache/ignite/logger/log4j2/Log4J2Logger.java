@@ -95,7 +95,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     private static volatile boolean quiet0;
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** Logger implementation. */
     @GridToStringExclude
@@ -215,7 +215,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
      * different configurations
      */
     static void cleanup() {
-        synchronized (mux) {
+        synchronized (MUX) {
             if (inited)
                 LogManager.shutdown();
 
@@ -290,7 +290,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
             return;
         }
 
-        synchronized (mux) {
+        synchronized (MUX) {
             if (inited) {
                 // Do not init.
                 impl = initLogClo.apply(false);
@@ -395,7 +395,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         if (inited) {
             final LoggerContext ctx = impl.getContext();
 
-            synchronized (mux) {
+            synchronized (MUX) {
                 inited = false;
             }
 

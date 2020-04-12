@@ -17,6 +17,19 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl.igfs;
 
+import java.io.BufferedOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.commons.logging.Log;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsException;
@@ -38,20 +51,6 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesExceptio
 import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
-
-import java.io.BufferedOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * IO layer implementation based on blocking IPC streams.
@@ -97,11 +96,11 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
         new GridConcurrentHashSet<>();
 
     /** Cached connections. */
-    private static final ConcurrentMap<String, HadoopIgfsIpcIo> ipcCache =
+    private static final ConcurrentMap<String, HadoopIgfsIpcIo> IPC_CACHE =
         new ConcurrentHashMap<>();
 
     /** Striped lock that prevents multiple instance creation in {@link #get(Log, String)}. */
-    private static final GridStripedLock initLock = new GridStripedLock(32);
+    private static final GridStripedLock INIT_LOCK = new GridStripedLock(32);
 
     /**
      * @param endpointAddr Endpoint.
@@ -128,29 +127,29 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
      */
     public static HadoopIgfsIpcIo get(Log log, String endpoint) throws IOException {
         while (true) {
-            HadoopIgfsIpcIo clientIo = ipcCache.get(endpoint);
+            HadoopIgfsIpcIo clientIo = IPC_CACHE.get(endpoint);
 
             if (clientIo != null) {
                 if (clientIo.acquire())
                     return clientIo;
                 else
                     // If concurrent close.
-                    ipcCache.remove(endpoint, clientIo);
+                    IPC_CACHE.remove(endpoint, clientIo);
             }
             else {
-                Lock lock = initLock.getLock(endpoint);
+                Lock lock = INIT_LOCK.getLock(endpoint);
 
                 lock.lock();
 
                 try {
-                    clientIo = ipcCache.get(endpoint);
+                    clientIo = IPC_CACHE.get(endpoint);
 
                     if (clientIo != null) { // Perform double check.
                         if (clientIo.acquire())
                             return clientIo;
                         else
                             // If concurrent close.
-                            ipcCache.remove(endpoint, clientIo);
+                            IPC_CACHE.remove(endpoint, clientIo);
                     }
 
                     // Otherwise try creating a new one.
@@ -163,7 +162,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
                         throw new IOException(e.getMessage(), e);
                     }
 
-                    HadoopIgfsIpcIo old = ipcCache.putIfAbsent(endpoint, clientIo);
+                    HadoopIgfsIpcIo old = IPC_CACHE.putIfAbsent(endpoint, clientIo);
 
                     // Put in exclusive lock.
                     assert old == null;
@@ -222,7 +221,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
 
             if (activeCnt.compareAndSet(cnt, cnt - 1)) {
                 if (cnt == 1) {
-                    ipcCache.remove(endpointAddr, this);
+                    IPC_CACHE.remove(endpointAddr, this);
 
                     if (log.isDebugEnabled())
                         log.debug("IPC IO stopping as unused: " + this);
@@ -241,7 +240,7 @@ public class HadoopIgfsIpcIo implements HadoopIgfsIo {
      * Closes this IO instance, removing it from cache.
      */
     public void forceClose() {
-        if (ipcCache.remove(endpointAddr, this))
+        if (IPC_CACHE.remove(endpointAddr, this))
             stop();
     }
 

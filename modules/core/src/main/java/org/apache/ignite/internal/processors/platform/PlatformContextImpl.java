@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -72,24 +79,16 @@ import org.apache.ignite.internal.processors.platform.messaging.PlatformMessageF
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.Timestamp;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Implementation of platform context.
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class PlatformContextImpl implements PlatformContext, PartitionsExchangeAware {
     /** Supported event types. */
-    private static final Set<Integer> evtTyps;
+    private static final Set<Integer> EVT_TYPS;
 
     /** Whether to use thread-local data to update platform near cache. */
-    private static final ThreadLocal<Boolean> nearUpdateUseThreadLocal = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> NEAR_UPDATE_USE_THREAD_LOCAL = new ThreadLocal<>();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -123,7 +122,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         addEventTypes(evtTyps0, EventType.EVTS_JOB_EXECUTION);
         addEventTypes(evtTyps0, EventType.EVTS_TASK_EXECUTION);
 
-        evtTyps = Collections.unmodifiableSet(evtTyps0);
+        EVT_TYPS = Collections.unmodifiableSet(evtTyps0);
     }
 
     /**
@@ -401,7 +400,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public boolean isEventTypeSupported(int evtTyp) {
-        return evtTyps.contains(evtTyp);
+        return EVT_TYPS.contains(evtTyp);
     }
 
     /** {@inheritDoc} */
@@ -605,7 +604,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
         if (!isNativeNearCacheSupported())
             return;
 
-        Boolean useTls = nearUpdateUseThreadLocal.get();
+        Boolean useTls = NEAR_UPDATE_USE_THREAD_LOCAL.get();
         if (useTls != null && useTls) {
             long cacheIdAndPartition = ((long)part << 32) + cacheId;
 
@@ -645,12 +644,12 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public void enableThreadLocalForNearUpdate() {
-        nearUpdateUseThreadLocal.set(true);
+        NEAR_UPDATE_USE_THREAD_LOCAL.set(true);
     }
 
     /** {@inheritDoc} */
     @Override public void disableThreadLocalForNearUpdate() {
-        nearUpdateUseThreadLocal.set(false);
+        NEAR_UPDATE_USE_THREAD_LOCAL.set(false);
     }
 
     /** {@inheritDoc} */

@@ -58,8 +58,8 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
  * JDBC result set implementation.
  */
 public class JdbcThinResultSet implements ResultSet {
-    /** Decimal format to convert streing to decimal. */
-    private static final ThreadLocal<DecimalFormat> decimalFormat = new ThreadLocal<DecimalFormat>() {
+    /** Decimal format to convert string to decimal. */
+    private static final ThreadLocal<DecimalFormat> DECIMAL_FORMAT = new ThreadLocal<DecimalFormat>() {
         /** {@inheritDoc} */
         @Override protected DecimalFormat initialValue() {
             DecimalFormatSymbols symbols = new DecimalFormatSymbols();
@@ -791,7 +791,7 @@ public class JdbcThinResultSet implements ResultSet {
             return new BigDecimal((Boolean)val ? 1 : 0);
         else if (cls == String.class || cls == Character.class) {
             try {
-                return (BigDecimal)decimalFormat.get().parse(val.toString());
+                return (BigDecimal)DECIMAL_FORMAT.get().parse(val.toString());
             }
             catch (ParseException e) {
                 throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED, e);

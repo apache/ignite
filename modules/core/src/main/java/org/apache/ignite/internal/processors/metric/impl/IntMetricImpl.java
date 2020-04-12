@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IntMetricImpl extends AbstractMetric implements IntMetric {
     /** Field updater. */
-    private static final AtomicIntegerFieldUpdater<IntMetricImpl> updater =
+    private static final AtomicIntegerFieldUpdater<IntMetricImpl> UPDATER =
         AtomicIntegerFieldUpdater.newUpdater(IntMetricImpl.class, "val");
 
     /** Value. */
@@ -47,7 +47,7 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
      * @param x Value to be added.
      */
     public void add(int x) {
-        updater.addAndGet(this, x);
+        UPDATER.addAndGet(this, x);
     }
 
     /** Adds 1 to the metric. */
@@ -66,7 +66,7 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        updater.set(this, 0);
+        UPDATER.set(this, 0);
     }
 
     /** {@inheritDoc} */

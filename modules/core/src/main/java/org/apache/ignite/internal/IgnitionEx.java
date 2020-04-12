@@ -182,13 +182,13 @@ public class IgnitionEx {
     public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.spi.systemview.SqlViewExporterSpi";
 
     /** Map of named Ignite instances. */
-    private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Object, IgniteNamedInstance> GRIDS = new ConcurrentHashMap<>();
 
     /** Map of grid states ever started in this JVM. */
-    private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap<>();
+    private static final Map<Object, IgniteState> GRID_STATES = new ConcurrentHashMap<>();
 
     /** Mutex to synchronize updates of default grid reference. */
-    private static final Object dfltGridMux = new Object();
+    private static final Object DFLT_GRID_MUX = new Object();
 
     /** Default grid. */
     private static volatile IgniteNamedInstance dfltGrid;
@@ -197,7 +197,7 @@ public class IgnitionEx {
     private static volatile IgniteState dfltGridState;
 
     /** List of state listeners. */
-    private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
+    private static final Collection<IgnitionListener> LSNRS = new GridConcurrentHashSet<>(4);
 
     /** */
     private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
@@ -280,10 +280,10 @@ public class IgnitionEx {
      * @return Grid state.
      */
     public static IgniteState state(@Nullable String name) {
-        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? GRIDS.get(name) : dfltGrid;
 
         if (grid == null) {
-            IgniteState state = name != null ? gridStates.get(name) : dfltGridState;
+            IgniteState state = name != null ? GRID_STATES.get(name) : dfltGridState;
 
             return state != null ? state : STOPPED;
         }
@@ -327,7 +327,7 @@ public class IgnitionEx {
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted) {
-        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? GRIDS.get(name) : dfltGrid;
 
         if (grid != null && stopNotStarted && grid.startLatch.getCount() != 0) {
             grid.starterThreadInterrupted = true;
@@ -341,9 +341,9 @@ public class IgnitionEx {
             boolean fireEvt;
 
             if (name != null)
-                fireEvt = grids.remove(name, grid);
+                fireEvt = GRIDS.remove(name, grid);
             else {
-                synchronized (dfltGridMux) {
+                synchronized (DFLT_GRID_MUX) {
                     fireEvt = dfltGrid == grid;
 
                     if (fireEvt)
@@ -415,7 +415,7 @@ public class IgnitionEx {
 
             boolean fireEvt;
 
-            synchronized (dfltGridMux) {
+            synchronized (DFLT_GRID_MUX) {
                 fireEvt = dfltGrid == dfltGrid0;
 
                 if (fireEvt)
@@ -427,10 +427,10 @@ public class IgnitionEx {
         }
 
         // Stop the rest and clear grids map.
-        for (IgniteNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : GRIDS.values()) {
             grid.stop(cancel);
 
-            boolean fireEvt = grids.remove(grid.getName(), grid);
+            boolean fireEvt = GRIDS.remove(grid.getName(), grid);
 
             if (fireEvt)
                 notifyStateChange(grid.getName(), grid.state());
@@ -1083,9 +1083,9 @@ public class IgnitionEx {
         IgniteNamedInstance old;
 
         if (name != null)
-            old = grids.putIfAbsent(name, grid);
+            old = GRIDS.putIfAbsent(name, grid);
         else {
-            synchronized (dfltGridMux) {
+            synchronized (DFLT_GRID_MUX) {
                 old = dfltGrid;
 
                 if (old == null)
@@ -1107,7 +1107,7 @@ public class IgnitionEx {
         if (startCtx.config().getWarmupClosure() != null)
             startCtx.config().getWarmupClosure().apply(startCtx.config());
 
-        startCtx.single(grids.size() == 1);
+        startCtx.single(GRIDS.size() == 1);
 
         boolean success = false;
 
@@ -1131,9 +1131,9 @@ public class IgnitionEx {
         finally {
             if (!success) {
                 if (name != null)
-                    grids.remove(name, grid);
+                    GRIDS.remove(name, grid);
                 else {
-                    synchronized (dfltGridMux) {
+                    synchronized (DFLT_GRID_MUX) {
                         if (dfltGrid == grid)
                             dfltGrid = null;
                     }
@@ -1241,9 +1241,9 @@ public class IgnitionEx {
      * @return List of all grids started so far.
      */
     private static List<Ignite> allGrids(boolean wait) {
-        List<Ignite> allIgnites = new ArrayList<>(grids.size() + 1);
+        List<Ignite> allIgnites = new ArrayList<>(GRIDS.size() + 1);
 
-        for (IgniteNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : GRIDS.values()) {
             Ignite g = wait ? grid.grid() : grid.gridx();
 
             if (g != null)
@@ -1286,7 +1286,7 @@ public class IgnitionEx {
                 return g;
         }
 
-        for (IgniteNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : GRIDS.values()) {
             IgniteKernal g = grid.grid();
 
             if (g != null && g.getLocalNodeId().equals(locNodeId))
@@ -1313,7 +1313,7 @@ public class IgnitionEx {
                 return g;
         }
 
-        for (IgniteNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : GRIDS.values()) {
             IgniteKernal g = grid.grid();
 
             if (g != null && g.getLocalNodeId().equals(locNodeId))
@@ -1340,7 +1340,7 @@ public class IgnitionEx {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite grid(@Nullable String name) throws IgniteIllegalStateException {
-        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? GRIDS.get(name) : dfltGrid;
 
         Ignite res;
 
@@ -1376,7 +1376,7 @@ public class IgnitionEx {
      * @return Grid instance.
      */
     public  static IgniteKernal gridx(@Nullable String name) {
-        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? GRIDS.get(name) : dfltGrid;
 
         IgniteKernal res;
 
@@ -1402,7 +1402,7 @@ public class IgnitionEx {
     public static void addListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
-        lsnrs.add(lsnr);
+        LSNRS.add(lsnr);
     }
 
     /**
@@ -1414,7 +1414,7 @@ public class IgnitionEx {
     public static boolean removeListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
-        return lsnrs.remove(lsnr);
+        return LSNRS.remove(lsnr);
     }
 
     /**
@@ -1423,11 +1423,11 @@ public class IgnitionEx {
      */
     private static void notifyStateChange(@Nullable String igniteInstanceName, IgniteState state) {
         if (igniteInstanceName != null)
-            gridStates.put(igniteInstanceName, state);
+            GRID_STATES.put(igniteInstanceName, state);
         else
             dfltGridState = state;
 
-        for (IgnitionListener lsnr : lsnrs)
+        for (IgnitionListener lsnr : LSNRS)
             lsnr.onStateChange(igniteInstanceName, state);
     }
 
@@ -1516,7 +1516,7 @@ public class IgnitionEx {
      */
     private static final class IgniteNamedInstance {
         /** Map of registered MBeans. */
-        private static final Map<MBeanServer, GridMBeanServerData> mbeans =
+        private static final Map<MBeanServer, GridMBeanServerData> MBEANS =
             new HashMap<>();
 
         /** */
@@ -2804,8 +2804,8 @@ public class IgnitionEx {
 
             assert srv != null;
 
-            synchronized (mbeans) {
-                GridMBeanServerData data = mbeans.get(srv);
+            synchronized (MBEANS) {
+                GridMBeanServerData data = MBEANS.get(srv);
 
                 if (data == null) {
                     try {
@@ -2832,7 +2832,7 @@ public class IgnitionEx {
 
                             data = new GridMBeanServerData(objName);
 
-                            mbeans.put(srv, data);
+                            MBEANS.put(srv, data);
 
                             if (log.isDebugEnabled())
                                 log.debug("Registered MBean: " + objName);
@@ -2857,8 +2857,8 @@ public class IgnitionEx {
             if(U.IGNITE_MBEANS_DISABLED)
                 return;
 
-            synchronized (mbeans) {
-                Iterator<Entry<MBeanServer, GridMBeanServerData>> iter = mbeans.entrySet().iterator();
+            synchronized (MBEANS) {
+                Iterator<Entry<MBeanServer, GridMBeanServerData>> iter = MBEANS.entrySet().iterator();
 
                 while (iter.hasNext()) {
                     Entry<MBeanServer, GridMBeanServerData> entry = iter.next();

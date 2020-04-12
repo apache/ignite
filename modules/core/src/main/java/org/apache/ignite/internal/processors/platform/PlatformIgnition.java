@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class PlatformIgnition {
     /** Map with active instances. */
-    private static final HashMap<String, PlatformProcessor> instances = new HashMap<>();
+    private static final HashMap<String, PlatformProcessor> INSTANCES = new HashMap<>();
 
     /**
      * Start Ignite node in platform mode.
@@ -73,7 +73,7 @@ public class PlatformIgnition {
 
             PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr);
 
-            PlatformProcessor old = instances.put(igniteInstanceName, proc);
+            PlatformProcessor old = INSTANCES.put(igniteInstanceName, proc);
 
             assert old == null;
         }
@@ -89,7 +89,7 @@ public class PlatformIgnition {
      * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
     @Nullable public static synchronized PlatformProcessor instance(@Nullable String igniteInstanceName) {
-        return instances.get(igniteInstanceName);
+        return INSTANCES.get(igniteInstanceName);
     }
 
     /**
@@ -113,7 +113,7 @@ public class PlatformIgnition {
      */
     public static synchronized boolean stop(@Nullable String igniteInstanceName, boolean cancel) {
         if (Ignition.stop(igniteInstanceName, cancel)) {
-            PlatformProcessor old = instances.remove(igniteInstanceName);
+            PlatformProcessor old = INSTANCES.remove(igniteInstanceName);
 
             assert old != null;
 
@@ -129,10 +129,10 @@ public class PlatformIgnition {
      * @param cancel Cancel flag.
      */
     public static synchronized void stopAll(boolean cancel) {
-        for (PlatformProcessor proc : instances.values())
+        for (PlatformProcessor proc : INSTANCES.values())
             Ignition.stop(proc.ignite().name(), cancel);
 
-        instances.clear();
+        INSTANCES.clear();
     }
 
     /**

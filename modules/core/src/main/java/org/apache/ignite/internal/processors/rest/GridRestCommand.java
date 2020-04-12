@@ -223,12 +223,12 @@ public enum GridRestCommand {
     private static final GridRestCommand[] VALS = values();
 
     /** Key to enum map. */
-    private static final Map<String, GridRestCommand> cmds = new HashMap<>();
+    private static final Map<String, GridRestCommand> CMDS = new HashMap<>();
 
     // Map keys to commands.
     static {
         for (GridRestCommand cmd : values())
-            cmds.put(cmd.key(), cmd);
+            CMDS.put(cmd.key(), cmd);
     }
 
     /** Command key. */
@@ -254,7 +254,7 @@ public enum GridRestCommand {
      * @return Command.
      */
     @Nullable public static GridRestCommand fromKey(String key) {
-        return cmds.get(key);
+        return CMDS.get(key);
     }
 
     /**

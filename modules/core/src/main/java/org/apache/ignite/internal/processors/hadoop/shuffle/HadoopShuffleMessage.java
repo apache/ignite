@@ -43,7 +43,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final AtomicLong ids = new AtomicLong();
+    private static final AtomicLong IDS = new AtomicLong();
 
     /** */
     private static final byte MARKER_KEY = (byte)17;
@@ -88,7 +88,7 @@ public class HadoopShuffleMessage implements Message, HadoopMessage {
         this.jobId = jobId;
         this.reducer = reducer;
 
-        msgId = ids.incrementAndGet();
+        msgId = IDS.incrementAndGet();
     }
 
     /**

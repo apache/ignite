@@ -90,7 +90,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     private static volatile boolean quiet0;
 
     /** */
-    private static final Object mux = new Object();
+    private static final Object MUX = new Object();
 
     /** Logger implementation. */
     @GridToStringExclude
@@ -374,7 +374,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
             return;
         }
 
-        synchronized (mux) {
+        synchronized (MUX) {
             if (inited) {
                 if (implInitC != null)
                     // Do not init.
@@ -629,7 +629,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * different configurations
      */
     static void cleanup() {
-        synchronized (mux) {
+        synchronized (MUX) {
             if (inited)
                 LogManager.shutdown();
 
