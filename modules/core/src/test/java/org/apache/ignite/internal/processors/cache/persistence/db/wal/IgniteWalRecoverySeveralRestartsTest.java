@@ -53,7 +53,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     private static final int LARGE_KEYS_COUNT = 5_000;
 
     /** */
-    private static final Random rnd = new Random(System.currentTimeMillis());
+    private static final Random RND = new Random(System.currentTimeMillis());
 
     /** */
     private String cacheName = "test";
@@ -309,8 +309,8 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
         private IndexedObject(int iVal) {
             this.iVal = iVal;
 
-            strVal0 = "String value #0 " + iVal + " " + GridTestUtils.randomString(rnd, 256);
-            strVal1 = GridTestUtils.randomString(rnd, 256);
+            strVal0 = "String value #0 " + iVal + " " + GridTestUtils.randomString(RND, 256);
+            strVal1 = GridTestUtils.randomString(RND, 256);
         }
 
         /** {@inheritDoc} */

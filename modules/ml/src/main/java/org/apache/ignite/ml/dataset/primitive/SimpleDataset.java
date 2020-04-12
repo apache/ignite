@@ -29,7 +29,7 @@ import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
  */
 public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, SimpleDatasetData> {
     /** BLAS (Basic Linear Algebra Subprograms) instance. */
-    private static final BLAS BLAS = BLAS.getInstance();
+    private static final BLAS BLAS_OBJ = BLAS.getInstance();
 
     /**
      * Creates a new instance of simple dataset that introduces additional methods based on a matrix of features.
@@ -61,7 +61,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         }, (a, b) -> a == null ? b : b == null ? a : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
 
         if (res != null) {
-            BLAS.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
+            BLAS_OBJ.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
             return res.val;
         }
 
@@ -90,7 +90,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         }, (a, b) -> a == null ? b : b == null ? a : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
 
         if (res != null) {
-            BLAS.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
+            BLAS_OBJ.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
             for (int i = 0; i < res.val.length; i++)
                 res.val[i] = Math.sqrt(res.val[i]);
             return res.val;

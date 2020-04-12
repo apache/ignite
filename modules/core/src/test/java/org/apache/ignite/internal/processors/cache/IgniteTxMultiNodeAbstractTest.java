@@ -75,10 +75,10 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
     private static final String RMVD_CNTR_KEY = "RMVD_CNTR_KEY";
 
     /** */
-    protected static final AtomicInteger cntr = new AtomicInteger();
+    protected static final AtomicInteger CNTR = new AtomicInteger();
 
     /** */
-    protected static final AtomicInteger cntrRmvd = new AtomicInteger();
+    protected static final AtomicInteger CNTR_RMVD = new AtomicInteger();
 
     /** Number of backups for partitioned tests. */
     protected int backups = 2;
@@ -87,7 +87,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         backups = 0;
 
-        cntr.set(0);
+        CNTR.set(0);
     }
 
     /**
@@ -305,7 +305,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 ", nearEntry=" + nearEntry(locId, RMVD_CNTR_KEY) +
                 (isCntrPrimary ? ", dhtEntry=" + dhtEntry(locId, RMVD_CNTR_KEY) : "") + ']';
 
-            String itemKey = Integer.toString(cntrRmvd.getAndIncrement());
+            String itemKey = Integer.toString(CNTR_RMVD.getAndIncrement());
 
             Integer val = cache.get(itemKey);
 
@@ -354,7 +354,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         UUID nodeId = ignite.cluster().localNode().id();
 
         for (int i = 0; i < RETRIES; i++) {
-            int cnt = cntr.getAndIncrement();
+            int cnt = CNTR.getAndIncrement();
 
             if (DEBUG)
                 ignite.log().info("***");
@@ -383,7 +383,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             if (DEBUG)
                 ignite.log().info("***");
 
-            if (DEBUG || cntrRmvd.getAndIncrement() % LOG_FREQ == 0)
+            if (DEBUG || CNTR_RMVD.getAndIncrement() % LOG_FREQ == 0)
                 ignite.log().info("*** Iteration #" + i + " ***");
 
             if (DEBUG)
@@ -406,7 +406,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             if (DEBUG)
                 ignite.log().info("***");
 
-            if (cntrRmvd.get() % LOG_FREQ == 0 || DEBUG)
+            if (CNTR_RMVD.get() % LOG_FREQ == 0 || DEBUG)
                 ignite.log().info("*** Iteration #" + i + " ***");
 
             if (DEBUG)
@@ -574,7 +574,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             assertFalse(entries.isEmpty());
 
-            cntrRmvd.set(0);
+            CNTR_RMVD.set(0);
 
             grid(0).compute().broadcast(new RemoveInTxJobQueried());
 
@@ -616,7 +616,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             assertFalse(entries.isEmpty());
 
-            cntrRmvd.set(0);
+            CNTR_RMVD.set(0);
 
             grid(0).compute().broadcast(new RemoveInTxJobSimple());
 
@@ -690,7 +690,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             assertFalse(entries.isEmpty());
 
-            cntrRmvd.set(0);
+            CNTR_RMVD.set(0);
 
             Collection<Thread> threads = new LinkedList<>();
 

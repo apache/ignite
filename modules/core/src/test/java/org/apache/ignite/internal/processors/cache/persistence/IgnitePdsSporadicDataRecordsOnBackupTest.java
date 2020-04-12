@@ -67,7 +67,7 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
     protected static final int KEYS_CNT = 100;
 
     /** Stop tx load flag. */
-    protected static final AtomicBoolean txStop = new AtomicBoolean();
+    protected static final AtomicBoolean TX_STOP = new AtomicBoolean();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -128,7 +128,7 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
         doSleep(10_000);
 
-        txStop.set(true);
+        TX_STOP.set(true);
 
         txLoadFut.get();
 
@@ -189,12 +189,12 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
      */
     @SuppressWarnings({"SameParameterValue"})
     protected IgniteInternalFuture startTxLoad(int threads, Ignite ignite) {
-        txStop.set(false);
+        TX_STOP.set(false);
 
         return GridTestUtils.runMultiThreadedAsync(() -> {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                while (!txStop.get()) {
+                while (!TX_STOP.get()) {
                     Ignite ig = ignite == null ? grid(rnd.nextInt(GRID_CNT)) : ignite;
 
                     if (ig == null)

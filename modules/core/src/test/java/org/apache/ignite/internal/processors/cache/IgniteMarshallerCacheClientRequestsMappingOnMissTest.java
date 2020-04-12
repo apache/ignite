@@ -58,7 +58,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
     private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
 
     /** */
-    private static final AtomicInteger mappingReqsCounter = new AtomicInteger(0);
+    private static final AtomicInteger MAPPING_REQS_COUNTER = new AtomicInteger(0);
 
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -92,7 +92,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         cleanupMarshallerFileStore();
 
-        mappingReqsCounter.set(0);
+        MAPPING_REQS_COUNTER.set(0);
     }
 
     /**
@@ -167,7 +167,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         cl1.cache(DEFAULT_CACHE_NAME).get(1);
 
-        int result = mappingReqsCounter.get();
+        int result = MAPPING_REQS_COUNTER.get();
 
         assertEquals("Expected requests count is 1, actual is " + result, 1, result);
     }
@@ -201,7 +201,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
 
-        int result = mappingReqsCounter.get();
+        int result = MAPPING_REQS_COUNTER.get();
 
         assertEquals("Expected requests count is 2, actual is " + result, 2, result);
     }
@@ -236,7 +236,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
 
-        int result = mappingReqsCounter.get();
+        int result = MAPPING_REQS_COUNTER.get();
 
         assertEquals("Expected requests count is 3, actual is " + result, 3, result);
     }
@@ -277,7 +277,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         nodeStopLatch.await(5_000, TimeUnit.MILLISECONDS);
 
-        int result = mappingReqsCounter.get();
+        int result = MAPPING_REQS_COUNTER.get();
 
         assertEquals("Expected requests count is 3, actual is " + result, 3, result);
     }
@@ -292,7 +292,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
         GridMessageListener wrapper = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                mappingReqsCounter.incrementAndGet();
+                MAPPING_REQS_COUNTER.incrementAndGet();
 
                 delegate.onMessage(nodeId, msg, plc);
             }
@@ -315,7 +315,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 new Thread(new Runnable() {
                     @Override public void run() {
-                        mappingReqsCounter.incrementAndGet();
+                        MAPPING_REQS_COUNTER.incrementAndGet();
 
                         latch.countDown();
 

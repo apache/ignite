@@ -71,7 +71,7 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
     private static final AffinityFunction AFFINITY = new RendezvousAffinityFunction(false, 16);
 
     /** Node filter to pin dynamic caches to a specific node. */
-    private static final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> NODE_FILTER = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode node) {
             return node.consistentId().toString().contains(NODE_CONS_ID_1);
         }
@@ -111,7 +111,7 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
             new CacheConfiguration(STATIC_CACHE_NAME_0)
                 .setGroupName(MIXED_CACHES_GROUP_NAME_0)
                 .setAffinity(AFFINITY)
-                .setNodeFilter(nodeFilter)
+                .setNodeFilter(NODE_FILTER)
         );
 
         if (igniteInstanceName.equals(NODE_CONS_ID_0)) {
@@ -156,7 +156,7 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
         ig.getOrCreateCache(new CacheConfiguration<>(cacheName)
             .setGroupName(groupName)
             .setAffinity(new RendezvousAffinityFunction(false, 16))
-            .setNodeFilter(nodeFilter)
+            .setNodeFilter(NODE_FILTER)
         );
     }
 

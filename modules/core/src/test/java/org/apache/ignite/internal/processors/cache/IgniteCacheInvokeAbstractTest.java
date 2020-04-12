@@ -378,7 +378,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 assertNull(entry.getValue());
 
                 if (cacheStoreFactory() != null)
-                    assertNull(storeMap.get(keys));
+                    assertNull(STORE_MAP.get(keys));
             }
             else {
                 int value = entry.getValue();
@@ -387,7 +387,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
                 if (cacheStoreFactory() != null)
                     assertEquals("\"" + key + "' entry has wrong value in cache store, exp=1 actl=" + value,
-                        1, (int)storeMap.get(key));
+                        1, (int)STORE_MAP.get(key));
             }
         }
     }

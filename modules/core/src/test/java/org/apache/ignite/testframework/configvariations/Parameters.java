@@ -170,7 +170,7 @@ public class Parameters {
      */
     private static class ReflectionParameter<T> implements ConfigParameter<T> {
         /** Classes of marameters cache. */
-        private static final ConcurrentMap<T2<Class, String>, Class> paramClassesCache = new ConcurrentHashMap();
+        private static final ConcurrentMap<T2<Class, String>, Class> PARAM_CLASSES_CACHE = new ConcurrentHashMap();
 
         /** */
         private final String mtdName;
@@ -219,7 +219,7 @@ public class Parameters {
                 if (!isPrimitiveOrEnum(val))
                     val0 = ((Factory)val0).create();
 
-                Class<?> paramCls = paramClassesCache.get(new T2<Class, String>(cfg.getClass(), mtdName));
+                Class<?> paramCls = PARAM_CLASSES_CACHE.get(new T2<Class, String>(cfg.getClass(), mtdName));
 
                 if (paramCls == null)
                     paramCls = val0.getClass();
@@ -255,7 +255,7 @@ public class Parameters {
                         mtd = cfg.getClass().getMethod(mtdName, paramCls);
 
                         if (failed)
-                            paramClassesCache.put(new T2<Class, String>(cfg.getClass(), mtdName), paramCls);
+                            PARAM_CLASSES_CACHE.put(new T2<Class, String>(cfg.getClass(), mtdName), paramCls);
 
                         break;
                     }

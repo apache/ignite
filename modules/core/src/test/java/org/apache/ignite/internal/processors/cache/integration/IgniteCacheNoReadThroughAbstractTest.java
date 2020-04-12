@@ -94,47 +94,47 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
         for (Integer key : keys()) {
             log.info("Test [key=" + key + ']');
 
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
             assertNull(cache.get(key));
 
-            assertEquals(key, storeMap.get(key));
+            assertEquals(key, STORE_MAP.get(key));
 
             assertNull(cache.getAndPut(key, -1));
 
-            assertEquals(-1, storeMap.get(key));
+            assertEquals(-1, STORE_MAP.get(key));
 
             cache.remove(key);
 
-            assertNull(storeMap.get(key));
+            assertNull(STORE_MAP.get(key));
 
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
             assertTrue(cache.putIfAbsent(key, -1));
 
-            assertEquals(-1, storeMap.get(key));
+            assertEquals(-1, STORE_MAP.get(key));
 
             cache.remove(key);
 
-            assertNull(storeMap.get(key));
+            assertNull(STORE_MAP.get(key));
 
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
             assertNull(cache.getAndRemove(key));
 
-            assertNull(storeMap.get(key));
+            assertNull(STORE_MAP.get(key));
 
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
             assertNull(cache.getAndPutIfAbsent(key, -1));
 
-            assertEquals(-1, storeMap.get(key));
+            assertEquals(-1, STORE_MAP.get(key));
 
             cache.remove(key);
 
-            assertNull(storeMap.get(key));
+            assertNull(STORE_MAP.get(key));
 
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
             Object ret = cache.invoke(key, new EntryProcessor<Integer, Integer, Object>() {
                 @Override public Object process(MutableEntry<Integer, Integer> e, Object... args) {
@@ -152,25 +152,25 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
             assertEquals("null", ret);
 
-            assertEquals(-1, storeMap.get(key));
+            assertEquals(-1, STORE_MAP.get(key));
 
             cache.remove(key);
 
-            assertNull(storeMap.get(key));
+            assertNull(STORE_MAP.get(key));
 
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
             assertFalse(cache.replace(key, -1));
 
-            assertEquals(key, storeMap.get(key));
+            assertEquals(key, STORE_MAP.get(key));
 
             assertNull(cache.getAndReplace(key, -1));
 
-            assertEquals(key, storeMap.get(key));
+            assertEquals(key, STORE_MAP.get(key));
 
             assertFalse(cache.replace(key, key, -1));
 
-            assertEquals(key, storeMap.get(key));
+            assertEquals(key, STORE_MAP.get(key));
         }
 
         Set<Integer> keys = new HashSet<>();
@@ -178,7 +178,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
         for (int i = 1000_0000; i < 1000_0000 + 1000; i++) {
             keys.add(i);
 
-            storeMap.put(i, i);
+            STORE_MAP.put(i, i);
         }
 
         assertTrue(cache.getAll(keys).isEmpty());
@@ -191,7 +191,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                             ", concurrency=" + concurrency +
                             ", isolation=" + isolation + ']');
 
-                        storeMap.put(key, key);
+                        STORE_MAP.put(key, key);
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertNull(cache.get(key));
@@ -199,7 +199,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                             tx.commit();
                         }
 
-                        assertEquals(key, storeMap.get(key));
+                        assertEquals(key, STORE_MAP.get(key));
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertNull(cache.getAndPut(key, -1));
@@ -207,13 +207,13 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                             tx.commit();
                         }
 
-                        assertEquals(-1, storeMap.get(key));
+                        assertEquals(-1, STORE_MAP.get(key));
 
                         cache.remove(key);
 
-                        assertNull(storeMap.get(key));
+                        assertNull(STORE_MAP.get(key));
 
-                        storeMap.put(key, key);
+                        STORE_MAP.put(key, key);
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertTrue(cache.putIfAbsent(key, -1));
@@ -221,13 +221,13 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                             tx.commit();
                         }
 
-                        assertEquals(-1, storeMap.get(key));
+                        assertEquals(-1, STORE_MAP.get(key));
 
                         cache.remove(key);
 
-                        assertNull(storeMap.get(key));
+                        assertNull(STORE_MAP.get(key));
 
-                        storeMap.put(key, key);
+                        STORE_MAP.put(key, key);
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             Object ret = cache.invoke(key, new EntryProcessor<Integer, Integer, Object>() {
@@ -249,7 +249,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                             tx.commit();
                         }
 
-                        assertEquals(-1, storeMap.get(key));
+                        assertEquals(-1, STORE_MAP.get(key));
 
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertTrue(cache.getAll(keys).isEmpty());
@@ -269,9 +269,9 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
         cache.remove(key);
 
-        storeMap.clear();
+        STORE_MAP.clear();
 
-        storeMap.put(key, 10);
+        STORE_MAP.put(key, 10);
 
         cache.loadCache(null);
 
@@ -279,7 +279,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
         cache.remove(key);
 
-        storeMap.put(key, 11);
+        STORE_MAP.put(key, 11);
 
         CompletionListenerFuture fut = new CompletionListenerFuture();
 

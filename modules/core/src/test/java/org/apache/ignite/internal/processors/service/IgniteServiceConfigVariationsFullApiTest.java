@@ -58,7 +58,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     private static int cntr;
 
     /** Callable factories. */
-    private static final Factory[] serviceFactories = new Factory[] {
+    private static final Factory[] SERVICE_FACTORIES = new Factory[] {
         Parameters.factory(TestServiceImpl.class),
         Parameters.factory(TestServiceImplExternalizable.class),
     };
@@ -209,7 +209,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
         /** {@inheritDoc} */
         @Override public void run() throws Exception {
-            for (Factory factory : serviceFactories)
+            for (Factory factory : SERVICE_FACTORIES)
                 testService((TestService)factory.create(), sticky, deployC);
         }
     }

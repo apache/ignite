@@ -104,7 +104,7 @@ public class StackingTest extends TrainerTest {
             .withVector2SubmodelInputConverter(IgniteFunction.identity())
             .withOriginalFeaturesKept(IgniteFunction.identity())
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
-            .fit(getCacheMock(xor), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
+            .fit(getCacheMock(XOR), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);
@@ -146,7 +146,7 @@ public class StackingTest extends TrainerTest {
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
             .addMatrix2MatrixTrainer(mlpTrainer)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
-            .fit(getCacheMock(xor), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
+            .fit(getCacheMock(XOR), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);

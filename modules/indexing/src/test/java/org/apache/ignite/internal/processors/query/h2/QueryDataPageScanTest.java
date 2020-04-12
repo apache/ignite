@@ -390,20 +390,20 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
     private void doTestDml(IgniteCache<Long,TestData> cache) {
         // SQL query (data page scan must be enabled by default).
-        DirectPageScanIndexing.callsCnt.set(0);
+        DirectPageScanIndexing.CALLS_CNT.set(0);
         int callsCnt = 0;
 
         checkDml(cache, null);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
 
         checkDml(cache, true);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
 
         checkDml(cache, false);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
 
         checkDml(cache, null);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
     }
 
     private void checkDml(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
@@ -426,20 +426,20 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
     private void doTestSqlQuery(IgniteCache<Long,TestData> cache) {
         // SQL query (data page scan must be enabled by default).
-        DirectPageScanIndexing.callsCnt.set(0);
+        DirectPageScanIndexing.CALLS_CNT.set(0);
         int callsCnt = 0;
 
         checkSqlQuery(cache, null);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
 
         checkSqlQuery(cache, true);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
 
         checkSqlQuery(cache, false);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
 
         checkSqlQuery(cache, null);
-        assertEquals(++callsCnt, DirectPageScanIndexing.callsCnt.get());
+        assertEquals(++callsCnt, DirectPageScanIndexing.CALLS_CNT.get());
     }
 
     private void checkSqlQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled) {
@@ -456,24 +456,24 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
     private void doTestScanQuery(IgniteCache<Long,TestData> cache, int keysCnt) {
         // Scan query (data page scan must be disabled by default).
-        TestPredicate.callsCnt.set(0);
+        TestPredicate.CALLS_CNT.set(0);
         int callsCnt = 0;
 
         assertTrue(cache.query(new ScanQuery<>(new TestPredicate())).getAll().isEmpty());
         assertFalse(CacheDataTree.isLastFindWithDataPageScan());
-        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+        assertEquals(callsCnt += keysCnt, TestPredicate.CALLS_CNT.get());
 
         checkScanQuery(cache, true, true);
-        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+        assertEquals(callsCnt += keysCnt, TestPredicate.CALLS_CNT.get());
 
         checkScanQuery(cache, false, false);
-        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+        assertEquals(callsCnt += keysCnt, TestPredicate.CALLS_CNT.get());
 
         checkScanQuery(cache, true, true);
-        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+        assertEquals(callsCnt += keysCnt, TestPredicate.CALLS_CNT.get());
 
         checkScanQuery(cache, null, false);
-        assertEquals(callsCnt += keysCnt, TestPredicate.callsCnt.get());
+        assertEquals(callsCnt += keysCnt, TestPredicate.CALLS_CNT.get());
     }
 
     private void checkScanQuery(IgniteCache<Long,TestData> cache, Boolean dataPageScanEnabled, Boolean expLastDataPageScan) {
@@ -500,7 +500,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         static volatile Boolean expectedDataPageScanEnabled;
 
         /** */
-        static final AtomicInteger callsCnt = new AtomicInteger();
+        static final AtomicInteger CALLS_CNT = new AtomicInteger();
 
         /** {@inheritDoc} */
         @Override public ResultSet executeSqlQueryWithTimer(
@@ -512,7 +512,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             Boolean dataPageScanEnabled,
             final H2QueryInfo qryInfo
         ) throws IgniteCheckedException {
-            callsCnt.incrementAndGet();
+            CALLS_CNT.incrementAndGet();
             assertEquals(expectedDataPageScanEnabled, dataPageScanEnabled);
 
             return super.executeSqlQueryWithTimer(stmt, conn, sql, timeoutMillis,
@@ -524,11 +524,11 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     static class TestPredicate implements IgniteBiPredicate<Long,TestData> {
         /** */
-        static final AtomicInteger callsCnt = new AtomicInteger();
+        static final AtomicInteger CALLS_CNT = new AtomicInteger();
 
         /** {@inheritDoc} */
         @Override public boolean apply(Long k, TestData v) {
-            callsCnt.incrementAndGet();
+            CALLS_CNT.incrementAndGet();
             return false;
         }
     }

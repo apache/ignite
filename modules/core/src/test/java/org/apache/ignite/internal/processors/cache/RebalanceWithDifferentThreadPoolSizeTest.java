@@ -34,7 +34,7 @@ import org.junit.Test;
  */
 public class RebalanceWithDifferentThreadPoolSizeTest extends GridCommonAbstractTest {
     /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Rebalance pool size. */
     private int rebalancePoolSize;
@@ -50,7 +50,7 @@ public class RebalanceWithDifferentThreadPoolSizeTest extends GridCommonAbstract
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
+        discoverySpi.setIpFinder(IP_FINDER);
 
         cfg.setRebalanceThreadPoolSize(rebalancePoolSize);
 

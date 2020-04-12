@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
@@ -27,14 +34,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 
 /**
@@ -172,7 +171,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
 
         createSymlinks();
 
-        checkFileContent(igfs, new IgfsPath("/file"), chunk);
+        checkFileContent(igfs, new IgfsPath("/file"), CHUNK);
     }
 
     /**
@@ -220,9 +219,9 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
                     for (int i = 0; i < FILES_COUNT; ++i) {
                         IgfsPath filePath = new IgfsPath(levelDir, "file" + Integer.toString(i));
 
-                        createFile(igfs, filePath, true, chunk);
+                        createFile(igfs, filePath, true, CHUNK);
 
-                        totalSize.getAndAdd(chunk.length);
+                        totalSize.getAndAdd(CHUNK.length);
                     }
 
                     if (level < DIRS_MAX_DEEP) {
@@ -252,7 +251,7 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     private void createSymlinks() throws Exception {
         assert dirLinkDest.mkdir();
 
-        createFile(fileLinkDest, true, chunk);
+        createFile(fileLinkDest, true, CHUNK);
 
         Files.createSymbolicLink(dirLinkSrc.toPath(), dirLinkDest.toPath());
         Files.createSymbolicLink(fileLinkSrc.toPath(), fileLinkDest.toPath());

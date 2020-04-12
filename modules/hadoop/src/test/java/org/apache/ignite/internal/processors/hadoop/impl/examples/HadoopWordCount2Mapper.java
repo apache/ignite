@@ -34,7 +34,7 @@ public class HadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWritab
     private Text word = new Text();
 
     /** Writable integer constant of '1' is writing as count of found words. */
-    private static final IntWritable one = new IntWritable(1);
+    private static final IntWritable ONE = new IntWritable(1);
 
     /** Flag is to check that mapper was configured before run. */
     private boolean wasConfigured;
@@ -52,7 +52,7 @@ public class HadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWritab
         while (wordList.hasMoreTokens()) {
             word.set(wordList.nextToken());
 
-            ctx.write(word, one);
+            ctx.write(word, ONE);
         }
 
         HadoopErrorSimulator.instance().onMap();

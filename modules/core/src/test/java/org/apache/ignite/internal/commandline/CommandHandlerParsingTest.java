@@ -74,7 +74,7 @@ import static org.junit.Assert.fail;
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class CommandHandlerParsingTest {
     /** */
-    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+    @ClassRule public static final TestRule CLASS_RULE = new SystemPropertiesRule();
 
     /** */
     @Rule public final TestRule methodRule = new SystemPropertiesRule();

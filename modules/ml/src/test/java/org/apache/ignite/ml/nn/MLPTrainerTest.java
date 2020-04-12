@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -26,19 +31,18 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
-import org.apache.ignite.ml.optimization.updatecalculators.*;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Tests for {@link MLPTrainer} that don't require to start the whole Ignite infrastructure.
@@ -51,17 +55,17 @@ public class MLPTrainerTest {
     @RunWith(Parameterized.class)
     public static class ComponentParamTests {
         /** Number of parts to be tested. */
-        private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
+        private static final int[] PARTS_TO_BE_TESTED = new int[] {1, 2, 3, 4, 5, 7};
 
         /** Batch sizes to be tested. */
-        private static final int[] batchSizesToBeTested = new int[] {1, 2, 3, 4};
+        private static final int[] BATCH_SIZES_TO_BE_TESTED = new int[] {1, 2, 3, 4};
 
         /** Parameters. */
         @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
         public static Iterable<Integer[]> data() {
             List<Integer[]> res = new ArrayList<>();
-            for (int part : partsToBeTested)
-                for (int batchSize1 : batchSizesToBeTested)
+            for (int part : PARTS_TO_BE_TESTED)
+                for (int batchSize1 : BATCH_SIZES_TO_BE_TESTED)
                     res.add(new Integer[] {part, batchSize1});
 
             return res;

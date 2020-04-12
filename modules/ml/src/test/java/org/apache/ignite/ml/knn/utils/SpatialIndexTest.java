@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
  */
 public abstract class SpatialIndexTest {
     /** Distance measure to be used in tests. */
-    private static final DistanceMeasure distanceMeasure = new EuclideanDistance();
+    private static final DistanceMeasure DISTANCE_MEASURE = new EuclideanDistance();
 
     /** Spatial index factory. */
     private final BiFunction<List<LabeledVector<Integer>>, DistanceMeasure, SpatialIndex<Integer>> idxFactory;
@@ -59,7 +59,7 @@ public abstract class SpatialIndexTest {
             dataset.add(vectorPnt);
         }
 
-        SpatialIndex<Integer> idx = idxFactory.apply(dataset, distanceMeasure);
+        SpatialIndex<Integer> idx = idxFactory.apply(dataset, DISTANCE_MEASURE);
 
         for (int k = 1; k <= 201; k += 2) {
             double expRadius = 1.0 * (k - 1) / 2;
@@ -68,7 +68,7 @@ public abstract class SpatialIndexTest {
 
             assertEquals(k, neighbours.size());
             for (LabeledVector<Integer> neighbour : neighbours) {
-                double distance = distanceMeasure.compute(pnt, neighbour.features());
+                double distance = DISTANCE_MEASURE.compute(pnt, neighbour.features());
                 assertTrue(distance <= expRadius);
             }
         }
@@ -87,7 +87,7 @@ public abstract class SpatialIndexTest {
             }
         }
 
-        SpatialIndex<Integer> idx = idxFactory.apply(dataset, distanceMeasure);
+        SpatialIndex<Integer> idx = idxFactory.apply(dataset, DISTANCE_MEASURE);
 
         for (int k = 1; k <= 81; k += 8) {
             double expRadius = Math.sqrt(3) * (k - 1) / 8;
@@ -96,7 +96,7 @@ public abstract class SpatialIndexTest {
 
             assertEquals(k, neighbours.size());
             for (LabeledVector<Integer> neighbour : neighbours) {
-                double distance = distanceMeasure.compute(pnt, neighbour.features());
+                double distance = DISTANCE_MEASURE.compute(pnt, neighbour.features());
                 assertTrue(distance <= expRadius);
             }
         }

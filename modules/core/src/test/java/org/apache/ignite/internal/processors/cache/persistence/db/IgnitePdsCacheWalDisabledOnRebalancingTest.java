@@ -81,10 +81,10 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
     private static final BiFunction<String, Integer, String> GENERATING_FUNC = (s, i) -> s + "_value_" + i;
 
     /** Flag to block rebalancing. */
-    private static final AtomicBoolean blockRebalanceEnabled = new AtomicBoolean(false);
+    private static final AtomicBoolean BLOCK_REBALANCE_ENABLED = new AtomicBoolean(false);
 
     /**  */
-    private static final Semaphore fileIoBlockingSemaphore = new Semaphore(Integer.MAX_VALUE);
+    private static final Semaphore FILE_IO_BLOCKING_SEMAPHORE = new Semaphore(Integer.MAX_VALUE);
 
     /** */
     private boolean useBlockingFileIO;
@@ -98,9 +98,9 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        fileIoBlockingSemaphore.drainPermits();
+        FILE_IO_BLOCKING_SEMAPHORE.drainPermits();
 
-        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+        FILE_IO_BLOCKING_SEMAPHORE.release(Integer.MAX_VALUE);
 
         stopAllGrids();
 
@@ -289,7 +289,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         useBlockingFileIO = true;
         int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
         blockMessagePredicate = (node, msg) -> {
-            if (blockRebalanceEnabled.get() && msg instanceof GridDhtPartitionDemandMessage)
+            if (BLOCK_REBALANCE_ENABLED.get() && msg instanceof GridDhtPartitionDemandMessage)
                 return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
 
             return false;
@@ -300,7 +300,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         int locMovingPartsNum;
 
         // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
-        fileIoBlockingSemaphore.drainPermits();
+        FILE_IO_BLOCKING_SEMAPHORE.drainPermits();
         try {
             ig1 = startGrid(1);
 
@@ -311,14 +311,14 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
             assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
                 locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
 
-            blockRebalanceEnabled.set(true);
+            BLOCK_REBALANCE_ENABLED.set(true);
 
             // Change baseline topology and release checkpointer to verify
             // that no partitions will be owned after affinity change.
             ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
         }
         finally {
-            fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+            FILE_IO_BLOCKING_SEMAPHORE.release(Integer.MAX_VALUE);
         }
 
         locMovingPartsNum = metrics.getLocalNodeMovingPartitionsCount();
@@ -362,14 +362,14 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         useBlockingFileIO = true;
 
         // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
-        fileIoBlockingSemaphore.drainPermits();
+        FILE_IO_BLOCKING_SEMAPHORE.drainPermits();
 
         // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
         startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
 
         startClientGrid("client");
 
-        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+        FILE_IO_BLOCKING_SEMAPHORE.release(Integer.MAX_VALUE);
 
         awaitPartitionMapExchange();
 
@@ -392,7 +392,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (Thread.currentThread().getName().contains("checkpoint")) {
                         try {
-                            fileIoBlockingSemaphore.acquire();
+                            FILE_IO_BLOCKING_SEMAPHORE.acquire();
                         }
                         catch (InterruptedException ignored) {
                             // No-op.
@@ -405,7 +405,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                 @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
                     if (Thread.currentThread().getName().contains("checkpoint")) {
                         try {
-                            fileIoBlockingSemaphore.acquire();
+                            FILE_IO_BLOCKING_SEMAPHORE.acquire();
                         }
                         catch (InterruptedException ignored) {
                             // No-op.
@@ -418,7 +418,7 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
                 @Override public int write(byte[] buf, int off, int len) throws IOException {
                     if (Thread.currentThread().getName().contains("checkpoint")) {
                         try {
-                            fileIoBlockingSemaphore.acquire();
+                            FILE_IO_BLOCKING_SEMAPHORE.acquire();
                         }
                         catch (InterruptedException ignored) {
                             // No-op.

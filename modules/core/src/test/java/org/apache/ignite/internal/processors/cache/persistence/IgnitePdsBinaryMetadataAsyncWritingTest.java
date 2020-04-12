@@ -65,7 +65,7 @@ import static org.apache.ignite.testframework.GridTestUtils.suppressException;
  */
 public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractTest {
     /** */
-    private static final AtomicReference<CountDownLatch> fileWriteLatchRef = new AtomicReference<>(null);
+    private static final AtomicReference<CountDownLatch> FILE_WRITE_LATCH_REF = new AtomicReference<>(null);
 
     /** */
     private FileIOFactory specialFileIOFactory;
@@ -111,8 +111,8 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (fileWriteLatchRef != null && fileWriteLatchRef.get() != null)
-            fileWriteLatchRef.get().countDown();
+        if (FILE_WRITE_LATCH_REF != null && FILE_WRITE_LATCH_REF.get() != null)
+            FILE_WRITE_LATCH_REF.get().countDown();
 
         stopAllGrids();
 
@@ -536,7 +536,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
         CountDownLatch cdl = new CountDownLatch(1);
 
         specialFileIOFactory = new SlowFileIOFactory(new RandomAccessFileIOFactory());
-        fileWriteLatchRef.set(cdl);
+        FILE_WRITE_LATCH_REF.set(cdl);
 
         return cdl;
     }
@@ -681,7 +681,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
             FileIO delegate = delegateFactory.create(file, modes);
 
             if (isBinaryMetaFile(file))
-                return new SlowFileIO(delegate, fileWriteLatchRef.get());
+                return new SlowFileIO(delegate, FILE_WRITE_LATCH_REF.get());
 
             return delegate;
         }

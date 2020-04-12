@@ -39,12 +39,12 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
     @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         //GridDhtPartitionSupplyMessage unmarshalling failed test.
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         for (int i = 0; i <= 20; i++)
             jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
-        readCnt.set(1);
+        READ_CNT.set(1);
 
         startGrid(3);
 
@@ -55,7 +55,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
         // GridDhtForceKeysRequest unmarshalling failed test.
         stopGrid(3);
 
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         for (int i = 0; i <= 100; i++)
             jcache(0).put(new TestKey(String.valueOf(++key)), "");
@@ -92,7 +92,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
                 fail();
         }
 
-        readCnt.set(1);
+        READ_CNT.set(1);
 
         try {
             jcache(10).get(new TestKey(String.valueOf(key)));

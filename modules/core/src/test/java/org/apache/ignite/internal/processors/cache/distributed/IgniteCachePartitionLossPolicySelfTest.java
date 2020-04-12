@@ -97,7 +97,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private static int backups;
 
     /** */
-    private static final AtomicBoolean delayPartExchange = new AtomicBoolean(false);
+    private static final AtomicBoolean DELAY_PART_EXCHANGE = new AtomicBoolean(false);
 
     /** */
     private final TopologyChanger killSingleNode = new TopologyChanger(
@@ -117,7 +117,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         cfg.setCommunicationSpi(new TestDelayingCommunicationSpi() {
             /** {@inheritDoc} */
             @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
-                return delayPartExchange.get() &&
+                return DELAY_PART_EXCHANGE.get() &&
                     (msg instanceof GridDhtPartitionsFullMessage || msg instanceof GridDhtPartitionsAbstractMessage);
             }
 
@@ -157,7 +157,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        delayPartExchange.set(false);
+        DELAY_PART_EXCHANGE.set(false);
 
         partLossPlc = PartitionLossPolicy.IGNORE;
 
@@ -961,7 +961,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
 
             if (delayExchange)
-                delayPartExchange.set(true);
+                DELAY_PART_EXCHANGE.set(true);
 
             ExecutorService executor = Executors.newFixedThreadPool(killNodes.size());
 
@@ -977,7 +977,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             executor.shutdown();
 
-            delayPartExchange.set(false);
+            DELAY_PART_EXCHANGE.set(false);
 
             Thread.sleep(5_000L);
 

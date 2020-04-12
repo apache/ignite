@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
@@ -26,12 +31,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
 import org.junit.Test;
 
 /**
@@ -1198,9 +1197,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfsSecondary, FILE, chunk);
+        createFile(igfsSecondary, FILE, CHUNK);
 
-        checkFileContent(igfs, FILE, chunk);
+        checkFileContent(igfs, FILE, CHUNK);
     }
 
     /**
@@ -1213,11 +1212,11 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, CHUNK);
 
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
-        checkFile(igfs, igfsSecondary, FILE, chunk);
+        checkFile(igfs, igfsSecondary, FILE, CHUNK);
     }
 
     /**
@@ -1251,10 +1250,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, CHUNK);
 
         checkExist(igfs, igfsSecondary, SUBDIR);
-        checkFile(igfs, igfsSecondary, FILE, chunk);
+        checkFile(igfs, igfsSecondary, FILE, CHUNK);
     }
 
     /**
@@ -1294,13 +1293,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
 
-        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ CHUNK);
 
-        appendFile(igfs, FILE, chunk);
+        appendFile(igfs, FILE, CHUNK);
 
         // Ensure that directory structure was created.
         checkExist(igfs, igfsSecondary, SUBDIR);
-        checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+        checkFile(igfs, igfsSecondary, FILE, CHUNK, CHUNK);
     }
 
     /**
@@ -1316,12 +1315,12 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
 
-        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ CHUNK);
 
-        appendFile(igfs, FILE, chunk);
+        appendFile(igfs, FILE, CHUNK);
 
         checkExist(igfs, igfsSecondary, SUBDIR);
-        checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+        checkFile(igfs, igfsSecondary, FILE, CHUNK, CHUNK);
     }
 
     /**
@@ -1629,7 +1628,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfsSecondary, FILE, chunk);
+        createFile(igfsSecondary, FILE, CHUNK);
 
         final long MAX_ALIGN_ON_SECOND = (long)Integer.MAX_VALUE * 1000;
 
@@ -1664,11 +1663,11 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     public void testSecondarySize() throws Exception {
         igfs.mkdirs(SUBDIR);
 
-        createFile(igfsSecondary, FILE, chunk);
-        createFile(igfsSecondary, new IgfsPath(SUBDIR, "file2"), chunk);
+        createFile(igfsSecondary, FILE, CHUNK);
+        createFile(igfsSecondary, new IgfsPath(SUBDIR, "file2"), CHUNK);
 
-        assertEquals(chunk.length, igfs.size(FILE));
-        assertEquals(chunk.length * 2, igfs.size(SUBDIR));
+        assertEquals(CHUNK.length, igfs.size(FILE));
+        assertEquals(CHUNK.length * 2, igfs.size(SUBDIR));
     }
 
     /**

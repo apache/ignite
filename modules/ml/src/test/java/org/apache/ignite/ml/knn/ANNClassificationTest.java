@@ -39,8 +39,8 @@ public class ANNClassificationTest extends TrainerTest {
     public void testBinaryClassification() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoClusters.length; i++)
-            cacheMock.put(i, twoClusters[i]);
+        for (int i = 0; i < TWO_CLUSTERS.length; i++)
+            cacheMock.put(i, TWO_CLUSTERS[i]);
 
         ANNClassificationTrainer trainer = new ANNClassificationTrainer()
             .withK(10)
@@ -73,8 +73,8 @@ public class ANNClassificationTest extends TrainerTest {
     public void testUpdate() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoClusters.length; i++)
-            cacheMock.put(i, twoClusters[i]);
+        for (int i = 0; i < TWO_CLUSTERS.length; i++)
+            cacheMock.put(i, TWO_CLUSTERS[i]);
 
         ANNClassificationTrainer trainer = new ANNClassificationTrainer()
             .withK(10)

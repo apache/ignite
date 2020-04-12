@@ -52,7 +52,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     private static final Random RAND = new Random();
 
     /** Execution count. */
-    private static final AtomicInteger cntr = new AtomicInteger();
+    private static final AtomicInteger CNTR = new AtomicInteger();
 
     /**
      * Start grid by default.
@@ -226,7 +226,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         assertNull("Thread should not have transaction upon completion", tx);
 
         if (printMemoryStats()) {
-            if (cntr.getAndIncrement() % 100 == 0)
+            if (CNTR.getAndIncrement() % 100 == 0)
                 // Print transaction memory stats.
                 ((IgniteKernal)grid(gridIdx)).internalCache(DEFAULT_CACHE_NAME).context().tm().printMemoryStats();
         }

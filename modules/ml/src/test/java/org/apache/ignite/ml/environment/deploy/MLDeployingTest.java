@@ -213,7 +213,7 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     }
 
     /** xor truth table. */
-    private static final double[][] xor = {
+    private static final double[][] XOR = {
         {0.0, 0.0, 0.0},
         {0.0, 1.0, 1.0},
         {1.0, 0.0, 1.0},
@@ -224,8 +224,8 @@ public class MLDeployingTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Vector> prepareCache(Ignite ignite, String cacheName) {
         IgniteCache<Integer, Vector> cache = ignite.getOrCreateCache(new CacheConfiguration<>(cacheName));
 
-        for (int i = 0; i < xor.length; i++)
-            cache.put(i, VectorUtils.of(xor[i]));
+        for (int i = 0; i < XOR.length; i++)
+            cache.put(i, VectorUtils.of(XOR[i]));
 
         return cache;
     }

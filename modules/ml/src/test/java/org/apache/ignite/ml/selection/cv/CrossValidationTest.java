@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.selection.cv;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -32,11 +34,10 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.ignite.ml.common.TrainerTest.twoLinearlySeparableClasses;
-import static org.junit.Assert.*;
+import static org.apache.ignite.ml.common.TrainerTest.TWO_LINEARLY_SEPARABLE_CLASSES;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link CrossValidation}.
@@ -107,8 +108,8 @@ public class CrossValidationTest {
     public void testBasicFunctionality() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            data.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            data.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
@@ -149,8 +150,8 @@ public class CrossValidationTest {
     public void testGridSearch() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            data.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            data.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
@@ -192,8 +193,8 @@ public class CrossValidationTest {
     public void testRandomSearch() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            data.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            data.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
@@ -240,8 +241,8 @@ public class CrossValidationTest {
     public void testRandomSearchWithPipeline() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            data.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            data.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),

@@ -77,10 +77,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     private static final int CLIENT_GRID_CNT = 5;
 
     /** */
-    private static final ThreadLocal<Boolean> clientFlagPerThread = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> CLIENT_FLAG_PER_THREAD = new ThreadLocal<>();
 
     /** */
-    private static final ThreadLocal<UUID> nodeId = new ThreadLocal<>();
+    private static final ThreadLocal<UUID> NODE_ID = new ThreadLocal<>();
 
     /** */
     private static volatile boolean clientFlagGlobal;
@@ -92,7 +92,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @return Client node flag.
      */
     private static boolean client() {
-        Boolean client = clientFlagPerThread.get();
+        Boolean client = CLIENT_FLAG_PER_THREAD.get();
 
         return client != null ? client : clientFlagGlobal;
     }
@@ -110,12 +110,12 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        UUID id = nodeId.get();
+        UUID id = NODE_ID.get();
 
         if (id != null) {
             cfg.setNodeId(id);
 
-            nodeId.set(null);
+            NODE_ID.set(null);
         }
 
         if (client())
@@ -188,7 +188,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> fut1 = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        clientFlagPerThread.set(true);
+                        CLIENT_FLAG_PER_THREAD.set(true);
 
                         int idx = clientIdx.getAndIncrement();
 
@@ -267,7 +267,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     new Callable<Object>() {
                         @Override public Object call() throws Exception {
                             try {
-                                clientFlagPerThread.set(true);
+                                CLIENT_FLAG_PER_THREAD.set(true);
 
                                 while (!done.get() && error.get() == null) {
                                     Integer stopIdx = clientStopIdxs.take();
@@ -284,7 +284,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                                         UUID id = UUID.randomUUID();
 
-                                        nodeId.set(id);
+                                        NODE_ID.set(id);
 
                                         try {
                                             Ignite ignite = startGrid(startIdx);
@@ -337,7 +337,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         try {
-                            clientFlagPerThread.set(false);
+                            CLIENT_FLAG_PER_THREAD.set(false);
 
                             while (!done.get() && error.get() == null) {
                                 int stopIdx = srvStopIdxs.take();

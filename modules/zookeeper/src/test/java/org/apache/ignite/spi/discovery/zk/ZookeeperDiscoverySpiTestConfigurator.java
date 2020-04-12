@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
  */
 public class ZookeeperDiscoverySpiTestConfigurator {
     /** */
-    private static final Lock lock = new ReentrantLock();
+    private static final Lock LOCK = new ReentrantLock();
 
     /** */
     private static TestingCluster testingCluster;
@@ -43,14 +43,14 @@ public class ZookeeperDiscoverySpiTestConfigurator {
 
         System.setProperty("zookeeper.forceSync", "false");
 
-        lock.lock();
+        LOCK.lock();
         try {
             testingCluster = ZookeeperDiscoverySpiTestUtil.createTestingCluster(3);
 
             testingCluster.start();
         }
         finally {
-            lock.unlock();
+            LOCK.unlock();
         }
 
         System.setProperty(GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS,
@@ -64,7 +64,7 @@ public class ZookeeperDiscoverySpiTestConfigurator {
      */
     @SuppressWarnings("unused")
     public static void preprocessConfiguration(IgniteConfiguration cfg) {
-        lock.lock();
+        LOCK.lock();
         try {
             if (testingCluster == null)
                 throw new IllegalStateException("Test Zookeeper cluster is not started.");
@@ -82,7 +82,7 @@ public class ZookeeperDiscoverySpiTestConfigurator {
             cfg.setDiscoverySpi(zkSpi);
         }
         finally {
-            lock.unlock();
+            LOCK.unlock();
         }
     }
 }

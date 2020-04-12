@@ -44,7 +44,7 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     private static IgniteCache<Object, Object> cache;
 
     /** */
-    private static final CacheEntryProcessor<Object, Object, Object> testEntryProcessor = (entry, arguments) -> null;
+    private static final CacheEntryProcessor<Object, Object, Object> TEST_ENTRY_PROCESSOR = (entry, arguments) -> null;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -275,61 +275,61 @@ public class MvccUnsupportedTxModesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInvoke1() {
-        checkOperation(() -> cache.invoke(1, testEntryProcessor));
+        checkOperation(() -> cache.invoke(1, TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAsync1() {
-        checkOperation(() -> cache.invokeAsync(1, testEntryProcessor));
+        checkOperation(() -> cache.invokeAsync(1, TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvoke2() {
-        checkOperation(() -> cache.invoke(1, testEntryProcessor));
+        checkOperation(() -> cache.invoke(1, TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAsync2() {
-        checkOperation(() -> cache.invokeAsync(1, testEntryProcessor));
+        checkOperation(() -> cache.invokeAsync(1, TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAll1() {
-        checkOperation(() -> cache.invokeAll(singleton(1), testEntryProcessor));
+        checkOperation(() -> cache.invokeAll(singleton(1), TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAllAsync1() {
-        checkOperation(() -> cache.invokeAllAsync(singleton(1), testEntryProcessor));
+        checkOperation(() -> cache.invokeAllAsync(singleton(1), TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAll2() {
-        checkOperation(() -> cache.invokeAll(singleton(1), testEntryProcessor));
+        checkOperation(() -> cache.invokeAll(singleton(1), TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAllAsync2() {
-        checkOperation(() -> cache.invokeAllAsync(singleton(1), testEntryProcessor));
+        checkOperation(() -> cache.invokeAllAsync(singleton(1), TEST_ENTRY_PROCESSOR));
     }
 
     /** */
     @Test
     public void testInvokeAll3() {
-        checkOperation(() -> cache.invokeAll(Collections.singletonMap(1, testEntryProcessor)));
+        checkOperation(() -> cache.invokeAll(Collections.singletonMap(1, TEST_ENTRY_PROCESSOR)));
     }
 
     /** */
     @Test
     public void testInvokeAllAsync3() {
-        checkOperation(() -> cache.invokeAllAsync(Collections.singletonMap(1, testEntryProcessor)));
+        checkOperation(() -> cache.invokeAllAsync(Collections.singletonMap(1, TEST_ENTRY_PROCESSOR)));
     }
 
     /**

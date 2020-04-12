@@ -146,7 +146,7 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
     protected static final IgfsPath FILE_NEW = new IgfsPath(SUBDIR_NEW, "fileNew");
 
     /** Default data chunk (128 bytes). */
-    protected static final byte[] chunk = createChunk(128);
+    protected static final byte[] CHUNK = createChunk(128);
 
     /** Primary IGFS. */
     protected static IgfsImpl igfs;

@@ -79,10 +79,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     private static int dfltCacheBackupCnt = 0;
 
     /** */
-    private static final AtomicReference<CountDownLatch> supplyMessageLatch = new AtomicReference<>();
+    private static final AtomicReference<CountDownLatch> SUPPLY_MESSAGE_LATCH = new AtomicReference<>();
 
     /** */
-    private static final AtomicReference<CountDownLatch> fileIOLatch = new AtomicReference<>();
+    private static final AtomicReference<CountDownLatch> FILE_IO_LATCH = new AtomicReference<>();
 
     /** Replicated cache name. */
     private static final String REPL_CACHE = "cache";
@@ -124,7 +124,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                     int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
 
                     if (grpId == CU.cacheId(DEFAULT_CACHE_NAME)) {
-                        CountDownLatch latch0 = supplyMessageLatch.get();
+                        CountDownLatch latch0 = SUPPLY_MESSAGE_LATCH.get();
 
                         if (latch0 != null)
                             try {
@@ -145,7 +145,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                     int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
 
                     if (grpId == CU.cacheId(DEFAULT_CACHE_NAME)) {
-                        CountDownLatch latch0 = supplyMessageLatch.get();
+                        CountDownLatch latch0 = SUPPLY_MESSAGE_LATCH.get();
 
                         if (latch0 != null)
                             try {
@@ -183,22 +183,22 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        CountDownLatch msgLatch = supplyMessageLatch.get();
+        CountDownLatch msgLatch = SUPPLY_MESSAGE_LATCH.get();
 
         if (msgLatch != null) {
             while (msgLatch.getCount() > 0)
                 msgLatch.countDown();
 
-            supplyMessageLatch.set(null);
+            SUPPLY_MESSAGE_LATCH.set(null);
         }
 
-        CountDownLatch fileLatch = fileIOLatch.get();
+        CountDownLatch fileLatch = FILE_IO_LATCH.get();
 
         if (fileLatch != null) {
             while (fileLatch.getCount() > 0)
                 fileLatch.countDown();
 
-            fileIOLatch.set(null);
+            FILE_IO_LATCH.set(null);
         }
 
         stopAllGrids();
@@ -481,7 +481,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testParallelExchangeDuringRebalance() throws Exception {
-        doTestParallelExchange(supplyMessageLatch);
+        doTestParallelExchange(SUPPLY_MESSAGE_LATCH);
     }
 
     /**
@@ -489,7 +489,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      */
     @Test
     public void testParallelExchangeDuringCheckpoint() throws Exception {
-        doTestParallelExchange(fileIOLatch);
+        doTestParallelExchange(FILE_IO_LATCH);
     }
 
     /**
@@ -750,7 +750,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public int write(ByteBuffer srcBuf) throws IOException {
-            CountDownLatch latch = fileIOLatch.get();
+            CountDownLatch latch = FILE_IO_LATCH.get();
 
             if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
                 try {
@@ -765,7 +765,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-            CountDownLatch latch = fileIOLatch.get();
+            CountDownLatch latch = FILE_IO_LATCH.get();
 
             if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
                 try {
@@ -780,7 +780,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public int write(byte[] buf, int off, int len) throws IOException {
-            CountDownLatch latch = fileIOLatch.get();
+            CountDownLatch latch = FILE_IO_LATCH.get();
 
             if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
                 try {

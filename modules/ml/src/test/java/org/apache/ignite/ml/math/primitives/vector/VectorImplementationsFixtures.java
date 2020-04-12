@@ -44,7 +44,7 @@ import static org.junit.Assert.assertNotNull;
 /** */
 class VectorImplementationsFixtures {
     /** */
-    private static final List<Supplier<Iterable<Vector>>> suppliers = Arrays.asList(
+    private static final List<Supplier<Iterable<Vector>>> SUPPLIERS = Arrays.asList(
         (Supplier<Iterable<Vector>>)DenseLocalOnHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>)SparseLocalVectorFixture::new,
         (Supplier<Iterable<Vector>>)DelegatingVectorFixture::new,
@@ -53,7 +53,7 @@ class VectorImplementationsFixtures {
 
     /** */
     void consumeSampleVectors(Consumer<Integer> paramsConsumer, BiConsumer<Vector, String> consumer) {
-        for (Supplier<Iterable<Vector>> fixtureSupplier : suppliers) {
+        for (Supplier<Iterable<Vector>> fixtureSupplier : SUPPLIERS) {
             final Iterable<Vector> fixture = fixtureSupplier.get();
 
             for (Vector v : fixture) {

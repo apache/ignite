@@ -128,7 +128,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
      */
     private static class Storage extends CacheStoreAdapter<Integer, byte[]> implements Serializable {
         /** */
-        private static final byte[] data = new byte[1024];
+        private static final byte[] DATA = new byte[1024];
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends byte[]> e) throws CacheWriterException {
@@ -153,7 +153,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public byte[] load(Integer key) throws CacheLoaderException {
-            return data;
+            return DATA;
         }
 
         /** {@inheritDoc} */
@@ -161,7 +161,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
             Map<Integer, byte[]> res = new HashMap<>();
 
             for (Integer key : keys)
-                res.put(key, data);
+                res.put(key, DATA);
 
             return res;
         }
@@ -171,7 +171,7 @@ public class IgniteCacheLoadRebalanceEvictionSelfTest extends GridCommonAbstract
             @Nullable Object... args) throws CacheLoaderException {
 
             for (int i = 0; i < ENTRIES_CNT; i++)
-                clo.apply(i, data);
+                clo.apply(i, DATA);
         }
     }
 }

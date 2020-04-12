@@ -55,7 +55,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.values;
  */
 public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest {
     /** */
-    private static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
+    private static final Map<Object, Object> STORE_MAP = new ConcurrentHashMap<>();
 
     /** */
     @Before
@@ -67,7 +67,7 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        storeMap.clear();
+        STORE_MAP.clear();
 
         super.afterTest();
     }
@@ -99,7 +99,7 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void checkLoadCount(CacheConfiguration<Object, Object> ccfg) throws Exception {
-        storeMap.clear();
+        STORE_MAP.clear();
 
         Ignite ignite0 = ignite(0);
 
@@ -243,17 +243,17 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
         @Override public Object load(Object key) {
             loadCnt.incrementAndGet();
 
-            return storeMap.get(key);
+            return STORE_MAP.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> entry) {
-            storeMap.put(entry.getKey(), entry.getValue());
+            STORE_MAP.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
-            storeMap.remove(key);
+            STORE_MAP.remove(key);
         }
     }
 

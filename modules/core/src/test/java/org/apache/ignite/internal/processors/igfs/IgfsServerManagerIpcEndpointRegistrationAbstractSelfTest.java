@@ -47,7 +47,7 @@ import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_MGMT_
  * Base test class for {@link IgfsServer} checking IPC endpoint registrations.
  */
 public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest extends IgfsCommonAbstractTest {
-    private static final AtomicInteger mgmtPort = new AtomicInteger(DFLT_MGMT_PORT);
+    private static final AtomicInteger MGMT_PORT = new AtomicInteger(DFLT_MGMT_PORT);
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -228,7 +228,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
         FileSystemConfiguration igfsConfiguration = new FileSystemConfiguration();
 
         igfsConfiguration.setName("igfs" + UUID.randomUUID());
-        igfsConfiguration.setManagementPort(mgmtPort.getAndIncrement());
+        igfsConfiguration.setManagementPort(MGMT_PORT.getAndIncrement());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 

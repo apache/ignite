@@ -94,10 +94,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    protected static final AtomicInteger srvIdx = new AtomicInteger();
+    protected static final AtomicInteger SRV_IDX = new AtomicInteger();
 
     /** */
-    private static final AtomicInteger clientIdx = new AtomicInteger();
+    private static final AtomicInteger CLIENT_IDX = new AtomicInteger();
 
     /** */
     protected static Collection<UUID> srvNodeIds;
@@ -186,7 +186,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 ipFinder = new TcpDiscoveryVmIpFinder();
 
                 String addr = new ArrayList<>(IP_FINDER.getRegisteredAddresses()).
-                    get((clientIdx.get() - 1) / clientsPerSrv).toString();
+                    get((CLIENT_IDX.get() - 1) / clientsPerSrv).toString();
 
                 if (addr.startsWith("/"))
                     addr = addr.substring(1);
@@ -254,8 +254,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         if (!F.isEmpty(addrs))
             IP_FINDER.unregisterAddresses(addrs);
 
-        srvIdx.set(0);
-        clientIdx.set(0);
+        SRV_IDX.set(0);
+        CLIENT_IDX.set(0);
 
         srvNodeIds = new GridConcurrentHashSet<>();
         clientNodeIds = new GridConcurrentHashSet<>();
@@ -902,7 +902,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         try {
             spi.brakeConnection();
 
-            Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+            Ignite g = startGrid("server-" + SRV_IDX.getAndIncrement());
 
             g.close();
 
@@ -947,7 +947,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         try {
             spi.brakeConnection();
 
-            Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+            Ignite g = startGrid("server-" + SRV_IDX.getAndIncrement());
 
             g.close();
 
@@ -1543,7 +1543,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         TestTcpDiscoverySpi srvSpi = ((TestTcpDiscoverySpi)srv.configuration().getDiscoverySpi());
 
-        final String client0 = "client-" + clientIdx.getAndIncrement();
+        final String client0 = "client-" + CLIENT_IDX.getAndIncrement();
 
         srvSpi.delayJoinAckFor = client0;
 
@@ -1571,7 +1571,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        final String client1 = "client-" + clientIdx.getAndIncrement();
+        final String client1 = "client-" + CLIENT_IDX.getAndIncrement();
 
         while (!fut.isDone()) {
             startClientGrid(client1);
@@ -1597,7 +1597,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                Ignite g = startClientGrid("client-" + clientIdx.getAndIncrement());
+                Ignite g = startClientGrid("client-" + CLIENT_IDX.getAndIncrement());
 
                 clientNodeIds.add(g.cluster().localNode().id());
 
@@ -1731,7 +1731,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         checkNodes(changeTop ? 2 : 1, 1);
 
-        Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+        Ignite g = startGrid("server-" + SRV_IDX.getAndIncrement());
 
         srvNodeIds.add(g.cluster().localNode().id());
 
@@ -1789,7 +1789,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 latch.await();
 
-                Ignite g = startClientGrid("client-" + clientIdx.getAndIncrement());
+                Ignite g = startClientGrid("client-" + CLIENT_IDX.getAndIncrement());
 
                 clientNodeIds.add(g.cluster().localNode().id());
 
@@ -2017,7 +2017,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         assertTrue(disconnectLatch.await(awaitTime(), MILLISECONDS));
 
         srvNodeIds.clear();
-        srvIdx.set(0);
+        SRV_IDX.set(0);
 
         Thread.sleep(3000);
 
@@ -2204,7 +2204,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     protected void startServerNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
-            Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+            Ignite g = startGrid("server-" + SRV_IDX.getAndIncrement());
 
             srvNodeIds.add(g.cluster().localNode().id());
         }
@@ -2216,7 +2216,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
      */
     protected void startClientNodes(int cnt) throws Exception {
         for (int i = 0; i < cnt; i++) {
-            Ignite g = startClientGrid("client-" + clientIdx.getAndIncrement());
+            Ignite g = startClientGrid("client-" + CLIENT_IDX.getAndIncrement());
 
             clientNodeIds.add(g.cluster().localNode().id());
         }

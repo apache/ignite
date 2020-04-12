@@ -56,7 +56,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     private static final int GRID_COUNT = 3;
 
     /** Events. */
-    private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> events = new ConcurrentLinkedQueue<>();
+    private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> EVENTS = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -85,7 +85,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         stopAllGrids();
 
-        events.clear();
+        EVENTS.clear();
     }
 
     /**
@@ -119,9 +119,9 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             }
         }
 
-        assertTrue("There are not filtered events", !events.isEmpty());
+        assertTrue("There are not filtered events", !EVENTS.isEmpty());
 
-        for (CacheEntryEvent<?, ?> event : events) {
+        for (CacheEntryEvent<?, ?> event : EVENTS) {
             assertNotNull("Key is null", event.getKey());
             assertNotNull("Value is null", event.getValue());
             assertNotNull("Old value is null", event.getOldValue());
@@ -192,7 +192,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     private static class CacheEventFilter implements CacheEntryEventFilter<Object, Object>, Serializable {
         /** {@inheritDoc} */
          @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
-            events.add(evt);
+            EVENTS.add(evt);
 
             return false;
         }

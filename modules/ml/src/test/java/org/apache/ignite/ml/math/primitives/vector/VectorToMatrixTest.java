@@ -36,13 +36,13 @@ import static org.junit.Assert.assertTrue;
 /** Tests for methods of Vector that involve Matrix. */
 public class VectorToMatrixTest {
     /** */
-    private static final Map<Class<? extends Vector>, Class<? extends Matrix>> typesMap = typesMap();
+    private static final Map<Class<? extends Vector>, Class<? extends Matrix>> TYPES_MAP = typesMap();
 
     /** */
     @Test
     public void testHaveLikeMatrix() {
-        for (Class<? extends Vector> key : typesMap.keySet()) {
-            Class<? extends Matrix> val = typesMap.get(key);
+        for (Class<? extends Vector> key : TYPES_MAP.keySet()) {
+            Class<? extends Matrix> val = TYPES_MAP.get(key);
 
             if (val == null)
                 System.out.println("Missing test for implementation of likeMatrix for " + key.getSimpleName());
@@ -60,7 +60,7 @@ public class VectorToMatrixTest {
 
             Class<? extends Vector> key = v.getClass();
 
-            Class<? extends Matrix> expMatrixType = typesMap.get(key);
+            Class<? extends Matrix> expMatrixType = TYPES_MAP.get(key);
 
             assertNotNull("Expect non-null matrix for " + key.getSimpleName() + " in " + desc, matrix);
 
@@ -204,7 +204,7 @@ public class VectorToMatrixTest {
     private boolean availableForTesting(Vector v) {
         assertNotNull("Error in test: vector is null", v);
 
-        final boolean availableForTesting = typesMap.get(v.getClass()) != null;
+        final boolean availableForTesting = TYPES_MAP.get(v.getClass()) != null;
 
         final Matrix actualLikeMatrix = v.likeMatrix(1, 1);
 

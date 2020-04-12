@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.reconnect;
 
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import com.google.common.collect.Sets;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -50,10 +50,10 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
  */
 public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryVmIpFinder vmIpFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryVmIpFinder VM_IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final TcpDiscoveryVmIpFinder clientIpFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryVmIpFinder CLIENT_IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final String NODE_1 = "node1";
@@ -136,11 +136,11 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         cfg.setAutoActivationEnabled(false);
 
         if (!NODE_CLIENT.equals(name))
-            cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(vmIpFinder));
+            cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(VM_IP_FINDER));
         else {
-            clientIpFinder.setAddresses(Collections.singletonList("127.0.0.1:47501"));
+            CLIENT_IP_FINDER.setAddresses(Collections.singletonList("127.0.0.1:47501"));
 
-            cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(clientIpFinder));
+            cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(CLIENT_IP_FINDER));
         }
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -218,7 +218,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         if (activateLatch != null)
             cfg3.setDiscoverySpi(
                 new AwaitTcpDiscoverySpi(activateLatch)
-                    .setIpFinder(clientIpFinder)
+                    .setIpFinder(CLIENT_IP_FINDER)
             );
 
         startGrid(cfg1);

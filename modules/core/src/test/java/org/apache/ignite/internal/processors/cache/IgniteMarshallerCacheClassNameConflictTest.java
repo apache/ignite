@@ -67,7 +67,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
     /**
      * Latch used to synchronize two nodes on sending mapping requests for classes with conflicting names.
      */
-    private static final CountDownLatch startLatch = new CountDownLatch(3);
+    private static final CountDownLatch START_LATCH = new CountDownLatch(3);
 
     /** */
     private static volatile boolean busySpinFlag;
@@ -120,10 +120,10 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         exec1.submit(new Runnable() {
             @Override public void run() {
-                startLatch.countDown();
+                START_LATCH.countDown();
 
                 try {
-                    startLatch.await();
+                    START_LATCH.await();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -141,10 +141,10 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
         exec2.submit(new Runnable() {
             @Override public void run() {
-                startLatch.countDown();
+                START_LATCH.countDown();
 
                 try {
-                    startLatch.await();
+                    START_LATCH.await();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -159,7 +159,7 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
                 Ignition.localIgnite().cache(DEFAULT_CACHE_NAME).put(2, bOrg2);
             }
         });
-        startLatch.countDown();
+        START_LATCH.countDown();
 
         busySpinFlag = true;
 

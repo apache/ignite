@@ -127,12 +127,12 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
         /**
          * Node ConsistentId for which the error will be generated
          */
-        private static final AtomicReference<String> unluckyConsistentId = new AtomicReference<>();
+        private static final AtomicReference<String> UNLUCKY_CONSISTENT_ID = new AtomicReference<>();
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            if (unluckyConsistentId.get() != null
-                && file.getAbsolutePath().contains(unluckyConsistentId.get())
+            if (UNLUCKY_CONSISTENT_ID.get() != null
+                && file.getAbsolutePath().contains(UNLUCKY_CONSISTENT_ID.get())
                 && file.getAbsolutePath().contains(StandaloneGridKernalContext.BINARY_META_FOLDER))
                 throw new IOException("No space left on device");
 
@@ -145,7 +145,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
          * @param unluckyConsistentId Node ConsistentId.
          */
         public static void setUnluckyConsistentId(String unluckyConsistentId) {
-            FailingFileIOFactory.unluckyConsistentId.set(unluckyConsistentId);
+            FailingFileIOFactory.UNLUCKY_CONSISTENT_ID.set(unluckyConsistentId);
         }
     }
 }

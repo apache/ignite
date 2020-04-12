@@ -57,7 +57,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /** Slow checkpoint enabled. */
-    private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
+    private static final AtomicBoolean SLOW_CHECKPOINT_ENABLED = new AtomicBoolean(true);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";
@@ -101,7 +101,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         deleteWorkFiles();
 
-        slowCheckpointEnabled.set(true);
+        SLOW_CHECKPOINT_ENABLED.set(true);
     }
 
     /** {@inheritDoc} */
@@ -190,7 +190,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                 LockSupport.parkNanos(10_000);
 
             if (zeroDropdown.get()) {
-                slowCheckpointEnabled.set(false);
+                SLOW_CHECKPOINT_ENABLED.set(false);
 
                 IgniteInternalFuture cpFut1 = ((IgniteEx)ignite(0)).context().cache().context().database()
                     .wakeupForCheckpoint("test");
@@ -305,21 +305,21 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
             return new FileIODecorator(delegate) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                    if (SLOW_CHECKPOINT_ENABLED.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(5_000_000);
 
                     return delegate.write(srcBuf);
                 }
 
                 @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                    if (SLOW_CHECKPOINT_ENABLED.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(5_000_000);
 
                     return delegate.write(srcBuf, position);
                 }
 
                 @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
+                    if (SLOW_CHECKPOINT_ENABLED.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(5_000_000);
 
                     return delegate.write(buf, off, len);

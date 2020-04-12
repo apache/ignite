@@ -46,8 +46,8 @@ public class OneVsRestTrainerTest extends TrainerTest {
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),
@@ -77,8 +77,8 @@ public class OneVsRestTrainerTest extends TrainerTest {
     public void testUpdate() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         LogisticRegressionSGDTrainer binaryTrainer = new LogisticRegressionSGDTrainer()
             .withUpdatesStgy(new UpdatesStrategy<>(new SimpleGDUpdateCalculator(0.2),

@@ -45,7 +45,7 @@ import org.junit.Test;
  */
 public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -61,7 +61,7 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
 
         rndAddrsField.set(spi, true);
 
-        cfg.setDiscoverySpi(spi.setIpFinder(ipFinder));
+        cfg.setDiscoverySpi(spi.setIpFinder(IP_FINDER));
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;

@@ -164,7 +164,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
 
         createSymlinks();
 
-        checkFileContent(igfs, new IgfsPath("/file"), chunk);
+        checkFileContent(igfs, new IgfsPath("/file"), CHUNK);
     }
 
     /**
@@ -201,9 +201,9 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
                     for (int i = 0; i < FILES_COUNT; ++i) {
                         IgfsPath filePath = new IgfsPath(levelDir, "file" + Integer.toString(i));
 
-                        createFile(igfs, filePath, true, chunk);
+                        createFile(igfs, filePath, true, CHUNK);
 
-                        totalSize.getAndAdd(chunk.length);
+                        totalSize.getAndAdd(CHUNK.length);
                     }
 
                     if (level < DIRS_MAX_DEEP) {
@@ -238,8 +238,8 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
         IgfsPath filePath = new IgfsPath("/file");
 
         try (OutputStream os = igfs.create(filePath, true)) {
-            for(int i = 0; i < fileSize / chunk.length; ++i)
-                os.write(chunk);
+            for(int i = 0; i < fileSize / CHUNK.length; ++i)
+                os.write(CHUNK);
         }
 
         Collection<IgfsBlockLocation> blocks;
@@ -308,7 +308,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
     private void createSymlinks() throws Exception {
         assert dirLinkDest.mkdir();
 
-        createFile(fileLinkDest, true, chunk);
+        createFile(fileLinkDest, true, CHUNK);
 
         Files.createSymbolicLink(dirLinkSrc.toPath(), dirLinkDest.toPath());
         Files.createSymbolicLink(fileLinkSrc.toPath(), fileLinkDest.toPath());

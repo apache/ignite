@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    private static final AtomicInteger cnt = new AtomicInteger();
+    private static final AtomicInteger CNT = new AtomicInteger();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -94,11 +94,11 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
      *
      */
     private void putAndCheck(IgniteCache<Object, Object> cache, int diff) {
-        cnt.set(0);
+        CNT.set(0);
 
         cache.put(1, "1");
 
-        assertEquals(diff, cnt.get());
+        assertEquals(diff, CNT.get());
     }
 
     /**
@@ -119,7 +119,7 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
 
         qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Object, Object>() {
             @Override public boolean evaluate(CacheEntryEvent<?, ?> event) throws CacheEntryListenerException {
-                cnt.incrementAndGet();
+                CNT.incrementAndGet();
 
                 return true;
             }

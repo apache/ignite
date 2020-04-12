@@ -146,15 +146,15 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         bucketMeta1.setBucketSize(0.1);
         BucketMeta bucketMeta2 = new BucketMeta(new FeatureMeta("", 1, true));
 
-        GiniHistogram forAllHist1 = new GiniHistogram(sampleId, lblMapping, bucketMeta1);
-        GiniHistogram forAllHist2 = new GiniHistogram(sampleId, lblMapping, bucketMeta2);
+        GiniHistogram forAllHist1 = new GiniHistogram(sampleId, LBL_MAPPING, bucketMeta1);
+        GiniHistogram forAllHist2 = new GiniHistogram(sampleId, LBL_MAPPING, bucketMeta2);
 
         List<GiniHistogram> partitions1 = new ArrayList<>();
         List<GiniHistogram> partitions2 = new ArrayList<>();
         int cntOfPartitions = rnd.nextInt(1000);
         for (int i = 0; i < cntOfPartitions; i++) {
-            partitions1.add(new GiniHistogram(sampleId,lblMapping, bucketMeta1));
-            partitions2.add(new GiniHistogram(sampleId,lblMapping, bucketMeta2));
+            partitions1.add(new GiniHistogram(sampleId, LBL_MAPPING, bucketMeta1));
+            partitions2.add(new GiniHistogram(sampleId, LBL_MAPPING, bucketMeta2));
         }
 
         int datasetSize = rnd.nextInt(10000);
@@ -172,8 +172,8 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         checkSums(forAllHist1, partitions1);
         checkSums(forAllHist2, partitions2);
 
-        GiniHistogram emptyHist1 = new GiniHistogram(sampleId, lblMapping, bucketMeta1);
-        GiniHistogram emptyHist2 = new GiniHistogram(sampleId, lblMapping, bucketMeta2);
+        GiniHistogram emptyHist1 = new GiniHistogram(sampleId, LBL_MAPPING, bucketMeta1);
+        GiniHistogram emptyHist2 = new GiniHistogram(sampleId, LBL_MAPPING, bucketMeta2);
         assertTrue(forAllHist1.isEqualTo(forAllHist1.plus(emptyHist1)));
         assertTrue(forAllHist2.isEqualTo(forAllHist2.plus(emptyHist2)));
         assertTrue(forAllHist1.isEqualTo(emptyHist1.plus(forAllHist1)));

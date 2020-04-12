@@ -60,7 +60,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
  */
 public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final Collection<TaskEvent> evts = new ArrayList<>();
+    private static final Collection<TaskEvent> EVTS = new ArrayList<>();
 
     /** */
     private static CountDownLatch latch;
@@ -90,7 +90,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
             @Override public boolean apply(Event evt) {
                 assert evt instanceof TaskEvent;
 
-                evts.add((TaskEvent)evt);
+                EVTS.add((TaskEvent)evt);
 
                 latch.countDown();
 
@@ -114,7 +114,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        evts.clear();
+        EVTS.clear();
     }
 
     /**
@@ -128,9 +128,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assert latch.await(1000, MILLISECONDS);
 
-        assertEquals(3, evts.size());
+        assertEquals(3, EVTS.size());
 
-        Iterator<TaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = EVTS.iterator();
 
         assert it.hasNext();
 
@@ -184,9 +184,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assert latch.await(1000, MILLISECONDS);
 
-        assertEquals(2, evts.size());
+        assertEquals(2, EVTS.size());
 
-        Iterator<TaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = EVTS.iterator();
 
         assert it.hasNext();
 
@@ -231,9 +231,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assert latch.await(1000, MILLISECONDS);
 
-        assertEquals(3, evts.size());
+        assertEquals(3, EVTS.size());
 
-        Iterator<TaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = EVTS.iterator();
 
         assert it.hasNext();
 
@@ -280,9 +280,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assert latch.await(1000, MILLISECONDS);
 
-        assertEquals(3, evts.size());
+        assertEquals(3, EVTS.size());
 
-        Iterator<TaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = EVTS.iterator();
 
         assert it.hasNext();
 
@@ -328,9 +328,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assert latch.await(1000, MILLISECONDS);
 
-        assertEquals(3, evts.size());
+        assertEquals(3, EVTS.size());
 
-        Iterator<TaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = EVTS.iterator();
 
         assert it.hasNext();
 

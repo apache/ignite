@@ -56,7 +56,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
             assert X.hasCause(e, IOException.class);
         }
 
-        assert readCnt.get() == 0; // Ensure we have read count as expected.
+        assert READ_CNT.get() == 0; // Ensure we have read count as expected.
     }
 
     /**
@@ -74,29 +74,29 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
             assert X.hasCause(e, IOException.class);
         }
 
-        assert readCnt.get() == 0; // Ensure we have read count as expected.
+        assert READ_CNT.get() == 0; // Ensure we have read count as expected.
     }
 
     /** {@inheritDoc} */
     @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() {
         //GridNearTxPrepareRequest unmarshalling failed test
-        readCnt.set(2);
+        READ_CNT.set(2);
 
         failOptimistic();
 
         //GridDhtTxPrepareRequest unmarshalling failed test
-        readCnt.set(3);
+        READ_CNT.set(3);
 
         failOptimistic();
 
         //GridNearLockRequest unmarshalling failed test
-        readCnt.set(2);
+        READ_CNT.set(2);
 
         failPessimictic();
 
         //GridDhtLockRequest unmarshalling failed test
-        readCnt.set(3);
+        READ_CNT.set(3);
 
         try (Transaction tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             jcache(0).put(new TestKey(String.valueOf(++key)), ""); //No failure at client side.

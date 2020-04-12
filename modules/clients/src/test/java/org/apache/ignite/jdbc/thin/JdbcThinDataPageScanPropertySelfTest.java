@@ -81,7 +81,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
         for (int i = 0; i < INITIAL_ROWS_CNT; i++)
             executeUpdate("INSERT INTO TEST VALUES (" + i + ", " + (i + 1) + ")");
 
-        IndexingWithQueries.queries.clear();
+        IndexingWithQueries.QUERIES.clear();
     }
 
     /**
@@ -141,20 +141,20 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
         }
 
         // Some update operations may produce additional SELECTS, but all the queries should have specified flag value.
-        boolean containsOrig = IndexingWithQueries.queries.stream()
+        boolean containsOrig = IndexingWithQueries.QUERIES.stream()
             .anyMatch(executedQry -> qryWithParam.equals(executedQry.getSql()));
 
         assertTrue("Original query have not been executed.", containsOrig);
 
-        IndexingWithQueries.queries.forEach(query ->
+        IndexingWithQueries.QUERIES.forEach(query ->
             assertEquals("Data page scan flag value is unexpected for query " + query, dps, null)
         );
 
-        int executed = IndexingWithQueries.queries.size();
+        int executed = IndexingWithQueries.QUERIES.size();
 
         assertEquals(expCnt, executed);
 
-        IndexingWithQueries.queries.clear();
+        IndexingWithQueries.QUERIES.clear();
     }
 
     /**
@@ -173,23 +173,23 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
         }
 
         // Some update operations may produce additional SELECTS, but all the queries should have specified flag value.
-        boolean containsOrig = IndexingWithQueries.queries.stream()
+        boolean containsOrig = IndexingWithQueries.QUERIES.stream()
             .anyMatch(executedQry -> qry.equals(executedQry.getSql()));
 
         assertTrue("Original query have not been executed.", containsOrig);
 
-        IndexingWithQueries.queries.forEach(executedQry ->
+        IndexingWithQueries.QUERIES.forEach(executedQry ->
             assertEquals("Data page scan flag value is unexpected for query " + executedQry, dps, null)
         );
 
-        int executed = IndexingWithQueries.queries.size();
+        int executed = IndexingWithQueries.QUERIES.size();
 
         assertTrue(
             "Expected that there are executed at least one query. " +
                 "But executed only " + executed,
             executed >= 1);
 
-        IndexingWithQueries.queries.clear();
+        IndexingWithQueries.QUERIES.clear();
     }
 
     /**
@@ -197,7 +197,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      */
     private static class IndexingWithQueries extends IgniteH2Indexing {
         /** All the queries that have been executed using this indexing. */
-        static final Queue<SqlFieldsQuery> queries = new LinkedBlockingQueue<>();
+        static final Queue<SqlFieldsQuery> QUERIES = new LinkedBlockingQueue<>();
 
         /** {@inheritDoc} */
         @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(
@@ -208,7 +208,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
             boolean failOnMultipleStmts,
             GridQueryCancel cancel
         ) {
-            queries.add(qry);
+            QUERIES.add(qry);
 
             return super.querySqlFields(
                 schemaName,

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -26,76 +27,75 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #map}
+ * {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #MAP}
  */
 public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
     /** Removes counter. */
-    private static final AtomicInteger removes = new AtomicInteger();
+    private static final AtomicInteger REMOVES = new AtomicInteger();
 
     /** Writes counter. */
-    private static final AtomicInteger writes = new AtomicInteger();
+    private static final AtomicInteger WRITES = new AtomicInteger();
 
     /** Reads counter. */
-    private static final AtomicInteger reads = new AtomicInteger();
+    private static final AtomicInteger READS = new AtomicInteger();
 
     /** Store map. */
-    private static final Map<Object, Object> map = new ConcurrentHashMap<>();
+    private static final Map<Object, Object> MAP = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public int getReads() {
-        return reads.get();
+        return READS.get();
     }
 
     /** {@inheritDoc} */
     @Override public int getWrites() {
-        return writes.get();
+        return WRITES.get();
     }
 
     /** {@inheritDoc} */
     @Override public int getRemoves() {
-        return removes.get();
+        return REMOVES.get();
     }
 
     /** {@inheritDoc} */
     @Override public int getStoreSize() {
-        return map.size();
+        return MAP.size();
     }
 
     /** {@inheritDoc} */
     @Override public void resetStore() {
-        map.clear();
+        MAP.clear();
 
-        reads.set(0);
-        writes.set(0);
-        removes.set(0);
+        READS.set(0);
+        WRITES.set(0);
+        REMOVES.set(0);
     }
 
     /** {@inheritDoc} */
     @Override public void putToStore(Object key, Object val) {
-        map.put(key, val);
+        MAP.put(key, val);
     }
 
     /** {@inheritDoc} */
     @Override public void putAllToStore(Map<?, ?> data) {
-        map.putAll(data);
+        MAP.putAll(data);
     }
 
     /** {@inheritDoc} */
     @Override public Object getFromStore(Object key) {
-        return map.get(key);
+        return MAP.get(key);
     }
 
     /** {@inheritDoc} */
     @Override public void removeFromStore(Object key) {
-        map.remove(key);
+        MAP.remove(key);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInStore(Object key) {
-        return map.containsKey(key);
+        return MAP.containsKey(key);
     }
 
     /** {@inheritDoc} */
@@ -108,7 +108,7 @@ public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
         return FactoryBuilder.factoryOf(MapCacheStore.class);
     }
 
-    /** Serializable {@link #map} backed cache store factory */
+    /** Serializable {@link #MAP} backed cache store factory */
     public static class MapStoreFactory implements Factory<CacheStore<Object, Object>> {
         /** {@inheritDoc} */
         @Override public CacheStore<Object, Object> create() {
@@ -116,30 +116,30 @@ public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
         }
     }
 
-    /** {@link CacheStore} backed by {@link #map} */
+    /** {@link CacheStore} backed by {@link #MAP} */
     public static class MapCacheStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
-            for (Map.Entry<Object, Object> e : map.entrySet())
+            for (Map.Entry<Object, Object> e : MAP.entrySet())
                 clo.apply(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public Object load(Object key) {
-            reads.incrementAndGet();
-            return map.get(key);
+            READS.incrementAndGet();
+            return MAP.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> e) {
-            writes.incrementAndGet();
-            map.put(e.getKey(), e.getValue());
+            WRITES.incrementAndGet();
+            MAP.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
-            removes.incrementAndGet();
-            map.remove(key);
+            REMOVES.incrementAndGet();
+            MAP.remove(key);
         }
     }
 }

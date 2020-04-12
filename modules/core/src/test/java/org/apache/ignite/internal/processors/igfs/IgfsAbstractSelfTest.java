@@ -17,6 +17,23 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -40,25 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -799,12 +797,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testOpen() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, CHUNK);
 
-        checkFileContent(igfs, FILE, chunk);
+        checkFileContent(igfs, FILE, CHUNK);
 
         // Read again when the whole file is in memory.
-        checkFileContent(igfs, FILE, chunk);
+        checkFileContent(igfs, FILE, CHUNK);
     }
 
     /**
@@ -838,7 +836,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testSetTimes() throws Exception {
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, CHUNK);
 
         checkExist(igfs, igfsSecondary, DIR);
         checkExist(igfs, igfsSecondary, SUBDIR);
@@ -950,9 +948,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testCreate() throws Exception {
         create(igfs, paths(DIR, SUBDIR), null);
 
-        createFile(igfs, FILE, true, chunk);
+        createFile(igfs, FILE, true, CHUNK);
 
-        checkFile(igfs, igfsSecondary, FILE, chunk);
+        checkFile(igfs, igfsSecondary, FILE, CHUNK);
 
         try (IgfsOutputStream os = igfs.create(new IgfsPath("/r"), false)) {
             checkExist(igfs, igfsSecondary, new IgfsPath("/r"));
@@ -1035,9 +1033,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testCreateParentRoot() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
-        createFile(igfs, file, true, chunk);
+        createFile(igfs, file, true, CHUNK);
 
-        checkFile(igfs, igfsSecondary, file, chunk);
+        checkFile(igfs, igfsSecondary, file, CHUNK);
     }
 
     /**
@@ -1154,7 +1152,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             // Delete worker cannot delete it for that reason:
             assertTrue(igfs.context().meta().exists(id));
 
-            os.write(chunk);
+            os.write(CHUNK);
 
             os.close();
         }
@@ -1209,7 +1207,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             // Delete worker cannot delete it for that reason:
             assertTrue(igfs.context().meta().exists(id));
 
-            os.write(chunk);
+            os.write(CHUNK);
 
             os.close();
         }
@@ -1274,29 +1272,29 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         IgfsOutputStream os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
 
-        os.write(chunk);
+        os.write(CHUNK);
 
         os.close();
 
         assert igfs.exists(path);
-        checkFileContent(igfs, path, chunk);
+        checkFileContent(igfs, path, CHUNK);
 
         os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
 
         assert igfs.exists(path);
 
-        os.write(chunk);
+        os.write(CHUNK);
 
         assert igfs.exists(path);
 
-        os.write(chunk);
+        os.write(CHUNK);
 
         assert igfs.exists(path);
 
         os.close();
 
         assert igfs.exists(path);
-        checkFileContent(igfs, path, chunk, chunk);
+        checkFileContent(igfs, path, CHUNK, CHUNK);
     }
 
     /**
@@ -1321,7 +1319,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     for (int i = 0; i < REPEAT_CNT; i++) {
                         IgfsOutputStream os = igfs.create(path, 128, true/*overwrite*/, null, 0, 256, null);
 
-                        os.write(chunk);
+                        os.write(CHUNK);
 
                         os.close();
 
@@ -1330,7 +1328,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
                     awaitFileClose(igfs, path);
 
-                    checkFileContent(igfs, path, chunk);
+                    checkFileContent(igfs, path, CHUNK);
                 }
                 catch (IOException | IgniteCheckedException e) {
                     err.compareAndSet(null, e); // Log the very first error.
@@ -1367,7 +1365,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                     try {
                         os = igfs.create(FILE, true);
 
-                        os.write(chunk);
+                        os.write(CHUNK);
 
                         os.close();
 
@@ -1418,7 +1416,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             throw err.get();
         }
 
-        checkFileContent(igfs, FILE, chunk);
+        checkFileContent(igfs, FILE, CHUNK);
     }
 
     /**
@@ -1434,13 +1432,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             assert igfs.exists(SUBDIR);
 
-            createFile(igfs, FILE, true, BLOCK_SIZE, chunk);
+            createFile(igfs, FILE, true, BLOCK_SIZE, CHUNK);
 
-            checkFile(igfs, igfsSecondary, FILE, chunk);
+            checkFile(igfs, igfsSecondary, FILE, CHUNK);
 
-            appendFile(igfs, FILE, chunk);
+            appendFile(igfs, FILE, CHUNK);
 
-            checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
+            checkFile(igfs, igfsSecondary, FILE, CHUNK, CHUNK);
 
             // Test create via append:
             IgfsPath path2 = FILE2;
@@ -1450,7 +1448,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try {
                 os = igfs.append(path2, true/*create*/);
 
-                writeFileChunks(os, chunk);
+                writeFileChunks(os, CHUNK);
             } finally {
                 U.closeQuiet(os);
 
@@ -1460,14 +1458,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             try {
                 os = igfs.append(path2, false/*create*/);
 
-                writeFileChunks(os, chunk);
+                writeFileChunks(os, CHUNK);
             } finally {
                 U.closeQuiet(os);
 
                 awaitFileClose(igfs, path2);
             }
 
-            checkFile(igfs, igfsSecondary, path2, chunk, chunk);
+            checkFile(igfs, igfsSecondary, path2, CHUNK, CHUNK);
 
             // Negative append (create == false):
             try {
@@ -1573,11 +1571,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if (appendSupported()) {
             IgfsPath file = new IgfsPath("/" + FILE.name());
 
-            createFile(igfs, file, true, BLOCK_SIZE, chunk);
+            createFile(igfs, file, true, BLOCK_SIZE, CHUNK);
 
-            appendFile(igfs, file, chunk);
+            appendFile(igfs, file, CHUNK);
 
-            checkFile(igfs, igfsSecondary, file, chunk, chunk);
+            checkFile(igfs, igfsSecondary, file, CHUNK, CHUNK);
         }
     }
 
@@ -1704,7 +1702,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 // it is locked for writing and just moved to TRASH.
                 // Delete worker cannot delete it for that reason.
 
-                os.write(chunk);
+                os.write(CHUNK);
 
                 os.close();
             } finally {
@@ -1759,7 +1757,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 // it is locked for writing and just moved to TRASH.
                 // Delete worker cannot delete it for that reason.
 
-                os.write(chunk);
+                os.write(CHUNK);
 
                 os.close();
             } finally {
@@ -1841,11 +1839,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                         byte[][] chunks = new byte[REPEAT_CNT][];
 
                         for (int i = 0; i < REPEAT_CNT; i++) {
-                            chunks[i] = chunk;
+                            chunks[i] = CHUNK;
 
                             IgfsOutputStream os = igfs.append(path, false);
 
-                            os.write(chunk);
+                            os.write(CHUNK);
 
                             os.close();
 
@@ -1892,7 +1890,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                         try {
                             os = igfs.append(FILE, false);
 
-                            os.write(chunk);
+                            os.write(CHUNK);
 
                             os.close();
 
@@ -1933,7 +1931,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             byte[][] data = new byte[chunksCtr.get()][];
 
-            Arrays.fill(data, chunk);
+            Arrays.fill(data, CHUNK);
 
             checkFileContent(igfs, FILE, data);
         }
@@ -1950,7 +1948,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         IgfsOutputStream os = igfs.create(FILE, true);
 
-        os.write(chunk);
+        os.write(CHUNK);
 
         igfs.stop(true);
 
@@ -2569,7 +2567,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                         try {
                             os = igfs.create(path, true);
 
-                            os.write(chunk);
+                            os.write(CHUNK);
                         }
                         finally {
                             U.closeQuiet(os);

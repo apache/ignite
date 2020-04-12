@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class KNNClassificationTest {
     /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 100};
+    private static final int[] PARTS_TO_BE_TESTED = new int[] {1, 2, 3, 4, 5, 7, 100};
 
     /** Number of partitions. */
     @Parameterized.Parameter
@@ -51,7 +51,7 @@ public class KNNClassificationTest {
     public static Iterable<Integer[]> data() {
         List<Integer[]> res = new ArrayList<>();
 
-        for (int part : partsToBeTested)
+        for (int part : PARTS_TO_BE_TESTED)
             res.add(new Integer[] {part});
 
         return res;

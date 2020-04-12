@@ -40,14 +40,14 @@ public class ImpurityHistogramTest {
     private static final int COUNT_OF_CLASSES = 3;
 
     /** Lbl mapping. */
-    static final Map<Double, Integer> lblMapping = new HashMap<>();
+    static final Map<Double, Integer> LBL_MAPPING = new HashMap<>();
 
     /** Random generator. */
     protected Random rnd = new Random();
 
     static {
         for(int i = 0; i < COUNT_OF_CLASSES; i++)
-            lblMapping.put((double)i, i);
+            LBL_MAPPING.put((double)i, i);
     }
 
     /** */

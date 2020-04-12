@@ -60,10 +60,10 @@ import org.junit.Test;
  */
 public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     /** Slow file IO enabled. */
-    private static final AtomicBoolean slowFileIoEnabled = new AtomicBoolean(false);
+    private static final AtomicBoolean SLOW_FILE_IO_ENABLED = new AtomicBoolean(false);
 
     /** Node failure occurs. */
-    private static final AtomicBoolean failure = new AtomicBoolean(false);
+    private static final AtomicBoolean FAILURE = new AtomicBoolean(false);
 
     /** Number of executing tasks. */
     private static final int NUM_TASKS = 16;
@@ -77,7 +77,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         cfg.setFailureHandler(new AbstractFailureHandler() {
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-                failure.set(true);
+                FAILURE.set(true);
 
                 return true;
             }
@@ -119,7 +119,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
     public void testFailNodesOnCanceledTask() throws Exception {
         cleanPersistenceDir();
 
-        failure.set(false);
+        FAILURE.set(false);
 
         try {
             Ignite ig0 = startGrids(4);
@@ -148,14 +148,14 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                     }));
             }
 
-            slowFileIoEnabled.set(true);
+            SLOW_FILE_IO_ENABLED.set(true);
 
             latch.await();
 
             for (IgniteFuture future: cancelFutures)
                 future.cancel();
 
-            slowFileIoEnabled.set(false);
+            SLOW_FILE_IO_ENABLED.set(false);
 
             for (int i = 0; i < NUM_TASKS; i++) {
                 final Integer key = i;
@@ -173,7 +173,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
             assertFalse(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return failure.get();
+                    return FAILURE.get();
                 }
             }, 5_000L));
         }
@@ -189,7 +189,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFilePageStoreInterruptThreads() throws Exception {
-        failure.set(false);
+        FAILURE.set(false);
 
         FileIOFactory factory = new RandomAccessFileIOFactory();
 
@@ -248,7 +248,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                             catch (Exception e) {
                                 log.error("Error while reading/writing page", e);
 
-                                failure.set(true);
+                                FAILURE.set(true);
                             }
                         }
                     }
@@ -273,7 +273,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
             for (Thread thread : threadList)
                 thread.join();
 
-            assertFalse(failure.get());
+            assertFalse(FAILURE.get());
         }
         finally {
             GridUnsafe.freeMemory(ptr);
@@ -334,7 +334,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
                 }
 
                 private void parkForAWhile() {
-                    if(slowFileIoEnabled.get() && slow)
+                    if(SLOW_FILE_IO_ENABLED.get() && slow)
                         LockSupport.parkNanos(1_000_000_000L);
                 }
             };

@@ -38,8 +38,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withSeed(1234L);
@@ -58,8 +58,8 @@ public class SVMBinaryTrainerTest extends TrainerTest {
     public void testUpdate() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         SVMLinearClassificationTrainer trainer = new SVMLinearClassificationTrainer()
             .withAmountOfIterations(1000)

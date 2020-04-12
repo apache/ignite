@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
@@ -36,7 +37,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -46,7 +46,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /** */
-    public static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
+    public static final Map<Object, Object> STORE_MAP = new ConcurrentHashMap<>();
 
     /**
      * @return Grids count to start.
@@ -73,7 +73,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        storeMap.clear();
+        STORE_MAP.clear();
     }
 
     /** {@inheritDoc} */
@@ -241,23 +241,23 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
-            for (Map.Entry<Object, Object> e : storeMap.entrySet())
+            for (Map.Entry<Object, Object> e : STORE_MAP.entrySet())
                 clo.apply(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public Object load(Object key) {
-            return storeMap.get(key);
+            return STORE_MAP.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
-            storeMap.put(entry.getKey(), entry.getValue());
+            STORE_MAP.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
-            storeMap.remove(key);
+            STORE_MAP.remove(key);
         }
     }
 }

@@ -109,10 +109,10 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return storeMap.size() == 1000;
+                return STORE_MAP.size() == 1000;
             }
         }, 5000);
 
-        assertEquals(1000, storeMap.size());
+        assertEquals(1000, STORE_MAP.size());
     }
 }

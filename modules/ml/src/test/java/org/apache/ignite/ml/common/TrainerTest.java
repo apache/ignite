@@ -30,14 +30,14 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TrainerTest {
     /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 13};
+    private static final int[] PARTS_TO_BE_TESTED = new int[] {1, 2, 3, 4, 13};
 
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
     public static Iterable<Integer[]> data() {
         List<Integer[]> res = new ArrayList<>();
 
-        for (int part : partsToBeTested)
+        for (int part : PARTS_TO_BE_TESTED)
             res.add(new Integer[] {part});
 
         return res;
@@ -51,7 +51,7 @@ public class TrainerTest {
     protected static final double PRECISION = 1e-2;
 
     /** Two-easy clustered data. */
-    protected static final double[][] twoClusters = {
+    protected static final double[][] TWO_CLUSTERS = {
         {0, 519.9017766224466, 554.4100892224841},
         {0, 563.5609233456146, 558.5857619285702},
         {0, 503.5549215892729, 594.3825404658926},
@@ -255,7 +255,7 @@ public class TrainerTest {
     };
 
     /** The data is easy separated with classifier by y = x. */
-    public static final double[][] twoLinearlySeparableClasses = {
+    public static final double[][] TWO_LINEARLY_SEPARABLE_CLASSES = {
         {0.0, -122.69914721554494, -152.90003228835155},
         {1.0, -988.7803093110984, 39.64498230320555},
         {1.0, -721.0342526056645, -167.29469954420483},
@@ -758,7 +758,7 @@ public class TrainerTest {
     };
 
     /** 4 sets grouped around of square vertices. */
-    protected static final double[][] fourSetsInSquareVertices = {
+    protected static final double[][] FOUR_SETS_IN_SQUARE_VERTICES = {
         {0, 9.35096604945605, 9.946073797069054},
         {0, 9.135109633114403, 9.962676066205383},
         {0, 9.046654725589521, 9.610699793950662},
@@ -1162,7 +1162,7 @@ public class TrainerTest {
     };
 
     /** xor truth table. */
-    protected static final double[][] xor = {
+    protected static final double[][] XOR = {
         {0.0, 0.0, 0.0},
         {0.0, 1.0, 1.0},
         {1.0, 0.0, 1.0},

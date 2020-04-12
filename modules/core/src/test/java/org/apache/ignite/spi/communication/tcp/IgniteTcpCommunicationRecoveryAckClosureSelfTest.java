@@ -65,13 +65,13 @@ import org.junit.Test;
 public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends CommunicationSpi<Message>>
     extends GridSpiAbstractTest<T> {
     /** */
-    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> SPI_RSRCS = new ArrayList<>();
 
     /** */
-    protected static final List<TcpCommunicationSpi> spis = new ArrayList<>();
+    protected static final List<TcpCommunicationSpi> SPIS = new ArrayList<>();
 
     /** */
-    protected static final List<ClusterNode> nodes = new ArrayList<>();
+    protected static final List<ClusterNode> NODES = new ArrayList<>();
 
     /** */
     private static final int SPI_CNT = 2;
@@ -139,11 +139,11 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         createSpis(ackCnt, idleTimeout, TcpCommunicationSpi.DFLT_MSG_QUEUE_LIMIT);
 
         try {
-            TcpCommunicationSpi spi0 = spis.get(0);
-            TcpCommunicationSpi spi1 = spis.get(1);
+            TcpCommunicationSpi spi0 = SPIS.get(0);
+            TcpCommunicationSpi spi1 = SPIS.get(1);
 
-            ClusterNode node0 = nodes.get(0);
-            ClusterNode node1 = nodes.get(1);
+            ClusterNode node0 = NODES.get(0);
+            ClusterNode node1 = NODES.get(1);
 
             int msgId = 0;
 
@@ -185,7 +185,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
                 final long totAcked0 = totAcked;
 
-                for (TcpCommunicationSpi spi : spis) {
+                for (TcpCommunicationSpi spi : SPIS) {
                     GridNioServer<?> srv = U.field(spi, "nioSrvr");
 
                     Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
@@ -226,7 +226,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
                 final int expMsgs0 = expMsgs;
 
-                for (TcpCommunicationSpi spi : spis) {
+                for (TcpCommunicationSpi spi : SPIS) {
                     final TestListener lsnr = (TestListener)spi.getListener();
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -286,11 +286,11 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private void checkOverflow() throws Exception {
-        TcpCommunicationSpi spi0 = spis.get(0);
-        TcpCommunicationSpi spi1 = spis.get(1);
+        TcpCommunicationSpi spi0 = SPIS.get(0);
+        TcpCommunicationSpi spi1 = SPIS.get(1);
 
-        ClusterNode node0 = nodes.get(0);
-        ClusterNode node1 = nodes.get(1);
+        ClusterNode node0 = NODES.get(0);
+        ClusterNode node1 = NODES.get(1);
 
         // Await time to close the session by queue overflow.
         final int awaitTime = 5_000;
@@ -428,9 +428,9 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     private void startSpis(int ackCnt, int idleTimeout, int queueLimit) throws Exception {
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
@@ -465,7 +465,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             ctx.timeoutProcessor(timeoutProcessor);
 
-            spiRsrcs.add(rsrcs);
+            SPI_RSRCS.add(rsrcs);
 
             rsrcs.inject(spi);
 
@@ -475,11 +475,11 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             node.order(i);
 
-            nodes.add(node);
+            NODES.add(node);
 
             spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
-            spis.add(spi);
+            SPIS.add(spi);
 
             spi.onContextInitialized(ctx);
 
@@ -488,7 +488,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         // For each context set remote nodes.
         for (Map.Entry<ClusterNode, GridSpiTestContext> e : ctxs.entrySet()) {
-            for (ClusterNode n : nodes) {
+            for (ClusterNode n : NODES) {
                 if (!n.equals(e.getKey()))
                     e.getValue().remoteNodes().add(n);
             }
@@ -538,7 +538,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             timeoutProcessor = null;
         }
 
-        for (CommunicationSpi<Message> spi : spis) {
+        for (CommunicationSpi<Message> spi : SPIS) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -546,11 +546,11 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             spi.spiStop();
         }
 
-        for (IgniteTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : SPI_RSRCS)
             rsrcs.stopThreads();
 
-        spis.clear();
-        nodes.clear();
-        spiRsrcs.clear();
+        SPIS.clear();
+        NODES.clear();
+        SPI_RSRCS.clear();
     }
 }

@@ -46,8 +46,8 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
     public void testEvaluatorWithoutFilter() {
         Map<Integer, Vector> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, VectorUtils.of(TWO_LINEARLY_SEPARABLE_CLASSES[i]));
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer().withK(3);
 
@@ -70,8 +70,8 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
     public void testEvaluatorWithFilter() {
         Map<Integer, Vector> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, VectorUtils.of(TWO_LINEARLY_SEPARABLE_CLASSES[i]));
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer().withK(3);
 

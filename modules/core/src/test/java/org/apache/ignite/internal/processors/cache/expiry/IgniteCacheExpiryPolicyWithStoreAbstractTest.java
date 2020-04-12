@@ -79,7 +79,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
         final Integer key = primaryKey(cache);
 
-        storeMap.put(key, 100);
+        STORE_MAP.put(key, 100);
 
         try {
             CompletionListenerFuture fut = new CompletionListenerFuture();
@@ -132,7 +132,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
         final Integer key = primaryKey(cache);
 
-        storeMap.put(key, 100);
+        STORE_MAP.put(key, 100);
 
         try {
             cache.loadCache(null);
@@ -159,7 +159,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);
 
-        storeMap.put(key, 100);
+        STORE_MAP.put(key, 100);
 
         try {
             Integer res = cache.invoke(key, new EntryProcessor<Integer, Integer, Integer>() {
@@ -234,7 +234,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
         keys.addAll(nears);
 
         for (Integer key : keys)
-            storeMap.put(key, key);
+            STORE_MAP.put(key, key);
 
         IgniteTransactions transactions = grid(0).transactions();
 

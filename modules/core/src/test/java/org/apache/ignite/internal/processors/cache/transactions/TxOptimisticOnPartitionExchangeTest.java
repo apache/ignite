@@ -202,7 +202,7 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
         private static volatile CountDownLatch partSingleMsgSentFromAddedNode;
 
         /** Partition supply message sent count. */
-        private static final AtomicInteger partSupplyMsgSentCnt = new AtomicInteger();
+        private static final AtomicInteger PART_SUPPLY_MSG_SENT_CNT = new AtomicInteger();
 
         /** Logger. */
         private IgniteLogger log;
@@ -220,7 +220,7 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
         public static void init() {
             partSingleMsgSentFromAddedNode = new CountDownLatch(1);
 
-            partSupplyMsgSentCnt.set(0);
+            PART_SUPPLY_MSG_SENT_CNT.set(0);
         }
 
         /** {@inheritDoc} */
@@ -259,10 +259,10 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
 
                                     while (waitForCondition(new GridAbsPredicate() {
                                         @Override public boolean apply() {
-                                            return partSupplyMsgSentCnt.get() > i.get();
+                                            return PART_SUPPLY_MSG_SENT_CNT.get() > i.get();
                                         }
                                     }, i.get() == 0 ? 5_000 : 500))
-                                        i.set(partSupplyMsgSentCnt.get());
+                                        i.set(PART_SUPPLY_MSG_SENT_CNT.get());
 
                                     sendMessage(node, msg, ackC, true);
 
@@ -277,7 +277,7 @@ public class TxOptimisticOnPartitionExchangeTest extends GridCommonAbstractTest 
                         partSingleMsgSentFromAddedNode.countDown();
 
                     if (msg0 instanceof GridDhtPartitionSupplyMessage)
-                        partSupplyMsgSentCnt.incrementAndGet();
+                        PART_SUPPLY_MSG_SENT_CNT.incrementAndGet();
                 }
             }
 

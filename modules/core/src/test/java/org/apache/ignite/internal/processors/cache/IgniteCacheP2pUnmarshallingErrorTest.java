@@ -39,10 +39,10 @@ import org.junit.Test;
  */
 public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTest {
     /** Allows to change behavior of readExternal method. */
-    protected static final AtomicInteger readCnt = new AtomicInteger();
+    protected static final AtomicInteger READ_CNT = new AtomicInteger();
 
     /** Allows to change behavior of readExternal method. */
-    protected static final AtomicInteger valReadCnt = new AtomicInteger();
+    protected static final AtomicInteger VAL_READ_CNT = new AtomicInteger();
 
     /** Iterable key. */
     protected static int key = 0;
@@ -108,7 +108,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
             assert X.hasCause(e, IOException.class);
         }
 
-        assert readCnt.get() == 0; //ensure we have read count as expected.
+        assert READ_CNT.get() == 0; //ensure we have read count as expected.
     }
 
     /**
@@ -153,54 +153,54 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     @Test
     public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         // GridNearAtomicFullUpdateRequest unmarshalling failed test.
-        readCnt.set(1);
+        READ_CNT.set(1);
 
         failAtomicPut(++key);
 
         // Check that cache is empty.
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         assert jcache(0).get(new TestKey(String.valueOf(key))) == null;
 
         // GridDhtAtomicUpdateRequest unmarshalling failed test.
-        readCnt.set(2);
+        READ_CNT.set(2);
 
         failAtomicPut(++key);
 
         // Check that cache is not empty.
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         assert jcache(0).get(new TestKey(String.valueOf(key))) != null;
 
         // GridNearGetRequest unmarshalling failed test.
-        readCnt.set(1);
+        READ_CNT.set(1);
 
         failGetAll(++key);
 
         // GridNearGetResponse unmarshalling failed test.
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
-        readCnt.set(2);
+        READ_CNT.set(2);
 
         failGetAll(key);
 
-        readCnt.set(Integer.MAX_VALUE);
-        valReadCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
+        VAL_READ_CNT.set(Integer.MAX_VALUE);
 
         jcache(0).put(new TestKey(String.valueOf(++key)), new TestValue());
 
         assertNotNull(new TestKey(String.valueOf(key)));
 
         // GridNearSingleGetRequest unmarshalling failed.
-        readCnt.set(1);
+        READ_CNT.set(1);
 
         failGet(key);
 
         // GridNearSingleGetRequest unmarshalling failed.
-        valReadCnt.set(1);
-        readCnt.set(2);
+        VAL_READ_CNT.set(1);
+        READ_CNT.set(2);
 
         failGet(key);
     }
@@ -253,7 +253,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
-            if (readCnt.decrementAndGet() <= 0)
+            if (READ_CNT.decrementAndGet() <= 0)
                 throw new IOException("Class can not be unmarshalled.");
         }
     }
@@ -276,7 +276,7 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            if (valReadCnt.decrementAndGet() <= 0)
+            if (VAL_READ_CNT.decrementAndGet() <= 0)
                 throw new IOException("Class can not be unmarshalled.");
         }
     }

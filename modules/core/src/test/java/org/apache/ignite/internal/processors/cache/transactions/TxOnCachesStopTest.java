@@ -74,7 +74,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     private static final String CACHE_2_NAME = "cache2";
 
     /** rnd instance. */
-    private static final GridRandom rnd = new GridRandom();
+    private static final GridRandom RND = new GridRandom();
 
     /** */
     private CacheConfiguration<Integer, byte[]> destroyCacheCfg;
@@ -284,7 +284,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 destroyLatch.await();
 
                 IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-                    doSleep(rnd.nextInt(500));
+                    doSleep(RND.nextInt(500));
 
                     spi.stopBlock();
                 });

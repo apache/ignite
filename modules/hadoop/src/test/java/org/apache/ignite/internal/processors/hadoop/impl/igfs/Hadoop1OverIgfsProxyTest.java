@@ -46,8 +46,8 @@ public class Hadoop1OverIgfsProxyTest extends Hadoop1DualAbstractTest {
         IgfsPath filePath = new IgfsPath("/file");
 
         try (OutputStream os = igfs.create(filePath, true)) {
-            for(int i = 0; i < fileSize / chunk.length; ++i)
-                os.write(chunk);
+            for(int i = 0; i < fileSize / CHUNK.length; ++i)
+                os.write(CHUNK);
         }
 
         long len = igfs.info(filePath).length();

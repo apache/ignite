@@ -141,18 +141,18 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     public static class TestIncrementStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
-            for (Map.Entry<Object, Object> e : storeMap.entrySet())
+            for (Map.Entry<Object, Object> e : STORE_MAP.entrySet())
                 clo.apply(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public Object load(Object key) {
-            return storeMap.get(key);
+            return STORE_MAP.get(key);
         }
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
-            Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
+            Object oldVal = STORE_MAP.put(entry.getKey(), entry.getValue());
 
             if (oldVal != null) {
                 Integer oldInt = (Integer) oldVal;
@@ -166,7 +166,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
-            storeMap.remove(key);
+            STORE_MAP.remove(key);
         }
     }
 }

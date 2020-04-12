@@ -44,12 +44,12 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
     /** {@inheritDoc} */
     @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() {
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
         //GridCacheQueryRequest unmarshalling failed test
-        readCnt.set(1);
+        READ_CNT.set(1);
 
         try {
             jcache(0).query(new SqlQuery<TestKey, String>(String.class, "field like '" + key + "'")).getAll();
@@ -66,7 +66,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
      */
     @Test
     public void testResponseMessageOnRequestUnmarshallingFailed() throws Exception {
-        readCnt.set(Integer.MAX_VALUE);
+        READ_CNT.set(Integer.MAX_VALUE);
 
         try {
             jcache().query(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {

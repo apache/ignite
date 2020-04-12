@@ -65,7 +65,7 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        IgniteCacheAbstractTest.storeMap.clear();
+        IgniteCacheAbstractTest.STORE_MAP.clear();
     }
 
     /** {@inheritDoc} */
@@ -88,7 +88,7 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
      * @throws Exception If failed.
      */
     protected void putDataInStore(Map<Object, Object> data, String cacheName) throws Exception {
-        IgniteCacheAbstractTest.storeMap.putAll(data);
+        IgniteCacheAbstractTest.STORE_MAP.putAll(data);
     }
 
     /**

@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
     /** */
-    static final AtomicInteger callCnt = new AtomicInteger();
+    static final AtomicInteger CALL_CNT = new AtomicInteger();
 
     /** */
     private static final int SRV_CNT = 4;
@@ -227,7 +227,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         log.info("Invoke: " + key);
 
         // Update.
-        callCnt.set(0);
+        CALL_CNT.set(0);
 
         tx = startTx(cache, concurrency, isolation);
 
@@ -236,7 +236,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         if (tx != null)
             tx.commit();
 
-        assertEquals(expCallCnt, callCnt.get());
+        assertEquals(expCallCnt, CALL_CNT.get());
 
         checkReturnValue(retVal, "null");
         checkCacheValue(cache.getName(), key, new TestValue(0));
@@ -244,7 +244,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         log.info("Invoke: " + key);
 
         // Get.
-        callCnt.set(0);
+        CALL_CNT.set(0);
 
         tx = startTx(cache, concurrency, isolation);
 
@@ -253,7 +253,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         if (tx != null)
             tx.commit();
 
-        assertEquals(expCallCntOnGet, callCnt.get());
+        assertEquals(expCallCntOnGet, CALL_CNT.get());
 
         checkReturnValue(retVal, "0");
         checkCacheValue(cache.getName(), key, new TestValue(0));
@@ -261,7 +261,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         log.info("Invoke: " + key);
 
         // Update.
-        callCnt.set(0);
+        CALL_CNT.set(0);
 
         tx = startTx(cache, concurrency, isolation);
 
@@ -270,7 +270,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         if (tx != null)
             tx.commit();
 
-        assertEquals(expCallCnt, callCnt.get());
+        assertEquals(expCallCnt, CALL_CNT.get());
 
         checkReturnValue(retVal, "0");
         checkCacheValue(cache.getName(), key, new TestValue(1));
@@ -278,7 +278,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         log.info("Invoke: " + key);
 
         // Remove.
-        callCnt.set(0);
+        CALL_CNT.set(0);
 
         tx = startTx(cache, concurrency, isolation);
 
@@ -287,7 +287,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
         if (tx != null)
             tx.commit();
 
-        assertEquals(expCallCnt, callCnt.get());
+        assertEquals(expCallCnt, CALL_CNT.get());
 
         checkReturnValue(retVal, "1");
         checkCacheValue(cache.getName(), key, null);
@@ -361,7 +361,7 @@ public class IgniteCacheEntryProcessorCallTest extends GridCommonAbstractTest {
 
             ignite.log().info("TestEntryProcessor called [op=" + op + ", entry=" + entry + ']');
 
-            callCnt.incrementAndGet();
+            CALL_CNT.incrementAndGet();
 
             assertEquals(1, args.length);
 

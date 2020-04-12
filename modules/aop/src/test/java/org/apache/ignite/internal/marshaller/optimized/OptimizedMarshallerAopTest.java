@@ -46,7 +46,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  */
 public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
     /** */
-    private static final AtomicInteger cntr = new AtomicInteger();
+    private static final AtomicInteger CNTR = new AtomicInteger();
 
     /**
      * Constructs a test.
@@ -75,7 +75,7 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
     public void testUp() throws Exception {
         G.ignite().events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
-                cntr.incrementAndGet();
+                CNTR.incrementAndGet();
 
                 return true;
             }
@@ -83,7 +83,7 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
 
         gridify1();
 
-        assertEquals("Method gridify() wasn't executed on grid.", 1, cntr.get());
+        assertEquals("Method gridify() wasn't executed on grid.", 1, CNTR.get());
     }
 
     /**

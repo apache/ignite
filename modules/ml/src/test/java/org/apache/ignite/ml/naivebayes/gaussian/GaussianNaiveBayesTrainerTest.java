@@ -79,8 +79,8 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     @Test
     public void testWithLinearlySeparableData() {
         Map<Integer, double[]> cacheMock = new HashMap<>();
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, twoLinearlySeparableClasses[i]);
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, TWO_LINEARLY_SEPARABLE_CLASSES[i]);
 
         GaussianNaiveBayesModel mdl = trainer.fit(
             cacheMock,

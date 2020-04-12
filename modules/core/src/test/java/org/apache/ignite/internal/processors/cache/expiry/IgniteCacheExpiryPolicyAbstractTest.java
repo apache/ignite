@@ -99,7 +99,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         factory = null;
 
-        storeMap.clear();
+        STORE_MAP.clear();
     }
 
     /** {@inheritDoc} */
@@ -1176,7 +1176,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }
 
-        storeMap.clear();
+        STORE_MAP.clear();
 
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)

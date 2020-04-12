@@ -87,7 +87,7 @@ public class BaggingTest extends TrainerTest {
      */
     @Test
     public void testNaiveBaggingLogRegression() {
-        Map<Integer, double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
+        Map<Integer, double[]> cacheMock = getCacheMock(TWO_LINEARLY_SEPARABLE_CLASSES);
 
         DatasetTrainer<LogisticRegressionModel, Double> trainer =
             new LogisticRegressionSGDTrainer()
@@ -127,7 +127,7 @@ public class BaggingTest extends TrainerTest {
      * @param cntr Function specifying which data we should count.
      */
     protected void count(IgniteTriFunction<Long, CountData, LearningEnvironment, Long> cntr) {
-        Map<Integer, double[]> cacheMock = getCacheMock(twoLinearlySeparableClasses);
+        Map<Integer, double[]> cacheMock = getCacheMock(TWO_LINEARLY_SEPARABLE_CLASSES);
 
         CountTrainer cntTrainer = new CountTrainer(cntr);
 
@@ -144,7 +144,7 @@ public class BaggingTest extends TrainerTest {
 
         Double res = mdl.predict(null);
 
-        TestUtils.assertEquals(twoLinearlySeparableClasses.length * subsampleRatio, res, twoLinearlySeparableClasses.length / 10);
+        TestUtils.assertEquals(TWO_LINEARLY_SEPARABLE_CLASSES.length * subsampleRatio, res, TWO_LINEARLY_SEPARABLE_CLASSES.length / 10);
     }
 
     /**

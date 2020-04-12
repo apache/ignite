@@ -84,7 +84,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
     private static final String DYNAMIC_CACHES_GROUP_WITHOUT_FILTER = "group3";
 
     /** Node filter to pin dynamic caches to a specific node. */
-    private static final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> NODE_FILTER = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode node) {
             return node.consistentId().toString().contains(NODE_1_CONS_ID);
         }
@@ -147,7 +147,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
         return new CacheConfiguration(cacheName)
             .setGroupName(GROUP_WITH_STATIC_CACHES)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setNodeFilter(nodeFilter);
+            .setNodeFilter(NODE_FILTER);
     }
 
     /**
@@ -229,7 +229,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
         ig.getOrCreateCache(new CacheConfiguration<>(DYNAMIC_CACHE_NAME_1)
             .setGroupName(GROUP_WITH_STATIC_CACHES)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setNodeFilter(nodeFilter)
+            .setNodeFilter(NODE_FILTER)
         );
 
         ig.getOrCreateCache(new CacheConfiguration<>(DYNAMIC_CACHE_NAME_2)

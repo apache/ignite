@@ -611,18 +611,18 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      */
     public static class WalRebalanceCheckingCommunicationSpi extends TestRecordingCommunicationSpi {
         /** (Group ID, Set of topology versions). */
-        private static final Map<Integer, Set<Long>> topVers = new HashMap<>();
+        private static final Map<Integer, Set<Long>> TOP_VERS = new HashMap<>();
 
         /** Lock object. */
-        private static final Object mux = new Object();
+        private static final Object MUX = new Object();
 
         /**
          * @param grpId Group ID.
          * @return Set of topology versions where WAL history has been used for rebalance.
          */
         Set<Long> walRebalanceVersions(int grpId) {
-            synchronized (mux) {
-                return Collections.unmodifiableSet(topVers.getOrDefault(grpId, Collections.emptySet()));
+            synchronized (MUX) {
+                return Collections.unmodifiableSet(TOP_VERS.getOrDefault(grpId, Collections.emptySet()));
             }
         }
 
@@ -630,8 +630,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
          * @return All topology versions for all groups where WAL rebalance has been used.
          */
         public static Map<Integer, Set<Long>> allRebalances() {
-            synchronized (mux) {
-                return Collections.unmodifiableMap(topVers);
+            synchronized (MUX) {
+                return Collections.unmodifiableMap(TOP_VERS);
             }
         }
 
@@ -639,8 +639,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
          * Cleans all rebalances history.
          */
         public static void cleanup() {
-            synchronized (mux) {
-                topVers.clear();
+            synchronized (MUX) {
+                TOP_VERS.clear();
             }
         }
 
@@ -655,8 +655,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     int grpId = demandMsg.groupId();
                     long topVer = demandMsg.topologyVersion().topologyVersion();
 
-                    synchronized (mux) {
-                        topVers.computeIfAbsent(grpId, v -> new HashSet<>()).add(topVer);
+                    synchronized (MUX) {
+                        TOP_VERS.computeIfAbsent(grpId, v -> new HashSet<>()).add(topVer);
                     }
                 }
             }

@@ -369,7 +369,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         List<String> nodes = new ArrayList<>();
 
         for (int i = 0; i < srvNodes; i++) {
-            Ignite g = startGrid("server-" + srvIdx.getAndIncrement());
+            Ignite g = startGrid("server-" + SRV_IDX.getAndIncrement());
 
             nodes.add(g.name());
 

@@ -41,8 +41,8 @@ public class PipelineTest extends TrainerTest {
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, Vector> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, VectorUtils.of(TWO_LINEARLY_SEPARABLE_CLASSES[i]));
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.FIRST);
@@ -66,8 +66,8 @@ public class PipelineTest extends TrainerTest {
     public void testTrainWithMissedFinalStage() {
         Map<Integer, Vector> cacheMock = new HashMap<>();
 
-        for (int i = 0; i < twoLinearlySeparableClasses.length; i++)
-            cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
+        for (int i = 0; i < TWO_LINEARLY_SEPARABLE_CLASSES.length; i++)
+            cacheMock.put(i, VectorUtils.of(TWO_LINEARLY_SEPARABLE_CLASSES[i]));
 
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.FIRST);

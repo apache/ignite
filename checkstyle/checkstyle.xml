@@ -57,5 +57,8 @@
             <property name="allowMultipleEmptyLines" value="false" />
             <property name="allowMultipleEmptyLinesInsideClassMembers" value="false" />
         </module>
+
+        <!-- @Override annotations on the same line with a method declaration check. -->
+        <module name="org.apache.ignite.tools.checkstyle.OverrideAnnotationOnTheSameLineCheck"/>
     </module>
 </module>
