@@ -2491,7 +2491,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Clear S#classCache. Use if necessary to test sensitive data
+     * Clear S#CLASS_CACHE. Use if necessary to test sensitive data
      * in the test. https://ggsystems.atlassian.net/browse/GG-25182
      */
     protected void clearGridToStringClassCache() {
