@@ -93,7 +93,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
         /*To listen the logs of future in current tests, since the log in the
         futures is static and is not reset when tests are launched.*/
         setFieldValue(GridDhtTxFinishFuture.class, "log", null);
-        ((AtomicReference<IgniteLogger>)getFieldValue(GridDhtTxFinishFuture.class, "logRef")).set(null);
+        ((AtomicReference<IgniteLogger>)getFieldValue(GridDhtTxFinishFuture.class, "LOG_REF")).set(null);
     }
 
     /** {@inheritDoc} */

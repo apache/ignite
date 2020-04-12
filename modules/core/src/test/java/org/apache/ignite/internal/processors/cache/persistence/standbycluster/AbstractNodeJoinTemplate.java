@@ -327,7 +327,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
         private IgniteConfiguration nodeCfg;
 
         /** State default. */
-        private static final Boolean STATE_DEFAULT = Boolean.TRUE;
+        private static final Boolean STATE_DEFAULT = new Boolean(true);
 
         /** State. */
         private Boolean state = STATE_DEFAULT;
