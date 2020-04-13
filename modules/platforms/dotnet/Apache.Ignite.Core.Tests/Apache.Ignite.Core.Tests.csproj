@@ -116,6 +116,15 @@
     <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
+    <Compile Include="Cache\NearCacheTest.cs" />
+    <Compile Include="Cache\Platform\PlatformCacheTestCreateDestroy.cs" />
+    <Compile Include="Cache\Platform\PlatformCacheTopologyChangeTest.cs" />
+    <Compile Include="Cache\Platform\PlatformCacheTest.cs" />
+    <Compile Include="Cache\Platform\FailingCacheStore.cs" />
+    <Compile Include="Cache\Platform\Foo.cs" />
+    <Compile Include="Cache\Platform\ScanQueryPlatformCacheFilter.cs" />
+    <Compile Include="Cache\Platform\ScanQueryNoPlatformCacheFilter.cs" />
+    <Compile Include="Cache\Platform\StoreNoPlatformCacheFilter.cs" />
     <Compile Include="Cache\PartitionPreloadTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
     <Compile Include="Cache\PersistentStoreTestObsolete.cs" />
@@ -223,6 +232,7 @@
     <Compile Include="EnvVar.cs" />
     <Compile Include="EventsTestLocalListeners.cs" />
     <Compile Include="FailureHandlerTest.cs" />
+    <Compile Include="IgniteUtilsTest.cs" />
     <Compile Include="Impl\Compute\ComputeImplTest.cs" />
     <Compile Include="JavaServer.cs" />
     <Compile Include="Log\ConsoleLoggerTest.cs" />
@@ -255,7 +265,6 @@
     <Compile Include="Cache\Affinity\AffinityFunctionTest.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
-    <Compile Include="Cache\CacheNearTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
     <Compile Include="Cache\Affinity\AffinityTest.cs" />

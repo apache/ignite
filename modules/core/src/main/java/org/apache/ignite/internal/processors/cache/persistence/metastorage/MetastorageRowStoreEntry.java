@@ -17,40 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-/**
- *
- */
-public class MetsatorageSearchRowImpl implements MetastorageSearchRow {
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+
+/** */
+public class MetastorageRowStoreEntry extends SimpleDataRow {
     /** */
-    private final String key;
-
-    /** */
-    private final long link;
-
-    /**
-     * @param key Key.
-     * @param link Link.
-     */
-    public MetsatorageSearchRowImpl(String key, long link) {
-        this.key = key;
-        this.link = link;
+    public MetastorageRowStoreEntry(byte[] val) {
+        super(0L, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
+            PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION, val);
     }
 
     /** {@inheritDoc} */
-    @Override
-    public String key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public long link() {
-        return link;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public int hash() {
-        return key.hashCode();
+    @Override public IOVersions<? extends AbstractDataPageIO<?>> ioVersions() {
+        return MetastoreDataPageIO.VERSIONS;
     }
 }

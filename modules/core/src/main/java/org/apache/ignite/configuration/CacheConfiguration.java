@@ -57,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -267,6 +268,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Near cache configuration. */
     private NearCacheConfiguration<K, V> nearCfg;
+
+    /** Platform cache configuration. Enables native cache in platforms (.NET, ...). */
+    private PlatformCacheConfiguration platformCfg;
 
     /** Default value for 'copyOnRead' flag. */
     public static final boolean DFLT_COPY_ON_READ = true;
@@ -486,6 +490,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         memPlcName = cc.getDataRegionName();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
+        platformCfg = cc.getPlatformCacheConfiguration();
         nodeFilter = cc.getNodeFilter();
         onheapCache = cc.isOnheapCacheEnabled();
         diskPageCompression = cc.getDiskPageCompression();
@@ -772,6 +777,38 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setNearConfiguration(NearCacheConfiguration<K, V> nearCfg) {
         this.nearCfg = nearCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets platform cache configuration.
+     *
+     * @return Platform cache configuration or null.
+     */
+    @IgniteExperimental
+    public PlatformCacheConfiguration getPlatformCacheConfiguration() {
+        return platformCfg;
+    }
+
+    /**
+     * Sets platform cache configuration.
+     * Enables native platform (only .NET currently) cache when not null.
+     * Cache entries will be stored in deserialized form in native platform memory (e.g. .NET objects in CLR heap).
+     * <p>
+     * When enabled on server nodes, all primary keys will be stored in platform memory as well.
+     * <p>
+     * Same eviction policy applies to near cache entries for all keys on client nodes and
+     * non-primary keys on server nodes.
+     * <p>
+     * Enabling this can greatly improve performance for key-value operations and scan queries,
+     * at the expense of RAM usage.
+     *
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setPlatformCacheConfiguration(PlatformCacheConfiguration platformCfg) {
+        this.platformCfg = platformCfg;
 
         return this;
     }

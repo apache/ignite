@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.events.ClusterActivationStartedEventTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
 import org.apache.ignite.failure.StopNodeFailureHandlerTest;
@@ -290,7 +291,9 @@ import org.junit.runners.Suite;
 
     GridIoManagerFileTransmissionSelfTest.class,
 
-    IgniteStandardMXBeanTest.class
+    IgniteStandardMXBeanTest.class,
+
+    ClusterActivationStartedEventTest.class
 })
 public class IgniteBasicTestSuite {
 }

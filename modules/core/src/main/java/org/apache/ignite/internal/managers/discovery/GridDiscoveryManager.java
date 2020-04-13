@@ -1914,6 +1914,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public boolean cacheGroupAffinityNode(ClusterNode node, int grpId) {
         CacheGroupAffinity aff = registeredCacheGrps.get(grpId);
 
+        if (aff == null) {
+            log.warning("Registered cache group not found for groupId=" + grpId + ". Group was destroyed.");
+
+            return false;
+        }
+
         return CU.affinityNode(node, aff.cacheFilter);
     }
 
