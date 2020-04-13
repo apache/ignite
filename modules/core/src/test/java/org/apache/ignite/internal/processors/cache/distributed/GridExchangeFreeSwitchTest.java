@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -582,7 +583,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     partitionedCcfg.setWriteSynchronizationMode(FULL_SYNC);
                     partitionedCcfg.setBackups(2);
                     partitionedCcfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-                    partitionedCcfg.setAffinity(new Map4PartitionsTo4NodesAffinityFunction());
+                    partitionedCcfg.setAffinity(new Map6PartitionsTo6NodesTo2CellsAffinityFunction());
 
                     CacheConfiguration replicatedCcfg = new CacheConfiguration();
 
@@ -595,7 +596,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 }
             };
 
-            int nodes = 4;
+            int nodes = 6;
 
             startGridsMultiThreaded(nodes);
 
@@ -633,10 +634,9 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             nearNodes.removeAll(backupNodes);
 
             assertEquals(failed, primary);
-            assertFalse(backupNodes.isEmpty());
-            assertFalse(nearNodes.isEmpty());
             assertTrue(Collections.disjoint(backupNodes, nearNodes));
-            assertEquals(nodes - 1, backupNodes.size() + nearNodes.size());
+            assertEquals(nodes / 2 - 1, backupNodes.size()); // Cell 1.
+            assertEquals(nodes / 2, nearNodes.size()); // Cell 2.
 
             IgniteInternalFuture<?> partFut = multithreadedAsync(() -> {
                 try {
@@ -728,17 +728,13 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 replTx.set(tx);
             }
 
-            CountDownLatch backupCreateLatch = new CountDownLatch(backupNodes.size());
-            CountDownLatch backupPutLatch = new CountDownLatch(backupNodes.size());
-            CountDownLatch backupCommitLatch = new CountDownLatch(backupNodes.size());
-            CountDownLatch nearCreateLatch = new CountDownLatch(nearNodes.size());
-            CountDownLatch nearPutLatch = new CountDownLatch(nearNodes.size());
-            CountDownLatch nearCommitLatch = new CountDownLatch(nearNodes.size());
-
-            BiConsumer<Ignite, T3<CountDownLatch, CountDownLatch, CountDownLatch>> txRun = // Counts tx's creations and preparations.
-                (Ignite ignite, T3</*create*/CountDownLatch, /*put*/CountDownLatch, /*commit*/CountDownLatch> latches) -> {
+            BiConsumer<T2<Ignite, String>, T3<CountDownLatch, CountDownLatch, CountDownLatch>> txRun = // Counts tx's creations and preparations.
+                (T2<Ignite, String> pair, T3</*create*/CountDownLatch, /*put*/CountDownLatch, /*commit*/CountDownLatch> latches) -> {
                     try {
-                        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(replCacheName);
+                        Ignite ignite = pair.get1();
+                        String cacheName = pair.get2();
+
+                        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheName);
 
                         try (Transaction tx = ignite.transactions().txStart()) {
                             latches.get1().countDown(); // Create.
@@ -757,28 +753,56 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     }
                 };
 
+            CountDownLatch replBackupCreateLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch replBackupPutLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch replBackupCommitLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch replNearCreateLatch = new CountDownLatch(nearNodes.size());
+            CountDownLatch replNearPutLatch = new CountDownLatch(nearNodes.size());
+            CountDownLatch replNearCommitLatch = new CountDownLatch(nearNodes.size());
+
+            CountDownLatch partBackupCreateLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch partBackupPutLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch partBackupCommitLatch = new CountDownLatch(backupNodes.size());
+            CountDownLatch partNearCreateLatch = new CountDownLatch(nearNodes.size());
+            CountDownLatch partNearPutLatch = new CountDownLatch(nearNodes.size());
+            CountDownLatch partNearCommitLatch = new CountDownLatch(nearNodes.size());
+
             List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-            for (Ignite backup : backupNodes)
+            for (Ignite backup : backupNodes) {
                 futs.add(multithreadedAsync(() ->
-                    txRun.accept(backup, new T3<>(backupCreateLatch, backupPutLatch, backupCommitLatch)), 1));
+                    txRun.accept(new T2<>(backup, replCacheName), new T3<>(replBackupCreateLatch, replBackupPutLatch, replBackupCommitLatch)), 1));
+                futs.add(multithreadedAsync(() ->
+                    txRun.accept(new T2<>(backup, partCacheName), new T3<>(partBackupCreateLatch, partBackupPutLatch, partBackupCommitLatch)), 1));
+            }
 
-            for (Ignite near : nearNodes)
+            for (Ignite near : nearNodes) {
                 futs.add(multithreadedAsync(() ->
-                    txRun.accept(near, new T3<>(nearCreateLatch, nearPutLatch, nearCommitLatch)), 1));
+                    txRun.accept(new T2<>(near, replCacheName), new T3<>(replNearCreateLatch, replNearPutLatch, replNearCommitLatch)), 1));
+                futs.add(multithreadedAsync(() ->
+                    txRun.accept(new T2<>(near, partCacheName), new T3<>(partNearCreateLatch, partNearPutLatch, partNearCommitLatch)), 1));
+            }
 
             checkUpcomingTransactionsState( // Switch in progress cluster-wide.
-                backupCreateLatch, 0, // Started.
-                backupPutLatch, backupNodes.size(),
-                backupCommitLatch, backupNodes.size(),
-                nearCreateLatch, 0, // Started.
-                nearPutLatch, nearNodes.size(),
-                nearCommitLatch, nearNodes.size());
+                replBackupCreateLatch, 0, // Started.
+                replBackupPutLatch, backupNodes.size(),
+                replBackupCommitLatch, backupNodes.size(),
+                replNearCreateLatch, 0, // Started.
+                replNearPutLatch, nearNodes.size(),
+                replNearCommitLatch, nearNodes.size());
+
+            checkUpcomingTransactionsState( // Switch in progress cluster-wide.
+                partBackupCreateLatch, 0, // Started.
+                partBackupPutLatch, backupNodes.size(),
+                partBackupCommitLatch, backupNodes.size(),
+                partNearCreateLatch, 0, // Started.
+                partNearPutLatch, nearNodes.size(),
+                partNearCommitLatch, nearNodes.size());
 
             checkActiveTransactionsCount(
                 null, 0,
-                backupNodes, 2 /* prepared replicated + prepard partitioned */ + 1 /* started txRun per node */,
-                nearNodes, 1 /* prepared replicated */ + 1 /* started txRun per node */);
+                backupNodes, 2 /* prepared replicated + prepard partitioned */ + 2 /* started txRun per node */,
+                nearNodes, 1 /* prepared replicated */ + 2 /* started txRun per node */);
 
             for (Ignite ignite : G.allGrids()) {
                 TestRecordingCommunicationSpi spi =
@@ -792,17 +816,25 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             }
 
             checkUpcomingTransactionsState(
-                backupCreateLatch, 0, // Started.
-                backupPutLatch, backupNodes.size(),
-                backupCommitLatch, backupNodes.size(),
-                nearCreateLatch, 0, // Started.
-                nearPutLatch, 0, // Near nodes able to start transactions once replicated caches recovered,
-                nearCommitLatch, nearNodes.size()); // But not able to commit transactions since their backups still in switch.
+                replBackupCreateLatch, 0, // Started.
+                replBackupPutLatch, backupNodes.size(),
+                replBackupCommitLatch, backupNodes.size(),
+                replNearCreateLatch, 0, // Started.
+                replNearPutLatch, 0, // Near nodes able to start transactions once Cell 2 finished the switch,
+                replNearCommitLatch, nearNodes.size()); // But not able to commit transactions since Cell 1 still in switch.
+
+            checkUpcomingTransactionsState(
+                partBackupCreateLatch, 0, // Started.
+                partBackupPutLatch, backupNodes.size(),
+                partBackupCommitLatch, backupNodes.size(),
+                partNearCreateLatch, 0, // Started.
+                partNearPutLatch, 0, // Near nodes able to start transactions once Cell 2 finished the switch,
+                partNearCommitLatch, 0); // Able to commit, since Cell 2 finished the switch.
 
             checkActiveTransactionsCount(
                 null, 0,
-                backupNodes, 1 /* prepared partitioned */ + 1 /* started txRun per node */,
-                nearNodes, 1 /* started txRun per node */);
+                backupNodes, 1 /* prepared partitioned */ + 2 /* started txRun per node */,
+                nearNodes, 1 /* replicated txRun per node */ + 2 /*  replicated backups prepared on Cell 2 */);
 
             for (Ignite ignite : G.allGrids()) {
                 TestRecordingCommunicationSpi spi =
@@ -813,13 +845,22 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 });
             }
 
-            checkUpcomingTransactionsState( // Switches finished cluster-wide, all transactions can be committed.
-                backupCreateLatch, 0,
-                backupPutLatch, 0,
-                backupCommitLatch, 0,
-                nearCreateLatch, 0,
-                nearPutLatch, 0,
-                nearCommitLatch, 0);
+            // Switches finished cluster-wide, all transactions can be committed.
+            checkUpcomingTransactionsState(
+                replBackupCreateLatch, 0,
+                replBackupPutLatch, 0,
+                replBackupCommitLatch, 0,
+                replNearCreateLatch, 0,
+                replNearPutLatch, 0,
+                replNearCommitLatch, 0);
+
+            checkUpcomingTransactionsState(
+                partBackupCreateLatch, 0,
+                partBackupPutLatch, 0,
+                partBackupCommitLatch, 0,
+                partNearCreateLatch, 0,
+                partNearPutLatch, 0,
+                partNearCommitLatch, 0);
 
             // Final check that active transactions are absent.
             checkActiveTransactionsCount(null, 0, backupNodes, 0, nearNodes, 0);
@@ -980,24 +1021,82 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 p2.add(affCtx.currentTopologySnapshot().get(2));
                 p3.add(affCtx.currentTopologySnapshot().get(3));
 
-                if (backups >= 1) {
+                if (backups == 1) {
                     p0.add(affCtx.currentTopologySnapshot().get(1));
                     p1.add(affCtx.currentTopologySnapshot().get(2));
                     p2.add(affCtx.currentTopologySnapshot().get(3));
                     p3.add(affCtx.currentTopologySnapshot().get(0));
                 }
 
-                if (backups == 2) {
-                    p0.add(affCtx.currentTopologySnapshot().get(2));
-                    p1.add(affCtx.currentTopologySnapshot().get(3));
-                    p2.add(affCtx.currentTopologySnapshot().get(0));
-                    p3.add(affCtx.currentTopologySnapshot().get(1));
-                }
+                res.add(p0);
+                res.add(p1);
+                res.add(p2);
+                res.add(p3);
+            }
+
+            return res;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class Map6PartitionsTo6NodesTo2CellsAffinityFunction extends RendezvousAffinityFunction {
+        /**
+         * Default constructor.
+         */
+        public Map6PartitionsTo6NodesTo2CellsAffinityFunction() {
+            super(false, 6);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            List<List<ClusterNode>> res = new ArrayList<>(6);
+
+            int backups = affCtx.backups();
+
+            assert backups == 2;
+
+            if (affCtx.currentTopologySnapshot().size() == 6) {
+                List<ClusterNode> p0 = new ArrayList<>();
+                List<ClusterNode> p1 = new ArrayList<>();
+                List<ClusterNode> p2 = new ArrayList<>();
+                List<ClusterNode> p3 = new ArrayList<>();
+                List<ClusterNode> p4 = new ArrayList<>();
+                List<ClusterNode> p5 = new ArrayList<>();
+
+                // Cell 1.
+                p0.add(affCtx.currentTopologySnapshot().get(0));
+                p0.add(affCtx.currentTopologySnapshot().get(1));
+                p0.add(affCtx.currentTopologySnapshot().get(2));
+
+                p1.add(affCtx.currentTopologySnapshot().get(2));
+                p1.add(affCtx.currentTopologySnapshot().get(0));
+                p1.add(affCtx.currentTopologySnapshot().get(1));
+
+                p2.add(affCtx.currentTopologySnapshot().get(1));
+                p2.add(affCtx.currentTopologySnapshot().get(2));
+                p2.add(affCtx.currentTopologySnapshot().get(0));
+
+                // Cell 2.
+                p3.add(affCtx.currentTopologySnapshot().get(3));
+                p3.add(affCtx.currentTopologySnapshot().get(4));
+                p3.add(affCtx.currentTopologySnapshot().get(5));
+
+                p4.add(affCtx.currentTopologySnapshot().get(5));
+                p4.add(affCtx.currentTopologySnapshot().get(3));
+                p4.add(affCtx.currentTopologySnapshot().get(4));
+
+                p5.add(affCtx.currentTopologySnapshot().get(4));
+                p5.add(affCtx.currentTopologySnapshot().get(5));
+                p5.add(affCtx.currentTopologySnapshot().get(3));
 
                 res.add(p0);
                 res.add(p1);
                 res.add(p2);
                 res.add(p3);
+                res.add(p4);
+                res.add(p5);
             }
 
             return res;
