@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.writeMap;
 /**
  *
  */
-public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
+public class VisorValidateIndexesJobResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,11 +82,6 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
      * For externalization only.
      */
     public VisorValidateIndexesJobResult() {
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V4;
     }
 
     /**
@@ -143,15 +138,9 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
         partRes = readMap(in);
-
-        if (protoVer >= V2)
-            idxRes = readMap(in);
-
-        if (protoVer >= V3)
-            integrityCheckFailures = readCollection(in);
-
-        if (protoVer >= V4)
-            checkSizeRes = readMap(in);
+        idxRes = readMap(in);
+        integrityCheckFailures = readCollection(in);
+        checkSizeRes = readMap(in);
     }
 
     /** {@inheritDoc} */

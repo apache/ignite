@@ -488,9 +488,9 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
             assertFalse(issues.isEmpty());
 
             issues.forEach(issue -> {
-                assertEquals((int)idxSizeExp.apply(rmvByTblEntry.getValue()), issue.idxSize());
+                assertEquals((int)idxSizeExp.apply(rmvByTblEntry.getValue()), issue.indexSize());
 
-                Throwable err = issue.err();
+                Throwable err = issue.error();
                 assertNotNull(err);
                 assertEquals("Cache and index size not same.", err.getMessage());
             });

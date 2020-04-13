@@ -20,18 +20,18 @@ package org.apache.ignite.internal.visor.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.IgniteUtils.readString;
-import static org.apache.ignite.internal.util.IgniteUtils.writeString;
+import static org.apache.ignite.internal.util.IgniteUtils.readLongString;
+import static org.apache.ignite.internal.util.IgniteUtils.writeLongString;
 
 /**
  * Issue when checking size of cache and index.
  */
-public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
+public class ValidateIndexesCheckSizeIssue extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -67,7 +67,7 @@ public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        writeString(out, idxName);
+        writeLongString(out, idxName);
         out.writeLong(idxSize);
         out.writeObject(t);
     }
@@ -77,7 +77,7 @@ public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        idxName = readString(in);
+        idxName = readLongString(in);
         idxSize = in.readLong();
         t = (Throwable)in.readObject();
     }
@@ -87,7 +87,7 @@ public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
      *
      * @return Index size.
      */
-    public long idxSize() {
+    public long indexSize() {
         return idxSize;
     }
 
@@ -96,12 +96,12 @@ public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
      *
      * @return Error.
      */
-    public Throwable err() {
+    public Throwable error() {
         return t;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ValidateIndexesCheckSizeIssue.class, this) + ", " + t.getClass() + ": " + t.getMessage();
+        return S.toString(ValidateIndexesCheckSizeIssue.class, this, "err", t);
     }
 }

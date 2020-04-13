@@ -144,25 +144,11 @@ public class VisorValidateIndexesTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = readSet(in);
-
-        if (protoVer > V1) {
-            checkFirst = in.readInt();
-            checkThrough = in.readInt();
-        }
-
-        if (protoVer > V2)
-            nodes = readSet(in);
-
-        if (protoVer > V5)
-            checkCrc = in.readBoolean();
-
-        if (protoVer > V6)
-            checkSizes = in.readBoolean();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V7;
+        checkFirst = in.readInt();
+        checkThrough = in.readInt();
+        nodes = readSet(in);
+        checkCrc = in.readBoolean();
+        checkSizes = in.readBoolean();
     }
 
     /** {@inheritDoc} */

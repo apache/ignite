@@ -36,7 +36,7 @@ Arguments: --cache help --yes
       --check-first N    - validate only the first N keys
       --check-through K  - validate every Kth key
       --check-crc        - check the CRC-sum of pages stored on disk
-      --check-sizes      - check that index size and cache size are same
+      --check-sizes      - check that index size and cache size are the same
 
   --cache contention minQueueSize [nodeId] [maxPrint]
     Show the keys that are point of contention for multiple transactions.

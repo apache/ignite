@@ -79,7 +79,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         map.put(CHECK_FIRST + " N", "validate only the first N keys");
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
         map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk");
-        map.put(CHECK_SIZES.toString(), "check that index size and cache size are same");
+        map.put(CHECK_SIZES.toString(), "check that index size and cache size are the same");
 
         usageCache(
             logger,
