@@ -28,8 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,9 +39,6 @@ import org.junit.Test;
  * discovery messages and peer class loading enabled. See IGNITE-10238, IGNITE-6668 for details.
  */
 public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 30 * 1000;
@@ -53,9 +48,7 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        discoSpi.addDiscoveryHook(new DiscoveryHook() {
+        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).addDiscoveryHook(new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateAcceptedMessage) {
                     try {
@@ -67,8 +60,6 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
                 }
             }
         });
-
-        discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setPeerClassLoadingEnabled(true);
 

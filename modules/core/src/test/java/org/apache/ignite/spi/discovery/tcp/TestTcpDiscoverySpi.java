@@ -70,6 +70,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
      */
     public void addDiscoveryHook(DiscoveryHook discoHook) {
         assert !started();
+        assert discoHook != null;
 
         discoHooks.add(discoHook);
     }

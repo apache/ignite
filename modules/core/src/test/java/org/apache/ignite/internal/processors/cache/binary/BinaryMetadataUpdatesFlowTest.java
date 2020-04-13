@@ -121,15 +121,11 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
-
         if (discoveryHook != null) {
-            discoSpi.addDiscoveryHook(discoveryHook);
+            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).addDiscoveryHook(discoveryHook);
 
             cfg.setMetricsUpdateFrequency(1000);
         }
-
-        discoSpi.setIpFinder(sharedStaticIpFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

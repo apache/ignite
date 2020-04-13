@@ -74,12 +74,8 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
-
         if (applyDiscoveryHook && discoveryHook != null)
-            discoSpi.addDiscoveryHook(discoveryHook);
-
-        discoSpi.setIpFinder(sharedStaticIpFinder);
+            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).addDiscoveryHook(discoveryHook);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
