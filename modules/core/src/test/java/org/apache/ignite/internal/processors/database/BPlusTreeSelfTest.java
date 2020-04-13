@@ -1478,7 +1478,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     Long putVal = curPutKey.getAndIncrement();
 
-                    if ((i & 0x7ff) == 0)
+                    if (DEBUG_PRINT || (i & 0x7ff) == 0)
                         X.println(" --> put(" + putVal + ")");
 
                     assertNull(tree.put(putVal));
@@ -1487,7 +1487,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     Long rmvVal = curRmvKey.getAndIncrement();
 
-                    if ((i & 0x7ff) == 0)
+                    if (DEBUG_PRINT || (i & 0x7ff) == 0)
                         X.println(" --> rmv(" + rmvVal + ")");
 
                     assertEquals(rmvVal, tree.remove(rmvVal));
@@ -1502,7 +1502,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     long correctSize = curPutKey.get() - curRmvKey.get();
 
-                    if ((i & 0x7ff) == 0)
+                    if (DEBUG_PRINT || (i & 0x7ff) == 0)
                         X.println("====> correctSize=" + correctSize);
 
                     assertEquals(correctSize, size(tree.find(null, null)));
@@ -1628,14 +1628,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     Long putVal = curPutKey.getAndIncrement();
 
-                    if ((i & 0x3ff) == 0)
+                    if (DEBUG_PRINT || (i & 0x3ff) == 0)
                         X.println(order + ": --> put(" + putVal + ")");
 
                     assertNull(tree.put(putVal));
 
                     Long rmvVal = curRmvKey.getAndIncrement();
 
-                    if ((i & 0x3ff) == 0)
+                    if (DEBUG_PRINT || (i & 0x3ff) == 0)
                         X.println(order + ": --> rmv(" + rmvVal + ")");
 
                     assertEquals(rmvVal, tree.remove(rmvVal));
@@ -1677,7 +1677,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     long minBound = correctSize - putRmvThreadCnt;
                     long maxBound = correctSize + putRmvThreadCnt;
 
-                    if ((iter & 0x3ff) == 0)
+                    if (DEBUG_PRINT || (iter & 0x3ff) == 0)
                       X.println(order + ": size=" + treeSize + "; bounds=[" + minBound + ".." + maxBound
                             + "]; contents=" + treeContents);
 
@@ -1895,7 +1895,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     long size = tree.size();
 
-                    if ((++iter & 0xffff) == 0)
+                    if (DEBUG_PRINT || (++iter & 0xffff) == 0)
                         X.println(" --> size() = " + size);
 
                     sizeInvokeCnt.incrementAndGet();
@@ -1917,7 +1917,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     if (rmvVal != null)
                         assertEquals(rmvVal, tree.remove(rmvVal));
 
-                    if ((++iter & 0x3ff) == 0)
+                    if (DEBUG_PRINT || (++iter & 0x3ff) == 0)
                         X.println(" --> rmv(" + rmvVal + ")");
                 }
 
@@ -1936,7 +1936,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                     rowsToRemove.put(putVal);
 
-                    if ((i & 0x3ff) == 0)
+                    if (DEBUG_PRINT || (i & 0x3ff) == 0)
                         X.println(" --> put(" + putVal + ")");
                 }
 
