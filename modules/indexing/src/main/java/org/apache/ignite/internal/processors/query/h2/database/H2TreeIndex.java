@@ -406,13 +406,15 @@ public class H2TreeIndex extends H2TreeIndexBase {
         assert upper == null || upper instanceof H2Row : upper;
 
         try {
-            int seg = threadLocalSegment();
+            QueryContext qctx = ses != null ? H2Utils.context(ses) : null;
+
+            int seg = segment(qctx);
 
             H2Tree tree = treeForRead(seg);
 
             // If it is known that only one row will be returned an optimization is employed
             if (isSingleRowLookup(lower, upper, tree)) {
-                H2Row row = tree.findOne((H2Row)lower, filter(qryCtxRegistry.getThreadLocal()), null);
+                H2Row row = tree.findOne((H2Row)lower, filter(qctx), null);
 
                 if (row == null || isExpired(row))
                     return GridH2Cursor.EMPTY;
@@ -421,7 +423,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             }
             else {
                 return new H2Cursor(tree.find((H2Row)lower,
-                    (H2Row)upper, filter(qryCtxRegistry.getThreadLocal()), null));
+                    (H2Row)upper, filter(qctx), null));
             }
         }
         catch (IgniteCheckedException e) {
@@ -449,11 +451,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** {@inheritDoc} */
     @Override public H2CacheRow put(H2CacheRow row) {
         try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
             int seg = segmentForRow(cctx, row);
 
             H2Tree tree = treeForRead(seg);
+
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -497,11 +499,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
         assert row instanceof H2Row : row;
 
         try {
-            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
-
             int seg = segmentForRow(cctx, row);
 
             H2Tree tree = treeForRead(seg);
+
+            InlineIndexHelper.setCurrentInlineIndexes(inlineIdxs);
 
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
@@ -520,11 +522,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
         try {
-            int seg = threadLocalSegment();
+            QueryContext qctx = H2Utils.context(ses);
+
+            int seg = segment(qctx);
 
             H2Tree tree = treeForRead(seg);
-
-            QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
             return tree.size(filter(qctx));
         }
@@ -534,10 +536,11 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session session, boolean b) {
+    @Override public Cursor findFirstOrLast(Session ses, boolean b) {
         try {
-            H2Tree tree = treeForRead(threadLocalSegment());
-            QueryContext qctx = qryCtxRegistry.getThreadLocal();
+            QueryContext qctx = H2Utils.context(ses);
+
+            H2Tree tree = treeForRead(segment(qctx));
 
             H2Row found = b ? tree.findFirst(filter(qctx)) : tree.findLast(filter(qctx));
 
@@ -715,7 +718,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        QueryContext qctx = qryCtxRegistry.getThreadLocal();
+        QueryContext qctx = H2Utils.context(filters[filter].getSession());
 
         if (qctx == null || qctx.distributedJoinContext() == null || !getTable().isPartitioned())
             return null;
@@ -736,9 +739,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             }
         }
 
-        GridCacheContext<?, ?> cctx = getTable().rowDescriptor().context();
-
-        return new DistributedLookupBatch(this, cctx, queryContextRegistry(), ucast, affColId);
+        return new DistributedLookupBatch(this, cctx, ucast, affColId);
     }
 
     /**

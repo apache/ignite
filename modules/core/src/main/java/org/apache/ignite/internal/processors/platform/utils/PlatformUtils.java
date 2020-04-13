@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.sql.Timestamp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -66,7 +67,6 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.EventType;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -711,7 +711,7 @@ public class PlatformUtils {
     }
 
     /**
-     * Get GridGain platform processor.
+     * Get platform processor.
      *
      * @param grid Ignite instance.
      * @return Platform processor.
@@ -1199,8 +1199,7 @@ public class PlatformUtils {
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
                 new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override
-                    public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
                         String name = reader.readString();
                         int typeId = reader.readInt();
                         int fieldId = reader.readInt();

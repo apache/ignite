@@ -1597,8 +1597,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             createFile(igfs, FILE, false);
 
             GridTestUtils.assertThrowsInherited(log(), new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     IgfsOutputStream os1 = null;
                     IgfsOutputStream os2 = null;
 
@@ -1718,8 +1717,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             // Delete worker should delete the file once its output stream is finally closed:
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override
-                public boolean apply() {
+                @Override public boolean apply() {
                     try {
                         return !igfs.context().meta().exists(id0);
                     } catch (IgniteCheckedException ice) {
@@ -1774,8 +1772,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             // Delete worker should delete the file once its output stream is finally closed:
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override
-                public boolean apply() {
+                @Override public boolean apply() {
                     try {
                         return !igfs.context().meta().exists(id0);
                     } catch (IgniteCheckedException ice) {
@@ -1835,8 +1832,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
                 createFile(igfs, new IgfsPath("/file" + i), false);
 
             multithreaded(new Runnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     int idx = ctr.getAndIncrement();
 
                     IgfsPath path = new IgfsPath("/file" + idx);
@@ -1889,8 +1885,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings("ThrowFromFinallyBlock")
-                @Override
-                public void run() {
+                @Override public void run() {
                     while (!stop.get() && err.get() == null) {
                         IgfsOutputStream os = null;
 

@@ -18,19 +18,13 @@
 package org.apache.ignite.internal.visor.compute;
 
 import java.util.List;
-import java.util.Map;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeTaskFuture;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,7 +64,7 @@ public class VisorComputeCancelSessionTask extends VisorOneNodeTask<VisorCompute
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorComputeCancelSessionTaskArg arg) {
-            ignite.compute(ignite.cluster()).broadcast(new ComputeCancelSessionClosure(), arg.getSessionId());
+            new ComputeMXBeanImpl(ignite.context()).cancel(arg.getSessionId());
 
             return null;
         }
@@ -78,34 +72,6 @@ public class VisorComputeCancelSessionTask extends VisorOneNodeTask<VisorCompute
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(VisorComputeCancelSessionJob.class, this);
-        }
-    }
-
-    /**
-     * Cancel compute session closure.
-     */
-    private static class ComputeCancelSessionClosure implements IgniteClosure<IgniteUuid, Void> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Auto-injected grid instance. */
-        @IgniteInstanceResource
-        private transient IgniteEx ignite;
-
-        /** {@inheritDoc} */
-        @Override public Void apply(IgniteUuid sesId) {
-            ignite.context().job().cancelJob(sesId, null, false);
-
-            IgniteCompute compute = ignite.compute(ignite.cluster().forLocal());
-
-            Map<IgniteUuid, ComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
-
-            ComputeTaskFuture<Object> fut = futs.get(sesId);
-
-            if (fut != null)
-                fut.cancel();
-
-            return null;
         }
     }
 }

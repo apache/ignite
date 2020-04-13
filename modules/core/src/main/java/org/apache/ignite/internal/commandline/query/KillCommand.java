@@ -27,6 +27,8 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTask;
+import org.apache.ignite.internal.visor.query.VisorContinuousQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTask;
 import org.apache.ignite.internal.visor.query.VisorQueryCancelOnInitiatorTaskArg;
 import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTask;
@@ -48,6 +50,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SERVICE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
@@ -159,6 +162,15 @@ public class KillCommand implements Command<Object> {
 
                 break;
 
+            case CONTINUOUS:
+                taskArgs = new VisorContinuousQueryCancelTaskArg(
+                    UUID.fromString(argIter.nextArg("Expected query originating node id.")),
+                    UUID.fromString(argIter.nextArg("Expected continuous query id.")));
+
+                taskName = VisorContinuousQueryCancelTask.class.getName();
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
@@ -186,6 +198,13 @@ public class KillCommand implements Command<Object> {
 
         Command.usage(log, "Kill scan query by node id, cache name and query id:", KILL,
             params, SCAN.toString(),"origin_node_id", "cache_name", "query_id");
+
+        params.clear();
+        params.put("origin_node_id", "Originating node id.");
+        params.put("routine_id", "Routine identifier.");
+
+        Command.usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
+            "origin_node_id", "routine_id");
     }
 
     /** {@inheritDoc} */
