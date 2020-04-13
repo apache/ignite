@@ -213,8 +213,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             AddHandler(UnmanagedCallbackOp.PluginProcessorStop, PluginProcessorStop);
             AddHandler(UnmanagedCallbackOp.PluginProcessorIgniteStop, PluginProcessorIgniteStop);
             AddHandler(UnmanagedCallbackOp.PluginCallbackInLongLongOutLong, PluginCallbackInLongLongOutLong);
-            AddHandler(UnmanagedCallbackOp.NearCacheUpdate, NearCacheUpdate);
-            AddHandler(UnmanagedCallbackOp.NearCacheUpdateFromThreadLocal, NearCacheUpdateFromThreadLocal);
+            AddHandler(UnmanagedCallbackOp.PlatformCacheUpdate, PlatformCacheUpdate);
+            AddHandler(UnmanagedCallbackOp.PlatformCacheUpdateFromThreadLocal, PlatformCacheUpdateFromThreadLocal);
             AddHandler(UnmanagedCallbackOp.OnCacheStopped, OnCacheStopped);
             AddHandler(UnmanagedCallbackOp.OnAffinityTopologyVersionChanged, OnAffinityTopologyVersionChanged);
         }
@@ -425,31 +425,31 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
         
         /// <summary>
-        /// Updates near cache entry.
+        /// Updates platform cache entry.
         /// </summary>
         /// <param name="memPtr">Memory pointer.</param>
         /// <returns>Unused.</returns>
-        private long NearCacheUpdate(long memPtr)
+        private long PlatformCacheUpdate(long memPtr)
         {
             using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
             {
                 var cacheId = stream.ReadInt();
 
-                _ignite.NearCacheManager.Update(cacheId, stream, _ignite.Marshaller);
+                _ignite.PlatformCacheManager.Update(cacheId, stream, _ignite.Marshaller);
             }
 
             return 0;
         }
         
         /// <summary>
-        /// Updates near cache entry.
+        /// Updates platform cache entry.
         /// </summary>
-        private long NearCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor, void* arg)
+        private long PlatformCacheUpdateFromThreadLocal(long cacheIdAndPartition, long verMajor, long verMinor, void* arg)
         {
             int cacheId = (int)(cacheIdAndPartition & 0xFFFFFFFF);
             int partition = (int) (cacheIdAndPartition >> 32);
 
-            _ignite.NearCacheManager.UpdateFromThreadLocal(
+            _ignite.PlatformCacheManager.UpdateFromThreadLocal(
                 cacheId, partition, new AffinityTopologyVersion(verMajor, (int) verMinor));
                 
             return 0;
@@ -461,7 +461,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <param name="cacheId">Cache id.</param>
         private long OnCacheStopped(long cacheId)
         {
-            _ignite.NearCacheManager.Stop((int) cacheId);
+            _ignite.PlatformCacheManager.Stop((int) cacheId);
             
             return 0;
         }
@@ -474,7 +474,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             var affinityTopologyVersion = new AffinityTopologyVersion(topologyVersion, (int) minorTopologyVersion);
             
-            _ignite.NearCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
+            _ignite.PlatformCacheManager.OnAffinityTopologyVersionChanged(affinityTopologyVersion);
             
             return 0;
         }

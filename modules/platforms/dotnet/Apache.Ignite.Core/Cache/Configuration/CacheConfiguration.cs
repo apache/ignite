@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             
             if (reader.ReadBoolean())
             {
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration(reader);
+                PlatformCacheConfiguration = new PlatformCacheConfiguration(reader);
             }
 
             var count = reader.ReadInt();
@@ -455,10 +455,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             writer.WriteCollectionRaw(KeyConfiguration);
             
-            if (PlatformNearConfiguration != null)
+            if (PlatformCacheConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                PlatformNearConfiguration.Write(writer);
+                PlatformCacheConfiguration.Write(writer);
             }
             else
             {
@@ -949,9 +949,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool EncryptionEnabled { get; set; }
 
         /// <summary>
-        /// Gets or sets platform near cache configuration.
-        /// More details: <see cref="PlatformNearConfiguration"/>. 
+        /// Gets or sets platform cache configuration.
+        /// More details: <see cref="PlatformCacheConfiguration"/>. 
         /// </summary>
-        public PlatformNearCacheConfiguration PlatformNearConfiguration { get; set; }
+        [IgniteExperimental]
+        public PlatformCacheConfiguration PlatformCacheConfiguration { get; set; }
     }
 }
