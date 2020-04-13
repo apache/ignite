@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregat
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -62,7 +63,7 @@ public class AggregateTraitsPropagationRule extends RelOptRule {
         IgniteDistribution inDistr = IgniteMdDistribution._distribution(input, mq);
 
         List<IgniteDistributions.Suggestion> suggestions =
-            IgniteDistributions.suggestAggregate(inDistr, groupSet, groupSets);
+            IgniteDistributions.suggestAggregate(F.asList(inDistr), groupSet, groupSets);
 
         List<RelNode> newRels = new ArrayList<>(suggestions.size());
 

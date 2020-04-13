@@ -36,8 +36,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -136,11 +137,18 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteUnionAll rel) {
+        List<RelNode> inputs = Commons.transform(rel.getInputs(), rel0 -> visit((IgniteRel) rel0));
+
+        return new IgniteUnionAll(cluster, rel.getTraitSet(), inputs);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
         Fragment fragment = rel.source();
         fragments.add(fragment = new Fragment(fragment.fragmentId(), visit(fragment.root())));
 
-        return new IgniteReceiver(cluster, rel.getTraitSet(), rel.getRowType(), fragment);
+        return new IgniteReceiver(cluster, rel.getTraitSet(), fragment);
     }
 
     /** {@inheritDoc} */

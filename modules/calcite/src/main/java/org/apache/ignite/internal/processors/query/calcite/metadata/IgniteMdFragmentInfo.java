@@ -23,6 +23,7 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.BiRel;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
@@ -113,6 +114,32 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
                 throw new OptimisticPlanningException(msg, leftCost.isLe(rightCost) ? rel.getLeft() : rel.getRight(), e);
             }
         }
+    }
+
+    /**
+     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     *
+     * {@link LocationMappingException} may be thrown on two children nodes locations merge. This means
+     * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
+     * is needed. This case we throw {@link OptimisticPlanningException} with an edge, where we need the additional
+     * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
+     * information will be recalculated for all fragments.
+     */
+    public FragmentInfo fragmentInfo(SetOp rel, RelMetadataQuery mq) {
+        FragmentInfo res = new FragmentInfo();
+
+        for (RelNode input : rel.getInputs()) {
+            FragmentInfo inputInfo = _fragmentInfo(input, mq);
+
+            try {
+                res = res.merge(inputInfo);
+            }
+            catch (LocationMappingException e) {
+                throw new OptimisticPlanningException("Failed to calculate physical distribution", input, e);
+            }
+        }
+
+        return res;
     }
 
     /**

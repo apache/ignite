@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,19 +33,20 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
-import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.logical.LogicalValues;
+import org.apache.calcite.rel.logical.LogicalUnion;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.DerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.BiSuggestion;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.Suggestion;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.typedef.F;
@@ -80,42 +82,6 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
      */
     public List<IgniteDistribution> deriveDistributions(AbstractConverter rel, RelMetadataQuery mq) {
         return Collections.emptyList();
-    }
-
-    /**
-     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
-     */
-    public List<IgniteDistribution> deriveDistributions(IgniteRel rel, RelMetadataQuery mq) {
-        return F.asList(IgniteMdDistribution._distribution(rel, mq));
-    }
-
-    /**
-     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
-     */
-    public List<IgniteDistribution> deriveDistributions(LogicalTableScan rel, RelMetadataQuery mq) {
-        return F.asList(IgniteMdDistribution._distribution(rel, mq));
-    }
-
-    /**
-     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
-     */
-    public List<IgniteDistribution> deriveDistributions(LogicalValues rel, RelMetadataQuery mq) {
-        return F.asList(IgniteMdDistribution._distribution(rel, mq));
-    }
-
-    /**
-     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
-     */
-    public List<IgniteDistribution> deriveDistributions(LogicalProject rel, RelMetadataQuery mq) {
-        HashSet<IgniteDistribution> res = new HashSet<>();
-
-        Mappings.TargetMapping mapping =
-            Project.getPartialMapping(rel.getInput().getRowType().getFieldCount(), rel.getProjects());
-
-        for (IgniteDistribution inDistr : _deriveDistributions(rel.getInput(), mq))
-            res.add(inDistr.apply(mapping));
-
-        return new ArrayList<>(res);
     }
 
     /**
@@ -163,21 +129,54 @@ public class IgniteMdDerivedDistribution implements MetadataHandler<DerivedDistr
     /**
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
+    public List<IgniteDistribution> deriveDistributions(LogicalProject rel, RelMetadataQuery mq) {
+        HashSet<IgniteDistribution> res = new HashSet<>();
+
+        Mappings.TargetMapping mapping =
+            Project.getPartialMapping(rel.getInput().getRowType().getFieldCount(), rel.getProjects());
+
+        for (IgniteDistribution inDistr : _deriveDistributions(rel.getInput(), mq))
+            res.add(inDistr.apply(mapping));
+
+        return new ArrayList<>(res);
+    }
+
+    /**
+     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
+     */
     public List<IgniteDistribution> deriveDistributions(LogicalAggregate rel, RelMetadataQuery mq) {
-        List<IgniteDistributions.Suggestion> suggestions = IgniteDistributions.suggestAggregate(
+        List<Suggestion> suggestions = IgniteDistributions.suggestAggregate(
             mq, rel.getInput(), rel.getGroupSet(), rel.getGroupSets());
 
-        return Commons.transform(suggestions, IgniteDistributions.Suggestion::out);
+        return Commons.transform(suggestions, Suggestion::out);
     }
 
     /**
      * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
      */
     public List<IgniteDistribution> deriveDistributions(LogicalJoin rel, RelMetadataQuery mq) {
-        List<IgniteDistributions.BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
+        List<BiSuggestion> suggestions = IgniteDistributions.suggestJoin(
             mq, rel.getLeft(), rel.getRight(), rel.analyzeCondition(), rel.getJoinType());
 
-        return Commons.transform(suggestions, IgniteDistributions.BiSuggestion::out);
+        return Commons.transform(suggestions, BiSuggestion::out);
+    }
+
+    /**
+     * See {@link IgniteMdDerivedDistribution#deriveDistributions(RelNode, RelMetadataQuery)}
+     */
+    public List<IgniteDistribution> deriveDistributions(LogicalUnion rel, RelMetadataQuery mq) {
+        List<IgniteDistribution> distributions = Commons.transform(
+            IgniteDistributions.suggestUnionAll(mq, rel.getInputs()), Suggestion::out);
+
+        if (rel.all)
+            return distributions;
+
+        // UNION becomes DISTINCT + UNION ALL where DISTINCT is implemented as an Aggregate
+        ImmutableBitSet groupSet = ImmutableBitSet.range(rel.getRowType().getFieldCount());
+        List<ImmutableBitSet> groupSets = ImmutableList.of(groupSet);
+
+        return Commons.transform(
+            IgniteDistributions.suggestAggregate(distributions, groupSet, groupSets), Suggestion::out);
     }
 
     /** */

@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
@@ -39,7 +38,6 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.mapping.Mappings;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDerivedDistribution;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdDistribution;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -49,11 +47,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.HashDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.RandomDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction.SingletonDistribution;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
@@ -63,12 +58,6 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
  *
  */
 public class IgniteDistributions {
-    /** */
-    private static final int BEST_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_JOIN_SUGGESTS_COUNT", 0);
-
-    /** */
-    private static final Integer[] INTS = new Integer[]{0, 1, 2};
-
     /** */
     private static final IgniteDistribution BROADCAST = canonize(new DistributionTrait(BroadcastDistribution.INSTANCE));
 
@@ -147,111 +136,97 @@ public class IgniteDistributions {
     }
 
     /**
-     * Suggests possible aggregate distributions.
+     * Suggests possible union distributions.
      *
-     * @param inDistr Input node distribution.
-     * @param groupSet Aggregate group set.
-     * @param groupSets Aggregate group sets.
-     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
+     * @param mq Metadata query.
+     * @param inputs Input nodes.
+     * @return Array of possible distributions.
      */
-    public static List<Suggestion> suggestAggregate(IgniteDistribution inDistr, ImmutableBitSet groupSet,
-        List<ImmutableBitSet> groupSets) {
-        return sorted(suggestAggregate0(new HashMap<>(), inDistr, groupSet, groupSets));
+    public static List<Suggestion> suggestUnionAll(RelMetadataQuery mq, List<RelNode> inputs) {
+        Set<Suggestion> suggestions = new HashSet<>();
+
+        suggestions.add(new Suggestion(random(), random()));
+        suggestions.add(new Suggestion(single(), single()));
+        suggestions.add(new Suggestion(broadcast(), broadcast()));
+
+        for (RelNode input : inputs) {
+            for (IgniteDistribution distribution : IgniteMdDerivedDistribution._deriveDistributions(input, mq)) {
+                if (distribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED)
+                    suggestions.add(new Suggestion(distribution, distribution));
+            }
+        }
+
+        return new ArrayList<>(suggestions);
     }
 
     /**
      * Suggests possible aggregate distributions.
      *
      * @param mq Metadata query.
-     * @param input Input node.
+     * @param input Input rel.
      * @param groupSet Aggregate group set.
      * @param groupSets Aggregate group sets.
      * @return Array of possible distributions, sorted by their efficiency (cheaper first).
      */
     public static List<Suggestion> suggestAggregate(RelMetadataQuery mq, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets) {
-        List<IgniteDistribution> inDistrs = IgniteMdDerivedDistribution._deriveDistributions(input, mq);
+        Set<Suggestion> suggestions = new HashSet<>();
 
-        Map<Suggestion, Integer> suggestions = new HashMap<>();
+        if (!groupSet.isEmpty() && simpleAggregate(groupSet, groupSets))
+            processHashAgg(suggestions, IgniteMdDerivedDistribution._deriveDistributions(input, mq), groupSet);
 
-        for (IgniteDistribution inDistr : inDistrs)
-            suggestions = suggestAggregate0(suggestions, inDistr, groupSet, groupSets);
+        suggestions.add(new Suggestion(single(), random()));
+        suggestions.add(new Suggestion(broadcast(), broadcast()));
+        suggestions.add(new Suggestion(single(), single()));
 
-        return sorted(suggestions);
+        return new ArrayList<>(suggestions);
     }
 
     /**
-     * Suggests possible aggregate distributions based on next principles:
-     * <li>Simple aggregate may be done in a distributed form in case its input is hash distributed by aggregate group keys</li>
-     * <li>Any aggregate may be done without map-reduce processing in case its input is singleton or broadcast distributed</li>
-     * <li>Any aggregate may be done in map-reduce style in case its input is hash or random distributed</li>
+     * Suggests possible aggregate distributions.
+     *
+     * @param inDistrs Input node distributions.
+     * @param groupSet Aggregate group set.
+     * @param groupSets Aggregate group sets.
+     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
      */
-    private static Map<Suggestion,Integer> suggestAggregate0(Map<Suggestion, Integer> dst, IgniteDistribution inDistr,
-        ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets) {
+    public static List<Suggestion> suggestAggregate(List<IgniteDistribution> inDistrs, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets) {
+        Set<Suggestion> suggestions = new HashSet<>();
 
-        IgniteDistribution out, in;
+        if (!groupSet.isEmpty() && simpleAggregate(groupSet, groupSets))
+            processHashAgg(suggestions, inDistrs, groupSet);
 
-        if (simpleAggregate(groupSet, groupSets) && !groupSet.isEmpty()) {
-            // re-hash by group keys
-            in = hash(groupSet.asList());
-            out = hash(ImmutableIntList.range(0, groupSet.cardinality()));
-            dst = add(dst, out, inDistr, in);
+        suggestions.add(new Suggestion(single(), random()));
+        suggestions.add(new Suggestion(broadcast(), broadcast()));
+        suggestions.add(new Suggestion(single(), single()));
+
+        return new ArrayList<>(suggestions);
+    }
+
+    /** */
+    private static void processHashAgg(Set<Suggestion> dst, List<IgniteDistribution> inDistrs, ImmutableBitSet groupSet) {
+        ImmutableIntList keys = ImmutableIntList.copyOf(groupSet);
+        Set<DistributionFunction> functions = new HashSet<>();
+
+        for (IgniteDistribution inDistr : inDistrs) {
+            if (inDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                && Objects.equals(keys, inDistr.getKeys()))
+                functions.add(inDistr.function());
         }
 
-        if (inDistr.satisfies(random()))
-            // map-reduce case
-            dst = add(dst, new Suggestion(single(), inDistr), BEST_CNT > 0 ? INTS[1] : INTS[0]);
+        functions.add(HashDistribution.INSTANCE);
 
-        out = broadcast(); in = broadcast();
-        dst = add(dst, out, inDistr, in);
-
-        out = single(); in = single();
-        dst = add(dst, out, inDistr, in);
-
-        return dst;
+        for (DistributionFunction function : functions) {
+            // re-hash by group keys
+            IgniteDistribution out = hash(ImmutableIntList.range(0, groupSet.cardinality()), function);
+            IgniteDistribution in = hash(groupSet.asList(), function);
+            dst.add(new Suggestion(out, in));
+        }
     }
 
     /**
-     * Suggests possible join distributions.
-     *
-     * @param mq Metadata query.
-     * @param left Left node.
-     * @param right Right node.
-     * @param joinInfo Join info.
-     * @param joinType Join type.
-     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
-     */
-    public static List<BiSuggestion> suggestJoin(RelMetadataQuery mq, RelNode left, RelNode right, JoinInfo joinInfo,
-        JoinRelType joinType) {
-        List<IgniteDistribution> leftIn = IgniteMdDerivedDistribution._deriveDistributions(left, mq);
-        List<IgniteDistribution> rightIn = IgniteMdDerivedDistribution._deriveDistributions(right, mq);
-
-        Map<BiSuggestion, Integer> suggestions = new HashMap<>();
-
-        for (IgniteDistribution leftIn0 : leftIn)
-            for (IgniteDistribution rightIn0 : rightIn)
-                suggestions = suggestJoin0(suggestions, leftIn0, rightIn0, joinInfo, joinType);
-
-        return sorted(suggestions);
-    }
-
-    /**
-     * Suggests possible join distributions.
-     *
-     * @param leftIn Left distribution.
-     * @param rightIn Right distribution.
-     * @param joinInfo Join info.
-     * @param joinType Join type.
-     * @return Array of possible distributions, sorted by their efficiency (cheaper first).
-     */
-    public static List<BiSuggestion> suggestJoin(IgniteDistribution leftIn, IgniteDistribution rightIn,
-        JoinInfo joinInfo, JoinRelType joinType) {
-        return sorted(suggestJoin0(new HashMap<>(), leftIn, rightIn, joinInfo, joinType));
-    }
-
-    /**
-     * Suggests possible join distributions using inputs distributions and join info
-     * based on next distributions table:
+     * Suggests possible join distributions based on next table:
      * <p/><table>
      * <tr><th>===============INNER JOIN==============</th></tr>
      * <tr><td>hash + hash = hash</td></tr>
@@ -273,114 +248,64 @@ public class IgniteDistributions {
      * <tr><td>broadcast + broadcast = broadcast</td></tr>
      * <tr><td>single + single = single</td></tr>
      * </table>
-     * <p/>others require redistribution.
+     *
+     * @param mq Metadata query.
+     * @param left Left node.
+     * @param right Right node.
+     * @param joinInfo Join info.
+     * @param joinType Join type.
+     * @return Array of possible distributions.
      */
-    private static Map<BiSuggestion, Integer> suggestJoin0(Map<BiSuggestion, Integer> dst, IgniteDistribution leftIn,
-        IgniteDistribution rightIn, JoinInfo joinInfo, JoinRelType joinType) {
-        IgniteDistribution out, left, right;
+    public static List<BiSuggestion> suggestJoin(RelMetadataQuery mq, RelNode left, RelNode right, JoinInfo joinInfo,
+        JoinRelType joinType) {
+        Set<BiSuggestion> suggestions = new HashSet<>();
+
+        suggestions.add(new BiSuggestion(broadcast(), broadcast(), broadcast()));
+        suggestions.add(new BiSuggestion(single(), single(), single()));
 
         if (joinType == LEFT || joinType == RIGHT || (joinType == INNER && !F.isEmpty(joinInfo.pairs()))) {
-            HashSet<DistributionFunction> factories = U.newHashSet(3);
+            Set<DistributionFunction> functions = new HashSet<>();
 
-            if (leftIn.getType() == RelDistribution.Type.HASH_DISTRIBUTED
-                && Objects.equals(joinInfo.leftKeys, leftIn.getKeys()))
-                factories.add(leftIn.function());
+            for (IgniteDistribution leftIn : IgniteMdDerivedDistribution._deriveDistributions(left, mq)) {
+                if (leftIn.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                    && Objects.equals(joinInfo.leftKeys, leftIn.getKeys()))
+                    functions.add(leftIn.function());
+            }
 
-            if (rightIn.getType() == RelDistribution.Type.HASH_DISTRIBUTED
-                && Objects.equals(joinInfo.rightKeys, rightIn.getKeys()))
-                factories.add(rightIn.function());
+            for (IgniteDistribution rightIn : IgniteMdDerivedDistribution._deriveDistributions(right, mq)) {
+                if (rightIn.getType() == RelDistribution.Type.HASH_DISTRIBUTED
+                    && Objects.equals(joinInfo.rightKeys, rightIn.getKeys()))
+                    functions.add(rightIn.function());
+            }
 
-            factories.add(HashDistribution.INSTANCE);
+            functions.add(HashDistribution.INSTANCE);
 
-            for (DistributionFunction factory : factories) {
+            IgniteDistribution out, left0, right0;
+
+            for (DistributionFunction factory : functions) {
                 out = hash(joinInfo.leftKeys, factory);
+                left0 = hash(joinInfo.leftKeys, factory);
+                right0 = hash(joinInfo.rightKeys, factory);
 
-                left = hash(joinInfo.leftKeys, factory); right = hash(joinInfo.rightKeys, factory);
-                dst = add(dst, out, leftIn, rightIn, left, right);
+                suggestions.add(new BiSuggestion(out, left0, right0));
 
                 if (joinType == INNER || joinType == LEFT) {
-                    left = hash(joinInfo.leftKeys, factory); right = broadcast();
-                    dst = add(dst, out, leftIn, rightIn, left, right);
+                    left0 = hash(joinInfo.leftKeys, factory);
+                    right0 = broadcast();
+
+                    suggestions.add(new BiSuggestion(out, left0, right0));
                 }
 
                 if (joinType == INNER || joinType == RIGHT) {
-                    left = broadcast(); right = hash(joinInfo.rightKeys, factory);
-                    dst = add(dst, out, leftIn, rightIn, left, right);
+                    left0 = broadcast();
+                    right0 = hash(joinInfo.rightKeys, factory);
+
+                    suggestions.add(new BiSuggestion(out, left0, right0));
                 }
             }
         }
 
-        out = left = right = broadcast();
-        dst = add(dst, out, leftIn, rightIn, left, right);
-
-        out = left = right = single();
-        dst = add(dst, out, leftIn, rightIn, left, right);
-
-        return dst;
-    }
-
-    /** */
-    private static Map<Suggestion, Integer> add(Map<Suggestion, Integer> dst, IgniteDistribution out,
-        IgniteDistribution in, IgniteDistribution newIn) {
-        if (BEST_CNT > 0) {
-            int exch = 0;
-
-            if (!in.satisfies(newIn))
-                exch++;
-
-            return add(dst, new Suggestion(out, newIn), INTS[exch]);
-        }
-        else
-            return add(dst, new Suggestion(out, newIn), INTS[0]);
-    }
-
-    /** */
-    private static Map<BiSuggestion, Integer> add(Map<BiSuggestion, Integer> dst, IgniteDistribution out,
-        IgniteDistribution left, IgniteDistribution right, IgniteDistribution newLeft, IgniteDistribution newRight) {
-        if (BEST_CNT > 0) {
-            int exch = 0;
-
-            if (!left.satisfies(newLeft))
-                exch++;
-
-            if (!right.satisfies(newRight))
-                exch++;
-
-            return add(dst, new BiSuggestion(out, newLeft, newRight), INTS[exch]);
-        }
-        else
-            return add(dst, new BiSuggestion(out, newLeft, newRight), INTS[0]);
-    }
-
-    /** */
-    private static <T> Map<T, Integer> add(Map<T, Integer> dst, T suggest, Integer exchCnt) {
-        if (dst == null)
-            dst = new HashMap<>();
-
-        dst.merge(suggest, exchCnt, IgniteDistributions::min);
-
-        return dst;
-    }
-
-    /** */
-    private static <T> List<T> sorted(Map<T, Integer> src) {
-        if (BEST_CNT > 0) {
-            List<Map.Entry<T, Integer>> entries = new ArrayList<>(src.entrySet());
-
-            entries.sort(Map.Entry.comparingByValue());
-
-            if (entries.size() >= BEST_CNT)
-                entries = entries.subList(0, BEST_CNT);
-
-            return Commons.transform(entries, Map.Entry::getKey);
-        }
-
-        return new ArrayList<>(src.keySet());
-    }
-
-    /** */
-    private static @NotNull Integer min(@NotNull Integer i1, @NotNull Integer i2) {
-        return i1 < i2 ? i1 : i2;
+        return new ArrayList<>(suggestions);
     }
 
     /**

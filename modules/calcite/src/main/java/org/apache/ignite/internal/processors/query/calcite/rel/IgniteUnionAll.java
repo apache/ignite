@@ -19,35 +19,29 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
+import org.apache.calcite.rel.core.SetOp;
+import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 
 /**
- * Relational expression that receives elements from remote {@link IgniteSender}
+ *
  */
-public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
+public class IgniteUnionAll extends Union implements IgniteRel {
     /** */
-    private final Fragment source;
-
-    /**
-     * Creates a Receiver
-     * @param cluster  Cluster that this relational expression belongs to
-     * @param traits   Traits of this relational expression
-     * @param source   Source fragment.
-     */
-    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, Fragment source) {
-        super(cluster, traits);
-
-        this.source = source;
-
-        rowType = source.root().getRowType();
+    public IgniteUnionAll(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs) {
+        super(cluster, traits, inputs, true);
     }
 
     /** {@inheritDoc} */
-    @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteReceiver(getCluster(), traitSet, source);
+    @Override public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+        assert all;
+
+        return new IgniteUnionAll(getCluster(), traitSet, inputs);
     }
 
     /** {@inheritDoc} */
@@ -55,10 +49,11 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
         return visitor.visit(this);
     }
 
-    /**
-     * @return Source fragment.
-     */
-    public Fragment source() {
-        return source;
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        if (distribution().getType() == RelDistribution.Type.ANY)
+            return planner.getCostFactory().makeInfiniteCost();
+
+        return super.computeSelfCost(planner, mq);
     }
 }

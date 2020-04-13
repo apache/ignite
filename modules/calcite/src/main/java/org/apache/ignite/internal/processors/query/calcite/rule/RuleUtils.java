@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptRuleOperand;
@@ -34,6 +34,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.calcite.plan.RelOptRule.any;
@@ -86,28 +87,16 @@ public class RuleUtils {
 
     /** */
     public static void transformTo(RelOptRuleCall call, List<RelNode> newRels) {
-        transformTo(call, newRels, ImmutableMap.of());
-    }
-
-    /** */
-    public static void transformTo(RelOptRuleCall call, List<RelNode> newRels, Map<RelNode, RelNode> additional) {
         RelNode orig = call.rel(0);
 
-        if (F.isEmpty(newRels)) {
-            if (!F.isEmpty(additional))
-                // small trick to register the additional equivalence map entries only, we pass
-                // the original rel as transformed one, which will be skipped by the planner.
-                call.transformTo(orig, additional);
-
+        if (F.isEmpty(newRels))
             return;
-        }
 
         if (isRoot(orig))
             newRels = Commons.transform(newRels, RuleUtils::changeToRootTraits);
 
         RelNode first = F.first(newRels);
-        List<RelNode> remaining = newRels.subList(1, newRels.size());
-        Map<RelNode, RelNode> equivMap = equivMap(orig, remaining, additional);
+        Map<RelNode, RelNode> equivMap = equivMap(orig, newRels.subList(1, newRels.size()));
 
         call.transformTo(first, equivMap);
     }
@@ -181,27 +170,24 @@ public class RuleUtils {
 
     /** */
     private static RelNode changeToRootTraits(RelNode rel) {
+        if (rel.getConvention() == Convention.NONE)
+            return rel; // logical rels will be converted after to-ignite transformation
+
         RelTraitSet rootTraits = rel.getCluster().getPlanner().getRoot().getTraitSet();
 
         return changeTraits(rel, rootTraits);
     }
 
     /** */
-    private static @NotNull Map<RelNode, RelNode> equivMap(RelNode orig, List<RelNode> equivList, Map<RelNode, RelNode> additional) {
+    private static @NotNull Map<RelNode, RelNode> equivMap(RelNode orig, List<RelNode> equivList) {
         assert orig != null;
         assert equivList != null;
-        assert additional != null;
 
-        if(F.isEmpty(equivList))
-            return additional;
-
-        ImmutableMap.Builder<RelNode, RelNode> b = ImmutableMap.builder();
+        Map<RelNode, RelNode> res = U.newHashMap(equivList.size());
 
         for (RelNode equiv : equivList)
-            b.put(equiv, orig);
+            res.put(equiv, orig);
 
-        b.putAll(additional);
-
-        return b.build();
+        return res;
     }
 }

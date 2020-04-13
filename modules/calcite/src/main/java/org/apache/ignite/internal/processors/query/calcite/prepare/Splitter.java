@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 
 /**
@@ -112,6 +113,11 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteUnionAll rel) {
+        return visitChildren(rel);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteRel rel) {
         return rel.accept(this);
     }
@@ -135,7 +141,7 @@ public class Splitter implements IgniteRelVisitor<IgniteRel> {
 
         fragments.add(fragment);
 
-        return new IgniteReceiver(cluster, rel.getTraitSet(), input.getRowType(), fragment);
+        return new IgniteReceiver(cluster, rel.getTraitSet(), fragment);
     }
 
     /**

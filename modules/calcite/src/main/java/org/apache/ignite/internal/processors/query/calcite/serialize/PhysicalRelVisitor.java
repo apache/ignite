@@ -72,6 +72,11 @@ public interface PhysicalRelVisitor<T> {
     T visit(TableModifyPhysicalRel rel);
 
     /**
+     * See {@link PhysicalRelVisitor#visit(PhysicalRel)}
+     */
+    T visit(UnionAllPhysicalRel rel);
+
+    /**
      * Processes given physical rel.
      *
      * @param rel Physical rel.
