@@ -2616,12 +2616,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     HashSet<ClusterNode> primaries = new HashSet<>();
 
                     for (List<ClusterNode> nodes : assignment) {
-                        if (nodes.contains(loc)) {
-                            ClusterNode primary = nodes.get(0);
-
-                            if (loc != primary)
-                                primaries.add(primary);
-                        }
+                        if (nodes.indexOf(loc) > 0)
+                            primaries.add(nodes.get(0));
                     }
 
                     res.addAll(primaries);

@@ -370,7 +370,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private Map<Integer, Set<Integer>> clearingPartitions;
 
     /** Specified only in case of 'cluster is fully rebalanced' state achieved. */
-    private volatile FullyRebalancedStateAchievedInfo rebalancedInfo;
+    private volatile RebalancedInfo rebalancedInfo;
 
     /**
      * @param cctx Cache context.
@@ -5106,9 +5106,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public void markRebalanced() {
         assert !rebalanced();
 
-        Set<ClusterNode> primaries = cctx.affinity().idealPrimaryNodesForLocalBackups();
-
-        rebalancedInfo = new FullyRebalancedStateAchievedInfo(primaries);
+        rebalancedInfo = new RebalancedInfo(cctx.affinity().idealPrimaryNodesForLocalBackups());
     }
 
     /**
@@ -5124,7 +5122,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param failed Failed node.
      */
     private boolean primaryFailed(ClusterNode failed) {
-        return rebalancedInfo.primaryNodesForLocBackups.contains(failed);
+        return rebalancedInfo.primaryNodes.contains(failed);
     }
 
     /**
@@ -5412,15 +5410,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      *
      */
-    private static class FullyRebalancedStateAchievedInfo {
-        /** Primary nodes for local backups. */
-        private Set<ClusterNode> primaryNodesForLocBackups;
+    private static class RebalancedInfo {
+        /** Primary nodes for local backups for all registered partitioned caches. */
+        private Set<ClusterNode> primaryNodes;
 
         /**
-         * @param primaryNodesForLocBackups Primary nodes for local backups.
+         * @param primaryNodes Primary nodes for local backups.
          */
-        public FullyRebalancedStateAchievedInfo(Set<ClusterNode> primaryNodesForLocBackups) {
-            this.primaryNodesForLocBackups = primaryNodesForLocBackups;
+        public RebalancedInfo(Set<ClusterNode> primaryNodes) {
+            this.primaryNodes = primaryNodes;
         }
     }
 }
