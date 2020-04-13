@@ -20,6 +20,8 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -37,7 +39,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     public boolean ignorePingResponse;
 
     /** Interceptors of discovery messages. */
-    private DiscoveryHook[] discoveryHooks;
+    private List<DiscoveryHook> discoHooks = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -54,20 +56,21 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ZeroLengthArrayAllocation")
     @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-        super.setListener(lsnr ==  null || discoveryHooks == null ? lsnr : wrap(lsnr, discoveryHooks));
+        super.setListener(lsnr ==  null || discoHooks.isEmpty() ?
+            lsnr : wrap(lsnr, discoHooks.toArray(new DiscoveryHook[0])));
     }
 
     /**
-     * Sets interceptors of discovery messages. Note that {@link DiscoveryHook}s must be setted before start.
+     * Adds interceptor of discovery messages. Note that {@link DiscoveryHook} must be added before start.
      * Otherwise, this method call will take no effect.
      *
-     * @param discoveryHooks Interceptors of discovery messages.
+     * @param discoHook Interceptor of discovery messages.
      */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public void discoveryHooks(DiscoveryHook... discoveryHooks) {
+    public void addDiscoveryHook(DiscoveryHook discoHook) {
         assert !started();
 
-        this.discoveryHooks = discoveryHooks;
+        discoHooks.add(discoHook);
     }
 }

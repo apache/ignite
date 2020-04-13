@@ -247,10 +247,10 @@ public final class GridTestUtils {
 
         /**
          * @param delegate Delegate.
-         * @param discoveryHooks Interceptors of discovery messages.
+         * @param discoHooks Interceptors of discovery messages.
          */
-        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook... discoveryHooks) {
-            return new DiscoverySpiListenerWrapper(delegate, discoveryHooks);
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook... discoHooks) {
+            return new DiscoverySpiListenerWrapper(delegate, discoHooks);
         }
     }
 

@@ -54,14 +54,12 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DiscoveryHook discoveryHook = new DiscoveryHook() {
+        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).addDiscoveryHook(new DiscoveryHook() {
             @Override public void afterDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof StopRoutineDiscoveryMessage)
                     stopRoutineLatch.countDown();
             }
-        };
-
-        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHooks(discoveryHook);
+        });
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 

@@ -55,7 +55,7 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
 
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        DiscoveryHook discoveryHook = new DiscoveryHook() {
+        discoSpi.addDiscoveryHook(new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateAcceptedMessage) {
                     try {
@@ -66,9 +66,8 @@ public class IgniteContinuousQueryMetadataUpdateTest extends GridCommonAbstractT
                     }
                 }
             }
-        };
+        });
 
-        discoSpi.discoveryHooks(discoveryHook);
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setPeerClassLoadingEnabled(true);

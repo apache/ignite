@@ -77,7 +77,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
 
         if (applyDiscoveryHook && discoveryHook != null)
-            discoSpi.discoveryHooks(discoveryHook);
+            discoSpi.addDiscoveryHook(discoveryHook);
 
         discoSpi.setIpFinder(sharedStaticIpFinder);
 

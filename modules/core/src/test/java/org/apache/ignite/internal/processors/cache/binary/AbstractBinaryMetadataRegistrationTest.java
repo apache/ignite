@@ -56,14 +56,12 @@ public abstract class AbstractBinaryMetadataRegistrationTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        DiscoveryHook discoveryHook = new DiscoveryHook() {
+        ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).addDiscoveryHook(new DiscoveryHook() {
             @Override public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
                 if (customMsg instanceof MetadataUpdateProposedMessage)
                     proposeMsgNum.incrementAndGet();
             }
-        };
-
-       ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHooks(discoveryHook);
+        });
 
         cfg.setCacheConfiguration(cacheConfiguration());
 

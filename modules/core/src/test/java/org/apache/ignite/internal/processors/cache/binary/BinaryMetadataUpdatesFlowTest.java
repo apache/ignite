@@ -124,7 +124,7 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)cfg.getDiscoverySpi();
 
         if (discoveryHook != null) {
-            discoSpi.discoveryHooks(discoveryHook);
+            discoSpi.addDiscoveryHook(discoveryHook);
 
             cfg.setMetricsUpdateFrequency(1000);
         }
