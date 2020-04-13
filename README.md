@@ -7,7 +7,7 @@
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is a horizontally scalable, fault-tolerant distributed in-memory computing platform for building real-time applications that can process terabytes of data with in-memory speed.
+Apache Ignite is a horizontally scalable, fault-tolerant distributed in-memory computing platform for building real-time applications that can process terabytes of data with in-memory speed.
 
 <p align="center">
     <a href="https://ignite.apache.org">
@@ -15,7 +15,7 @@
     </a>
 </p>
 
-## Multi-Tiere Storage
+## Multi-Tier Storage
 
 Apache Ignite is designed to work with memory, disk, and Intel Optane as active storage tiers. The memory tier allows using DRAM and Intel® Optane™ operating in the Memory Mode for data storage and processing needs. The disk tier is optional with the support of two options -- you can persist data in an external database or keep it in the Ignite native persistence. SSD, Flash, HDD, or Intel Optane operating in the AppDirect Mode can be used as a storage device.
 
