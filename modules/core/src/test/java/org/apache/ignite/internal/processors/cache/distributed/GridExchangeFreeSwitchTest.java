@@ -687,7 +687,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             partLatch.await();
             replLatch.await();
 
-            checkActiveTransactionsCount(null, 2, backupNodes, 2, nearNodes, 1);
+            checkActiveTransactionsCount(failed, 2, backupNodes, 2, nearNodes, 1);
 
             failed.close(); // Stopping node.
 
@@ -709,11 +709,11 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
             partFut.get();
             replFut.get();
 
-            checkActiveTransactionsCount(null, 0, backupNodes, 2, nearNodes, 1);
+            checkActiveTransactionsCount(null /*stopped*/, 0, backupNodes, 2, nearNodes, 1);
 
             AtomicReference<IgniteInternalTx> replTx = new AtomicReference<>();
 
-            for (Ignite near : nearNodes) { // Contains only replicated txs.
+            for (Ignite near : nearNodes) { // Near nodes contain only replicated txs.
                 Collection<IgniteInternalTx> txs =
                     ((IgniteEx)near).context().cache().context().tm().activeTransactions();
 
@@ -796,7 +796,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 backupPutLatch, backupNodes.size(),
                 backupCommitLatch, backupNodes.size(),
                 nearCreateLatch, 0, // Started.
-                nearPutLatch, 0, // Near nodes able to start transactions once replicated caches restored,
+                nearPutLatch, 0, // Near nodes able to start transactions once replicated caches recovered,
                 nearCommitLatch, nearNodes.size()); // But not able to commit transactions since their backups still in switch.
 
             checkActiveTransactionsCount(
