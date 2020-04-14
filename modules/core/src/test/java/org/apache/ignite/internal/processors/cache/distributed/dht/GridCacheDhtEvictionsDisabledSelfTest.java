@@ -110,7 +110,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
             assertNotNull(v2);
 
             // TODO GG-11148: can do assertSame if on-heap storage is implemented.
-            if (false && affinity(cache).mapKeyToNode(key).isLocal())
+            if (false)
                 assertSame(v1, v2);
             else
                 assertEquals(v1, v2);
