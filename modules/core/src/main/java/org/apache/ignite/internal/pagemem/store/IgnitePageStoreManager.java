@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -265,4 +266,14 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @throws IgniteCheckedException If failed.
      */
     public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException;
+
+    /**
+     * Restore partition file.
+     *
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     * @param src Partition file.
+     * @throws IgniteCheckedException If the page store doesn't exists or the file couldn't be moved.
+     */
+    public void restore(int grpId, int partId, File src) throws IgniteCheckedException;
 }

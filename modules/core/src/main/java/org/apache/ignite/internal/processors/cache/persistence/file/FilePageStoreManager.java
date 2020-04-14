@@ -1276,6 +1276,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void restore(int grpId, int partId, File src) throws IgniteCheckedException {
+        FilePageStore pageStore = (FilePageStore)getStore(grpId, partId);
+
+        File dest = new File(pageStore.getFileAbsolutePath());
+
+        assert !dest.exists() : "dest=" + dest;
+
+        if (log.isDebugEnabled())
+            log.debug("Moving snapshot [from=" + src + " , to=" + dest + " , size=" + src.length() + "]");
+
+        try {
+            Files.move(src.toPath(), dest.toPath());
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Unable to move partition file [from=" + src + ", to=" + dest + "]", e);
+        }
+    }
+
     /**
      * @param pageStoreFileIoFactory File IO factory to override default, may be used for blocked read-write.
      * @param pageStoreV1FileIoFactory File IO factory for reading V1 page store and for fast touching page files

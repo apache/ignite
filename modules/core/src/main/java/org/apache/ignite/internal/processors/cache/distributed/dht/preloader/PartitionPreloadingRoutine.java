@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -239,7 +238,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             return;
         }
 
-        initPartitionSnapshot(grp.topology().localPartition(partId), file);
+        initPartitionSnapshot(grp, partId, file);
 
         grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
@@ -265,10 +264,11 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     }
 
     /**
-     * @param part Partition.
+     * @param grp Cache group.
+     * @param partId Partition ID.
      * @param file SNapshot file.
      */
-    private void initPartitionSnapshot(GridDhtLocalPartition part, File file) {
+    private void initPartitionSnapshot(CacheGroupContext grp, int partId, File file) {
         lock.lock();
 
         try {
@@ -276,12 +276,18 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             if (isDone())
                 return;
 
-            part.initialize(file);
+            cctx.pageStore().restore(grp.groupId(), partId, file);
+
+            GridDhtLocalPartition part = grp.topology().localPartition(partId);
+
+            boolean initialized = part.dataStore().init();
+
+            assert initialized;
         }
-        catch (IOException | IgniteCheckedException e) {
-            log.error("Unable to initialize partition snapshot [" +
-                "grp=" + part.group().cacheOrGroupName() +
-                ", p=" + part.id() +
+        catch (IgniteCheckedException e) {
+            log.error("Unable to initialize partition snapshot " +
+                "[grp=" + grp.cacheOrGroupName() +
+                ", p=" + partId +
                 ", file=" + file + "]", e);
 
             onDone(e);
