@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -92,6 +93,13 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
         RelNode input = visit((IgniteRel) rel.getInput());
 
         return new IgniteFilter(cluster, rel.getTraitSet(), input, rel.getCondition());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTrimExchange rel) {
+        RelNode input = visit((IgniteRel) rel.getInput());
+
+        return new IgniteTrimExchange(cluster, rel.getTraitSet(), input);
     }
 
     /** {@inheritDoc} */

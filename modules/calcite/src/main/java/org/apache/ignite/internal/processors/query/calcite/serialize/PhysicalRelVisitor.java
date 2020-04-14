@@ -34,6 +34,11 @@ public interface PhysicalRelVisitor<T> {
     /**
      * See {@link PhysicalRelVisitor#visit(PhysicalRel)}
      */
+    T visit(TrimExchangePhysicalRel rel);
+
+    /**
+     * See {@link PhysicalRelVisitor#visit(PhysicalRel)}
+     */
     T visit(ProjectPhysicalRel rel);
 
     /**

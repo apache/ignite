@@ -191,7 +191,7 @@ public class IgniteDistributions {
 
         IgniteDistribution out, in;
 
-        if (simpleAggregate(groupSet, groupSets)) {
+        if (simpleAggregate(groupSet, groupSets) && !groupSet.isEmpty()) {
             // re-hash by group keys
             in = hash(groupSet.asList());
             out = hash(ImmutableIntList.range(0, groupSet.cardinality()));

@@ -99,6 +99,8 @@ public class TableModifyPhysicalRel implements PhysicalRel {
         for (int i = 0; i < tableNameSize; i++)
             tableName.add(in.readUTF());
 
+        this.tableName = tableName;
+
         operation = TableModify.Operation.values()[in.readByte()];
 
         int columnsSize = in.readInt();

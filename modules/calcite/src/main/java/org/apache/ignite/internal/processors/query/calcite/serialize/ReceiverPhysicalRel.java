@@ -125,6 +125,8 @@ public class ReceiverPhysicalRel implements PhysicalRel {
         for (int i = 0; i < sourcesSize; i++)
             sources.add((UUID) in.readObject());
 
+        this.sources = sources;
+
         int collationsSize = in.readInt();
 
         if (collationsSize == -1)

@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
@@ -46,8 +50,10 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.ReceiverPhy
 import org.apache.ignite.internal.processors.query.calcite.serialize.SenderPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableModifyPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableScanPhysicalRel;
+import org.apache.ignite.internal.processors.query.calcite.serialize.TrimExchangePhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.ValuesPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -99,6 +105,16 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(FilterPhysicalRel rel) {
         FilterNode node = new FilterNode(ctx, expressionFactory.predicate(ctx, rel.condition(), rel.rowType()));
+        node.register(visit(rel.input()));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(TrimExchangePhysicalRel rel) {
+        Predicate<Object[]> predicate = partitionFilter(rel.function(), rel.distributionKeys(), rel.partitions());
+
+        FilterNode node = new FilterNode(ctx, predicate);
         node.register(visit(rel.input()));
 
         return node;
@@ -201,6 +217,21 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(PhysicalRel rel) {
         return rel.accept(this);
+    }
+
+    /** */
+    private Predicate<Object[]> partitionFilter(DistributionFunction function, ImmutableIntList keys, int partitions) {
+        assert function.type() == RelDistribution.Type.HASH_DISTRIBUTED;
+        assert !F.isEmpty(ctx.partitions());
+
+        boolean[] filter = new boolean[partitions];
+
+        for (int part : ctx.partitions())
+            filter[part] = true;
+
+        ToIntFunction<Object> partFunction = function.partitionFunction(partitionService, partitions, keys);
+
+        return o -> filter[partFunction.applyAsInt(o)];
     }
 
     /** */

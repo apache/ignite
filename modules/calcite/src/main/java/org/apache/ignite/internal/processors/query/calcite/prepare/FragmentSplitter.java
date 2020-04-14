@@ -40,9 +40,11 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -84,6 +86,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     @Override public IgniteRel visit(IgniteSender rel) {
         // a split may happen on BiRel inputs merge. A sender node cannot be a BiRel input.
         assert rel != cutPoint;
+        assert cutPoint != null;
 
         RelNode input = rel.getInput();
         RelNode newInput = visit((IgniteRel) input);
@@ -96,30 +99,25 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteAggregate rel) {
-        boolean split = rel == cutPoint;
+        boolean split = cutPoint(rel);
 
         RelNode input = rel.getInput();
         RelNode newInput = visit((IgniteRel) input);
 
         if (input != newInput) {
-            IgniteDistribution newDistr = IgniteDistributions.aggregate(mq,
-                newInput, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
+            checkDistributionEqual(input, newInput);
 
-            assert newDistr != null;
-
-            RelTraitSet traits = rel.getTraitSet()
-                .replace(newDistr);
-
-            rel = (IgniteAggregate) rel.copy(traits, ImmutableList.of(newInput));
+            rel = (IgniteAggregate) rel.copy(rel.getTraitSet(), ImmutableList.of(newInput));
         }
 
-        return split ? split(rel, rel.getTraitSet()) : rel;
+        return split ? split(rel) : rel;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteMapAggregate rel) {
         // a split may happen on BiRel inputs merge. An map aggregate node cannot be a BiRel input.
         assert rel != cutPoint;
+        assert cutPoint != null;
 
         RelNode input = rel.getInput();
         RelNode newInput = visit((IgniteRel) input);
@@ -143,7 +141,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
         // a split may happen on BiRel inputs merge. An reduce aggregate node doesn't have a
         // physical mapping (because it always goes after receiver node), so, its merge with
         // any input cannot cause the split.
-        assert rel != cutPoint;
+        assert cutPoint == null;
 
         if (U.assertionsEnabled()) {
             RelNode input = rel.getInput();
@@ -157,7 +155,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteFilter rel) {
-        boolean split = rel == cutPoint;
+        boolean split = cutPoint(rel);
 
         RelNode input = rel.getInput();
         IgniteRel newInput = visit((IgniteRel) input);
@@ -169,12 +167,32 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
             rel = (IgniteFilter) rel.copy(traits, ImmutableList.of(newInput));
         }
 
-        return split ? split(rel, rel.getTraitSet()) : rel;
+        return split ? split(rel) : rel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTrimExchange rel) {
+        boolean split = cutPoint(rel);
+
+        // after split we need to remove the exchange, return an original
+        // distribution and propagate the distribution to a fragment root.
+        if (split)
+            return split((IgniteRel) rel.getInput());
+        else if (cutPoint == null)
+            return (IgniteRel) rel.getInput();
+
+        RelNode input = rel.getInput();
+        IgniteRel newInput = visit((IgniteRel) input);
+
+        if (input == newInput)
+            return rel;
+
+        return (IgniteRel) rel.copy(rel.getTraitSet(), F.asList(newInput));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteProject rel) {
-        boolean split = rel == cutPoint;
+        boolean split = cutPoint(rel);
 
         RelNode input = rel.getInput();
         RelNode newInput = visit((IgniteRel) input);
@@ -186,12 +204,15 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
             rel = (IgniteProject) rel.copy(traits, ImmutableList.of(newInput));
         }
 
-        return split ? split(rel, rel.getTraitSet()) : rel;
+        return split ? split(rel) : rel;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteJoin rel) {
-        boolean split = rel == cutPoint;
+        if (cutPoint == null)
+            return rel; // no need to check deeper
+
+        boolean split = cutPoint(rel);
 
         RelNode left = rel.getLeft();
         RelNode right = rel.getRight();
@@ -208,32 +229,35 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
             rel = (IgniteJoin) rel.copy(rel.getTraitSet(), ImmutableList.of(newLeft, newRight));
         }
 
-        return split ? split(rel, rel.getTraitSet()) : rel;
+        return split ? split(rel) : rel;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableModify rel) {
-        boolean split = rel == cutPoint;
+        boolean split = cutPoint(rel);
 
         RelNode input = rel.getInput();
         RelNode newInput = visit((IgniteRel) input);
 
-        if (input != newInput)
-            rel = (IgniteTableModify) rel.copy(rel.getTraitSet(), ImmutableList.of(newInput));
+        if (input != newInput) {
+            checkDistributionEqual(input, newInput);
 
-        return split ? split(rel, rel.getTraitSet()) : rel;
+            rel = (IgniteTableModify) rel.copy(rel.getTraitSet(), ImmutableList.of(newInput));
+        }
+
+        return split ? split(rel) : rel;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
-        return rel == cutPoint ? split(rel, rel.getTraitSet()) : rel;
+        return cutPoint(rel) ? split(rel) : rel;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
         // a split may happen on BiRel inputs merge. A receiver doesn't have a
         // physical mapping, so, its merge with any input cannot cause the split.
-        assert rel != cutPoint;
+        assert cutPoint == null;
 
         return rel;
     }
@@ -242,7 +266,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     @Override public IgniteRel visit(IgniteValues rel) {
         // a split may happen on BiRel inputs merge. A values node doesn't have a
         // physical mapping, so, its merge with any input cannot cause the split.
-        assert rel != cutPoint;
+        assert cutPoint == null;
 
         return rel;
     }
@@ -258,8 +282,19 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     }
 
     /** */
-    private IgniteRel split(IgniteRel input, RelTraitSet traits) {
+    public boolean cutPoint(RelNode rel) {
+        boolean res = rel == cutPoint;
+
+        if (res)
+            cutPoint = null;
+
+        return res;
+    }
+
+    /** */
+    private IgniteRel split(IgniteRel input) {
         RelOptCluster cluster = input.getCluster();
+        RelTraitSet traits = input.getTraitSet();
 
         Fragment fragment = new Fragment(new IgniteSender(cluster, traits, input));
 
