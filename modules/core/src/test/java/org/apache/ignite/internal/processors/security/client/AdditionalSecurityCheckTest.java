@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
@@ -26,12 +26,14 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
@@ -142,7 +144,7 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
 
         return new GridClientConfiguration()
             .setSslContextFactory(getClientSslContextFactory()::create)
-            .setRouters(Collections.singletonList("127.0.0.1:11211"))
+            .setRouters(Arrays.asList("127.0.0.1:11211", "127.0.0.1:11212"))
             .setSecurityCredentialsProvider(
                 new SecurityCredentialsBasicProvider(new SecurityCredentials(CLIENT, "")))
             .setUserAttributes(userAttrs);
@@ -247,6 +249,29 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
         }
         catch (ClientAuthenticationException e) {
             assertTrue(e.getMessage().contains("Client version is not found"));
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testClientInfoGridClientNotFail() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        assertEquals(2, ignite.cluster().topologyVersion());
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
+            assertTrue(client.connected());
+
+            GridClientClusterState state = client.state();
+
+            // Close a coordinator to force the client to send a CLUSTER_CURRENT_STATE message to the other node.
+            ignite.close();
+
+            state.state();
         }
     }
 
