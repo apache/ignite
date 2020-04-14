@@ -3179,6 +3179,36 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             assert nodeCntrs != null;
 
+            for (int i = 0; i < nodeCntrs.size(); i++) {
+                int p = nodeCntrs.partitionAt(i);
+
+                UUID uuid = e.getKey();
+
+                GridDhtPartitionState state = top.partitionState(uuid, p);
+
+                if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
+                    continue;
+
+                long cntr = state == GridDhtPartitionState.MOVING ?
+                    nodeCntrs.initialUpdateCounterAt(i) :
+                    nodeCntrs.updateCounterAt(i);
+
+                Long minCntr = minCntrs.get(p);
+
+                if (minCntr == null || minCntr > cntr)
+                    minCntrs.put(p, cntr);
+
+                if (state != GridDhtPartitionState.OWNING)
+                    continue;
+
+                CounterWithNodes maxCntr = maxCntrs.get(p);
+
+                if (maxCntr == null || cntr > maxCntr.cnt)
+                    maxCntrs.put(p, new CounterWithNodes(cntr, e.getValue().partitionSizes(top.groupId()).get(p), uuid));
+                else if (cntr == maxCntr.cnt)
+                    maxCntr.nodes.add(uuid);
+            }
+
             if (nodeCntrs.isEmpty()) {
                 // We should provide the supplier for file rebalancing even if the counters were not sent.
                 for (int p = 0; p < top.partitions(); p++) {
@@ -3188,37 +3218,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         continue;
 
                     minCntrs.put(p, 0L);
-                }
-            }
-            else {
-                for (int i = 0; i < nodeCntrs.size(); i++) {
-                    int p = nodeCntrs.partitionAt(i);
-
-                    UUID uuid = e.getKey();
-
-                    GridDhtPartitionState state = top.partitionState(uuid, p);
-
-                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.MOVING)
-                        continue;
-
-                    long cntr = state == GridDhtPartitionState.MOVING ?
-                        nodeCntrs.initialUpdateCounterAt(i) :
-                        nodeCntrs.updateCounterAt(i);
-
-                    Long minCntr = minCntrs.get(p);
-
-                    if (minCntr == null || minCntr > cntr)
-                        minCntrs.put(p, cntr);
-
-                    if (state != GridDhtPartitionState.OWNING)
-                        continue;
-
-                    CounterWithNodes maxCntr = maxCntrs.get(p);
-
-                    if (maxCntr == null || cntr > maxCntr.cnt)
-                        maxCntrs.put(p, new CounterWithNodes(cntr, e.getValue().partitionSizes(top.groupId()).get(p), uuid));
-                    else if (cntr == maxCntr.cnt)
-                        maxCntr.nodes.add(uuid);
                 }
             }
         }
