@@ -76,7 +76,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.snapshotPath;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 
 /**
  * Base snapshot tests.
@@ -243,7 +243,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     protected IgniteEx startGridsFromSnapshot(int cnt, String snpName) throws Exception {
-        return startGridsFromSnapshot(cnt, cfg -> snapshotPath(cfg).toString(), snpName, true);
+        return startGridsFromSnapshot(cnt, cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), snpName, true);
     }
 
     /**

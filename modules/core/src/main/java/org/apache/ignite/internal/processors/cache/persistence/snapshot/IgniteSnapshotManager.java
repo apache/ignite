@@ -343,7 +343,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-        locSnpDir = snapshotPath(ctx.config()).toFile();
+        locSnpDir = resolveSnapshotWorkDirectory(ctx.config());
         tmpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR).toFile();
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
@@ -1279,10 +1279,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param cfg Ignite configuration.
      * @return Snapshot work path.
      */
-    static Path snapshotPath(IgniteConfiguration cfg) {
-        return cfg.getSnapshotPath() == null ?
-            Paths.get(cfg.getWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY) :
-            Paths.get(cfg.getSnapshotPath());
+    static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
+        try {
+            return cfg.getSnapshotPath() == null ?
+                U.resolveWorkDirectory(cfg.getWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false) :
+                U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Remote snapshot future which tracks remote snapshot transmission result. */
