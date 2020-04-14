@@ -6857,23 +6857,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Indicates that Ignite has been sufficiently tested on the current OS.
-     *
-     * @return {@code true} if current OS was sufficiently tested - {@code false} otherwise.
-     */
-    public static boolean isSufficientlyTestedOs() {
-        return
-            win7 ||
-                win8 ||
-                win81 ||
-                winXp ||
-                winVista ||
-                mac ||
-                linux ||
-                solaris;
-    }
-
-    /**
      * Indicates whether current OS is Windows XP.
      *
      * @return {@code true} if current OS is Windows XP- {@code false} otherwise.

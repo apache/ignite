@@ -3074,8 +3074,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public long indexSize(String schemaName, String idxName) throws IgniteCheckedException {
-        GridH2Table tbl = schemaMgr.dataTableForIndex(schemaName, idxName);
+    @Override public long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
+        GridH2Table tbl = schemaMgr.dataTable(schemaName, tblName);
 
         if (tbl == null)
             return 0;
