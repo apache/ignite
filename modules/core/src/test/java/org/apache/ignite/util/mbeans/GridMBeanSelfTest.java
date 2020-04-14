@@ -17,7 +17,6 @@
 
 package org.apache.ignite.util.mbeans;
 
-import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
@@ -26,7 +25,6 @@ import javax.management.StandardMBean;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
