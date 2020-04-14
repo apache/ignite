@@ -254,19 +254,16 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
         assertNotNull(cache.get(100));
 
-        cache.query(new SqlFieldsQuery(
-            String.format("UPDATE %s SET %s = '%s' WHERE _KEY = 100", POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")
-        ).setSchema(POI_SCHEMA_NAME)).getAll();
+        cache.query(new SqlFieldsQuery(String.format("UPDATE %s SET %s = '%s' WHERE _KEY = 100",
+            POI_TABLE_NAME, NAME_FIELD_NAME, "POI_100")).setSchema(POI_SCHEMA_NAME)).getAll();
 
         assertEquals("POI_100", ((BinaryObject)cache.get(100)).field(NAME_FIELD_NAME));
 
-        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE name = 'POI_10'",
-            NAME_FIELD_IDX_NAME);
+        assertIndexUsed(cache, "SELECT * FROM " + POI_TABLE_NAME + " WHERE name = 'POI_10'", NAME_FIELD_IDX_NAME);
     }
 
-
     /**
-     * fill data by default
+     * Fill cache with test data.
      */
     private void fillTestData(Ignite ig) {
         try (IgniteDataStreamer<? super Object, ? super Object> s = ig.dataStreamer(POI_CACHE_NAME)) {

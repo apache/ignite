@@ -22,17 +22,16 @@ import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 
 /**
- *
+ * Enabling indexing on cache operation.
  */
 public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final Collection<QueryEntity> entities;
 
     /**
-     * Constructor.
-     *
      * @param opId    Operation ID.
      * @param cacheName Cache name.
      * @param schemaName Schema name.
@@ -47,9 +46,8 @@ public class SchemaAddQueryEntitiesOperation extends SchemaAbstractOperation {
         this.entities = entities;
     }
 
-
     /**
-     * @return Entities.
+     * @return Query entities.
      */
     public Collection<QueryEntity> entities() {
         return entities;

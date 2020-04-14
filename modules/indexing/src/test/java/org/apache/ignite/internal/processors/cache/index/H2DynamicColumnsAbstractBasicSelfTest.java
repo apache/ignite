@@ -195,7 +195,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             cache.put(i, poi);
         }
 
-
         Collection<QueryEntity> entities = Collections.singletonList(entity);
 
         IgniteFuture<Void> fut = cache.enableIndexing(QueryUtils.DFLT_SCHEMA, entities);
@@ -220,7 +219,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         assertEquals(NUM_OF_POI, cache.size(CachePeekMode.PRIMARY));
         assertEquals(NUM_OF_POI, res.size());
-
 
         POI poi = new POI();
         poi.id(100600);

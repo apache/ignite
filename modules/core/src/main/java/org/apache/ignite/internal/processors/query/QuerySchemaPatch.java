@@ -43,7 +43,6 @@ public class QuerySchemaPatch {
     /** Schema name to apply, if previous is null. */
     private final String schemaName;
 
-
     /**
      * Create schema patch.
      *

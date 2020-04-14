@@ -105,7 +105,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -731,7 +730,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 String schemaName = QueryUtils.normalizeSchemaName(cacheName, cacheInfo.config().getSqlSchema());
 
-                GridTuple3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(cacheName, schemaName, cacheInfo.config(), schema.entities(), escape);
 
                 // Ensure that candidates has unique index names.
@@ -989,7 +988,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private GridTuple3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+    private T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
         createQueryCandidates(
             String cacheName,
             String schemaName,
@@ -1052,7 +1051,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 "serializer using BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
         }
 
-        return new GridTuple3<>(cands, tblTypMap, idxTypMap);
+        return new T3<>(cands, tblTypMap, idxTypMap);
     }
 
     /**
@@ -1626,7 +1625,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         } else
             cacheInfo = idx.registeredCacheInfo(cacheName);
 
-
         if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
@@ -1708,7 +1706,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 boolean escape = cacheInfo.config().isSqlEscapeAll();
 
-                GridTuple3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
+                T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(op0.cacheName(), op0.schemaName(), cacheInfo.config(), op0.entities(), escape);
 
                 registerCache0(op0.cacheName(), op.schemaName(), cacheInfo, candRes.get1(), false);
