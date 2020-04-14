@@ -42,7 +42,7 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public boolean isSnapshotCreating() {
-        return mgr.inProgress();
+        return mgr.isSnapshotCreating();
     }
 
     /** {@inheritDoc} */

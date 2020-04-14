@@ -794,7 +794,7 @@ public class ClusterCachesInfo {
         String cacheName,
         DynamicCacheDescriptor desc
     ) {
-        if (ctx.cache().context().snapshotMgr().inProgress()) {
+        if (ctx.cache().context().snapshotMgr().isSnapshotCreating()) {
             IgniteCheckedException err = new IgniteCheckedException(SNP_IN_PROGRESS_ERR_MSG);
 
             U.warn(log, err);

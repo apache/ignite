@@ -921,7 +921,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return {@code True} if snapshot operation is in progress.
      */
-    public boolean inProgress() {
+    public boolean isSnapshotCreating() {
         if (clusterSnpRq != null)
             return true;
 
