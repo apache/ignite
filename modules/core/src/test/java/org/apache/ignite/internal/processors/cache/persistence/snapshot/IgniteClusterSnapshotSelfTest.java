@@ -416,7 +416,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         String dirNameIgnite1 = folderName(grid(1));
 
         Function<String, SnapshotSender> delegateLocSndr = (snpName) ->
-            new DelegateSnapshotSender(log, mgr1.snapshotExecutorService(), mgr1.localSnapshotSender(snpName)) {
+            new DelegateSnapshotSender(log, mgr1.snapshotExecutorService(), mgr1.localSnapshotSenderFactory().apply(snpName)) {
                 @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
                     if (log.isInfoEnabled())
                         log.info("Processing delta file has been blocked: " + delta.getName());
@@ -434,7 +434,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 }
             };
 
-        GridTestUtils.setFieldValue(mgr1, "locSndrFactory", delegateLocSndr);
+        mgr1.setLocalSnapshotSenderFactory(delegateLocSndr);
 
         TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(grid(1));
         commSpi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);

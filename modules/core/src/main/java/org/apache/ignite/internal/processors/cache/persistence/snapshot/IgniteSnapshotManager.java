@@ -240,7 +240,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Take snapshot operation procedure. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startSnpProc;
 
-    /** Check previously preformed snapshot operation and delete uncompleted files if need. */
+    /** Check previously performed snapshot operation and delete uncompleted files if need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
     /** Resolved persistent data storage settings. */
@@ -250,7 +250,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile ReadWriteMetastorage metaStorage;
 
     /** Local snapshot sender factory. */
-    private Function<String, SnapshotSender> locSndrFactory = this::localSnapshotSender;
+    private Function<String, SnapshotSender> locSndrFactory = localSnapshotSenderFactory();
 
     /** Main snapshot directory to save created snapshots. */
     private volatile File locSnpDir;
@@ -290,11 +290,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ByteBuffer.allocateDirect(ctx.config().getDataStorageConfiguration().getPageSize())
                 .order(ByteOrder.nativeOrder()));
 
-        startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::startLocalSnapshot,
-            this::startLocalSnapshotResult);
+        startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
+            this::processLocalSnapshotStartStageResult);
 
-        endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::endLocalSnapshot,
-            this::endLocalSnapshotResult);
+        endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
+            this::processLocalSnapshotEndStageResult);
     }
 
     /**
@@ -796,7 +796,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param req Request on snapshot creation.
      * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> startLocalSnapshot(SnapshotOperationRequest req) {
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
         if (cctx.kernalContext().clientNode() ||
             !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
@@ -829,7 +829,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param res Results.
      * @param err Errors.
      */
-    private void startLocalSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+    private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
         SnapshotOperationRequest snpRq = clusterSnpRq;
 
         if (snpRq == null)
@@ -856,7 +856,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param req Request on snapshot creation.
      * @return Future which will be completed when the snapshot will be finalized.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> endLocalSnapshot(SnapshotOperationRequest req) {
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         if (clusterSnpRq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
@@ -878,7 +878,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param res Results.
      * @param err Errors.
      */
-    private void endLocalSnapshotResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+    private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
         SnapshotOperationRequest snpRq = clusterSnpRq;
 
         if (snpRq == null)
@@ -1201,10 +1201,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return Snapshot receiver instance.
+     * @param factory Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    SnapshotSender localSnapshotSender(String snpName) {
-        return new LocalSnapshotSender(snpName);
+    void setLocalSnapshotSenderFactory(Function<String, SnapshotSender> factory) {
+        locSndrFactory = factory;
+    }
+
+    /**
+     * @return Factory which produces {@link LocalSnapshotSender} implementation.
+     */
+    Function<String, SnapshotSender> localSnapshotSenderFactory() {
+        return LocalSnapshotSender::new;
     }
 
     /**
