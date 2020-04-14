@@ -2154,14 +2154,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 res.onDone(err);
             });
+
+            return res;
         }
         else  {
             idxRebuildFuts.remove(cacheId, res);
 
             res.onDone();
-        }
 
-        return res;
+            return null;
+        }
     }
 
     /**
