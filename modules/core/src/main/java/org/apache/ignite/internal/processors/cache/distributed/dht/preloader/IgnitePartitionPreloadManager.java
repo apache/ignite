@@ -82,29 +82,33 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Initiates new partitions preload process from given {@code assignments}.
-     *
-     * @param rebalanceId Current rebalance id.
-     * @param exchFut Exchange future.
-     * @param assignments A map of cache assignments grouped by grpId.
-     * @return Cache group identifiers with futures that will be completed when partitions are preloaded.
+     * @param exchId Exchange ID.
+     * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
+     * @param rebalanceId Rebalance id.
+     * @param forcePreload {@code True} if preload requested by {@link ForceRebalanceExchangeTask}.
+     * @return Cache group identifiers with future assignments that will be ready when partitions are preloaded.
      */
-    public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
-        long rebalanceId,
+    public Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> generateAssignments(
+        GridDhtPartitionExchangeId exchId,
         GridDhtPartitionsExchangeFuture exchFut,
-        Map<Integer, GridDhtPreloaderAssignments> assignments
+        long rebalanceId,
+        boolean forcePreload
     ) {
-        // Re-map assignments by node.
-        Map<UUID, Map<Integer, Set<Integer>>> assignsByNode = new HashMap<>();
+        Map<UUID, Map<Integer, Set<Integer>>> filePreloadingAssignments = new HashMap<>();
         Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futAssigns = new HashMap<>();
 
-        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignments.entrySet()) {
-            CacheGroupContext grp = cctx.cache().cacheGroup(e.getKey());
-            GridDhtPreloaderAssignments assigns = e.getValue();
+        for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            long delay = grp.config().getRebalanceDelay();
+
+            GridDhtPreloaderAssignments assigns = null;
+
+            // Don't delay for dummy reassigns to avoid infinite recursion.
+            if ((delay == 0 || forcePreload) && !cctx.snapshot().partitionsAreFrozen(grp))
+                assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
             GridDhtLocalPartition anyPart;
 
-            if (F.isEmpty(assigns) || !supports(grp) ||
+            if (F.isEmpty(assigns) || assigns.cancelled() || !supports(grp) || forcePreload ||
                 (anyPart = F.first(grp.topology().currentLocalPartitions())) == null || anyPart.active()) {
                 futAssigns.put(grp.groupId(), new GridFinishedFuture<>(assigns));
 
@@ -113,35 +117,47 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
 
             for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e0 : assigns.entrySet()) {
                 Map<Integer, Set<Integer>> grpAssigns =
-                    assignsByNode.computeIfAbsent(e0.getKey().id(), v -> new HashMap<>());
+                    filePreloadingAssignments.computeIfAbsent(e0.getKey().id(), v -> new HashMap<>());
 
                 grpAssigns.put(grp.groupId(), e0.getValue().partitions().fullSet());
             }
         }
 
-        if (!assignsByNode.isEmpty()) {
-            lock.lock();
-
-            try {
-                if (isStopping())
-                    return Collections.emptyMap();
-
-                assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
-
-                // Start new rebalance session.
-                partPreloadingRoutine = new PartitionPreloadingRoutine(exchFut, cctx, rebalanceId, assignsByNode);
-
-                Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futHistAssigns =
-                    partPreloadingRoutine.startPartitionsPreloading();
-
-                futAssigns.putAll(futHistAssigns);
-            }
-            finally {
-                lock.unlock();
-            }
-        }
+        if (!filePreloadingAssignments.isEmpty())
+            futAssigns.putAll(preloadAsync(exchFut, rebalanceId, filePreloadingAssignments));
 
         return futAssigns;
+    }
+
+    /**
+     * Initiates new partitions preload process from given {@code assignments}.
+     *
+     * @param exchFut Exchange future.
+     * @param rebalanceId Rebalance id.
+     * @param assignments A map of cache assignments grouped by node.
+     * @return Cache group identifiers with future assignments that will be ready when partitions are preloaded.
+     */
+    private Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> preloadAsync(
+        GridDhtPartitionsExchangeFuture exchFut,
+        long rebalanceId,
+        Map<UUID, Map<Integer, Set<Integer>>> assignments
+    ) {
+        lock.lock();
+
+        try {
+            if (isStopping())
+                return Collections.emptyMap();
+
+            assert partPreloadingRoutine == null || partPreloadingRoutine.isDone();
+
+            // Start new rebalance session.
+            partPreloadingRoutine = new PartitionPreloadingRoutine(exchFut, cctx, rebalanceId, assignments);
+
+            return partPreloadingRoutine.startPartitionsPreloading();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**

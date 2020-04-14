@@ -104,7 +104,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.lat
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -3189,7 +3188,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     busy = true;
 
-                    Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
+                    Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> assignsMap = null;
 
                     boolean forcePreload = false;
 
@@ -3364,30 +3363,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (rebalanceDelay > 0)
                                 U.sleep(rebalanceDelay);
 
-                            assignsMap = new HashMap<>();
-
-                            IgniteCacheSnapshotManager snp = cctx.snapshot();
-
-                            for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                                long delay = grp.config().getRebalanceDelay();
-
-                                boolean disableRebalance = snp.partitionsAreFrozen(grp);
-
-                                GridDhtPreloaderAssignments assigns = null;
-
-                                // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance)
-                                    assigns = grp.preloader().generateAssignments(exchId, exchFut);
-
-                                assignsMap.put(grp.groupId(), assigns);
-
-                                if (resVer == null && !grp.isLocal())
-                                    resVer = grp.topology().readyTopologyVersion();
-                            }
+                            assignsMap = cctx.preloader().generateAssignments(exchId, exchFut, cnt, forcePreload);
                         }
-
-                        if (resVer == null)
-                            resVer = exchId.topologyVersion();
                     }
                     finally {
                         // Must flip busy flag before assignments are given to demand workers.
@@ -3395,16 +3372,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     if (assignsMap != null && rebTopVer.equals(NONE)) {
-                        Map<Integer, IgniteInternalFuture<GridDhtPreloaderAssignments>> futAssigns =
-                            cctx.preloader().preloadAsync(cnt, exchFut, assignsMap);
-
                         int size = assignsMap.size();
 
                         NavigableMap<CacheRebalanceOrder, List<Integer>> orderMap = new TreeMap<>();
 
-                        for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-                            int grpId = e.getKey();
-
+                        for (Integer grpId : assignsMap.keySet()) {
                             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                             CacheRebalanceOrder order = new CacheRebalanceOrder(
@@ -3415,7 +3387,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 orderMap.put(order, new ArrayList<Integer>(size));
 
                             orderMap.get(order).add(grpId);
+
+                            if (resVer == null && !grp.isLocal())
+                                resVer = grp.topology().readyTopologyVersion();
                         }
+
+                        if (resVer == null)
+                            resVer = exchId.topologyVersion();
 
                         Runnable r = null;
 
@@ -3430,7 +3408,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = futAssigns.get(grpId);
+                                IgniteInternalFuture<GridDhtPreloaderAssignments> fut = assignsMap.get(grpId);
 
                                 assert fut != null : "grp=" + grp.cacheOrGroupName();
 
@@ -3479,7 +3457,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
                     else
                         U.log(log, "Skipping rebalancing (no affinity changes) " +
-                            "[top=" + resVer +
+                            "[top=" + resVer != null ? resVer : exchId.topologyVersion() +
                             ", rebTopVer=" + rebTopVer +
                             ", evt=" + exchId.discoveryEventName() +
                             ", evtNode=" + exchId.nodeId() +
