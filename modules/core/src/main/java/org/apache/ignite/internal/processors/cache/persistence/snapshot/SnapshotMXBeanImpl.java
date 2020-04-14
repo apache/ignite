@@ -37,7 +37,12 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
     /** {@inheritDoc} */
     @Override public void createSnapshot(String snpName) {
-        mgr.createSnapshot(snpName).get();
+        mgr.createSnapshot(snpName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSnapshotCreating() {
+        return mgr.inProgress();
     }
 
     /** {@inheritDoc} */

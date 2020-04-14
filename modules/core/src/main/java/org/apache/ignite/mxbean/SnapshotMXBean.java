@@ -41,4 +41,11 @@ public interface SnapshotMXBean {
      */
     @MXBeanDescription("Create cluster-wide snapshot.")
     public void createSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+
+    /**
+     * Cluster snapshot in-progress state.
+     */
+    @MXBeanDescription("Cluster snapshot in progress state.")
+    public boolean isSnapshotCreating();
+
 }

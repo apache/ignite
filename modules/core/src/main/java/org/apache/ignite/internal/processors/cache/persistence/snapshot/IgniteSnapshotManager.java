@@ -837,6 +837,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation failed due to another snapshot " +
                         "operation in progress: " + snpRq.snpName));
+
+                    clusterSnpFut = null;
                 }
 
                 return;
@@ -917,9 +919,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return {@code True} if snapshot operation started.
+     * @return {@code True} if snapshot operation is in progress.
      */
     public boolean inProgress() {
+        if (clusterSnpRq != null)
+            return true;
+
         synchronized (snpOpMux) {
             return clusterSnpRq != null || clusterSnpFut != null;
         }

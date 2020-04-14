@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Collections;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.SnapshotMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -34,6 +35,9 @@ public class SnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         SnapshotMXBean mxBean = getMBean(ignite.name());
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
+
+        GridTestUtils.waitForCondition(mxBean::isSnapshotCreating, 10_000);
+        GridTestUtils.waitForCondition(() -> !mxBean.isSnapshotCreating(), 10_000);
 
         stopAllGrids();
 
@@ -50,6 +54,9 @@ public class SnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         SnapshotMXBean mxBean = getMBean(ignite.name());
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
+
+        GridTestUtils.waitForCondition(mxBean::isSnapshotCreating, 10_000);
+        GridTestUtils.waitForCondition(() -> !mxBean.isSnapshotCreating(), 10_000);
 
         assertEquals("Snapshot must be created",
             Collections.singletonList(SNAPSHOT_NAME), mxBean.getSnapshots());
