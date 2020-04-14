@@ -29,13 +29,14 @@ Arguments: --cache help --yes
       --groups                    - print information about groups.
       --seq                       - print information about sequences.
 
-  --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K]
+  --cache validate_indexes [cacheName1,...,cacheNameN] [nodeId] [--check-first N|--check-through K|--check-crc|--check-sizes]
     Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. Cache filtering options configure the set of caches that will be processed by idle_verify command. Default value for the set of cache names (or cache group names) is all cache groups. Default value for --exclude-caches is empty set. Default value for --cache-filter is no filtering. Therefore, the set of all caches is sequently filtered by cache name regexps, by cache type and after all by exclude regexps.
 
     Parameters:
       --check-first N    - validate only the first N keys
       --check-through K  - validate every Kth key
       --check-crc        - check the CRC-sum of pages stored on disk
+      --check-sizes      - check that index size and cache size are the same
 
   --cache contention minQueueSize [nodeId] [maxPrint]
     Show the keys that are point of contention for multiple transactions.

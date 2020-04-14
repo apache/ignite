@@ -229,7 +229,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
 
         awaitPartitionMapExchange();
 
-        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false);
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(Collections.singleton(CACHE_NAME), 0, 0, false, true);
         node2.context().resource().injectGeneric(clo);
         VisorValidateIndexesJobResult res = clo.call();
 

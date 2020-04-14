@@ -355,7 +355,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (tryLocalGet(key, part, topVer, affNodes, locVals))
                 return false;
 
-            node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+            node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, forcePrimary);
         }
 
         // Failed if none remote node found.

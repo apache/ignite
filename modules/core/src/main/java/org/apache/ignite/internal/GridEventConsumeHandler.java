@@ -345,30 +345,30 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                 ClassLoader ldr = null;
 
-                if (cache != null) {
-                    GridCacheDeploymentManager depMgr = cache.context().deploy();
+                try {
+                    if (cache != null) {
+                        GridCacheDeploymentManager depMgr = cache.context().deploy();
 
-                    GridDeploymentInfo depInfo = wrapper.depInfo;
+                        GridDeploymentInfo depInfo = wrapper.depInfo;
 
-                    if (depInfo != null) {
-                        depMgr.p2pContext(
-                            nodeId,
-                            depInfo.classLoaderId(),
-                            depInfo.userVersion(),
-                            depInfo.deployMode(),
-                            depInfo.participants()
-                        );
+                        if (depInfo != null) {
+                            depMgr.p2pContext(
+                                nodeId,
+                                depInfo.classLoaderId(),
+                                depInfo.userVersion(),
+                                depInfo.deployMode(),
+                                depInfo.participants()
+                            );
+                        }
+
+                        ldr = depMgr.globalLoader();
+                    }
+                    else {
+                        U.warn(ctx.log(getClass()), "Received cache event for cache that is not configured locally " +
+                            "when peer class loading is enabled: " + wrapper.cacheName + ". Will try to unmarshal " +
+                            "with default class loader.");
                     }
 
-                    ldr = depMgr.globalLoader();
-                }
-                else {
-                    U.warn(ctx.log(getClass()), "Received cache event for cache that is not configured locally " +
-                        "when peer class loading is enabled: " + wrapper.cacheName + ". Will try to unmarshal " +
-                        "with default class loader.");
-                }
-
-                try {
                     wrapper.p2pUnmarshal(ctx.config().getMarshaller(), U.resolveClassLoader(ldr, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
