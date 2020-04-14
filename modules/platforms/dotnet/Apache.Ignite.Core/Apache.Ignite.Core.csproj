@@ -54,8 +54,9 @@
     <Compile Include="Binary\TimestampAttribute.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
-    <Compile Include="Cache\Configuration\PlatformNearCacheConfiguration.cs" />
+    <Compile Include="Cache\Configuration\PlatformCacheConfiguration.cs" />
     <Compile Include="Cache\IQueryMetrics.cs" />
+    <Compile Include="Cache\Query\IQueryCursorField.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
@@ -85,11 +86,13 @@
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
     <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
-    <Compile Include="Impl\Cache\Near\INearCache.cs" />
-    <Compile Include="Impl\Cache\Near\NearCache.cs" />
-    <Compile Include="Impl\Cache\Near\NearCacheEntry.cs" />
-    <Compile Include="Impl\Cache\Near\NearCacheManager.cs" />
+    <Compile Include="Impl\Cache\Platform\IPlatformCache.cs" />
+    <Compile Include="Impl\Cache\Platform\PlatformCache.cs" />
+    <Compile Include="Impl\Cache\Platform\PlatformCacheEntry.cs" />
+    <Compile Include="Impl\Cache\Platform\PlatformCacheManager.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
+    <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
     <Compile Include="Impl\Client\ClientContextBase.cs" />
     <Compile Include="Impl\Client\ClientOpExtensions.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
@@ -107,6 +110,7 @@
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\MinVersionAttribute.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
+    <Compile Include="Impl\Common\PlatformType.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Log\NoopLogger.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
@@ -281,7 +285,6 @@
     <Compile Include="Impl\Cache\Expiry\ExpiryPolicySerializer.cs" />
     <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
     <Compile Include="Impl\Common\Listenable.cs" />
-    <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
