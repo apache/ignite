@@ -43,7 +43,7 @@ public class GridLog4jLoggingFileTest {
         xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
-        assert xml.exists() == true;
+        assert xml.exists();
 
         log = new Log4JLogger(xml).getLogger(getClass());
     }
