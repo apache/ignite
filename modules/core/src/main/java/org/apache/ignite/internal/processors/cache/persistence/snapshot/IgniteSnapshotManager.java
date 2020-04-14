@@ -31,7 +31,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -132,11 +131,13 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
+import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
@@ -727,11 +728,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Concurrently traverse the snapshot directory for given local node folder name and
-     * delete recursively all files from it if exist.
-     *
      * @param snpDir Snapshot dire
-     * @param folderName Local node folder name (see U.maskForFileName with consistent id).
+     * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
      */
     public static void deleteSnapshot(File snpDir, String folderName) {
         if (!snpDir.exists())
@@ -740,19 +738,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert snpDir.isDirectory() : snpDir;
 
         try {
-            List<Path> dirs = new ArrayList<>();
+            File binDir = resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName);
+            File dbDir = U.resolveWorkDirectory(snpDir.getAbsolutePath(), databaseRelativePath(folderName), false);
 
-            Files.walkFileTree(snpDir.toPath(), new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult preVisitDirectory(Path dir,
-                    BasicFileAttributes attrs) throws IOException {
-                    if (Files.isDirectory(dir) &&
-                        Files.exists(dir) &&
-                        folderName.equals(dir.getFileName().toString())) {
-                        // Directory found, add it for processing.
-                        dirs.add(dir);
-                    }
+            U.delete(binDir);
+            U.delete(dbDir);
 
-                    return super.preVisitDirectory(dir, attrs);
+            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+
+            // Concurrently traverse the snapshot marshaller directory and delete all files.
+            Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    U.delete(file);
+
+                    return FileVisitResult.CONTINUE;
                 }
 
                 @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
@@ -761,14 +760,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
             });
 
-            dirs.forEach(U::delete);
-
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
             if (!db.exists() || db.list().length == 0)
                 U.delete(snpDir);
         }
-        catch (IOException e) {
+        catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
@@ -1223,7 +1220,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Remote snapshots can be send only by single threaded executor since only one transmissionSender created.
         return new RemoteSnapshotSender(log,
             new SequentialExecutorWrapper(log, snpRunner),
-            () -> igniteCacheStoragePath(pdsSettings),
+            () -> databaseRelativePath(pdsSettings.folderName()),
             cctx.gridIO().openTransmissionSender(rmtNodeId, DFLT_INITIAL_SNAPSHOT_TOPIC),
             snpName);
     }
@@ -1271,8 +1268,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Relative configured path of persistence data storage directory for the local node.
      * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
      */
-    static String igniteCacheStoragePath(PdsFolderSettings pcfg) {
-        return Paths.get(DB_DEFAULT_FOLDER, pcfg.folderName()).toString();
+    static String databaseRelativePath(String folderName) {
+        return Paths.get(DB_DEFAULT_FOLDER, folderName).toString();
     }
 
     /**
@@ -1595,7 +1592,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            dbDir = new File (snpLocDir, igniteCacheStoragePath(pdsSettings));
+            dbDir = new File (snpLocDir, databaseRelativePath(pdsSettings.folderName()));
 
             if (dbDir.exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +
