@@ -617,7 +617,18 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
             Random r = new Random();
 
-            Ignite failed = grid(r.nextInt(nodes));
+            Ignite candidate;
+            MvccProcessor proc;
+
+            do {
+                candidate = G.allGrids().get(r.nextInt(nodes));
+
+                proc = ((IgniteEx)candidate).context().coordinators();
+            }
+            // MVCC coordinator fail always breaks transactions, excluding.
+            while (proc.mvccEnabled() && proc.currentCoordinator().local());
+
+            Ignite failed = candidate;
 
             IgniteCache<Integer, Integer> partCache = failed.getOrCreateCache(partCacheName);
             IgniteCache<Integer, Integer> replCache = failed.getOrCreateCache(replCacheName);
