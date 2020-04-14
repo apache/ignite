@@ -275,7 +275,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private DiscoveryEventListener discoLsnr;
 
     /** Cluster snapshot operation requested by user. */
-    private GridFutureAdapter<Void> clusterSnpFut;
+    private ClusterSnapshotFuture clusterSnpFut;
 
     /** Current snapshot operation on local node. */
     private volatile SnapshotOperationRequest clusterSnpRq;
@@ -832,6 +832,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpRq == null)
             return;
 
+        if (!snpRq.rqId.equals(id)) {
+            synchronized (snpOpMux) {
+                if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
+                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation failed due to another snapshot " +
+                        "operation in progress: " + snpRq.snpName));
+                }
+
+                return;
+            }
+        }
+
         if (isLocalNodeCoordinator(cctx.discovery())) {
             Set<UUID> missed = new HashSet<>(snpRq.bltNodes);
             missed.removeAll(res.keySet());
@@ -950,7 +961,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "The baseline topology is not configured for cluster."));
         }
 
-        GridFutureAdapter<Void> snpFut0;
+        ClusterSnapshotFuture snpFut0;
 
         synchronized (snpOpMux) {
             if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
@@ -967,7 +978,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
                     "Snapshot with given name already exists."));
 
-            snpFut0 = new GridFutureAdapter<>();
+            snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID());
 
             clusterSnpFut = snpFut0;
         }
@@ -980,7 +991,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-        startSnpProc.start(UUID.randomUUID(), new SnapshotOperationRequest(cctx.localNodeId(),
+        startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId,
+            cctx.localNodeId(),
             name,
             grps,
             new HashSet<>(F.viewReadOnly(srvNodes,
@@ -1768,6 +1780,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
+        /** Unique snapshot request id. */
+        private final UUID rqId;
+
         /** Source node id which trigger request. */
         private final UUID srcNodeId;
 
@@ -1789,29 +1804,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param grpIds Cache groups to include into snapshot.
          */
-        public SnapshotOperationRequest(UUID srcNodeId, String snpName, List<Integer> grpIds, Set<UUID> bltNodes) {
+        public SnapshotOperationRequest(UUID rqId, UUID srcNodeId, String snpName, List<Integer> grpIds, Set<UUID> bltNodes) {
+            this.rqId = rqId;
             this.srcNodeId = srcNodeId;
             this.snpName = snpName;
             this.grpIds = grpIds;
             this.bltNodes = bltNodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SnapshotOperationRequest request = (SnapshotOperationRequest)o;
-
-            return Objects.equals(snpName, request.snpName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(snpName);
         }
 
         /** {@inheritDoc} */
@@ -1898,6 +1896,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SnapshotStartDiscoveryMessage.class, this);
+        }
+    }
+
+    /** */
+    private static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
+        /** Unique snapshot request id. */
+        private final UUID rqId;
+
+        /**
+         * @param rqId Unique snapshot request id.
+         */
+        public ClusterSnapshotFuture(UUID rqId) {
+            this.rqId = rqId;
         }
     }
 }
