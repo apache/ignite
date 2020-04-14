@@ -81,6 +81,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
@@ -799,7 +800,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertNotNull(mbn);
 
-        assertEquals(36, mbn.getMBeanInfo().getAttributes().length);
+        assertEquals(37, mbn.getMBeanInfo().getAttributes().length);
 
         assertFalse(stream(mbn.getMBeanInfo().getAttributes()).anyMatch(a-> F.isEmpty(a.getDescription())));
 
@@ -862,6 +863,8 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 (String)mbn.getAttribute("mBeanServerFormatted"));
 
         assertEquals(ClusterState.ACTIVE.toString(), mbn.getAttribute("clusterState"));
+
+        assertEquals(DFLT_PUBLIC_THREAD_CNT, (int)mbn.getAttribute("publicThreadPoolSize"));
     }
 
     /** */

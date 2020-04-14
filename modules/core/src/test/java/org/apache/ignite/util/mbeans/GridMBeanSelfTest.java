@@ -199,25 +199,6 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests correct MBean interface.
-     *
-     * @throws Exception Thrown if test fails.
-     */
-    @Test
-    public void testIgniteKernalReturnsValidPublicThreadPoolSize() throws Exception {
-        try {
-            IgniteEx igniteCrd = startGrid(0);
-
-            DynamicMBean igniteMBean = metricRegistry(igniteCrd.name(), null, GridMetricManager.IGNITE_METRICS);
-
-            assertEquals(IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT, igniteMBean.getAttribute("publicThreadPoolSize"));
-        }
-        finally {
-            stopGrid(0);
-        }
-    }
-
-    /**
      * Super interface for {@link GridMBeanInterface}.
      */
     public static interface GridMBeanSuperInterface {
