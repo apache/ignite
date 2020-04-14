@@ -23,10 +23,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
+import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
@@ -60,14 +62,14 @@ public class DistributedSqlConfiguration {
         = new SimpleDistributedProperty<>("sql.disabledFunctions");
 
     /**
-     * @param isp Subscription processor.
+     * @param ctx Kernal context
      * @param log Logger.
      */
     public DistributedSqlConfiguration(
-        GridInternalSubscriptionProcessor isp,
+        GridKernalContext ctx,
         IgniteLogger log
     ) {
-        isp.registerDistributedConfigurationListener(
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
                     disabledSqlFuncs.addListener(makeUpdateListener(PROPERTY_UPDATE_MESSAGE, log));
@@ -76,10 +78,19 @@ public class DistributedSqlConfiguration {
                 }
 
                 @Override public void onReadyToWrite() {
-                    setDefaultValue(
-                        disabledSqlFuncs,
-                        DFLT_DISABLED_FUNCS,
-                        log);
+                    if (ReadableDistributedMetaStorage.isSupported(ctx)) {
+                        setDefaultValue(
+                            disabledSqlFuncs,
+                            DFLT_DISABLED_FUNCS,
+                            log);
+                    }
+                    else {
+                        log.warning("Distributed metastorage is not supported. " +
+                            "All distributed SQL configuration parameters are unavailable.");
+
+                        // Set disabled functions to default.
+                        disabledSqlFuncs.localUpdate(null);
+                    }
                 }
             }
         );
