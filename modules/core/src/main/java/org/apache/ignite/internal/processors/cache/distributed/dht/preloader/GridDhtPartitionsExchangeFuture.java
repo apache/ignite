@@ -1513,26 +1513,34 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
         if (context().exchangeFreeSwitch()) {
-            String replicatedBackupsRecovery = "exchange-free-replicated-backups-recovery";
-            String partitionedBackupsRecovery = "exchange-free-partitioned-backups-recovery";
+            String baseLatchId = "exchange-free";
+            String replicatedLatchId = baseLatchId + "-replicated";
+            String partitionedLatchId = baseLatchId + "-partitioned";
+
+            boolean partitionedRecovery = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
 
             IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
                 for (IgniteTxEntry entry : tx.writeEntries())
                     if (cctx.cacheContext(entry.cacheId()).isReplicated())
                         return true;
 
+                assert partitionedRecovery; // Checks non-affected nodes contain no txs to be recovered.
+
                 return false;
             };
 
-            // Assuming that there is no or minimal amount of replicated transactions.
-            waitPartitionRelease(replicatedBackupsRecovery, true, false, replicatedOnly);
+            // Assuming that replicated transactions are absent. Non-affected nodes will wait only this sync.
+            waitPartitionRelease(replicatedLatchId, true, false, replicatedOnly);
 
-            if (rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode()))
-                // This node contain backup partitions for failed partitioned caches primaries, waiting for recovery.
-                waitPartitionRelease(partitionedBackupsRecovery, true, false, null);
-            else
-                // This node contain no backup partitions for failed partitioned caches primaries.
-                confirmPartitionReleased(partitionedBackupsRecovery);
+            if (partitionedRecovery)
+                // This node contain backup partitions for failed partitioned caches primaries. Waiting for recovery.
+                waitPartitionRelease(partitionedLatchId, true, false, null);
+            else {
+                // This node contain no backup partitions for failed partitioned caches primaries. Recovery is not needed.
+                Latch releaseLatch = cctx.exchange().latch().getOrCreate(partitionedLatchId, initialVersion());
+
+                releaseLatch.countDown(); // Await-free confirmation.
+            }
         }
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
             boolean distributed = true;
@@ -1711,16 +1719,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return null;
-    }
-
-    /**
-     * Confirms operation related to specified phase finished.
-     * @param id Phase id.
-     */
-    private void confirmPartitionReleased(String id) {
-        Latch releaseLatch = cctx.exchange().latch().getOrCreate(id, initialVersion());
-
-        releaseLatch.countDown(); // Await-free confirmation.
     }
 
     /**
