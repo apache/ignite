@@ -130,8 +130,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override
-    public <T> T attribute(String name) {
+    @Override public <T> T attribute(String name) {
         assert name != null;
 
         return (T)attrs.get(name);

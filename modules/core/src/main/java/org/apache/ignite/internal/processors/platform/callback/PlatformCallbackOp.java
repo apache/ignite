@@ -229,10 +229,10 @@ class PlatformCallbackOp {
     public static final int EventLocalListenerApply = 69;
 
     /** */
-    public static final int NearCacheUpdate = 70;
+    public static final int PlatformCacheUpdate = 70;
 
     /** */
-    public static final int NearCacheUpdateFromThreadLocal = 71;
+    public static final int PlatformCacheUpdateFromThreadLocal = 71;
 
     /** */
     public static final int OnCacheStopped = 72;

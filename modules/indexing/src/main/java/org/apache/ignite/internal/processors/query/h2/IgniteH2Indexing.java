@@ -678,17 +678,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             UpdatePlan plan = dml.plan();
 
-            List<List<?>> planRows = plan.createRows(args != null ? args : X.EMPTY_OBJECT_ARRAY);
+            Iterator<List<?>> iter = new GridQueryCacheObjectsIterator(updateQueryRows(schemaName, plan, args),
+                objectContext(), true);
 
-            Iterator<List<?>> iter = new GridQueryCacheObjectsIterator(
-                planRows.iterator(),
-                objectContext(),
-                true
-            );
+            if (!iter.hasNext())
+                return 0;
 
-            if (planRows.size() == 1) {
-                IgniteBiTuple t = plan.processRow(iter.next());
+            IgniteBiTuple<?, ?> t = plan.processRow(iter.next());
 
+            if (!iter.hasNext()) {
                 streamer.addData(t.getKey(), t.getValue());
 
                 return 1;
@@ -696,10 +694,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             else {
                 Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
 
+                rows.put(t.getKey(), t.getValue());
+
                 while (iter.hasNext()) {
                     List<?> row = iter.next();
 
-                    IgniteBiTuple t = plan.processRow(row);
+                    t = plan.processRow(row);
 
                     rows.put(t.getKey(), t.getValue());
                 }
@@ -717,6 +717,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             runningQryMgr.unregister(qryId, failReason);
         }
+    }
+
+    /**
+     * Calculates rows for update query.
+     *
+     * @param schemaName Schema name.
+     * @param plan Update plan.
+     * @param args Statement arguments.
+     * @return Rows for update.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Iterator<List<?>> updateQueryRows(String schemaName, UpdatePlan plan, Object[] args) throws IgniteCheckedException {
+        Object[] params = args != null ? args : X.EMPTY_OBJECT_ARRAY;
+
+        if (!F.isEmpty(plan.selectQuery())) {
+            SqlFieldsQuery selectQry = new SqlFieldsQuery(plan.selectQuery())
+                .setArgs(params)
+                .setLocal(true);
+
+            QueryParserResult selectParseRes = parser.parse(schemaName, selectQry, false);
+
+            GridQueryFieldsResult res = executeSelectLocal(
+                selectParseRes.queryDescriptor(),
+                selectParseRes.queryParameters(),
+                selectParseRes.select(),
+                null,
+                null,
+                null,
+                false,
+                0
+            );
+
+            return res.iterator();
+        } else
+            return plan.createRows(params).iterator();
     }
 
     /**
@@ -2779,6 +2814,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return result;
         }
 
+        final GridQueryCancel selectCancel = (cancel != null) ? new GridQueryCancel() : null;
+
+        if (cancel != null)
+            cancel.add(selectCancel::cancel);
+
         SqlFieldsQuery selectFieldsQry = new SqlFieldsQuery(plan.selectQuery(), qryDesc.collocated())
             .setArgs(qryParams.arguments())
             .setDistributedJoins(qryDesc.distributedJoins())
@@ -2798,7 +2838,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 qryDesc.schemaName(),
                 selectFieldsQry,
                 null,
-                cancel,
+                selectCancel,
                 qryParams.timeout()
             );
         }
@@ -2815,7 +2855,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 selectParseRes.select(),
                 filters,
                 null,
-                cancel,
+                selectCancel,
                 false,
                 qryParams.timeout()
             );
@@ -2835,8 +2875,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int pageSize = qryParams.updateBatchSize();
 
-        //TODO: IGNITE-11176 - Need to support cancellation
-        return DmlUtils.processSelectResult(plan, cur, pageSize);
+        // TODO: IGNITE-11176 - Need to support cancellation
+        try {
+            return DmlUtils.processSelectResult(plan, cur, pageSize);
+        }
+        finally {
+            if (cur instanceof AutoCloseable)
+                U.closeQuiet((AutoCloseable)cur);
+        }
     }
 
     /**
