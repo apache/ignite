@@ -54,8 +54,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             "queryDetailMetrics",  // IGNITE-6680
             "resetQueryDetailMetrics",  // IGNITE-6680
-            "enableStatistics",  // IGNITE-7276
-            "clearStatistics",  // IGNITE-9017
+            "enableIndexing", // IGNITE-12897
         };
 
         /// <summary>

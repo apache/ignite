@@ -2147,12 +2147,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 Throwable err = fut.error();
 
-                res.onDone(err);
-
                 if (isNull(err) && log.isInfoEnabled())
                     log.info("Finished indexes rebuilding for cache " + cacheInfo);
                 else if (!(err instanceof NodeStoppingException))
                     log.error("Failed to rebuild indexes for cache " + cacheInfo, err);
+
+                res.onDone(err);
             });
         }
         else  {
