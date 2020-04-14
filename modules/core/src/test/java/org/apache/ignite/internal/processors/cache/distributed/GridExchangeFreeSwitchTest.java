@@ -794,7 +794,8 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                     txRun.accept(new T2<>(near, partCacheName), new T3<>(partNearCreateLatch, partNearPutLatch, partNearCommitLatch)), 1));
             }
 
-            checkUpcomingTransactionsState( // Switch in progress cluster-wide.
+            // Switch in progress cluster-wide.
+            checkUpcomingTransactionsState(
                 replBackupCreateLatch, 0, // Started.
                 replBackupPutLatch, backupNodes.size(),
                 replBackupCommitLatch, backupNodes.size(),
@@ -802,7 +803,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 replNearPutLatch, nearNodes.size(),
                 replNearCommitLatch, nearNodes.size());
 
-            checkUpcomingTransactionsState( // Switch in progress cluster-wide.
+            checkUpcomingTransactionsState(
                 partBackupCreateLatch, 0, // Started.
                 partBackupPutLatch, backupNodes.size(),
                 partBackupCommitLatch, backupNodes.size(),
@@ -826,6 +827,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 });
             }
 
+            // Switch partially finished. Cell 1 still in switch while Cell 2 finished the switch.
             checkUpcomingTransactionsState(
                 replBackupCreateLatch, 0, // Started.
                 replBackupPutLatch, backupNodes.size(),
