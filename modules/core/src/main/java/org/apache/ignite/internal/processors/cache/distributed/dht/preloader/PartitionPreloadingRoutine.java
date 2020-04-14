@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -451,6 +452,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param partId Partition ID.
      * @return Future that will be done when partition mode changed.
      */
+    @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<Long> activatePartition(int grpId, int partId) {
         GridFutureAdapter<Long> endFut = new GridFutureAdapter<Long>() {
             @Override public boolean cancel() {
@@ -488,10 +490,15 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 part.enable();
 
                 AffinityTopologyVersion infinTopVer = new AffinityTopologyVersion(Long.MAX_VALUE, 0);
+                GridCompoundFuture partReleaseFut = new GridCompoundFuture();
 
-                IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(infinTopVer);
+                partReleaseFut.add(cctx.mvcc().finishAtomicUpdates(infinTopVer));
+                partReleaseFut.add(cctx.mvcc().finishDataStreamerUpdates(infinTopVer));
+                partReleaseFut.add(cctx.tm().finishLocalTxs(infinTopVer, null));
 
-                // Operations that are in progress now will be lost and should be included in historical rebalancing.
+                partReleaseFut.markInitialized();
+
+                // Local updates that are in progress now will be lost and should be included in historical rebalancing.
                 // These operations can update the old update counter or the new update counter, so the maximum applied
                 // counter is used after all updates are completed.
                 partReleaseFut.listen(c -> {
