@@ -14,35 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.tree;
-
-import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+package org.apache.ignite.development.utils.indexreader;
 
 /**
- *
+ * Callback that will be executed for each page of the tree while traversing, if it's set.
  */
-public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
+interface PageCallback {
     /** */
-    public static final IOVersions<CacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareDataLeafIO(1)
-    );
-
-    /**
-     * @param ver Page format version.
-     */
-    private CacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean storeCacheId() {
-        return true;
-    }
+    void cb(PageContent pageContent, long pageId);
 }

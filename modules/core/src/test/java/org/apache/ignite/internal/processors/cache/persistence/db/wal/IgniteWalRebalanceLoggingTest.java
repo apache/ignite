@@ -32,8 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests for checking rebalance log messages.
  */
 public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
-    /** */
-    private static final int CHECKPOINT_FREQUENCY = 100;
+    /** This timeout should be big enough in order to prohibit checkpoint triggered by timeout. */
+    private static final int CHECKPOINT_FREQUENCY = 600_000;
 
     /** Test logger. */
     private final ListeningTestLogger srvLog = new ListeningTestLogger(false, log);
@@ -111,7 +111,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
 
         LogListener expMsgsLsnr = LogListener.
             matches("Following partitions were reserved for potential history rebalance [grpId=1813188848," +
-                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").times(4).
+                " grpName=cache_group2, parts=[0-7], grpId=1813188847, grpName=cache_group1, parts=[0-7]]").times(3).
             andMatches("fullPartitions=[], histPartitions=[0-7]").times(2).build();
 
         LogListener unexpectedMessagesLsnr =
@@ -184,6 +184,8 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
             cache2.put(i, "abc" + i);
         }
 
+        forceCheckpoint();
+
         stopGrid(1);
 
         for (int i = KEYS_LOW_BORDER; i < KEYS_UPPER_BORDER; i++) {
@@ -191,7 +193,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
             cache2.put(i, "abc" + i);
         }
 
-        Thread.sleep(CHECKPOINT_FREQUENCY * 2);
+        forceCheckpoint();
 
         srvLog.clearListeners();
 
@@ -200,7 +202,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(false, true, null);
     }
 
     /**

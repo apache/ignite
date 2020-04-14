@@ -159,7 +159,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -396,12 +399,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private ConnectionPolicy connPlc;
 
     /** */
-    private boolean enableForcibleNodeKill = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+    private boolean enableForcibleNodeKill = getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /** */
-    private boolean enableTroubleshootingLog = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
+    private boolean enableTroubleshootingLog = getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
 
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
@@ -459,6 +460,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         return;
 
                     UUID id = connId.nodeId();
+
+                    if (log.isDebugEnabled()) {
+                        String errMsg = e != null ? e.getMessage() : null;
+                        log.debug("The node was disconnected [nodeId=" + id + ", err=" + errMsg + "]");
+                    }
 
                     GridCommunicationClient[] nodeClients = clients.get(id);
 
@@ -2181,10 +2187,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
-            HashMap<String, Object> res = new HashMap<>(5);
+            Map<String, Object> res = new HashMap<>(5);
+
+            boolean ip = !F.isEmpty(locAddr) && locHost.getHostAddress().equals(locAddr);
+            boolean setEmptyHostNamesAttr = !getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false) && ip;
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
-            res.put(createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2());
+            res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
             res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort);
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
@@ -2826,6 +2835,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if client was removed.
      */
     private boolean removeNodeClient(UUID nodeId, GridCommunicationClient rmvClient) {
+        if (log.isDebugEnabled())
+            log.debug("The client was removed [nodeId=" + nodeId + ",  client=" + rmvClient.toString() + "].");
+
         for (;;) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
@@ -2849,6 +2861,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private void addNodeClient(ClusterNode node, int connIdx, GridCommunicationClient addClient) {
         assert connectionsPerNode > 0 : connectionsPerNode;
         assert connIdx == addClient.connectionIndex() : addClient;
+
+        if (log.isDebugEnabled())
+            log.debug("The node client is going to create a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
 
         if (connIdx >= connectionsPerNode) {
             assert !usePairedConnections(node);
@@ -2877,6 +2892,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 newClients = Arrays.copyOf(curClients, curClients.length);
                 newClients[connIdx] = addClient;
 
+                if (log.isDebugEnabled())
+                    log.debug("The node client was replaced [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
+
                 if (clients.replace(node.id(), curClients, newClients))
                     break;
             }
@@ -2896,6 +2914,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         assert (connIdx >= 0 && connIdx < connectionsPerNode) || !usePairedConnections(node) : connIdx;
 
         UUID nodeId = node.id();
+
+        if (log.isDebugEnabled())
+            log.debug("The node client is going to reserve a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + "]");
 
         while (true) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
@@ -3628,6 +3649,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @throws IgniteCheckedException If occurs.
      */
     void closeConnections(UUID nodeId) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("The node client connections were closed [nodeId=" + nodeId + "]");
+
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
         if (nonNull(clients)) {
             for (GridCommunicationClient client : clients)

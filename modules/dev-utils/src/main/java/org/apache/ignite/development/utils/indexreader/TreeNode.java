@@ -14,35 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.development.utils.indexreader;
 
-package org.apache.ignite.internal.processors.cache.tree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
-import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import java.util.List;
 
 /**
- *
+ * Tree node info. It is used to represent tree nodes in recursive traversal.
  */
-public final class CacheIdAwareDataLeafIO extends AbstractDataLeafIO {
+class TreeNode {
     /** */
-    public static final IOVersions<CacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareDataLeafIO(1)
-    );
+    final long pageId;
 
-    /**
-     * @param ver Page format version.
-     */
-    private CacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_AWARE_DATA_REF_LEAF, ver, 16);
-    }
+    /** */
+    final PageIO io;
 
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
-    }
+    /** */
+    final String additionalInfo;
 
-    /** {@inheritDoc} */
-    @Override public boolean storeCacheId() {
-        return true;
+    /** */
+    final List<TreeNode> children;
+
+    /** */
+    public TreeNode(long pageId, PageIO io, String additionalInfo, List<TreeNode> children) {
+        this.pageId = pageId;
+        this.io = io;
+        this.additionalInfo = additionalInfo;
+        this.children = children;
     }
 }

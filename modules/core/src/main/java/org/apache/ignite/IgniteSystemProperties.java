@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -1244,6 +1245,14 @@ public final class IgniteSystemProperties {
      */
     @Deprecated
     public static final String IGNITE_SQL_DISABLED_FUNCTIONS = "IGNITE_SQL_DISABLED_FUNCTIONS";
+
+    /**
+     * Enables setting attribute value of {@link
+     * TcpCommunicationSpi#ATTR_HOST_NAMES ATTR_HOST_NAMES} when value {@link
+     * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
+     * compatibility. By default, {@code false}.
+     */
+    public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
      * Enforces singleton.
