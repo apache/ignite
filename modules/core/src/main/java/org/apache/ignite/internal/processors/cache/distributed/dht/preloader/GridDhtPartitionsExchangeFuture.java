@@ -1526,7 +1526,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             waitPartitionRelease(replicatedBackupsRecovery, true, false, replicatedOnly);
 
-            if (primaryFailed(firstDiscoEvt.eventNode()))
+            if (rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode()))
                 waitPartitionRelease(partitionedBackupsRecovery, true, false, null);
             else
                 // This node contains no backup partitions for failed partitioned caches primaries.
@@ -5116,13 +5116,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !rebalanced() && wasRebalanced();
 
         rebalancedInfo = sharedContext().exchange().lastFinishedFuture().rebalancedInfo;
-    }
-
-    /**
-     * @param failed Failed node.
-     */
-    private boolean primaryFailed(ClusterNode failed) {
-        return rebalancedInfo.primaryNodes.contains(failed);
     }
 
     /**
