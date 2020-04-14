@@ -184,6 +184,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Active propose messages. */
     private final LinkedHashMap<UUID, SchemaProposeDiscoveryMessage> activeProposals = new LinkedHashMap<>();
 
+    /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
+    private final ConcurrentMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
+
     /** General state mutex. */
     private final Object stateMux = new Object();
 
@@ -1712,7 +1715,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 cacheInfo.cacheContext().queries().enable();
 
-                idx.rebuildIndexesFromHash(cacheInfo.cacheContext(), true);
+                rebuildIndexesFromHash0(cacheInfo.cacheContext(), true);
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -2112,11 +2115,62 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         try {
-            return idx.rebuildIndexesFromHash(cctx, false);
+            return rebuildIndexesFromHash0(cctx, false);
         }
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param rebuildInMemory If {@code True}, rebuild indexes for in-memory-cache too).
+     */
+    private IgniteInternalFuture<?> rebuildIndexesFromHash0(GridCacheContext<?, ?> cctx, boolean rebuildInMemory) {
+        int cacheId = cctx.cacheId();
+
+        GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+
+        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, res);
+
+        if (old != null)
+            old.onDone();
+
+        IgniteInternalFuture<?> idxFut = idx.rebuildIndexesFromHash(cctx, rebuildInMemory);
+
+        if (nonNull(idxFut)) {
+            String cacheInfo = "[name=" + cctx.name() + ", grpName=" + cctx.group().name() + "]";
+
+            if (log.isInfoEnabled())
+                log.info("Started indexes rebuilding for cache " + cacheInfo);
+
+            idxFut.listen(fut -> {
+                idxRebuildFuts.remove(cacheId, res);
+
+                Throwable err = fut.error();
+
+                res.onDone(err);
+
+                if (isNull(err) && log.isInfoEnabled())
+                    log.info("Finished indexes rebuilding for cache " + cacheInfo);
+                else if (!(err instanceof NodeStoppingException))
+                    log.error("Failed to rebuild indexes for cache " + cacheInfo, err);
+            });
+        }
+        else  {
+            idxRebuildFuts.remove(cacheId, res);
+
+            res.onDone();
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Future that will be completed when indexes for given cache are restored.
+     */
+    @Nullable public IgniteInternalFuture<?> indexRebuildFuture(int cacheId) {
+        return idxRebuildFuts.get(cacheId);
     }
 
     /**

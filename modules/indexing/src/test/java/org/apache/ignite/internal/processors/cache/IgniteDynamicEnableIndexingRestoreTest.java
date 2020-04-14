@@ -223,6 +223,8 @@ public class IgniteDynamicEnableIndexingRestoreTest extends GridCommonAbstractTe
 
             cache.enableIndexing(POI_SCHEMA_NAME, testQueryEntities()).get();
 
+            cache.indexReadyFuture().get();
+
             performQueryingIntegrityCheck(ig);
 
             stopAllGrids();

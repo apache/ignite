@@ -361,9 +361,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
 
-    /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
-    private final ConcurrentMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
-
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
      * In this case lock is held on PDS resover manager and it is not required to manage locking here
@@ -1490,36 +1487,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             fut.timeBag().finishGlobalStage("Restore partition states");
         }
-
-        if (cctx.kernalContext().query().moduleEnabled()) {
-            ExchangeActions acts = fut.exchangeActions();
-
-            if (acts != null) {
-                if (!F.isEmpty(acts.cacheStartRequests())) {
-                    for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests())
-                        prepareIndexRebuildFuture(CU.cacheId(actionData.request().cacheName()));
-                }
-                else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
-                    for (T2<DynamicCacheDescriptor, NearCacheConfiguration> tup : acts.localJoinContext().caches())
-                        prepareIndexRebuildFuture(tup.get1().cacheId());
-                }
-            }
-        }
-    }
-
-    /**
-     * Creates a new index rebuild future that should be completed later after exchange is done. The future
-     * has to be created before exchange is initialized to guarantee that we will capture a correct future
-     * after activation or restore completes.
-     * If there was an old future for the given ID, it will be completed.
-     *
-     * @param cacheId Cache ID.
-     */
-    private void prepareIndexRebuildFuture(int cacheId) {
-        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
-
-        if (old != null)
-            old.onDone();
     }
 
     /** {@inheritDoc} */
@@ -1544,43 +1511,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()))
                 continue;
 
-            int cacheId = cacheCtx.cacheId();
-            GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
-
             IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);
 
-            if (nonNull(rebuildFut)) {
-                if (log.isInfoEnabled())
-                    log.info("Started indexes rebuilding for cache [" + cacheInfo(cacheCtx) + ']');
-
-                assert nonNull(usrFut) : "Missing user future for cache: " + cacheCtx.name();
-
-                rebuildFut.listen(fut -> {
-                    idxRebuildFuts.remove(cacheId, usrFut);
-
-                    Throwable err = fut.error();
-
-                    usrFut.onDone(err);
-
-                    if (isNull(err)) {
-                        if (log.isInfoEnabled())
-                            log.info("Finished indexes rebuilding for cache [" + cacheInfo(cacheCtx) + ']');
-                    }
-                    else {
-                        if (!(err instanceof NodeStoppingException))
-                            log.error("Failed to rebuild indexes for cache [" + cacheInfo(cacheCtx) + ']', err);
-                    }
-
-                    rebuildIndexesCompleteCntr.countDown(true);
-                });
-            }
-            else if (nonNull(usrFut)) {
-                idxRebuildFuts.remove(cacheId, usrFut);
-
-                usrFut.onDone();
-
+            if (nonNull(rebuildFut))
+                rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+            else
                 rebuildIndexesCompleteCntr.countDown(false);
-            }
         }
     }
 
@@ -1594,11 +1530,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert nonNull(cacheCtx);
 
         return "name=" + cacheCtx.name() + ", grpName=" + cacheCtx.group().name();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteInternalFuture indexRebuildFuture(int cacheId) {
-        return idxRebuildFuts.get(cacheId);
     }
 
     /** {@inheritDoc} */
