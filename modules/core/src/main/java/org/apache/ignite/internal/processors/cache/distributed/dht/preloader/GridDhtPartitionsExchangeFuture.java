@@ -1524,12 +1524,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 return false;
             };
 
+            // Assuming that there is no or minimal amount of replicated transactions.
             waitPartitionRelease(replicatedBackupsRecovery, true, false, replicatedOnly);
 
             if (rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode()))
+                // This node contain backup partitions for failed partitioned caches primaries, waiting for recovery.
                 waitPartitionRelease(partitionedBackupsRecovery, true, false, null);
             else
-                // This node contains no backup partitions for failed partitioned caches primaries.
+                // This node contain no backup partitions for failed partitioned caches primaries.
                 confirmPartitionReleased(partitionedBackupsRecovery);
         }
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).
