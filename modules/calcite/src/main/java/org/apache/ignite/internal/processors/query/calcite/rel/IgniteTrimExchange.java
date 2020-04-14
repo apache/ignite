@@ -32,12 +32,12 @@ import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 /**
  *
  */
-public class IgniteHashFilter extends SingleRel implements IgniteRel, RelTargetAware {
+public class IgniteTrimExchange extends SingleRel implements IgniteRel, RelTargetAware {
     /** */
     private RelTarget target;
 
     /** */
-    public IgniteHashFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+    public IgniteTrimExchange(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
         super(cluster, traits, input);
 
         assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
@@ -51,7 +51,7 @@ public class IgniteHashFilter extends SingleRel implements IgniteRel, RelTargetA
         assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
         assert traits.getTrait(DistributionTraitDef.INSTANCE).getType() == HASH_DISTRIBUTED;
 
-        return new IgniteHashFilter(getCluster(), traits, input);
+        return new IgniteTrimExchange(getCluster(), traits, input);
     }
 
     /** {@inheritDoc} */

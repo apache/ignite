@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -89,7 +89,7 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public PhysicalRel visit(IgniteHashFilter rel) {
+    @Override public PhysicalRel visit(IgniteTrimExchange rel) {
         IgniteDistribution distr = rel.distribution();
         RelTarget target = rel.target();
 
@@ -98,7 +98,7 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
 
         int partitions = target.mapping().assignments().size();
 
-        return new HashFilterPhysicalRel(distr.function(), distr.getKeys(), partitions, visit((IgniteRel) rel.getInput()));
+        return new TrimExchangePhysicalRel(distr.function(), distr.getKeys(), partitions, visit((IgniteRel) rel.getInput()));
     }
 
     /** {@inheritDoc} */

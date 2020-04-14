@@ -34,7 +34,7 @@ public interface IgniteRelVisitor<T> {
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */
-    T visit(IgniteHashFilter rel);
+    T visit(IgniteTrimExchange rel);
 
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}

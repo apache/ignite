@@ -24,7 +24,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashFilter;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rule.RuleUtils;
 
 /**
@@ -60,7 +60,7 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
         // special case
         if (fromDist.getType() == RelDistribution.Type.BROADCAST_DISTRIBUTED
             && toDist.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
-            newRel = planner.register(new IgniteHashFilter(rel.getCluster(), newTraits, rel), rel);
+            newRel = planner.register(new IgniteTrimExchange(rel.getCluster(), newTraits, rel), rel);
         }
         else {
             RelNode input = RuleUtils.convert(rel, IgniteDistributions.any()); // erasing source distribution a bit reduces search space

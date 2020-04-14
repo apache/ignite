@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 /**
  *
  */
-public class HashFilterPhysicalRel implements PhysicalRel {
+public class TrimExchangePhysicalRel implements PhysicalRel {
     /** */
     private DistributionFunction function;
 
@@ -39,10 +39,12 @@ public class HashFilterPhysicalRel implements PhysicalRel {
     /** */
     private PhysicalRel input;
 
-    public HashFilterPhysicalRel() {
+    /** */
+    public TrimExchangePhysicalRel() {
     }
 
-    public HashFilterPhysicalRel(DistributionFunction function, ImmutableIntList keys, int partitions, PhysicalRel input) {
+    /** */
+    public TrimExchangePhysicalRel(DistributionFunction function, ImmutableIntList keys, int partitions, PhysicalRel input) {
         this.function = function;
         this.keys = keys;
         this.partitions = partitions;

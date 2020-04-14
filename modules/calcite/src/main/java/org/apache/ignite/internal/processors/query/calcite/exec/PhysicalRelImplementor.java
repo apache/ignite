@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionSer
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.serialize.AggregatePhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.FilterPhysicalRel;
-import org.apache.ignite.internal.processors.query.calcite.serialize.HashFilterPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.JoinPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.PhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.PhysicalRelVisitor;
@@ -51,6 +50,7 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.ReceiverPhy
 import org.apache.ignite.internal.processors.query.calcite.serialize.SenderPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableModifyPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableScanPhysicalRel;
+import org.apache.ignite.internal.processors.query.calcite.serialize.TrimExchangePhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.ValuesPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
@@ -111,8 +111,10 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Object[]> visit(HashFilterPhysicalRel rel) {
-        FilterNode node = new FilterNode(ctx, partitionFilter(rel.function(), rel.distributionKeys(), rel.partitions()));
+    @Override public Node<Object[]> visit(TrimExchangePhysicalRel rel) {
+        Predicate<Object[]> predicate = partitionFilter(rel.function(), rel.distributionKeys(), rel.partitions());
+
+        FilterNode node = new FilterNode(ctx, predicate);
         node.register(visit(rel.input()));
 
         return node;
