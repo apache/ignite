@@ -5106,7 +5106,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Sets cluster fully rebalanced flag.
      */
     private void markRebalanced() {
-        assert !rebalanced() && !wasRebalanced();
+        assert !rebalanced();
 
         rebalancedInfo = new RebalancedInfo(cctx.affinity().idealPrimaryNodesForLocalBackups());
     }
