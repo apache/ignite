@@ -17,13 +17,17 @@
 
 package org.apache.ignite.examples.ml.sql;
 
+import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.BinaryObjectVectorizer;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
@@ -55,12 +59,16 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
     /**
      * Run example.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.out.println(">>> Decision tree classification trainer example started.");
 
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite-ml.xml")) {
             System.out.println(">>> Ignite grid started.");
+
+            // Use internal API to enable disabled by default SQL functions (the function CSVREAD is used below)
+            ((IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing())
+                .distributedConfiguration().disabledFunctions(new HashSet<>());
 
             // Dummy cache is required to perform SQL queries.
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
