@@ -86,7 +86,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
-    /** Ignite logger */
+    /** Ignite logger. */
     private final IgniteLogger log;
 
     /** Node id which cause snapshot operation. */

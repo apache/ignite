@@ -1452,7 +1452,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Relative node path initializer. */
         private final Supplier<String> initPath;
 
-        /** Snapshot name */
+        /** Snapshot name. */
         private final String snpName;
 
         /** Local node persistent directory with consistent id. */
@@ -1787,12 +1787,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         private final String snpName;
 
-        @GridToStringInclude
         /** The list of cache groups to include into snapshot. */
+        @GridToStringInclude
         private final List<Integer> grpIds;
 
-        @GridToStringInclude
         /** The list of affected by snapshot operation baseline nodes. */
+        @GridToStringInclude
         private final Set<UUID> bltNodes;
 
         /** {@code true} if an execution of local snapshot tasks failed with an error. */
@@ -1860,7 +1860,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Unique snapshot request id. */
         private final UUID rqId;
 
-        /** Snapshot name */
+        /** Snapshot name. */
         private final String name;
 
         /** Snapshot start time. */
