@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -115,6 +116,7 @@ import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -190,6 +192,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Metastorage key to save currently running snapshot. */
     public static final String SNP_RUNNING_KEY = "snapshot-running";
+
+    /** Snapshot metrics prefix. */
+    public static final String SNAPSHOT_METRICS = "snapshot";
 
     /** Prefix for snapshot threads. */
     private static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -283,6 +288,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** {@code true} if recovery process occurred for snapshot. */
     private volatile boolean recovered;
 
+    /** Last seen cluster snapshot operation. */
+    private volatile ClusterSnapshotFuture lastSeenSnpFut = new ClusterSnapshotFuture();
+
     /**
      * @param ctx Kernal context.
      */
@@ -349,6 +357,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
+
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
+
+        mreg.register("LastSnapshotStartTime", () -> lastSeenSnpFut.startTime,
+            "The system time approximated by 10 ms when the last cluster snapshot operation has been started.");
+        mreg.register("LastSnapshotEndTime", () -> lastSeenSnpFut.endTime,
+            "The system time approximated by 10 ms when the last cluster snapshot operation has been finished.");
+        mreg.register("LastSnapshotName", () -> lastSeenSnpFut.name, String.class,
+            "The name of last started cluster snapshot operation.");
+        mreg.register("LastSnapshotErrorMessage",
+            () -> lastSeenSnpFut.error() == null ? null : lastSeenSnpFut.error().getMessage(),
+            String.class,
+            "The error message of last started cluster snapshot operation which fail. This value will be 'null' " +
+                "if last snapshot operation completed successfully.");
+        mreg.register("localSnapshotList", this::getSnapshots, List.class,
+            "The list of all known snapshots currently saved on the local node with respect to " +
+                "configured via IgniteConfiguration a snapshot path.");
 
         storeFactory = storeMgr::getPageStoreFactory;
 
@@ -944,70 +969,69 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        if (cctx.kernalContext().clientNode()) {
-            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
-                "perform this operation."));
-        }
+        A.notNullOrEmpty(name, "name");
 
-        if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT)) {
-            return new IgniteFinishedFutureImpl<>(new IllegalStateException("Not all nodes in the cluster support " +
-                "a snapshot operation."));
-        }
+        try {
+            if (cctx.kernalContext().clientNode())
+                throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
-        if (!active(cctx.kernalContext().state().clusterState().state())) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException("Snapshot operation has been rejected. " +
-                "The cluster is inactive."));
-        }
+            if (!IgniteFeatures.allNodesSupports(cctx.discovery().allNodes(), PERSISTENCE_CACHE_SNAPSHOT))
+                throw new IgniteException("Not all nodes in the cluster support a snapshot operation.");
 
-        DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
+            if (!active(cctx.kernalContext().state().clusterState().state()))
+                throw new IgniteException("Snapshot operation has been rejected. The cluster is inactive.");
 
-        if (!clusterState.hasBaselineTopology()) {
-            return new IgniteFinishedFutureImpl<>(new IgniteException("Snapshot operation has been rejected. " +
-                "The baseline topology is not configured for cluster."));
-        }
+            DiscoveryDataClusterState clusterState = cctx.kernalContext().state().clusterState();
 
-        ClusterSnapshotFuture snpFut0;
+            if (!clusterState.hasBaselineTopology())
+                throw new IgniteException("Snapshot operation has been rejected. The baseline topology is not configured for cluster.");
 
-        synchronized (snpOpMux) {
-            if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
-                return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
-                    "The previous snapshot operation was not completed."));
+            ClusterSnapshotFuture snpFut0;
+
+            synchronized (snpOpMux) {
+                if (clusterSnpFut != null && !clusterSnpFut.isDone())
+                    throw new IgniteException("Create snapshot request has been rejected. The previous snapshot operation was not completed.");
+
+                if (clusterSnpRq != null)
+                    throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
+
+                if (getSnapshots().contains(name))
+                    throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists.");
+
+                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
+
+                clusterSnpFut = snpFut0;
+                lastSeenSnpFut = snpFut0;
             }
 
-            if (clusterSnpRq != null) {
-                return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
-                    "Parallel snapshot processes are not allowed."));
-            }
+            List<Integer> grps = cctx.cache().persistentGroups().stream()
+                .filter(g -> cctx.cache().cacheType(g.cacheOrGroupName()) == CacheType.USER)
+                .filter(g -> !g.config().isEncryptionEnabled())
+                .map(CacheGroupDescriptor::groupId)
+                .collect(Collectors.toList());
 
-            if (getSnapshots().contains(name))
-                return new IgniteFinishedFutureImpl<>(new IgniteException("Create snapshot request has been rejected. " +
-                    "Snapshot with given name already exists."));
+            List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-            snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID());
+            startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId,
+                cctx.localNodeId(),
+                name,
+                grps,
+                new HashSet<>(F.viewReadOnly(srvNodes,
+                    F.node2id(),
+                    (node) -> CU.baselineNode(node, clusterState)))));
 
-            clusterSnpFut = snpFut0;
+            if (log.isInfoEnabled())
+                log.info("Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']');
+
+            return new IgniteFutureImpl<>(snpFut0);
         }
+        catch (Exception e) {
+            U.error(log, "Start snapshot operation failed", e);
 
-        List<Integer> grps = cctx.cache().persistentGroups().stream()
-            .filter(g -> cctx.cache().cacheType(g.cacheOrGroupName()) == CacheType.USER)
-            .filter(g -> !g.config().isEncryptionEnabled())
-            .map(CacheGroupDescriptor::groupId)
-            .collect(Collectors.toList());
+            lastSeenSnpFut = new ClusterSnapshotFuture(name, e);
 
-        List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
-
-        startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId,
-            cctx.localNodeId(),
-            name,
-            grps,
-            new HashSet<>(F.viewReadOnly(srvNodes,
-                F.node2id(),
-                (node) -> CU.baselineNode(node, clusterState)))));
-
-        if (log.isInfoEnabled())
-            log.info("Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']');
-
-        return new IgniteFutureImpl<>(snpFut0);
+            return new IgniteFinishedFutureImpl<>(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1909,11 +1933,54 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Unique snapshot request id. */
         private final UUID rqId;
 
+        /** Snapshot name */
+        private final String name;
+
+        /** Snapshot start time. */
+        private final long startTime;
+
+        /** Snapshot finish time. */
+        private volatile long endTime;
+
+        /**
+         * Default constructor.
+         */
+        public ClusterSnapshotFuture() {
+            onDone();
+
+            rqId = null;
+            name = null;
+            startTime = 0;
+            endTime = 0;
+        }
+
+        /**
+         * @param name Snapshot name.
+         * @param err Error starting snapshot operation.
+         */
+        public ClusterSnapshotFuture(String name, Exception err) {
+            onDone(err);
+
+            this.name = name;
+            startTime = U.currentTimeMillis();
+            endTime = 0;
+            rqId = null;
+        }
+
         /**
          * @param rqId Unique snapshot request id.
          */
-        public ClusterSnapshotFuture(UUID rqId) {
+        public ClusterSnapshotFuture(UUID rqId, String name) {
             this.rqId = rqId;
+            this.name = name;
+            startTime = U.currentTimeMillis();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
+            endTime = U.currentTimeMillis();
+
+            return super.onDone(res, err, cancel);
         }
     }
 }

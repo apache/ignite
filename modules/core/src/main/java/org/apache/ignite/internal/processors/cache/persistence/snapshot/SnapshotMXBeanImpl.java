@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.List;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
@@ -38,15 +37,5 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** {@inheritDoc} */
     @Override public void createSnapshot(String snpName) {
         mgr.createSnapshot(snpName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isSnapshotCreating() {
-        return mgr.isSnapshotCreating();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<String> getSnapshots() {
-        return mgr.getSnapshots();
     }
 }

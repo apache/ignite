@@ -17,7 +17,6 @@
 
 package org.apache.ignite.mxbean;
 
-import java.util.List;
 import org.apache.ignite.IgniteSnapshot;
 
 /**
@@ -26,26 +25,11 @@ import org.apache.ignite.IgniteSnapshot;
 @MXBeanDescription("MBean that provides access for snapshot features.")
 public interface SnapshotMXBean {
     /**
-     * Gets all created snapshots on the cluster.
-     *
-     * @return List of all known snapshots.
-     */
-    @MXBeanDescription("List of all known snapshots.")
-    public List<String> getSnapshots();
-
-    /**
-     * Create the cluster-wide snapshot with given name.
+     * Create the cluster-wide snapshot with given name asynchronously.
      *
      * @param snpName Snapshot name to created.
      * @see IgniteSnapshot#createSnapshot(String) (String)
      */
     @MXBeanDescription("Create cluster-wide snapshot.")
     public void createSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
-
-    /**
-     * Cluster snapshot in-progress state.
-     */
-    @MXBeanDescription("Cluster snapshot in progress state.")
-    public boolean isSnapshotCreating();
-
 }

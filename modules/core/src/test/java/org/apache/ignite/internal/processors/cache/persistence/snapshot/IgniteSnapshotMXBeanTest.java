@@ -17,16 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collections;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.mxbean.SnapshotMXBean;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 
 /**
  * Tests {@link SnapshotMXBean}.
  */
-public class SnapshotMXBeanTest extends AbstractSnapshotSelfTest {
+public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testCreateSnapshot() throws Exception {
@@ -36,30 +39,21 @@ public class SnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
-        GridTestUtils.waitForCondition(mxBean::isSnapshotCreating, 10_000);
-        GridTestUtils.waitForCondition(() -> !mxBean.isSnapshotCreating(), 10_000);
+        MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
+
+        LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
+
+        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
+            0, endTime.value());
+
+        assertTrue("Waiting for snapshot operation failed.",
+            GridTestUtils.waitForCondition(() -> endTime.value() > 0, 10_000));
 
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testListOfSnapshots() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
-
-        SnapshotMXBean mxBean = getMBean(ignite.name());
-
-        mxBean.createSnapshot(SNAPSHOT_NAME);
-
-        GridTestUtils.waitForCondition(mxBean::isSnapshotCreating, 10_000);
-        GridTestUtils.waitForCondition(() -> !mxBean.isSnapshotCreating(), 10_000);
-
-        assertEquals("Snapshot must be created",
-            Collections.singletonList(SNAPSHOT_NAME), mxBean.getSnapshots());
     }
 
     /**

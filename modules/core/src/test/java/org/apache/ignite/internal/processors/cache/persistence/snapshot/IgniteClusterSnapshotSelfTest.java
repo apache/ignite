@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.nio.file.OpenOption;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,12 +54,15 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Before;
@@ -66,11 +70,13 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Cluster-wide snapshot test.
@@ -412,29 +418,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
         String dirNameIgnite0 = folderName(ignite);
 
-        IgniteSnapshotManager mgr1 = snp(grid(1));
         String dirNameIgnite1 = folderName(grid(1));
 
-        Function<String, SnapshotSender> delegateLocSndr = (snpName) ->
-            new DelegateSnapshotSender(log, mgr1.snapshotExecutorService(), mgr1.localSnapshotSenderFactory().apply(snpName)) {
-                @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-                    if (log.isInfoEnabled())
-                        log.info("Processing delta file has been blocked: " + delta.getName());
-
-                    partProcessed.countDown();
-
-                    try {
-                        U.await(block);
-
-                        super.sendDelta0(delta, cacheDirName, pair);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        throw new IgniteException("Interrupted by node stop", e);
-                    }
-                }
-            };
-
-        mgr1.setLocalSnapshotSenderFactory(delegateLocSndr);
+        snp(grid(1)).setLocalSnapshotSenderFactory(
+            blockingLocalSnapshotSender(grid(1), partProcessed, block));
 
         TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(grid(1));
         commSpi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
@@ -599,6 +586,108 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             U.delete(exSnpDir);
         }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotMetrics() throws Exception {
+        String newSnapshotName = SNAPSHOT_NAME + "_new";
+        CountDownLatch deltaApply = new CountDownLatch(1);
+        CountDownLatch deltaBlock = new CountDownLatch(1);
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        MetricRegistry mreg0 = ignite.context().metric().registry(SNAPSHOT_METRICS);
+
+        LongMetric startTime = mreg0.findMetric("LastSnapshotStartTime");
+        LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
+        ObjectGauge<String> snpName = mreg0.findMetric("LastSnapshotName");
+        ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
+
+        // Snapshot process will be blocked when delta partition files processing starts.
+        snp(ignite).setLocalSnapshotSenderFactory(
+            blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
+
+        long cutoffStartTime = U.currentTimeMillis();
+
+        IgniteFuture<Void> fut0 = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        U.await(deltaApply);
+
+        assertTrue("Snapshot start time must be set prior to snapshot operation started " +
+            "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
+            startTime.value() >= cutoffStartTime);
+        assertEquals("Snapshot end time must be zero prior to snapshot operation started.",
+            0, endTime.value());
+        assertEquals("Snapshot name must be set prior to snapshot operation started.",
+            SNAPSHOT_NAME, snpName.value());
+        assertNull("Snapshot error message must null prior to snapshot operation started.",
+            errMsg.value());
+
+        IgniteFuture<Void> fut1 = grid(1).snapshot().createSnapshot(newSnapshotName);
+
+        assertThrowsWithCause((Callable<Object>)fut1::get, IgniteException.class);
+
+        MetricRegistry mreg1 = grid(1).context().metric().registry(SNAPSHOT_METRICS);
+
+        LongMetric startTime1 = mreg1.findMetric("LastSnapshotStartTime");
+        LongMetric endTime1 = mreg1.findMetric("LastSnapshotEndTime");
+        ObjectGauge<String> snpName1 = mreg1.findMetric("LastSnapshotName");
+        ObjectGauge<String> errMsg1 = mreg1.findMetric("LastSnapshotErrorMessage");
+
+        assertTrue("Snapshot start time must be greater than zero for finished snapshot.",
+            startTime1.value() > 0);
+        assertEquals("Snapshot end time must zero for failed on start snapshots.",
+            0, endTime1.value());
+        assertEquals("Snapshot name must be set when snapshot operation already finished.",
+            newSnapshotName, snpName1.value());
+        assertNotNull("Concurrent snapshot operation must failed",
+            errMsg1.value());
+
+        deltaBlock.countDown();
+
+        fut0.get();
+
+        assertTrue("Snapshot start time must be greater than zero for finished snapshot.",
+            startTime.value() > 0);
+        assertTrue("Snapshot end time must be greater than zero for finished snapshot.",
+            endTime.value() > 0);
+        assertEquals("Snapshot name must be set when snapshot operation already finished.",
+            SNAPSHOT_NAME, snpName.value());
+        assertNull("Concurrent snapshot operation must finished successfully",
+            errMsg.value());
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param started Latch will be released when delta partition processing starts.
+     * @param blocked Latch to await delta partition processing.
+     * @return Factory which produces local snapshot senders.
+     */
+    private Function<String, SnapshotSender> blockingLocalSnapshotSender(IgniteEx ignite,
+        CountDownLatch started,
+        CountDownLatch blocked
+    ) {
+        return (snpName) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(),
+            snp(ignite).localSnapshotSenderFactory().apply(snpName)) {
+            @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                if (log.isInfoEnabled())
+                    log.info("Processing delta file has been blocked: " + delta.getName());
+
+                started.countDown();
+
+                try {
+                    U.await(blocked);
+
+                    if (log.isInfoEnabled())
+                        log.info("Latch released. Processing delta file continued: " + delta.getName());
+
+                    super.sendDelta0(delta, cacheDirName, pair);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    throw new IgniteException("Interrupted by node stop", e);
+                }
+            }
+        };
     }
 
     /** {@inheritDoc} */
