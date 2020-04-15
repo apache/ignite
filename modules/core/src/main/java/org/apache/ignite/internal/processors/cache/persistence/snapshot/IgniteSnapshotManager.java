@@ -356,9 +356,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
         mreg.register("LastSnapshotStartTime", () -> lastSeenSnpFut.startTime,
-            "The system time approximated by 10 ms of the last started cluster snapshot request on this node.");
+            "The system time of the last cluster snapshot request start time on this node.");
         mreg.register("LastSnapshotEndTime", () -> lastSeenSnpFut.endTime,
-            "The system time approximated by 10 ms of the last started cluster snapshot request on this node.");
+            "The system time of the last cluster snapshot request end time on this node.");
         mreg.register("LastSnapshotName", () -> lastSeenSnpFut.name, String.class,
             "The name of last started cluster snapshot request on this node.");
         mreg.register("LastSnapshotErrorMessage",

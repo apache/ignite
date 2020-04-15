@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -602,6 +603,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
         ObjectGauge<String> snpName = mreg0.findMetric("LastSnapshotName");
         ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
+        ObjectGauge<List<String>> snpList = mreg0.findMetric("LocalSnapshotList");
 
         // Snapshot process will be blocked when delta partition files processing starts.
         snp(ignite).localSnapshotSenderFactory(
@@ -640,7 +642,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             0, endTime1.value());
         assertEquals("Snapshot name must be set when snapshot operation already finished.",
             newSnapshotName, snpName1.value());
-        assertNotNull("Concurrent snapshot operation must failed",
+        assertNotNull("Concurrent snapshot operation must failed.",
             errMsg1.value());
 
         deltaBlock.countDown();
@@ -653,8 +655,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             endTime.value() > 0);
         assertEquals("Snapshot name must be set when snapshot operation already finished.",
             SNAPSHOT_NAME, snpName.value());
-        assertNull("Concurrent snapshot operation must finished successfully",
+        assertNull("Concurrent snapshot operation must finished successfully.",
             errMsg.value());
+        assertEquals("Only the first snapshot must be created and stored on disk.",
+            Collections.singletonList(SNAPSHOT_NAME), snpList.value());
     }
 
     /**

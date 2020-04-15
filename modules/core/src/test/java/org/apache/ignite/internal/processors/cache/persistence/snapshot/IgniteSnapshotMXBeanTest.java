@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import javax.management.AttributeNotFoundException;
+import javax.management.DynamicMBean;
+import javax.management.MBeanException;
+import javax.management.ReflectionException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.mxbean.SnapshotMXBean;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -30,24 +34,28 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * Tests {@link SnapshotMXBean}.
  */
 public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setMetricExporterSpi(new JmxMetricExporterSpi());
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testCreateSnapshot() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
+        DynamicMBean snpMBean = metricRegistry(ignite.name(), null, SNAPSHOT_METRICS);
+
+        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
+            0, getLastSnapshotEndTime(snpMBean));
+
         SnapshotMXBean mxBean = getMBean(ignite.name());
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
-        MetricRegistry mreg = ignite.context().metric().registry(SNAPSHOT_METRICS);
-
-        LongMetric endTime = mreg.findMetric("LastSnapshotEndTime");
-
-        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
-            0, endTime.value());
-
         assertTrue("Waiting for snapshot operation failed.",
-            GridTestUtils.waitForCondition(() -> endTime.value() > 0, 10_000));
+            GridTestUtils.waitForCondition(() -> getLastSnapshotEndTime(snpMBean) > 0, 10_000));
 
         stopAllGrids();
 
@@ -62,5 +70,19 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
      */
     private SnapshotMXBean getMBean(String ignite) {
         return getMxBean(ignite, "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+    }
+
+    /**
+
+     * @param mBean Ignite snapshot MBean.
+     * @return Value of snapshot end time.
+     */
+    private static long getLastSnapshotEndTime(DynamicMBean mBean) {
+        try {
+            return  (long)mBean.getAttribute("LastSnapshotEndTime");
+        }
+        catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
