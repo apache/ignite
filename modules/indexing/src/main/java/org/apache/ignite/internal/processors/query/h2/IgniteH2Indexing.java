@@ -2133,7 +2133,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         JdbcUtils.serializer = h2Serializer();
 
-        distrCfg = new DistributedSqlConfiguration(ctx.internalSubscriptionProcessor(), log);
+        distrCfg = new DistributedSqlConfiguration(ctx, log);
 
         funcMgr = new FunctionsManager(distrCfg);
     }
