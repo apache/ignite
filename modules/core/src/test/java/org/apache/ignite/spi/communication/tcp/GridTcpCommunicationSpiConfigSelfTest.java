@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -24,6 +25,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
@@ -105,10 +107,9 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
     /**
      * Test checks that attribute {@link TcpCommunicationSpi#ATTR_HOST_NAMES}
-     * is empty only if ip is set to {@link IgniteConfiguration#setLocalHost}
-     * and property {@link
-     * IgniteSystemProperties#IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES} ==
-     * {@code false} (default value).
+     * is empty only if IP(don't wildcard and loopback) is set to {@link IgniteConfiguration#setLocalHost}
+     * and property {@link IgniteSystemProperties#IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES} == {@code false}
+     * (default value).
      *
      * @throws Exception If failed.
      */
@@ -116,10 +117,22 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     public void testEmptyHostNameAttrByDefault() throws Exception {
         assertFalse(getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false));
 
-        InetSocketAddress inetSockAddr = new InetSocketAddress(0);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(
+            new InetSocketAddress(0).getAddress()
+        );
 
-        String ip = inetSockAddr.getHostName();
-        String host = U.resolveLocalAddresses(inetSockAddr.getAddress()).get2().iterator().next();
+        String host = addrs.get2().iterator().next();
+
+        String ip = null;
+
+        for (String addr : addrs.get1()) {
+            InetAddress inetAddr = U.resolveLocalHost(addr);
+
+            if (!inetAddr.isLoopbackAddress() && !inetAddr.isAnyLocalAddress())
+                ip = addr;
+        }
+
+        assertNotNull("addrs=" + addrs, ip);
 
         log.info("Testing ip=" + ip + " host=" + host);
 
@@ -133,11 +146,18 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
 
         locHost = null;
         checkHostNamesAttr(startGrid(nodeIdx++), true, false);
+
+        locHost = "0.0.0.0";
+        checkHostNamesAttr(startGrid(nodeIdx++), false, false);
+
+        stopAllGrids();
+
+        locHost = "127.0.0.1";
+        checkHostNamesAttr(startGrid(nodeIdx++), false, true);
     }
 
     /**
-     * Test checks that attribute {@link TcpCommunicationSpi#ATTR_HOST_NAMES}
-     * is not empty.
+     * Test checks that attribute {@link TcpCommunicationSpi#ATTR_HOST_NAMES} is not empty.
      *
      * @throws Exception If failed.
      */
