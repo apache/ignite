@@ -25,10 +25,8 @@ import java.util.HashMap;
 import java.util.AbstractMap;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.ignite.IgniteCheckedException;
+import java.util.Collections;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -138,6 +136,13 @@ public class GridDhtPartitionsStateValidator {
                 top.groupId(),
                 parts);
         }
+    }
+
+    /**
+     * Cleans up resources to avoid excessive memory usage.
+     */
+    public void cleanUp() {
+        invalidParts = null;
     }
 
     /**
