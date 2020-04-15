@@ -801,6 +801,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
+        Set<UUID> leftNodes = new HashSet<>(req.bltNodes);
+        leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            F.node2id()));
+
+        if (!leftNodes.isEmpty()) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Some of baseline nodes left the cluster " +
+                "prior to snapshot operation start: " + leftNodes));
+        }
+
+        Set<Integer> leftGrps = new HashSet<>(req.grpIds);
+        leftGrps.removeAll(cctx.cache().persistentGroups().stream()
+            .map(CacheGroupDescriptor::groupId)
+            .collect(Collectors.toSet()));
+
+        if (!leftGrps.isEmpty()) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
+                "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
+        }
+
         // Collection of pairs group and appropriate cache partition to be snapshot.
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
@@ -823,16 +842,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
-        SnapshotOperationRequest snpReq = clusterSnpReq;
-
-        if (snpReq == null)
+        if (cctx.kernalContext().clientNode())
             return;
 
-        if (!snpReq.rqId.equals(id)) {
+        SnapshotOperationRequest snpReq = clusterSnpReq;
+
+        if (snpReq == null || !snpReq.rqId.equals(id)) {
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
-                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation failed due to another snapshot " +
-                        "operation in progress: " + snpReq.snpName));
+                    clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation has not been fully completed " +
+                        "[err=" + err + ", snpReq=" + snpReq + ']'));
 
                     clusterSnpFut = null;
                 }
