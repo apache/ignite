@@ -148,10 +148,9 @@ public class PlatformConfigurationUtils {
      * Reads cache configuration from a stream.
      *
      * @param in Stream.
-     * @param protocolCtx Client protocol version.
      * @return Cache configuration.
      */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in, ClientProtocolContext protocolCtx) {
+    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
         assert in != null;
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -218,7 +217,7 @@ public class PlatformConfigurationUtils {
             Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
             for (int i = 0; i < qryEntCnt; i++)
-                entities.add(readQueryEntity(in, protocolCtx));
+                entities.add(readQueryEntity(in));
 
             ccfg.setQueryEntities(entities);
         }
@@ -485,7 +484,17 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the query entity.
+     * Reads the query entity. Version of function to be used from thick platform client.
+     *
+     * @param in Stream.
+     * @return QueryEntity.
+     */
+    public static QueryEntity readQueryEntity(BinaryRawReader in) {
+        return readQueryEntity(in, DEFAULT_PROTOCOL_CONTEXT);
+    }
+
+    /**
+     * Reads the query entity. Version of function to be used from thin client.
      *
      * @param in Stream.
      * @param protocolCtx Client protocol version.
@@ -616,11 +625,9 @@ public class PlatformConfigurationUtils {
      * Reads Ignite configuration.
      * @param in Reader.
      * @param cfg Configuration.
-     * @param protocolCtx Client protocol version.
      */
     @SuppressWarnings("deprecation")
-    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg,
-        ClientProtocolContext protocolCtx) {
+    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] evtTypes = in.readIntArray();
@@ -706,9 +713,9 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setQueryThreadPoolSize(in.readInt());
 
-        readCacheConfigurations(in, cfg, protocolCtx);
+        readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
-        readEncryptionConfiguration(in, cfg, protocolCtx);
+        readEncryptionConfiguration(in, cfg);
 
         if (in.readBoolean()) {
             TcpCommunicationSpi comm = new TcpCommunicationSpi();
@@ -816,7 +823,7 @@ public class PlatformConfigurationUtils {
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
 
         if (in.readBoolean())
-            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in, protocolCtx));
+            cfg.setDataStorageConfiguration(readDataStorageConfiguration(in));
 
         if (in.readBoolean())
             cfg.setSslContextFactory(readSslContextFactory(in));
@@ -864,10 +871,8 @@ public class PlatformConfigurationUtils {
      *
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
-     * @param protocolCtx Client protocol version.
      */
-    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg,
-        ClientProtocolContext protocolCtx) {
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         int len = in.readInt();
 
         if (len == 0)
@@ -876,7 +881,7 @@ public class PlatformConfigurationUtils {
         List<CacheConfiguration> caches = new ArrayList<>();
 
         for (int i = 0; i < len; i++)
-            caches.add(readCacheConfiguration(in, protocolCtx));
+            caches.add(readCacheConfiguration(in));
 
         CacheConfiguration[] oldCaches = cfg.getCacheConfiguration();
         CacheConfiguration[] caches0 = caches.toArray(new CacheConfiguration[caches.size()]);
@@ -974,13 +979,9 @@ public class PlatformConfigurationUtils {
      * Reads encryption configuration
      * @param in Reader.
      * @param cfg Configuration.
-     * @param protocolCtx Client protocol version.
      */
-    private static void readEncryptionConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg,
-        ClientProtocolContext protocolCtx) {
-        boolean encryptionSupported = protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.ENCRYPTION);
-
-        if (!encryptionSupported || !in.readBoolean()) {
+    private static void readEncryptionConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+        if (!in.readBoolean()) {
             cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
             return;
@@ -1001,10 +1002,8 @@ public class PlatformConfigurationUtils {
      *
      * @param writer Writer.
      * @param ccfg Configuration.
-     * @param protocolCtx Client protocol context.
      */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg,
-        ClientProtocolContext protocolCtx) {
+    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg) {
         assert writer != null;
         assert ccfg != null;
 
@@ -1065,7 +1064,7 @@ public class PlatformConfigurationUtils {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(writer, e, protocolCtx);
+                writeQueryEntity(writer, e);
         }
         else
             writer.writeInt(0);
@@ -1129,7 +1128,17 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Write query entity.
+     * Write query entity. Version for thick .NET platform.
+     *
+     * @param writer Writer.
+     * @param qryEntity Query entity.
+     */
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity) {
+        writeQueryEntity(writer, qryEntity, DEFAULT_PROTOCOL_CONTEXT);
+    }
+
+    /**
+     * Write query entity. Version for thin client.
      *
      * @param writer Writer.
      * @param qryEntity Query entity.
@@ -1233,20 +1242,8 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param cfg Configuration.
      */
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
-        writeIgniteConfiguration(w, cfg, DEFAULT_PROTOCOL_CONTEXT);
-    }
-
-    /**
-     * Writes Ignite configuration.
-     *
-     * @param w Writer.
-     * @param cfg Configuration.
-     * @param protocolCtx Client protocol context.
-     */
     @SuppressWarnings("deprecation")
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg,
-        ClientProtocolContext protocolCtx) {
+    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
         assert w != null;
         assert cfg != null;
 
@@ -1331,13 +1328,13 @@ public class PlatformConfigurationUtils {
             w.writeInt(cacheCfg.length);
 
             for (CacheConfiguration ccfg : cacheCfg)
-                writeCacheConfiguration(w, ccfg, protocolCtx);
+                writeCacheConfiguration(w, ccfg);
         }
         else
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
-        writeEncryptionConfiguration(w, cfg.getEncryptionSpi(), protocolCtx);
+        writeEncryptionConfiguration(w, cfg.getEncryptionSpi());
 
         CommunicationSpi comm = cfg.getCommunicationSpi();
 
@@ -1448,7 +1445,7 @@ public class PlatformConfigurationUtils {
 
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
 
-        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration(), protocolCtx);
+        writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
 
         writeSslContextFactory(w, cfg.getSslContextFactory());
 
@@ -1570,13 +1567,8 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      * @param enc Encryption Spi.
-     * @param protocolCtx Client protocol context.
      */
-    private static void writeEncryptionConfiguration(BinaryRawWriter w, EncryptionSpi enc,
-        ClientProtocolContext protocolCtx) {
-        if (!protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.ENCRYPTION))
-            return;
-
+    private static void writeEncryptionConfiguration(BinaryRawWriter w, EncryptionSpi enc) {
         if (enc instanceof NoopEncryptionSpi) {
             w.writeBoolean(false);
 
@@ -1954,11 +1946,9 @@ public class PlatformConfigurationUtils {
      * Reads the data storage configuration.
      *
      * @param in Reader.
-     * @param protocolCtx Client protocol version.
      * @return Config.
      */
-    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in,
-        ClientProtocolContext protocolCtx) {
+    private static DataStorageConfiguration readDataStorageConfiguration(BinaryRawReader in) {
         DataStorageConfiguration res = new DataStorageConfiguration()
                 .setStoragePath(in.readString())
                 .setCheckpointFrequency(in.readLong())
@@ -2002,13 +1992,13 @@ public class PlatformConfigurationUtils {
             DataRegionConfiguration[] regs = new DataRegionConfiguration[cnt];
 
             for (int i = 0; i < cnt; i++)
-                regs[i] = readDataRegionConfiguration(in, protocolCtx);
+                regs[i] = readDataRegionConfiguration(in);
 
             res.setDataRegionConfigurations(regs);
         }
 
         if (in.readBoolean())
-            res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in, protocolCtx));
+            res.setDefaultDataRegionConfiguration(readDataRegionConfiguration(in));
 
         return res;
     }
@@ -2088,10 +2078,8 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      * @param cfg Data storage configuration.
-     * @param protocolCtx Client protocol context.
      */
-    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg,
-        ClientProtocolContext protocolCtx) {
+    private static void writeDataStorageConfiguration(BinaryRawWriter w, DataStorageConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {
@@ -2145,14 +2133,14 @@ public class PlatformConfigurationUtils {
                 w.writeInt(cfg.getDataRegionConfigurations().length);
 
                 for (DataRegionConfiguration d : cfg.getDataRegionConfigurations())
-                    writeDataRegionConfiguration(w, d, protocolCtx);
+                    writeDataRegionConfiguration(w, d);
             }
             else
                 w.writeInt(0);
 
             if (cfg.getDefaultDataRegionConfiguration() != null) {
                 w.writeBoolean(true);
-                writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration(), protocolCtx);
+                writeDataRegionConfiguration(w, cfg.getDefaultDataRegionConfiguration());
             }
             else
                 w.writeBoolean(false);
@@ -2165,10 +2153,8 @@ public class PlatformConfigurationUtils {
      * Writes the data region configuration.
      *
      * @param w Writer.
-     * @param protocolCtx Client protocol context.
      */
-    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration cfg,
-        ClientProtocolContext protocolCtx) {
+    private static void writeDataRegionConfiguration(BinaryRawWriter w, DataRegionConfiguration cfg) {
         assert w != null;
         assert cfg != null;
 
@@ -2184,9 +2170,7 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getMetricsSubIntervalCount());
         w.writeLong(cfg.getMetricsRateTimeInterval());
         w.writeLong(cfg.getCheckpointPageBufferSize());
-
-        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.LAZY_MEMORY_ALLOCATION))
-            w.writeBoolean(cfg.isLazyMemoryAllocation());
+        w.writeBoolean(cfg.isLazyMemoryAllocation());
     }
 
     /**
@@ -2224,10 +2208,8 @@ public class PlatformConfigurationUtils {
      * Reads the data region configuration.
      *
      * @param r Reader.
-     * @param protocolCtx Client protocol version.
      */
-    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r,
-        ClientProtocolContext protocolCtx) {
+    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r) {
         assert r != null;
 
         DataRegionConfiguration cfg = new DataRegionConfiguration()
@@ -2244,8 +2226,7 @@ public class PlatformConfigurationUtils {
             .setMetricsRateTimeInterval(r.readLong())
             .setCheckpointPageBufferSize(r.readLong());
 
-        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.LAZY_MEMORY_ALLOCATION))
-            cfg.setLazyMemoryAllocation(r.readBoolean());
+        cfg.setLazyMemoryAllocation(r.readBoolean());
 
         return cfg;
     }

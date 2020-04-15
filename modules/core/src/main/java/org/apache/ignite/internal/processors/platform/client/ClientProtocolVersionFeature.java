@@ -21,7 +21,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_1_0;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_6_0;
 import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_7_0;
@@ -35,14 +34,8 @@ public class ClientProtocolVersionFeature {
     /** Authorization feature. */
     public static final ClientProtocolVersionFeature AUTHORIZATION = new ClientProtocolVersionFeature(VER_1_1_0);
 
-    /** Encryption configuration feature. */
-    public static final ClientProtocolVersionFeature ENCRYPTION = new ClientProtocolVersionFeature(VER_1_2_0);
-
     /** Query entity precision and scale feature. */
     public static final ClientProtocolVersionFeature QUERY_ENTITY_PRECISION_AND_SCALE = new ClientProtocolVersionFeature(VER_1_2_0);
-
-    /** Lazy memory allocation feature. */
-    public static final ClientProtocolVersionFeature LAZY_MEMORY_ALLOCATION = new ClientProtocolVersionFeature(VER_1_3_0);
 
     /** Partition awareness feature. */
     public static final ClientProtocolVersionFeature PARTITION_AWARENESS = new ClientProtocolVersionFeature(VER_1_4_0);
