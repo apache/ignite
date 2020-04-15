@@ -50,8 +50,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
-
 /**
  * Partition File preloading routine.
  */
@@ -150,16 +148,15 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         ((GridCacheDatabaseSharedManager)cctx.database()).addCheckpointListener(checkpointLsnr);
 
-        requestPartitionsSnapshot(remaining.entrySet().iterator(), new GridConcurrentHashSet<>());
+        requestPartitionsSnapshot(remaining.entrySet().iterator());
 
         return Collections.unmodifiableMap(futAssigns);
     }
 
     /**
      * @param it Iterator on node assignments.
-     * @param grps Requested groups.
      */
-    private void requestPartitionsSnapshot(Iterator<Map.Entry<UUID, Map<Integer, Set<Integer>>>> it, Set<Integer> grps) {
+    private void requestPartitionsSnapshot(Iterator<Map.Entry<UUID, Map<Integer, Set<Integer>>>> it) {
         if (!it.hasNext())
             return;
 
@@ -174,12 +171,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
             currGroups.add(grp.cacheOrGroupName());
-
-            if (!grps.contains(grpId)) {
-                grps.add(grpId);
-
-                grp.preloader().sendRebalanceStartedEvent(exchId.discoveryEvent());
-            }
         }
 
         lock.lock();
@@ -200,7 +191,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 .chain(f -> {
                         try {
                             if (!f.isCancelled() && f.get())
-                                requestPartitionsSnapshot(it, grps);
+                                requestPartitionsSnapshot(it);
                         }
                         catch (IgniteCheckedException e) {
                             if (!onDone(e) && log.isDebugEnabled())
@@ -239,8 +230,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         }
 
         initPartitionSnapshot(grp, partId, file);
-
-        grp.preloader().rebalanceEvent(partId, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
         activatePartition(grpId, partId)
             .listen(f -> {
@@ -337,9 +326,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         assert !grp.localWalEnabled() : "grp=" + grp.cacheOrGroupName();
 
         IgniteInternalFuture<?> idxFut = cctx.database().rebuildIndexes(grp);
-
-        // Cache group file preloading is finished, historical rebalancing will send separate events.
-        grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
         GridDhtPreloaderAssignments histAssignments = histAssignments(grp, maxCntrs);
 

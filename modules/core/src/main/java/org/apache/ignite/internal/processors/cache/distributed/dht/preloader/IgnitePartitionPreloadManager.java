@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
@@ -212,7 +211,7 @@ public class IgnitePartitionPreloadManager extends GridCacheSharedManagerAdapter
      * @param nodes List of Nodes.
      * @return {@code True} if file rebalancing is applicable for specified cache group and all nodes supports it.
      */
-    public boolean supports(CacheGroupContext grp, @NotNull Collection<ClusterNode> nodes) {
+    public boolean supports(CacheGroupContext grp, Collection<ClusterNode> nodes) {
         assert nodes != null && !nodes.isEmpty();
 
         if (!supports(grp))

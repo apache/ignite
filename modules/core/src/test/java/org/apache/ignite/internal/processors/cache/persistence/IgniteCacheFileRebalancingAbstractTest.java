@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -48,10 +48,13 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRequestMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -70,7 +73,6 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FILE_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 
 /**
  * File rebalancing tests.
@@ -82,7 +84,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     private static final int INITIAL_ENTRIES_COUNT = 100_000;
 
     /** */
-    private static final long AWAIT_TIME_SECONDS = 15_000;
+    private static final long AWAIT_TIME_MILLIS = 15_000;
 
     /** */
     private static final int DFLT_LOADER_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
@@ -101,9 +103,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
     /** */
     private final Set<Integer> requestedGroups = new GridConcurrentHashSet<>();
-
-    /** */
-    private boolean checkEvts;
 
     /** {@inheritDoc} */
     @Override protected long checkpointFrequency() {
@@ -152,9 +151,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         cfg.setCacheConfiguration(ccfgs0);
 
-        if (checkEvts)
-            cfg.setIncludeEventTypes(EVT_CACHE_REBALANCE_PART_LOADED);
-
         return cfg;
     }
 
@@ -163,8 +159,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
      */
     @Test
     public void testSimpleRebalancing() throws Exception {
-        checkEvts = true;
-
         IgniteEx ignite0 = startGrid(0, true);
 
         LoadParameters<TestValue> idxCache = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
@@ -181,24 +175,12 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         IgniteEx ignite1 = startGrid(1);
 
-        AtomicInteger actualParts = new AtomicInteger();
-
-        ignite1.events().localListen(evt -> {
-            if (evt.shortDisplay().contains("cache=" + INDEXED_CACHE + ",") ||
-                evt.shortDisplay().contains("cache=" + CACHE + ","))
-                actualParts.incrementAndGet();
-
-            return true;
-        }, EVT_CACHE_REBALANCE_PART_LOADED);
-
         ignite0.cluster().setBaselineTopology(2);
 
         awaitPartitionMapExchange();
 
         int expParts = ignite0.cachex(INDEXED_CACHE).context().affinity().partitions() +
             ignite0.cachex(CACHE).context().affinity().partitions();
-
-        assertEquals(expParts, actualParts.get());
 
         assertTrue(requestedGroups.contains(CU.cacheId(INDEXED_CACHE)));
         assertTrue(requestedGroups.contains(CU.cacheId(CACHE)));
@@ -215,8 +197,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testHistoricalStartsAfterFilesPreloading() throws Exception {
         assert backups() > 0 : backups();
 
-        checkEvts = true;
-
         IgniteEx ignite0 = startGrid(0, true);
 
         DataLoader<TestValue> ldr = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
@@ -226,10 +206,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         forceCheckpoint(ignite0);
 
         IgniteEx ignite1 = startGrid(1);
-
-        CountDownLatch cacheStartLatch = new CountDownLatch(1);
-
-        AtomicInteger loadedParts = new AtomicInteger();
 
         IgniteInternalCache<Object, Object> cache = ignite0.cachex(INDEXED_CACHE);
 
@@ -245,14 +221,8 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         // Recording all historical demand messages.
         recCommSpi.record(msgPred);
 
-        ignite1.events().localListen(evt -> {
-            if (evt.shortDisplay().contains("cache=" + INDEXED_CACHE + ",")) {
-                if (loadedParts.incrementAndGet() == totalPartitions)
-                    cacheStartLatch.countDown();
-            }
-
-            return true;
-        }, EVT_CACHE_REBALANCE_PART_LOADED);
+        IgniteInternalFuture loadPartsFut =
+            waitForPartitions(ignite1.cachex(INDEXED_CACHE).context(), totalPartitions);
 
         recCommSpi.blockMessages(msgPred);
 
@@ -260,7 +230,7 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         ignite0.cluster().setBaselineTopology(2);
 
         // Wait until partition files received.
-        cacheStartLatch.await();
+        loadPartsFut.get();
 
         // File rebalancing should request historiacal rebalance for loaded partitions.
         recCommSpi.waitForBlocked();
@@ -289,8 +259,6 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
     public void testConsistencyOnFilesPreloadingInterruption() throws Exception {
         assert backups() > 0 : backups();
 
-        checkEvts = true;
-
         IgniteEx ignite0 = startGrid(0, true);
 
         DataLoader<TestValue> ldr = testValuesLoader(false, DFLT_LOADER_THREADS).loadData(ignite0);
@@ -301,28 +269,18 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
 
         IgniteEx ignite1 = startGrid(1);
 
-        CountDownLatch cacheStartLatch = new CountDownLatch(1);
-
-        AtomicInteger loadedParts = new AtomicInteger();
-
         IgniteInternalCache<Object, Object> cache = ignite0.cachex(INDEXED_CACHE);
 
         int totalPartitions = cache.affinity().partitions();
 
-        ignite1.events().localListen(evt -> {
-            if (evt.shortDisplay().contains("cache=" + INDEXED_CACHE + ",")) {
-                if (loadedParts.incrementAndGet() > totalPartitions / 4)
-                    cacheStartLatch.countDown();
-            }
-
-            return true;
-        }, EVT_CACHE_REBALANCE_PART_LOADED);
+        IgniteInternalFuture loadPartsFut =
+            waitForPartitions(ignite1.cachex(INDEXED_CACHE).context(), totalPartitions / 4);
 
         // After baseline has changed.file rebalance should start.
         ignite0.cluster().setBaselineTopology(2);
 
         // Wait until some partition files received.
-        cacheStartLatch.await();
+        loadPartsFut.get();
 
         // Switching this partitions from read-only to normal mode.
         forceCheckpoint(ignite1);
@@ -337,6 +295,42 @@ public abstract class IgniteCacheFileRebalancingAbstractTest extends IgnitePdsCa
         // If historical rebalancing starts after interrupting file preloading,
         // we'll get inconsistent indexes and cache verification should fail.
         verifyCache(ignite1, ldr);
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param expectedCnt Expected number of existing partitions.
+     * @return The future, which will be completed when the number of existing partition files on the disk is greater
+     *         than or equal to the specified.
+     */
+    private IgniteInternalFuture waitForPartitions(GridCacheContext<Object, Object> ctx, int expectedCnt) {
+        return GridTestUtils.runAsync(() -> {
+            boolean success = GridTestUtils.waitForCondition(
+                () -> {
+                    int cnt = 0;
+
+                    try {
+                        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+                            FilePageStoreManager storeMgr = (FilePageStoreManager)ctx.shared().pageStore();
+
+                            FilePageStore fileStore = (FilePageStore)storeMgr.getStore(ctx.groupId(), part.id());
+
+                            if (new File(fileStore.getFileAbsolutePath()).exists())
+                                ++cnt;
+                        }
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return cnt >= expectedCnt;
+                },
+                AWAIT_TIME_MILLIS);
+
+            assertTrue(success);
+
+            return true;
+        });
     }
 
     /**
