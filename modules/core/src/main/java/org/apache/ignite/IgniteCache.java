@@ -1673,6 +1673,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * @param entities Query entities.
+     * @return A future representing pending completion of enabling indexing of cache.
      */
     public IgniteFuture<Void> enableIndexing(String schemaName, Collection<QueryEntity> entities);
 }

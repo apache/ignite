@@ -2837,14 +2837,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Add dynamically {@code QueryEntities} to existing cache.
+     * Enable dynamically indexing of existing cache.
+     *
+     * @param cacheName Cache name
+     * @param schemaName Target schema name.
+     * @param entities Collecion of {@code QueryEntity}
      */
     public IgniteInternalFuture<?> dynamicAddQueryEntities(
             String cacheName,
             String schemaName,
             Collection<QueryEntity> entities
     ) {
-        GridCacheContext<Object, Object> cctx = ctx.cache().cache(cacheName).context();
+        GridCacheContext<?, ?> cctx = ctx.cache().cache(cacheName).context();
 
         Collection<QueryEntity> entities0 = QueryUtils.normalizeQueryEntities(entities, cctx.config());
 
