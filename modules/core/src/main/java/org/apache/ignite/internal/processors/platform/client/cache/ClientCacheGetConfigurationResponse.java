@@ -31,29 +31,29 @@ public class ClientCacheGetConfigurationResponse extends ClientResponse {
     private final CacheConfiguration cfg;
 
     /** Client protocol context. */
-    private final ClientProtocolContext protocolContext;
+    private final ClientProtocolContext protocolCtx;
 
     /**
      * Constructor.
      *
      * @param reqId Request id.
      * @param cfg Cache configuration.
-     * @param protocolContext Client protocol context.
+     * @param protocolCtx Client protocol context.
      */
-    ClientCacheGetConfigurationResponse(long reqId, CacheConfiguration cfg, ClientProtocolContext protocolContext) {
+    ClientCacheGetConfigurationResponse(long reqId, CacheConfiguration cfg, ClientProtocolContext protocolCtx) {
         super(reqId);
 
         assert cfg != null;
-        assert protocolContext != null;
+        assert protocolCtx != null;
 
         this.cfg = cfg;
-        this.protocolContext = protocolContext;
+        this.protocolCtx = protocolCtx;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        ClientCacheConfigurationSerializer.write(writer, cfg, protocolContext);
+        ClientCacheConfigurationSerializer.write(writer, cfg, protocolCtx);
     }
 }

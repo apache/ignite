@@ -23,11 +23,13 @@ import org.apache.ignite.internal.ThinProtocolFeature;
 /**
  * Defines supported features for thin client.
  */
-public enum ClientFeature implements ThinProtocolFeature {
+public enum ClientBitmaskFeature implements ThinProtocolFeature {
+    /** Feature for user attributes. */
     USER_ATTRIBUTES(0);
 
     /** */
-    private static final EnumSet<ClientFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(ClientFeature.class);
+    private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
+        EnumSet.allOf(ClientBitmaskFeature.class);
 
     /** Feature id. */
     private final int featureId;
@@ -35,7 +37,7 @@ public enum ClientFeature implements ThinProtocolFeature {
     /**
      * @param id Feature ID.
      */
-    ClientFeature(int id) {
+    ClientBitmaskFeature(int id) {
         featureId = id;
     }
 
@@ -48,12 +50,12 @@ public enum ClientFeature implements ThinProtocolFeature {
      * @param bytes Feature byte array.
      * @return Set of supported features.
      */
-    public static EnumSet<ClientFeature> enumSet(byte[] bytes) {
-        return ThinProtocolFeature.enumSet(bytes, ClientFeature.class);
+    public static EnumSet<ClientBitmaskFeature> enumSet(byte[] bytes) {
+        return ThinProtocolFeature.enumSet(bytes, ClientBitmaskFeature.class);
     }
 
     /** */
-    public static EnumSet<ClientFeature> allFeaturesAsEnumSet() {
+    public static EnumSet<ClientBitmaskFeature> allFeaturesAsEnumSet() {
         return ALL_FEATURES_AS_ENUM_SET.clone();
     }
 }

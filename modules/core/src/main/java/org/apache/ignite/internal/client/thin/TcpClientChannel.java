@@ -68,7 +68,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.ThinProtocolFeature;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -118,7 +117,7 @@ class TcpClientChannel implements ClientChannel {
     private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
     /** Protocol context. */
-    private ProtocolContext protocolContext;
+    private ProtocolContext protocolCtx;
 
     /** Server node ID. */
     private UUID srvNodeId;
@@ -301,7 +300,7 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream resIn;
 
-        if (protocolContext.isPartitionAwarenessSupported()) {
+        if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.PARTITION_AWARENESS)) {
             short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
@@ -343,8 +342,8 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public ProtocolContext protocolContext() {
-        return protocolContext;
+    @Override public ProtocolContext protocolCtx() {
+        return protocolCtx;
     }
 
     /** {@inheritDoc} */
@@ -408,8 +407,9 @@ class TcpClientChannel implements ClientChannel {
     private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
         Map<String, String> userAttrs) throws ClientConnectionException {
         BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
+
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, new BinaryHeapOutputStream(32), null, null)) {
-            ProtocolContext protocolContext = protocolContextFromVersion(proposedVer);
+            ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size
             writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
@@ -420,15 +420,17 @@ class TcpClientChannel implements ClientChannel {
 
             writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
-            if (protocolContext.isFeaturesSupported()) {
-                byte[] features = ThinProtocolFeature.featuresAsBytes(protocolContext.features());
+            if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.BITMAP_FEATURES)) {
+                byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());
                 writer.writeByteArray(features);
             }
 
-            if (protocolContext.isUserAttributesSupported())
+            if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.USER_ATTRIBUTES))
                 writer.writeMap(userAttrs);
 
-            if (protocolContext.isAuthorizationSupported() && user != null && !user.isEmpty()) {
+            boolean authSupported = protocolCtx.isFeatureSupported(ProtocolVersionFeature.AUTHORIZATION);
+
+            if (authSupported && user != null && !user.isEmpty()) {
                 writer.writeString(user);
                 writer.writeString(pwd);
             }
@@ -440,15 +442,15 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /**
-     * @param version Protocol version.
+     * @param ver Protocol version.
      * @return Protocol context for a version.
      */
-    private ProtocolContext protocolContextFromVersion(ProtocolVersion version) {
-        EnumSet<ProtocolFeature> features = null;
-        if (ProtocolContext.isFeaturesSupported(version))
-            features = ProtocolFeature.allFeaturesAsEnumSet();
+    private ProtocolContext protocolContextFromVersion(ProtocolVersion ver) {
+        EnumSet<ProtocolBitmaskFeature> features = null;
+        if (ProtocolContext.isFeatureSupported(ver, ProtocolVersionFeature.BITMAP_FEATURES))
+            features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
 
-        return new ProtocolContext(version, features);
+        return new ProtocolContext(ver, features);
     }
 
     /** Receive and handle handshake response. */
@@ -462,17 +464,17 @@ class TcpClientChannel implements ClientChannel {
         BinaryInputStream res = new BinaryHeapInputStream(dataInput.read(resSize));
 
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(null, res, null, true)) {
-
             boolean success = res.readBoolean();
+
             if (success) {
                 byte[] features = new byte[0];
-                if (ProtocolContext.isFeaturesSupported(proposedVer)) {
+
+                if (ProtocolContext.isFeatureSupported(proposedVer, ProtocolVersionFeature.BITMAP_FEATURES))
                     features = reader.readByteArray();
-                }
 
-                protocolContext = new ProtocolContext(proposedVer, ProtocolFeature.enumSet(features));
+                protocolCtx = new ProtocolContext(proposedVer, ProtocolBitmaskFeature.enumSet(features));
 
-                if (protocolContext.isPartitionAwarenessSupported()) {
+                if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.PARTITION_AWARENESS)) {
                     // Reading server UUID
                     srvNodeId = reader.readUuid();
                 }

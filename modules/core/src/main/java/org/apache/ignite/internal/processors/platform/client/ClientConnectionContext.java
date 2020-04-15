@@ -66,7 +66,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /**
      * Version 1.7.0. Added: protocol features.
-     * ATTENTION! Do not add any new protocol versions unless totally necessary. Use {@link ClientFeature} instead.
+     * ATTENTION! Do not add any new protocol versions unless totally necessary. Use {@link ClientBitmaskFeature}
+     * instead.
      */
     public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
 
@@ -75,7 +76,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
     /** Default protocol context. */
     public static final ClientProtocolContext DEFAULT_PROTOCOL_CONTEXT =
-        new ClientProtocolContext(DEFAULT_VER, ClientFeature.allFeaturesAsEnumSet());
+        new ClientProtocolContext(DEFAULT_VER, ClientBitmaskFeature.allFeaturesAsEnumSet());
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
@@ -168,14 +169,12 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
 
-        EnumSet<ClientFeature> features = null;
+        EnumSet<ClientBitmaskFeature> features = null;
 
-        if (ClientProtocolContext.isFeaturesSupported(ver)) {
+        if (ClientProtocolContext.isFeatureSupported(ver, ClientProtocolVersionFeature.BITMAP_FEATURES)) {
             byte [] cliFeatures = reader.readByteArray();
 
-            features = ClientFeature.enumSet(cliFeatures);
-
-            features.retainAll(ClientFeature.allFeaturesAsEnumSet());
+            features = ClientBitmaskFeature.enumSet(cliFeatures);
         }
 
         currentProtocolContext = new ClientProtocolContext(ver, features);
@@ -183,10 +182,10 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         String user = null;
         String pwd = null;
 
-        if (currentProtocolContext.isUserAttributesSupported())
+        if (currentProtocolContext.isFeatureSupported(ClientBitmaskFeature.USER_ATTRIBUTES))
             userAttrs = reader.readMap();
 
-        if (currentProtocolContext.isAuthorizationSupported()) {
+        if (currentProtocolContext.isFeatureSupported(ClientProtocolVersionFeature.AUTHORIZATION)) {
             boolean hasMore;
             try {
                 hasMore = reader.available() > 0;

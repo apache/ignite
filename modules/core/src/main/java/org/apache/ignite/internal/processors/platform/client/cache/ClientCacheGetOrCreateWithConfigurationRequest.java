@@ -39,12 +39,12 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
      * Constructor.
      *
      * @param reader Reader.
-     * @param protocolContext Client protocol context.
+     * @param protocolCtx Client protocol context.
      */
-    public ClientCacheGetOrCreateWithConfigurationRequest(BinaryRawReader reader, ClientProtocolContext protocolContext) {
+    public ClientCacheGetOrCreateWithConfigurationRequest(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
         super(reader);
 
-        cacheCfg = ClientCacheConfigurationSerializer.read(reader, protocolContext);
+        cacheCfg = ClientCacheConfigurationSerializer.read(reader, protocolCtx);
     }
 
     /** {@inheritDoc} */

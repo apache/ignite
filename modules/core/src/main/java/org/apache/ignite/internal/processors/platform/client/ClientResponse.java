@@ -73,11 +73,11 @@ public class ClientResponse extends ClientListenerResponse {
         ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
 
-        ClientProtocolContext protocolContext = ctx.currentProtocolContext();
+        ClientProtocolContext protocolCtx = ctx.currentProtocolContext();
 
-        assert protocolContext != null;
+        assert protocolCtx != null;
 
-        if (protocolContext.isPartitionAwarenessSupported()) {
+        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.PARTITION_AWARENESS)) {
             boolean error = status() != ClientStatus.SUCCESS;
 
             short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());

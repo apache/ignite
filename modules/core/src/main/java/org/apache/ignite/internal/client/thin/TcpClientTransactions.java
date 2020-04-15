@@ -92,10 +92,11 @@ class TcpClientTransactions implements ClientTransactions {
 
         tx0 = ch.service(ClientOperation.TX_START,
             req -> {
-                ProtocolContext protocolContext = req.clientChannel().protocolContext();
-                if (!protocolContext.isTransactionsSupported()) {
+                ProtocolContext protocolCtx = req.clientChannel().protocolCtx();
+
+                if (!protocolCtx.isFeatureSupported(ProtocolVersionFeature.TRANSACTIONS)) {
                     throw new ClientProtocolError(String.format("Transactions are not supported by the server's " +
-                        "protocol version %s, required version %s", protocolContext.version(), V1_5_0));
+                        "protocol version %s, required version %s", protocolCtx.version(), V1_5_0));
                 }
 
                 try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), req.out(), null, null)) {

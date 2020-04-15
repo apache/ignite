@@ -242,7 +242,7 @@ final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolContext) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
@@ -321,7 +321,8 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
 
-                                if (protocolContext.isQueryEntityPrecisionAndScaleSupported()) {
+                                if (protocolCtx.isFeatureSupported(
+                                    ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE)) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
                                 }
@@ -351,7 +352,7 @@ final class ClientUtils {
                 )
             );
 
-            if (protocolContext.isExpirationPolicySupported()) {
+            if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.EXPIRY_POLICY)) {
                 itemWriter.accept(CfgItem.EXPIRE_POLICY, w -> {
                     ExpiryPolicy expiryPlc = cfg.getExpiryPolicy();
                     if (expiryPlc == null)
@@ -366,7 +367,7 @@ final class ClientUtils {
             }
             else if (cfg.getExpiryPolicy() != null) {
                 throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
-                    "version %s, required version %s", protocolContext.version(), V1_6_0));
+                    "version %s, required version %s", protocolCtx.version(), V1_6_0));
             }
 
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
@@ -375,7 +376,7 @@ final class ClientUtils {
     }
 
     /** Deserialize configuration from stream. */
-    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolContext)
+    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolCtx)
         throws IOException {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
@@ -421,7 +422,7 @@ final class ClientUtils {
                             .setValueFieldName(reader.readString());
 
                         boolean isPrecisionAndScaleSupported =
-                            protocolContext.isQueryEntityPrecisionAndScaleSupported();
+                            protocolCtx.isFeatureSupported(ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE);
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
@@ -496,7 +497,7 @@ final class ClientUtils {
                             ));
                     }
                 ).toArray(new QueryEntity[0]))
-                .setExpiryPolicy(!protocolContext.isExpirationPolicySupported()?
+                .setExpiryPolicy(!protocolCtx.isFeatureSupported(ProtocolVersionFeature.EXPIRY_POLICY)?
                         null : reader.readBoolean() ?
                         new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong()) : null
                 );

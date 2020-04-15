@@ -19,14 +19,6 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.EnumSet;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_3_0;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
-
 /**
  * Protocol Context.
  */
@@ -35,98 +27,35 @@ public class ProtocolContext {
     private final ProtocolVersion ver;
 
     /** Features. */
-    private final EnumSet<ProtocolFeature> features;
+    private final EnumSet<ProtocolBitmaskFeature> features;
 
     /**
      * @param ver Protocol version.
      * @param features Supported features.
      */
-    public ProtocolContext(ProtocolVersion ver, EnumSet<ProtocolFeature> features) {
+    public ProtocolContext(ProtocolVersion ver, EnumSet<ProtocolBitmaskFeature> features) {
         this.ver = ver;
-        this.features = features != null ? features : EnumSet.noneOf(ProtocolFeature.class);
+        this.features = features != null ? features : EnumSet.noneOf(ProtocolBitmaskFeature.class);
     }
 
     /**
-     * @return {@code true} if protocol features supported.
+     * @return {@code true} if bitmask protocol feature supported.
      */
-    public boolean isUserAttributesSupported() {
-        return features.contains(ProtocolFeature.USER_ATTRIBUTES);
+    public boolean isFeatureSupported(ProtocolBitmaskFeature feature) {
+        return features.contains(feature);
     }
 
     /**
-     * @return {@code true} if protocol feature mask is supported.
+     * @return {@code true} if protocol version feature supported.
      */
-    public boolean isFeaturesSupported() {
-        return isFeaturesSupported(ver);
-    }
-
-    /**
-     * @return {@code true} if expiration policy supported.
-     */
-    public boolean isExpirationPolicySupported() {
-        return ver.compareTo(V1_6_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if transactions supported.
-     */
-    public boolean isTransactionsSupported() {
-        return ver.compareTo(V1_5_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if partition awareness supported.
-     */
-    public boolean isPartitionAwarenessSupported() {
-        return ver.compareTo(V1_4_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if idle timeout supported.
-     */
-    public boolean isIdleTimeoutSupported() {
-        return ver.compareTo(V1_3_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if handshake timeout supported.
-     */
-    public boolean isHandshakeTimeoutSupported() {
-        return ver.compareTo(V1_3_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if lazy memory allocation supported.
-     */
-    public boolean isLazyMemoryAllocationSupported() {
-        return ver.compareTo(V1_3_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if query entity precision and scale supported.
-     */
-    public boolean isQueryEntityPrecisionAndScaleSupported() {
-        return ver.compareTo(V1_2_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if encryption configuration supported.
-     */
-    public boolean isEncryptionConfigurationSupported() {
-        return ver.compareTo(V1_2_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if authorization supported.
-     */
-    public boolean isAuthorizationSupported() {
-        return ver.compareTo(V1_1_0) >= 0;
+    public boolean isFeatureSupported(ProtocolVersionFeature feature) {
+        return isFeatureSupported(ver, feature);
     }
 
     /**
      * @return Supported features.
      */
-    public EnumSet<ProtocolFeature> features() {
+    public EnumSet<ProtocolBitmaskFeature> features() {
         return features;
     }
 
@@ -138,9 +67,12 @@ public class ProtocolContext {
     }
 
     /**
-     * @return {@code true} if protocol features supported.
+     * Check if the feature was supported in the protocol version.
+     * @param ver Protocol version.
+     * @param feature Feature which support should be checked.
+     * @return {@code true} if the feature was supported in the protocol version.
      */
-    public static boolean isFeaturesSupported(ProtocolVersion ver) {
-        return ver.compareTo(V1_7_0) >= 0;
+    public static boolean isFeatureSupported(ProtocolVersion ver, ProtocolVersionFeature feature) {
+        return ver.compareTo(feature.verIntroduced()) >= 0;
     }
 }

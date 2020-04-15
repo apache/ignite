@@ -245,17 +245,17 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     private final ClientConnectionContext ctx;
 
     /** Client protocol context */
-    private final ClientProtocolContext protocolContext;
+    private final ClientProtocolContext protocolCtx;
 
     /**
      * @param ctx Client connection context.
      */
-    ClientMessageParser(ClientConnectionContext ctx, ClientProtocolContext protocolContext) {
+    ClientMessageParser(ClientConnectionContext ctx, ClientProtocolContext protocolCtx) {
         assert ctx != null;
-        assert protocolContext != null;
+        assert protocolCtx != null;
 
         this.ctx = ctx;
-        this.protocolContext = protocolContext;
+        this.protocolCtx = protocolCtx;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
         marsh = cacheObjProc.marshaller();
@@ -392,13 +392,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheGetNamesRequest(reader);
 
             case OP_CACHE_GET_CONFIGURATION:
-                return new ClientCacheGetConfigurationRequest(reader, protocolContext);
+                return new ClientCacheGetConfigurationRequest(reader, protocolCtx);
 
             case OP_CACHE_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheCreateWithConfigurationRequest(reader, protocolContext);
+                return new ClientCacheCreateWithConfigurationRequest(reader, protocolCtx);
 
             case OP_CACHE_GET_OR_CREATE_WITH_CONFIGURATION:
-                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, protocolContext);
+                return new ClientCacheGetOrCreateWithConfigurationRequest(reader, protocolCtx);
 
             case OP_QUERY_SQL:
                 return new ClientCacheSqlQueryRequest(reader);

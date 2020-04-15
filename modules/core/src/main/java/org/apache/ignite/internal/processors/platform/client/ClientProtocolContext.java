@@ -21,108 +21,43 @@ import java.util.EnumSet;
 import org.apache.ignite.internal.ThinProtocolFeature;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.*;
-
 /**
- * Protocol context for JDBC protocol. Holds protocol version and supported features.
+ * Protocol context for thin client protocol. Holds protocol version and supported features.
  */
 public class ClientProtocolContext {
     /** Protocol version. */
     private final ClientListenerProtocolVersion ver;
 
     /** Features. */
-    private final EnumSet<ClientFeature> features;
+    private final EnumSet<ClientBitmaskFeature> features;
 
     /**
      * @param ver Protocol version.
      * @param features Supported features.
      */
-    public ClientProtocolContext(ClientListenerProtocolVersion ver, EnumSet<ClientFeature> features) {
+    public ClientProtocolContext(ClientListenerProtocolVersion ver, EnumSet<ClientBitmaskFeature> features) {
         this.ver = ver;
-        this.features = features != null ? features : EnumSet.noneOf(ClientFeature.class);
+        this.features = features != null ? features : EnumSet.noneOf(ClientBitmaskFeature.class);
     }
 
     /**
-     * @return {@code true} if protocol features supported.
+     * @return {@code true} if bitmask protocol feature supported.
      */
-    public boolean isUserAttributesSupported() {
-        return features.contains(ClientFeature.USER_ATTRIBUTES);
+    public boolean isFeatureSupported(ClientBitmaskFeature feature) {
+        return features.contains(feature);
     }
 
     /**
-     * @return {@code true} if protocol features supported.
+     * @return {@code true} if protocol version feature supported.
      */
-    public boolean isFeaturesSupported() {
-        return isFeaturesSupported(ver);
-    }
-
-    /**
-     * @return {@code true} if expiration policy supported.
-     */
-    public boolean isExpirationPolicySupported() {
-        return ver.compareTo(VER_1_6_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if transactions supported.
-     */
-    public boolean isTransactionsSupported() {
-        return ver.compareTo(VER_1_5_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if partition awareness supported.
-     */
-    public boolean isPartitionAwarenessSupported() {
-        return ver.compareTo(VER_1_4_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if idle timeout supported.
-     */
-    public boolean isIdleTimeoutSupported() {
-        return ver.compareTo(VER_1_3_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if handshake timeout supported.
-     */
-    public boolean isHandshakeTimeoutSupported() {
-        return ver.compareTo(VER_1_3_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if lazy memory allocation supported.
-     */
-    public boolean isLazyMemoryAllocationSupported() {
-        return ver.compareTo(VER_1_3_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if query entity precision and scale supported.
-     */
-    public boolean isQueryEntityPrecisionAndScaleSupported() {
-        return ver.compareTo(VER_1_2_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if encryption configuration supported.
-     */
-    public boolean isEncryptionConfigurationSupported() {
-        return ver.compareTo(VER_1_2_0) >= 0;
-    }
-
-    /**
-     * @return {@code true} if authorization supported.
-     */
-    public boolean isAuthorizationSupported() {
-        return ver.compareTo(VER_1_1_0) >= 0;
+    public boolean isFeatureSupported(ClientProtocolVersionFeature feature) {
+        return isFeatureSupported(ver, feature);
     }
 
     /**
      * @return Supported features.
      */
-    public EnumSet<ClientFeature> features() {
+    public EnumSet<ClientBitmaskFeature> features() {
         return features;
     }
 
@@ -141,9 +76,12 @@ public class ClientProtocolContext {
     }
 
     /**
-     * @return {@code true} if protocol features supported.
+     * Check if the feature was supported in the protocol version.
+     * @param ver Protocol version.
+     * @param feature Feature which support should be checked.
+     * @return {@code true} if the feature was supported in the protocol version.
      */
-    public static boolean isFeaturesSupported(ClientListenerProtocolVersion ver) {
-        return ver.compareTo(VER_1_7_0) >= 0;
+    public static boolean isFeatureSupported(ClientListenerProtocolVersion ver, ClientProtocolVersionFeature feature) {
+        return ver.compareTo(feature.verIntroduced()) >= 0;
     }
 }

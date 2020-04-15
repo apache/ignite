@@ -40,7 +40,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     private final AuthorizationContext authCtx;
 
     /** Protocol context. */
-    private ClientProtocolContext protocolContext;
+    private ClientProtocolContext protocolCtx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -50,14 +50,14 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
      *
      * @param ctx Kernal context.
      * @param authCtx Authentication context.
-     * @param protocolContext Protocol context.
+     * @param protocolCtx Protocol context.
      */
-    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientProtocolContext protocolContext) {
+    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientProtocolContext protocolCtx) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.authCtx = authCtx;
-        this.protocolContext = protocolContext;
+        this.protocolCtx = protocolCtx;
         log = ctx.kernalContext().log(getClass());
     }
 
@@ -119,10 +119,10 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
 
-        if (protocolContext.isFeaturesSupported())
-            writer.writeByteArray(protocolContext.featureBytes());
+        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.BITMAP_FEATURES))
+            writer.writeByteArray(protocolCtx.featureBytes());
 
-        if (protocolContext.isPartitionAwarenessSupported())
+        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.PARTITION_AWARENESS))
             writer.writeUuid(ctx.kernalContext().localNodeId());
     }
 
@@ -148,6 +148,6 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion protocolVersion() {
-        return protocolContext.version();
+        return protocolCtx.version();
     }
 }

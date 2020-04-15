@@ -42,7 +42,7 @@ interface ClientChannel extends AutoCloseable {
     /**
      * @return Protocol context.
      */
-    public ProtocolContext protocolContext();
+    public ProtocolContext protocolCtx();
 
     /**
      * @return Server node ID.

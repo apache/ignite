@@ -157,7 +157,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             this::writeCacheInfo,
             res -> {
                 try {
-                    return serDes.cacheConfiguration(res.in(), res.clientChannel().protocolContext());
+                    return serDes.cacheConfiguration(res.in(), res.clientChannel().protocolCtx());
                 }
                 catch (IOException e) {
                     return null;
@@ -520,10 +520,11 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         TcpClientTransaction tx = transactions.tx();
 
         if (expiryPlc != null) {
-            ProtocolContext protocolContext = payloadCh.clientChannel().protocolContext();
-            if (!protocolContext.isExpirationPolicySupported()) {
+            ProtocolContext protocolCtx = payloadCh.clientChannel().protocolCtx();
+
+            if (!protocolCtx.isFeatureSupported(ProtocolVersionFeature.EXPIRY_POLICY)) {
                 throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
-                    "version %s, required version %s", protocolContext.version(), V1_6_0));
+                    "version %s, required version %s", protocolCtx.version(), V1_6_0));
             }
 
             flags |= WITH_EXPIRY_POLICY_FLAG_MASK;

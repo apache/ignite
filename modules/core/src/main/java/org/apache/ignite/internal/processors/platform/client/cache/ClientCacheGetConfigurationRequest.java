@@ -29,18 +29,18 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  */
 public class ClientCacheGetConfigurationRequest extends ClientCacheRequest {
     /** Client protocol context. */
-    private final ClientProtocolContext protocolContext;
+    private final ClientProtocolContext protocolCtx;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
-     * @param protocolContext Client protocol context.
+     * @param protocolCtx Client protocol context.
      */
-    public ClientCacheGetConfigurationRequest(BinaryRawReader reader, ClientProtocolContext protocolContext) {
+    public ClientCacheGetConfigurationRequest(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
         super(reader);
 
-        this.protocolContext = protocolContext;
+        this.protocolCtx = protocolCtx;
     }
 
     /** {@inheritDoc} */
@@ -49,6 +49,6 @@ public class ClientCacheGetConfigurationRequest extends ClientCacheRequest {
         CacheConfiguration cfg = ((IgniteCache<Object, Object>) rawCache(ctx))
                 .getConfiguration(CacheConfiguration.class);
 
-        return new ClientCacheGetConfigurationResponse(requestId(), cfg, protocolContext);
+        return new ClientCacheGetConfigurationResponse(requestId(), cfg, protocolCtx);
     }
 }

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.readQueryEntity;
@@ -138,9 +139,9 @@ public class ClientCacheConfigurationSerializer {
      * Writes the cache configuration.
      * @param writer Writer.
      * @param cfg Configuration.
-     * @param protocolContext Client protocol context.
+     * @param protocolCtx Client protocol context.
      */
-    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, ClientProtocolContext protocolContext) {
+    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, ClientProtocolContext protocolCtx) {
         assert writer != null;
         assert cfg != null;
 
@@ -196,11 +197,11 @@ public class ClientCacheConfigurationSerializer {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(writer, e, protocolContext);
+                writeQueryEntity(writer, e, protocolCtx);
         } else
             writer.writeInt(0);
 
-        if (protocolContext.isExpirationPolicySupported())
+        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.EXPIRY_POLICY))
             PlatformConfigurationUtils.writeExpiryPolicyFactory(writer, cfg.getExpiryPolicyFactory());
 
         // Write length (so that part of the config can be skipped).
@@ -211,10 +212,10 @@ public class ClientCacheConfigurationSerializer {
      * Reads the cache configuration.
      *
      * @param reader Reader.
-     * @param protocolContext Client protocol context.
+     * @param protocolCtx Client protocol context.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader, ClientProtocolContext protocolContext) {
+    static CacheConfiguration read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();
@@ -362,7 +363,7 @@ public class ClientCacheConfigurationSerializer {
                         Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
                         for (int j = 0; j < qryEntCnt; j++)
-                            entities.add(readQueryEntity(reader, protocolContext));
+                            entities.add(readQueryEntity(reader, protocolCtx));
 
                         cfg.setQueryEntities(entities);
                     }
