@@ -478,16 +478,18 @@ public class CommandHandler {
         if (!F.isEmpty(userName))
             clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
 
-        if (!F.isEmpty(args.sslKeyStorePath()))
-            clientCfg.setSslContextFactory(createSslSupportFactory(args));
+        if (!F.isEmpty(args.sslKeyStorePath())) {
+            GridSslBasicContextFactory sslCtxFactory = createSslSupportFactory(args);
 
-        if (args.sslKeyStorePath() != null && args.sslKeyStorePassword() != null) {
+            clientCfg.setSslContextFactory(sslCtxFactory);
+
             Map<String, String> userAttr = new HashMap<>();
 
             X509Certificate[] selfCerts;
 
             try {
-                selfCerts = extractCertificates(loadKeyStore(args.sslKeyStorePath(), args.sslKeyStorePassword()));
+                selfCerts = extractCertificates(loadKeyStore(sslCtxFactory.getKeyStoreFilePath(),
+                    sslCtxFactory.getKeyStorePassword()));
             }
             catch (Exception e) {
                 throw new SecurityException("Failed to get user private key chain.", e);
