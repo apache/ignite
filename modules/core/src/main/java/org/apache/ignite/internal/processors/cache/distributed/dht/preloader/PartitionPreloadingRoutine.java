@@ -28,7 +28,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -80,7 +80,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private final Map<UUID, Map<Integer, Set<Integer>>> remaining;
 
     /** Count of partition snapshots received. */
-    private final AtomicInteger receivedCnt = new AtomicInteger();
+    private final AtomicLong receivedCnt = new AtomicLong();
 
     /** Cache group with restored partition snapshots and HWM value of update counter mapped to node identifier. */
     @GridToStringInclude
@@ -93,7 +93,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
     private final Map<Integer, GridFutureAdapter<GridDhtPreloaderAssignments>> futAssigns = new ConcurrentHashMap<>();
 
     /** Total number of partitions. */
-    private final int totalPartitionsCnt;
+    private final long totalPartitionsCnt;
 
     /** Snapshot future. */
     private IgniteInternalFuture<Boolean> snapshotFut;
@@ -110,7 +110,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         long rebalanceId,
         Map<UUID, Map<Integer, Set<Integer>>> assignments
     ) {
-        int totalParts = 0;
+        long totalParts = 0;
 
         // Copy contents.
         Map<UUID, Map<Integer, Set<Integer>>> remaining0 = U.newHashMap(assignments.size());
@@ -462,8 +462,11 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
                 final CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                 // Cache was concurrently destroyed.
-                if (grp == null)
+                if (grp == null) {
+                    endFut.cancel();
+
                     return;
+                }
 
                 GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
