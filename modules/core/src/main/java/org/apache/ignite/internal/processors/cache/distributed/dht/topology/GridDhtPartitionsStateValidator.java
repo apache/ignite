@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +42,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 
 /**
- * Class to validate partitions update counters and cache sizes during exchange process.
+ * Class to validate partitions update counters and cache sizes during exchange
+ * process.
  */
 public class GridDhtPartitionsStateValidator {
     /** Version since node is able to send cache sizes in {@link GridDhtPartitionsSingleMessage}. */
@@ -67,15 +69,19 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Validates partition states - update counters and cache sizes for all nodes.
-     * If update counter value or cache size for the same partitions are different on some nodes
-     * method throws exception with full information about inconsistent partitions.
+     * Validates partition states - update counters and cache sizes
+     * for all nodes.
+     * If update counter value or cache size for the same partitions are
+     * different on some nodes
+     * method throws exception with full information about inconsistent
+     * partitions.
      *
      * @param fut Current exchange future.
      * @param top Topology to validate.
      * @param messages Single messages received from all nodes.
-     * @throws IgniteCheckedException If validation failed. Exception message contains
-     * full information about all partitions which update counters or cache sizes are not consistent.
+     * @throws PartitionStateValidationException If validation failed.
+     * Exception message contains full information about all partitions which
+     * update counters or cache sizes are not consistent.
      */
     public void validatePartitionCountersAndSizes(
         GridDhtPartitionsExchangeFuture fut,
@@ -115,20 +121,19 @@ public class GridDhtPartitionsStateValidator {
                 ignoringNodes.add(id);
         }
 
-        // Validate cache sizes.
-        result = validatePartitionsSizes(top, messages, ignoringNodes);
+            result = validatePartitionsSizes(top, messages, ignoringNodes);
 
-        if (!result.isEmpty()) {
-            Set<Integer> parts = new HashSet<>(result.keySet());
+            if (!result.isEmpty()) {
+                Set<Integer> parts = new HashSet<>(result.keySet());
 
             invalidParts.putIfAbsent(top.groupId(), parts);
 
-            throw new PartitionStateValidationException(
-                "Partitions cache sizes are inconsistent for " + fold(topVer, result),
-                topVer,
-                top.groupId(),
-                parts);
-        }
+                throw new PartitionStateValidationException(
+                    "Partitions cache sizes are inconsistent for " + fold(topVer, result),
+                    topVer,
+                    top.groupId(),
+                    parts);
+            }
     }
 
     /**
@@ -161,7 +166,8 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Checks what partitions from given {@code singleMsg} message should be excluded from validation.
+     * Checks what partitions from given {@code singleMsg} message should be
+     * excluded from validation.
      *
      * @param top Topology to validate.
      * @param nodeId Node which sent single message.
@@ -210,7 +216,8 @@ public class GridDhtPartitionsStateValidator {
      * @param top Topology to validate.
      * @param messages Single messages received from all nodes.
      * @param ignoringNodes Nodes for what we ignore validation.
-     * @return Invalid partitions map with following structure: (partId, (nodeId, updateCounter)).
+     * @return Invalid partitions map with following structure:
+     * (partId, (nodeId, updateCounter)).
      * If map is empty validation is successful.
      */
     public Map<Integer, Map<UUID, Long>> validatePartitionsUpdateCounters(
@@ -270,7 +277,8 @@ public class GridDhtPartitionsStateValidator {
      * @param top Topology to validate.
      * @param messages Single messages received from all nodes.
      * @param ignoringNodes Nodes for what we ignore validation.
-     * @return Invalid partitions map with following structure: (partId, (nodeId, cacheSize)).
+     * @return Invalid partitions map with following structure:
+     * (partId, (nodeId, cacheSize)).
      * If map is empty validation is successful.
      */
     public Map<Integer, Map<UUID, Long>> validatePartitionsSizes(
@@ -325,8 +333,10 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Processes given {@code counter} for partition {@code part} reported by {@code node}.
-     * Populates {@code invalidPartitions} map if existing counter and current {@code counter} are different.
+     * Processes given {@code counter} for partition {@code part}
+     * reported by {@code node}.
+     * Populates {@code invalidPartitions} map if existing counter
+     * and current {@code counter} are different.
      *
      * @param invalidPartitions Invalid partitions map.
      * @param countersAndNodes Current map of counters and nodes by partitions.
@@ -358,7 +368,8 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Folds given map of invalid partition states to string representation in the following format:
+     * Folds given map of invalid partition states to string representation
+     * in the following format:
      * Part [id]: [consistentId=value*]
      *
      * Value can be both update counter or cache size.
