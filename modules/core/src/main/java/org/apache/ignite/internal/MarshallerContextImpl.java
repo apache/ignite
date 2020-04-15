@@ -218,7 +218,7 @@ public class MarshallerContextImpl implements MarshallerContext {
             Map<Integer, MappedName> attach = mappings.get(platformId);
 
             if (attach == null)
-                return;
+                continue;
 
             ConcurrentMap<Integer, MappedName> cached = mappedCache.apply(platformId);
 

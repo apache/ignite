@@ -279,7 +279,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private ClusterSnapshotFuture clusterSnpFut;
 
     /** Current snapshot operation on local node. */
-    private volatile SnapshotOperationRequest clusterSnpRq;
+    private volatile SnapshotOperationRequest clusterSnpReq;
 
     /** {@code true} if recovery process occurred for snapshot. */
     private volatile boolean recovered;
@@ -464,13 +464,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 UUID leftNodeId = evt.eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-                    SnapshotOperationRequest snpRq = clusterSnpRq;
+                    SnapshotOperationRequest snpReq = clusterSnpReq;
 
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                         if (sctx.sourceNodeId().equals(leftNodeId) ||
-                            (snpRq != null &&
-                                snpRq.snpName.equals(sctx.snapshotName()) &&
-                                snpRq.bltNodes.contains(leftNodeId))) {
+                            (snpReq != null &&
+                                snpReq.snpName.equals(sctx.snapshotName()) &&
+                                snpReq.bltNodes.contains(leftNodeId))) {
                             sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
                                 "creation has left the grid"));
                         }
@@ -797,9 +797,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
-        if (clusterSnpRq != null) {
+        if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
-                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpRq + ']'));
+                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
         // Collection of pairs group and appropriate cache partition to be snapshot.
@@ -813,7 +813,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             parts,
             locSndrFactory.apply(req.snpName));
 
-        clusterSnpRq = req;
+        clusterSnpReq = req;
 
         return task0.chain(f -> new SnapshotOperationResponse());
     }
@@ -824,16 +824,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
-        SnapshotOperationRequest snpRq = clusterSnpRq;
+        SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpRq == null)
+        if (snpReq == null)
             return;
 
-        if (!snpRq.rqId.equals(id)) {
+        if (!snpReq.rqId.equals(id)) {
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot operation failed due to another snapshot " +
-                        "operation in progress: " + snpRq.snpName));
+                        "operation in progress: " + snpReq.snpName));
 
                     clusterSnpFut = null;
                 }
@@ -843,19 +843,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (isLocalNodeCoordinator(cctx.discovery())) {
-            Set<UUID> missed = new HashSet<>(snpRq.bltNodes);
+            Set<UUID> missed = new HashSet<>(snpReq.bltNodes);
             missed.removeAll(res.keySet());
             missed.removeAll(err.keySet());
 
-            snpRq.hasErr = !F.isEmpty(err) || !missed.isEmpty();
+            snpReq.hasErr = !F.isEmpty(err) || !missed.isEmpty();
 
-            if (snpRq.hasErr) {
+            if (snpReq.hasErr) {
                 U.warn(log, "Execution of local snapshot tasks fails or them haven't been executed " +
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
                     "[err=" + err + ", missed=" + missed + ']');
             }
 
-            endSnpProc.start(UUID.randomUUID(), snpRq);
+            endSnpProc.start(UUID.randomUUID(), snpReq);
         }
     }
 
@@ -864,7 +864,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
-        if (clusterSnpRq == null)
+        if (clusterSnpReq == null)
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
         try {
@@ -886,28 +886,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
-        SnapshotOperationRequest snpRq = clusterSnpRq;
+        SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpRq == null)
+        if (snpReq == null)
             return;
 
-        Set<UUID> endFail = new HashSet<>(snpRq.bltNodes);
+        Set<UUID> endFail = new HashSet<>(snpReq.bltNodes);
         endFail.removeAll(res.keySet());
 
-        clusterSnpRq = null;
+        clusterSnpReq = null;
 
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
-                if (endFail.isEmpty() && !snpRq.hasErr) {
+                if (endFail.isEmpty() && !snpReq.hasErr) {
                     clusterSnpFut.onDone();
 
                     if (log.isInfoEnabled())
-                        log.info("Cluster-wide snapshot operation finished successfully [req=" + snpRq + ']');
+                        log.info("Cluster-wide snapshot operation finished successfully [req=" + snpReq + ']');
                 }
                 else {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
-                        "[hasErr" + snpRq.hasErr + ", fail=" + endFail + ']'));
+                        "[hasErr" + snpReq.hasErr + ", fail=" + endFail + ']'));
                 }
 
                 clusterSnpFut = null;
@@ -919,11 +919,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if snapshot operation is in progress.
      */
     public boolean isSnapshotCreating() {
-        if (clusterSnpRq != null)
+        if (clusterSnpReq != null)
             return true;
 
         synchronized (snpOpMux) {
-            return clusterSnpRq != null || clusterSnpFut != null;
+            return clusterSnpReq != null || clusterSnpFut != null;
         }
     }
 
@@ -964,7 +964,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpFut != null && !clusterSnpFut.isDone())
                     throw new IgniteException("Create snapshot request has been rejected. The previous snapshot operation was not completed.");
 
-                if (clusterSnpRq != null)
+                if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
                 if (getSnapshots().contains(name))
@@ -1051,18 +1051,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-        if (clusterSnpRq == null || cctx.kernalContext().clientNode())
+        if (clusterSnpReq == null || cctx.kernalContext().clientNode())
             return;
 
-        SnapshotOperationRequest snpRq = clusterSnpRq;
+        SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        SnapshotFutureTask task = locSnpTasks.get(snpRq.snpName);
+        SnapshotFutureTask task = locSnpTasks.get(snpReq.snpName);
 
         if (task == null)
             return;
 
         if (task.start()) {
-            cctx.database().forceCheckpoint(String.format("Start snapshot operation: %s", snpRq.snpName));
+            cctx.database().forceCheckpoint(String.format("Start snapshot operation: %s", snpReq.snpName));
 
             // schedule task on checkpoint and wait when it starts
             try {
