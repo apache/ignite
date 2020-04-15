@@ -426,7 +426,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         try {
             // Snapshot must be taken on node1 and transmitted to node0.
-            IgniteInternalFuture<?> fut = mgr0.createRemoteSnapshot(rmtNodeId,
+            IgniteInternalFuture<?> fut = mgr0.requestRemoteSnapshot(rmtNodeId,
                 parts,
                 new BiConsumer<File, GroupPartitionId>() {
                     @Override public void accept(File file, GroupPartitionId gprPartId) {
@@ -441,7 +441,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             fut.cancel();
 
-            IgniteInternalFuture<?> fut2 = mgr0.createRemoteSnapshot(rmtNodeId,
+            IgniteInternalFuture<?> fut2 = mgr0.requestRemoteSnapshot(rmtNodeId,
                 parts,
                 (part, pair) -> {
                     try {
@@ -489,10 +489,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             node0);
 
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> futFrom1To0 = mgr0.createRemoteSnapshot(node1, fromNode1,
+        IgniteInternalFuture<?> futFrom1To0 = mgr0.requestRemoteSnapshot(node1, fromNode1,
             (part, pair) -> assertTrue("Received partition has not been requested", fromNode1.get(pair.getGroupId())
                     .remove(pair.getPartitionId())));
-        IgniteInternalFuture<?> futFrom0To1 = mgr1.createRemoteSnapshot(node0, fromNode0,
+        IgniteInternalFuture<?> futFrom0To1 = mgr1.requestRemoteSnapshot(node0, fromNode0,
             (part, pair) -> assertTrue("Received partition has not been requested", fromNode0.get(pair.getGroupId())
                 .remove(pair.getPartitionId())));
 
@@ -541,7 +541,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         Map<Integer, Set<Integer>> parts = new HashMap<>();
         parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
 
-        snp(ig0).createRemoteSnapshot(rmtNodeId, parts, (part, grp) -> {});
+        snp(ig0).requestRemoteSnapshot(rmtNodeId, parts, (part, grp) -> {});
 
         IgniteInternalFuture<?>[] futs = new IgniteInternalFuture[1];
 
@@ -601,7 +601,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteSnapshotManager mgr0 = snp(ig0);
 
         // Snapshot must be taken on node1 and transmitted to node0.
-        IgniteInternalFuture<?> snpFut = mgr0.createRemoteSnapshot(rmtNodeId,
+        IgniteInternalFuture<?> snpFut = mgr0.requestRemoteSnapshot(rmtNodeId,
             owningParts(ig0, new HashSet<>(Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))), rmtNodeId),
             (part, grp) -> {});
 

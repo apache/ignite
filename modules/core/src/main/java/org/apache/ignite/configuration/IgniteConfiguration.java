@@ -556,10 +556,11 @@ public class IgniteConfiguration {
     private DataStorageConfiguration dsCfg;
 
     /**
-     * Directory where will be stored all results of snapshot operations. If {@code null} then
-     * relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
+     * Directory where will be stored all results of snapshot operations. The internal
+     * {@link U#resolveWorkDirectory(String, String, boolean)} is used to configure
+     * snapshot working directory.
      */
-    private String snapshotPath;
+    private String snapshotPath = DFLT_SNAPSHOT_DIRECTORY;
 
     /** Active on start flag. */
     @Deprecated
@@ -3163,17 +3164,18 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return {@code null} if relative {@link #DFLT_SNAPSHOT_DIRECTORY} should be used
-     * and snapshot absolute path the otherwise.
+     * @return By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used. The value can be
+     * configured as relative path starting from the Ignites {@link #getWorkDirectory()} or
+     * the value can be represented as an absolute snapshot working path.
      */
     public String getSnapshotPath() {
         return snapshotPath;
     }
 
     /**
-     * @param snapshotPath Absolute path to store all local snapshot results.
-     * By default relative {@link #DFLT_SNAPSHOT_DIRECTORY} will be used.
-     * @return Ignite configuration for chaining.
+     * @param snapshotPath By default the relative {@link #DFLT_SNAPSHOT_DIRECTORY} is used.
+     * The value can be configured as relative path starting from the Ignites {@link #getWorkDirectory()}
+     * or the value can be represented as an absolute snapshot working path instead.
      */
     public IgniteConfiguration setSnapshotPath(String snapshotPath) {
         this.snapshotPath = snapshotPath;

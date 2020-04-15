@@ -124,7 +124,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.cluster.ClusterState.active;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
@@ -1080,7 +1079,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param partConsumer Received partition handler.
      * @return Future which will be completed when requested snapshot fully received.
      */
-    public IgniteInternalFuture<Void> createRemoteSnapshot(
+    public IgniteInternalFuture<Void> requestRemoteSnapshot(
         UUID rmtNodeId,
         Map<Integer, Set<Integer>> parts,
         BiConsumer<File, GroupPartitionId> partConsumer
@@ -1287,13 +1286,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param cfg Ignite configuration.
-     * @return Snapshot work path.
+     * @return Snapshot directory resolved through given configuration.
      */
     static File resolveSnapshotWorkDirectory(IgniteConfiguration cfg) {
         try {
-            return cfg.getSnapshotPath() == null ?
-                U.resolveWorkDirectory(cfg.getWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false) :
-                U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
+            return U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
