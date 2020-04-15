@@ -262,7 +262,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
                 }
 
                 CopyLocalProperties(other);
@@ -274,9 +274,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <param name="srvVer">Server version.</param>
-        internal CacheConfiguration(BinaryReader reader, ClientProtocolVersion srvVer)
+        internal CacheConfiguration(BinaryReader reader)
         {
-            Read(reader, srvVer);
+            Read(reader);
         }
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <param name="srvVer">Server version.</param>
-        private void Read(BinaryReader reader, ClientProtocolVersion srvVer)
+        private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
             Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             SqlSchema = reader.ReadString();
             EncryptionEnabled = reader.ReadBoolean();
 
-            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 

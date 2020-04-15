@@ -210,8 +210,7 @@ namespace Apache.Ignite.Core.Configuration
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal DataStorageConfiguration(IBinaryRawReader reader, ClientProtocolVersion srvVer)
+        internal DataStorageConfiguration(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -252,13 +251,13 @@ namespace Apache.Ignite.Core.Configuration
             if (count > 0)
             {
                 DataRegionConfigurations = Enumerable.Range(0, count)
-                    .Select(x => new DataRegionConfiguration(reader, srvVer))
+                    .Select(x => new DataRegionConfiguration(reader))
                     .ToArray();
             }
 
             if (reader.ReadBoolean())
             {
-                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader, srvVer);
+                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
             }
         }
 
@@ -267,7 +266,7 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="srvVer">Server version.</param>
-        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(IBinaryRawWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -315,7 +314,7 @@ namespace Apache.Ignite.Core.Configuration
                             "DataStorageConfiguration.DataRegionConfigurations must not contain null items.");
                     }
 
-                    region.Write(writer, srvVer);
+                    region.Write(writer);
                 }
             }
             else
@@ -326,7 +325,7 @@ namespace Apache.Ignite.Core.Configuration
             if (DefaultDataRegionConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DefaultDataRegionConfiguration.Write(writer, srvVer);
+                DefaultDataRegionConfiguration.Write(writer);
             }
             else
             {

@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public CacheConfiguration GetConfiguration()
         {
             return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(
-                BinaryUtils.Marshaller.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion));
+                BinaryUtils.Marshaller.StartUnmarshal(stream)));
         }
 
         /** <inheritDoc /> */

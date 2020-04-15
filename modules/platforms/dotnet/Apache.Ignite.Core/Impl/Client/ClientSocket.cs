@@ -49,9 +49,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Version 1.2.0. */
         public static readonly ClientProtocolVersion Ver120 = new ClientProtocolVersion(1, 2, 0);
 
-        /** Version 1.3.0. */
-        public static readonly ClientProtocolVersion Ver130 = new ClientProtocolVersion(1, 3, 0);
-
         /** Version 1.4.0. */
         public static readonly ClientProtocolVersion Ver140 = new ClientProtocolVersion(1, 4, 0);
 

@@ -233,8 +233,27 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
+        internal QueryEntity(IBinaryRawReader reader)
+        {
+            Read(reader, ClientSocket.CurrentProtocolVersion);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
         /// <param name="srvVer">Server version.</param>
         internal QueryEntity(IBinaryRawReader reader, ClientProtocolVersion srvVer)
+        {
+            Read(reader, srvVer);
+        }
+        
+        /// <summary>
+        /// Reads an instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <param name="srvVer">Server version.</param>
+        internal void Read(IBinaryRawReader reader, ClientProtocolVersion srvVer)
         {
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
