@@ -470,8 +470,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             (snpReq != null &&
                                 snpReq.snpName.equals(sctx.snapshotName()) &&
                                 snpReq.bltNodes.contains(leftNodeId))) {
-                            sctx.acceptException(new ClusterTopologyCheckedException("The node which requested snapshot " +
-                                "creation has left the grid"));
+                            sctx.acceptException(new ClusterTopologyCheckedException("Snapshot operation interrupted. " +
+                                "One of baseline nodes left the cluster: " + leftNodeId));
                         }
                     }
 
