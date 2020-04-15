@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -39,8 +38,6 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 
 /**
  * Adapter for preloading which always assumes that preloading finished.
@@ -202,23 +199,5 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     @Override public int batchSize() {
         return grp.shared().gridConfig().getRebalanceBatchSize() == DFLT_REBALANCE_BATCH_SIZE ?
             grp.config().getRebalanceBatchSize() : grp.shared().gridConfig().getRebalanceBatchSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void sendRebalanceStartedEvent(DiscoveryEvent discoEvt) {
-        if (grp.eventRecordable(EVT_CACHE_REBALANCE_STARTED))
-            grp.addRebalanceEvent(-1, EVT_CACHE_REBALANCE_STARTED, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void sendRebalanceFinishedEvent(DiscoveryEvent discoEvt) {
-        if (grp.eventRecordable(EVT_CACHE_REBALANCE_STOPPED))
-            grp.addRebalanceEvent(-1, EVT_CACHE_REBALANCE_STOPPED, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void rebalanceEvent(int p, int evt, DiscoveryEvent discoEvt) {
-        if (grp.eventRecordable(evt))
-            grp.addRebalanceEvent(p, evt, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
     }
 }

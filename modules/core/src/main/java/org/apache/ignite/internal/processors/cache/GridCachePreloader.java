@@ -22,7 +22,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -232,27 +231,4 @@ public interface GridCachePreloader {
      * @return Rebalance message size in bytes.
      */
     public int batchSize();
-
-    /**
-     * Send rebalance started event.
-     *
-     * @param discoEvt Discovery event, that triggered rebalancing.
-     */
-    public void sendRebalanceStartedEvent(DiscoveryEvent discoEvt);
-
-    /**
-     * Send rebalance finished event.
-     *
-     * @param discoEvt Discovery event, that triggered rebalancing.
-     */
-    public void sendRebalanceFinishedEvent(DiscoveryEvent discoEvt);
-
-    /**
-     * Send rebalance event.
-     *
-     * @param p Partition ID.
-     * @param evtType rebalance event type.
-     * @param discoEvt Discovery event, that triggered rebalancing.
-     */
-    public void rebalanceEvent(int p, int evtType, DiscoveryEvent discoEvt);
 }

@@ -80,6 +80,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl.PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK;
@@ -367,7 +369,7 @@ public class GridDhtPartitionDemander {
                 }
             }
 
-            grp.preloader().sendRebalanceStartedEvent(assignments.exchangeId().discoveryEvent());
+            fut.sendRebalanceStartedEvent();
 
             if (assignments.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
@@ -375,7 +377,7 @@ public class GridDhtPartitionDemander {
 
                 fut.onDone(false);
 
-                grp.preloader().sendRebalanceFinishedEvent(assignments.exchangeId().discoveryEvent());
+                fut.sendRebalanceFinishedEvent();
 
                 return null;
             }
@@ -388,7 +390,7 @@ public class GridDhtPartitionDemander {
 
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
-                grp.preloader().sendRebalanceFinishedEvent(assignments.exchangeId().discoveryEvent());
+                fut.sendRebalanceFinishedEvent();
 
                 return null;
             }
@@ -1479,7 +1481,8 @@ public class GridDhtPartitionDemander {
                 if (isDone())
                     return;
 
-                grp.preloader().rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
+                if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_LOADED))
+                    rebalanceEvent(p, EVT_CACHE_REBALANCE_PART_LOADED, exchId.discoveryEvent());
 
                 IgniteDhtDemandedPartitionsMap parts = remaining.get(nodeId);
 
@@ -1541,7 +1544,7 @@ public class GridDhtPartitionDemander {
          */
         private void checkIsDone(boolean cancelled) {
             if (remaining.isEmpty()) {
-                grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
+                sendRebalanceFinishedEvent();
 
                 if (log.isInfoEnabled())
                     log.info("Completed rebalance future: " + this);
@@ -1581,6 +1584,22 @@ public class GridDhtPartitionDemander {
          */
         private synchronized Collection<UUID> remainingNodes() {
             return remaining.keySet();
+        }
+
+        /**
+         *
+         */
+        private void sendRebalanceStartedEvent() {
+            if (grp.eventRecordable(EVT_CACHE_REBALANCE_STARTED))
+                rebalanceEvent(EVT_CACHE_REBALANCE_STARTED, exchId.discoveryEvent());
+        }
+
+        /**
+         *
+         */
+        private void sendRebalanceFinishedEvent() {
+            if (grp.eventRecordable(EVT_CACHE_REBALANCE_STOPPED))
+                rebalanceEvent(EVT_CACHE_REBALANCE_STOPPED, exchId.discoveryEvent());
         }
 
         /** {@inheritDoc} */
