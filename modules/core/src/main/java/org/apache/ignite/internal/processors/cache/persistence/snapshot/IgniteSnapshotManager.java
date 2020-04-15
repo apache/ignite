@@ -356,19 +356,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
         mreg.register("LastSnapshotStartTime", () -> lastSeenSnpFut.startTime,
-            "The system time approximated by 10 ms when the last cluster snapshot operation has been started.");
+            "The system time approximated by 10 ms of the last started cluster snapshot request on this node.");
         mreg.register("LastSnapshotEndTime", () -> lastSeenSnpFut.endTime,
-            "The system time approximated by 10 ms when the last cluster snapshot operation has been finished.");
+            "The system time approximated by 10 ms of the last started cluster snapshot request on this node.");
         mreg.register("LastSnapshotName", () -> lastSeenSnpFut.name, String.class,
-            "The name of last started cluster snapshot operation.");
+            "The name of last started cluster snapshot request on this node.");
         mreg.register("LastSnapshotErrorMessage",
             () -> lastSeenSnpFut.error() == null ? null : lastSeenSnpFut.error().getMessage(),
             String.class,
-            "The error message of last started cluster snapshot operation which fail. This value will be 'null' " +
-                "if last snapshot operation completed successfully.");
-        mreg.register("localSnapshotList", this::getSnapshots, List.class,
-            "The list of all known snapshots currently saved on the local node with respect to " +
-                "configured via IgniteConfiguration a snapshot path.");
+            "The error message of last started cluster snapshot request which fail with an error. " +
+                "This value will be 'null' if last snapshot request has been completed successfully.");
+        mreg.register("LocalSnapshotList", this::getSnapshots, List.class,
+            "The list of names of all snapshots currently saved on the local node with respect to " +
+                "the configured via IgniteConfiguration snapshot working path.");
 
         storeFactory = storeMgr::getPageStoreFactory;
 
