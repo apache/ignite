@@ -309,41 +309,6 @@ public class IgniteDistributions {
     }
 
     /**
-     * Projects distribution keys using target mapping.
-     * Returns empty collection in case any of distribution keys is lost.
-     *
-     * @param mapping Target mapping.
-     * @param keys Distribution keys.
-     * @return New distribution keys.
-     */
-    public static ImmutableIntList projectDistributionKeys(Mappings.TargetMapping mapping, ImmutableIntList keys) {
-        if (mapping.getTargetCount() < keys.size())
-            return ImmutableIntList.of();
-
-        int[] resKeys = new int[keys.size()];
-
-        for (int i = 0; i < keys.size(); i++) {
-            boolean found = false;
-            int key = keys.getInt(i);
-
-            for (int j = 0; j < mapping.getTargetCount(); j++) {
-                if (mapping.getSourceOpt(j) != key)
-                    continue;
-
-                found = true;
-                resKeys[i] = j;
-
-                break;
-            }
-
-            if (!found)
-                return ImmutableIntList.of();
-        }
-
-        return ImmutableIntList.of(resKeys);
-    }
-
-    /**
      * @return Values relational node distribution.
      */
     public static IgniteDistribution values(RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples) {

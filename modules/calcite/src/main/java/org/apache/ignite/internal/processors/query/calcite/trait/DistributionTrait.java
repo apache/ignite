@@ -41,10 +41,10 @@ public final class DistributionTrait implements IgniteDistribution {
         Ordering.<Integer>natural().lexicographical();
 
     /** */
-    private DistributionFunction function;
+    private final DistributionFunction function;
 
     /** */
-    private ImmutableIntList keys;
+    private final ImmutableIntList keys;
 
     /**
      * @param function Distribution function.
@@ -139,14 +139,34 @@ public final class DistributionTrait implements IgniteDistribution {
 
     /** {@inheritDoc} */
     @Override public IgniteDistribution apply(Mappings.TargetMapping mapping) {
-        if (keys.isEmpty())
+        if (getType() != HASH_DISTRIBUTED)
             return this;
 
-        assert getType() == HASH_DISTRIBUTED;
+        if (mapping.getTargetCount() < keys.size())
+            IgniteDistributions.random();
 
-        ImmutableIntList newKeys = IgniteDistributions.projectDistributionKeys(mapping, keys);
+        int[] map = new int[mapping.getSourceCount()];
+        int[] res = new int[keys.size()];
 
-        return newKeys.isEmpty() ? IgniteDistributions.random() : IgniteDistributions.hash(newKeys, function);
+        for (int i = 0; i < keys.size(); i++)
+            map[keys.getInt(i)] = i + 1;
+
+        for (int i = 0, found = 0; i < mapping.getTargetCount(); i++) {
+            int source = mapping.getSourceOpt(i);
+            int keyPos = map[source] - 1;
+
+            if (keyPos == -1)
+                continue;
+
+            res[keyPos] = i;
+
+            if (++found == keys.size())
+                return IgniteDistributions.hash(ImmutableIntList.of(res), function);
+
+            map[source] = 0;
+        }
+
+        return IgniteDistributions.random();
     }
 
     /** {@inheritDoc} */
