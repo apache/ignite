@@ -963,6 +963,7 @@ public class GridCacheSharedContext<K, V> {
      *
      * @param topVer Topology version.
      * @param node Failed node.
+     * @param filter Recovery filter.
      * @return {@code true} if waiting was successful.
      */
     public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node,

@@ -832,6 +832,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param topVer Topology version.
      * @param node Cluster node.
+     * @param filter Recovery filter.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
     public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer, ClusterNode node,
@@ -853,7 +854,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         for (IgniteInternalTx tx : activeTransactions()) {
             if (node != null) {
                 // Synchronous wait only for txs on backups with failed primary.
-                // Failed tx coordinator recovery can be postponed to after the switch period.
+                // Failed tx coordinator recovery can be postponed to post-switch period.
                 if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
                     assert needWaitTransaction(tx, topVer);
 

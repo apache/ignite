@@ -1517,22 +1517,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             String replicatedLatchId = baseLatchId + "-replicated";
             String partitionedLatchId = baseLatchId + "-partitioned";
 
-            boolean partitionedRecovery = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
+            boolean partitionedRecoveryRequired = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
 
             IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
                 for (IgniteTxEntry entry : tx.writeEntries())
                     if (cctx.cacheContext(entry.cacheId()).isReplicated())
                         return true;
 
-                assert partitionedRecovery; // Checks non-affected nodes contain no txs to be recovered.
+                assert partitionedRecoveryRequired; // Checks non-affected nodes contain no txs to be recovered.
 
                 return false;
             };
 
-            // Assuming that replicated transactions are absent. Non-affected nodes will wait only this sync.
+            // Assuming that replicated transactions are absent, non-affected nodes will wait only this short sync.
             waitPartitionRelease(replicatedLatchId, true, false, replicatedOnly);
 
-            if (partitionedRecovery)
+            if (partitionedRecoveryRequired)
                 // This node contain backup partitions for failed partitioned caches primaries. Waiting for recovery.
                 waitPartitionRelease(partitionedLatchId, true, false, null);
             else {
@@ -1729,9 +1729,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
      * Also, this method can be used to wait for tx recovery only in case of PME-free switch.
      *
+     * @param latchId Distributed latch Id.
      * @param distributed If {@code true} then node should wait for partition release completion on all other nodes.
      * @param doRollback If {@code true} tries to rollback transactions which lock partitions. Avoids unnecessary calls
      *      of {@link org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager#rollbackOnTopologyChange}
+     * @param filter Recovery filter.
      *
      * @throws IgniteCheckedException If failed.
      */
@@ -5103,8 +5105,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Sets cluster fully rebalanced flag.
      */
-    public void markRebalanced() {
-        assert !rebalanced();
+    private void markRebalanced() {
+        assert !rebalanced() && !wasRebalanced();
 
         rebalancedInfo = new RebalancedInfo(cctx.affinity().idealPrimaryNodesForLocalBackups());
     }
@@ -5112,7 +5114,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Keeps cluster fully rebalanced flag.
      */
-    public void keepRebalanced() {
+    private void keepRebalanced() {
         assert !rebalanced() && wasRebalanced();
 
         rebalancedInfo = sharedContext().exchange().lastFinishedFuture().rebalancedInfo;
