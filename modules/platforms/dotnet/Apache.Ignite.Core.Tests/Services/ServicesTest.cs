@@ -870,7 +870,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
-
+            
             DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             Assert.AreEqual(dt, svc.test(dt));
