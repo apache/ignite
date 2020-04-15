@@ -144,8 +144,6 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.IgniteCollectors;
 import org.apache.ignite.internal.util.InitializationProtector;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1997,7 +1995,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      */
-    public void stopCacheSafely(GridCacheContext<?, ?> cctx) {
+    private void stopCacheSafely(GridCacheContext<?, ?> cctx) {
         stopCacheSafely(cctx, true);
     }
 
@@ -4047,10 +4045,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg, AffinityTopologyVersion topVer, ClusterNode node) {
-        if (msg instanceof InitMessage &&
-            ((InitMessage)msg).type() == DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal())
-            return true;
-
         if (msg instanceof SchemaAbstractDiscoveryMessage) {
             ctx.query().onDiscovery((SchemaAbstractDiscoveryMessage)msg);
 

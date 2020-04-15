@@ -1661,7 +1661,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         ", time=" + U.nanosToMillis(end - start) + "ms]");
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException | IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
         }
     }
@@ -2951,6 +2951,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (cctx.kernalContext().isStopping())
                     return;
 
+                if (exchCtx.exchangeFreeSwitch())
+                    return;
+
                 // DynamicCacheChangeFailureMessage was sent.
                 // Thus, there is no need to create and send GridDhtPartitionsFullMessage.
                 if (cacheChangeFailureMsgSent)
@@ -2963,7 +2966,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() : this;
+                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() :
+                        GridDhtPartitionsExchangeFuture.this;
 
                     ClusterNode node = cctx.node(nodeId);
 

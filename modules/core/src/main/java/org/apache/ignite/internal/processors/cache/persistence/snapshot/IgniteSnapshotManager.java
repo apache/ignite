@@ -79,9 +79,6 @@ import org.apache.ignite.internal.managers.communication.TransmissionCancelledEx
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
 import org.apache.ignite.internal.managers.communication.TransmissionMeta;
 import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -121,7 +118,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
@@ -300,7 +296,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .order(ByteOrder.nativeOrder()));
 
         startSnpProc = new DistributedProcess<>(ctx, START_SNAPSHOT, this::initLocalSnapshotStartStage,
-            this::processLocalSnapshotStartStageResult);
+            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult);
@@ -769,17 +765,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * @param msg Init distributed process message.
-     * @param discoCache Discovery cache data.
-     * @return Custom snapshot message.
-     */
-    public static SnapshotDiscoveryMessage convert(InitMessage<?> msg, DiscoCache discoCache) {
-        assert msg.type() == START_SNAPSHOT.ordinal() : msg;
-
-        return new SnapshotStartDiscoveryMessage(discoCache, msg.processId());
     }
 
     /**
@@ -1841,23 +1826,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Snapshot operation start message. */
-    private static class SnapshotStartDiscoveryMessage implements SnapshotDiscoveryMessage {
+    private static class SnapshotStartDiscoveryMessage extends InitMessage<SnapshotOperationRequest>
+        implements SnapshotDiscoveryMessage {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
-        /** Discovery cache. */
-        private final DiscoCache discoCache;
-
-        /** Snapshot request id */
-        private final IgniteUuid id;
-
         /**
-         * @param discoCache Discovery cache.
-         * @param id Snapshot request id.
+         * @param processId Unique process id.
+         * @param req Snapshot initial request.
          */
-        public SnapshotStartDiscoveryMessage(DiscoCache discoCache, UUID id) {
-            this.discoCache = discoCache;
-            this.id = new IgniteUuid(id, 0);
+        public SnapshotStartDiscoveryMessage(
+            UUID processId,
+            SnapshotOperationRequest req
+        ) {
+            super(processId, START_SNAPSHOT, req);
         }
 
         /** {@inheritDoc} */
@@ -1868,45 +1850,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override public boolean needAssignPartitions() {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            return this.discoCache;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            SnapshotStartDiscoveryMessage message = (SnapshotStartDiscoveryMessage)o;
-
-            return id.equals(message.id);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(id);
         }
 
         /** {@inheritDoc} */

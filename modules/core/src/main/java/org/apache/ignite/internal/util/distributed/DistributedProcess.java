@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -81,17 +82,41 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Factory which creates custom {@link InitMessage} for distributed process initialization. */
+    private BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory;
+
     /**
      * @param ctx Kernal context.
      * @param type Process type.
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      */
-    public DistributedProcess(GridKernalContext ctx, DistributedProcessType type,
+    public DistributedProcess(
+        GridKernalContext ctx,
+        DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
-        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish) {
+        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
+    ) {
+        this(ctx, type, exec, finish, (id ,req) -> new InitMessage<>(id, type, req));
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @param type Process type.
+     * @param exec Execute action and returns future with the single node result to send to the coordinator.
+     * @param finish Finish process closure. Called on each node when all single nodes results received.
+     * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
+     */
+    public DistributedProcess(
+        GridKernalContext ctx,
+        DistributedProcessType type,
+        Function<I, IgniteInternalFuture<R>> exec,
+        CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
+        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
+    ) {
         this.ctx = ctx;
         this.type = type;
+        this.initMsgFactory = initMsgFactory;
 
         log = ctx.log(getClass());
 
@@ -219,9 +244,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     public void start(UUID id, I req) {
         try {
-            InitMessage<I> msg = new InitMessage<>(id, type, req);
-
-            ctx.discovery().sendCustomEvent(msg);
+            ctx.discovery().sendCustomEvent(initMsgFactory.apply(id, req));
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to start process.", e);
