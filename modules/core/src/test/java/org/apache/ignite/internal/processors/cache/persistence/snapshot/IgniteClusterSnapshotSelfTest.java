@@ -420,7 +420,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         String dirNameIgnite1 = folderName(grid(1));
 
-        snp(grid(1)).setLocalSnapshotSenderFactory(
+        snp(grid(1)).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(grid(1), partProcessed, block));
 
         TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(grid(1));
@@ -604,7 +604,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
 
         // Snapshot process will be blocked when delta partition files processing starts.
-        snp(ignite).setLocalSnapshotSenderFactory(
+        snp(ignite).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
 
         long cutoffStartTime = U.currentTimeMillis();
@@ -667,8 +667,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch started,
         CountDownLatch blocked
     ) {
-        return (snpName) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(),
-            snp(ignite).localSnapshotSenderFactory().apply(snpName)) {
+        Function<String, SnapshotSender> old = snp(ignite).localSnapshotSenderFactory();
+
+        return (snpName) -> new DelegateSnapshotSender(log, snp(ignite).snapshotExecutorService(), old.apply(snpName)) {
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
                 if (log.isInfoEnabled())
                     log.info("Processing delta file has been blocked: " + delta.getName());

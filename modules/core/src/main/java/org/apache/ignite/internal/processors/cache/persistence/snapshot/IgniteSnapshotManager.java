@@ -251,7 +251,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile ReadWriteMetastorage metaStorage;
 
     /** Local snapshot sender factory. */
-    private Function<String, SnapshotSender> locSndrFactory = localSnapshotSenderFactory();
+    private Function<String, SnapshotSender> locSndrFactory = LocalSnapshotSender::new;
 
     /** Main snapshot directory to save created snapshots. */
     private volatile File locSnpDir;
@@ -1212,7 +1212,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param factory Factory which produces {@link LocalSnapshotSender} implementation.
      */
-    void setLocalSnapshotSenderFactory(Function<String, SnapshotSender> factory) {
+    void localSnapshotSenderFactory(Function<String, SnapshotSender> factory) {
         locSndrFactory = factory;
     }
 
@@ -1220,7 +1220,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Factory which produces {@link LocalSnapshotSender} implementation.
      */
     Function<String, SnapshotSender> localSnapshotSenderFactory() {
-        return LocalSnapshotSender::new;
+        return locSndrFactory;
     }
 
     /**
