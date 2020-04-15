@@ -307,8 +307,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     ((DiscoveryCustomEvent)evt).customMessage() instanceof InitMessage) {
                     InitMessage<?> msg = (InitMessage<?>)((DiscoveryCustomEvent)evt).customMessage();
 
-                    // This happens when #takeSnapshot() method already invoked and distributed process
-                    // starts its action.
+                    // This happens when #initLocalSnapshotStartStage() method already invoked and
+                    // distributed process starts its action.
                     if (msg.type() == START_SNAPSHOT.ordinal()) {
                         ((DiscoveryCustomEvent)evt).customMessage(convert(msg, cache));
 
