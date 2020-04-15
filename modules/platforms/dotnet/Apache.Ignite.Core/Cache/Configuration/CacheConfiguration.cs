@@ -347,7 +347,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             
             if (reader.ReadBoolean())
             {
-                PlatformNearConfiguration = new PlatformNearCacheConfiguration(reader);
+                PlatformCacheConfiguration = new PlatformCacheConfiguration(reader);
             }
 
             var count = reader.ReadInt();
@@ -455,10 +455,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             writer.WriteCollectionRaw(KeyConfiguration);
             
-            if (PlatformNearConfiguration != null)
+            if (PlatformCacheConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                PlatformNearConfiguration.Write(writer);
+                PlatformCacheConfiguration.Write(writer);
             }
             else
             {
@@ -949,19 +949,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool EncryptionEnabled { get; set; }
 
         /// <summary>
-        /// Gets or sets platform near cache configuration.
-        /// <para />
-        /// Enables native .NET near cache when not null. Cache entries will be stored in deserialized form in
-        /// CLR heap.
-        /// <para />
-        /// When enabled on server nodes, all primary keys will be stored in platform memory as well.
-        /// <para />
-        /// Same eviction policy applies to near cache entries for all keys on client nodes and
-        /// non-primary keys on server nodes.
-        /// <para />
-        /// Enabling this can greatly improve performance for key-value operations and scan queries,
-        /// at the expense of RAM usage.
+        /// Gets or sets platform cache configuration.
+        /// More details: <see cref="PlatformCacheConfiguration"/>. 
         /// </summary>
-        public PlatformNearCacheConfiguration PlatformNearConfiguration { get; set; }
+        [IgniteExperimental]
+        public PlatformCacheConfiguration PlatformCacheConfiguration { get; set; }
     }
 }

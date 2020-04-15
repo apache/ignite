@@ -62,6 +62,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /** <inheritdoc /> */
         public IList<string> FieldNames { get; private set; }
 
+        /** <inheritdoc /> */
+        public IList<IQueryCursorField> Fields
+        {
+            get
+            {
+                throw IgniteClient.GetClientNotSupportedException();
+            }
+        }
+
         /// <summary>
         /// Reads the columns.
         /// </summary>
