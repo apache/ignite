@@ -486,7 +486,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             finally {
                 busyLock.leaveBusy();
             }
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_DISCOVERY_CUSTOM_EVT);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         // Remote snapshot handler.
         cctx.kernalContext().io().addTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC, new TransmissionHandler() {
