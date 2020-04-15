@@ -319,14 +319,14 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         if (parts.isEmpty() && grpParts.remove(grpId) != null &&
             remaining.values().stream().map(Map::keySet).noneMatch(set -> set.contains(grpId)))
-            onCacheGroupDone(grpId, grpCntrs);
+            finishPreloading(grpId, grpCntrs);
     }
 
     /**
      * @param grpId Group ID.
      * @param maxCntrs Partition set with HWM update counter value for hstorical rebalance.
      */
-    private void onCacheGroupDone(int grpId, Map<UUID, Map<Integer, Long>> maxCntrs) {
+    private void finishPreloading(int grpId, Map<UUID, Map<Integer, Long>> maxCntrs) {
         GridFutureAdapter<GridDhtPreloaderAssignments> fut = futAssigns.remove(grpId);
 
         if (fut == null)
@@ -338,10 +338,10 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         IgniteInternalFuture<?> idxFut = cctx.database().rebuildIndexes(grp);
 
-        // Cache group File preloading is finished, historical rebalancing will send separate events.
+        // Cache group file preloading is finished, historical rebalancing will send separate events.
         grp.preloader().sendRebalanceFinishedEvent(exchId.discoveryEvent());
 
-        GridDhtPreloaderAssignments histAssignments = makeHistoricalAssignments(grp, maxCntrs);
+        GridDhtPreloaderAssignments histAssignments = histAssignments(grp, maxCntrs);
 
         fut.onDone(histAssignments);
 
@@ -415,10 +415,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
      * @param cntrs Partition set with HWM update counter value for hstorical rebalance.
      * @return Partition to node assignments.
      */
-    private GridDhtPreloaderAssignments makeHistoricalAssignments(
-        CacheGroupContext grp,
-        Map<UUID, Map<Integer, Long>> cntrs
-    ) {
+    private GridDhtPreloaderAssignments histAssignments(CacheGroupContext grp, Map<UUID, Map<Integer, Long>> cntrs) {
         GridDhtPreloaderAssignments histAssigns = new GridDhtPreloaderAssignments(exchId, topVer);
 
         int parts = grp.topology().partitions();
