@@ -467,31 +467,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 UUID leftNodeId = evt.eventNode().id();
 
-                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                    DiscoveryCustomEvent evt0 = (DiscoveryCustomEvent)evt;
-
-                    if (evt0.customMessage() instanceof InitMessage) {
-                        InitMessage<?> msg = (InitMessage<?>)evt0.customMessage();
-
-                        // This happens when #takeSnapshot() method already invoked and distributed process
-                        // starts its action.
-                        if (msg.type() == START_SNAPSHOT.ordinal()) {
-                            assert clusterSnpRq != null ||
-                                !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()) : evt;
-
-                            DiscoveryCustomEvent customEvt = new DiscoveryCustomEvent();
-
-                            customEvt.node(evt0.node());
-                            customEvt.eventNode(evt0.eventNode());
-                            customEvt.affinityTopologyVersion(evt0.affinityTopologyVersion());
-                            customEvt.customMessage(new SnapshotStartDiscoveryMessage(discoCache, msg.processId()));
-
-                            // Handle new event inside discovery thread, so no guarantees will be violated.
-                            cctx.exchange().onDiscoveryEvent(customEvt, discoCache);
-                        }
-                    }
-                }
-                else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
+                if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpRq = clusterSnpRq;
 
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
@@ -793,6 +769,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param msg Init distributed process message.
+     * @param discoCache Discovery cache data.
+     * @return Custom snapshot message.
+     */
+    public static SnapshotDiscoveryMessage convert(InitMessage<?> msg, DiscoCache discoCache) {
+        assert msg.type() == START_SNAPSHOT.ordinal() : msg;
+
+        return new SnapshotStartDiscoveryMessage(discoCache, msg.processId());
     }
 
     /**

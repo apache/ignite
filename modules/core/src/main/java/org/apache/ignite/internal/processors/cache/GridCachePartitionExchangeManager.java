@@ -120,6 +120,7 @@ import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -168,6 +169,7 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.nextDumpTimeout;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.convert;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
@@ -175,6 +177,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 
 /**
  * Partition exchange manager.
@@ -300,6 +303,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 return;
 
             try {
+                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+                    ((DiscoveryCustomEvent)evt).customMessage() instanceof InitMessage) {
+                    InitMessage<?> msg = (InitMessage<?>)((DiscoveryCustomEvent)evt).customMessage();
+
+                    // This happens when #takeSnapshot() method already invoked and distributed process
+                    // starts its action.
+                    if (msg.type() == START_SNAPSHOT.ordinal()) {
+                        ((DiscoveryCustomEvent)evt).customMessage(convert(msg, cache));
+
+                        onDiscoveryEvent(evt, cache);
+
+                        return;
+                    }
+                }
+
                 if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
                     (((DiscoveryCustomEvent)evt).customMessage() instanceof ChangeGlobalStateMessage)) {
                     ChangeGlobalStateMessage stateChangeMsg =
@@ -553,7 +571,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param evt Event.
      * @param cache Discovery data cache.
      */
-    public void onDiscoveryEvent(DiscoveryEvent evt, DiscoCache cache) {
+    private void onDiscoveryEvent(DiscoveryEvent evt, DiscoCache cache) {
         ClusterNode loc = cctx.localNode();
 
         assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED ||
