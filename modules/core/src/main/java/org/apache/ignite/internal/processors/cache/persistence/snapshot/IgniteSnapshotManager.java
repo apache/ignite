@@ -811,9 +811,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         Set<Integer> leftGrps = new HashSet<>(req.grpIds);
-        leftGrps.removeAll(cctx.cache().persistentGroups().stream()
-            .map(CacheGroupDescriptor::groupId)
-            .collect(Collectors.toSet()));
+        leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
