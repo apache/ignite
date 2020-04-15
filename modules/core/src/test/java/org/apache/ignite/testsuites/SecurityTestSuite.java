@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteS
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.ComputeSandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.ContinuousQuerySandboxTest;
+import org.apache.ignite.internal.processors.security.sandbox.ContinuousQueryWithTransformerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DataStreamerSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.DoPrivilegedOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteOperationsInsideSandboxTest;
@@ -93,6 +95,9 @@ import org.junit.runners.Suite;
     IgniteOperationsInsideSandboxTest.class,
     SecuritySubjectPermissionsTest.class,
     AccessToClassesInsideInternalPackageTest.class,
+    ContinuousQuerySandboxTest.class,
+    ContinuousQueryWithTransformerSandboxTest.class,
+
     IgniteSecurityProcessorTest.class,
     GridCommandHandlerSslWithSecurityTest.class,
     MultipleSSLContextsTest.class

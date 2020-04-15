@@ -24,7 +24,9 @@ import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
@@ -56,8 +58,12 @@ public class SecurityAwareFilter<K, V> extends AbstractSecurityAwareExternalizab
 
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent<? extends K, ? extends V> evt) throws CacheEntryListenerException {
-        try (OperationSecurityContext c = ignite.context().security().withContext(subjectId)) {
-            return original.evaluate(evt);
+        IgniteSecurity security = ignite.context().security();
+
+        try (OperationSecurityContext c = security.withContext(subjectId)) {
+            IgniteSandbox sandbox = security.sandbox();
+
+            return sandbox.enabled() ? sandbox.execute(() -> original.evaluate(evt)) : original.evaluate(evt);
         }
     }
 }
