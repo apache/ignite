@@ -61,6 +61,10 @@ public class DecisionTreeClassificationTrainerSQLTableExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
+            // Use internal API to enable SQL functions disabled by default (the function CSVREAD is used below)
+            ((IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing())
+                .distributedConfiguration().disabledFunctions(new HashSet<>());
+
             // Dummy cache is required to perform SQL queries.
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
                 .setSqlSchema("PUBLIC");
