@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.mxbean.MetricsMxBean;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -1295,6 +1296,14 @@ public final class IgniteSystemProperties {
      * restart.
      */
     public static final String IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING = "IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING";
+
+    /**
+     * Enables setting attribute value of {@link
+     * TcpCommunicationSpi#ATTR_HOST_NAMES ATTR_HOST_NAMES} when value {@link
+     * IgniteConfiguration#getLocalHost getLocalHost} is ip, for backward
+     * compatibility. By default, {@code false}.
+     */
+    public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
      * Enforces singleton.
