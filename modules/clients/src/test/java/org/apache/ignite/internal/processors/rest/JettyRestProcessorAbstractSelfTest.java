@@ -477,6 +477,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             "String value",
             new Timestamp(Calendar.getInstance().getTime().getTime()),
             Date.valueOf("1986-04-26"),
+            Time.valueOf("23:59:59"),
             df.parse(df.format(Calendar.getInstance().getTime())),
             F.asMap("key1", 1, "key2", 2),
             new int[] {1, 2, 3},
@@ -507,6 +508,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         );
 
         assertEquals(complex, JSON_MAPPER.treeToValue(res, Complex.class));
+    }
+
+    /**
+     * Test adding a system (java.*) type object.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutJvmType() throws Exception {
+        Map<String, int[]> map = new HashMap<>();
+        map.put("1", new int[] {1, 2, 3});
+        putObject(DEFAULT_CACHE_NAME, "1", map, Map.class.getName());
+        assertTrue(Map.class.isAssignableFrom(jcache().get(1).getClass()));
+
+        Set<int[]> set = new HashSet<>();
+        set.add(new int[] {1, 2, 3});
+        putObject(DEFAULT_CACHE_NAME, "2", set, Set.class.getName());
+        assertTrue(Set.class.isAssignableFrom(jcache().get(2).getClass()));
+
+        List<int[]> list = new ArrayList<>();
+        list.add(new int[] {1, 2, 3});
+        putObject(DEFAULT_CACHE_NAME, "3", list, Collection.class.getName());
+        assertTrue(Collection.class.isAssignableFrom(jcache().get(3).getClass()));
+
+        int[] ints = {1, 2, 3};
+        putObject(DEFAULT_CACHE_NAME, "4", ints, int[].class.getName());
+        assertTrue(Arrays.equals(ints, (int[])jcache().get(4)));
+
+        Character[] chars = {'a', 'b', 'c'};
+        putObject(DEFAULT_CACHE_NAME, "5", chars, Character[].class.getName());
+        assertTrue(Arrays.equals(chars, (Object[])jcache().get(5)));
+
+        // Check that exception is thrown when a system type has been specified.
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "keyType", "int",
+            "key", "6",
+            "valueType", jcache().getClass().getName(),
+            "val", "\"cache\"");
+
+        assertTrue(JSON_MAPPER.readTree(ret).get("error").textValue().contains("Cannot make binary object [type="));
     }
 
     /**
@@ -604,47 +645,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         info("Get command result: " + ret);
 
         assertResponseContainsError(ret, "Failed convert to JSON object for circular references");
-    }
-
-
-    /**
-     * Test adding a system (java.*) type object.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPutJvmType() throws Exception {
-        Map<String, int[]> map = new HashMap<>();
-        map.put("1", new int[] {1, 2, 3});
-        putObject(DEFAULT_CACHE_NAME, "1", map, Map.class.getName());
-        assertTrue(Map.class.isAssignableFrom(jcache().get(1).getClass()));
-
-        Set<int[]> set = new HashSet<>();
-        set.add(new int[] {1, 2, 3});
-        putObject(DEFAULT_CACHE_NAME, "2", set, Set.class.getName());
-        assertTrue(Set.class.isAssignableFrom(jcache().get(2).getClass()));
-
-        List<int[]> list = new ArrayList<>();
-        list.add(new int[] {1, 2, 3});
-        putObject(DEFAULT_CACHE_NAME, "3", list, Collection.class.getName());
-        assertTrue(Collection.class.isAssignableFrom(jcache().get(3).getClass()));
-
-        int[] ints = {1, 2, 3};
-        putObject(DEFAULT_CACHE_NAME, "4", ints, int[].class.getName());
-        assertTrue(Arrays.equals(ints, (int[])jcache().get(4)));
-
-        Character[] chars = {'a', 'b', 'c'};
-        putObject(DEFAULT_CACHE_NAME, "5", chars, Character[].class.getName());
-        assertTrue(Arrays.equals(chars, (Object[])jcache().get(5)));
-
-        // Check that exception is thrown when a system type has been specified.
-        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
-            "keyType", "int",
-            "key", "6",
-            "valueType", jcache().getClass().getName(),
-            "val", "\"cache\"");
-
-        assertTrue(JSON_MAPPER.readTree(ret).get("error").textValue().contains("Cannot make binary object [type="));
     }
 
     /**
@@ -3316,6 +3316,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         private Date sqlDate;
 
         /** */
+        private Time time;
+
+        /** */
         private java.util.Date date;
 
         /** */
@@ -3357,13 +3360,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        Complex(Integer id, String str, Timestamp timestamp, Date sqlDate, java.util.Date date,
+        Complex(Integer id, String str, Timestamp timestamp, Date sqlDate, Time time, java.util.Date date,
             Map<String, Integer> map, int[] ints, Integer[] integers, long[] longs, List<Integer> list,
             Set<Integer> col, byte[] bytes, char[] chars, COLOR color, OuterClass outer, OuterClass[] objects) {
             this.id = id;
             this.str = str;
             this.timestamp = timestamp;
             this.sqlDate = sqlDate;
+            this.time = time;
             this.date = date;
             this.map = new HashMap<>(map);
             this.ints = ints;
@@ -3449,6 +3453,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
+        public Time getTime() {
+            return time;
+        }
+
+        /** */
         public java.util.Date getDate() {
             return date;
         }
@@ -3469,6 +3478,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 Objects.equals(str, complex.str) &&
                 Objects.equals(timestamp, complex.timestamp) &&
                 Objects.equals(sqlDate, complex.sqlDate) &&
+                Objects.equals(time, complex.time) &&
                 Objects.equals(date, complex.date) &&
                 Objects.equals(map, complex.map) &&
                 Arrays.equals(longs, complex.longs) &&
@@ -3484,7 +3494,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(id, str, timestamp, sqlDate, date, map, list, col, outer, color);
+            int result = Objects.hash(id, str, timestamp, sqlDate, time, date, map, list, col, outer, color);
             result = 31 * result + Arrays.hashCode(longs);
             result = 31 * result + Arrays.hashCode(ints);
             result = 31 * result + Arrays.hashCode(bytes);
@@ -3500,6 +3510,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 ", string='" + str + '\'' +
                 ", timestamp=" + timestamp +
                 ", sqlDate=" + sqlDate +
+                ", time=" + time +
                 ", date=" + date +
                 ", map=" + map +
                 ", longs=" + Arrays.toString(longs) +

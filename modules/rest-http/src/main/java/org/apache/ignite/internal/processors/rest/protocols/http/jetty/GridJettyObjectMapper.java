@@ -78,10 +78,13 @@ public class GridJettyObjectMapper extends ObjectMapper {
         module.addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER);
         module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
         module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
-        module.addSerializer(Timestamp.class, IGNITE_TIMESTAMP_SERIALIZER);
-        module.addSerializer(Date.class, IGNITE_SQLDATE_SERIALIZER);
 
+        // Standard serializer loses nanoseconds.
+        module.addSerializer(Timestamp.class, IGNITE_TIMESTAMP_SERIALIZER);
         module.addDeserializer(Timestamp.class, IGNITE_TIMESTAMP_DESERIALIZER);
+
+        // Standard serializer may incorrectly apply timezone.
+        module.addSerializer(Date.class, IGNITE_SQLDATE_SERIALIZER);
         module.addDeserializer(Date.class, IGNITE_SQLDATE_DESERIALIZER);
 
         if (ctx != null)
@@ -301,8 +304,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
     /** Custom serializer for {@link java.sql.Date}. */
     private static final JsonSerializer<Date> IGNITE_SQLDATE_SERIALIZER = new JsonSerializer<Date>() {
-        @Override
-        public void serialize(Date date, JsonGenerator gen, SerializerProvider prov) throws IOException {
+        @Override public void serialize(Date date, JsonGenerator gen, SerializerProvider prov) throws IOException {
             gen.writeString(date.toString());
         }
     };
@@ -310,7 +312,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
     /** Custom deserializer for {@link java.sql.Timestamp}. */
     private static final JsonDeserializer<Timestamp> IGNITE_TIMESTAMP_DESERIALIZER = new JsonDeserializer<Timestamp>() {
         @Override public Timestamp deserialize(JsonParser parser,
-            DeserializationContext context) throws IOException, JsonProcessingException {
+            DeserializationContext ctx) throws IOException, JsonProcessingException {
             return Timestamp.valueOf(parser.getText());
         }
     };
@@ -318,7 +320,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
     /** Custom deserializer for {@link java.sql.Date}. */
     private static final JsonDeserializer<Date> IGNITE_SQLDATE_DESERIALIZER = new JsonDeserializer<Date>() {
         @Override public Date deserialize(JsonParser parser,
-            DeserializationContext context) throws IOException, JsonProcessingException {
+            DeserializationContext ctx) throws IOException, JsonProcessingException {
             return Date.valueOf(parser.getText());
         }
     };
