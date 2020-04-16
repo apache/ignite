@@ -17,33 +17,71 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Class for accumulation of record types and number of indexed records in index tree.
  */
 public class SchemaIndexCacheStat {
-    /**
-     * Indexed types.
-     */
-    public final Map<String, QueryTypeDescriptorImpl> types = new HashMap<>();
+    /** Indexed types. */
+    private final Map<String, QueryTypeDescriptorImpl> types = new HashMap<>();
+
+    /** Number of indexed keys. */
+    private int scanned;
 
     /**
-     * Indexed keys.
-     */
-    public int scanned;
-
-    /**
-     * Return is extra index create/rebuild logging enabled.
+     * Adds statistics from {@code stat} to the current statistics.
      *
-     * @return Is extra index create/rebuild logging enabled.
+     * @param stat Statistics.
      */
-    public static boolean extraIndexBuildLogging() {
-        return getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
+    public void accumulate(SchemaIndexCacheStat stat) {
+        scanned += stat.scanned;
+        types.putAll(stat.types);
+    }
+
+    /**
+     * Adds type to indexed types.
+     *
+     * @param type Type.
+     */
+    public void addType(QueryTypeDescriptorImpl type) {
+        types.put(type.name(), type);
+    }
+
+    /**
+     * Adds to number of scanned keys given {@code scanned}.
+     *
+     * @param scanned Number of scanned keys during partition processing. Must be positive or zero.
+     */
+    public void add(int scanned) {
+        A.ensure(scanned >= 0, "scanned is negative. Value: " + scanned);
+
+        this.scanned += scanned;
+    }
+
+    /**
+     * @return Number of scanned keys.
+     */
+    public int scannedKeys() {
+        return scanned;
+    }
+
+    /**
+     * @return Unmodifiable collection of processed type names.
+     */
+    public Collection<String> typeNames() {
+        return Collections.unmodifiableCollection(types.keySet());
+    }
+
+    /**
+     * @return Unmodifiable collection of processed types.
+     */
+    public Collection<QueryTypeDescriptorImpl> types() {
+        return Collections.unmodifiableCollection(types.values());
     }
 }
