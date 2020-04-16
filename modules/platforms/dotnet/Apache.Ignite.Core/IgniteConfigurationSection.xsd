@@ -538,9 +538,9 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
-                                        <xs:element name="platformNearConfiguration" minOccurs="0">
+                                        <xs:element name="platformCacheConfiguration" minOccurs="0">
                                             <xs:annotation>
-                                                <xs:documentation>Platform near cache configuration (.NET near cache).</xs:documentation>
+                                                <xs:documentation>Platform cache configuration.</xs:documentation>
                                             </xs:annotation>
                                             <xs:complexType>
                                                 <xs:attribute name="keyTypeName" type="xs:string">
@@ -555,7 +555,7 @@
                                                 </xs:attribute>
                                                 <xs:attribute name="keepBinary" type="xs:boolean">
                                                     <xs:annotation>
-                                                        <xs:documentation>Whether platform near cache should store keys and values in binary form.</xs:documentation>
+                                                        <xs:documentation>Whether platform cache should store keys and values in binary form.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
                                             </xs:complexType>
