@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.serialize;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -171,6 +174,16 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteValues rel) {
         return new ValuesPhysicalRel(toValues(rel.getTuples()), rel.getRowType().getFieldCount());
+    }
+
+    /** {@inheritDoc} */
+    @Override public PhysicalRel visit(IgniteUnionAll rel) {
+        List<PhysicalRel> inputs = new ArrayList<>(rel.getInputs().size());
+
+        for (RelNode input : rel.getInputs())
+            inputs.add(visit((IgniteRel) input));
+
+        return new UnionAllPhysicalRel(inputs);
     }
 
     /** {@inheritDoc} */

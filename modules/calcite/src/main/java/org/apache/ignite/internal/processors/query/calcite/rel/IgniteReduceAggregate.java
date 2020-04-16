@@ -30,6 +30,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -46,14 +47,14 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
     /** */
     private final List<AggregateCall> aggCalls;
 
-    /***/
+    /** */
     public IgniteReduceAggregate(RelOptCluster cluster, RelTraitSet traits, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls, RelDataType rowType) {
         super(cluster, traits, input);
 
         assert rowType != null;
         assert RelOptUtil.areRowTypesEqual(input.getRowType(),
             Commons.aggregationDataRowType(getCluster().getTypeFactory()), true);
-        assert getInput().getTraitSet().contains(IgniteDistributions.single());
+        assert traits.getTrait(DistributionTraitDef.INSTANCE).satisfies(IgniteDistributions.single());
 
         this.groupSet = groupSet;
         this.groupSets = groupSets;

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -103,6 +104,49 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         Assert.assertArrayEquals(new Object[]{2, "Ivan", "Calcite"}, rows.get(0));
         Assert.assertArrayEquals(new Object[]{2, "Ivan", "Ignite"}, rows.get(1));
+    }
+
+    @Test
+    public void testUnionAll() throws Exception {
+        ExecutionContext ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+
+        RowHandler<Object[]> rowHnd = ArrayRowHandler.INSTANCE;
+
+        ScanNode scan1 = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        ScanNode scan2 = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        ScanNode scan3 = new ScanNode(ctx, Arrays.asList(
+            rowHnd.create("Igor", 200),
+            rowHnd.create("Roman", 300),
+            rowHnd.create("Ivan", 1400),
+            rowHnd.create("Alexey", 1000)
+        ));
+
+        UnionAllNode<Object[]> union = new UnionAllNode<>(ctx);
+        union.register(F.asList(scan1, scan2, scan3));
+
+        RootNode root = new RootNode(ctx, c -> {});
+        root.register(union);
+
+        assertTrue(root.hasNext());
+
+        List<Object[]> res = new ArrayList<>();
+
+        while (root.hasNext())
+            res.add(root.next());
+
+        assertEquals(12, res.size());
     }
 
     @Test

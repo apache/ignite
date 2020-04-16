@@ -41,12 +41,9 @@ public class IgniteSender extends SingleRel implements IgniteRel, RelTargetAware
      * @param cluster  Cluster that this relational expression belongs to
      * @param traits   Traits of this relational expression
      * @param input    input relational expression
-     * @param target   Remote targets information
      */
-    public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelTarget target) {
-        super(cluster, traits, input);
-
-        this.target = target;
+    public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
+        this(cluster, traits, input, null);
     }
 
     /**
@@ -55,9 +52,12 @@ public class IgniteSender extends SingleRel implements IgniteRel, RelTargetAware
      * @param cluster  Cluster that this relational expression belongs to
      * @param traits   Traits of this relational expression
      * @param input    input relational expression
+     * @param target   Remote targets information
      */
-    public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
-        this(cluster, traits, input, null);
+    private IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelTarget target) {
+        super(cluster, traits, input);
+
+        this.target = target;
     }
 
     /** {@inheritDoc} */

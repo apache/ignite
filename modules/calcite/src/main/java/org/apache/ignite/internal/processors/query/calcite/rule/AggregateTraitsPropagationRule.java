@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMapAggregat
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReduceAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  *
@@ -62,7 +62,7 @@ public class AggregateTraitsPropagationRule extends RelOptRule {
         IgniteDistribution inDistr = IgniteMdDistribution._distribution(input, mq);
 
         List<IgniteDistributions.Suggestion> suggestions =
-            IgniteDistributions.suggestAggregate(inDistr, groupSet, groupSets);
+            IgniteDistributions.suggestAggregate(F.asList(inDistr), groupSet, groupSets);
 
         List<RelNode> newRels = new ArrayList<>(suggestions.size());
 
@@ -88,7 +88,7 @@ public class AggregateTraitsPropagationRule extends RelOptRule {
 
     /** */
     private boolean isMapReduce(IgniteDistributions.Suggestion suggestion) {
-        return Objects.equals(suggestion.out(), IgniteDistributions.single())
+        return suggestion.out().satisfies(IgniteDistributions.single())
             && suggestion.in().satisfies(IgniteDistributions.random());
     }
 }

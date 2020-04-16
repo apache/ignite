@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
@@ -171,6 +173,13 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteValues rel) {
         return new ScanNode(ctx, expressionFactory.valuesRex(ctx, Commons.flat(Commons.cast(rel.getTuples())), rel.getRowType().getFieldCount()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(IgniteUnionAll rel) {
+        UnionAllNode<Object[]> node = new UnionAllNode<>(ctx);
+        node.register(Commons.transform(rel.getInputs(), this::visit));
+        return node;
     }
 
     /** {@inheritDoc} */

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.serialize.AggregatePhysicalRel;
@@ -51,10 +52,12 @@ import org.apache.ignite.internal.processors.query.calcite.serialize.SenderPhysi
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableModifyPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.TableScanPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.TrimExchangePhysicalRel;
+import org.apache.ignite.internal.processors.query.calcite.serialize.UnionAllPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.serialize.ValuesPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -182,6 +185,13 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
             default:
                 throw new AssertionError();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Object[]> visit(UnionAllPhysicalRel rel) {
+        UnionAllNode<Object[]> node = new UnionAllNode<>(ctx);
+        node.register(Commons.transform(rel.inputs(), this::visit));
+        return node;
     }
 
     /** {@inheritDoc} */

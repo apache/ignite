@@ -37,6 +37,7 @@ import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -249,6 +250,32 @@ public final class Commons {
     /** */
     public static <T> List<T> flat(List<List<? extends T>> src) {
         return src.stream().flatMap(List::stream).collect(Collectors.toList());
+    }
+
+    /** */
+    public static int max(ImmutableIntList list) {
+        if (list.isEmpty())
+            throw new UnsupportedOperationException();
+
+        int res = list.getInt(0);
+
+        for (int i = 1; i < list.size(); i++)
+            res = Math.max(res, list.getInt(i));
+
+        return res;
+    }
+
+    /** */
+    public static int min(ImmutableIntList list) {
+        if (list.isEmpty())
+            throw new UnsupportedOperationException();
+
+        int res = list.getInt(0);
+
+        for (int i = 1; i < list.size(); i++)
+            res = Math.min(res, list.getInt(i));
+
+        return res;
     }
 
     /** */
