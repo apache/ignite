@@ -147,7 +147,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -423,9 +422,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         List<Integer> list = F.asList(1, 2, 3);
 
-        OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list, null);
-        newType.timestamp = Timestamp.valueOf("2004-08-26 16:47:03.141592653");
-        newType.longs = new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE};
+        OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list,
+            Timestamp.valueOf("2004-08-26 16:47:03.141592"),  new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE}, null);
 
         putObject(cache.getName(), "300", newType, valType);
 
@@ -434,9 +432,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertEquals(newType, getObject(cache.getName(), "300", OuterClass.class));
 
         // Sending "optional" (new) field for registered binary type.
-        OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list, true);
-        newTypeUpdate.timestamp = Timestamp.valueOf("2004-08-26 16:47:03.14");
-        newTypeUpdate.longs = new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE};
+        OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list,
+            Timestamp.valueOf("2004-08-26 16:47:03.14"), new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE}, true);
 
         putObject(cache.getName(), "301", newTypeUpdate, valType);
 
@@ -466,11 +463,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         DateFormat df = JSON_MAPPER.getDateFormat();
 
-        OuterClass[] objects = new OuterClass[3];
-
-        objects[0] = new OuterClass(111, "out-0", 0.7d, F.asList(9, 1), false);
-        objects[1] = new OuterClass(112, "out-1", 0.1d, F.asList(9, 1), false);
-        objects[2] = new OuterClass(113, "out-2", 0.3d, F.asList(9, 1), false);
+        OuterClass[] objects = new OuterClass[] {
+            new OuterClass(111, "out-0", 0.7d, F.asList(9, 1)),
+            new OuterClass(112, "out-1", 0.1d, F.asList(9, 1)),
+            new OuterClass(113, "out-2", 0.3d, F.asList(9, 1))
+        };
 
         Complex complex = new Complex(
             1234567,
@@ -488,7 +485,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             new byte[] {4, 1, 2},
             new char[] {'a', 'b', 'c'},
             COLOR.GREEN,
-            new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1), false),
+            new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1)),
             objects
         );
 
@@ -517,18 +514,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testPutJvmType() throws Exception {
-        Map<String, int[]> map = new HashMap<>();
-        map.put("1", new int[] {1, 2, 3});
+        Map<String, int[]> map = U.map("1", new int[] {1, 2, 3});
         putObject(DEFAULT_CACHE_NAME, "1", map, Map.class.getName());
         assertTrue(Map.class.isAssignableFrom(jcache().get(1).getClass()));
 
-        Set<int[]> set = new HashSet<>();
-        set.add(new int[] {1, 2, 3});
+        Set<int[]> set = new HashSet<>(map.values());
         putObject(DEFAULT_CACHE_NAME, "2", set, Set.class.getName());
         assertTrue(Set.class.isAssignableFrom(jcache().get(2).getClass()));
 
-        List<int[]> list = new ArrayList<>();
-        list.add(new int[] {1, 2, 3});
+        List<int[]> list = new ArrayList<>(set);
         putObject(DEFAULT_CACHE_NAME, "3", list, Collection.class.getName());
         assertTrue(Collection.class.isAssignableFrom(jcache().get(3).getClass()));
 
@@ -3057,6 +3051,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         JsonNode res = validateJsonResponse(ret);
 
         JsonNode items = res.get("items");
+
         assertNotNull(items);
 
         assertEquals(1, items.size());
@@ -3064,12 +3059,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertFalse(queryCursorFound());
 
         JsonNode pair = items.get(0);
-        assertNotNull(pair);
 
-        JsonNode val = pair.get("value");
-        assertNotNull(val);
-
-        return val;
+        return pair.get("value");
     }
 
     /**
@@ -3209,21 +3200,32 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        OuterClass(long id, String name, double doubleVal, List<Integer> list, @Nullable Boolean optional) {
+        OuterClass(long id, String name, double doubleVal, List<Integer> list) {
+            this(id, name, doubleVal, list, null, null, null);
+        }
+
+        /** */
+        @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+        OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp ts, long[] longs, Boolean b) {
             this.id = id;
             this.name = name;
             this.doubleVal = doubleVal;
             this.list = new ArrayList<>(list);
-            this.optional = optional;
+            this.timestamp = ts;
+            this.longs = longs;
+            this.optional = b;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
+
             if (o == null || getClass() != o.getClass())
                 return false;
+
             OuterClass aCls = (OuterClass)o;
+
             return id == aCls.id &&
                 Double.compare(aCls.doubleVal, doubleVal) == 0 &&
                 Objects.equals(name, aCls.name) &&
@@ -3240,7 +3242,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "OuterClass{" +
+            return "OuterClass [" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", doubleVal=" + doubleVal +
@@ -3248,7 +3250,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 ", list=" + list +
                 ", timestamp=" + timestamp +
                 ", bytes=" + Arrays.toString(longs) +
-                '}';
+                ']';
         }
     }
 
@@ -3371,9 +3373,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
+
             if (o == null || getClass() != o.getClass())
                 return false;
+
             Complex complex = (Complex)o;
+
             return Objects.equals(id, complex.id) &&
                 Objects.equals(str, complex.str) &&
                 Objects.equals(timestamp, complex.timestamp) &&
@@ -3395,17 +3400,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         /** {@inheritDoc} */
         @Override public int hashCode() {
             int result = Objects.hash(id, str, timestamp, sqlDate, time, date, map, list, col, outer, color);
+
             result = 31 * result + Arrays.hashCode(longs);
             result = 31 * result + Arrays.hashCode(ints);
             result = 31 * result + Arrays.hashCode(bytes);
             result = 31 * result + Arrays.hashCode(chars);
             result = 31 * result + Arrays.hashCode(integers);
+
             return result;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "Complex{" +
+            return "Complex [" +
                 "id=" + id +
                 ", string='" + str + '\'' +
                 ", timestamp=" + timestamp +
@@ -3422,7 +3429,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 ", col=" + col +
                 ", outer=" + outer +
                 ", color=" + color +
-                '}';
+                ']';
         }
     }
 

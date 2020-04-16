@@ -1017,7 +1017,9 @@ public class GridJettyRestHandler extends AbstractHandler {
         return null;
     }
 
-    /** */
+    /**
+     * Converter from string into specified type.
+     */
     private class Converter {
         /** Cache name. */
         private final String cacheName;
@@ -1041,6 +1043,7 @@ public class GridJettyRestHandler extends AbstractHandler {
          * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
          * @param params Parameters map.
          * @return Values.
+         * @throws IgniteCheckedException If failed to convert.
          */
         private List<Object> values(String type, String keyPrefix,
             Map<String, String> params) throws IgniteCheckedException {

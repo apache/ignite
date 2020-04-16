@@ -190,7 +190,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          * @return value.
          * @throws IOException In case of error.
          */
-        protected Object readValue(String field, JsonNode jsonNode) throws IOException {
+        @Nullable protected Object readValue(String field, JsonNode jsonNode) throws IOException {
             JsonNodeType nodeType = jsonNode.getNodeType();
 
             if (nodeType == JsonNodeType.BINARY)
@@ -265,8 +265,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                 JsonNode node = tree.get(field);
                 BinaryFieldMetadata meta = metas.get(field);
 
-                Object val = meta != null ?
-                    readValue(meta.typeId(), field, node, binType) : readValue(field, node);
+                Object val = meta != null ? readValue(meta.typeId(), field, node, binType) : readValue(field, node);
 
                 builder.setField(field, val);
             }
@@ -317,8 +316,9 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          */
         private @Nullable BinaryClassDescriptor binaryClassDescriptor() {
             try {
-                return binType.context().descriptorForTypeId(false, binType.typeId(),null,false);
-            } catch (BinaryObjectException ignore) {
+                return binType.context().descriptorForTypeId(false, binType.typeId(), null, false);
+            }
+            catch (BinaryObjectException ignore) {
                 return null;
             }
         }
