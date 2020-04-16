@@ -3043,7 +3043,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @return Json query result.
      * @throws Exception If failed.
      */
-    private JsonNode queryObject(String cacheName, String ... params) throws Exception {
+    private JsonNode queryObject(String cacheName, String... params) throws Exception {
         String ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY, params);
 
         info("SQL command result: " + ret);

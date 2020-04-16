@@ -1065,91 +1065,91 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         /**
          * @param type Optional value type.
-         * @param s String to convert.
+         * @param str String to convert.
          * @return Converted value.
          * @throws IgniteCheckedException If failed to convert.
          */
-        private Object convert(String type, String s) throws IgniteCheckedException {
-            if (F.isEmpty(type) || s == null)
-                return s;
+        private Object convert(@Nullable String type, @Nullable String str) throws IgniteCheckedException {
+            if (F.isEmpty(type) || str == null)
+                return str;
 
             try {
                 switch (type.toLowerCase()) {
                     case "boolean":
                     case "java.lang.boolean":
-                        return Boolean.valueOf(s);
+                        return Boolean.valueOf(str);
 
                     case "byte":
                     case "java.lang.byte":
-                        return Byte.valueOf(s);
+                        return Byte.valueOf(str);
 
                     case "short":
                     case "java.lang.short":
-                        return Short.valueOf(s);
+                        return Short.valueOf(str);
 
                     case "int":
                     case "integer":
                     case "java.lang.integer":
-                        return Integer.valueOf(s);
+                        return Integer.valueOf(str);
 
                     case "long":
                     case "java.lang.long":
-                        return Long.valueOf(s);
+                        return Long.valueOf(str);
 
                     case "float":
                     case "java.lang.float":
-                        return Float.valueOf(s);
+                        return Float.valueOf(str);
 
                     case "double":
                     case "java.lang.double":
-                        return Double.valueOf(s);
+                        return Double.valueOf(str);
 
                     case "date":
                     case "java.sql.date":
-                        return Date.valueOf(s);
+                        return Date.valueOf(str);
 
                     case "time":
                     case "java.sql.time":
-                        return Time.valueOf(s);
+                        return Time.valueOf(str);
 
                     case "timestamp":
                     case "java.sql.timestamp":
-                        return Timestamp.valueOf(s);
+                        return Timestamp.valueOf(str);
 
                     case "uuid":
                     case "java.util.uuid":
-                        return UUID.fromString(s);
+                        return UUID.fromString(str);
 
                     case "igniteuuid":
                     case "org.apache.ignite.lang.igniteuuid":
-                        return IgniteUuid.fromString(s);
+                        return IgniteUuid.fromString(str);
 
                     case "string":
                     case "java.lang.string":
-                        return s;
+                        return str;
 
                     default:
                         try {
                             if (type.startsWith("java.") || type.startsWith("["))
-                                return jsonMapper.readValue(s, Class.forName(type));
+                                return jsonMapper.readValue(str, Class.forName(type));
 
                             InjectableValues.Std prop = new InjectableValues.Std()
                                 .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
                                 .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
 
-                            return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(s);
+                            return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(str);
                         } catch (IOException e) {
                             log.warning("Unable to parse JSON, object will be stored as a text " +
-                                "[type=" + type + ", value=\"" + s + "\", reason=\"" + e.getMessage() + "\"]");
+                                "[type=" + type + ", value=\"" + str + "\", reason=\"" + e.getMessage() + "\"]");
                         }
                 }
             }
             catch (Throwable e) {
                 throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
-                    ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
+                    ", val=" + str + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
             }
 
-            return s;
+            return str;
         }
     }
 
