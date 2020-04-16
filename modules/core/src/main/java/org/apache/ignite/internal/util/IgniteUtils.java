@@ -1188,8 +1188,7 @@ public abstract class IgniteUtils {
             return GRID_EVTS;
 
         List<Integer> evts = toIntList(GRID_EVTS, new P1<Integer>() {
-            @Override
-            public boolean apply(Integer i) {
+            @Override public boolean apply(Integer i) {
                 return !containsIntArray(excl, i);
             }
         });
@@ -6855,23 +6854,6 @@ public abstract class IgniteUtils {
      */
     public static boolean isWindowsNt() {
         return winNt;
-    }
-
-    /**
-     * Indicates that Ignite has been sufficiently tested on the current OS.
-     *
-     * @return {@code true} if current OS was sufficiently tested - {@code false} otherwise.
-     */
-    public static boolean isSufficientlyTestedOs() {
-        return
-            win7 ||
-                win8 ||
-                win81 ||
-                winXp ||
-                winVista ||
-                mac ||
-                linux ||
-                solaris;
     }
 
     /**
