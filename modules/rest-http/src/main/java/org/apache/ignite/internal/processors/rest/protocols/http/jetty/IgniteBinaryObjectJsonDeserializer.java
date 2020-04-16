@@ -291,6 +291,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                     baseCls = Map.class;
 
                     break;
+
                 case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.COL:
                 case GridBinaryMarshaller.OBJ:
@@ -301,6 +302,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                         return readValue(field, node);
 
                     break;
+
                 default:
                     baseCls = BinaryUtils.FLAG_TO_CLASS.get((byte)type);
             }
