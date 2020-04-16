@@ -117,8 +117,8 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     }
 
     /** Gets cache configurations */
-    protected CacheConfiguration[] cacheConfigurations(){
-        return new CacheConfiguration[]{
+    protected CacheConfiguration[] cacheConfigurations() {
+        return new CacheConfiguration[] {
             new CacheConfiguration().setName(CACHE),
             new CacheConfiguration().setName(FORBIDDEN_CACHE)
         };
