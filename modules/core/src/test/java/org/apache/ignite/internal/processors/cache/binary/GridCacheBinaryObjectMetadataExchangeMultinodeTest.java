@@ -75,7 +75,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (applyDiscoveryHook && discoveryHook != null)
-            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).addDiscoveryHook(discoveryHook);
+            ((TestTcpDiscoverySpi)cfg.getDiscoverySpi()).discoveryHook(discoveryHook);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

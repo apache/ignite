@@ -206,15 +206,15 @@ public final class GridTestUtils {
         /** */
         private final DiscoverySpiListener delegate;
 
-        /** Interceptors of discovery messages. */
-        private final DiscoveryHook[] hooks;
+        /** Interceptor of discovery messages. */
+        private final DiscoveryHook hook;
 
         /**
          * @param delegate Delegate.
-         * @param hooks Interceptors of discovery messages.
+         * @param hook Interceptor of discovery messages.
          */
-        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook[] hooks) {
-            this.hooks = hooks;
+        private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
+            this.hook = hook;
             this.delegate = delegate;
         }
 
@@ -227,15 +227,11 @@ public final class GridTestUtils {
             @Nullable Map<Long, Collection<ClusterNode>> topHist,
             @Nullable DiscoverySpiCustomMessage spiCustomMsg
         ) {
-            for (DiscoveryHook hook : hooks)
-                hook.beforeDiscovery(spiCustomMsg);
+            hook.beforeDiscovery(spiCustomMsg);
 
             IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
 
-            fut.listen(f -> {
-                for (DiscoveryHook hook : hooks)
-                    hook.afterDiscovery(spiCustomMsg);
-            });
+            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
 
             return fut;
         }
@@ -247,10 +243,10 @@ public final class GridTestUtils {
 
         /**
          * @param delegate Delegate.
-         * @param discoHooks Interceptors of discovery messages.
+         * @param discoHook Interceptor of discovery messages.
          */
-        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook... discoHooks) {
-            return new DiscoverySpiListenerWrapper(delegate, discoHooks);
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoHook) {
+            return new DiscoverySpiListenerWrapper(delegate, discoHook);
         }
     }
 

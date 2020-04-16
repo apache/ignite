@@ -20,8 +20,6 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -38,8 +36,8 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     /** */
     public boolean ignorePingResponse;
 
-    /** Interceptors of discovery messages. */
-    private List<DiscoveryHook> discoHooks;
+    /** Interceptor of discovery messages. */
+    private DiscoveryHook discoHook;
 
     /** {@inheritDoc} */
     @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -56,25 +54,19 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
     @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-        super.setListener(lsnr == null || discoHooks == null ?
-            lsnr : wrap(lsnr, discoHooks.toArray(new DiscoveryHook[0])));
+        super.setListener(lsnr == null || discoHook == null ? lsnr : wrap(lsnr, discoHook));
     }
 
     /**
-     * Adds interceptor of discovery messages. Note that {@link DiscoveryHook} must be added before start.
+     * Sets interceptor of discovery messages. Note that {@link DiscoveryHook} must be set before SPI start.
      * Otherwise, this method call will take no effect.
      *
      * @param discoHook Interceptor of discovery messages.
      */
-    public void addDiscoveryHook(DiscoveryHook discoHook) {
+    public void discoveryHook(DiscoveryHook discoHook) {
         assert !started();
-        assert discoHook != null;
 
-        if (discoHooks == null)
-            discoHooks = new ArrayList<>();
-
-        discoHooks.add(discoHook);
+        this.discoHook = discoHook;
     }
 }
