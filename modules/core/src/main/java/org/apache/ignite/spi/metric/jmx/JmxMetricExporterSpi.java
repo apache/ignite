@@ -64,7 +64,7 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
     private void register(ReadOnlyMetricRegistry mreg) {
         if (filter != null && !filter.test(mreg)) {
             if (log.isDebugEnabled())
-                U.debug(log, "Metric registry filtered and will not be registered.[registry=" + mreg.name() + ']');
+                log.debug("Metric registry filtered and will not be registered.[registry=" + mreg.name() + ']');
 
             return;
         }
