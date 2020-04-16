@@ -3034,10 +3034,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     private <T> T getObject(String cacheName, String key, Class<T> cls) throws Exception {
-        String ret = content(cacheName, GridRestCommand.CACHE_GET,
-            "keyType", "int",
-            "key", key
-        );
+        String ret = content(cacheName, GridRestCommand.CACHE_GET, "keyType", "int", "key", key);
 
         info("Get command result: " + ret);
 
