@@ -116,6 +116,7 @@ public class AbstractContinuousQuerySandboxTest extends AbstractSandboxTest {
     /**
      * Opens query cursor.
      *
+     * @param ignite Node.
      * @param q {@link Query}.
      * @param init True if needing put data to a cache before openning a cursor.
      */
