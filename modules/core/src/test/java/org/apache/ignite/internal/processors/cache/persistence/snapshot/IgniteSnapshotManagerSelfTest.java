@@ -234,7 +234,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try {
             snpFutTask.start();
 
-            // Change data before snapshot creation which must be included into it witch correct value multiplier.
+            // Change data before snapshot creation which must be included into it with correct value multiplier.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, valMultiplier * i));
 
@@ -274,7 +274,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
             assertEquals("snapshot data consistency violation [key=" + i + ']',
-                i * valMultiplier, ((TestOrderItem)ig2.cache(DEFAULT_CACHE_NAME).get(i)).value);
+                i * valMultiplier, ((TestOrderItem)ig2.cache(DEFAULT_CACHE_NAME).get(i)).val);
         }
     }
 
@@ -689,12 +689,13 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                     try {
                         U.await(cpLatch);
 
-                            delegate.sendPart0(part, cacheDirName, pair, length);
-                        } catch (IgniteInterruptedCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                        delegate.sendPart0(part, cacheDirName, pair, length);
                     }
-                });
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            });
 
         IgniteCache<?, ?> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -774,11 +775,15 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         private final int key;
 
         /** Order value. */
-        private final int value;
+        private final int val;
 
-        public TestOrderItem(int key, int value) {
+        /**
+         * @param key Item key.
+         * @param val Item value.
+         */
+        public TestOrderItem(int key, int val) {
             this.key = key;
-            this.value = value;
+            this.val = val;
         }
 
         /** {@inheritDoc} */
@@ -792,17 +797,17 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             TestOrderItem item = (TestOrderItem)o;
 
             return key == item.key &&
-                value == item.value;
+                val == item.val;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(key, value);
+            return Objects.hash(key, val);
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "TestOrderItem [key=" + key + ", value=" + value + ']';
+            return "TestOrderItem [key=" + key + ", value=" + val + ']';
         }
     }
 }
