@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -818,11 +819,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
         }
 
-        // Collection of pairs group and appropriate cache partition to be snapshot.
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
-        for (Integer grpId : req.grpIds)
+        // Prepare collection of pairs group and appropriate cache partition to be snapshot.
+        // Cache group context may be 'null' on some nodes e.g. a node filter is set.
+        for (Integer grpId : req.grpIds) {
+            if (cctx.cache().cacheGroup(grpId) == null)
+                continue;
+
             parts.put(grpId, null);
+        }
+
+        if (parts.isEmpty())
+            return new GridFinishedFuture<>();
 
         SnapshotFutureTask task0 = registerSnapshotTask(req.snpName,
             req.srcNodeId,
@@ -831,7 +840,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         clusterSnpReq = req;
 
-        return task0.chain(f -> new SnapshotOperationResponse());
+        return task0.chain(fut -> {
+            if (fut.error() == null)
+                return new SnapshotOperationResponse();
+            else
+                throw new GridClosureException(fut.error());
+        });
     }
 
     /**
@@ -923,7 +937,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 else {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
-                        "[hasErr" + snpReq.hasErr + ", fail=" + endFail + ']'));
+                        "[hasErr=" + snpReq.hasErr + ", fail=" + endFail + ']'));
                 }
 
                 clusterSnpFut = null;

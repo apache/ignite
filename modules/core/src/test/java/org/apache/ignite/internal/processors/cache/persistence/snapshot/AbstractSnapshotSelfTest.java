@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -91,8 +92,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
 
-    /** Configuration for the 'default' cache. */
-    protected CacheConfiguration<Integer, Integer> dfltCacheCfg =
+    /** Default configuration for the 'default' cache. */
+    protected static Supplier<CacheConfiguration<Integer, Integer>> txCcfgFactory = () ->
         new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.PARTITIONED)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
@@ -100,6 +101,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false)
                 .setPartitions(CACHE_PARTS_COUNT));
+
+    /** Configuration for the 'default' cache. */
+    protected volatile CacheConfiguration<Integer, Integer> dfltCacheCfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -135,6 +139,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Before
     public void beforeTestSnapshot() throws Exception {
         cleanPersistenceDir();
+
+        dfltCacheCfg = txCcfgFactory.get();
     }
 
     /** @throws Exception If fails. */

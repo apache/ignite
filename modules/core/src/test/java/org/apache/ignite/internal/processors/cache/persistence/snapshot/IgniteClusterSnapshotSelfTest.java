@@ -87,8 +87,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** Cache configuration for test. */
-    private static CacheConfiguration<Integer, Integer> txCcfg = new CacheConfiguration<Integer, Integer>("txCacheName")
-        .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+    private static CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("txCacheName")
+        .setAtomicityMode(CacheAtomicityMode.ATOMIC)
         .setBackups(2)
         .setAffinity(new RendezvousAffinityFunction(false)
             .setPartitions(CACHE_PARTS_COUNT));
@@ -105,13 +105,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Take snapshot from the whole cluster and check snapshot consistency.
+     * Take snapshot from the whole cluster and check snapshot consistency when the
+     * cluster tx load starts on a new topology version.
      * Note: Client nodes and server nodes not in baseline topology must not be affected.
      *
      * @throws Exception If fails.
      */
     @Test
-    public void testConsistentClusterSnapshotUnderLoad() throws Exception {
+    public void testConsistentClusterSnapshotLoadNewTopology() throws Exception {
         int grids = 3;
         String snpName = "backup23012020";
         AtomicInteger atKey = new AtomicInteger(CACHE_KEYS_RANGE);
@@ -128,11 +129,11 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         File locSnpDir = snp(notBltIgnite).snapshotLocalDir(SNAPSHOT_NAME);
         String notBltDirName = folderName(notBltIgnite);
 
-        IgniteCache<Integer, Integer> cache = ignite.createCache(txCcfg);
+        IgniteCache<Integer, Integer> atCache = ignite.createCache(atomicCcfg);
 
         for (int idx = 0; idx < CACHE_KEYS_RANGE; idx++) {
-            cache.put(txKey.incrementAndGet(), -1);
-            ignite.cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), -1);
+            atCache.put(atKey.incrementAndGet(), -1);
+            ignite.cache(DEFAULT_CACHE_NAME).put(txKey.incrementAndGet(), -1);
         }
 
         forceCheckpoint();
@@ -172,14 +173,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 while (!Thread.currentThread().isInterrupted()) {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    int txIdx = rnd.nextInt(grids);
+                    int atIdx = rnd.nextInt(grids);
 
                     // Zero out the sign bit.
-                    grid(txIdx).cache(txCcfg.getName()).put(txKey.incrementAndGet(), rnd.nextInt() & Integer.MAX_VALUE);
+                    grid(atIdx).cache(atomicCcfg.getName()).put(txKey.incrementAndGet(), rnd.nextInt() & Integer.MAX_VALUE);
 
-                    int atomicIdx = rnd.nextInt(grids);
+                    int txIdx = rnd.nextInt(grids);
 
-                    grid(atomicIdx).cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), rnd.nextInt() & Integer.MAX_VALUE);
+                    grid(txIdx).cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), rnd.nextInt() & Integer.MAX_VALUE);
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
@@ -209,16 +210,16 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + DEFAULT_CACHE_NAME,
             CACHE_KEYS_RANGE, snpIg0.cache(DEFAULT_CACHE_NAME).size());
 
-        assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + txCcfg.getName(),
-            CACHE_KEYS_RANGE, snpIg0.cache(txCcfg.getName()).size());
+        assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + atomicCcfg.getName(),
+            CACHE_KEYS_RANGE, snpIg0.cache(atomicCcfg.getName()).size());
 
         snpIg0.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
             .forEach(e -> assertTrue("Snapshot must contains only negative values " +
                 "[cache=" + DEFAULT_CACHE_NAME + ", entry=" + e +']', (Integer)e.getValue() < 0));
 
-        snpIg0.cache(txCcfg.getName()).query(new ScanQuery<>(null))
+        snpIg0.cache(atomicCcfg.getName()).query(new ScanQuery<>(null))
             .forEach(e -> assertTrue("Snapshot must contains only negative values " +
-                "[cache=" + txCcfg.getName() + ", entry=" + e + ']', (Integer)e.getValue() < 0));
+                "[cache=" + atomicCcfg.getName() + ", entry=" + e + ']', (Integer)e.getValue() < 0));
     }
 
     /** @throws Exception If fails. */
@@ -235,24 +236,26 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
                 int gId = rnd.nextInt(grids);
 
-                grid(gId).cache(DEFAULT_CACHE_NAME)
-                    .put(cacheKey.incrementAndGet(), 0);
+                IgniteCache<Integer, Integer> txCache = grid(gId).getOrCreateCache(dfltCacheCfg.getName());
+
+                try (Transaction tx = grid(gId).transactions().txStart()) {
+                    txCache.put(cacheKey.incrementAndGet(), 0);
+
+                    txCache.put(cacheKey.incrementAndGet(), 1);
+
+                    tx.commit();
+                }
             }
-        }, 5, "atomic-cache-put-");
+        }, 5, "tx-cache-put-");
 
         IgniteInternalFuture<Long> txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                int gId = rnd.nextInt(grids);
+                IgniteCache<Integer, Integer> atomicCache = grid(rnd.nextInt(grids))
+                    .getOrCreateCache(atomicCcfg);
 
-                IgniteCache<Integer, Integer> txCache = grid(gId).getOrCreateCache(txCcfg);
-
-                try (Transaction tx = grid(gId).transactions().txStart()) {
-                    txCache.put(cacheKey.incrementAndGet(), 0);
-
-                    tx.commit();
-                }
+                atomicCache.put(cacheKey.incrementAndGet(), 0);
             }
         }, 5, "tx-cache-put-");
 
@@ -287,6 +290,36 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             }, REBALANCE_AWAIT_TIME));
 
         TestRecordingCommunicationSpi.stopBlockAll();
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotWithCacheNodeFilter() throws Exception {
+        int grids = 4;
+
+        CacheConfiguration<Integer, Integer> ccfg = txCcfgFactory.get()
+            .setNodeFilter(node -> node.consistentId().toString().endsWith("1"));
+
+        for (int i = 0; i < grids; i++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+
+        IgniteEx ig0 = grid(0);
+
+        ig0.cluster().baselineAutoAdjustEnabled(false);
+        ig0.cluster().state(ACTIVE);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.getOrCreateCache(ccfg).put(i, i);
+
+        forceCheckpoint();
+
+        ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
+
+        assertSnapshotCacheKeys(snp.cache(ccfg.getName()));
     }
 
     /** @throws Exception If fails. */
@@ -611,6 +644,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         // Snapshot process will be blocked when delta partition files processing starts.
         snp(ignite).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
+
+        assertEquals("Snapshot start time must be undefined prior to snapshot operation started.",
+            0, startTime.value());
+        assertEquals("Snapshot end time must be undefined to snapshot operation started.",
+            0, endTime.value());
+        assertNull("Snapshot name must not exist prior to snapshot operation started.", snpName.value());
+        assertNull("Snapshot error message must null prior to snapshot operation started.", errMsg.value());
+        assertTrue("Snapshots on local node must not exist", snpList.value().isEmpty());
 
         long cutoffStartTime = U.currentTimeMillis();
 

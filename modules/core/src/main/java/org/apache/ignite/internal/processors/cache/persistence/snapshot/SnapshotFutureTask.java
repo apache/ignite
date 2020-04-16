@@ -245,7 +245,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         startedFut.onDone(th);
 
-        U.log(log, "Snapshot task has accepted exception to stop itself: " + th);
+        U.warn(log, "Snapshot task has accepted exception to stop: " + th);
     }
 
     /** {@inheritDoc} */
@@ -308,7 +308,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
                 if (gctx == null)
-                    throw new IgniteCheckedException("Cache group context has not found. Cache group is stopped: " + grpId);
+                    throw new IgniteCheckedException("Cache group context not found: " + grpId);
 
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);

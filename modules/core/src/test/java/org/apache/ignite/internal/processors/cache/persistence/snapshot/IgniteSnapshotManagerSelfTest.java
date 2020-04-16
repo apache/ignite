@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
@@ -352,6 +354,42 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             fut::get,
             IgniteException.class,
             err_msg);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRemoteWithNodeFiler() throws Exception {
+        int grids = 3;
+        CacheConfiguration<Integer, Integer> ccfg = txCcfgFactory.get()
+            .setNodeFilter(node -> node.consistentId().toString().endsWith("1"));
+
+        for (int i = 0; i < grids; i++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+
+        IgniteEx ig0 = grid(0);
+        ig0.cluster().baselineAutoAdjustEnabled(false);
+        ig0.cluster().state(ACTIVE);
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            ig0.getOrCreateCache(ccfg).put(i, i);
+
+        forceCheckpoint();
+
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        parts.put(CU.cacheId(DEFAULT_CACHE_NAME), null);
+
+        IgniteInternalFuture<?> fut = snp(grid(0)).requestRemoteSnapshot(grid(2).localNode().id(),
+            parts,
+            new BiConsumer<File, GroupPartitionId>() {
+                @Override public void accept(File file, GroupPartitionId gprPartId) {
+                    fail("We should not receive anything.");
+                }
+            });
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            IgniteCheckedException.class,
+            "The snapshot operation stopped");
     }
 
     /** @throws Exception If fails. */
