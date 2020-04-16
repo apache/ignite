@@ -38,25 +38,19 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                 </bean>
                 <bean id="cacheNear" class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cacheNear"/>
-                    <property name="nearConfiguration">
-                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
-                    </property>
-                    <property name="platformNearConfiguration">
-                        <bean class="org.apache.ignite.configuration.PlatformNearCacheConfiguration">
+                    <property name="name" value="cachePlatform"/>
+                    <property name="platformCacheConfiguration">
+                        <bean class="org.apache.ignite.configuration.PlatformCacheConfiguration">
                             <property name="keyTypeName" value="System.Int32" />
                             <property name="valueTypeName" value="Apache.Ignite.Benchmarks.Model.Employee" />
                         </bean>
                     </property>
                 </bean>
                 <bean id="cacheNear" class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="cacheNearObj"/>
-                    <property name="nearConfiguration">
-                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
-                    </property>
-                    <property name="platformNearConfiguration">
-                        <bean class="org.apache.ignite.configuration.PlatformNearCacheConfiguration">
-                            <!-- Do not specify types: near cache defaults to ConcurrentDictionary<object, object> -->
+                    <property name="name" value="cachePlatformObj"/>
+                    <property name="platformCacheConfiguration">
+                        <bean class="org.apache.ignite.configuration.PlatformCacheConfiguration">
+                            <!-- Do not specify types: platform cache defaults to ConcurrentDictionary<object, object> -->
                         </bean>
                     </property>
                 </bean>
