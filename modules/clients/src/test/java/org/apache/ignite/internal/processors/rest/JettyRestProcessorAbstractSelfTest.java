@@ -3177,27 +3177,33 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /** */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public static class OuterClass {
         /** */
+        @JsonProperty
         private long id;
 
         /** */
+        @JsonProperty
         private String name;
 
         /** */
+        @JsonProperty
         private double doubleVal;
 
         /** */
+        @JsonProperty
         private Boolean optional;
 
         /** */
+        @JsonProperty
         private ArrayList<Integer> list;
 
         /** */
+        @JsonProperty
         private Timestamp timestamp;
 
         /** */
+        @JsonProperty
         private long[] longs;
 
         /** */
@@ -3214,55 +3220,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             this.optional = optional;
         }
 
-        /** */
-        public long getId() {
-            return id;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public Boolean getOptional() {
-            return optional;
-        }
-
-        /** */
-        public double getDoubleVal() {
-            return doubleVal;
-        }
-
-        /** */
-        public ArrayList<Integer> getList() {
-            return list;
-        }
-
-        /** */
-        public Timestamp getTimestamp() {
-            return timestamp;
-        }
-
-        /** */
-        public long[] getLongs() {
-            return longs;
-        }
-
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            OuterClass aClass = (OuterClass)o;
-            return id == aClass.id &&
-                Double.compare(aClass.doubleVal, doubleVal) == 0 &&
-                Objects.equals(name, aClass.name) &&
-                Objects.equals(optional, aClass.optional) &&
-                Objects.equals(list, aClass.list) &&
-                Objects.equals(timestamp, aClass.timestamp) &&
-                Arrays.equals(longs, aClass.longs);
+            OuterClass aCls = (OuterClass)o;
+            return id == aCls.id &&
+                Double.compare(aCls.doubleVal, doubleVal) == 0 &&
+                Objects.equals(name, aCls.name) &&
+                Objects.equals(optional, aCls.optional) &&
+                Objects.equals(list, aCls.list) &&
+                Objects.equals(timestamp, aCls.timestamp) &&
+                Arrays.equals(longs, aCls.longs);
         }
 
         /** {@inheritDoc} */
@@ -3301,57 +3272,74 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     static class Complex implements Serializable {
         /** */
         @QuerySqlField(index = true)
+        @JsonProperty
         private Integer id;
 
         /** */
         @QuerySqlField
+        @JsonProperty
         private String str;
 
         /** */
         @QuerySqlField
+        @JsonProperty
         private Timestamp timestamp;
 
         /** */
         @QuerySqlField
+        @JsonProperty
         private Date sqlDate;
 
         /** */
+        @JsonProperty
         private Time time;
 
         /** */
+        @JsonProperty
         private java.util.Date date;
 
         /** */
+        @JsonProperty
         private HashMap<String, Integer> map;
 
         /** */
+        @JsonProperty
         private OuterClass[] objects;
 
         /** */
+        @JsonProperty
         private long[] longs;
 
         /** */
+        @JsonProperty
         private int[] ints;
 
         /** */
+        @JsonProperty
         private byte[] bytes;
 
         /** */
+        @JsonProperty
         private char[] chars;
 
         /** */
+        @JsonProperty
         private Integer[] integers;
 
         /** */
+        @JsonProperty
         private ArrayList<Integer> list;
 
         /** */
+        @JsonProperty
         private HashSet<Integer> col;
 
         /** */
+        @JsonProperty
         private OuterClass outer;
 
         /** */
+        @JsonProperty
         private COLOR color;
 
         /** */
@@ -3380,91 +3368,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             this.color = color;
             this.outer = outer;
             this.objects = objects;
-        }
-
-        /** */
-        public OuterClass[] getObjects() {
-            return objects;
-        }
-
-        /** */
-        public byte[] getBytes() {
-            return bytes;
-        }
-
-        /** */
-        public char[] getChars() {
-            return chars;
-        }
-
-        /** */
-        public HashMap<String, Integer> getMap() {
-            return map;
-        }
-
-        /** */
-        public int[] getInts() {
-            return ints;
-        }
-
-        /** */
-        public long[] getLongs() {
-            return longs;
-        }
-
-        /** */
-        public String getStr() {
-            return str;
-        }
-
-        /** */
-        public Integer getId() {
-            return id;
-        }
-
-        /** */
-        public Timestamp getTimestamp() {
-            return timestamp;
-        }
-
-        /** */
-        public ArrayList<Integer> getList() {
-            return list;
-        }
-
-        /** */
-        public Integer[] getIntegers() {
-            return integers;
-        }
-
-        /** */
-        public HashSet<Integer> getCol() {
-            return col;
-        }
-
-        /** */
-        public OuterClass getOuter() {
-            return outer;
-        }
-
-        /** */
-        public Date getSqlDate() {
-            return sqlDate;
-        }
-
-        /** */
-        public Time getTime() {
-            return time;
-        }
-
-        /** */
-        public java.util.Date getDate() {
-            return date;
-        }
-
-        /** */
-        public COLOR getColor() {
-            return color;
         }
 
         /** {@inheritDoc} */
