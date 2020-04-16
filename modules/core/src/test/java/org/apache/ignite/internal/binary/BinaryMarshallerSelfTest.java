@@ -53,6 +53,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -80,10 +82,18 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformBigEndianInputStreamImpl;
+import org.apache.ignite.internal.processors.platform.memory.PlatformBigEndianOutputStreamImpl;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStreamImpl;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStreamImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -2947,6 +2957,89 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testReadDetachedMap_WithoutFullyCopyingUnderlyingData() throws Exception {
+        Map<Key, Value> map = IntStream.range(0, 1000).mapToObj(i -> new T2<>(new Key(i), new Value(i)))
+            .collect(Collectors.toMap(T2::getKey, T2::getValue));
+
+        Map<BinaryObject, BinaryObject> desMap =
+            (Map<BinaryObject, BinaryObject>)ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(map);
+
+        desMap.forEach((k, v) -> {
+            Key key = new Key(k.field("key"));
+            Value val = new Value(v.field("val"));
+
+            assertTrue(map.containsKey(key));
+            assertEquals(val, map.get(key));
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedCollection_WithoutFullyCopyingUnderlyingData() throws Exception {
+        Collection<Value> col = IntStream.range(0, 1000).mapToObj(Value::new).collect(Collectors.toSet());
+
+        Collection<BinaryObject> desCol =
+            (Collection<BinaryObject>)ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(col);
+
+        desCol.forEach(v -> {
+           Value val = new Value(v.field("val"));
+
+           assertTrue(col.contains(val));
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedArray_WithoutFullyCopyingUnderlyingData() throws Exception {
+        Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
+
+        Object[] desArr = (Object[])ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(arr);
+
+        assertEquals(arr.length, desArr.length);
+
+        for (int i = 0; i < arr.length; i++) {
+            BinaryObject val = (BinaryObject)desArr[i];
+
+            assertEquals(arr[i], new Value(val.field("val")));
+        }
+    }
+
+    /**
+     * Tests that process of detach reading object from platform offheap memory
+     * performs correctly and doesn't invoke additional memory copy on heap.
+     *
+     * @param testObj Test object to perform marshalling and detached unmarshalling.
+     * @return Unmarshalled object.
+     */
+    private Object ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(Object testObj) throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        try(TestPlatformMemory mem = new TestPlatformMemory()) {
+            BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(mem.output());
+
+            writer.writeObject(testObj);
+
+            PlatformInputStream is = mem.input();
+
+            BinaryRawReaderEx reader = marsh.binaryMarshaller().reader(is);
+
+            Object res = reader.readObjectDetached();
+
+            // Check that data doesn't copy fully on heap.
+            assertNull(GridTestUtils.getFieldValue(is, "dataCopy"));
+
+            return res;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testMarshallingThroughJdk() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
@@ -5715,6 +5808,74 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
                 return a;
             }
+        }
+    }
+
+    /** */
+    static class TestPlatformMemory implements PlatformMemory {
+        /** */
+        private static final int DEFAULT_CAPACITY = 1024;
+
+        /** */
+        long memPtr;
+
+        /** */
+        int capacity;
+
+        /** */
+        public TestPlatformMemory() {
+            this(DEFAULT_CAPACITY);
+        }
+
+        /** */
+        public TestPlatformMemory(int cap) {
+            memPtr = GridUnsafe.allocateMemory(cap);
+
+            capacity = cap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public PlatformInputStream input() {
+            return GridUnsafe.BIG_ENDIAN ? new PlatformBigEndianInputStreamImpl(this) :
+                new PlatformInputStreamImpl(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public PlatformOutputStream output() {
+            return GridUnsafe.BIG_ENDIAN ? new PlatformBigEndianOutputStreamImpl(this) :
+                new PlatformOutputStreamImpl(this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long pointer() {
+            return memPtr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long data() {
+            return memPtr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int capacity() {
+            return capacity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int length() {
+            return capacity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reallocate(int cap) {
+            memPtr = GridUnsafe.reallocateMemory(memPtr, cap);
+
+            capacity = cap;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            GridUnsafe.freeMemory(memPtr);
         }
     }
 }
