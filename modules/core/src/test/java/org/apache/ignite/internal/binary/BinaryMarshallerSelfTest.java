@@ -2961,8 +2961,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Map<Key, Value> map = IntStream.range(0, 1000).mapToObj(i -> new T2<>(new Key(i), new Value(i)))
             .collect(Collectors.toMap(T2::getKey, T2::getValue));
 
-        Map<BinaryObject, BinaryObject> desMap =
-            (Map<BinaryObject, BinaryObject>)ensureAllDataNotCopiedOnHeap(map);
+        Map<BinaryObject, BinaryObject> desMap = (Map<BinaryObject, BinaryObject>)ensureAllDataNotCopiedOnHeap(map);
+
+        assertEquals(map.size(), desMap.size());
 
         desMap.forEach((k, v) -> {
             Key key = new Key(k.field("key"));
@@ -2980,8 +2981,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testReadDetachedCollection_WithoutFullyCopyingUnderlyingData() throws Exception {
         Collection<Value> col = IntStream.range(0, 1000).mapToObj(Value::new).collect(Collectors.toSet());
 
-        Collection<BinaryObject> desCol =
-            (Collection<BinaryObject>)ensureAllDataNotCopiedOnHeap(col);
+        Collection<BinaryObject> desCol = (Collection<BinaryObject>)ensureAllDataNotCopiedOnHeap(col);
 
         assertEquals(col.size(), desCol.size());
 
