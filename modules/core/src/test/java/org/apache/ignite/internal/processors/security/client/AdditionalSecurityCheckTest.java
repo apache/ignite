@@ -268,7 +268,8 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
 
             GridClientClusterState state = client.state();
 
-            // Close a coordinator to force the client to send a CLUSTER_CURRENT_STATE message to the other node.
+            // Close a coordinator to force the client to send a CLUSTER_CURRENT_STATE message to the other node
+            // in the next statement.
             ignite.close();
 
             state.state();
