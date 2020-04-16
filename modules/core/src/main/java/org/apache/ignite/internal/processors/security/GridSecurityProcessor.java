@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
  * This interface is responsible for:
- *<ul>
+ * <ul>
  *     <li>Node authentication;</li>
  *     <li>Thin client authentication;</li>
  *     <li>Providing configuration info whether global node authentication is enabled;</li>
@@ -42,7 +42,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  *     <li>Keeping and propagating authenticated security subject for thin clients;</li>
  *     <li>Keeping and propagating authenticated security contexts for nodes and thin clients;</li>
  *     <li>Authorizing specific operations (cache put, task execute, so on) when session security context is set.</li>
- *</ul>
+ * </ul>
  */
 public interface GridSecurityProcessor extends GridProcessor {
     /**

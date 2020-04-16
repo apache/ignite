@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -134,7 +135,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(
+        IgniteEx ignite = startGrid(
             getConfiguration(
                 new TestSecurityData(CLIENT,
                     SecurityPermissionSetBuilder.create().defaultAllowAll(false)
@@ -170,7 +171,9 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
                         .build()
                 )
             )
-        ).cluster().state(ClusterState.ACTIVE);
+        );
+
+        ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
