@@ -31,10 +31,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
@@ -115,6 +122,30 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
+    }
+
+    /**
+     * Gets the node's security context.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     * @param node Node.
+     * @return Node's security context.
+     */
+    public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+        A.notNull(node, "Cluster node");
+
+        byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+        if (subjBytes == null)
+            throw new SecurityException("Security context isn't certain.");
+
+        try {
+            return U.unmarshal(marsh, subjBytes, ldr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SecurityException("Failed to get security context.", e);
+        }
     }
 
     /**

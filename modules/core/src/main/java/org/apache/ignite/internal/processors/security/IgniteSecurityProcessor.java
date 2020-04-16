@@ -46,13 +46,12 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
  * Default {@code IgniteSecurity} implementation.
@@ -86,8 +85,8 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Must use JDK marshaller for Security Subject. */
     private final JdkMarshaller marsh;
 
-    /** Map of node's security contexts. Key is the node's id. */
-    private final Map<UUID, SecurityContext> nodesSecCtxs = new ConcurrentHashMap<>();
+    /** Map of security contexts. Key is the node's id. */
+    private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /** Instance of IgniteSandbox. */
     private IgniteSandbox sandbox;
@@ -122,7 +121,9 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
             .orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
-        SecurityContext res = node != null ? securityContext(node) : securityContext(subjId);
+        SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
+            uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
+            : secPrc.securityContext(subjId);
 
         if (res == null)
             throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
@@ -137,31 +138,6 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         assert res != null;
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SecurityContext securityContext(UUID subjId) {
-        return secPrc.securityContext(requireNonNull(subjId, "Parameter 'subjId' cannot be null."));
-    }
-
-    /** {@inheritDoc} */
-    @Override public SecurityContext securityContext(ClusterNode node) {
-        requireNonNull(node, "Parameter 'node' cannot be null.");
-
-        return nodesSecCtxs.computeIfAbsent(node.id(),
-            id -> {
-                byte[] subjBytes = node.attribute(ATTR_SECURITY_SUBJECT_V2);
-
-                if (subjBytes == null)
-                    throw new SecurityException("Security context isn't certain.");
-
-                try {
-                    return U.unmarshal(marsh, subjBytes, U.resolveClassLoader(ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new SecurityException("Failed to get security context.", e);
-                }
-            });
     }
 
     /** {@inheritDoc} */
@@ -282,7 +258,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         ctx.event().addDiscoveryEventListener(
-            (evt, discoCache) -> nodesSecCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
+            (evt, discoCache) -> secCtxs.remove(evt.eventNode().id()), EVT_NODE_FAILED, EVT_NODE_LEFT
         );
 
         secPrc.onKernalStart(active);
@@ -355,7 +331,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @return Security context of local node.
      */
     private SecurityContext localSecurityContext() {
-        return securityContext(ctx.discovery().localNode());
+        return nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), ctx.discovery().localNode());
     }
 
     /**

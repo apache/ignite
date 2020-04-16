@@ -490,10 +490,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                @Override public SecurityContext securityContext(ClusterNode node) {
-                    return ctx.security().securityContext(node);
-                }
-
                 @Override public boolean isGlobalNodeAuthentication() {
                     return ctx.security().isGlobalNodeAuthentication();
                 }

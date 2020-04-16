@@ -29,7 +29,7 @@ public class ThinClientSecurityContextOnRemoteNodeTest extends ThinClientPermiss
     @Override protected CacheConfiguration[] cacheConfigurations() {
         return new CacheConfiguration[] {
             new CacheConfiguration().setName(CACHE).setCacheMode(CacheMode.REPLICATED),
-            new CacheConfiguration().setName(FORBIDDEN_CACHE)
+            new CacheConfiguration().setName(FORBIDDEN_CACHE).setCacheMode(CacheMode.REPLICATED)
         };
     }
 
