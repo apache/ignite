@@ -17,23 +17,30 @@
 
 package org.apache.ignite.internal;
 
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryUpdatedListener;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -302,6 +309,34 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
                 newSrvCache.put(key, key);
 
             assertFalse(lsnr.latch.await(3000, MILLISECONDS));
+        }
+    }
+
+    @Test
+    public void testCacheContinuousQuerySpliteratorMultipleCalls() {
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        CacheEventListener lsnr = new CacheEventListener();
+
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+        qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
+            @Override public boolean apply(Object key, Object val) {
+                return key != null;
+            }
+        }));
+        qry.setAutoUnsubscribe(true);
+
+        qry.setLocalListener(lsnr);
+
+        try(QueryCursor<?> cur = clientCache.query(qry)) {
+            cur.iterator();
+            cur.spliterator();
+            GridTestUtils.assertThrows(log, IgniteException.class, "Iterator is already fetched or query was cancelled.", cur, "iterator");
         }
     }
 
