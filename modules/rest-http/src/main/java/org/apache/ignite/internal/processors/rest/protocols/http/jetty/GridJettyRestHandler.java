@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -162,7 +163,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param authChecker Authentication checking closure.
      * @param ctx Kernal context.
      */
-    GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, GridKernalContext ctx) {
+    GridJettyRestHandler(GridRestProtocolHandler hnd, C1<String, Boolean> authChecker, GridKernalContext ctx) {
         assert hnd != null;
         assert ctx != null;
 

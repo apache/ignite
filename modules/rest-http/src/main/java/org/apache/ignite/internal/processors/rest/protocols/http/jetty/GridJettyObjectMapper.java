@@ -304,6 +304,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
     /** Custom serializer for {@link java.sql.Date}. */
     private static final JsonSerializer<Date> IGNITE_SQLDATE_SERIALIZER = new JsonSerializer<Date>() {
+        /** {@inheritDoc} */
         @Override public void serialize(Date date, JsonGenerator gen, SerializerProvider prov) throws IOException {
             gen.writeString(date.toString());
         }
@@ -311,6 +312,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
     /** Custom deserializer for {@link java.sql.Timestamp}. */
     private static final JsonDeserializer<Timestamp> IGNITE_TIMESTAMP_DESERIALIZER = new JsonDeserializer<Timestamp>() {
+        /** {@inheritDoc} */
         @Override public Timestamp deserialize(JsonParser parser,
             DeserializationContext ctx) throws IOException, JsonProcessingException {
             return Timestamp.valueOf(parser.getText());
@@ -319,6 +321,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
 
     /** Custom deserializer for {@link java.sql.Date}. */
     private static final JsonDeserializer<Date> IGNITE_SQLDATE_DESERIALIZER = new JsonDeserializer<Date>() {
+        /** {@inheritDoc} */
         @Override public Date deserialize(JsonParser parser,
             DeserializationContext ctx) throws IOException, JsonProcessingException {
             return Date.valueOf(parser.getText());
