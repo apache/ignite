@@ -40,7 +40,6 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
@@ -48,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * JSON deserializer into the Ignite binary object.
  */
-public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer {
+public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryObjectImpl> {
     /** Property name to set binary type name. */
     public static final String BINARY_TYPE_PROPERTY = "binaryTypeName";
 
@@ -73,7 +72,9 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer {
         String cacheName = (String)dCtx.findInjectableValue(CACHE_NAME_PROPERTY, null, null);
 
         assert type != null;
-        assert !ctx.marshallerContext().isSystemType(type);
+
+        if (ctx.marshallerContext().isSystemType(type))
+            throw new IllegalArgumentException("Cannot make binary object [type=" + type + "]");
 
         ObjectCodec mapper = parser.getCodec();
         JsonNode jsonTree = mapper.readTree(parser);
@@ -217,9 +218,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer {
                     return jsonNode.numberValue();
 
                 case OBJECT:
-                    String newTypeName = type + "." + GridCacheUtils.capitalize(field);
-
-                    return deserialize0(cacheName, newTypeName, jsonNode, mapper);
+                    return mapper.treeToValue(jsonNode, cls);
 
                 case STRING:
                     return jsonNode.asText();

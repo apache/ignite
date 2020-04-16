@@ -164,6 +164,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      */
     GridJettyRestHandler(GridRestProtocolHandler hnd, IgniteClosure<String, Boolean> authChecker, GridKernalContext ctx) {
         assert hnd != null;
+        assert ctx != null;
 
         this.hnd = hnd;
         this.authChecker = authChecker;
@@ -809,7 +810,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.sqlQuery(params.get("qry"));
 
-                restReq0.arguments(new Converter(cacheName).values( null, "arg", params).toArray());
+                restReq0.arguments(new Converter(cacheName).values(null, "arg", params).toArray());
 
                 restReq0.typeName(params.get("type"));
 
@@ -1125,6 +1126,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                     default:
                         try {
+                            if (type.startsWith("java.") || type.startsWith("["))
+                                return jsonMapper.readValue(s, Class.forName(type));
+
                             InjectableValues.Std prop = new InjectableValues.Std()
                                 .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
                                 .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
