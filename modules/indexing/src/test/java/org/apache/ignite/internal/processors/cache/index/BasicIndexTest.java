@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
