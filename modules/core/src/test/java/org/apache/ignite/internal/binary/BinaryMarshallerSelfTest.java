@@ -2962,7 +2962,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             .collect(Collectors.toMap(T2::getKey, T2::getValue));
 
         Map<BinaryObject, BinaryObject> desMap =
-            (Map<BinaryObject, BinaryObject>)ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(map);
+            (Map<BinaryObject, BinaryObject>)ensureAllDataNotCopiedOnHeap(map);
 
         desMap.forEach((k, v) -> {
             Key key = new Key(k.field("key"));
@@ -2981,7 +2981,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Collection<Value> col = IntStream.range(0, 1000).mapToObj(Value::new).collect(Collectors.toSet());
 
         Collection<BinaryObject> desCol =
-            (Collection<BinaryObject>)ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(col);
+            (Collection<BinaryObject>)ensureAllDataNotCopiedOnHeap(col);
+
+        assertEquals(col.size(), desCol.size());
 
         desCol.forEach(v -> {
            Value val = new Value(v.field("val"));
@@ -2997,7 +2999,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testReadDetachedArray_WithoutFullyCopyingUnderlyingData() throws Exception {
         Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
 
-        Object[] desArr = (Object[])ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(arr);
+        Object[] desArr = (Object[])ensureAllDataNotCopiedOnHeap(arr);
 
         assertEquals(arr.length, desArr.length);
 
@@ -3016,7 +3018,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @return Unmarshalled object.
      * @throws Exception If failed.
      */
-    private Object ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(Object testObj) throws Exception {
+    private Object ensureAllDataNotCopiedOnHeap(Object testObj) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
         try (TestPlatformMemory mem = new TestPlatformMemory()) {
@@ -5818,17 +5820,19 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private static final int DEFAULT_CAPACITY = 1024;
 
         /** */
-        long memPtr;
+        private long memPtr;
 
         /** */
-        int capacity;
+        private int capacity;
 
         /** */
         public TestPlatformMemory() {
             this(DEFAULT_CAPACITY);
         }
 
-        /** */
+        /**
+         * @param cap Initial capacity of underlying buffer.
+         */
         public TestPlatformMemory(int cap) {
             memPtr = GridUnsafe.allocateMemory(cap);
 
