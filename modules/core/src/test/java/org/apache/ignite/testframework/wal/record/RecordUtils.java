@@ -487,4 +487,14 @@ public class RecordUtils {
     public static MetaPageInitRootInlineFlagsCreatedVersionRecord buildMetaPageInitRootInlineFlagsCreatedVersionRecord() {
         return new MetaPageInitRootInlineFlagsCreatedVersionRecord(1, 1, 2, 1);
     }
+
+    /**
+     * Return {@code true} if include to write-ahead log.
+     *
+     * @param walRecord Instance of {@link WALRecord}.
+     * @return {@code True} if include to write-ahead log.
+     */
+    public static boolean isIncludeIntoLog(WALRecord walRecord) {
+        return !UnsupportedWalRecord.class.isInstance(walRecord) && !SwitchSegmentRecord.class.isInstance(walRecord);
+    }
 }
