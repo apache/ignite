@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Defines custom data region configuration for Apache Ignite page memory

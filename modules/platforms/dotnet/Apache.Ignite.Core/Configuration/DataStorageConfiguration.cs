@@ -26,7 +26,6 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Data storage configuration for Ignite page memory.
