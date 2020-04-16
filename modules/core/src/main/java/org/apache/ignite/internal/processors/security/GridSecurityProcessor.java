@@ -94,7 +94,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param subjId Security subject id.
      * @return Security context or null if not found.
      */
-    public default SecurityContext securityContext(UUID subjId){
+    public default SecurityContext securityContext(UUID subjId) {
         throw new UnsupportedOperationException();
     }
 
