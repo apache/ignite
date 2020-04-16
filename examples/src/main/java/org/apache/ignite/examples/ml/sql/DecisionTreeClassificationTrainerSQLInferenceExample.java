@@ -67,6 +67,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
             System.out.println(">>> Ignite grid started.");
 
             // Use internal API to enable SQL functions disabled by default (the function CSVREAD is used below)
+            // TODO: IGNITE-12903
             ((IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing())
                 .distributedConfiguration().disabledFunctions(new HashSet<>());
 
