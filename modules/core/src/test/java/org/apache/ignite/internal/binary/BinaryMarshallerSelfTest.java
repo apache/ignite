@@ -3014,11 +3014,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      *
      * @param testObj Test object to perform marshalling and detached unmarshalling.
      * @return Unmarshalled object.
+     * @throws Exception If failed.
      */
     private Object ensureAllDataNotCopiedOnHeap_WhenObjectReadDetached(Object testObj) throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        try(TestPlatformMemory mem = new TestPlatformMemory()) {
+        try (TestPlatformMemory mem = new TestPlatformMemory()) {
             BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(mem.output());
 
             writer.writeObject(testObj);
