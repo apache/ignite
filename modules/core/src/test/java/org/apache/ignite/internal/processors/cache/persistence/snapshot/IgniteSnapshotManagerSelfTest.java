@@ -19,14 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -87,10 +85,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         // The following data will be included into checkpoint.
         for (int i = 2048; i < 4096; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i));
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i));
 
         for (int i = 4096; i < 8192; i++) {
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i) {
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
                 @Override public String toString() {
                     return "_" + super.toString();
                 }
@@ -170,7 +168,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, i));
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i));
 
         forceCheckpoint(ig);
 
@@ -185,7 +183,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
                 while (!Thread.currentThread().isInterrupted())
                     ig.cache(DEFAULT_CACHE_NAME).put(cntr.incrementAndGet(),
-                        new TestOrderItem(cntr.incrementAndGet(), cntr.incrementAndGet()));
+                        new Account(cntr.incrementAndGet(), cntr.incrementAndGet()));
             }
             catch (IgniteInterruptedCheckedException e) {
                 log.warning("Loader has been interrupted", e);
@@ -236,7 +234,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             // Change data before snapshot creation which must be included into it with correct value multiplier.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, valMultiplier * i));
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, valMultiplier * i));
 
             // Snapshot is still in the INIT state. beforeCheckpoint has been skipped
             // due to checkpoint already running and we need to schedule the next one
@@ -251,7 +249,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             // Change data after snapshot.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ig.cache(DEFAULT_CACHE_NAME).put(i, new TestOrderItem(i, 3 * i));
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, 3 * i));
 
             // Snapshot on the next checkpoint must copy page to delta file before write it to a partition.
             forceCheckpoint(ig);
@@ -274,7 +272,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
             assertEquals("snapshot data consistency violation [key=" + i + ']',
-                i * valMultiplier, ((TestOrderItem)ig2.cache(DEFAULT_CACHE_NAME).get(i)).val);
+                i * valMultiplier, ((Account)ig2.cache(DEFAULT_CACHE_NAME).get(i)).balance);
         }
     }
 
@@ -763,51 +761,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     private static class ZeroPartitionAffinityFunction extends RendezvousAffinityFunction {
         @Override public int partition(Object key) {
             return 0;
-        }
-    }
-
-    /** */
-    private static class TestOrderItem implements Serializable {
-        /** Serial version. */
-        private static final long serialVersionUID = 0L;
-
-        /** Order key. */
-        private final int key;
-
-        /** Order value. */
-        private final int val;
-
-        /**
-         * @param key Item key.
-         * @param val Item value.
-         */
-        public TestOrderItem(int key, int val) {
-            this.key = key;
-            this.val = val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TestOrderItem item = (TestOrderItem)o;
-
-            return key == item.key &&
-                val == item.val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(key, val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "TestOrderItem [key=" + key + ", value=" + val + ']';
         }
     }
 }

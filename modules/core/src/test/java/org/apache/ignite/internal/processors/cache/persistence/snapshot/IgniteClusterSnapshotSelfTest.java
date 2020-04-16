@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -36,6 +37,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -257,7 +259,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
                 atomicCache.put(cacheKey.incrementAndGet(), 0);
             }
-        }, 5, "tx-cache-put-");
+        }, 5, "atomic-cache-put-");
 
         try {
             IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
@@ -290,6 +292,104 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             }, REBALANCE_AWAIT_TIME));
 
         TestRecordingCommunicationSpi.stopBlockAll();
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotConsistencyUnderLoad() throws Exception {
+        int clients = 50;
+        int balance = 10_000;
+        int transferLimit = 1000;
+        int total = clients * balance * 2;
+        int grids = 3;
+        int transferThreadCnt = 4;
+        AtomicBoolean stop = new AtomicBoolean(false);
+        CountDownLatch txStarted = new CountDownLatch(1);
+
+        CacheConfiguration<Integer, Account> eastCcfg = accountCacheConfiguration("east");
+        CacheConfiguration<Integer, Account> westCcfg = accountCacheConfiguration("west");
+
+        for (int i = 0; i < grids; i++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration(eastCcfg, westCcfg)));
+
+        grid(0).cluster().state(ACTIVE);
+
+        Ignite client = startClientGrid(grids);
+
+        IgniteCache<Integer, Account> eastCache = client.cache(eastCcfg.getName());
+        IgniteCache<Integer, Account> westCache = client.cache(westCcfg.getName());
+
+        // Create clients with zero balance.
+        for (int i = 0; i < clients; i++) {
+            eastCache.put(i, new Account(i, balance));
+            westCache.put(i, new Account(i, balance));
+        }
+
+        assertEquals("The initial summary value in all caches is not correct.",
+            total, sumAllCacheValues(client, clients, eastCcfg.getName(), westCcfg.getName()));
+
+        forceCheckpoint();
+
+        IgniteInternalFuture<?> txLoadFut = GridTestUtils.runMultiThreadedAsync(
+            () -> {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                int amount;
+
+                try {
+                    while (!stop.get()) {
+                        IgniteEx ignite = grid(rnd.nextInt(grids));
+                        IgniteCache<Integer, Account> east = ignite.cache("east");
+                        IgniteCache<Integer, Account> west = ignite.cache("west");
+
+                        amount = rnd.nextInt(transferLimit);
+
+                        try (Transaction tx = ignite.transactions().txStart()) {
+                            Integer id = rnd.nextInt(clients);
+
+                            Account acc0 = east.get(id);
+                            Account acc1 = west.get(id);
+
+                            acc0.balance -= amount;
+
+                            txStarted.countDown();
+
+                            acc1.balance += amount;
+
+                            east.put(id, acc0);
+                            west.put(id, acc1);
+
+                            tx.commit();
+                        }
+                    }
+                }
+                catch (Throwable e) {
+                    U.error(log, e);
+
+                    fail("Tx must not be failed.");
+                }
+            }, transferThreadCnt, "transfer-account-thread-");
+
+        try {
+            U.await(txStarted);
+
+            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        }
+        finally {
+            stop.set(true);
+        }
+
+        txLoadFut.get();
+
+        assertEquals("The summary value should not changed during tx transfers.",
+            total, sumAllCacheValues(client, clients, eastCcfg.getName(), westCcfg.getName()));
+
+        stopAllGrids();
+
+        IgniteEx snpIg0 = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
+
+        assertEquals("The total amount of all cache values must not changed in snapshot.",
+            total, sumAllCacheValues(snpIg0, clients, eastCcfg.getName(), westCcfg.getName()));
     }
 
     /** @throws Exception If fails. */
@@ -740,6 +840,37 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean isMultiJvm() {
         return jvm;
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param caches Cache names to read values.
+     * @return Summary value.
+     */
+    private static int sumAllCacheValues(Ignite ignite, int keys, String... caches) {
+        AtomicInteger total = new AtomicInteger();
+
+        for (String name : caches) {
+            IgniteCache<Integer, Account> cache = ignite.cache(name);
+
+            for (int key = 0; key < keys; key++)
+                total.addAndGet(cache.get(key).balance);
+        }
+
+        return total.get();
+    }
+
+    /**
+     * @param name Cache name.
+     * @return Cache configuration.
+     */
+    private static CacheConfiguration<Integer, Account> accountCacheConfiguration(String name) {
+        return new CacheConfiguration<Integer, Account>(name)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(2)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false)
+                .setPartitions(CACHE_PARTS_COUNT));
     }
 
     /**

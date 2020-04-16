@@ -937,7 +937,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 else {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
-                        "[hasErr=" + snpReq.hasErr + ", fail=" + endFail + ']'));
+                        "[hasErr=" + snpReq.hasErr + ", fail=" + endFail + ", err=" + err + ']'));
                 }
 
                 clusterSnpFut = null;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -61,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
@@ -420,6 +423,51 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void close0(Throwable th) {
             delegate.close(th);
+        }
+    }
+
+    /** Account item. */
+    protected static class Account implements Serializable {
+        /** Serial version. */
+        private static final long serialVersionUID = 0L;
+
+        /** User id. */
+        private final int id;
+
+        /** Order value. */
+        protected int balance;
+
+        /**
+         * @param id User id.
+         * @param balance User balance.
+         */
+        public Account(int id, int balance) {
+            this.id = id;
+            this.balance = balance;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Account item = (Account)o;
+
+            return id == item.id &&
+                balance == item.balance;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, balance);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Account.class, this);
         }
     }
 }
