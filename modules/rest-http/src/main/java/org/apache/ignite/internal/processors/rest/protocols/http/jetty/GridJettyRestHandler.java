@@ -201,11 +201,11 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return Long value from parameters map or {@code dfltVal} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static Long longValue(String key, Map<String, Object> params,
+    @Nullable private static Long longValue(String key, Map<String, String> params,
         Long dfltVal) throws IgniteCheckedException {
         assert key != null;
 
-        String val = (String)params.get(key);
+        String val = params.get(key);
 
         try {
             return val == null ? dfltVal : Long.valueOf(val);
@@ -223,10 +223,10 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param dfltVal Default value.
      * @return Boolean value from parameters map or {@code dfltVal} if null or not exists.
      */
-    private static boolean booleanValue(String key, Map<String, Object> params, boolean dfltVal) {
+    private static boolean booleanValue(String key, Map<String, String> params, boolean dfltVal) {
         assert key != null;
 
-        String val = (String)params.get(key);
+        String val = params.get(key);
 
         return val == null ? dfltVal : Boolean.parseBoolean(val);
     }
@@ -240,10 +240,10 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return Integer value from parameters map or {@code dfltVal} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    private static int intValue(String key, Map<String, Object> params, int dfltVal) throws IgniteCheckedException {
+    private static int intValue(String key, Map<String, String> params, int dfltVal) throws IgniteCheckedException {
         assert key != null;
 
-        String val = (String)params.get(key);
+        String val = params.get(key);
 
         try {
             return val == null ? dfltVal : Integer.parseInt(val);
@@ -255,13 +255,13 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     private static <T extends Enum<T>> @Nullable T enumValue(
         String key,
-        Map<String, Object> params,
+        Map<String, String> params,
         Class<T> enumClass
     ) throws IgniteCheckedException {
         assert key != null;
         assert enumClass != null;
 
-        String val = (String)params.get(key);
+        String val = params.get(key);
 
         if (val == null)
             return null;
@@ -282,10 +282,10 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @return UUID value from parameters map or {@code null} if null or not exists.
      * @throws IgniteCheckedException If parsing failed.
      */
-    @Nullable private static UUID uuidValue(String key, Map<String, Object> params) throws IgniteCheckedException {
+    @Nullable private static UUID uuidValue(String key, Map<String, String> params) throws IgniteCheckedException {
         assert key != null;
 
-        String val = (String)params.get(key);
+        String val = params.get(key);
 
         try {
             return val == null ? null : UUID.fromString(val);
@@ -433,7 +433,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         GridRestResponse cmdRes;
 
-        Map<String, Object> params = parameters(req);
+        Map<String, String> params = parameters(req);
 
         try {
             GridRestRequest cmdReq = createRequest(cmd, params, req);
@@ -505,7 +505,7 @@ public class GridJettyRestHandler extends AbstractHandler {
      */
     @Nullable private GridRestRequest createRequest(
         GridRestCommand cmd,
-        Map<String, Object> params,
+        Map<String, String> params,
         HttpServletRequest req
     ) throws IgniteCheckedException {
         GridRestRequest restReq;
@@ -514,14 +514,14 @@ public class GridJettyRestHandler extends AbstractHandler {
             case GET_OR_CREATE_CACHE: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+                restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
-                String templateName = (String)params.get(TEMPLATE_NAME_PARAM);
+                String templateName = params.get(TEMPLATE_NAME_PARAM);
 
                 if (!F.isEmpty(templateName))
                     restReq0.templateName(templateName);
 
-                String backups = (String)params.get(BACKUPS_PARAM);
+                String backups = params.get(BACKUPS_PARAM);
 
                 CacheConfigurationOverride cfg = new CacheConfigurationOverride();
 
@@ -536,19 +536,19 @@ public class GridJettyRestHandler extends AbstractHandler {
                 }
 
                 // Set cache group name.
-                String cacheGrp = (String)params.get(CACHE_GROUP_PARAM);
+                String cacheGrp = params.get(CACHE_GROUP_PARAM);
 
                 if (!F.isEmpty(cacheGrp))
                     cfg.cacheGroup(cacheGrp);
 
                 // Set cache data region name.
-                String dataRegion = (String)params.get(DATA_REGION_PARAM);
+                String dataRegion = params.get(DATA_REGION_PARAM);
 
                 if (!F.isEmpty(dataRegion))
                     cfg.dataRegion(dataRegion);
 
                 // Set cache write mode.
-                String wrtSyncMode = (String)params.get(WRITE_SYNCHRONIZATION_MODE_PARAM);
+                String wrtSyncMode = params.get(WRITE_SYNCHRONIZATION_MODE_PARAM);
 
                 if (!F.isEmpty(wrtSyncMode)) {
                     try {
@@ -570,7 +570,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case DESTROY_CACHE: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+                restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
                 restReq = restReq0;
 
@@ -617,11 +617,11 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_PREPEND: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                String cacheName = (String)params.get(CACHE_NAME_PARAM);
+                String cacheName = params.get(CACHE_NAME_PARAM);
                 restReq0.cacheName(F.isEmpty(cacheName) ? null : cacheName);
 
-                String keyType = (String)params.get("keyType");
-                String valType = (String)params.get("valueType");
+                String keyType = params.get("keyType");
+                String valType = params.get("valueType");
 
                 Converter converter = new Converter(cacheName);
 
@@ -666,13 +666,13 @@ public class GridJettyRestHandler extends AbstractHandler {
             case NODE: {
                 GridRestTopologyRequest restReq0 = new GridRestTopologyRequest();
 
-                restReq0.includeMetrics(Boolean.parseBoolean((String)params.get("mtr")));
-                restReq0.includeAttributes(Boolean.parseBoolean((String)params.get("attr")));
+                restReq0.includeMetrics(Boolean.parseBoolean(params.get("mtr")));
+                restReq0.includeAttributes(Boolean.parseBoolean(params.get("attr")));
 
-                String caches = (String)params.get("caches");
+                String caches = params.get("caches");
                 restReq0.includeCaches(caches == null || Boolean.parseBoolean(caches));
 
-                restReq0.nodeIp((String)params.get("ip"));
+                restReq0.nodeIp(params.get("ip"));
 
                 restReq0.nodeId(uuidValue("id", params));
 
@@ -686,12 +686,12 @@ public class GridJettyRestHandler extends AbstractHandler {
             case NOOP: {
                 GridRestTaskRequest restReq0 = new GridRestTaskRequest();
 
-                restReq0.taskId((String)params.get("id"));
-                restReq0.taskName((String)params.get("name"));
+                restReq0.taskId(params.get("id"));
+                restReq0.taskName(params.get("name"));
 
                 restReq0.params(new Converter().values(null, "p", params));
 
-                restReq0.async(Boolean.parseBoolean((String)params.get("async")));
+                restReq0.async(Boolean.parseBoolean(params.get("async")));
 
                 restReq0.timeout(longValue("timeout", params, 0L));
 
@@ -703,7 +703,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case LOG: {
                 GridRestLogRequest restReq0 = new GridRestLogRequest();
 
-                restReq0.path((String)params.get("path"));
+                restReq0.path(params.get("path"));
 
                 restReq0.from(intValue("from", params, -1));
                 restReq0.to(intValue("to", params, -1));
@@ -793,8 +793,8 @@ public class GridJettyRestHandler extends AbstractHandler {
             case UPDATE_USER: {
                 RestUserActionRequest restReq0 = new RestUserActionRequest();
 
-                restReq0.user((String)params.get("user"));
-                restReq0.password((String)params.get("password"));
+                restReq0.user(params.get("user"));
+                restReq0.password(params.get("password"));
 
                 restReq = restReq0;
 
@@ -805,25 +805,25 @@ public class GridJettyRestHandler extends AbstractHandler {
             case EXECUTE_SQL_FIELDS_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
-                String cacheName = (String)params.get(CACHE_NAME_PARAM);
+                String cacheName = params.get(CACHE_NAME_PARAM);
 
-                restReq0.sqlQuery((String)params.get("qry"));
+                restReq0.sqlQuery(params.get("qry"));
 
                 restReq0.arguments(new Converter(cacheName).values( null, "arg", params).toArray());
 
-                restReq0.typeName((String)params.get("type"));
+                restReq0.typeName(params.get("type"));
 
-                String pageSize = (String)params.get("pageSize");
+                String pageSize = params.get("pageSize");
 
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
-                String keepBinary = (String)params.get("keepBinary");
+                String keepBinary = params.get("keepBinary");
 
                 if (keepBinary != null)
                     restReq0.keepBinary(Boolean.parseBoolean(keepBinary));
 
-                String distributedJoins = (String)params.get("distributedJoins");
+                String distributedJoins = params.get("distributedJoins");
 
                 if (distributedJoins != null)
                     restReq0.distributedJoins(Boolean.parseBoolean(distributedJoins));
@@ -843,16 +843,16 @@ public class GridJettyRestHandler extends AbstractHandler {
             case EXECUTE_SCAN_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
-                restReq0.sqlQuery((String)params.get("qry"));
+                restReq0.sqlQuery(params.get("qry"));
 
-                String pageSize = (String)params.get("pageSize");
+                String pageSize = params.get("pageSize");
 
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
-                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+                restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
-                restReq0.className((String)params.get("className"));
+                restReq0.className(params.get("className"));
 
                 restReq0.queryType(RestQueryRequest.QueryType.SCAN);
 
@@ -864,17 +864,17 @@ public class GridJettyRestHandler extends AbstractHandler {
             case FETCH_SQL_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
-                String qryId = (String)params.get("qryId");
+                String qryId = params.get("qryId");
 
                 if (qryId != null)
                     restReq0.queryId(Long.parseLong(qryId));
 
-                String pageSize = (String)params.get("pageSize");
+                String pageSize = params.get("pageSize");
 
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
-                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+                restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
                 restReq = restReq0;
 
@@ -884,12 +884,12 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CLOSE_SQL_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
 
-                String qryId = (String)params.get("qryId");
+                String qryId = params.get("qryId");
 
                 if (qryId != null)
                     restReq0.queryId(Long.parseLong(qryId));
 
-                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+                restReq0.cacheName(params.get(CACHE_NAME_PARAM));
 
                 restReq = restReq0;
 
@@ -913,7 +913,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))
             credentials(params, USER_PARAM, PWD_PARAM, restReq);
 
-        String clientId = (String)params.get("clientId");
+        String clientId = params.get("clientId");
 
         try {
             if (clientId != null)
@@ -923,7 +923,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             // Ignore invalid client id. Rest handler will process this logic.
         }
 
-        String destId = (String)params.get("destId");
+        String destId = params.get("destId");
 
         try {
             if (destId != null)
@@ -933,7 +933,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             // Don't fail - try to execute locally.
         }
 
-        String sesTokStr = (String)params.get("sessionToken");
+        String sesTokStr = params.get("sessionToken");
 
         try {
             if (sesTokStr != null) {
@@ -958,13 +958,12 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param restReq Request to add credentials if any.
      * @return {@code true} If params contains credentials.
      */
-    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam,
+    private boolean credentials(Map<String, String> params, String userParam, String pwdParam,
         GridRestRequest restReq) {
         boolean hasCreds = params.containsKey(userParam) || params.containsKey(pwdParam);
 
         if (hasCreds) {
-            SecurityCredentials cred = new SecurityCredentials((String)params.get(userParam),
-                (String)params.get(pwdParam));
+            SecurityCredentials cred = new SecurityCredentials(params.get(userParam), params.get(pwdParam));
 
             restReq.credentials(cred);
         }
@@ -988,13 +987,13 @@ public class GridJettyRestHandler extends AbstractHandler {
      * @param req Request.
      * @return Map of parsed parameters.
      */
-    private Map<String, Object> parameters(ServletRequest req) {
+    private Map<String, String> parameters(ServletRequest req) {
         Map<String, String[]> params = req.getParameterMap();
 
         if (F.isEmpty(params))
             return Collections.emptyMap();
 
-        Map<String, Object> map = U.newHashMap(params.size());
+        Map<String, String> map = U.newHashMap(params.size());
 
         for (Map.Entry<String, String[]> entry : params.entrySet())
             map.put(entry.getKey(), parameter(entry.getValue()));
@@ -1042,7 +1041,7 @@ public class GridJettyRestHandler extends AbstractHandler {
          * @return Values.
          */
         private List<Object> values(String type, String keyPrefix,
-            Map<String, Object> params) throws IgniteCheckedException {
+            Map<String, String> params) throws IgniteCheckedException {
             assert keyPrefix != null;
 
             List<Object> vals = new LinkedList<>();
@@ -1061,15 +1060,13 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         /**
          * @param type Optional value type.
-         * @param obj Object to convert.
+         * @param s String to convert.
          * @return Converted value.
          * @throws IgniteCheckedException If failed to convert.
          */
-        private Object convert(String type, Object obj) throws IgniteCheckedException {
-            if (F.isEmpty(type) || obj == null)
-                return obj;
-
-            String s = (String)obj;
+        private Object convert(String type, String s) throws IgniteCheckedException {
+            if (F.isEmpty(type) || s == null)
+                return s;
 
             try {
                 switch (type.toLowerCase()) {
@@ -1144,7 +1141,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                     ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
             }
 
-            return obj;
+            return s;
         }
     }
 
