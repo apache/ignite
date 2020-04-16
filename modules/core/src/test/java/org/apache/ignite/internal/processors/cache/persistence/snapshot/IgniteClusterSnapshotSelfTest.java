@@ -23,9 +23,9 @@ import java.io.Serializable;
 import java.nio.file.OpenOption;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -83,9 +83,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * Cluster-wide snapshot test.
  */
 public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
-    /** Random instance. */
-    private static final Random R = new Random();
-
     /** Time to wait while rebalance may happen. */
     private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
 
@@ -167,20 +164,22 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             }
         });
 
-        // Start cache load
+        // Start cache load.
         IgniteInternalFuture<Long> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             try {
                 U.await(loadLatch);
 
                 while (!Thread.currentThread().isInterrupted()) {
-                    int txIdx = R.nextInt(grids);
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    // zero out the sign bit
-                    grid(txIdx).cache(txCcfg.getName()).put(txKey.incrementAndGet(), R.nextInt() & Integer.MAX_VALUE);
+                    int txIdx = rnd.nextInt(grids);
 
-                    int atomicIdx = R.nextInt(grids);
+                    // Zero out the sign bit.
+                    grid(txIdx).cache(txCcfg.getName()).put(txKey.incrementAndGet(), rnd.nextInt() & Integer.MAX_VALUE);
 
-                    grid(atomicIdx).cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), R.nextInt() & Integer.MAX_VALUE);
+                    int atomicIdx = rnd.nextInt(grids);
+
+                    grid(atomicIdx).cache(DEFAULT_CACHE_NAME).put(atKey.incrementAndGet(), rnd.nextInt() & Integer.MAX_VALUE);
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
@@ -199,7 +198,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             loadFut.cancel();
         }
 
-        // cluster can be deactivated but we must test snapshot restore when binary recovery also occurred
+        // Cluster can be deactivated but we must test snapshot restore when binary recovery also occurred.
         stopAllGrids();
 
         assertTrue("Snapshot directory must be empty for node not in baseline topology: " + notBltDirName,
@@ -232,7 +231,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteInternalFuture<Long> atLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted()) {
-                int gId = R.nextInt(grids);
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                int gId = rnd.nextInt(grids);
 
                 grid(gId).cache(DEFAULT_CACHE_NAME)
                     .put(cacheKey.incrementAndGet(), 0);
@@ -241,7 +242,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteInternalFuture<Long> txLoadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted()) {
-                int gId = R.nextInt(grids);
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                int gId = rnd.nextInt(grids);
 
                 IgniteCache<Integer, Integer> txCache = grid(gId).getOrCreateCache(txCcfg);
 
