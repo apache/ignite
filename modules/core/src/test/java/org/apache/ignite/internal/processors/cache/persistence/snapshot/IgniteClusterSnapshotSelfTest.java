@@ -607,8 +607,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            forceCheckpoint();
-
             ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
                 .get();
 
