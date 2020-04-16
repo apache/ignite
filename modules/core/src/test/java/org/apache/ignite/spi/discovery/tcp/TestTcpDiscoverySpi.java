@@ -39,7 +39,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     public boolean ignorePingResponse;
 
     /** Interceptors of discovery messages. */
-    private List<DiscoveryHook> discoHooks = new ArrayList<>();
+    private List<DiscoveryHook> discoHooks;
 
     /** {@inheritDoc} */
     @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
@@ -58,7 +58,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     /** {@inheritDoc} */
     @SuppressWarnings("ZeroLengthArrayAllocation")
     @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
-        super.setListener(lsnr ==  null || discoHooks.isEmpty() ?
+        super.setListener(lsnr == null || discoHooks == null ?
             lsnr : wrap(lsnr, discoHooks.toArray(new DiscoveryHook[0])));
     }
 
@@ -71,6 +71,9 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     public void addDiscoveryHook(DiscoveryHook discoHook) {
         assert !started();
         assert discoHook != null;
+
+        if (discoHooks == null)
+            discoHooks = new ArrayList<>();
 
         discoHooks.add(discoHook);
     }
