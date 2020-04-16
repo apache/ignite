@@ -30,6 +30,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.TRANSACTIONS;
 
 /**
  * Implementation of {@link ClientTransactions} over TCP protocol.
@@ -94,7 +95,7 @@ class TcpClientTransactions implements ClientTransactions {
             req -> {
                 ProtocolContext protocolCtx = req.clientChannel().protocolCtx();
 
-                if (!protocolCtx.isFeatureSupported(ProtocolVersionFeature.TRANSACTIONS)) {
+                if (!protocolCtx.isFeatureSupported(TRANSACTIONS)) {
                     throw new ClientProtocolError(String.format("Transactions are not supported by the server's " +
                         "protocol version %s, required version %s", protocolCtx.version(), V1_5_0));
                 }

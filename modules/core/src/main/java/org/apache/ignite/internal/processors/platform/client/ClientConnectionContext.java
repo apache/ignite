@@ -39,6 +39,10 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.AUTHORIZATION;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
+
 /**
  * Thin Client connection context.
  */
@@ -171,7 +175,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         EnumSet<ClientBitmaskFeature> features = null;
 
-        if (ClientProtocolContext.isFeatureSupported(ver, ClientProtocolVersionFeature.BITMAP_FEATURES)) {
+        if (ClientProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES)) {
             byte [] cliFeatures = reader.readByteArray();
 
             features = ClientBitmaskFeature.enumSet(cliFeatures);
@@ -182,10 +186,10 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         String user = null;
         String pwd = null;
 
-        if (currentProtocolContext.isFeatureSupported(ClientBitmaskFeature.USER_ATTRIBUTES))
+        if (currentProtocolContext.isFeatureSupported(USER_ATTRIBUTES))
             userAttrs = reader.readMap();
 
-        if (currentProtocolContext.isFeatureSupported(ClientProtocolVersionFeature.AUTHORIZATION)) {
+        if (currentProtocolContext.isFeatureSupported(AUTHORIZATION)) {
             boolean hasMore;
             try {
                 hasMore = reader.available() > 0;

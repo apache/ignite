@@ -64,8 +64,6 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
-import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
-import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -95,8 +93,6 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_PROTOCOL_CONTEXT;
 
 /**
  * Configuration utils.
@@ -484,23 +480,12 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Reads the query entity. Version of function to be used from thick platform client.
+     * Reads the query entity. Version of function to be used from thin client.
      *
      * @param in Stream.
      * @return QueryEntity.
      */
     public static QueryEntity readQueryEntity(BinaryRawReader in) {
-        return readQueryEntity(in, DEFAULT_PROTOCOL_CONTEXT);
-    }
-
-    /**
-     * Reads the query entity. Version of function to be used from thin client.
-     *
-     * @param in Stream.
-     * @param protocolCtx Client protocol version.
-     * @return QueryEntity.
-     */
-    public static QueryEntity readQueryEntity(BinaryRawReader in, ClientProtocolContext protocolCtx) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -536,17 +521,15 @@ public class PlatformConfigurationUtils {
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
 
-                if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE)) {
-                    int precision = in.readInt();
+                int precision = in.readInt();
 
-                    if (precision != -1)
-                        fieldsPrecision.put(fieldName, precision);
+                if (precision != -1)
+                    fieldsPrecision.put(fieldName, precision);
 
-                    int scale = in.readInt();
+                int scale = in.readInt();
 
-                    if (scale != -1)
-                        fieldsScale.put(fieldName, scale);
-                }
+                if (scale != -1)
+                    fieldsScale.put(fieldName, scale);
             }
 
             res.setFields(fields);
@@ -600,7 +583,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Query index.
      */
-    private static QueryIndex readQueryIndex(BinaryRawReader in) {
+    public static QueryIndex readQueryIndex(BinaryRawReader in) {
         QueryIndex res = new QueryIndex();
 
         res.setName(in.readString());
@@ -1128,24 +1111,12 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Write query entity. Version for thick .NET platform.
+     * Write query entity. Version for thin client.
      *
      * @param writer Writer.
      * @param qryEntity Query entity.
      */
     public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity) {
-        writeQueryEntity(writer, qryEntity, DEFAULT_PROTOCOL_CONTEXT);
-    }
-
-    /**
-     * Write query entity. Version for thin client.
-     *
-     * @param writer Writer.
-     * @param qryEntity Query entity.
-     * @param protocolCtx Client protocol context.
-     */
-    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity,
-        ClientProtocolContext protocolCtx) {
         assert qryEntity != null;
 
         writer.writeString(qryEntity.getKeyType());
@@ -1172,11 +1143,8 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
-
-                if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE)) {
-                    writer.writeInt(fieldsPrecision == null ? -1 : fieldsPrecision.getOrDefault(field.getKey(), -1));
-                    writer.writeInt(fieldsScale == null ? -1 : fieldsScale.getOrDefault(field.getKey(), -1));
-                }
+                writer.writeInt(fieldsPrecision == null ? -1 : fieldsPrecision.getOrDefault(field.getKey(), -1));
+                writer.writeInt(fieldsScale == null ? -1 : fieldsScale.getOrDefault(field.getKey(), -1));
             }
         }
         else
@@ -1215,7 +1183,7 @@ public class PlatformConfigurationUtils {
      * @param writer Writer.
      * @param idx Index.
      */
-    private static void writeQueryIndex(BinaryRawWriter writer, QueryIndex idx) {
+    public static void writeQueryIndex(BinaryRawWriter writer, QueryIndex idx) {
         assert idx != null;
 
         writer.writeString(idx.getName());

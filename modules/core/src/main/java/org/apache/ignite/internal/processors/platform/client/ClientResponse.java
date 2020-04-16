@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
+
 /**
  * Thin client response.
  */
@@ -77,7 +79,7 @@ public class ClientResponse extends ClientListenerResponse {
 
         assert protocolCtx != null;
 
-        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.PARTITION_AWARENESS)) {
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
             boolean error = status() != ClientStatus.SUCCESS;
 
             short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());

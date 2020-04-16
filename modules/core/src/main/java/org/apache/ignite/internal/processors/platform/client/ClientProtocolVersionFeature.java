@@ -35,7 +35,8 @@ public class ClientProtocolVersionFeature {
     public static final ClientProtocolVersionFeature AUTHORIZATION = new ClientProtocolVersionFeature(VER_1_1_0);
 
     /** Query entity precision and scale feature. */
-    public static final ClientProtocolVersionFeature QUERY_ENTITY_PRECISION_AND_SCALE = new ClientProtocolVersionFeature(VER_1_2_0);
+    public static final ClientProtocolVersionFeature QUERY_ENTITY_PRECISION_AND_SCALE =
+        new ClientProtocolVersionFeature(VER_1_2_0);
 
     /** Partition awareness feature. */
     public static final ClientProtocolVersionFeature PARTITION_AWARENESS = new ClientProtocolVersionFeature(VER_1_4_0);

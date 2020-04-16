@@ -29,6 +29,9 @@ import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareReq
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.plugin.security.SecurityException;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
+
 /**
  * Thin client request handler.
  */
@@ -119,10 +122,10 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
 
-        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.BITMAP_FEATURES))
+        if (protocolCtx.isFeatureSupported(BITMAP_FEATURES))
             writer.writeByteArray(protocolCtx.featureBytes());
 
-        if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.PARTITION_AWARENESS))
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS))
             writer.writeUuid(ctx.kernalContext().localNodeId());
     }
 

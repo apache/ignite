@@ -84,6 +84,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_0_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_1_0;
@@ -93,6 +94,9 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_4_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_5_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PARTITION_AWARENESS;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -300,7 +304,7 @@ class TcpClientChannel implements ClientChannel {
 
         BinaryInputStream resIn;
 
-        if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.PARTITION_AWARENESS)) {
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
             short flags = dataInput.readShort();
 
             if ((flags & ClientFlag.AFFINITY_TOPOLOGY_CHANGED) != 0) {
@@ -420,15 +424,15 @@ class TcpClientChannel implements ClientChannel {
 
             writer.writeByte(ClientListenerNioListener.THIN_CLIENT);
 
-            if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.BITMAP_FEATURES)) {
+            if (protocolCtx.isFeatureSupported(BITMAP_FEATURES)) {
                 byte[] features = ProtocolBitmaskFeature.featuresAsBytes(protocolCtx.features());
                 writer.writeByteArray(features);
             }
 
-            if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.USER_ATTRIBUTES))
+            if (protocolCtx.isFeatureSupported(USER_ATTRIBUTES))
                 writer.writeMap(userAttrs);
 
-            boolean authSupported = protocolCtx.isFeatureSupported(ProtocolVersionFeature.AUTHORIZATION);
+            boolean authSupported = protocolCtx.isFeatureSupported(AUTHORIZATION);
 
             if (authSupported && user != null && !user.isEmpty()) {
                 writer.writeString(user);
@@ -447,7 +451,7 @@ class TcpClientChannel implements ClientChannel {
      */
     private ProtocolContext protocolContextFromVersion(ProtocolVersion ver) {
         EnumSet<ProtocolBitmaskFeature> features = null;
-        if (ProtocolContext.isFeatureSupported(ver, ProtocolVersionFeature.BITMAP_FEATURES))
+        if (ProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES))
             features = ProtocolBitmaskFeature.allFeaturesAsEnumSet();
 
         return new ProtocolContext(ver, features);
@@ -469,12 +473,12 @@ class TcpClientChannel implements ClientChannel {
             if (success) {
                 byte[] features = new byte[0];
 
-                if (ProtocolContext.isFeatureSupported(proposedVer, ProtocolVersionFeature.BITMAP_FEATURES))
+                if (ProtocolContext.isFeatureSupported(proposedVer, BITMAP_FEATURES))
                     features = reader.readByteArray();
 
                 protocolCtx = new ProtocolContext(proposedVer, ProtocolBitmaskFeature.enumSet(features));
 
-                if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.PARTITION_AWARENESS)) {
+                if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
                     // Reading server UUID
                     srvNodeId = reader.readUuid();
                 }

@@ -65,6 +65,8 @@ import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
 /**
@@ -321,8 +323,7 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
 
-                                if (protocolCtx.isFeatureSupported(
-                                    ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE)) {
+                                if (protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE)) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
                                 }
@@ -352,7 +353,7 @@ final class ClientUtils {
                 )
             );
 
-            if (protocolCtx.isFeatureSupported(ProtocolVersionFeature.EXPIRY_POLICY)) {
+            if (protocolCtx.isFeatureSupported(EXPIRY_POLICY)) {
                 itemWriter.accept(CfgItem.EXPIRE_POLICY, w -> {
                     ExpiryPolicy expiryPlc = cfg.getExpiryPolicy();
                     if (expiryPlc == null)
@@ -422,7 +423,7 @@ final class ClientUtils {
                             .setValueFieldName(reader.readString());
 
                         boolean isPrecisionAndScaleSupported =
-                            protocolCtx.isFeatureSupported(ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE);
+                            protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE);
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
@@ -497,7 +498,7 @@ final class ClientUtils {
                             ));
                     }
                 ).toArray(new QueryEntity[0]))
-                .setExpiryPolicy(!protocolCtx.isFeatureSupported(ProtocolVersionFeature.EXPIRY_POLICY)?
+                .setExpiryPolicy(!protocolCtx.isFeatureSupported(EXPIRY_POLICY)?
                         null : reader.readBoolean() ?
                         new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong()) : null
                 );
