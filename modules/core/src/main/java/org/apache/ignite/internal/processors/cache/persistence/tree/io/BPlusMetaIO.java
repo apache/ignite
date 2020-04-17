@@ -62,7 +62,10 @@ public class BPlusMetaIO extends PageIO {
     private static final long FLAG_INLINE_OBJECT_SUPPORTED = 2L;
 
     /** */
-    public static final long DEFAULT_FLAGS = FLAG_UNWRAPPED_PK | FLAG_INLINE_OBJECT_SUPPORTED ;
+    private static final long FLAG_INLINE_OBJECT_HASH = 4L;
+
+    /** */
+    public static final long DEFAULT_FLAGS = FLAG_UNWRAPPED_PK | FLAG_INLINE_OBJECT_SUPPORTED | FLAG_INLINE_OBJECT_HASH;
 
     /** */
     private final int refsOff;
@@ -231,6 +234,17 @@ public class BPlusMetaIO extends PageIO {
         assert supportFlags();
 
         return (flags(pageAddr) & FLAG_INLINE_OBJECT_SUPPORTED) != 0L;
+    }
+
+    /**
+     * Whether Java objects should be inlined as hash or as bytes array.
+     *
+     * @param pageAddr Page address.
+     */
+    public boolean inlineObjectHash(long pageAddr) {
+        assert supportFlags();
+
+        return (flags(pageAddr) & FLAG_INLINE_OBJECT_HASH) != 0L;
     }
 
     /**

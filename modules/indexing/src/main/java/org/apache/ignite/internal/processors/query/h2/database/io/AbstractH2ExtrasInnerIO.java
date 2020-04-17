@@ -26,7 +26,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
-import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper;
+import org.apache.ignite.internal.processors.query.h2.database.InlineIndexColumn;
+import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnFactory;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 
@@ -102,14 +103,14 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<H2Row> implem
 
         assert row0.link() != 0 : row0;
 
-        List<InlineIndexHelper> inlineIdxs = InlineIndexHelper.getCurrentInlineIndexes();
+        List<InlineIndexColumn> inlineIdxs = InlineIndexColumnFactory.getCurrentInlineIndexes();
 
         assert inlineIdxs != null : "no inline index helpers";
 
         int fieldOff = 0;
 
         for (int i = 0; i < inlineIdxs.size(); i++) {
-            InlineIndexHelper idx = inlineIdxs.get(i);
+            InlineIndexColumn idx = inlineIdxs.get(i);
 
             int size = idx.put(pageAddr, off + fieldOff, row.getValue(idx.columnIndex()), payloadSize - fieldOff);
 
