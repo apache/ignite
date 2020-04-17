@@ -180,8 +180,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown");
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -226,8 +224,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown");
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -292,8 +288,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown");
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -340,8 +334,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown");
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -398,8 +390,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown");
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             if (!e.getMessage().contains("Value conversion failed")) {
@@ -551,8 +541,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown");
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -651,8 +639,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -744,8 +730,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -829,8 +813,6 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
         }
         catch (BatchUpdateException e) {
-            checkThereAreNotUsedConnections();
-
             int[] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
