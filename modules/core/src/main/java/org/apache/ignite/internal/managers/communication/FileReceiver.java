@@ -82,7 +82,7 @@ class FileReceiver extends TransmissionReceiver {
             fileIo.position(meta.offset());
         }
         catch (IOException e) {
-            throw new IgniteException("Unable to open destination file. Receiver will will be stopped: " +
+            throw new IgniteException("Unable to open destination file. Receiver will be stopped: " +
                 file.getAbsolutePath(), e);
         }
     }

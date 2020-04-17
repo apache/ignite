@@ -801,7 +801,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (exchCtx.exchangeFreeSwitch()){
                 exchange = isSnapshotOperation(firstDiscoEvt) ? onCustomMessageNoAffinityChange() :
-                    onExchangeFreeSwitchOnLeft();
+                    onExchangeFreeSwitchNodeLeft();
 
                 initCoordinatorCaches(newCrd);
             }
@@ -1419,7 +1419,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @return Exchange type.
      */
-    private ExchangeType onExchangeFreeSwitchOnLeft() {
+    private ExchangeType onExchangeFreeSwitchNodeLeft() {
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         assert firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED;

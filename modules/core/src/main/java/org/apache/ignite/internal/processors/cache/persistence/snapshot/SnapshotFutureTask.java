@@ -455,14 +455,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         if (stopping())
             return;
 
-        // Snapshot task is now started since checkpoint write lock released.
-        if (!startedFut.onDone())
-            return;
-
         assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
         wrapExceptionIfStarted(() -> snpSndr.init(processed.values().stream().mapToInt(Set::size).sum()))
             .run();
+
+        // Snapshot task can now be started since checkpoint write lock released and
+        // there is no error happen on task init.
+        if (startedFut.isDone() || !startedFut.onDone())
+            return;
 
         // Submit all tasks for partitions and deltas processing.
         List<CompletableFuture<Void>> futs = new ArrayList<>();

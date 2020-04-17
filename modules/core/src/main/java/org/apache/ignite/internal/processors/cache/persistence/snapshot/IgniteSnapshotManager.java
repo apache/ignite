@@ -725,7 +725,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param snpDir Snapshot dire
+     * @param snpDir Snapshot dir.
      * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
      */
     public static void deleteSnapshot(File snpDir, String folderName) {

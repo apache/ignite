@@ -40,7 +40,7 @@ abstract class SnapshotSender {
     /** Executor to run operation at. */
     private final Executor exec;
 
-    /** {@code true} if sender is currently working */
+    /** {@code true} if sender is currently working. */
     private volatile boolean closed;
 
     /** Ignite logger to use. */
