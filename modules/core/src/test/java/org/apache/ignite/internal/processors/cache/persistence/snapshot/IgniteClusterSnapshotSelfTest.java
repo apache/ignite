@@ -413,7 +413,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         stopAllGrids();
 
-        IgniteEx snp = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
+        IgniteEx snp = startGridsFromSnapshot(grids,
+            cfg -> resolveSnapshotWorkDirectory(cfg.setCacheConfiguration()).getAbsolutePath(),
+            SNAPSHOT_NAME,
+            true);
+
+        awaitPartitionMapExchange();
 
         assertSnapshotCacheKeys(snp.cache(ccfg.getName()));
     }
