@@ -52,7 +52,20 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * Used in tests for updatesCount counter of metastorage and corresponds to keys BASELINE_ENABLED and other initial
      * objects that were added but should not be counted along with keys defined in tests.
      */
-    private static final int INITIAL_UPDATES_COUNT = 2;
+    private static int initialUpdatesCount = -1;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(0);
+
+        // We have to start the second node and wait when it is started
+        // to be sure that all async metastorage updates of the node_0 are completed.
+        startGrid(1);
+
+        initialUpdatesCount = (int)metastorage(0).getUpdatesCount();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -333,18 +346,17 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         metastorage(0).write("key1", "value1");
 
-        assertEquals(1, metastorage(0).getUpdatesCount() - INITIAL_UPDATES_COUNT);
+        assertEquals(1, metastorage(0).getUpdatesCount() - initialUpdatesCount);
 
         metastorage(0).write("key2", "value2");
 
-        assertEquals(2, metastorage(0).getUpdatesCount() - INITIAL_UPDATES_COUNT);
+        assertEquals(2, metastorage(0).getUpdatesCount() - initialUpdatesCount);
 
         metastorage(0).write("key1", "value1");
 
-        assertEquals(2, metastorage(0).getUpdatesCount() - INITIAL_UPDATES_COUNT);
+        assertEquals(2, metastorage(0).getUpdatesCount() - initialUpdatesCount);
     }
 
-    /** */
     /** */
     @Test
     public void testClient() throws Exception {
@@ -358,7 +370,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         AtomicInteger clientLsnrUpdatesCnt = new AtomicInteger();
 
-        assertEquals(1, metastorage(1).getUpdatesCount() - INITIAL_UPDATES_COUNT);
+        assertEquals(1, metastorage(1).getUpdatesCount() - initialUpdatesCount);
 
         assertEquals("value0", metastorage(1).read("key0"));
 
@@ -400,7 +412,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         // Wait enough to cover failover timeout.
         assertTrue(GridTestUtils.waitForCondition(
-            () -> metastorage(1).getUpdatesCount() - INITIAL_UPDATES_COUNT == expUpdatesCnt, 15_000));
+            () -> metastorage(1).getUpdatesCount() - initialUpdatesCount == expUpdatesCnt, 15_000));
 
         if (isPersistent())
             assertEquals("value0", metastorage(1).read("key0"));
