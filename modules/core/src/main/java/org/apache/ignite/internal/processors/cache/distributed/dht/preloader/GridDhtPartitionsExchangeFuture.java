@@ -101,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -111,6 +110,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1520,8 +1520,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             boolean partitionedRecoveryRequired = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
 
             IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
-                for (IgniteTxEntry entry : tx.writeEntries())
-                    if (cctx.cacheContext(entry.cacheId()).isReplicated())
+                GridIntList cacheIds = tx.txState().cacheIds();
+
+                assert cacheIds != null;
+
+                for (int i = 0; i < cacheIds.size(); i++)
+                    if (cctx.cacheContext(cacheIds.get(i)).isReplicated())
                         return true;
 
                 assert partitionedRecoveryRequired; // Checks non-affected nodes contain no txs to be recovered.
