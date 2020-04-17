@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -306,8 +305,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         AtomicBoolean stop = new AtomicBoolean(false);
         CountDownLatch txStarted = new CountDownLatch(1);
 
-        CacheConfiguration<Integer, Account> eastCcfg = accountCacheConfiguration("east");
-        CacheConfiguration<Integer, Account> westCcfg = accountCacheConfiguration("west");
+        CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
+        CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
         for (int i = 0; i < grids; i++)
             startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration(eastCcfg, westCcfg)));
@@ -397,7 +396,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotWithCacheNodeFilter() throws Exception {
         int grids = 4;
 
-        CacheConfiguration<Integer, Integer> ccfg = txCcfgFactory.get()
+        CacheConfiguration<Integer, Integer> ccfg = txCacheConfig(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
             .setNodeFilter(node -> node.consistentId().toString().endsWith("1"));
 
         for (int i = 0; i < grids; i++)
@@ -858,19 +857,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         }
 
         return total.get();
-    }
-
-    /**
-     * @param name Cache name.
-     * @return Cache configuration.
-     */
-    private static CacheConfiguration<Integer, Account> accountCacheConfiguration(String name) {
-        return new CacheConfiguration<Integer, Account>(name)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setBackups(2)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false)
-                .setPartitions(CACHE_PARTS_COUNT));
     }
 
     /**

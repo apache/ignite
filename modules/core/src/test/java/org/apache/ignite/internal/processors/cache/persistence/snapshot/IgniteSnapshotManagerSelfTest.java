@@ -81,7 +81,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
         // Start grid node with data before each test.
-        IgniteEx ig = startGridWithCache(dfltCacheCfg, 2048);
+        IgniteEx ig = startGridWithCache(txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME)), 2048);
 
         // The following data will be included into checkpoint.
         for (int i = 2048; i < 4096; i++)
@@ -358,7 +358,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotRemoteWithNodeFiler() throws Exception {
         int grids = 3;
-        CacheConfiguration<Integer, Integer> ccfg = txCcfgFactory.get()
+        CacheConfiguration<Integer, Integer> ccfg = txCacheConfig(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
             .setNodeFilter(node -> node.consistentId().toString().endsWith("1"));
 
         for (int i = 0; i < grids; i++)
@@ -618,16 +618,9 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test(expected = IgniteCheckedException.class)
     public void testRemoteOutdatedSnapshot() throws Exception {
-        IgniteEx ig0 = startGrids(2);
+        dfltCacheCfg.setBackups(1);
 
-        ig0.cluster().state(ClusterState.ACTIVE);
-
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig0.cache(DEFAULT_CACHE_NAME).put(i, i);
-
-        awaitPartitionMapExchange();
-
-        forceCheckpoint();
+        IgniteEx ig0 = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi.spi(ig0)
             .blockMessages((node, msg) -> msg instanceof SnapshotRequestMessage);

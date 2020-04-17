@@ -33,7 +33,6 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -44,7 +43,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterState;
@@ -95,16 +93,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
 
-    /** Default configuration for the 'default' cache. */
-    protected static Supplier<CacheConfiguration<Integer, Integer>> txCcfgFactory = () ->
-        new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setRebalanceMode(CacheRebalanceMode.ASYNC)
-            .setBackups(1)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false)
-                .setPartitions(CACHE_PARTS_COUNT));
-
     /** Configuration for the 'default' cache. */
     protected volatile CacheConfiguration<Integer, Integer> dfltCacheCfg;
 
@@ -143,7 +131,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public void beforeTestSnapshot() throws Exception {
         cleanPersistenceDir();
 
-        dfltCacheCfg = txCcfgFactory.get();
+        dfltCacheCfg = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
     }
 
     /** @throws Exception If fails. */
@@ -168,6 +156,18 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         cleanPersistenceDir();
+    }
+
+    /**
+     * @param ccfg Default cache configuration.
+     * @return Cache configuration.
+     */
+    protected static <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
+        return ccfg.setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(2)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false)
+                .setPartitions(CACHE_PARTS_COUNT));
     }
 
     /**
