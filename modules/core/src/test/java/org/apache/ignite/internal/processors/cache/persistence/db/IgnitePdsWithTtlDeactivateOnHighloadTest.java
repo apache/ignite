@@ -144,8 +144,6 @@ public class IgnitePdsWithTtlDeactivateOnHighloadTest extends GridCommonAbstract
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>();
 
         ccfg.setName(name);
-        // TODO https://issues.apache.org/jira/browse/IGNITE-12854 Uncomment after fixing.
-        //ccfg.setGroupName(GROUP1);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, PART_SIZE));
         ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, EXPIRATION_TIMEOUT)));
         ccfg.setEagerTtl(true);
