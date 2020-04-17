@@ -50,7 +50,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
             0, getLastSnapshotEndTime(snpMBean));
 
-        SnapshotMXBean mxBean = getMBean(ignite.name());
+        SnapshotMXBean mxBean = getMxBean(ignite.name(), "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
         mxBean.createSnapshot(SNAPSHOT_NAME);
 
@@ -62,14 +62,6 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
-    }
-
-    /**
-     * @param ignite Ignite instance name.
-     * @return Snapshot MBean.
-     */
-    private SnapshotMXBean getMBean(String ignite) {
-        return getMxBean(ignite, "Snapshot", SnapshotMXBeanImpl.class, SnapshotMXBean.class);
     }
 
     /**
