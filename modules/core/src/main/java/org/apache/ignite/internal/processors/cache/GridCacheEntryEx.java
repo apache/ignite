@@ -866,7 +866,6 @@ public interface GridCacheEntryEx {
      * statistics about index update to {@code stat}, if it is present.
      *
      * @param clo Closure to apply to key, value, and expiration time.
-     * @param stat Object for collecting statistics about index update (can be {@code null}).
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
