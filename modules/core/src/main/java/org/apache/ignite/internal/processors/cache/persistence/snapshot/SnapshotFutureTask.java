@@ -462,7 +462,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         // Snapshot task can now be started since checkpoint write lock released and
         // there is no error happen on task init.
-        if (startedFut.isDone() || !startedFut.onDone())
+        if (!startedFut.onDone())
             return;
 
         // Submit all tasks for partitions and deltas processing.
