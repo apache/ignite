@@ -1513,37 +1513,42 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             && cctx.exchange().latch().canSkipJoiningNodes(initialVersion());
 
         if (context().exchangeFreeSwitch()) {
-            String baseLatchId = "exchange-free";
-            String replicatedLatchId = baseLatchId + "-replicated";
-            String partitionedLatchId = baseLatchId + "-partitioned";
-
-            boolean partitionedRecoveryRequired = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
-
-            IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
-                GridIntList cacheIds = tx.txState().cacheIds();
-
-                assert cacheIds != null;
-
-                for (int i = 0; i < cacheIds.size(); i++)
-                    if (cctx.cacheContext(cacheIds.get(i)).isReplicated())
-                        return true;
-
-                assert partitionedRecoveryRequired; // Checks non-affected nodes contain no txs to be recovered.
-
-                return false;
-            };
-
-            // Assuming that replicated transactions are absent, non-affected nodes will wait only this short sync.
-            waitPartitionRelease(replicatedLatchId, true, false, replicatedOnly);
-
-            if (partitionedRecoveryRequired)
-                // This node contain backup partitions for failed partitioned caches primaries. Waiting for recovery.
-                waitPartitionRelease(partitionedLatchId, true, false, null);
+            // Currently MVCC does not support operations on partially switched cluster.
+            if (cctx.kernalContext().coordinators().mvccEnabled())
+                waitPartitionRelease(DISTRIBUTED_LATCH_ID, true, false, null);
             else {
-                // This node contain no backup partitions for failed partitioned caches primaries. Recovery is not needed.
-                Latch releaseLatch = cctx.exchange().latch().getOrCreate(partitionedLatchId, initialVersion());
+                String baseLatchId = "exchange-free";
+                String replicatedLatchId = baseLatchId + "-replicated";
+                String partitionedLatchId = baseLatchId + "-partitioned";
 
-                releaseLatch.countDown(); // Await-free confirmation.
+                boolean partitionedRecoveryRequired = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
+
+                IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
+                    GridIntList cacheIds = tx.txState().cacheIds();
+
+                    assert cacheIds != null;
+
+                    for (int i = 0; i < cacheIds.size(); i++)
+                        if (cctx.cacheContext(cacheIds.get(i)).isReplicated())
+                            return true;
+
+                    assert partitionedRecoveryRequired; // Checks non-affected nodes contain no txs to be recovered.
+
+                    return false;
+                };
+
+                // Assuming that replicated transactions are absent, non-affected nodes will wait only this short sync.
+                waitPartitionRelease(replicatedLatchId, true, false, replicatedOnly);
+
+                if (partitionedRecoveryRequired)
+                    // This node contain backup partitions for failed partitioned caches primaries. Waiting for recovery.
+                    waitPartitionRelease(partitionedLatchId, true, false, null);
+                else {
+                    // This node contain no backup partitions for failed partitioned caches primaries. Recovery is not needed.
+                    Latch releaseLatch = cctx.exchange().latch().getOrCreate(partitionedLatchId, initialVersion());
+
+                    releaseLatch.countDown(); // Await-free confirmation.
+                }
             }
         }
         else if (!skipWaitOnLocalJoin) { // Skip partition release if node has locally joined (it doesn't have any updates to be finished).

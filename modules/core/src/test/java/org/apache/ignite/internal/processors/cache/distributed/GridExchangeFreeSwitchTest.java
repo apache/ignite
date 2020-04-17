@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +31,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -569,6 +571,10 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnlyAffectedNodesWaitsForRecovery() throws Exception {
+        // Cellular switch can't be performed on MVCC caches, at least at the moment.
+        if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
+            return;
+
         persistence = true;
 
         String partCacheName = "partitioned";
