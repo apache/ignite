@@ -176,53 +176,55 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             while (itr.hasNext()) {
                 Map.Entry<String, JsonNode> entry = itr.next();
 
-                String field = entry.getKey();
-                Object val = readValue(field, entry.getValue());
+                String fieldName = entry.getKey();
+                Object val = readField(fieldName, entry.getValue());
 
-                builder.setField(field, val);
+                builder.setField(fieldName, val);
             }
 
             return builder.build();
         }
 
         /**
-         * @param field Field name.
-         * @param jsonNode JSON node.
+         * Read JSON field value into required format.
+         *
+         * @param name Field name.
+         * @param node JSON node.
          * @return value.
          * @throws IOException In case of error.
          */
-        @Nullable protected Object readValue(String field, JsonNode jsonNode) throws IOException {
-            JsonNodeType nodeType = jsonNode.getNodeType();
+        @Nullable protected Object readField(String name, JsonNode node) throws IOException {
+            JsonNodeType nodeType = node.getNodeType();
 
             if (nodeType == JsonNodeType.BINARY)
-                return jsonNode.binaryValue();
+                return node.binaryValue();
 
             if (nodeType == JsonNodeType.BOOLEAN)
-                return jsonNode.booleanValue();
+                return node.booleanValue();
 
-            Class<?> cls = qryFields.get(QueryUtils.normalizeObjectName(field, true));
+            Class<?> cls = qryFields.get(QueryUtils.normalizeObjectName(name, true));
 
             if (cls != null)
-                return mapper.treeToValue(jsonNode, cls);
+                return mapper.treeToValue(node, cls);
 
             switch (nodeType) {
                 case ARRAY:
-                    List<Object> list = new ArrayList<>(jsonNode.size());
-                    Iterator<JsonNode> itr = jsonNode.elements();
+                    List<Object> list = new ArrayList<>(node.size());
+                    Iterator<JsonNode> itr = node.elements();
 
                     while (itr.hasNext())
-                        list.add(readValue(field, itr.next()));
+                        list.add(readField(name, itr.next()));
 
                     return list;
 
                 case NUMBER:
-                    return jsonNode.numberValue();
+                    return node.numberValue();
 
                 case OBJECT:
-                    return mapper.treeToValue(jsonNode, cls);
+                    return mapper.treeToValue(node, cls);
 
                 case STRING:
-                    return jsonNode.asText();
+                    return node.asText();
 
                 default:
                     return null;
@@ -266,7 +268,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                 JsonNode node = tree.get(field);
                 BinaryFieldMetadata meta = metas.get(field);
 
-                Object val = meta != null ? readValue(meta.typeId(), field, node, binType) : readValue(field, node);
+                Object val = meta != null ? readField(field, meta.typeId(), node, binType) : readField(field, node);
 
                 builder.setField(field, val);
             }
@@ -275,19 +277,20 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         }
 
         /**
-         * Extract and cast JSON node value into required object format.
+         * Read JSON field value into required format.
          *
-         * @param type Field type.
-         * @param field Field name.
+         * @param name Field name.
+         * @param typeId Field type ID.
          * @param node JSON node.
-         * @param parentType Parent type.
+         * @param nodeType Object binary type.
+         *
          * @return Extracted value.
          * @throws IOException if failed.
          */
-        private Object readValue(int type, String field, JsonNode node, BinaryTypeImpl parentType) throws IOException {
+        private Object readField(String name, int typeId, JsonNode node, BinaryTypeImpl nodeType) throws IOException {
             Class<?> baseCls;
 
-            switch (type) {
+            switch (typeId) {
                 case GridBinaryMarshaller.MAP:
                     baseCls = Map.class;
 
@@ -298,21 +301,21 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                 case GridBinaryMarshaller.BINARY_OBJ:
                 case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.ENUM:
-                    baseCls = fieldClass(field);
+                    baseCls = fieldClass(name);
 
                     if (baseCls == null)
-                        return readValue(field, node);
+                        return readField(name, node);
 
                     break;
 
                 default:
-                    baseCls = BinaryUtils.FLAG_TO_CLASS.get((byte)type);
+                    baseCls = BinaryUtils.FLAG_TO_CLASS.get((byte)typeId);
             }
 
             if (baseCls != null)
                 return mapper.treeToValue(node, baseCls);
 
-            return deserialize0(cacheName, parentType.fieldTypeName(field), node, mapper);
+            return deserialize0(cacheName, nodeType.fieldTypeName(name), node, mapper);
         }
 
         /**
