@@ -46,7 +46,17 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
- * Default IgniteSecurity implementation.
+ * Default {@code IgniteSecurity} implementation.
+ * <p>
+ * {@code IgniteSecurityProcessor} serves here as a facade with is exposed to Ignite internal code,
+ * while {@code GridSecurityProcessor} is hidden and managed from {@code IgniteSecurityProcessor}.
+ * <p>
+ * This implementation of {@code IgniteSecurity} is responsible for:
+ * <ul>
+ *     <li>Keeping and propagating authenticated security contexts for cluster nodes;</li>
+ *     <li>Delegating calls for all actions to {@code GridSecurityProcessor};</li>
+ *     <li>Managing sandbox and proving point of entry to the internal sandbox API.</li>
+ * </ul>
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Internal attribute name constant. */
@@ -93,30 +103,18 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public OperationSecurityContext withContext(UUID nodeId) {
-        return withContext(
-            secCtxs.computeIfAbsent(nodeId,
-                uuid -> nodeSecurityContext(
-                    marsh, U.resolveClassLoader(ctx.config()), findNode(uuid)
-                )
-            )
-        );
-    }
+    @Override public OperationSecurityContext withContext(UUID subjId) {
+        ClusterNode node = Optional.ofNullable(ctx.discovery().node(subjId))
+            .orElseGet(() -> ctx.discovery().historicalNode(subjId));
 
-    /**
-     * Resolves cluster node by its ID.
-     *
-     * @param nodeId Node id.
-     * @throws IllegalStateException If node with provided ID doesn't exist.
-     */
-    private ClusterNode findNode(UUID nodeId) {
-        ClusterNode node = Optional.ofNullable(ctx.discovery().node(nodeId))
-            .orElseGet(() -> ctx.discovery().historicalNode(nodeId));
+        SecurityContext res = node != null ? secCtxs.computeIfAbsent(subjId,
+            uuid -> nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node))
+            : secPrc.securityContext(subjId);
 
-        if (node == null)
-            throw new IllegalStateException("Failed to find node with given ID for security context setup: " + nodeId);
+        if (res == null)
+            throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
 
-        return node;
+        return withContext(res);
     }
 
     /** {@inheritDoc} */
