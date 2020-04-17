@@ -138,7 +138,6 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         log = cctx.kernalContext().log(getClass());
         totalPartitionsCnt = totalParts;
         remaining = Collections.unmodifiableMap(remaining0);
-
         restoreHnd = new PartitionRestoreHandler(cctx);
     }
 
@@ -250,7 +249,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
             restoreFut.listen(f -> {
                 try {
-                    if (!f.isCancelled())
+                    if (!f.isCancelled() && !isDone())
                         onPartitionSnapshotRestored(nodeId, grpId, partId, f.get());
                 }
                 catch (IgniteCheckedException e) {
@@ -298,12 +297,12 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         grpCntrs.computeIfAbsent(nodeId, v -> new ConcurrentHashMap<>()).put(partId, cntr);
 
-        GridFutureAdapter<GridDhtPreloaderAssignments> fut;
+        GridFutureAdapter<GridDhtPreloaderAssignments> resFut;
 
         if (!parts.isEmpty() ||
             grpParts.remove(grpId) == null ||
             remaining.values().stream().map(Map::keySet).anyMatch(grps -> grps.contains(grpId)) ||
-            (fut = futAssigns.remove(grpId)) == null)
+            (resFut = futAssigns.remove(grpId)) == null)
             return;
 
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -314,7 +313,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
 
         GridDhtPreloaderAssignments histAssignments = makeHistoricalAssignments(grp, grpCntrs);
 
-        fut.onDone(histAssignments);
+        resFut.onDone(histAssignments);
 
         if (histAssignments.isEmpty())
             idxFut.listen(f -> cctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer));
@@ -457,6 +456,7 @@ public class PartitionPreloadingRoutine extends GridFutureAdapter<Boolean> {
         /** {@inheritDoc} */
         @Override public void stop() {
             lock.lock();
+
             try {
                 checkpointRequests.clear();
 
