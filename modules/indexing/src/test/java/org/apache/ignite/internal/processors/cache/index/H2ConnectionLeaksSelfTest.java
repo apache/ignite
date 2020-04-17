@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
