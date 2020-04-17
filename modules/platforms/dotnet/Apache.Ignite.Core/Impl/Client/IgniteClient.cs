@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Near;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -287,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public NearCacheManager NearCacheManager
+        public PlatformCacheManager PlatformCacheManager
         {
             get { throw GetClientNotSupportedException(); }
         }

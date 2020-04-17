@@ -69,7 +69,7 @@ public class ClusterActivationEvent extends EventAdapter {
     private final Collection<BaselineNode> baselineNodes;
 
     /**
-     * Creates deployment event with given parameters.
+     * Creates activation event with given parameters.
      *
      * @param node Node.
      * @param msg Optional event message.

@@ -33,6 +33,9 @@
     <module name="NewlineAtEndOfFile"/>
 
     <module name="TreeWalker">
+        <!-- Coding Checks. See: https://checkstyle.sourceforge.io/config_coding.html -->
+        <module name="SimplifyBooleanExpression"/>
+
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>

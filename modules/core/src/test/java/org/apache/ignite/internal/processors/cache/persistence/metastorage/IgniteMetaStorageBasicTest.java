@@ -29,14 +29,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -210,7 +208,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
             db.waitForCheckpoint("Test");
 
-            ((GridCacheDatabaseSharedManager)db).enableCheckpoints(false);
+            enableCheckpoints(ig, false);
 
             db.checkpointReadLock();
 
@@ -469,7 +467,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
 
         // Disable checkpoints in order to check whether recovery works.
         forceCheckpoint(grid(1));
-        disableCheckpoints(grid(1));
+        enableCheckpoints(grid(1), false);
 
         loadKeys(grid(1), KEYS_CNT, KEY_PREFIX, NEW_VAL_PREFIX, UPDATED_VAL_PREFIX);
 
@@ -582,22 +580,7 @@ public class IgniteMetaStorageBasicTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Disable checkpoints on a specific node.
-     *
-     * @param node Ignite node.h
-     * @throws IgniteCheckedException If failed.
-     */
-    private void disableCheckpoints(Ignite node) throws IgniteCheckedException {
-        assert !node.cluster().localNode().isClient();
-
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)node).context()
-                .cache().context().database();
-
-        dbMgr.enableCheckpoints(false).get();
-    }
-
-    /* */
+    /** */
     private Collection<IgniteBiTuple<String, byte[]>> readTestData(
         Map<String, byte[]> testData,
         MetaStorage metaStorage
