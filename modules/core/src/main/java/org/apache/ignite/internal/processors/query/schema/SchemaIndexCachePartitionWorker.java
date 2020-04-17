@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,6 +38,8 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -60,16 +63,13 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     private final SchemaIndexOperationCancellationToken cancel;
 
     /** Index closure. */
-    private final SchemaIndexCacheVisitorClosure clo;
+    private final SchemaIndexCacheVisitorClosureWrapper wrappedClo;
 
     /** Partition. */
     private final GridDhtLocalPartition locPart;
 
     /** Worker future. */
     private final GridFutureAdapter<SchemaIndexCacheStat> fut;
-
-    /** Object for collecting statistics about index update. */
-    @Nullable private final SchemaIndexCacheStat indexCacheStat;
 
     /**
      * Constructor.
@@ -104,10 +104,8 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
         assert nonNull(fut);
 
         this.stop = stop;
-        this.clo = clo;
+        wrappedClo = new SchemaIndexCacheVisitorClosureWrapper(clo);
         this.fut = fut;
-
-        indexCacheStat = SchemaIndexCacheStat.extraIndexBuildLogging() ? new SchemaIndexCacheStat() : null;
     }
 
     /** {@inheritDoc} */
@@ -127,7 +125,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
             cctx.group().metrics0().setIndexBuildCountPartitionsLeft(0);
         }
         finally {
-            fut.onDone(indexCacheStat, err);
+            fut.onDone(wrappedClo.indexCacheStat, err);
         }
     }
 
@@ -185,8 +183,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                         break;
                 }
 
-                if (nonNull(indexCacheStat))
-                    indexCacheStat.scanned += cntr;
+                wrappedClo.addNumberProcessedKeys(cntr);
             }
             finally {
                 if (locked)
@@ -216,7 +213,7 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(clo, indexCacheStat);
+                    entry.updateIndex(wrappedClo);
                 }
                 finally {
                     entry.touch();
@@ -255,5 +252,48 @@ public class SchemaIndexCachePartitionWorker extends GridWorker {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaIndexCachePartitionWorker.class, this);
+    }
+
+    /**
+     * Wrapper class for given closure.
+     */
+    private class SchemaIndexCacheVisitorClosureWrapper implements SchemaIndexCacheVisitorClosure {
+        /** Closure. */
+        private final SchemaIndexCacheVisitorClosure clo;
+
+        /** Object for collecting statistics about index update. */
+        @Nullable private final SchemaIndexCacheStat indexCacheStat;
+
+        /** */
+        private SchemaIndexCacheVisitorClosureWrapper(SchemaIndexCacheVisitorClosure clo) {
+            this.clo = clo;
+            indexCacheStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false) ? new SchemaIndexCacheStat() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
+            if (row != null) {
+                clo.apply(row);
+
+                if (indexCacheStat != null) {
+                    QueryTypeDescriptorImpl type = cctx.kernalContext().query().typeByValue(
+                        cctx.cache().name(),
+                        cctx.cacheObjectContext(),
+                        row.key(),
+                        row.value(),
+                        true
+                    );
+
+                    if (type != null)
+                        indexCacheStat.addType(type);
+                }
+            }
+        }
+
+        /** */
+        private void addNumberProcessedKeys(int cnt) {
+            if (nonNull(indexCacheStat))
+                indexCacheStat.add(cnt);
+        }
     }
 }

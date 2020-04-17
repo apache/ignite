@@ -187,8 +187,6 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
         assertEquals(msgFound, idxRebuildLsnr.check());
     }
 
-
-
     /** */
     private void removeIndexBin(int nodeId) throws IgniteCheckedException {
         U.delete(
