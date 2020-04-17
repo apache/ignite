@@ -67,6 +67,14 @@ public interface IgniteSecurity {
     public SecurityContext securityContext();
 
     /**
+     * Gets security context for authenticated nodes and thin clients.
+     *
+     * @param subjId Security subject id.
+     * @return Security context or null if not found.
+     */
+    public SecurityContext securityContext(UUID subjId);
+
+    /**
      * Delegates call to {@link GridSecurityProcessor#authenticateNode(org.apache.ignite.cluster.ClusterNode,
      * org.apache.ignite.plugin.security.SecurityCredentials)}
      */
