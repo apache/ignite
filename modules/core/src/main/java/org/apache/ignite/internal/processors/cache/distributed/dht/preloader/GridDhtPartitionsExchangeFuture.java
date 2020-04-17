@@ -2951,9 +2951,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (cctx.kernalContext().isStopping())
                     return;
 
-                if (exchCtx.exchangeFreeSwitch())
-                    return;
-
                 // DynamicCacheChangeFailureMessage was sent.
                 // Thus, there is no need to create and send GridDhtPartitionsFullMessage.
                 if (cacheChangeFailureMsgSent)
@@ -2966,8 +2963,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() :
-                        GridDhtPartitionsExchangeFuture.this;
+                    assert (firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient())
+                        || isSnapshotOperation(firstDiscoEvt) : GridDhtPartitionsExchangeFuture.this;
 
                     ClusterNode node = cctx.node(nodeId);
 
