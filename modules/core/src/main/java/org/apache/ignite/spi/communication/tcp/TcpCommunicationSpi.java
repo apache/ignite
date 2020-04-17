@@ -2189,8 +2189,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             Map<String, Object> res = new HashMap<>(5);
 
-            boolean ip = !F.isEmpty(locAddr) && locHost.getHostAddress().equals(locAddr);
-            boolean setEmptyHostNamesAttr = !getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false) && ip;
+            boolean setEmptyHostNamesAttr = !getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false) &&
+                (!F.isEmpty(locAddr) && locHost.getHostAddress().equals(locAddr)) && !locHost.isAnyLocalAddress() &&
+                !locHost.isLoopbackAddress();
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
             res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
