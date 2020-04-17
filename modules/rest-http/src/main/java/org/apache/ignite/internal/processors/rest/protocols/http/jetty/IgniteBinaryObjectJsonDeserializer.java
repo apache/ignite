@@ -41,6 +41,7 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -199,7 +200,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             if (nodeType == JsonNodeType.BOOLEAN)
                 return jsonNode.booleanValue();
 
-            Class<?> cls = qryFields.get(field.toUpperCase());
+            Class<?> cls = qryFields.get(QueryUtils.normalizeObjectName(field, true));
 
             if (cls != null)
                 return mapper.treeToValue(jsonNode, cls);
@@ -292,9 +293,10 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
 
                     break;
 
-                case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.COL:
                 case GridBinaryMarshaller.OBJ:
+                case GridBinaryMarshaller.BINARY_OBJ:
+                case GridBinaryMarshaller.OBJ_ARR:
                 case GridBinaryMarshaller.ENUM:
                     baseCls = fieldClass(field);
 

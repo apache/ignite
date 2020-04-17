@@ -404,6 +404,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         fields.put("doubleVal", Double.class.getName());
         fields.put("timestamp", Timestamp.class.getName());
         fields.put("bytes", long[].class.getName());
+        fields.put("igniteUuid", IgniteUuid.class.getName());
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("testCache");
 
@@ -423,7 +424,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         List<Integer> list = F.asList(1, 2, 3);
 
         OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list,
-            Timestamp.valueOf("2004-08-26 16:47:03.141592"),  new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE}, null);
+            Timestamp.valueOf("2004-08-26 16:47:03.141592"),  new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE},
+            UUID.randomUUID(), IgniteUuid.randomUuid(), null);
 
         putObject(cache.getName(), "300", newType, valType);
 
@@ -433,7 +435,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         // Sending "optional" (new) field for registered binary type.
         OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list,
-            Timestamp.valueOf("2004-08-26 16:47:03.14"), new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE}, true);
+            Timestamp.valueOf("2004-08-26 16:47:03.14"), new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE},
+            UUID.randomUUID(), IgniteUuid.randomUuid(), true);
 
         putObject(cache.getName(), "301", newTypeUpdate, valType);
 
@@ -484,9 +487,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             F.asMap(123, null, 4567, null).keySet(),
             new byte[] {4, 1, 2},
             new char[] {'a', 'b', 'c'},
-            COLOR.GREEN,
+            Color.GREEN,
             new OuterClass(Long.MIN_VALUE, "outer", 0.7d, F.asList(9, 1)),
-            objects
+            objects,
+            UUID.randomUUID(),
+            IgniteUuid.randomUuid()
         );
 
         putObject(cacheName, "300", complex);
@@ -3195,24 +3200,35 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         private long[] longs;
 
         /** */
+        @JsonProperty
+        private UUID uuid;
+
+        /** */
+        @JsonProperty
+        private IgniteUuid igniteUuid;
+
+        /** */
         OuterClass() {
             // No-op.
         }
 
         /** */
         OuterClass(long id, String name, double doubleVal, List<Integer> list) {
-            this(id, name, doubleVal, list, null, null, null);
+            this(id, name, doubleVal, list, null, null, null, null, null);
         }
 
         /** */
         @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-        OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp ts, long[] longs, Boolean b) {
+        OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp ts, long[] longs,
+            UUID uuid, IgniteUuid igniteUuid, Boolean b) {
             this.id = id;
             this.name = name;
             this.doubleVal = doubleVal;
             this.list = new ArrayList<>(list);
             this.timestamp = ts;
             this.longs = longs;
+            this.uuid = uuid;
+            this.igniteUuid = igniteUuid;
             this.optional = b;
         }
 
@@ -3232,12 +3248,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 Objects.equals(optional, aCls.optional) &&
                 Objects.equals(list, aCls.list) &&
                 Objects.equals(timestamp, aCls.timestamp) &&
-                Arrays.equals(longs, aCls.longs);
+                Arrays.equals(longs, aCls.longs) &&
+                Objects.equals(uuid, aCls.uuid) &&
+                Objects.equals(igniteUuid, aCls.igniteUuid);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(id, name, optional, doubleVal, list, timestamp, longs);
+            return Objects.hash(id, name, optional, doubleVal, list, timestamp, longs, uuid, igniteUuid);
         }
 
         /** {@inheritDoc} */
@@ -3255,7 +3273,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** */
-    public enum COLOR {
+    public enum Color {
         /** */
         RED,
 
@@ -3339,7 +3357,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** */
         @JsonProperty
-        private COLOR color;
+        private Color color;
+
+        /** */
+        @JsonProperty
+        private UUID uuid;
+
+        /** */
+        @JsonProperty
+        private IgniteUuid igniteUuid;
 
         /** */
         Complex() {
@@ -3349,7 +3375,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         /** */
         Complex(Integer id, String str, Timestamp timestamp, Date sqlDate, Time time, java.util.Date date,
             Map<String, Integer> map, int[] ints, Integer[] integers, long[] longs, List<Integer> list,
-            Set<Integer> col, byte[] bytes, char[] chars, COLOR color, OuterClass outer, OuterClass[] objects) {
+            Set<Integer> col, byte[] bytes, char[] chars, Color color, OuterClass outer, OuterClass[] objects,
+            UUID uuid, IgniteUuid igniteUuid) {
             this.id = id;
             this.str = str;
             this.timestamp = timestamp;
@@ -3367,6 +3394,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             this.color = color;
             this.outer = outer;
             this.objects = objects;
+            this.uuid = uuid;
+            this.igniteUuid = igniteUuid;
         }
 
         /** {@inheritDoc} */
@@ -3394,12 +3423,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 Objects.equals(list, complex.list) &&
                 Objects.equals(col, complex.col) &&
                 Objects.equals(outer, complex.outer) &&
+                Arrays.equals(objects, complex.objects) &&
+                Objects.equals(uuid, complex.uuid) &&
+                Objects.equals(igniteUuid, complex.igniteUuid) &&
                 color == complex.color;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(id, str, timestamp, sqlDate, time, date, map, list, col, outer, color);
+            int result = Objects.hash(id, str, timestamp, sqlDate, time, date,
+                map, list, col, outer, color, objects, uuid, igniteUuid);
 
             result = 31 * result + Arrays.hashCode(longs);
             result = 31 * result + Arrays.hashCode(ints);
