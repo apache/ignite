@@ -43,7 +43,6 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 
 import static java.util.AbstractMap.SimpleEntry;
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
@@ -525,7 +524,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
             if (!protocolCtx.isFeatureSupported(EXPIRY_POLICY)) {
                 throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
-                    "version %s, required version %s", protocolCtx.version(), V1_6_0));
+                    "version %s, required version %s", protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
             }
 
             flags |= WITH_EXPIRY_POLICY_FLAG_MASK;

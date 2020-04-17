@@ -496,7 +496,7 @@ class TcpClientChannel implements ClientChannel {
                 else if (proposedVer.equals(srvVer))
                     throw new ClientProtocolError(err);
                 else if (!supportedVers.contains(srvVer) ||
-                    (srvVer.compareTo(V1_1_0) < 0 && !F.isEmpty(user)))
+                    (!ProtocolContext.isFeatureSupported(srvVer, AUTHORIZATION) && !F.isEmpty(user)))
                     // Server version is not supported by this client OR server version is less than 1.1.0 supporting
                     // authentication and authentication is required.
                     throw new ClientProtocolError(String.format(

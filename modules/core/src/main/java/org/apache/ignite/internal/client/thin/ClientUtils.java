@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_6_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -368,7 +367,7 @@ final class ClientUtils {
             }
             else if (cfg.getExpiryPolicy() != null) {
                 throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
-                    "version %s, required version %s", protocolCtx.version(), V1_6_0));
+                    "version %s, required version %s", protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
             }
 
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
