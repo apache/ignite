@@ -88,7 +88,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
 
     /** Cache configuration for test. */
-    private static CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("txCacheName")
+    private static CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
         .setAtomicityMode(CacheAtomicityMode.ATOMIC)
         .setBackups(2)
         .setAffinity(new RendezvousAffinityFunction(false)
@@ -296,10 +296,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotConsistencyUnderLoad() throws Exception {
-        int clients = 50;
+        int clientsCnt = 50;
         int balance = 10_000;
         int transferLimit = 1000;
-        int total = clients * balance * 2;
+        int total = clientsCnt * balance * 2;
         int grids = 3;
         int transferThreadCnt = 4;
         AtomicBoolean stop = new AtomicBoolean(false);
@@ -318,14 +318,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteCache<Integer, Account> eastCache = client.cache(eastCcfg.getName());
         IgniteCache<Integer, Account> westCache = client.cache(westCcfg.getName());
 
-        // Create clients with zero balance.
-        for (int i = 0; i < clients; i++) {
+        // Create clients with initial balance.
+        for (int i = 0; i < clientsCnt; i++) {
             eastCache.put(i, new Account(i, balance));
             westCache.put(i, new Account(i, balance));
         }
 
         assertEquals("The initial summary value in all caches is not correct.",
-            total, sumAllCacheValues(client, clients, eastCcfg.getName(), westCcfg.getName()));
+            total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
 
         forceCheckpoint();
 
@@ -343,16 +343,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
                         amount = rnd.nextInt(transferLimit);
 
+                        txStarted.countDown();
+
                         try (Transaction tx = ignite.transactions().txStart()) {
-                            Integer id = rnd.nextInt(clients);
+                            Integer id = rnd.nextInt(clientsCnt);
 
                             Account acc0 = east.get(id);
                             Account acc1 = west.get(id);
 
                             acc0.balance -= amount;
-
-                            txStarted.countDown();
-
                             acc1.balance += amount;
 
                             east.put(id, acc0);
@@ -381,14 +380,14 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         txLoadFut.get();
 
         assertEquals("The summary value should not changed during tx transfers.",
-            total, sumAllCacheValues(client, clients, eastCcfg.getName(), westCcfg.getName()));
+            total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
 
         stopAllGrids();
 
         IgniteEx snpIg0 = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
 
         assertEquals("The total amount of all cache values must not changed in snapshot.",
-            total, sumAllCacheValues(snpIg0, clients, eastCcfg.getName(), westCcfg.getName()));
+            total, sumAllCacheValues(snpIg0, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
     }
 
     /** @throws Exception If fails. */
@@ -409,8 +408,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.getOrCreateCache(ccfg).put(i, i);
-
-        forceCheckpoint();
 
         ig0.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
