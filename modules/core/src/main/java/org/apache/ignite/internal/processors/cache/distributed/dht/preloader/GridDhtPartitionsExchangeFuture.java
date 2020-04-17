@@ -940,7 +940,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 comp.onInitAfterTopologyLock(this);
 
             // For pme-free exchanges onInitAfterTopologyLock must be
-            // invoked prior to onDoneBeforeTopologyUnlock
+            // invoked prior to onDoneBeforeTopologyUnlock.
             if (exchange == ExchangeType.ALL && context().exchangeFreeSwitch()) {
                 cctx.exchange().exchangerBlockingSectionBegin();
 
