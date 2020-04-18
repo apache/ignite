@@ -55,7 +55,7 @@ public class CacheEntryInfoCollection implements Message {
     /**
      * Constructor.
      *
-     * @param {@code True} if partition rebalancing using WAL history.
+     * @param historical {@code True} if partition rebalancing using WAL history.
      */
     public CacheEntryInfoCollection(boolean historical) {
         this.historical = historical;
