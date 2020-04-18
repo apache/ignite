@@ -748,8 +748,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             0, startTime.value());
         assertEquals("Snapshot end time must be undefined to snapshot operation started.",
             0, endTime.value());
-        assertNull("Snapshot name must not exist prior to snapshot operation started.", snpName.value());
-        assertNull("Snapshot error message must null prior to snapshot operation started.", errMsg.value());
+        assertTrue("Snapshot name must not exist prior to snapshot operation started.", snpName.value().isEmpty());
+        assertTrue("Snapshot error message must null prior to snapshot operation started.", errMsg.value().isEmpty());
         assertTrue("Snapshots on local node must not exist", snpList.value().isEmpty());
 
         long cutoffStartTime = U.currentTimeMillis();
@@ -765,8 +765,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             0, endTime.value());
         assertEquals("Snapshot name must be set prior to snapshot operation started.",
             SNAPSHOT_NAME, snpName.value());
-        assertNull("Snapshot error message must null prior to snapshot operation started.",
-            errMsg.value());
+        assertTrue("Snapshot error message must null prior to snapshot operation started.",
+            errMsg.value().isEmpty());
 
         IgniteFuture<Void> fut1 = grid(1).snapshot().createSnapshot(newSnapshotName);
 
@@ -798,8 +798,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             endTime.value() > 0);
         assertEquals("Snapshot name must be set when snapshot operation already finished.",
             SNAPSHOT_NAME, snpName.value());
-        assertNull("Concurrent snapshot operation must finished successfully.",
-            errMsg.value());
+        assertTrue("Concurrent snapshot operation must finished successfully.",
+            errMsg.value().isEmpty());
         assertEquals("Only the first snapshot must be created and stored on disk.",
             Collections.singletonList(SNAPSHOT_NAME), snpList.value());
     }

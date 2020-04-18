@@ -363,10 +363,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         mreg.register("LastSnapshotName", () -> lastSeenSnpFut.name, String.class,
             "The name of last started cluster snapshot request on this node.");
         mreg.register("LastSnapshotErrorMessage",
-            () -> lastSeenSnpFut.error() == null ? null : lastSeenSnpFut.error().getMessage(),
+            () -> lastSeenSnpFut.error() == null ? "" : lastSeenSnpFut.error().getMessage(),
             String.class,
             "The error message of last started cluster snapshot request which fail with an error. " +
-                "This value will be 'null' if last snapshot request has been completed successfully.");
+                "This value will be empty if last snapshot request has been completed successfully.");
         mreg.register("LocalSnapshotList", this::getSnapshots, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
@@ -1906,7 +1906,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             onDone();
 
             rqId = null;
-            name = null;
+            name = "";
             startTime = 0;
             endTime = 0;
         }
