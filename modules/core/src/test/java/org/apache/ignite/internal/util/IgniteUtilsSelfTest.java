@@ -312,7 +312,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         System.out.println("Is Solaris SPARC: " + U.isSolarisSparc());
         System.out.println("Is Solaris x86: " + U.isSolarisX86());
         System.out.println("Is Windows7: " + U.isWindows7());
-        System.out.println("Is Sufficiently Tested OS: " + U.isSufficientlyTestedOs());
     }
 
     /**

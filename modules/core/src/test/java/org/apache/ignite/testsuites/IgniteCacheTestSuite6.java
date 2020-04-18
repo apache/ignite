@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartT
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticReadThroughTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnIncorrectParamsTest;
@@ -127,6 +128,8 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, PartitionedTransactionalPessimisticCacheGetsDistributionTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxOptimisticOnPartitionExchangeTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxOptimisticReadThroughTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteExchangeLatchManagerCoordinatorFailTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteExchangeLatchManagerDiscoHistoryTest.class, ignoredTests);
