@@ -107,7 +107,8 @@ public class GridDhtPartitionsStateValidator {
                 parts);
         }
 
-        // For sizes validation ignore also nodes which are not able to send cache sizes.
+        // For sizes validation ignore also nodes which are not able to send
+        // cache sizes.
         for (UUID id : messages.keySet()) {
             ClusterNode node = cctx.discovery().node(id);
             if (node != null && node.version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
@@ -131,7 +132,8 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Returns set of partitions that did not pass validation for all caches that were checked.
+     * Returns set of partitions that did not pass validation for all caches
+     * that were checked.
      *
      * @return Collection of invalid partitions.
      * @see GridDhtPartitionsStateValidator#validatePartitionCountersAndSizes
