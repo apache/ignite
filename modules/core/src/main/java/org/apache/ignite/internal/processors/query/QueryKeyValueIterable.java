@@ -45,8 +45,8 @@ public class QueryKeyValueIterable<K, V> implements Iterable<Cache.Entry<K, V>> 
         return new QueryKeyValueIterator<>(cur.iterator());
     }
 
-    @Override
-    public Spliterator<Cache.Entry<K, V>> spliterator() {
+    /** {@inheritDoc} */
+    @Override public Spliterator<Cache.Entry<K, V>> spliterator() {
         return new QueryKeyValueSpliterator<>(cur.spliterator());
     }
 

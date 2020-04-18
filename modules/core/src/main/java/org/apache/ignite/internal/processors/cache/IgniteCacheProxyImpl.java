@@ -728,8 +728,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                     return cur != null ? cur.getAll() : Collections.<Cache.Entry<K, V>>emptyList();
                 }
 
-                @Override
-                public Spliterator<Entry<K, V>> spliterator() {
+                @Override public Spliterator<Entry<K, V>> spliterator() {
                     return cur != null ? cur.spliterator() : Spliterators.emptySpliterator();
                 }
 

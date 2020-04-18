@@ -42,8 +42,8 @@ public class QueryKeyValueSpliterator<K, V> implements Spliterator<Cache.Entry<K
         this.spliterator = spliterator;
     }
 
-    @Override
-    public boolean tryAdvance(Consumer<? super Cache.Entry<K, V>> action) {
+    /** {@inheritDoc} */
+    @Override public boolean tryAdvance(Consumer<? super Cache.Entry<K, V>> action) {
         return spliterator.tryAdvance(new Consumer<List<?>>() {
             @Override
             public void accept(List<?> row) {
@@ -52,18 +52,18 @@ public class QueryKeyValueSpliterator<K, V> implements Spliterator<Cache.Entry<K
         });
     }
 
-    @Override
-    public Spliterator<Cache.Entry<K, V>> trySplit() {
+    /** {@inheritDoc} */
+    @Override public Spliterator<Cache.Entry<K, V>> trySplit() {
         return null;
     }
 
-    @Override
-    public long estimateSize() {
+    /** {@inheritDoc} */
+    @Override public long estimateSize() {
         return spliterator.estimateSize();
     }
 
-    @Override
-    public int characteristics() {
+    /** {@inheritDoc} */
+    @Override public int characteristics() {
         return spliterator.characteristics();
     }
 }

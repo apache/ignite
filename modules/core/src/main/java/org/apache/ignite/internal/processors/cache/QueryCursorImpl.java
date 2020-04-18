@@ -98,6 +98,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         return new AutoClosableCursorIterator<>(this, iter());
     }
 
+    /** {@inheritDoc} */
     @Override public Spliterator<T> spliterator() {
         return iterExec == null ? QueryCursorEx.super.spliterator() : iterExec.spliterator();
     }
