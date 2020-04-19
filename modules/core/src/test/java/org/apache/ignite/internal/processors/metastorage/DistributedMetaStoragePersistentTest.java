@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -570,7 +569,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     /** */
     @Test
     public void testLongKey() throws Exception {
-        startGrid(0).cluster().state(ClusterState.ACTIVE);
+        startGrid(0).cluster().active(true);
 
         String l10 = "1234567890";
         String longKey = l10 + l10 + l10 + l10 + l10 + l10 + l10;
