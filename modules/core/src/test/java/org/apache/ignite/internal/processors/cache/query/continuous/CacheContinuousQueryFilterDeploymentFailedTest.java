@@ -56,9 +56,14 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     /** Latch that indicates whether {@link StopRoutineDiscoveryMessage} was processed by all nodes. */
     private final CountDownLatch stopRoutineLatch = new CountDownLatch(NODES_CNT);
 
+    /** */
+    private boolean clientMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setClientMode(clientMode);
 
         DiscoveryHook discoveryHook = new DiscoveryHook() {
             @Override public void afterDiscovery(DiscoverySpiCustomMessage msg) {
@@ -94,7 +99,11 @@ public class CacheContinuousQueryFilterDeploymentFailedTest extends GridCommonAb
     public void testContinuousQueryFilterDeploymentFailed() throws Exception {
         startGrids(NODES_CNT - 1);
 
-        IgniteEx cli = startClientGrid(NODES_CNT - 1);
+        clientMode = true;
+
+        IgniteEx cli = startGrid(NODES_CNT - 1);
+
+        clientMode = false;
 
         IgniteCache<Integer, Integer> cache = cli.createCache(DEFAULT_CACHE_NAME);
 
