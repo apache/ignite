@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
@@ -26,11 +27,24 @@ public class SqlMergeOnClientNodeTest extends SqlMergeTest {
     /** Node. */
     protected static IgniteEx cli;
 
+    /** */
+    private boolean clientMode;
+
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setClientMode(clientMode);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        cli = startClientGrid(2);
+        clientMode = true;
+
+        cli = startGrid(2);
+
+        clientMode = false;
     }
 
     /** {@inheritDoc} */

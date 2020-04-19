@@ -21,12 +21,21 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheMergeSqlQueryFailingTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
+    /** */
+    private boolean clientMode;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setClientMode(clientMode);
+    }
+
     /**
      *
      */
@@ -38,7 +47,11 @@ public class IgniteCacheMergeSqlQueryFailingTest extends IgniteCacheAbstractInse
                 "CONSTRAINT USERPUBSTATICDATA_PK PRIMARY KEY (BOOK,DESK)) " +
                 "WITH \"template=replicated\"").setSchema("PUBLIC"));
 
-        Ignite ignite = startClientGrid(3);
+        clientMode = true;
+
+        Ignite ignite = startGrid(3);
+
+        clientMode = false;
 
         IgniteCache srvCache = ignite(0).cache("S2P").withKeepBinary();
 
