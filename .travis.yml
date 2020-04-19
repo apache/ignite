@@ -1,0 +1,10 @@
+sudo: false
+
+script: "mvn package -P all-java,lgpl,examples,checkstyle,java-8 -DskipTests -Dmaven.javadoc.skip=true -B -V"
+
+jdk:
+  - openjdk8
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
