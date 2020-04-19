@@ -37,8 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-
 /**
  *
  */
@@ -76,7 +74,7 @@ public class GridCacheScheduleResendPartitionsAfterEvictionTest extends Partitio
 
         subscribeEvictionQueueAtLatch(node1, latch, false);
 
-        node1.cluster().state(ACTIVE);
+        node1.cluster().active(true);
 
         node1.getOrCreateCache(DEFAULT_CACHE_NAME);
         try (IgniteDataStreamer streamer = node1.dataStreamer(DEFAULT_CACHE_NAME)) {
