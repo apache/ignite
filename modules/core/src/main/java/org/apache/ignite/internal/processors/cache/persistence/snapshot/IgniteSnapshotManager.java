@@ -349,7 +349,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
         locSnpDir = resolveSnapshotWorkDirectory(ctx.config());
-        tmpWorkDir = Paths.get(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR).toFile();
+        tmpWorkDir = U.resolveWorkDirectory(storeMgr.workDir().getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR, true);
 
         U.ensureDirectory(locSnpDir, "snapshot work directory", log);
         U.ensureDirectory(tmpWorkDir, "temp directory for snapshot creation", log);
