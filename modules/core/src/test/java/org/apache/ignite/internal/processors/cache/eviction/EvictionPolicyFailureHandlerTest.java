@@ -44,7 +44,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -61,9 +60,14 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
     /** Flag indicats that {@link ThrowableEvictionPolicy} should be used instead of {@link SortedEvictionPolicy}. */
     private boolean oom;
 
+    /** */
+    private boolean clientMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setClientMode(clientMode);
 
         cfg.setFailureHandler((ignite, failureCtx) -> {
             nodeFailure.set(true);
@@ -106,7 +110,11 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(0);
 
-        IgniteEx client = startClientGrid(1);
+        clientMode = true;
+
+        IgniteEx client = startGrid(1);
+
+        clientMode = false;
 
         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)node).internalCache(DEFAULT_CACHE_NAME);
 
@@ -155,7 +163,9 @@ public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
             .anyMatch(e -> new Double(2.1).equals(e.key().value(null, false)))
         );
 
-        assertTrue(node.cluster().state().active(ACTIVE));
+        node.cluster().active(true);
+
+        assertTrue(node.cluster().active());
     }
 
     /**
