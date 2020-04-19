@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -363,8 +363,8 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         PartitionUpdateCounter pc2 = new PartitionUpdateCounterTrackingImpl(null);
         pc2.init(0, bytes);
 
-        NavigableMap q0 = U.field(pc, "queue");
-        NavigableMap q1 = U.field(pc2, "queue");
+        Set q0 = U.field(pc, "queue");
+        Set q1 = U.field(pc2, "queue");
 
         assertEquals(q0, q1);
     }
