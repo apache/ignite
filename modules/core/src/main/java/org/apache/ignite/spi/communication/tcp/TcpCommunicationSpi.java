@@ -3514,6 +3514,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         for (InetSocketAddress addr : addrs) {
+            if (addr.isUnresolved())
+                continue;
+
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
                 failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
