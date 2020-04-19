@@ -5,7 +5,7 @@ install: skip
 before_script:
   - echo $JDK_PROFILE
   - echo $JVM_EXTRA_ARGS
-script: mvn package -Pall-java,lgpl,examples,checkstyle,$JDK_PROFILE -DskipTests -Dmaven.javadoc.skip=true
+script: mvn package -Pall-java,lgpl,examples,checkstyle,$JDK_PROFILE -DskipTests -Dmaven.javadoc.skip=true -B -V
 
 jobs:
   include:
@@ -18,7 +18,7 @@ jobs:
       - export JDK_PROFILE=java-9+
 
 before_cache:
-  - rm -rfv $HOME/.m2/repository/org/apache/ignite/
+  - rm -rfv $HOME/.m2/repository/org/apache/ignite
 cache:
   directories:
-    - $HOME/.m2/repository
+    - $HOME/.m2
