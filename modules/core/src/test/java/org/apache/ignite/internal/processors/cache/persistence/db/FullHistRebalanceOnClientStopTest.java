@@ -57,9 +57,14 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
     /** Partitions count. */
     private static final int PARTS_CNT = 16;
 
+    /** */
+    private boolean clientMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setClientMode(clientMode);
 
         cfg.setConsistentId(gridName);
 
@@ -114,7 +119,11 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
-        startClientGrid(5);
+        clientMode = true;
+
+        startGrid(5);
+
+        clientMode = false;
 
         final int entryCnt = PARTS_CNT * 1000;
 
