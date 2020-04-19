@@ -5,16 +5,19 @@ install: skip
 before_script:
   - echo $JAVA_VERSION
   - echo $JVM_EXTRA_ARGS
-script: mvn package -Pall-java,all-scala,scala,licenses,lgpl,examples,checkstyle -DskipTests -Dmaven.javadoc.skip=true -B -V
+  - echo $BUILD_SCALA
+script: mvn package -Pall-java,licenses,lgpl,examples,checkstyle $BUILD_SCALA -DskipTests -Dmaven.javadoc.skip=true -B -V
 
 jobs:
   include:
     - jdk: openjdk8
       before_script:
       - export JAVA_VERSION=8
+      - export BUILD_SCALA='-Pall-scala,scala'
     - jdk: openjdk11
       before_script:
       - export JVM_EXTRA_ARGS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED -Djdk.tls.client.protocols=TLSv1.2'
+      - export BUILD_SCALA=
       - export JAVA_VERSION=11
 
 before_cache:
