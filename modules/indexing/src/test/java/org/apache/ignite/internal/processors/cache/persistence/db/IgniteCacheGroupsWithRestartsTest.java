@@ -61,7 +61,6 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -279,7 +278,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     public void testNodeRestartWith3rdPartyCacheStoreAndPersistenceEnabled() throws Exception {
         IgniteEx crd = startGrid(0);
 
-        crd.cluster().state(ACTIVE);
+        crd.cluster().active(true);
 
         String cacheName = "test-cache-3rd-party-write-behind-and-ignite-persistence";
         CacheConfiguration  ccfg = new CacheConfiguration(cacheName)
@@ -296,7 +295,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         crd = startGrid(0);
 
-        crd.cluster().state(ACTIVE);
+        crd.cluster().active(true);
 
         cache = crd.cache(cacheName);
 
