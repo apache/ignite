@@ -11,14 +11,14 @@ script: mvn package -Pall-java,licenses,lgpl,checkstyle $EXTENDED_PROFILES -Dski
 jobs:
   include:
     - jdk: openjdk8
-      before_script:
-      - export JAVA_VERSION=8
-      - export EXTENDED_PROFILES='-Pall-scala,scala,examples'
+      env:
+      - JAVA_VERSION=8
+      - EXTENDED_PROFILES='-Pall-scala,scala,examples'
     - jdk: openjdk11
-      before_script:
-      - export JVM_EXTRA_ARGS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED -Djdk.tls.client.protocols=TLSv1.2'
-      - export EXTENDED_PROFILES=
-      - export JAVA_VERSION=11
+      env:
+      - JVM_EXTRA_ARGS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED -Djdk.tls.client.protocols=TLSv1.2'
+      - EXTENDED_PROFILES=
+      - JAVA_VERSION=11
 
 before_cache:
   - rm -rfv $HOME/.m2/repository/org/apache/ignite
