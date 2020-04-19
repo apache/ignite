@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -65,8 +66,11 @@ public class CheckpointHistory {
     /** The maximal number of checkpoints hold in memory. */
     private final int maxCpHistMemSize;
 
-    /** If WalHistorySize was setted by user will use old way for removing checkpoints. */
-    private final boolean isWalHistorySizeParameterEnabled;
+    /** Should WAL be truncated */
+    private final boolean isWalTruncationEnabled;
+
+    /** Maximum size of WAL archive (in bytes) */
+    private final long maxWalArchiveSize;
 
     /**
      * Constructor.
@@ -79,10 +83,11 @@ public class CheckpointHistory {
 
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        maxCpHistMemSize = Math.min(dsCfg.getWalHistorySize(),
-            IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100));
+        maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
 
-        isWalHistorySizeParameterEnabled = dsCfg.isWalHistorySizeParameterUsed();
+        isWalTruncationEnabled = maxWalArchiveSize != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+
+        maxCpHistMemSize = IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100);
     }
 
     /**
@@ -165,7 +170,7 @@ public class CheckpointHistory {
      * @return {@code true} if there is space for next checkpoint.
      */
     public boolean hasSpace() {
-        return histMap.size() + 1 <= maxCpHistMemSize;
+        return isWalTruncationEnabled || histMap.size() + 1 <= maxCpHistMemSize;
     }
 
     /**
@@ -184,14 +189,8 @@ public class CheckpointHistory {
             if (highBound.compareTo(cpPnt) <= 0)
                 break;
 
-            if (cctx.wal().reserved(cpEntry.checkpointMark())) {
-                U.warn(log, "Could not clear historyMap due to WAL reservation on cp: " + cpEntry +
-                    ", history map size is " + histMap.size());
-
+            if (!removeCheckpoint(cpEntry))
                 break;
-            }
-
-            histMap.remove(cpEntry.timestamp());
 
             removed.add(cpEntry);
         }
@@ -200,92 +199,102 @@ public class CheckpointHistory {
     }
 
     /**
+     * Removes checkpoints from history.
+     *
+     * @return List of checkpoint entries removed from history.
+     */
+    public List<CheckpointEntry> removeCheckpoints(int countToRemove) {
+        if (countToRemove == 0)
+            return Collections.emptyList();
+
+        List<CheckpointEntry> removed = new ArrayList<>();
+
+        for (Iterator<Map.Entry<Long, CheckpointEntry>> iterator = histMap.entrySet().iterator();
+                iterator.hasNext() && removed.size() < countToRemove; ) {
+            Map.Entry<Long, CheckpointEntry> entry = iterator.next();
+
+            CheckpointEntry checkpoint = entry.getValue();
+
+            if (!removeCheckpoint(checkpoint))
+                break;
+
+            removed.add(checkpoint);
+        }
+
+        return removed;
+    }
+
+    /**
+     * Remove checkpoint from history
+     * @param checkpoint Checkpoint to be removed
+     * @return Whether checkpoint was removed from history
+     */
+    private boolean removeCheckpoint(CheckpointEntry checkpoint) {
+        if (cctx.wal().reserved(checkpoint.checkpointMark())) {
+            U.warn(log, "Could not clear historyMap due to WAL reservation on cp: " + checkpoint +
+                ", history map size is " + histMap.size());
+
+            return false;
+        }
+
+        histMap.remove(checkpoint.timestamp());
+
+        return true;
+    }
+
+    /**
      * Logs and clears checkpoint history after checkpoint finish.
      *
      * @return List of checkpoints removed from history.
      */
-    public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp, boolean truncateWal) {
+    public List<CheckpointEntry> onCheckpointFinished(Checkpoint chp) {
         chp.walSegsCoveredRange(calculateWalSegmentsCovered());
 
-        WALPointer checkpointMarkUntilDel = isWalHistorySizeParameterEnabled //check for compatibility mode.
-            ? checkpointMarkUntilDeleteByMemorySize()
-            : newerPointer(checkpointMarkUntilDeleteByMemorySize(), checkpointMarkUntilDeleteByArchiveSize());
+        int removeCount = isWalTruncationEnabled
+            ? checkpointCountUntilDeleteByArchiveSize()
+            : (histMap.size() - maxCpHistMemSize);
 
-        if (checkpointMarkUntilDel == null)
+        if (removeCount <= 0)
             return Collections.emptyList();
 
-        List<CheckpointEntry> deletedCheckpoints = onWalTruncated(checkpointMarkUntilDel);
+        List<CheckpointEntry> deletedCheckpoints = removeCheckpoints(removeCount);
 
-        int deleted = 0;
+        if (isWalTruncationEnabled) {
+            int deleted = cctx.wal().truncate(null, firstCheckpointPointer());
 
-        if (truncateWal)
-            deleted += cctx.wal().truncate(null, firstCheckpointPointer());
-
-        chp.walFilesDeleted(deleted);
+            chp.walFilesDeleted(deleted);
+        }
 
         return deletedCheckpoints;
     }
 
     /**
-     * @param firstPointer One of pointers to choose the newest.
-     * @param secondPointer One of pointers to choose the newest.
-     * @return The newest pointer from input ones.
-     */
-    private FileWALPointer newerPointer(WALPointer firstPointer, WALPointer secondPointer) {
-        FileWALPointer first = (FileWALPointer)firstPointer;
-        FileWALPointer second = (FileWALPointer)secondPointer;
-
-        if (firstPointer == null)
-            return second;
-
-        if (secondPointer == null)
-            return first;
-
-        return first.index() > second.index() ? first : second;
-    }
-
-    /**
-     * Calculate mark until delete by maximum checkpoint history memory size.
+     * Calculate count of checkpoints to delete by maximum allowed archive size.
      *
-     * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
+     * @return Checkpoint count to be deleted.
      */
-    private WALPointer checkpointMarkUntilDeleteByMemorySize() {
-        if (histMap.size() <= maxCpHistMemSize)
-            return null;
-
-        int calculatedCpHistSize = maxCpHistMemSize;
-
-        for (Map.Entry<Long, CheckpointEntry> entry : histMap.entrySet()) {
-            if (histMap.size() <= calculatedCpHistSize++)
-                return entry.getValue().checkpointMark();
-        }
-
-        return lastCheckpoint().checkpointMark();
-    }
-
-    /**
-     * Calculate mark until delete by maximum allowed archive size.
-     *
-     * @return Checkpoint mark until which checkpoints can be deleted(not including this pointer).
-     */
-    @Nullable private WALPointer checkpointMarkUntilDeleteByArchiveSize() {
+     private int checkpointCountUntilDeleteByArchiveSize() {
         long absFileIdxToDel = cctx.wal().maxArchivedSegmentToDelete();
 
         if (absFileIdxToDel < 0)
-            return null;
+            return 0;
 
         long fileUntilDel = absFileIdxToDel + 1;
 
         long checkpointFileIdx = absFileIdx(lastCheckpoint());
 
+        int countToRemove = 0;
+
         for (CheckpointEntry cpEntry : histMap.values()) {
             long currFileIdx = absFileIdx(cpEntry);
 
             if (checkpointFileIdx <= currFileIdx || fileUntilDel <= currFileIdx)
-                return cpEntry.checkpointMark();
+                return countToRemove;
+
+            countToRemove++;
         }
 
-        return lastCheckpoint().checkpointMark();
+        return histMap.size() - 1;
     }
 
     /**
