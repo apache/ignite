@@ -3,9 +3,6 @@ language: java
 install: skip
 script: mvn package -Pall-java,lgpl,examples,checkstyle,$JDK_PROFILE -DskipTests -Dmaven.javadoc.skip=true
 
-jdk:
-  - openjdk8
-
 matrix:
   include:
     - jdk: openjdk8
