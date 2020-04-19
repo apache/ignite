@@ -1,9 +1,13 @@
+os: linux
 dist: trusty
 language: java
 install: skip
+before_script:
+  - echo $JDK_PROFILE
+  - echo $JVM_EXTRA_ARGS
 script: mvn package -Pall-java,lgpl,examples,checkstyle,$JDK_PROFILE -DskipTests -Dmaven.javadoc.skip=true
 
-matrix:
+jobs:
   include:
     - jdk: openjdk8
       env:
