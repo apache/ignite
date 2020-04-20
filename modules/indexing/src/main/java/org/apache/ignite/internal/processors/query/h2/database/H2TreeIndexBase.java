@@ -70,7 +70,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         return mul * baseCost;
     }
 
-
     /**
      * Creates inline helper list for provided column list.
      *

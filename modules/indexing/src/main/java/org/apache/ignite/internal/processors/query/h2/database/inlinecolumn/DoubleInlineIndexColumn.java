@@ -66,4 +66,3 @@ public class DoubleInlineIndexColumn extends AbstractInlineIndexColumn {
         return size() + 1;
     }
 }
-
