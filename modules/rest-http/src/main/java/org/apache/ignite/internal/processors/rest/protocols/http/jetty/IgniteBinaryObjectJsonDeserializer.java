@@ -29,18 +29,17 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
@@ -142,7 +141,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          */
         private Map<String, Class<?>> qryFields() {
             if (ctx.query().moduleEnabled()) {
-                QueryTypeDescriptorImpl desc = ctx.query().typeDescriptor(cacheName, type);
+                GridQueryTypeDescriptor desc = ctx.query().typeDescriptor(cacheName, type);
 
                 if (desc != null)
                     return desc.fields();
@@ -239,8 +238,8 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         /** Binary type. */
         private final BinaryTypeImpl binType;
 
-        /** Binary class descriptor. */
-        private final BinaryClassDescriptor binClsDesc;
+        /** Class described by a binary type. */
+        private final Class<?> binCls;
 
         /**
          * @param cacheName Cache name.
@@ -251,7 +250,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             super(cacheName, binaryType.typeName(), mapper);
 
             binType = binaryType;
-            binClsDesc = binaryClassDescriptor();
+            binCls = resolveClass(binaryType);
         }
 
         /** {@inheritDoc} */
@@ -319,25 +318,26 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         }
 
         /**
-         * @return Class descriptor for current binary type or {@code null} if the class was not found.
+         * @param type Binary type.
+         * @return Resovled class for specified binary type or {@code null} if the class could not be resolved.
          */
-        private @Nullable BinaryClassDescriptor binaryClassDescriptor() {
+        private @Nullable Class<?> resolveClass(BinaryTypeImpl type) {
             try {
-                return binType.context().descriptorForTypeId(false, binType.typeId(), null, false);
+                return BinaryUtils.resolveClass(type.context(), type.typeId(), null, null, false);
             }
-            catch (BinaryObjectException ignore) {
+            catch (BinaryInvalidTypeException ignore) {
                 return null;
             }
         }
 
         /**
          * @param field Field name.
-         * @return Class for the specified field or {@code null} if the class was not resolved.
+         * @return Class for the specified field or {@code null} if the class could not be resolved.
          */
         private @Nullable Class<?> fieldClass(String field) {
             try {
-                if (binClsDesc != null)
-                    return binClsDesc.describedClass().getDeclaredField(field).getType();
+                if (binCls != null)
+                    return binCls.getDeclaredField(field).getType();
             }
             catch (NoSuchFieldException ignore) {
                 // No-op.

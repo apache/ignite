@@ -421,7 +421,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Described class.
      */
-    public Class<?> describedClass() {
+    Class<?> describedClass() {
         return cls;
     }
 
