@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#563d7c">
+
+    <title>Ignite profiling report</title>
+
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap/bootstrap-table.min.css">
+    <link rel="stylesheet" href="bootstrap/bootstrap-select.min.css">
+
+    <!--todo-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
+          integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+    <!-- Favicons -->
+    <link rel="icon" href="bootstrap/favicon.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="bootstrap/favicon.png" sizes="16x16" type="image/png">
+
+    <link href="bootstrap/dashboard.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Ignite profiling report</a>
+    <span id="reportTiming" class="navbar-text mr-3"></span>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#cacheOperationsTab" role="tab"
+                           aria-selected="true">Cache operations</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#txOperationsTab" role="tab"
+                           aria-selected="false">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#sqlStatisticsTab" role="tab"
+                           aria-selected="false">SQL queries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#scanStatisticsTab" role="tab"
+                           aria-selected="false">Scan queries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#computeStatisticsTab" role="tab"
+                           aria-selected="false">Tasks and jobs</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="cacheOperationsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Cache operations statistics</h1>
+                    </div>
+
+                    <select id="searchCaches" class="selectpicker" data-live-search="true"></select>
+                    <select id="searchNodes" class="selectpicker" data-live-search="true"></select>
+
+                    <div id="operationsCharts"></div>
+                </div>
+                <div class="tab-pane fade" id="txOperationsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Transactions statistics</h1>
+                    </div>
+
+                    <select id="txSearchCaches" class="selectpicker" data-live-search="true"></select>
+                    <select id="txSearchNodes" class="selectpicker" data-live-search="true"></select>
+
+                    <div id="txCharts"></div>
+                </div>
+                <div class="tab-pane fade" id="sqlStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">SQL query statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="sqlStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest queries</h2>
+                    <table data-toggle="table" id="topSlowSqlTable"></table>
+                </div>
+                <div class="tab-pane fade" id="scanStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Scan query statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="scanStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest queries</h2>
+                    <table data-toggle="table" id="topSlowScanTable"></table>
+                </div>
+                <div class="tab-pane fade" id="computeStatisticsTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Tasks and jobs statistics</h1>
+                    </div>
+                    <h2 class="mt-4">Overall statistics</h2>
+                    <table data-toggle="table" id="computeStatisticsTable"></table>
+                    <h2 class="mt-4">Top of slowest tasks</h2>
+                    <table data-toggle="table" id="topSlowComputeTable"></table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="bootstrap/jquery-3.3.1.min.js"></script>
+<script src="bootstrap/popper.min.js"></script>
+<script src="bootstrap/bootstrap.min.js"></script>
+<script src="bootstrap/moment.min.js"></script>
+<script src="bootstrap/feather.min.js"></script>
+<script src="bootstrap/Chart.min.js"></script>
+<script src="bootstrap/bootstrap-table.min.js"></script>
+<script src="bootstrap/bootstrap-select.min.js"></script>
+
+<!-- TODO async load -->
+<script type="text/javascript" src="data/ops.json.js"></script>
+<script type="text/javascript" src="data/sql.json.js"></script>
+<script type="text/javascript" src="data/scan.json.js"></script>
+<script type="text/javascript" src="data/startedCaches.json.js"></script>
+<script type="text/javascript" src="data/topSlowSql.json.js"></script>
+<script type="text/javascript" src="data/topSlowScan.json.js"></script>
+<script type="text/javascript" src="data/tx.json.js"></script>
+<script type="text/javascript" src="data/txHistogram.json.js"></script>
+<script type="text/javascript" src="data/txHistogramBuckets.json.js"></script>
+<script type="text/javascript" src="data/totalCompute.json.js"></script>
+<script type="text/javascript" src="data/topSlowCompute.json.js"></script>
+<script type="text/javascript" src="data/topology.json.js"></script>
+
+<script type="text/javascript" src="js/utils.js"></script>
+<script type="text/javascript" src="js/operationsTab.js"></script>
+<script type="text/javascript" src="js/sqlTab.js"></script>
+<script type="text/javascript" src="js/scanTab.js"></script>
+<script type="text/javascript" src="js/txTab.js"></script>
+<script type="text/javascript" src="js/computeTab.js"></script>
+
+</body>
+</html>

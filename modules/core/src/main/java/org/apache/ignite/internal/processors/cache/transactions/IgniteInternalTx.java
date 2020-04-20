@@ -94,6 +94,13 @@ public interface IgniteInternalTx {
     public long startTime();
 
     /**
+     * Start time of this transaction in nanoseconds to measure duration.
+     *
+     * @return Start time of this transaction in nanoseconds.
+     */
+    public long startTimeNanos();
+
+    /**
      * Cache transaction isolation level.
      *
      * @return Isolation level.

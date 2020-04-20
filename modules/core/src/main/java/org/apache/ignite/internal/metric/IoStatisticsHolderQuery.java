@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query Statistics holder to gather statistics related to concrete query.
@@ -39,16 +38,6 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
 
     /** */
     private LongAdder physicalReadCtr = new LongAdder();
-
-    /** */
-    private final String qryId;
-
-    /**
-     * @param qryId Query id.
-     */
-    public IoStatisticsHolderQuery(String qryId) {
-        this.qryId = qryId;
-    }
 
     /** {@inheritDoc} */
     @Override public void trackLogicalRead(long pageAddr) {
@@ -75,32 +64,5 @@ public class IoStatisticsHolderQuery implements IoStatisticsHolder {
     /** {@inheritDoc} */
     @Override public String metricRegistryName() {
         return null;
-    }
-
-    /**
-     * @return Query id.
-     */
-    public String queryId() {
-        return qryId;
-    }
-
-    /**
-     * Add given given statistics into this.
-     * Merge query statistics.
-     *
-     * @param logicalReads Logical reads which will be added to current query statistics.
-     * @param physicalReads Physical reads which will be added to current query statistics,
-     */
-    public void merge(long logicalReads, long physicalReads) {
-        logicalReadCtr.add(logicalReads);
-
-        physicalReadCtr.add(physicalReads);
-    }
-
-    @Override public String toString() {
-        return S.toString(IoStatisticsHolderQuery.class, this,
-            "logicalReadCtr", logicalReadCtr,
-            "physicalReadCtr", physicalReadCtr,
-            "qryId", qryId);
     }
 }

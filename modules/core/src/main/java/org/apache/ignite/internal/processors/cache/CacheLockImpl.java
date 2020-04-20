@@ -50,6 +50,9 @@ class CacheLockImpl<K, V> implements Lock {
     /** */
     private volatile Thread lockedThread;
 
+    /** Lock start time in nanoseconds. */
+    private volatile long startTime;
+
     /**
      * @param gate Gate.
      * @param delegate Delegate.
@@ -92,6 +95,9 @@ class CacheLockImpl<K, V> implements Lock {
         cntr++;
 
         lockedThread = Thread.currentThread();
+
+        if (startTime == 0)
+            startTime = System.nanoTime();
     }
 
     /** {@inheritDoc} */
@@ -186,8 +192,19 @@ class CacheLockImpl<K, V> implements Lock {
 
             cntr--;
 
-            if (cntr == 0)
+            if (cntr == 0) {
+                if (delegate.context().kernalContext().metric().isProfilingEnabled()) {
+                    delegate.context().kernalContext().metric().profile("cache",
+                        "op", "lock",
+                        "cacheId", delegate.context().cacheId(),
+                        "startTime", System.currentTimeMillis(),
+                        "duration", System.nanoTime() - startTime);
+                }
+
+                startTime = 0;
+
                 lockedThread = null;
+            }
 
             delegate.unlockAll(keys);
         }

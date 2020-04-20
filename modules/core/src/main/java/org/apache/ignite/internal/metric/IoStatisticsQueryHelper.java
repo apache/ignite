@@ -28,30 +28,13 @@ public class IoStatisticsQueryHelper {
     /**
      * Start gathering IO statistics for query. Should be used together with {@code finishGatheringQueryStatistics}
      * method.
-     *
-     * @param qryId Identifier of query.
      */
-    public static void startGatheringQueryStatistics(String qryId) {
+    public static void startGatheringQueryStatistics() {
         IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder == null : currQryStatisticsHolder;
 
-        CUR_QRY_STATS.set(new IoStatisticsHolderQuery(qryId));
-    }
-
-    /**
-     * Merge query statistics.
-     *
-     * @param qryStat Statistics which will be merged to current query statistics.
-     */
-    public static void mergeQueryStatistics(IoStatisticsHolderQuery qryStat) {
-        assert qryStat != null;
-
-        IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
-
-        assert currQryStatisticsHolder != null;
-
-        currQryStatisticsHolder.merge(qryStat.logicalReads(), qryStat.physicalReads());
+        CUR_QRY_STATS.set(new IoStatisticsHolderQuery());
     }
 
     /**
@@ -60,7 +43,7 @@ public class IoStatisticsQueryHelper {
      *
      * @return Gathered statistics.
      */
-    public static IoStatisticsHolder finishGatheringQueryStatistics() {
+    public static IoStatisticsHolderQuery finishGatheringQueryStatistics() {
         IoStatisticsHolderQuery currQryStatisticsHolder = CUR_QRY_STATS.get();
 
         assert currQryStatisticsHolder != null;

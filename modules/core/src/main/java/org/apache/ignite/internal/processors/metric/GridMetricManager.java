@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -58,8 +59,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -204,6 +205,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Prefix for {@link HistogramMetric} configuration property name. */
     public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
 
+    /** Profiling log category. */
+    private static final String PROFILING_LOG_CATEGORY = "profiling";
+
     /** Registered metrics registries. */
     private final ConcurrentHashMap<String, ReadOnlyMetricRegistry> registries = new ConcurrentHashMap<>();
 
@@ -233,6 +237,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** Nonheap memory metrics. */
     private final MemoryUsageMetrics nonHeap;
+
+    /** Profiling logger. */
+    private final IgniteLogger profilingLog;
 
     /**
      * @param ctx Kernal context.
@@ -271,6 +278,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         pmeReg.histogram(PME_OPS_BLOCKED_DURATION_HISTOGRAM, pmeBounds,
             "Histogram of cache operations blocked PME durations in milliseconds.");
+
+        profilingLog = ctx.log(PROFILING_LOG_CATEGORY);
     }
 
     /** {@inheritDoc} */
@@ -745,6 +754,39 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         catch (IllegalArgumentException ignored) {
             return new MemoryUsage(0, 0, 0, 0);
         }
+    }
+
+    /** @return {@code True} if profiling enabled. */
+    public boolean isProfilingEnabled() {
+        return profilingLog.isInfoEnabled();
+    }
+
+    /**
+     * Profiles operation.
+     *
+     * @param category Profile category.
+     * @param tuples Tuples to profile (key, value).
+     */
+    public void profile(String category, Object... tuples) {
+        if (!profilingLog.isInfoEnabled())
+            return;
+
+        assert tuples.length % 2 == 0;
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(category).append(" [");
+
+        for (int i = 0; i < tuples.length; i += 2) {
+            sb.append(tuples[i]).append("=").append(tuples[i + 1]);
+
+            if (i < tuples.length - 2)
+                sb.append(", ");
+        }
+
+        sb.append(']');
+
+        profilingLog.info(sb.toString());
     }
 
     /**

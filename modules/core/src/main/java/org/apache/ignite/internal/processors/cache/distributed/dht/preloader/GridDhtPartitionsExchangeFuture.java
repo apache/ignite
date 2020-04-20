@@ -2393,7 +2393,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             afterLsnrCompleteFut.onDone();
 
             if (err == null) {
-                updateDurationHistogram(System.currentTimeMillis() - initTime);
+                long duration = System.currentTimeMillis() - initTime;
+
+                updateDurationHistogram(duration);
+
+                cctx.kernalContext().metric().profile("pme", "duration", duration,
+                    "reason", firstDiscoEvt, "blocking", changedAffinity(), "resVer", res);
 
                 cctx.exchange().clusterRebalancedMetric().value(rebalanced);
             }

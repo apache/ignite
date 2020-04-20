@@ -89,12 +89,17 @@ public class RunningQueryManager {
      */
     private final AtomicLongMetric canceledQrsCnt;
 
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param ctx Context.
      */
     public RunningQueryManager(GridKernalContext ctx) {
+        this.ctx = ctx;
+
         localNodeId = ctx.localNodeId();
 
         histSz = ctx.config().getSqlQueryHistorySize();
@@ -144,6 +149,7 @@ public class RunningQueryManager {
             qryType,
             schemaName,
             System.currentTimeMillis(),
+            ctx.metric().isProfilingEnabled() ? System.nanoTime() : 0,
             cancel,
             loc
         );
@@ -191,6 +197,14 @@ public class RunningQueryManager {
                     canceledQrsCnt.increment();
             }
         }
+
+        ctx.metric().profile("query",
+            "type", qry.queryType(),
+            "query", qry.query(),
+            "id", QueryUtils.globalQueryId(qry.nodeId(), qryId),
+            "startTime", qry.startTime(),
+            "duration", System.nanoTime() - qry.startTimeNanos(),
+            "success", !failed);
     }
 
     /**

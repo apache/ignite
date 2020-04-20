@@ -43,6 +43,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -298,6 +299,9 @@ public class GridMapQueryExecutor {
         @Nullable final MvccSnapshot mvccSnapshot,
         Boolean dataPageScanEnabled
     ) {
+        if (ctx.metric().isProfilingEnabled())
+            IoStatisticsQueryHelper.startGatheringQueryStatistics();
+
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
@@ -520,6 +524,8 @@ public class GridMapQueryExecutor {
         finally {
             if (reserved != null)
                 reserved.release();
+
+            qryCtxRegistry.clearThreadLocal();
         }
     }
 
