@@ -21,8 +21,12 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityContext;
+import org.apache.ignite.internal.processors.security.impl.TestSecuritySubject;
+import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,19 +34,49 @@ import static org.mockito.Mockito.when;
  * Unit test for {@link IgniteSecurityProcessor}.
  */
 public class IgniteSecurityProcessorTest {
+    /** */
+    private GridKernalContext ctx;
+
+    /** */
+    private GridSecurityProcessor secPrc;
+
+    /**
+     *
+     */
+    @Before
+    public void setUp() {
+        ctx = mock(GridKernalContext.class);
+
+        when(ctx.config()).thenReturn(new IgniteConfiguration());
+        when(ctx.discovery()).thenReturn(mock(GridDiscoveryManager.class));
+
+        secPrc = mock(GridSecurityProcessor.class);
+    }
+
     /**
      * Checks that {@link IgniteSecurityProcessor#withContext(UUID)} throws exception in case a node ID is unknown.
      */
     @Test(expected = IllegalStateException.class)
     public void testThrowIllegalStateExceptionIfNodeNotFoundInDiscoCache() {
-        GridKernalContext ctx = mock(GridKernalContext.class);
-        when(ctx.config()).thenReturn(new IgniteConfiguration());
-        when(ctx.discovery()).thenReturn(mock(GridDiscoveryManager.class));
-
-        GridSecurityProcessor secPrc = mock(GridSecurityProcessor.class);
-
         IgniteSecurityProcessor ignSecPrc = new IgniteSecurityProcessor(ctx, secPrc);
 
         ignSecPrc.withContext(UUID.randomUUID());
+    }
+
+    /**
+     * Checks that {@link IgniteSecurityProcessor#securityContext(UUID)} returns {@code SecurityContext} from
+     * {@code GridSecurityPrcessor}.
+     */
+    @Test
+    public void testGetSecurityContextBySubjectId() {
+        UUID subjId = UUID.randomUUID();
+
+        SecurityContext secCtx = new TestSecurityContext(new TestSecuritySubject().setId(subjId));
+
+        when(secPrc.securityContext(subjId)).thenReturn(secCtx);
+
+        IgniteSecurityProcessor ignSecPrc = new IgniteSecurityProcessor(ctx, secPrc);
+
+        assertEquals(secCtx.subject().id(), ignSecPrc.securityContext(subjId).subject().id());
     }
 }
