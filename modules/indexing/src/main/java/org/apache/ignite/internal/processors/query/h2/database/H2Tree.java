@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.h2.message.DbException;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
@@ -462,65 +463,71 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<H2Row> io, long pageAddr, int idx,
         H2Row row) throws IgniteCheckedException {
-        if (inlineSize() == 0)
-            return compareRows(getRow(io, pageAddr, idx), row);
-        else {
-            int off = io.offset(idx);
+        try {
+            if (inlineSize() == 0)
+                return compareRows(getRow(io, pageAddr, idx), row);
+            else {
+                int off = io.offset(idx);
 
-            int fieldOff = 0;
+                int fieldOff = 0;
 
-            int lastIdxUsed = 0;
+                int lastIdxUsed = 0;
 
-            for (int i = 0; i < inlineIdxs.size(); i++) {
-                InlineIndexColumn inlineIdx = inlineIdxs.get(i);
-                Value v2 = row.getValue(inlineIdx.columnIndex());
+                for (int i = 0; i < inlineIdxs.size(); i++) {
+                    InlineIndexColumn inlineIdx = inlineIdxs.get(i);
+                    
+                    Value v2 = row.getValue(inlineIdx.columnIndex());
 
-                if (v2 == null)
-                    return 0;
+                    if (v2 == null)
+                        return 0;
 
-                int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
+                    int c = inlineIdx.compare(pageAddr, off + fieldOff, inlineSize() - fieldOff, v2, comp);
 
-                if (c == CANT_BE_COMPARE)
-                    break;
+                    if (c == CANT_BE_COMPARE)
+                        break;
 
-                lastIdxUsed++;
+                    lastIdxUsed++;
 
-                if (c != 0)
-                    return fixSort(c, inlineCols[i].sortType);
+                    if (c != 0)
+                        return fixSort(c, inlineCols[i].sortType);
 
-                fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
+                    fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
 
-                if (fieldOff > inlineSize())
-                    break;
-            }
-
-            if (lastIdxUsed == cols.length)
-                return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
-
-            inlineSizeRecomendation(row);
-
-            SearchRow rowData = getRow(io, pageAddr, idx);
-
-            for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
-                IndexColumn col = cols[i];
-                int idx0 = col.column.getColumnId();
-
-                Value v2 = row.getValue(idx0);
-
-                if (v2 == null) {
-                    // Can't compare further.
-                    return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
+                    if (fieldOff > inlineSize())
+                        break;
                 }
 
-                Value v1 = rowData.getValue(idx0);
+                if (lastIdxUsed == cols.length)
+                    return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
 
-                int c = compareValues(v1, v2);
+                inlineSizeRecomendation(row);
 
-                if (c != 0)
-                    return fixSort(c, col.sortType);
+                SearchRow rowData = getRow(io, pageAddr, idx);
+
+                for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
+                    IndexColumn col = cols[i];
+                    int idx0 = col.column.getColumnId();
+
+                    Value v2 = row.getValue(idx0);
+
+                    if (v2 == null) {
+                        // Can't compare further.
+                        return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
+                    }
+
+                    Value v1 = rowData.getValue(idx0);
+
+                    int c = compareValues(v1, v2);
+
+                    if (c != 0)
+                        return fixSort(c, col.sortType);
+                }
+
+                return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
             }
-
-            return mvccCompare((H2RowLinkIO)io, pageAddr, idx, row);
+        }
+        catch (DbException ex) {
+            throw new IgniteCheckedException("Rows cannot be compared", ex);
         }
     }
 
