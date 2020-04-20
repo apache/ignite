@@ -239,7 +239,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
          * @param binFieldMeta Binary field metadata.
          * @return Class for the specified field or {@code null} if the class could not be resolved.
          */
-        private @Nullable Class<?> fieldClass(String name, @Nullable BinaryFieldMetadata binFieldMeta) {
+        @Nullable private Class<?> fieldClass(String name, @Nullable BinaryFieldMetadata binFieldMeta) {
             try {
                 if (binCls != null)
                     return binCls.getDeclaredField(name).getType();
