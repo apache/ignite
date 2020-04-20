@@ -570,7 +570,7 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testOnlyAffectedNodesWaitsForRecovery() throws Exception {
+    public void testOnlyAffectedNodesWaitForRecovery() throws Exception {
         // Cellular switch can't be performed on MVCC caches, at least at the moment.
         if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
             return;
