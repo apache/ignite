@@ -18,12 +18,12 @@ jobs:
         - JDK_PROFILES='-P!spark-2.4,!spark,!scala'
       before_script:
       - |
-        export JVM_EXTRA_ARGS='--illegal-access=permit \
-        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        export JVM_EXTRA_ARGS='--illegal-access=permit
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
         -Djdk.tls.client.protocols=TLSv1.2'
 
 before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
