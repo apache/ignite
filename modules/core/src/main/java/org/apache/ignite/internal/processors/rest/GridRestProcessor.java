@@ -818,6 +818,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         else
             ses.creds = creds;
 
+        if (ses.userAttrs == null && req.userAttributes() != null)
+            ses.userAttrs = req.userAttributes();
+
         authCtx.credentials(creds);
 
         SecurityContext subjCtx = ctx.security().authenticate(authCtx);
@@ -1071,6 +1074,9 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         /** Credentials that can be used for security token invalidation.*/
         private volatile SecurityCredentials creds;
+
+        /** User attributes. */
+        private Map<String, String> userAttrs;
 
         /**
          * @param clientId Client ID.

@@ -463,7 +463,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             long reqId = reqIdCntr.getAndIncrement();
 
             msg.requestId(reqId);
-            msg.userAttributes(userAttrs);
 
             if (!routeMode) {
                 msg.clientId(clientId);
@@ -894,6 +893,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
+        msg.userAttributes(userAttrs);
 
         if (credentials() != null) {
             msg.login((String) credentials().getLogin());
