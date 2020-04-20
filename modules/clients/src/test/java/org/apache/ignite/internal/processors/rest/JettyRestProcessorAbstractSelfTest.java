@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -43,7 +44,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -455,6 +459,64 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertEquals(newTypeUpdate, JSON_MAPPER.treeToValue(res, OuterClass.class));
 
         grid(0).destroyCache(ccfg.getName());
+    }
+
+    /**
+     * Check serialization of the nested binary object.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPutNestedBinaryObject() throws Exception {
+        IgniteBinary binary = grid(0).binary();
+
+        BinaryObjectBuilder nested = binary.builder("Nested");
+
+        nested.setField("str1", "stringValue");
+        nested.setField("sqlDate", java.sql.Date.valueOf("2019-01-01"));
+
+        // Registering "Nested" type.
+        jcache().put(-1, nested.build());
+
+        BinaryObjectBuilder parent = binary.builder("Parent");
+
+        parent.setField("nested", nested.build());
+        parent.setField("id", Long.MAX_VALUE);
+        parent.setField("byteVal", (byte)1);
+        parent.setField("timestamp", new Timestamp(new java.util.Date().getTime()));
+
+        BinaryObject obj = parent.build();
+
+        // Registering "Parent" type.
+        jcache().put(2, obj);
+
+        // Adding another "Parent" object via REST.
+        JsonNode jsonNode = JSON_MAPPER.valueToTree(obj);
+
+        ((ObjectNode)jsonNode).put("id", Long.MIN_VALUE);
+
+        String jsonText = JSON_MAPPER.writeValueAsString(jsonNode);
+
+        info("Put: " + jsonText);
+
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "keyType", "int",
+            "key", "3",
+            "valueType", "Parent",
+            "val", jsonText
+        );
+
+        info("Put command result: " + ret);
+
+        assertResponseSucceeded(ret, false);
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_GET, "keyType", "int", "key", "3");
+
+        info("Get command result: " + ret);
+
+        JsonNode res = assertResponseSucceeded(ret, false);
+
+        assertEquals(jsonNode, res);
     }
 
     /**
