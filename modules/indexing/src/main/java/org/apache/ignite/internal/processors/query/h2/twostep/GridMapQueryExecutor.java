@@ -43,6 +43,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.metric.IoStatisticsHolderQuery;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -525,7 +527,17 @@ public class GridMapQueryExecutor {
             if (reserved != null)
                 reserved.release();
 
-            qryCtxRegistry.clearThreadLocal();
+            if (ctx.metric().isProfilingEnabled()) {
+                IoStatisticsHolderQuery stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
+
+                if (stat.logicalReads() > 0 || stat.physicalReads() > 0) {
+                    ctx.metric().profile("queryStat",
+                        "type", "SQL_FIELDS",
+                        "id", QueryUtils.globalQueryId(node.id(), reqId),
+                        "logicalReads", stat.logicalReads(),
+                        "physicalReads", stat.physicalReads());
+                }
+            }
         }
     }
 
