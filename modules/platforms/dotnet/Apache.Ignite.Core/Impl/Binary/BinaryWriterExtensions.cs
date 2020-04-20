@@ -254,5 +254,31 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writer.WriteInt(0);
             }
         }
+
+        /// <summary>
+        /// Writes strings.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <param name="strings">Strings.</param>
+        public static int WriteStrings(this BinaryWriter writer, IEnumerable<string> strings)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(strings != null);
+            
+            var pos = writer.Stream.Position;
+
+            var count = 0;
+            writer.WriteInt(count);  // Reserve space.
+
+            foreach (var cacheName in strings)
+            {
+                writer.WriteString(cacheName);
+                count++;
+            }
+
+            writer.Stream.WriteInt(pos, count);
+
+            return count;
+        }
     }
 }
