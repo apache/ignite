@@ -771,6 +771,7 @@
                                     <configLocation>../checkstyle/checkstyle.xml</configLocation>
                                     <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
                                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                    <excludes>**/generated/**/*</excludes>
                                 </configuration>
                             </execution>
                         </executions>
