@@ -1302,7 +1302,6 @@ public class PlatformUtils {
         out.writeByteArray(productVersion.revisionHash());
     }
 
-
     /**
      * Reads collection of strings.
      *
