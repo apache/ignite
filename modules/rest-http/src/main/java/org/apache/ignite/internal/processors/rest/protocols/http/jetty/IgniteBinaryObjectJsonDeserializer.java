@@ -221,7 +221,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
                     return node.numberValue();
 
                 case OBJECT:
-                    return mapper.treeToValue(node, cls);
+                    return mapper.treeToValue(node, Map.class);
 
                 case STRING:
                     return node.asText();

@@ -436,7 +436,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         // Sending "optional" (new) field for registered binary type.
         OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list,
             Timestamp.valueOf("2004-08-26 16:47:03.14"), new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE},
-            UUID.randomUUID(), IgniteUuid.randomUuid(), true);
+            UUID.randomUUID(), IgniteUuid.randomUuid(), new OuterClass.OptionalObject("test"));
 
         putObject(cache.getName(), "301", newTypeUpdate, valType);
 
@@ -3185,7 +3185,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** */
         @JsonProperty
-        private Boolean optional;
+        private OptionalObject optional;
 
         /** */
         @JsonProperty
@@ -3219,17 +3219,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         /** */
         @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-        OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp ts, long[] longs,
-            UUID uuid, IgniteUuid igniteUuid, Boolean b) {
+        OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp timestamp, long[] longs,
+            UUID uuid, IgniteUuid igniteUuid, OptionalObject optional) {
             this.id = id;
             this.name = name;
             this.doubleVal = doubleVal;
             this.list = new ArrayList<>(list);
-            this.timestamp = ts;
+            this.timestamp = timestamp;
             this.longs = longs;
             this.uuid = uuid;
             this.igniteUuid = igniteUuid;
-            this.optional = b;
+            this.optional = optional;
         }
 
         /** {@inheritDoc} */
@@ -3269,6 +3269,34 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
                 ", timestamp=" + timestamp +
                 ", bytes=" + Arrays.toString(longs) +
                 ']';
+        }
+
+        /** */
+        static class OptionalObject {
+            /** String field. */
+            @JsonProperty
+            private String strField;
+
+            /** */
+            OptionalObject() {
+                // No-op.
+            }
+
+            /** */
+            OptionalObject(String strField) {
+                this.strField = strField;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean equals(Object o) {
+                return (o != null && getClass() == o.getClass()) &&
+                    Objects.equals(strField, ((OptionalObject)o).strField);
+            }
+
+            /** {@inheritDoc} */
+            @Override public int hashCode() {
+                return Objects.hash(strField);
+            }
         }
     }
 
