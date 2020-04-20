@@ -6,18 +6,18 @@ before_script:
   - echo $JAVA_VERSION
   - echo $JVM_EXTRA_ARGS
   - echo $EXTENDED_PROFILES
-script: mvn package -Pall-java,licenses,lgpl,checkstyle $EXTENDED_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
+script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples $EXTENDED_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
 
 jobs:
   include:
     - jdk: openjdk8
       env:
       - JAVA_VERSION=8
-      - EXTENDED_PROFILES='-Pall-scala,scala,examples'
+      - EXTENDED_PROFILES='-Pall-scala,scala'
     - jdk: openjdk11
       env:
       - JVM_EXTRA_ARGS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED -Djdk.tls.client.protocols=TLSv1.2'
-      - EXTENDED_PROFILES=
+      - EXTENDED_PROFILES='-P\!spark-2.4,\!spark,!scala'
       - JAVA_VERSION=11
 
 before_cache:
