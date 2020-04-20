@@ -35,4 +35,4 @@ matrix:
       mono: none
       dotnet: 3.1.101
       script:
-        - dotnet build modules/platforms/dotnet/Apache.Ignite.Core.DotNetCore.sln
+        - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
