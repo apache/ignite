@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh;
 
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -40,6 +41,29 @@ public abstract class JmhAbstractBenchmark {
      */
     protected static int randomInt(int max) {
         return ThreadLocalRandom.current().nextInt(max);
+    }
+
+    /**
+     * Generate random lowercase alphabetic string.
+     *
+     * @param size Size of random string.
+     * @return Random string.
+     */
+    protected static String randomString(int size) {
+        int leftLimit = 97; // letter 'a'
+        int rightLimit = 122; // letter 'z'
+
+        Random rnd = ThreadLocalRandom.current();
+
+        StringBuilder buf = new StringBuilder(size);
+
+        for (int i = 0; i < size; i++) {
+            int chr = leftLimit + rnd.nextInt(rightLimit - leftLimit + 1);
+
+            buf.append((char)chr);
+        }
+
+        return buf.toString();
     }
 
     /**
