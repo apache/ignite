@@ -142,7 +142,7 @@ public abstract class AbstractSqlQueryAuthorizationTest extends AbstractSecurity
     }
 
     /**
-     * Tests ALTER TABLE query permissions check,
+     * Tests ALTER TABLE query permissions check.
      */
     @Test
     public void testAlterTableAddColumn() throws Exception {
@@ -152,7 +152,7 @@ public abstract class AbstractSqlQueryAuthorizationTest extends AbstractSecurity
     }
 
     /**
-     * Tests ALTER TABLE DROP COLUMN query permissions check,
+     * Tests ALTER TABLE DROP COLUMN query permissions check.
      */
     @Test
     public void testAlterTableDropColumn() throws Exception {
@@ -162,7 +162,7 @@ public abstract class AbstractSqlQueryAuthorizationTest extends AbstractSecurity
     }
 
     /**
-     * Tests CREATE INDEX and DROP INDEX queries permissions check,
+     * Tests CREATE INDEX and DROP INDEX queries permissions check.
      */
     @Test
     public void testCreateAndDropIndex() throws Exception {
@@ -258,7 +258,7 @@ public abstract class AbstractSqlQueryAuthorizationTest extends AbstractSecurity
      * Generates key which will belong to node with specified index and inserts it in the test table.
      *
      * @param keyType Type of key for dynamic generation.
-     * @param nodeIdx Index of node to which key will belong,
+     * @param nodeIdx Index of node to which key will belong.
      * @return Initialized key.
      */
     private int initializeKeyForNode(KeyType keyType, int nodeIdx) throws Exception {
@@ -323,7 +323,7 @@ public abstract class AbstractSqlQueryAuthorizationTest extends AbstractSecurity
      * Asserts that authorization of SQL query on behalf of the user with the specified permissions fails.
      *
      * @param sql SQL query to execute.
-     * @param perms Executive user permissions;
+     * @param perms Executive user permissions.
      */
     @SuppressWarnings("ThrowableNotThrown")
     protected void assertAuthorizationFailed(String sql, SecurityPermissionSet perms) {
