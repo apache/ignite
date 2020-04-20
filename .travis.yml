@@ -4,18 +4,20 @@ language: java
 install: skip
 before_script:
   - echo $JVM_EXTRA_ARGS
-  - echo $EXTENDED_PROFILES
-script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples $EXTENDED_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
+  - echo $JDK_PROFILES
+script: |
+  mvn package -Pall-java,licenses,lgpl,checkstyle,examples $JDK_PROFILES 
+    -DskipTests -Dmaven.javadoc.skip=true -B -V
 
 jobs:
   include:
     - jdk: openjdk8
       env:
-      - EXTENDED_PROFILES='-Pall-scala,scala'
+      - JDK_PROFILES='-Pall-scala,scala'
     - jdk: openjdk11
-      # ignite-scalar module currently doesn't builds under jdk11
+      # ignite-scalar module currently doesn't build under jdk11
       env:
-        - EXTENDED_PROFILES='-P!spark-2.4,!spark,!scala'
+        - JDK_PROFILES='-P!spark-2.4,!spark,!scala'
       before_script:
       - |
         export JVM_EXTRA_ARGS='--illegal-access=permit \
@@ -26,8 +28,5 @@ jobs:
         --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
         -Djdk.tls.client.protocols=TLSv1.2'
 
-before_cache:
-  - rm -rfv $HOME/.m2/repository/org/apache/ignite
-cache:
-  directories:
-    - $HOME/.m2/repository
+before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
+cache: {directories: [$HOME/.m2/repository]}
