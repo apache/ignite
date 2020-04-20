@@ -95,7 +95,7 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteTableScan rel) {
-        return new TableScanPhysicalRel(rel.getTable().getQualifiedName());
+        return new TableScanPhysicalRel(rel.getTable().getQualifiedName(), rel.indexName());
     }
 
     /** {@inheritDoc} */

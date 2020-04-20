@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -36,7 +35,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.Statistic;
@@ -50,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
@@ -67,10 +64,18 @@ import org.jetbrains.annotations.NotNull;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
-/** */
+/**
+ * Table or index
+ */
 public class IgniteTable extends AbstractTable implements TranslatableTable, ProjectableFilterableTable {
     /** */
-    private final String name;
+    public static final String PK_INDEX_NAME = "PK";
+
+    /** */
+    public static final String PK_ALIAS_INDEX_NAME = "PK_ALIAS";
+
+    /** */
+    private final String tblName;
 
     /** */
     private final TableDescriptor desc;
@@ -82,21 +87,18 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     private final List<RelCollation> collations;
 
     /** */
-    private final Map<String, IgniteTable> indexes = new ConcurrentHashMap<>();
-
-    /** */
-    private final GridIndex idx;
+    private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
     /**
-     * @param name Table full name.
-     * @param pk
+     *
+     * @param tblName Table name.
+     * @param desc Table descriptor.
+     * @param collation Table collation.
      */
-    public IgniteTable(String name, TableDescriptor desc, RelCollation collation,
-        GridIndex pk) {
-        this.name = name;
+    public IgniteTable(String tblName, TableDescriptor desc, RelCollation collation) {
+        this.tblName = tblName;
         this.desc = desc;
         this.collations = collation == null ? emptyList() : singletonList(collation);
-        this.idx = pk;
         statistic = new StatisticsImpl();
     }
 
@@ -104,7 +106,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
      * @return Table name.
      */
     public String name() {
-        return name;
+        return tblName;
     }
 
     /** {@inheritDoc} */
@@ -122,16 +124,11 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
         return desc;
     }
 
-    /** */
-    public GridIndex index() {
-        return idx;
-    }
-
     /** {@inheritDoc} */
     @Override public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
         RelOptCluster cluster = context.getCluster();
 
-        return toRel(cluster, relOptTable);
+        return toRel(cluster, relOptTable, PK_INDEX_NAME);
     }
 
     /**
@@ -141,32 +138,41 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
      * @param relOptTable Table.
      * @return Table relational expression.
      */
-    public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTable) {
+    public IgniteTableScan toRel(RelOptCluster cluster, RelOptTable relOptTable, String idxName) {
         RelTraitSet traitSet = cluster.traitSetOf(IgniteConvention.INSTANCE)
-            .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
             .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
+        IgniteIndex idx = indexes.get(idxName);
+
+        if (idx == null)
+            return null;
+
+        traitSet = traitSet.replaceIf(RelCollationTraitDef.INSTANCE, idx::collation);
+
+        return new IgniteTableScan(cluster, traitSet, relOptTable, idxName,  null, null);
     }
 
     /**
      * @return Indexes for the current table.
      */
-    public Map<String, IgniteTable> indexes() {
+    public Map<String, IgniteIndex> indexes() {
         return indexes;
     }
 
     /**
      * Adds index to table.
-     * @param idxName Index name.
-     * @param collation Index collation.
-     * @param gridIdx Tree index
+     * @param idxTbl Index table.
      */
-    public void addIndex(String idxName, RelCollation collation,
-        GridIndex gridIdx) {
-        IgniteTable idx = new IgniteTable(idxName, desc, collation, gridIdx);
+    public void addIndex(IgniteIndex idxTbl) {
+        indexes.put(idxTbl.name(), idxTbl);
+    }
 
-        indexes.put(idxName, idx);
+    /**
+     * @param idxName Index name.
+     * @return Index.
+     */
+    public IgniteIndex getIndex(String idxName) {
+        return indexes.get(idxName);
     }
 
     /**
@@ -226,11 +232,12 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
 
 
     public Iterable<Object[]> scan(
-        ExecutionContext ctx,
+        ExecutionContext execCtx,
         Predicate<Object[]> filters,
-        Function<Object[], Object[]> proj,
-        List<RexCall> idxConditions) {
-        return new IndexScan(ctx, this, filters, proj, idxConditions);
+        int[] projects,
+        Object[] lowerIdxConditions,
+        Object[] upperIdxConditions) {
+        return new IndexScan(execCtx, this, filters, projects, lowerIdxConditions, upperIdxConditions);
     }
 
     /** {@inheritDoc} */

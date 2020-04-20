@@ -34,7 +34,6 @@ import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
@@ -63,8 +62,11 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+
+import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable.PK_INDEX_NAME;
 
 /**
  * Query planer.
@@ -303,19 +305,20 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         for (RelOptTable tbl : tbls) {
             IgniteTable igniteTbl = tbl.unwrap(IgniteTable.class);
 
-            IgniteTableScan tblScan = igniteTbl.toRel(cluster, tbl);
+            IgniteTableScan tblScan = igniteTbl.toRel(cluster, tbl, PK_INDEX_NAME);
 
-            for (IgniteTable idxTbl : igniteTbl.indexes().values()) {
+            for (IgniteIndex idx : igniteTbl.indexes().values()) {
                 ImmutableList<String> names = ImmutableList.<String>builder()
                     .addAll(Util.skipLast(tbl.getQualifiedName()))
-                    .add(idxTbl.name())
+                    .add(igniteTbl.name() + "[" + idx.name() + "]")
                     .build();
 
-                RelOptTable idxRelTbl = RelOptTableImpl.create(tbl.getRelOptSchema(), tbl.getRowType(), idxTbl,  names);
+               // RelOptTable idxRelTbl = RelOptTableImpl.create(tbl.getRelOptSchema(), tbl.getRowType(), idx,  names);
 
-                IgniteTableScan idxScan = idxTbl.toRel(cluster, idxRelTbl);
+                IgniteTableScan idxTblScan = igniteTbl.toRel(cluster, tbl, idx.name());
+                //IgniteTableScan idxScan = idx.toRel(cluster, idxRelTbl, idx.indexName());
 
-                idxMaterializations.add(new RelOptMaterialization(idxScan, tblScan, null, names));
+                idxMaterializations.add(new RelOptMaterialization(idxTblScan, tblScan, null, names));
             }
         }
 

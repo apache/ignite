@@ -53,7 +53,7 @@ public class PushFilterProjectIntoScanRule  extends RelOptRule {
     }
 
     @Override public void onMatch(RelOptRuleCall call) {
-        TableScan scan = call.rel(1);
+        IgniteTableScan scan = call.rel(1);
         RelNode rel = call.rel(0);
 
         assert rel instanceof Filter || rel instanceof Project : "Wrong rel class: " + rel;
@@ -74,7 +74,7 @@ public class PushFilterProjectIntoScanRule  extends RelOptRule {
             projects = pushProject(scan, (Project)rel, projects);
 
         call.transformTo(
-            new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), filters, projects));
+            new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), filters, projects));
     }
 
     public int[] pushProject(TableScan scan, Project proj, int[] projects) {

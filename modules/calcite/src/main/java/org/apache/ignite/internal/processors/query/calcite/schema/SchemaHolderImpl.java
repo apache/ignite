@@ -42,6 +42,7 @@ import org.jetbrains.annotations.NotNull;
  * Holds actual schema and mutates it on schema change, requested by Ignite.
  */
 public class SchemaHolderImpl extends AbstractService implements SchemaHolder, SchemaChangeListener {
+
     /** */
     private final Map<String, IgniteSchema> igniteSchemas = new HashMap<>();
 
@@ -99,20 +100,29 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** {@inheritDoc} */
     @Override public synchronized void onSqlTypeCreate(
         String schemaName,
-        GridQueryTypeDescriptor typeDescriptor,
+        GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
         GridIndex pk) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
-        String tableName = typeDescriptor.tableName();
+        String tblName = typeDesc.tableName();
 
         TableDescriptorImpl desc =
-            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDescriptor, affinityIdentity(cacheInfo));
+            new TableDescriptorImpl(cacheInfo.cacheContext(), typeDesc, affinityIdentity(cacheInfo));
 
         RelCollation pkCollation = RelCollations.of(new RelFieldCollation(QueryUtils.KEY_COL));
 
-        // TODO multiple collations handling
-        schema.addTable(tableName, new IgniteTable(tableName, desc, pkCollation, pk));
+        IgniteTable tbl = new IgniteTable(tblName, desc, pkCollation);
+        schema.addTable(tblName, tbl);
+
+        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTable.PK_INDEX_NAME, pk);
+        tbl.addIndex(pkIdx);
+
+        if (desc.keyField() != QueryUtils.KEY_COL) {
+            RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
+            IgniteIndex pkAliasIdx = new IgniteIndex(pkAliasCollation, IgniteTable.PK_ALIAS_INDEX_NAME, pk);
+            tbl.addIndex(pkAliasIdx);
+        }
 
         rebuild();
     }
@@ -139,16 +149,17 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public synchronized void onIndexCreate(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, GridIndex idx) {
+        GridQueryIndexDescriptor idxDesc, GridIndex gridIdx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
         IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
         assert tbl != null;
 
-        RelCollation collation = deriveSecondaryIndexCollation(idxDesc, tbl);
+        RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        tbl.addIndex(idxName, collation, idx);
+        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, gridIdx);
+        tbl.addIndex(idx);
     }
 
     /**

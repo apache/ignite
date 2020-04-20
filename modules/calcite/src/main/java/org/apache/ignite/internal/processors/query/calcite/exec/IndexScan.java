@@ -16,18 +16,19 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
-import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import org.apache.calcite.rex.RexCall;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.util.lang.GridCursor;
+import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * TODO: Add class description.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class IndexScan implements Iterable<Object[]> {
     /** */
     private final ExecutionContext ectx;
@@ -39,31 +40,62 @@ public class IndexScan implements Iterable<Object[]> {
     private final Predicate<Object[]> filters;
 
     /** */
-    private final Function<Object[], Object[]> proj;
+    private final int[] proj;
 
     /** */
-    private final List<RexCall> indexConditions;
+    private final Object[] lowerBound;
 
     /** */
-    private final GridIndex idx;
+    private final Object[] upperBound;
+
+    /** */
+    private final GridIndex<H2Row> idx;
 
     public IndexScan(
         ExecutionContext ctx,
         IgniteTable tbl,
         Predicate<Object[]> filters,
-        Function<Object[], Object[]> proj,
-        List<RexCall> indexConditions) {
+        int[] projects,
+        Object[] lowerBound,
+        Object[] upperBound
+    ) {
         this.ectx = ctx;
         this.desc = tbl.descriptor();
-        this.idx = tbl.index();
+        this.idx = null;// tbl.index();
         this.filters = filters;
-        this.proj = proj;
-        this.indexConditions = indexConditions;
-
-
+        this.proj = projects;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
     }
 
     @NotNull @Override public Iterator<Object[]> iterator() {
-        return null; // TODO: CODE: implement.
+        GridCursor<H2Row> cur =  idx.find(null, null, null); // TODO: CODE: implement.
+
+        System.out.println(cur);
+
+        return null;
+    }
+
+    private static class CalciteH2Row extends H2Row {
+
+        public CalciteH2Row(ExecutionContext ectx, Object[] row) {
+           //H2Utils.wrap(coCtx, o, DataType.getTypeFromClass(o.getClass());
+        }
+
+        @Override public boolean indexSearchRow() {
+            return true;
+        }
+
+        @Override public int getColumnCount() {
+            return 0; // TODO: CODE: implement.
+        }
+
+        @Override public Value getValue(int index) {
+            return null; // TODO: CODE: implement.
+        }
+
+        @Override public void setValue(int index, Value v) {
+            // TODO: CODE: implement.
+        }
     }
 }

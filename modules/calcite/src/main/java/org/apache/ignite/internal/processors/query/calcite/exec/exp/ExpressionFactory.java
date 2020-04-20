@@ -156,6 +156,18 @@ public class ExpressionFactory {
     }
 
     /**
+     * Creates a Filter predicate.
+     * @param ctx Execution context, holds a planner context, query and its parameters,
+     *             execution specific variables (like queryId, current user, session, etc).
+     * @param filters Filters expression.
+     * @param rowType Input row type.
+     * @return Filter predicate.
+     */
+    public <T> Predicate<T> predicate(ExecutionContext ctx, List<RexNode> filters, RelDataType rowType) {
+        return new PredicateImpl<>(ctx, scalar(filters, rowType));
+    }
+
+    /**
      * Creates a Project function. Resulting function returns a row with different fields,
      * fields order, fields types, etc.
      * @param ctx Execution context, holds a planner context, query and its parameters,
@@ -205,12 +217,41 @@ public class ExpressionFactory {
      * @param ctx Execution context, holds a planner context, query and its parameters,
      *             execution specific variables (like queryId, current user, session, etc).
      * @param values Values.
+     * @return Values relational node rows source.
+     */
+    public Object[] singleRowValuesExp(ExecutionContext ctx, List<Expression> values) {
+        Object[] out = new Object[values.size()];
+
+        for (int i = 0; i < values.size(); i++)
+            out[i] = values.get(i).evaluate(ctx);
+
+        return out;
+    }
+
+    /**
+     * Creates a Values relational node rows source.
+     *
+     * @param ctx Execution context, holds a planner context, query and its parameters,
+     *             execution specific variables (like queryId, current user, session, etc).
+     * @param values Values.
      * @param rowLen Row length.
      * @return Values relational node rows source.
      */
     public <T> Iterable<T> valuesRex(ExecutionContext ctx, List<RexNode> values, int rowLen) {
         // it's safe to just interpret literals
         return valuesExp(ctx, rexToExpTranslator.translate(values), rowLen);
+    }
+
+    /**
+     * Creates a Values relational node rows source.
+     *
+     * @param ctx Execution context, holds a planner context, query and its parameters,
+     *             execution specific variables (like queryId, current user, session, etc).
+     * @param values Values.
+     * @return Values relational node rows source.
+     */
+    public Object[] singleRowValuesRex(ExecutionContext ctx, List<RexNode> values) {
+        return singleRowValuesExp(ctx, rexToExpTranslator.translate(values));
     }
 
     /** */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -73,35 +74,52 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Object[]> visit(TableScanPhysicalRel rel) {
+    @Override public Node<Object[]> visit(TableScanPhysicalRel scan) {
         IgniteTable tbl = ctx.planningContext()
             .catalogReader()
-            .getTable(rel.tableName())
+            .getTable(scan.tableName())
             .unwrap(IgniteTable.class);
 
-        Predicate<Object[]> filters = null;
-        if (rel.condition() != null)
-            filters = expressionFactory.predicate(ctx, rel.condition(), rel.rowType());
+        IgniteTable idxTable = null ;//; tbl.getIndex(scan.indexName());
 
-        int[] proj = rel.projects();
+        Predicate<Object[]> filters = scan.condition() == null ? null :
+            expressionFactory.predicate(ctx, scan.condition(), scan.rowType());
 
-        Iterable<Object[]> rowsIter = null; // tbl.scan(ctx, filters, proj, ); TODO
+        int[] projects = scan.projects();
+
+        Object[] lowerBound = scan.lowerBound() == null ? null :
+            expressionFactory.singleRowValuesExp(ctx, scan.lowerBound());
+
+        Object[] upperBound = scan.upperBound() == null ? null :
+            expressionFactory.singleRowValuesExp(ctx, scan.upperBound());
+
+        Iterable<Object[]> rowsIter = tbl.scan(ctx, filters, projects, lowerBound, upperBound);
 
         return new ScanNode(ctx, rowsIter);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(FilterPhysicalRel rel) {
-        FilterNode node = new FilterNode(ctx, expressionFactory.predicate(ctx, rel.condition(), rel.rowType()));
-        node.register(visit(rel.input()));
+        Predicate<Object[]> pred = expressionFactory.predicate(ctx, rel.condition(), rel.rowType());
+
+        FilterNode node = new FilterNode(ctx, pred);
+
+        Node<Object[]> child = visit(rel.input());
+
+        node.register(child);
 
         return node;
     }
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(ProjectPhysicalRel rel) {
-        ProjectNode node = new ProjectNode(ctx, expressionFactory.project(ctx, rel.projects(), rel.rowType()));
-        node.register(visit(rel.input()));
+        Function<Object[], Object[]> prj = expressionFactory.project(ctx, rel.projects(), rel.rowType());
+
+        ProjectNode node = new ProjectNode(ctx, prj);
+
+        Node<Object[]> child = visit(rel.input());
+
+        node.register(child);
 
         return node;
     }

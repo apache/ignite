@@ -1811,7 +1811,7 @@ public class PlannerTest extends GridCommonAbstractTest {
 
         /** */
         private TestTable(RelDataType type) {
-            super(null, null, null, null);
+            super(null, null, null);
             protoType = RelDataTypeImpl.proto(type);
         }
 
@@ -1822,7 +1822,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
+            return new IgniteTableScan(cluster, traitSet, relOptTable, null, null, null);
         }
 
         /** {@inheritDoc} */

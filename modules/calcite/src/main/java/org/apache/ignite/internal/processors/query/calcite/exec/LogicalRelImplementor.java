@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
@@ -140,15 +138,23 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Object[]> visit(IgniteTableScan rel) {
-        List<RexNode> filters = rel.filters();
-        int[] projects = rel.projects();
+    @Override public Node<Object[]> visit(IgniteTableScan scan) {
+        Predicate<Object[]> filters = scan.filters() == null ? null :
+            expressionFactory.predicate(ctx, scan.filters(), scan.getRowType());
 
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        int[] projects = scan.projects();
 
-        Iterable<Object[]> rowsIterator = tbl.scan(ctx, filters, projects);
+        Object[] lowerBound = scan.lowerIndexCondition() == null ? null :
+            expressionFactory.singleRowValuesRex(ctx, scan.lowerIndexCondition());
 
-        return new ScanNode(ctx, rowsIterator);
+        Object[] upperBound = scan.upperIndexCondition() == null ? null :
+            expressionFactory.singleRowValuesRex(ctx, scan.upperIndexCondition());
+
+        IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
+
+        Iterable<Object[]> rowsIterator = tbl.scan(ctx, filters, projects, lowerBound, upperBound);
+
+        return new ScanNode(ctx, rowsIterator); // TODO refactor other methods.
     }
 
     /** {@inheritDoc} */

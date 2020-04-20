@@ -79,22 +79,37 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 
     @Test
     public void testPkIdx_KeyColumnFilter() {
-        assertIndexInQuery("PROJECT", "SELECT * FROM Project WHERE _key=1");
+        assertIndexInQuery("[[PUBLIC, PROJECT][PK]]", "SELECT * FROM Project WHERE _key=1");
     }
 
     @Test
     public void testPkIdx_KeyColumnAliasFilter() {
-        assertIndexInQuery("PROJECT", "SELECT * FROM Project WHERE id=1");
+        assertIndexInQuery("[[PUBLIC, PROJECT][PK_ALIAS]]",
+            "SELECT * FROM Project WHERE id=1");
     }
 
     @Test
     public void testNameIdx_NameFilter() {
-        assertIndexInQuery("PROJECT_NAME_ASC_IDX", "SELECT * FROM Project WHERE name='Ignite'");
+        assertIndexInQuery("[[PUBLIC, PROJECT][PROJECT_NAME_ASC_IDX]]",
+            "SELECT * FROM Project WHERE name='Ignite'");
     }
 
     @Test
     public void testVerNameIdIdx_VerFilter() {
-        assertIndexInQuery("PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX", "SELECT * FROM Project WHERE ver=1 AND name='Vasya'");
+        assertIndexInQuery("[[PUBLIC, PROJECT][PROJECT_VER_DESC_NAME_ASC_ID_DESC_IDX]]",
+            "SELECT * FROM Project WHERE ver=1 AND name='Vasya'");
+    }
+
+    @Test
+    public void testNameIdx_NameFilterQuery() {
+        QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> cursors =
+            engine.query(null, "PUBLIC", "SELECT * FROM Project WHERE name='Ignite'");
+
+        FieldsQueryCursor<List<?>> cur = cursors.get(0);
+
+        List<List<?>> res = cur.getAll();
     }
 
 //    @Test
@@ -137,11 +152,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 
     public void assertIndexInQuery(String idxName, String qry) {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
-//
-//        System.out.println("Equals on id, so PK should be selected");
-//        engine.query(null, "PUBLIC", "SELECT * FROM Project WHERE  id = 1");
 
-        System.out.println("Equals on name, so NAME_IDX should be selected");
         List<FieldsQueryCursor<List<?>>> cursors =
             engine.query(null, "PUBLIC", "EXPLAIN PLAN FOR " + qry);
 
@@ -151,7 +162,7 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
 
         String plan = (String)res.get(0).get(0);
 
-        String idxScanName = "IgniteTableScan(table=[[PUBLIC, " + idxName + "]],";
+        String idxScanName = "IgniteTableScan(table=" + idxName + ",";
 
         assertTrue("idxName=" + idxName + ", plan=" + plan, plan.contains(idxScanName));
     }
