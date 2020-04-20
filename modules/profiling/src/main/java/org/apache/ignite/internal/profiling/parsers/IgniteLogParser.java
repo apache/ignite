@@ -18,16 +18,12 @@
 package org.apache.ignite.internal.profiling.parsers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 
 /**
  * The interface represents log parser. Creates JSON for UI views.
  */
 public interface IgniteLogParser {
-    /** Json mapper. */
-    static ObjectMapper mapper = new ObjectMapper();
-
     /**
      * Parse line from profiling log.
      *
@@ -36,13 +32,13 @@ public interface IgniteLogParser {
      */
     void parse(String nodeId, String str);
 
-    /** */
+    /** Callback on all logs parsed at first iteration. */
     default void onFirstPhaseEnd() {
         // No-op.
     }
 
     /**
-     * Parse line from profiling log.
+     * Parse line from profiling log (second iteration).
      *
      * @param nodeId Node id.
      * @param str String to parse.

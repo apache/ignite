@@ -41,27 +41,27 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.ProfilingLogTest.QUERY_PATTERN;
 import static org.apache.ignite.internal.ProfilingLogTest.QUERY_READS_PATTERN;
 
-/** */
+/** Tests profile of query reads. */
 public class ProfilingQueryTest extends GridCommonAbstractTest {
-    /** */
+    /** Log listen timeout. */
     public static final long TIMEOUT = 5_000L;
 
-    /** */
+    /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
 
-    /** */
+    /** Client. */
     private static IgniteEx client;
 
-    /** */
+    /** Cache. */
     private static IgniteCache<Integer, Integer> cache;
 
-    /** */
+    /** Log of grid0. */
     private static ListeningTestLogger log0;
 
-    /** */
+    /** Log of grid1. */
     private static ListeningTestLogger log1;
 
-    /** */
+    /** Log of client. */
     private static ListeningTestLogger clientLog;
 
     /** {@inheritDoc} */
@@ -153,7 +153,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
         checkQuery(qry);
     }
 
-    /** */
+    /** Check query. */
     private void checkQuery(Query<?> qry) throws Exception {
         client.cluster().state(INACTIVE);
         client.cluster().state(ACTIVE);
@@ -190,7 +190,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
         assertTrue(clientLsnr.check(TIMEOUT));
     }
 
-    /** */
+    /** @return Log listener for given reads. */
     private LogListener readsListener(boolean hasLogicalReads, boolean hasPhysicalReads) {
         String logical = hasLogicalReads ? "[1-9]\\d*" : "0";
 
@@ -198,7 +198,7 @@ public class ProfilingQueryTest extends GridCommonAbstractTest {
 
         return LogListener
             .matches(QUERY_READS_PATTERN)
-            .andMatches(compile("logicalReads=" + logical + " physicalReads=" + physical))
+            .andMatches(compile("logicalReads=" + logical + ", physicalReads=" + physical))
             .times(1)
             .build();
     }

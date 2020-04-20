@@ -24,14 +24,31 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** */
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+
+/**
+ * Builds JSON with started caches and their IDs.
+ *
+ * Example:
+ * <pre>
+ * {
+ *   $cacheId : {
+ *     "cacheId" : $cacheId,
+ *     "startTime" : $startTime,
+ *     "cacheName" : $cacheName,
+ *     "groupName" : $groupName,
+ *     "userCache" : $userCacheFlag
+ *     }
+ * }
+ * </pre>
+ */
 public class CacheNamesParser implements IgniteLogParser {
     /** */
     private static final Pattern pattern = Pattern.compile(
         "^cacheStart \\[id=(-?\\d+), startTime=(\\d+), name=(.*), group=(.*), userCache=(true|false)]$");
 
-    /** */
-    private final ObjectNode res = mapper.createObjectNode();
+    /** Result JSON. */
+    private final ObjectNode res = MAPPER.createObjectNode();
 
     /** {@inheritDoc} */
     @Override public void parse(String nodeId, String str) {
@@ -53,7 +70,7 @@ public class CacheNamesParser implements IgniteLogParser {
         String groupName = matcher.group(4);
         boolean userCache = Boolean.parseBoolean(matcher.group(5));
 
-        ObjectNode node = mapper.createObjectNode();
+        ObjectNode node = MAPPER.createObjectNode();
 
         node.put("cacheId", cacheId);
         node.put("startTime", startTime);

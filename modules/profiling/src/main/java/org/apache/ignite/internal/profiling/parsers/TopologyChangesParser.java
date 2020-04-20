@@ -27,26 +27,40 @@ import java.util.regex.Pattern;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.util.regex.Pattern.compile;
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
-/** */
+/**
+ * Builds JSON with topology information.
+ *
+ * Example:
+ * <pre>
+ * {
+ *      "startTime" : $startTime,
+ *      "finishTime" : $finishTime,
+ *      "nodeIds" : [ $nodeId ]
+ * }
+ * </pre>
+ */
 public class TopologyChangesParser implements IgniteLogParser {
     /** */
     private static final Pattern pattern = compile(
         "^pme \\[duration=\\d+, reason=.+tstamp=(\\d+).+, blocking=(true|false), resVer=.+]$");
 
-    /** */
-    private final ObjectNode res = mapper.createObjectNode();
+    /** Result JSON. */
+    private final ObjectNode res = MAPPER.createObjectNode();
 
-    /** */
-    long startTime;
+    /** Cluster start time. */
+    private long startTime;
 
-    /** */
-    long finishTime;
+    /** Cluster stop time. */
+    private long finishTime;
 
-    /** */
-    Set<String> nodeIds;
+    /** Nodes IDs. */
+    private final Set<String> nodeIds;
 
-    /** */
+    /**
+     * @param nodeIds Nodes IDs.
+     */
     public TopologyChangesParser(Set<String> nodeIds) {
         this.nodeIds = nodeIds;
     }
@@ -73,7 +87,7 @@ public class TopologyChangesParser implements IgniteLogParser {
         res.put("startTime", startTime);
         res.put("finishTime", finishTime);
 
-        ArrayNode nodeIds = mapper.createArrayNode();
+        ArrayNode nodeIds = MAPPER.createArrayNode();
 
         this.nodeIds.forEach(nodeIds::add);
 

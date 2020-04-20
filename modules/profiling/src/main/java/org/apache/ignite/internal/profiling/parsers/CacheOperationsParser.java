@@ -24,12 +24,26 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
 import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
 
-/** */
+/**
+ * Builds JSON with aggregated cache operations statistics.
+ *
+ * Example:
+ * <pre>
+ * {
+ *    $nodeId : {
+ *       $cacheId : {
+ *          $opType : [ [ $startTime, $count] ]
+ *       }
+ *    }
+ * }
+ * </pre>
+ */
 public class CacheOperationsParser implements IgniteLogParser {
-    /** nodeId->cacheId->opType->aggregatedResults */
+    /** Cache operations statistics: nodeId->cacheId->opType->aggregatedResults */
     private final Map<String, Map<String, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */
@@ -57,7 +71,7 @@ public class CacheOperationsParser implements IgniteLogParser {
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        ObjectNode jsonRes = mapper.createObjectNode();
+        ObjectNode jsonRes = MAPPER.createObjectNode();
 
         res.forEach((nodeId, cachesMap) -> {
             ObjectNode node = createObjectIfAbsent(nodeId, jsonRes);
@@ -69,7 +83,7 @@ public class CacheOperationsParser implements IgniteLogParser {
                     ArrayNode op = createArrayIfAbsent(opType, cache);
 
                     timingMap.forEach((time, count) -> {
-                        ArrayNode arr = mapper.createArrayNode();
+                        ArrayNode arr = MAPPER.createArrayNode();
 
                         arr.add(time);
                         arr.add(count);

@@ -30,10 +30,42 @@ import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+
 /**
+ * Builds JSON with aggregated tasks and jobs statistics.
  *
- * totalRes = {$taskName:{count:zzz, totalDuration:yyy, jobsCount:ccc}}
- * topSlowRes = [{$taskName:xxx, duration:yyy, startTime:zzz, nodes:[{$nodeName:nnn, duration:sss, startTime:zzz}]}]
+ * Example:
+ * <pre>
+ * {
+ *      $taskName : {
+ *          "count" : $executionsCount,
+ *          "duration" : $duration,
+ *          "jobsCount" : $jobsCount,
+ *          "jobsTotalDuration" : $jobsTotalDuration
+ *      }
+ * }
+ * </pre>
+ * Example of slowest tasks:
+ * <pre>
+ * [
+ *  {
+ *      "taskName" : $taskName,
+ *      "startTime" : $startTime,
+ *      "duration" : $duration,
+ *      "affPartId" : $affPartId,
+ *      "nodeId" : $nodeId,
+ *      "jobsTotalDuration" : $jobsTotalDuration,
+ *      "jobs" : [ {
+ *          "queuedTime" : $queuedTime,
+ *          "startTime" : $startTime,
+ *          "duration" : $duration,
+ *          "isTimedOut" : $isTimedOut,
+ *          "nodeId" : "$nodeId"
+ *      } ]
+ *  }
+ * ]
+ * </pre>
  */
 public class ComputeParser implements IgniteLogParser {
     /** Compute results: taskName -> aggregatedInfo. */
@@ -56,7 +88,7 @@ public class ComputeParser implements IgniteLogParser {
             parseJob(nodeId, str);
     }
 
-    /** */
+    /** Parses task. */
     private void parseTask(String nodeId, String str) {
         Task task = new Task(nodeId, str);
 
@@ -77,7 +109,7 @@ public class ComputeParser implements IgniteLogParser {
         }
     }
 
-    /** */
+    /** Parses job. */
     private void parseJob(String nodeId, String str) {
         Job job = new Job(nodeId, str);
 
@@ -115,10 +147,10 @@ public class ComputeParser implements IgniteLogParser {
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        ObjectNode taskJson = mapper.createObjectNode();
+        ObjectNode taskJson = MAPPER.createObjectNode();
 
         taskRes.forEach((taskName, info) -> {
-            ObjectNode task = mapper.createObjectNode();
+            ObjectNode task = MAPPER.createObjectNode();
 
             task.put("count", info.count);
             task.put("duration", info.totalDuration);
@@ -128,17 +160,17 @@ public class ComputeParser implements IgniteLogParser {
             taskJson.set(taskName, task);
         });
 
-        ArrayNode topSlowJson = mapper.createArrayNode();
+        ArrayNode topSlowJson = MAPPER.createArrayNode();
 
         topSlowTask.values().forEach(task -> {
-            ObjectNode node = mapper.createObjectNode();
+            ObjectNode node = MAPPER.createObjectNode();
 
             long jobsTotalDuration = 0;
 
-            ArrayNode jobsJson = mapper.createArrayNode();
+            ArrayNode jobsJson = MAPPER.createArrayNode();
 
             for (Job job : topSlowRes.get(task.sesId)) {
-                ObjectNode jobJson = mapper.createObjectNode();
+                ObjectNode jobJson = MAPPER.createObjectNode();
 
                 jobJson.put("queuedTime", job.queuedTime);
                 jobJson.put("startTime", job.startTime);
@@ -265,7 +297,7 @@ public class ComputeParser implements IgniteLogParser {
         /** Job execution time. */
         long duration;
 
-        /**  {@code True} if job is timed out. */
+        /** {@code True} if job is timed out. */
         boolean isTimedOut;
 
         /**

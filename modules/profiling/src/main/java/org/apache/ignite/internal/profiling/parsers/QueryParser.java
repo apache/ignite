@@ -25,7 +25,40 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** */
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+
+/**
+ * Builds JSON with aggregated query statistics.
+ *
+ * Example:
+ * <pre>
+ * {
+ *      $textOrCacheName : {
+ *          "count" : $executionsCount,
+ *          "duration" : $duration,
+ *          "logicalReads" : $logicalReads,
+ *          "physicalReads" : $physicalReads,
+ *          "failures" : $failures
+ *      }
+ * }
+ * </pre>
+ * Example of slowest queries:
+ * <pre>
+ * [
+ *  {
+ *      "text" : $textOrCacheName,
+ *      "startTime" : $startTime,
+ *      "duration" : $duration,
+ *      "nodeId" : $nodeId,
+ *      "logicalReads" : $logicalReads,
+ *      "physicalReads" : $physicalReads,
+ *      "success" : $success
+ *  }
+ * ]
+ * </pre>
+ *
+ * @see TopSlowQueryHelper
+ */
 public class QueryParser implements IgniteLogParser {
     /** SQL queries results: queryText -> aggregatedInfo. */
     private final Map<String, AggregatedQueryInfo> sqlRes = new HashMap<>();
@@ -36,7 +69,7 @@ public class QueryParser implements IgniteLogParser {
     /** Parsed reads that have not mapped to queries yet: queryNodeId -> queryId -> reads. */
     private final Map<String, Map<Integer, long[]>> unmergedIds = new HashMap<>();
 
-    /** */
+    /** Top of slowest queries. */
     private final TopSlowQueryHelper slowQueries = new TopSlowQueryHelper();
 
     /** {@inheritDoc} */
@@ -47,7 +80,7 @@ public class QueryParser implements IgniteLogParser {
             parseReads(str);
     }
 
-    /** */
+    /** Parses query. */
     private void parseQuery(String nodeId, String str) {
         Query query = new Query(nodeId, str);
 
@@ -76,7 +109,7 @@ public class QueryParser implements IgniteLogParser {
         }
     }
 
-    /** */
+    /** Parses reads. */
     private void parseReads(String str) {
         QueryReads reads = new QueryReads(str);
 
@@ -117,8 +150,8 @@ public class QueryParser implements IgniteLogParser {
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        ObjectNode sqlRes = mapper.createObjectNode();
-        ObjectNode scanRes = mapper.createObjectNode();
+        ObjectNode sqlRes = MAPPER.createObjectNode();
+        ObjectNode scanRes = MAPPER.createObjectNode();
 
         buildResult(this.sqlRes, sqlRes);
         buildResult(this.scanRes, scanRes);
@@ -130,13 +163,13 @@ public class QueryParser implements IgniteLogParser {
         return res;
     }
 
-    /** */
+    /** Builds JSON. */
     private void buildResult(Map<String, AggregatedQueryInfo> res, ObjectNode jsonRes) {
         res.forEach((text, info) -> {
             ObjectNode sql = (ObjectNode)jsonRes.get(text);
 
             if (sql == null) {
-                sql = mapper.createObjectNode();
+                sql = MAPPER.createObjectNode();
 
                 sql.put("count", info.count);
                 sql.put("duration", info.totalDuration);

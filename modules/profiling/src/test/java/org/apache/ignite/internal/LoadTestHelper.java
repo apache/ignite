@@ -47,7 +47,10 @@ import org.junit.Test;
 import static org.apache.ignite.testframework.junits.GridAbstractTest.LOCAL_IP_FINDER;
 
 /**
- * To run load from several JVM's
+ * To run load from several JVM's with configured profiling log.
+ *
+ * Start nodes in parallel run: {@link #startServer()} and {@link #startClient()}.
+ * Load will be started when all nodes started ({@link #NODES_COUNT}).
  */
 public class LoadTestHelper {
     /** Test load duration. */

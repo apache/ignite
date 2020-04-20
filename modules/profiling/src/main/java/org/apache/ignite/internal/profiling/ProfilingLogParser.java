@@ -268,7 +268,7 @@ public class ProfilingLogParser {
     /**
      * Writes JSON to file.
      *
-     * @param fileName File name.
+     * @param fileName File name path.
      * @param json JSON to write.
      */
     public static void writeJsonToFile(String fileName, JsonNode json) throws IOException {
@@ -283,6 +283,9 @@ public class ProfilingLogParser {
 
     /**
      * Make JSON as JS variable (CORS blocks external json files).
+     *
+     * @param fileName The JSON file path.
+     * @param varName The variable name for the JSON object.
      */
     public static void jsonToJsVar(String fileName, String varName) throws IOException {
         File jsonFile = new File(fileName);

@@ -28,9 +28,13 @@ import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.parsers.IgniteLogParser.mapper;
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
-/** */
+/**
+ * Build JSON of slowest queries.
+ *
+ * @see QueryParser
+ */
 public class TopSlowQueryHelper {
     /** Tree to store top of slow SQL queries: duration -> query. */
     private final OrderedFixedSizeStructure<Long, Query> topSql = new OrderedFixedSizeStructure<>();
@@ -44,20 +48,29 @@ public class TopSlowQueryHelper {
     /** Result map with aggregated reads: queryNodeId -> queryId -> query & reads. */
     private final Map<String, Map<Integer, T2<Query, long[]>>> scanRes = new HashMap<>();
 
-    /** */
+    /**
+     * Put value.
+     *
+     * @param nodeId Node id.
+     * @param query Query.
+     */
     public void value(String nodeId, Query query) {
         OrderedFixedSizeStructure<Long, Query> map = query.isSql ? topSql : topScan;
 
         map.put(query.duration, query);
     }
 
-    /** */
+    /** Callback on all logs parsed at first iteration. */
     public void onFirstPhaseEnd() {
         prepareResult(topSql, sqlRes);
         prepareResult(topScan, scanRes);
     }
 
-    /** */
+    /**
+     * Adds reads to slowest queries.
+     *
+     * @param reads Query reads.
+     */
     public void mergeReads(QueryReads reads) {
         Map<String, Map<Integer, T2<Query, long[]>>> map = reads.isSql ? sqlRes : scanRes;
 
@@ -76,10 +89,14 @@ public class TopSlowQueryHelper {
         });
     }
 
-    /** */
+    /**
+     * Map of named JSON results.
+     *
+     * @return Result map.
+     */
     public Map<String, JsonNode> results() {
-        ArrayNode sqlRes = mapper.createArrayNode();
-        ArrayNode scanRes = mapper.createArrayNode();
+        ArrayNode sqlRes = MAPPER.createArrayNode();
+        ArrayNode scanRes = MAPPER.createArrayNode();
 
         buildResultJson(this.sqlRes, sqlRes);
         buildResultJson(this.scanRes, scanRes);
@@ -87,7 +104,7 @@ public class TopSlowQueryHelper {
         return U.map("topSlowSql", sqlRes, "topSlowScan", scanRes);
     }
 
-    /** */
+    /** Prepares results to start to find reads. */
     private void prepareResult(OrderedFixedSizeStructure<Long, Query> top,
         Map<String, Map<Integer, T2<Query, long[]>>> res) {
         top.values().forEach(query -> {
@@ -96,14 +113,14 @@ public class TopSlowQueryHelper {
         });
     }
 
-    /** */
+    /** Builds JSON. */
     private void buildResultJson(Map<String, Map<Integer, T2<Query, long[]>>> res, ArrayNode json) {
         res.forEach((originNodeId, qrs) -> {
             for (T2<Query, long[]> t3 : qrs.values()) {
                 Query query = t3.get1();
                 long[] reads = t3.get2();
 
-                ObjectNode node = mapper.createObjectNode();
+                ObjectNode node = MAPPER.createObjectNode();
 
                 node.put("text", query.text);
                 node.put("startTime", query.startTime);

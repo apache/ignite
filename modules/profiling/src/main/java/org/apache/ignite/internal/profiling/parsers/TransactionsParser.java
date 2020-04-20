@@ -26,18 +26,32 @@ import java.util.Map;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
 import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
 
-/** */
+/**
+ * Builds JSON with aggregated transaction statistics.
+ *
+ * Example:
+ * <pre>
+ * {
+ *    $nodeId : {
+ *       $cacheId : {
+ *          $opType : [ [ $startTime, $count] ]
+ *       }
+ *    }
+ * }
+ * </pre>
+ */
 public class TransactionsParser implements IgniteLogParser {
     /** Histogram buckets for duration get, put, remove, commit, rollback operations in milliseconds. */
     public static final long[] HISTOGRAM_BUCKETS = new long[] {1, 10, 100, 250,  1000};
 
-    /** nodeId->cacheId->opType->aggregatedResults */
+    /** Aggregated results: nodeId->cacheId->opType->aggregatedResults. */
     private final Map<String, Map<String, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
 
-    /** Transaction durations histogram data. nodeId->cacheId->histogram */
+    /** Transaction durations histogram data: nodeId->cacheId->histogram. */
     private final Map<String, Map<String, HistogramMetricImpl>> histogram = new HashMap<>();
 
     /** {@inheritDoc} */
@@ -77,16 +91,16 @@ public class TransactionsParser implements IgniteLogParser {
         ObjectNode jsonRes = resultsToJson();
         ObjectNode histogram = histogramToJson();
 
-        ArrayNode buckets = mapper.createArrayNode();
+        ArrayNode buckets = MAPPER.createArrayNode();
 
         Arrays.stream(HISTOGRAM_BUCKETS).forEach(buckets::add);
 
         return U.map("tx", jsonRes, "txHistogram", histogram, "txHistogramBuckets", buckets);
     }
 
-    /** */
+    /** Builds JSON. */
     private ObjectNode resultsToJson() {
-        ObjectNode json = mapper.createObjectNode();
+        ObjectNode json = MAPPER.createObjectNode();
 
         res.forEach((nodeId, cachesMap) -> {
             ObjectNode nodesInfo = createObjectIfAbsent(nodeId, json);
@@ -98,7 +112,7 @@ public class TransactionsParser implements IgniteLogParser {
                     ArrayNode op = createArrayIfAbsent(opType, cachesInfo);
 
                     timingMap.forEach((time, count) -> {
-                        ArrayNode arr = mapper.createArrayNode();
+                        ArrayNode arr = MAPPER.createArrayNode();
 
                         arr.add(time);
                         arr.add(count);
@@ -112,9 +126,9 @@ public class TransactionsParser implements IgniteLogParser {
         return json;
     }
 
-    /** */
+    /** Builds JSON. */
     private ObjectNode histogramToJson() {
-        ObjectNode json = mapper.createObjectNode();
+        ObjectNode json = MAPPER.createObjectNode();
 
         histogram.forEach((nodeId, map) -> {
             ObjectNode nodesInfo = createObjectIfAbsent(nodeId, json);
@@ -130,14 +144,21 @@ public class TransactionsParser implements IgniteLogParser {
     }
 
     /** */
-    static class Transaction {
+    private static class Transaction {
+        /** Cache IDs. */
         String cacheIds;
+
+        /** Start time. */
         long startTime;
+
+        /** Duration. */
         long duration;
+
+        /** {@code True} if commited. */
         boolean commit;
 
+        /** @param str String to parse from. */
         static Transaction fromString(String str) {
-            /*tx [cacheIds=[-531344302], startTime=1586860023059, duration=169901176, commit=true]*/
             Transaction res = new Transaction();
 
             res.commit = str.charAt(str.length() - 3) == 'u';
