@@ -3,7 +3,6 @@ dist: trusty
 language: java
 install: skip
 before_script:
-  - echo $JAVA_VERSION
   - echo $JVM_EXTRA_ARGS
   - echo $EXTENDED_PROFILES
 script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples $EXTENDED_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
@@ -12,13 +11,11 @@ jobs:
   include:
     - jdk: openjdk8
       env:
-      - JAVA_VERSION=8
       - EXTENDED_PROFILES='-Pall-scala,scala'
     - jdk: openjdk11
       env:
       - JVM_EXTRA_ARGS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED -Djdk.tls.client.protocols=TLSv1.2'
-      - EXTENDED_PROFILES='-P\!spark-2.4,\!spark,!scala'
-      - JAVA_VERSION=11
+      - EXTENDED_PROFILES='-P\!spark-2.4,\!spark,\!scala'
 
 before_cache:
   - rm -rfv $HOME/.m2/repository/org/apache/ignite
