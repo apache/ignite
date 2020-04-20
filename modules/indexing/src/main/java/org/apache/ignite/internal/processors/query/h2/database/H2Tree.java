@@ -81,11 +81,18 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     /** */
     private final int inlineSize;
 
-    /** */
+    /** List of helpers to work with inline values on the page. */
     private final List<InlineIndexColumn> inlineIdxs;
 
-    /** */
+    /** Actual columns that current index is consist from. */
     private final IndexColumn[] cols;
+
+    /**
+     * Columns that will be used for inlining.
+     * Could differ from actual columns {@link #cols} in case of
+     * meta page were upgraded from older version.
+     */
+    private final IndexColumn[] inlineCols;
 
     /** */
     private final boolean mvccEnabled;
@@ -225,11 +232,11 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = getMetaInfo();
 
-            inlineSize = metaInfo.inlineSize();
-
             unwrappedPk = metaInfo.useUnwrappedPk();
 
             cols = (unwrappedPk ? unwrappedCols : wrappedCols).toArray(H2Utils.EMPTY_COLUMNS);
+
+            inlineSize = metaInfo.inlineSize();
 
             List<InlineIndexColumn> inlineIdxs0 = getAvailableInlineColumns(affinityKey, cacheName, idxName, log, pk,
                 table, cols, factory, metaInfo.inlineObjectHash());
@@ -239,6 +246,13 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             inlineIdxs = inlineObjSupported ? inlineIdxs0 : inlineIdxs0.stream()
                 .filter(ih -> ih.type() != Value.JAVA_OBJECT)
                 .collect(Collectors.toList());
+
+            inlineCols = new IndexColumn[inlineIdxs.size()];
+
+            for (int i = 0, j = 0; i < cols.length && j < inlineIdxs.size(); i++) {
+                if (cols[i].column.getColumnId() == inlineIdxs.get(j).columnIndex())
+                    inlineCols[j++] = cols[i];
+            }
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
@@ -252,6 +266,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             unwrappedPk = true;
 
             cols = unwrappedCols.toArray(H2Utils.EMPTY_COLUMNS);
+            inlineCols = cols;
 
             inlineIdxs = getAvailableInlineColumns(affinityKey, cacheName, idxName, log, pk, table, cols, factory, true);
 
@@ -458,9 +473,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
 
             for (int i = 0; i < inlineIdxs.size(); i++) {
                 InlineIndexColumn inlineIdx = inlineIdxs.get(i);
-                IndexColumn col = cols[i];
-
-                Value v2 = row.getValue(col.column.getColumnId());
+                Value v2 = row.getValue(inlineIdx.columnIndex());
 
                 if (v2 == null)
                     return 0;
@@ -473,7 +486,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
                 lastIdxUsed++;
 
                 if (c != 0)
-                    return fixSort(c, col.sortType);
+                    return fixSort(c, inlineCols[i].sortType);
 
                 fieldOff += inlineIdx.fullSize(pageAddr, off + fieldOff);
 
