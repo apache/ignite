@@ -61,6 +61,8 @@
     <Compile Include="Client\IClientCluster.cs" />
     <Compile Include="Client\IClientClusterGroup.cs" />
     <Compile Include="Client\IClientClusterNode.cs" />
+    <Compile Include="Client\IClientTransaction.cs" />
+    <Compile Include="Client\IClientTransactions.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Client\ISslStreamFactory.cs" />
     <Compile Include="Client\SslStreamFactory.cs" />
