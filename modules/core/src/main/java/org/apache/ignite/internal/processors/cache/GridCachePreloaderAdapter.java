@@ -71,7 +71,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
         log = ctx.logger(getClass());
 
-        finFut = new GridFinishedFuture();
+        finFut = new GridFinishedFuture<>(true);
     }
 
     /** {@inheritDoc} */
