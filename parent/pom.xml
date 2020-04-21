@@ -867,6 +867,7 @@
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
+                                        <exclude>.travis.yml</exclude>
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
