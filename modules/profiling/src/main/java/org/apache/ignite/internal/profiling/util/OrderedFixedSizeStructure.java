@@ -20,7 +20,6 @@ package org.apache.ignite.internal.profiling.util;
 import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Data structure for keeping the top N elements in DESC sort order.
