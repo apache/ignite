@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -147,8 +146,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
                 Path snpTempDir = Paths.get(storeWorkDir.getAbsolutePath(), DFLT_SNAPSHOT_TMP_DIR);
 
-                assertTrue("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
-                    F.isEmptyDirectory(snpTempDir));
+                assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
+                    0, U.fileCount(snpTempDir));
             }
         }
         finally {

@@ -96,7 +96,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     private final String snpName;
 
     /** Snapshot working directory on file system. */
-    private final File tmpTaskWorkDir;
+    private final File tmpSnpWorkDir;
 
     /** Local buffer to perform copy-on-write operations for {@link PageStoreSerialWriter}. */
     private final ThreadLocal<ByteBuffer> locBuff;
@@ -141,8 +141,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** Future to wait until checkpoint mark phase will be finished and snapshot tasks scheduled. */
     private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
 
-    /** Absolute snapshot storage path. */
-    private File tmpSnpDir;
+    /** Absolute path to save intermediate results of cache partitions of this node. */
+    private volatile File tmpConsIdDir;
 
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     private volatile CompletableFuture<Void> closeFut;
@@ -163,7 +163,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         log = null;
         snpName = null;
         srcNodeId = null;
-        tmpTaskWorkDir = null;
+        tmpSnpWorkDir = null;
         snpSndr = null;
 
         err.set(e);
@@ -199,7 +199,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         this.log = cctx.logger(SnapshotFutureTask.class);
         this.snpName = snpName;
         this.srcNodeId = srcNodeId;
-        this.tmpTaskWorkDir = new File(tmpWorkDir, snpName);
+        this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
         this.snpSndr = snpSndr;
         this.ioFactory = ioFactory;
         this.locBuff = locBuff;
@@ -255,16 +255,16 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
         snpSndr.close(err);
 
-        if (tmpSnpDir != null)
-            U.delete(tmpSnpDir);
+        if (tmpConsIdDir != null)
+            U.delete(tmpConsIdDir);
 
         // Delete snapshot directory if no other files exists.
         try {
-            if (U.fileCount(tmpTaskWorkDir.toPath()) == 0 || err != null)
-                U.delete(tmpTaskWorkDir.toPath());
+            if (U.fileCount(tmpSnpWorkDir.toPath()) == 0 || err != null)
+                U.delete(tmpSnpWorkDir.toPath());
         }
         catch (IOException e) {
-            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpTaskWorkDir + ']');
+            log.error("Snapshot directory doesn't exist [snpName=" + snpName + ", dir=" + tmpSnpWorkDir + ']');
         }
 
         if (err != null)
@@ -300,7 +300,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             if (!started.compareAndSet(false, true))
                 return false;
 
-            tmpSnpDir = U.resolveWorkDirectory(tmpTaskWorkDir.getAbsolutePath(),
+            tmpConsIdDir = U.resolveWorkDirectory(tmpSnpWorkDir.getAbsolutePath(),
                 databaseRelativePath(cctx.kernalContext().pdsFolderResolver().resolveFolders().folderName()),
                 false);
 
@@ -317,7 +317,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                     throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshot: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())),
+                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
                     log);
             }
@@ -439,7 +439,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                     partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(store,
-                            partDeltaFile(cacheWorkDir(tmpSnpDir, cacheDirName(gctx.config())), partId)));
+                            partDeltaFile(cacheWorkDir(tmpConsIdDir, cacheDirName(gctx.config())), partId)));
 
                     partFileLengths.put(pair, store.size());
                 }
