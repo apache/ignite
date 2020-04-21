@@ -399,6 +399,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "CACHE_GROUPS",
             "CACHES",
             "TASKS",
+            "JOBS",
             "SQL_QUERIES_HISTORY",
             "NODES",
             "SCHEMAS",
