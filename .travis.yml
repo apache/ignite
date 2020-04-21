@@ -7,7 +7,7 @@ matrix:
       before_script:
         - echo $JVM_EXTRA_ARGS
         - echo $JDK_PROFILES
-      script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples $JDK_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
+      script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples,check-licenses $JDK_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
       
       jobs:
         include:
