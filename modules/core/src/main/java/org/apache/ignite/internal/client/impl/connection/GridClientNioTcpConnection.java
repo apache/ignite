@@ -264,6 +264,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             ses.addMeta(SES_META_CONN, this);
 
+            GridClientAuthenticationRequest authReq = buildAuthRequest();
+
+            ses.send(authReq);
+
             if (log.isLoggable(Level.INFO))
                 log.info("Client TCP connection established: " + serverAddress());
 
