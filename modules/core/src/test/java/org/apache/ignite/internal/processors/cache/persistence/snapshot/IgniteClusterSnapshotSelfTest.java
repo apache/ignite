@@ -535,7 +535,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
             IgniteException.class,
-            "Snapshot with given name already exists.");
+            "Snapshot with given name already exists on local node.");
 
         stopAllGrids();
 
