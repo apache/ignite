@@ -166,7 +166,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
     private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         log.info("handleAsync0 got " + req.getClass().getSimpleName());
 
-
         if (!busyLock.tryReadLock())
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
