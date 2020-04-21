@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -2193,6 +2192,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 TransactionState state = tx.state();
 
                 if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
+                    if (state == PREPARED)
+                        tx.markFinalizing(RECOVERY_FINISH); // Prevents concurrent rollback.
+
                     if (--txNum == 0) {
                         if (fut != null)
                             fut.onDone(true);
@@ -2201,7 +2203,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     }
                 }
                 else {
-                    if (tx.state(MARKED_ROLLBACK) || tx.state() == UNKNOWN) {
+                    if (tx.setRollbackOnly() || tx.state() == UNKNOWN) {
                         tx.rollbackAsync();
 
                         if (log.isDebugEnabled())
@@ -2238,7 +2240,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 }
 
                 if (processedVers == null)
-                    processedVers = new HashSet<>(txNum, 1.0f);
+                    processedVers = U.newHashSet(txNum);
 
                 processedVers.add(tx.xidVersion());
             }
@@ -2287,12 +2289,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (log.isInfoEnabled())
             log.info("Finishing prepared transaction [commit=" + commit + ", tx=" + tx + ']');
 
-        if (!tx.markFinalizing(RECOVERY_FINISH)) {
-            if (log.isInfoEnabled())
-                log.info("Will not try to commit prepared transaction (could not mark finalized): " + tx);
-
-            return;
-        }
+        // Transactions participating in recovery can be finished only by recovery consensus.
+        assert tx.finalizationStatus() == RECOVERY_FINISH : tx;
 
         if (tx instanceof IgniteTxRemoteEx) {
             IgniteTxRemoteEx rmtTx = (IgniteTxRemoteEx)tx;
@@ -2338,6 +2336,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
+
+        // Transaction will be completed by finish message.
+        if (!tx.markFinalizing(RECOVERY_FINISH))
+            return;
 
         GridCacheTxRecoveryFuture fut = new GridCacheTxRecoveryFuture(
             cctx,

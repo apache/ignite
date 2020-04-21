@@ -24,18 +24,31 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition update counter for non-tx scenarios without support for tracking missed updates.
- * Currently used for atomic, mixed tx-atomic and in-memory cache groups.
- * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
+ * Partition update counter for volatile caches.
+ * <p>
+ * Doesn't track gaps in update sequence because it's not needed for volatile caches
+ * (because their state is lost on node failure).
+ * <p>
+ * In this mode LWM and HWM are non distinguishable.
  */
-public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter {
+public class PartitionUpdateCounterVolatileImpl implements PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
     /**
      * Initial counter is set to update with max sequence number after WAL recovery.
      */
-    private long initCntr;
+    private volatile long initCntr;
+
+    /** */
+    private final CacheGroupContext grp;
+
+    /**
+     * @param grp Group.
+     */
+    public PartitionUpdateCounterVolatileImpl(CacheGroupContext grp) {
+        this.grp = grp;
+    }
 
     /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
@@ -114,13 +127,18 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     }
 
     /** {@inheritDoc} */
+    @Override public void resetInitialCounter() {
+        initCntr = 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PartitionAtomicUpdateCounterImpl cntr = (PartitionAtomicUpdateCounterImpl)o;
+        PartitionUpdateCounterVolatileImpl cntr = (PartitionUpdateCounterVolatileImpl)o;
 
         return this.cntr.get() == cntr.cntr.get();
     }
@@ -143,5 +161,10 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "Counter [init=" + initCntr + ", val=" + get() + ']';
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheGroupContext context() {
+        return grp;
     }
 }

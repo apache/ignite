@@ -995,6 +995,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
     /**
+     * Throttling time out for thread dump generation during failure handling.
+     *
+     * Default is failure detection timeout. {@code 0} or negative value - throttling is disabled.
+     */
+    public static final String IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT =
+            "IGNITE_DUMP_THREADS_ON_FAILURE_THROTTLING_TIMEOUT";
+
+    /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
      * Default is 500 ms.

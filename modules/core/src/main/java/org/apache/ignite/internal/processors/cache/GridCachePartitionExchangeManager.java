@@ -78,7 +78,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
@@ -95,6 +94,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
@@ -271,11 +271,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
+    /** List of exchange aware components. */
+    private final List<PartitionsExchangeAware> exchangeAwareComps = new ArrayList<>();
+
     /** Histogram of PME durations. */
     private volatile HistogramMetricImpl durationHistogram;
 
     /** Histogram of blocking PME durations. */
     private volatile HistogramMetricImpl blockingDurationHistogram;
+
+    /** Delay before rebalancing code is start executing after exchange completion. For tests only. */
+    private volatile long rebalanceDelay;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -395,32 +401,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
                         }
                     }
-                    else if (exchangeInProgress()) {
-                        if (log.isInfoEnabled())
-                            log.info("Ignore single message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
 
-                        return;
-                    }
-
-                    if (!crdInitFut.isDone() && !msg.restoreState()) {
-                        GridDhtPartitionExchangeId exchId = msg.exchangeId();
-
-                        if (log.isInfoEnabled()) {
-                            log.info("Waiting for coordinator initialization [node=" + node.id() +
-                                ", nodeOrder=" + node.order() +
-                                ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
-                        }
-
-                        crdInitFut.listen(new CI1<IgniteInternalFuture>() {
-                            @Override public void apply(IgniteInternalFuture fut) {
-                                processSinglePartitionUpdate(node, msg);
-                            }
-                        });
-
-                        return;
-                    }
-
-                    processSinglePartitionUpdate(node, msg);
+                    preprocessSingleMessage(node, msg);
                 }
             });
 
@@ -504,6 +486,34 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
+    }
+
+    /**
+     * Preprocess {@code msg} which was sended by {@code node}.
+     *
+     * @param node Cluster node.
+     * @param msg Message.
+     */
+    private void preprocessSingleMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
+        if (!crdInitFut.isDone() && !msg.restoreState()) {
+            GridDhtPartitionExchangeId exchId = msg.exchangeId();
+
+            if (log.isInfoEnabled()) {
+                log.info("Waiting for coordinator initialization [node=" + node.id() +
+                    ", nodeOrder=" + node.order() +
+                    ", ver=" + (exchId != null ? exchId.topologyVersion() : null) + ']');
+            }
+
+            crdInitFut.listen(new CI1<IgniteInternalFuture>() {
+                @Override public void apply(IgniteInternalFuture fut) {
+                    processSinglePartitionUpdate(node, msg);
+                }
+            });
+
+            return;
+        }
+
+        processSinglePartitionUpdate(node, msg);
     }
 
     /**
@@ -1084,6 +1094,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @return {@code True} if pending future queue contains server exchange task.
+     */
+    public boolean hasPendingServerExchange() {
+        return exchWorker.hasPendingServerExchange();
+    }
+
+    /**
      *
      * @param topVer Topology version.
      * @return Last topology version before the provided one when affinity was modified.
@@ -1173,6 +1190,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (pendingResend.compareAndSet(timeout, update))
                 cctx.time().addTimeoutObject(update);
         }
+    }
+
+    /**
+     * Registers component that will be notified on every partition map exchange.
+     *
+     * @param comp Component to be registered.
+     */
+    public void registerExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.add(comp);
+    }
+
+    /**
+     * Removes exchange aware component from list of listeners.
+     *
+     * @param comp Component to be registered.
+     */
+    public void unregisterExchangeAwareComponent(PartitionsExchangeAware comp) {
+        exchangeAwareComps.remove(comp);
+    }
+
+    /**
+     * @return List of registered exchange listeners.
+     */
+    public List<PartitionsExchangeAware> exchangeAwareComponents() {
+        return U.sealList(exchangeAwareComps);
     }
 
     /**
@@ -2454,6 +2496,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @param delay Rebalance delay.
+     */
+    public void rebalanceDelay(long delay) {
+        this.rebalanceDelay = delay;
+    }
+
+    /**
      * For testing only.
      *
      * @return Current version to wait for.
@@ -2719,30 +2768,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private boolean currentThreadIsExchanger() {
         return exchWorker != null && Thread.currentThread() == exchWorker.runner();
-    }
-
-    /**
-     * @return {@code True} If there is any exchange future in progress.
-     */
-    private boolean exchangeInProgress() {
-        if (exchWorker.hasPendingServerExchange())
-            return true;
-
-        GridDhtPartitionsExchangeFuture current = lastTopologyFuture();
-
-        if (current == null)
-            return false;
-
-        GridDhtTopologyFuture finished = lastFinishedFut.get();
-
-        if (finished == null || finished.result().compareTo(current.initialVersion()) < 0) {
-            ClusterNode triggeredBy = current.firstEvent().eventNode();
-
-            if (current.partitionChangesInProgress() && !triggeredBy.isClient())
-                return true;
-       }
-
-        return false;
     }
 
     /** */
@@ -3282,6 +3307,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             rebTopVer = NONE;
 
                         if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
+                            if (rebalanceDelay > 0)
+                                U.sleep(rebalanceDelay);
+
                             assignsMap = new HashMap<>();
 
                             IgniteCacheSnapshotManager snp = cctx.snapshot();
@@ -3367,7 +3395,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled || hasPendingExchange()) {
+                        if (assignsCancelled || hasPendingServerExchange()) {
                             U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');

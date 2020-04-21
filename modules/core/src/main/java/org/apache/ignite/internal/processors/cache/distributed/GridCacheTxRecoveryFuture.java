@@ -114,24 +114,15 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
         UUID locNodeId = cctx.localNodeId();
 
-        for (Map.Entry<UUID, Collection<UUID>> e : tx.transactionNodes().entrySet()) {
-            if (!locNodeId.equals(e.getKey()) && !failedNodeIds.contains(e.getKey()) && !nodes.containsKey(e.getKey())) {
-                ClusterNode node = cctx.discovery().node(e.getKey());
-
-                if (node != null)
-                    nodes.put(node.id(), node);
-                else if (log.isInfoEnabled())
-                    log.info("Transaction node left (will ignore) " + e.getKey());
-            }
-
-            for (UUID nodeId : e.getValue()) {
+        for (Map.Entry<UUID, Collection<UUID>> entry : tx.transactionNodes().entrySet()) {
+            for (UUID nodeId : F.concat(false, entry.getKey(), entry.getValue())) {
                 if (!locNodeId.equals(nodeId) && !failedNodeIds.contains(nodeId) && !nodes.containsKey(nodeId)) {
                     ClusterNode node = cctx.discovery().node(nodeId);
 
                     if (node != null)
                         nodes.put(node.id(), node);
                     else if (log.isInfoEnabled())
-                        log.info("Transaction node left (will ignore) " + e.getKey());
+                        log.info("Transaction node left (will ignore) " + nodeId);
                 }
             }
         }

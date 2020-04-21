@@ -15,42 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
+package org.apache.ignite.testframework.wal.record;
+
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * The wrapper of record type which isn't supported anymore.
  */
-public class MetsatorageSearchRowImpl implements MetastorageSearchRow {
-    /** */
-    private final String key;
-
-    /** */
-    private final long link;
+public class UnsupportedWalRecord extends WALRecord {
+    /** **/
+    private final RecordType recordType;
 
     /**
-     * @param key Key.
-     * @param link Link.
+     * @param type Record type.
      */
-    public MetsatorageSearchRowImpl(String key, long link) {
-        this.key = key;
-        this.link = link;
+    public UnsupportedWalRecord(RecordType type) {
+        recordType = type;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public String key() {
-        return key;
+    @Override public RecordType type() {
+        return recordType;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public long link() {
-        return link;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public int hash() {
-        return key.hashCode();
+    @Override public String toString() {
+        return S.toString(UnsupportedWalRecord.class, this, "super", super.toString());
     }
 }

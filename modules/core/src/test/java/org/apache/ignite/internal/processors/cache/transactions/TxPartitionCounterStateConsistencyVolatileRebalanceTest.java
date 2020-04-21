@@ -52,4 +52,9 @@ public class TxPartitionCounterStateConsistencyVolatileRebalanceTest extends TxP
     @Override protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override protected int partitions() {
+        return 1024;
+    }
 }

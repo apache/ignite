@@ -565,4 +565,31 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assertEquals(1, hist.length);
     }
+
+    /** */
+    @Test
+    public void testLongKey() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        String l10 = "1234567890";
+        String longKey = l10 + l10 + l10 + l10 + l10 + l10 + l10;
+
+        metastorage(0).write(longKey, "value");
+
+        stopGrid(0);
+
+        // Check that the value was actually persisted to the storage.
+
+        startGrid(0);
+
+        assertEquals("value", metastorage(0).read(longKey));
+
+        metastorage(0).remove(longKey);
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        assertNull(metastorage(0).read(longKey));
+    }
 }

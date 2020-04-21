@@ -651,12 +651,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Future to signal that this node is no longer an owner or backup.
      */
     public IgniteInternalFuture<?> rent(boolean updateSeq) {
+        return rent(updateSeq, true);
+    }
+
+    /**
+     * Initiates partition eviction process.
+     *
+     * If partition has reservations, eviction will be delayed and continued after all reservations will be released.
+     *
+     * @param updateSeq If {@code true} topology update sequence will be updated after eviction is finished.
+     * @param alwaysReturnRentingFut If {@code true} renting future is returned in any way.
+     * @return Future to signal that this node is no longer an owner or backup or null if corresponding partition
+     * state is {@code RENTING} or {@code EVICTED}.
+     */
+    public IgniteInternalFuture<?> rent(boolean updateSeq, boolean alwaysReturnRentingFut) {
         long state0 = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state0);
 
         if (partState == RENTING || partState == EVICTED)
-            return rent;
+            return alwaysReturnRentingFut ? rent : null;
 
         delayedRentingTopVer = ctx.exchange().readyAffinityVersion().topologyVersion();
 
@@ -694,6 +708,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         // Clearing process is already running at the moment. No need to run it again.
         if (!reinitialized)
             return;
+
+        // Reset the initial update counter value to prevent historical rebalancing on this partition.
+        if (grp.persistenceEnabled())
+            store.resetInitialUpdateCounter();
 
         // Make sure current rebalance future is finished before start clearing
         // to avoid clearing currently rebalancing partition (except "initial" dummy rebalance).
@@ -787,54 +805,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return {@code true} if evicting thread was added.
+     * @return {@code True} if evicting thread was added.
      */
     private boolean addEvicting() {
-        while (true) {
-            int cnt = evictGuard.get();
-
-            if (cnt != 0)
-                return false;
-
-            if (evictGuard.compareAndSet(cnt, cnt + 1))
-                return true;
-        }
+        return evictGuard.compareAndSet(0, 1);
     }
 
     /**
-     * @return {@code true} if no thread evicting partition at the moment.
+     * Clears evicting flag.
      */
-    private boolean clearEvicting() {
-        boolean free;
-
-        while (true) {
-            int cnt = evictGuard.get();
-
-            assert cnt > 0;
-
-            if (evictGuard.compareAndSet(cnt, cnt - 1)) {
-                free = cnt == 1;
-
-                break;
-            }
-        }
-
-        return free;
+    private void clearEvicting() {
+        evictGuard.set(0);
     }
 
     /**
-     * @return {@code True} if partition is safe to destroy.
+     * @return {@code True} if partition is marked for destroy.
      */
     public boolean markForDestroy() {
-        while (true) {
-            int cnt = evictGuard.get();
-
-            if (cnt != 0)
-                return false;
-
-            if (evictGuard.compareAndSet(0, -1))
-                return true;
-        }
+        return evictGuard.compareAndSet(0, -1);
     }
 
     /**
@@ -947,10 +935,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 throw e;
             }
             finally {
-                boolean free = clearEvicting();
+                clearEvicting();
 
-                if (free)
-                    clearFuture.finish();
+                clearFuture.finish();
             }
         }
 
@@ -1108,9 +1095,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Reset partition counters.
+     * Reset partition update counter.
      */
-    public void resetCounters() {
+    public void resetUpdateCounter() {
         store.resetUpdateCounter();
     }
 
