@@ -164,8 +164,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @return Future.
      */
     private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
-        log.info("handleAsync0 got " + req.getClass().getSimpleName());
-
         if (!busyLock.tryReadLock())
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
@@ -811,7 +809,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
-//        authCtx.nodeAttributes(req.userAttributes());
         authCtx.address(req.address());
         authCtx.certificates(req.certificates());
 
@@ -828,12 +825,10 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.credentials(creds);
 
-        Map<String, String> userAttrs = ses.userAttrs;
+        if(req.userAttributes() != null)
+            ses.userAttrs = req.userAttributes();
 
-        if(userAttrs == null && req.userAttributes() != null)
-            userAttrs = ses.userAttrs = req.userAttributes();
-
-        authCtx.nodeAttributes(userAttrs);
+        authCtx.nodeAttributes(ses.userAttrs);
 
         SecurityContext subjCtx = ctx.security().authenticate(authCtx);
 

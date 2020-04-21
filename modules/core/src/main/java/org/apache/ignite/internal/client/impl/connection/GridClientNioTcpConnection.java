@@ -897,12 +897,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
-        msg.userAttributes(userAttrs);
-
-        if (credentials() != null) {
-            msg.login((String) credentials().getLogin());
-            msg.password((String) credentials().getPassword());
-        }
     }
 
     /** {@inheritDoc} */
