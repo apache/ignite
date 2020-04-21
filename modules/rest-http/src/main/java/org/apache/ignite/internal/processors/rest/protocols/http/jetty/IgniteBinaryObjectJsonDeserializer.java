@@ -77,7 +77,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         Deserializer deserializer = new Deserializer(
             type, queryFields(cacheName, type), binaryFields(binType), binaryClass(binType), parser.getCodec());
 
-        return deserializer.deserialize(parser);
+        return deserializer.deserialize(parser.readValueAsTree());
     }
 
     /**
@@ -166,12 +166,11 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         /**
          * Deserialize JSON tree.
          *
-         * @param parser Parser used for reading JSON conten
+         * @param tree JSON tree node.
          * @return Binary object.
          * @throws IOException In case of error.
          */
-        public BinaryObjectImpl deserialize(JsonParser parser) throws IOException {
-            JsonNode tree = mapper.readTree(parser);
+        public BinaryObjectImpl deserialize(JsonNode tree) throws IOException {
             BinaryObjectBuilder builder = ctx.cacheObjects().builder(type);
             Iterator<Map.Entry<String, JsonNode>> itr = tree.fields();
 
