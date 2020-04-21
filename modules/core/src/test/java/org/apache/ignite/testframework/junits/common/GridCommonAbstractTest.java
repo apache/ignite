@@ -844,7 +844,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param c Cache proxy.
      */
-    protected void printPartitionState(IgniteCache<?, ?> c) {
+    protected static void printPartitionState(IgniteCache<?, ?> c) {
         printPartitionState(c.getConfiguration(CacheConfiguration.class).getName(), 0);
     }
 
@@ -854,7 +854,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * Print partitionState for cache.
      */
-    protected void printPartitionState(String cacheName, int firstParts) {
+    protected static void printPartitionState(String cacheName, int firstParts) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("----preload sync futures----\n");

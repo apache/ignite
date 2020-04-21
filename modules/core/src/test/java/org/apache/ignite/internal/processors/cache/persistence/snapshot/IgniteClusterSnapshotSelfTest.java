@@ -48,6 +48,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -62,6 +63,7 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -72,6 +74,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_IN_PROGRESS_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
@@ -419,7 +422,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             true);
 
         awaitPartitionMapExchange();
+        checkCacheDiscoveryDataConsistent();
 
+        CacheGroupDescriptor descr = snp.context().cache().cacheGroupDescriptors()
+            .get(CU.cacheId(ccfg.getName()));
+
+        assertNotNull(descr);
+        assertNotNull(descr.config().getNodeFilter());
+        assertEquals(ccfg.getNodeFilter().apply(grid(1).localNode()),
+            descr.config().getNodeFilter().apply(grid(1).localNode()));
         assertSnapshotCacheKeys(snp.cache(ccfg.getName()));
     }
 
@@ -682,6 +693,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
 
         awaitPartitionMapExchange();
+        checkPartitionMapExchangeFinished();
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }
