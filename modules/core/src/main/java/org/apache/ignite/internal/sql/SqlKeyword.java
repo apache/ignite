@@ -83,6 +83,9 @@ public class SqlKeyword {
     /** Keyword: DECIMAL. */
     public static final String DECIMAL = "DECIMAL";
 
+    /** Keyword: DELIMITER. */
+    public static final String DELIMITER = "DELIMITER";
+
     /** Keyword: DESC. */
     public static final String DESC = "DESC";
 
