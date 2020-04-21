@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -43,6 +44,8 @@ abstract class AbstractSnapshotMessage implements Message {
      * @param snpName Unique snapshot name.
      */
     protected AbstractSnapshotMessage(String snpName) {
+        assert U.alphanumericUnderscore(snpName) : snpName;
+
         this.snpName = snpName;
     }
 

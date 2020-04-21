@@ -588,7 +588,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite1).isPresent());
 
-        List<String> allSnapshots = snp(ignite).getSnapshots();
+        List<String> allSnapshots = snp(ignite).getSnapshotNamesLocal();
 
         assertTrue("Snapshot directory must be empty due to snapshot fail: " + allSnapshots,
             allSnapshots.isEmpty());
@@ -645,7 +645,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue("Snapshot directory must be empty", grid2.snapshot().getSnapshots().isEmpty());
+        assertTrue("Snapshot directory must be empty", grid2.snapshot().getSnapshotNamesLocal().isEmpty());
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
@@ -802,6 +802,17 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             errMsg.value().isEmpty());
         assertEquals("Only the first snapshot must be created and stored on disk.",
             Collections.singletonList(SNAPSHOT_NAME), snpList.value());
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotIncorrectNameFails() throws Exception {
+        IgniteEx ignite = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        assertThrowsAnyCause(log,
+            () -> ignite.snapshot().createSnapshot("--№=+.:(snapshot)").get(),
+            IllegalArgumentException.class,
+            "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
     }
 
     /**

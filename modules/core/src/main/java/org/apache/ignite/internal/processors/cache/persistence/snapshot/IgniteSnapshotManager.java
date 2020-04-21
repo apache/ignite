@@ -367,7 +367,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String.class,
             "The error message of last started cluster snapshot request which fail with an error. " +
                 "This value will be empty if last snapshot request has been completed successfully.");
-        mreg.register("LocalSnapshotList", this::getSnapshots, List.class,
+        mreg.register("LocalSnapshotList", this::getSnapshotNamesLocal, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
@@ -773,6 +773,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public File snapshotLocalDir(String snpName) {
         assert locSnpDir != null;
+        assert U.alphanumericUnderscore(snpName) : snpName;
 
         return new File(locSnpDir, snpName);
     }
@@ -958,7 +959,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> getSnapshots() {
+    @Override public List<String> getSnapshotNamesLocal() {
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
@@ -971,7 +972,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        A.notNullOrEmpty(name, "name");
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
         try {
             if (cctx.kernalContext().clientNode())
@@ -997,8 +999,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                if (getSnapshots().contains(name))
-                    throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists.");
+                if (getSnapshotNamesLocal().contains(name))
+                    throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists on local node.");
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
@@ -1127,7 +1129,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Remote node left the grid [rmtNodeId=" + rmtNodeId + ']'));
         }
 
-        String snpName = RMT_SNAPSHOT_PREFIX + UUID.randomUUID().toString();
+        String snpName = RMT_SNAPSHOT_PREFIX + U.maskForFileName(UUID.randomUUID().toString());
 
         RemoteSnapshotFuture snpTransFut = new RemoteSnapshotFuture(rmtNodeId, snpName, partConsumer);
 

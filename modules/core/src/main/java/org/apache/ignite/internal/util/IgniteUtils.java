@@ -367,8 +367,8 @@ public abstract class IgniteUtils {
     /** Thread dump message. */
     public static final String THREAD_DUMP_MSG = "Thread dump at ";
 
-    /** Correct Mbean cache name pattern. */
-    private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
+    /** Alphanumeric with underscore regexp pattern. */
+    private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -4793,10 +4793,18 @@ public abstract class IgniteUtils {
      * @return An escaped string.
      */
     private static String escapeObjectNameValue(String s) {
-        if (MBEAN_CACHE_NAME_PATTERN.matcher(s).matches())
+        if (alphanumericUnderscore(s))
             return s;
 
         return '\"' + s.replaceAll("[\\\\\"?*]", "\\\\$0") + '\"';
+    }
+
+    /**
+     * @param s String to check.
+     * @return {@code true} if given string contains only alphanumeric and underscore symbols.
+     */
+    public static boolean alphanumericUnderscore(String s) {
+        return ALPHANUMERIC_UNDERSCORE_PATTERN.matcher(s).matches();
     }
 
     /**
