@@ -35,6 +35,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Base class for exporters that pushes metrics to the external system.
  */
 public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implements MetricExporterSpi {
+    /** Default export period in milliseconds. */
+    public static final long DFLT_EXPORT_PERIOD = 60_000L;
+
     /** Metric registry. */
     protected ReadOnlyMetricManager mreg;
 
@@ -42,7 +45,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     protected  @Nullable Predicate<ReadOnlyMetricRegistry> filter;
 
     /** Export period. */
-    private long period;
+    private long period = DFLT_EXPORT_PERIOD;
 
     /** Push spi executor. */
     private ScheduledExecutorService execSvc;
