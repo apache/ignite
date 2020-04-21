@@ -217,8 +217,8 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         out.writeInt(blockSize);
         out.writeLong(len);
-        U.writeGridUuid(out, lockId);
-        U.writeGridUuid(out, affKey);
+        U.writeIgniteUuid(out, lockId);
+        U.writeIgniteUuid(out, affKey);
         out.writeObject(fileMap);
         out.writeBoolean(evictExclude);
     }
@@ -229,8 +229,8 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         blockSize = in.readInt();
         len = in.readLong();
-        lockId = U.readGridUuid(in);
-        affKey = U.readGridUuid(in);
+        lockId = U.readIgniteUuid(in);
+        affKey = U.readIgniteUuid(in);
         fileMap = (IgfsFileMap)in.readObject();
         evictExclude = in.readBoolean();
     }
