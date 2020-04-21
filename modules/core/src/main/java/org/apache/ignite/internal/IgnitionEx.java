@@ -2488,7 +2488,7 @@ public class IgnitionEx {
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
             if (F.isEmpty(cfg.getSystemViewExporterSpi())) {
-                if (IgniteUtils.inClassPath(SYSTEM_VIEW_SQL_SPI)) {
+                if (IgniteComponentType.INDEXING.inClassPath()) {
                     try {
                         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi(),
                             U.newInstance(SYSTEM_VIEW_SQL_SPI));

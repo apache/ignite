@@ -1,0 +1,38 @@
+matrix:
+  include:
+    - language: java
+      os: linux
+      dist: trusty      
+      install: skip
+      before_script:
+        - echo $JVM_EXTRA_ARGS
+        - echo $JDK_PROFILES
+      script: mvn package -Pall-java,licenses,lgpl,checkstyle,examples $JDK_PROFILES -DskipTests -Dmaven.javadoc.skip=true -B -V
+      
+      jobs:
+        include:
+          - jdk: openjdk8
+            env:
+            - JDK_PROFILES='-Pall-scala,scala'
+          - jdk: openjdk11
+            # ignite-scalar module currently doesn't build under jdk11
+            env:
+              - JDK_PROFILES='-P!spark-2.4,!spark,!scala'
+            before_script:
+            - |
+              export JVM_EXTRA_ARGS='--illegal-access=permit
+              --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+              --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+              --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+              --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+              --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+              -Djdk.tls.client.protocols=TLSv1.2'
+      
+      before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
+      cache: {directories: [$HOME/.m2/repository]}
+    
+    - language: csharp
+      mono: none
+      dotnet: 3.1.101
+      script:
+        - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
