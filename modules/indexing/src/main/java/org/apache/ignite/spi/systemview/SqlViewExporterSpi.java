@@ -23,7 +23,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -68,7 +67,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements SystemViewEx
     private void register(SystemView<?> sysView) {
         if (filter != null && !filter.test(sysView)) {
             if (log.isDebugEnabled())
-                U.debug(log, "System view filtered and will not be registered.[name=" + sysView.name() + ']');
+                log.debug("System view filtered and will not be registered [name=" + sysView.name() + ']');
 
             return;
         }
