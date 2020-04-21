@@ -311,7 +311,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         List<String> cacheNames = Lists.newArrayList(CACHE4, CACHE5);
 
         for (String cacheName : cacheNames) {
-            ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).boxed()
+            ignite0.getOrCreateCache(cacheName).putAll(new Random().ints(KEYS_COUNT).distinct().boxed()
                 .collect(Collectors.toMap(i -> i, i -> (long)i)));
         }
 
