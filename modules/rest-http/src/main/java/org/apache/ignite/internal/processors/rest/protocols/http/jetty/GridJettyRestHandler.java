@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1130,8 +1131,10 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                     default:
                         try {
-                            if (type.startsWith("java.") || type.startsWith("["))
-                                return jsonMapper.readValue(str, Class.forName(type));
+                            Class<?> cls = IgniteUtils.classForName(type, null);
+
+                            if (cls != null)
+                                return jsonMapper.readValue(str, cls);
 
                             InjectableValues.Std prop = new InjectableValues.Std()
                                 .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)

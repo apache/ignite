@@ -600,15 +600,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         Character[] chars = {'a', 'b', 'c'};
         putObject(DEFAULT_CACHE_NAME, "5", chars, Character[].class.getName());
         assertTrue(Arrays.equals(chars, (Object[])jcache().get(5)));
-
-        // Check that exception is thrown when a system type has been specified.
-        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
-            "keyType", "int",
-            "key", "6",
-            "valueType", jcache().getClass().getName(),
-            "val", "\"cache\"");
-
-        assertTrue(JSON_MAPPER.readTree(ret).get("error").textValue().contains("Cannot make binary object [type="));
     }
 
     /**
@@ -3583,6 +3574,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         /** Salary (indexed). */
         @QuerySqlField(index = true)
         private double salary;
+
+        /** */
+        Person() {
+            // No-op.
+        }
 
         /**
          * @param firstName First name.

@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -74,9 +73,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
         JsonNode tree = parser.readValueAsTree();
         ObjectCodec mapper = parser.getCodec();
 
-        BinaryTypeImpl binType = (BinaryTypeImpl)ctx.cacheObjects().binary().type(type);
-        Class<?> binCls = binaryClass(binType);
-        Map<String, BinaryFieldMetadata> binFields = binaryFields(binType);
+        Map<String, BinaryFieldMetadata> binFields = binaryFields(type);
         Map<String, Class<?>> qryFields = queryFields(cacheName, type);
 
         BinaryObjectBuilder builder = ctx.cacheObjects().builder(type);
@@ -88,7 +85,13 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             String field = entry.getKey();
             JsonNode node = tree.get(field);
 
-            Class<?> fieldCls = fieldClass(field, qryFields, binFields, binCls);
+            Class<?> fieldCls = qryFields.get(QueryUtils.normalizeObjectName(field, true));
+
+            if (fieldCls == null) {
+                BinaryFieldMetadata meta = binFields.get(field);
+
+                fieldCls = meta != null ? BinaryUtils.FLAG_TO_CLASS.get((byte)meta.typeId()) : null;
+            }
 
             builder.setField(field, fieldCls != null ? mapper.treeToValue(node, fieldCls) : readField(node, mapper));
         }
@@ -136,44 +139,6 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
     }
 
     /**
-     * @param name Field name.
-     * @param qryFields Mapping from field name to its type.
-     * @param binFields Mapping from field name to its binary type.
-     * @param binCls Class described by the specified type or {@code null} if the class could not be resolved.
-     * @return Class for the specified field or {@code null} if the class could not be resolved.
-     */
-    @Nullable private Class<?> fieldClass(
-        String name,
-        Map<String, Class<?>> qryFields,
-        Map<String, BinaryFieldMetadata> binFields,
-        @Nullable Class<?> binCls
-    ) {
-        try {
-            if (binCls != null)
-                return binCls.getDeclaredField(name).getType();
-        }
-        catch (NoSuchFieldException ignore) {
-            // No-op.
-        }
-
-        Class<?> cls = qryFields.get(QueryUtils.normalizeObjectName(name, true));
-
-        if (cls != null)
-            return cls;
-
-        BinaryFieldMetadata meta = binFields.get(name);
-
-        if (meta == null)
-            return null;
-
-        int typeId = meta.typeId();
-
-        assert typeId >= Byte.MIN_VALUE && typeId <= Byte.MAX_VALUE : "field=" + name + ", typeId=" + typeId;
-
-        return BinaryUtils.FLAG_TO_CLASS.get((byte)typeId);
-    }
-
-    /**
      * @param cacheName Cache name.
      * @param type Type name.
      * @return Mapping from field name to its type.
@@ -190,29 +155,15 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
     }
 
     /**
-     * @param type Binary type.
+     * @param type Binary type name.
      * @return Mapping from field name to its binary type.
      */
-    private Map<String, BinaryFieldMetadata> binaryFields(BinaryTypeImpl type) {
-        if (type != null)
-            return type.metadata().fieldsMap();
+    private Map<String, BinaryFieldMetadata> binaryFields(String type) {
+        BinaryTypeImpl binType = (BinaryTypeImpl)ctx.cacheObjects().binary().type(type);
+
+        if (binType != null)
+            return binType.metadata().fieldsMap();
 
         return Collections.emptyMap();
-    }
-
-    /**
-     * @param type Binary type.
-     * @return Resovled class for specified binary type or {@code null} if the class could not be resolved.
-     */
-    @Nullable private Class<?> binaryClass(BinaryTypeImpl type) {
-        try {
-            if (type != null)
-                return BinaryUtils.resolveClass(type.context(), type.typeId(), null, null, false);
-        }
-        catch (BinaryInvalidTypeException ignore) {
-            // No-op.
-        }
-
-        return null;
     }
 }

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -91,6 +92,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
             module.addDeserializer(BinaryObjectImpl.class, new IgniteBinaryObjectJsonDeserializer(ctx));
 
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         registerModule(module);
     }
