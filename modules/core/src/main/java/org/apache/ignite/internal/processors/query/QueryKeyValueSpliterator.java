@@ -43,8 +43,7 @@ public class QueryKeyValueSpliterator<K, V> implements Spliterator<Cache.Entry<K
     /** {@inheritDoc} */
     @Override public boolean tryAdvance(Consumer<? super Cache.Entry<K, V>> action) {
         return spliterator.tryAdvance(new Consumer<List<?>>() {
-            @Override
-            public void accept(List<?> row) {
+            @Override public void accept(List<?> row) {
                 action.accept(new CacheEntryImpl<>((K)row.get(0), (V)row.get(1)));
             }
         });

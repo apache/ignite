@@ -382,6 +382,7 @@ import org.junit.runners.Suite;
     IgniteCacheMultipleIndexedTypesTest.class,
     CacheDataPageScanQueryTest.class,
     QueryDataPageScanTest.class,
+    QueryCursorSpliteratorCallsTest.class,
 
     // DML.
     IgniteCacheMergeSqlQuerySelfTest.class,
@@ -592,8 +593,7 @@ import org.junit.runners.Suite;
 
     IgniteCacheMergeSqlQuerySelfTest.class,
     SqlMergeTest.class,
-    SqlMergeOnClientNodeTest.class,
-    QueryCursorSpliteratorCallsTest.class
+    SqlMergeOnClientNodeTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }
