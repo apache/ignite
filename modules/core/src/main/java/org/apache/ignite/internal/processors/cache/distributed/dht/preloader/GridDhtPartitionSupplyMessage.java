@@ -233,9 +233,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         CacheEntryInfoCollection infoCol = infos().get(p);
 
         if (infoCol == null) {
-            msgSize += 4;
+            msgSize += 5;
 
-            infos().put(p, infoCol = new CacheEntryInfoCollection());
+            infos().put(p, infoCol = new CacheEntryInfoCollection(historical));
 
             infoCol.init();
         }

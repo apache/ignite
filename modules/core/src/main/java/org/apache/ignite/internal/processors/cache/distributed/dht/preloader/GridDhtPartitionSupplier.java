@@ -60,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 /**
  * Class for supplying partitions to demanding nodes.
  */
-class GridDhtPartitionSupplier {
+public class GridDhtPartitionSupplier {
     /** */
     private final CacheGroupContext grp;
 
