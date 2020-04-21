@@ -1822,7 +1822,7 @@ public class PlannerTest extends GridCommonAbstractTest {
                 .replaceIfs(RelCollationTraitDef.INSTANCE, this::collations)
                 .replaceIf(DistributionTraitDef.INSTANCE, this::distribution);
 
-            return new IgniteTableScan(cluster, traitSet, relOptTable, null, null, null);
+            return new IgniteTableScan(cluster, traitSet, relOptTable, null, null);
         }
 
         /** {@inheritDoc} */

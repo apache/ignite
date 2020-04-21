@@ -15,8 +15,11 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.function.Predicate;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.ignite.internal.processors.query.GridIndex;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 
 /**
  * TODO: Add class description.
@@ -32,10 +35,14 @@ public class IgniteIndex {
     private final GridIndex idx;
 
     /** */
-    public IgniteIndex(RelCollation collation, String name, GridIndex idx) {
+    private final IgniteTable tbl;
+
+    /** */
+    public IgniteIndex(RelCollation collation, String name, GridIndex idx, IgniteTable tbl) {
         this.collation = collation;
         this.idxName = name;
         this.idx = idx;
+        this.tbl = tbl;
     }
 
     /** */
@@ -51,5 +58,18 @@ public class IgniteIndex {
     /** */
     public GridIndex index() {
         return idx;
+    }
+
+    /** */
+    public IgniteTable table() {
+        return tbl;
+    }
+
+    public Iterable<Object[]> scan(
+        ExecutionContext execCtx,
+        Predicate<Object[]> filters,
+        Object[] lowerIdxConditions,
+        Object[] upperIdxConditions) {
+        return new IndexScan(execCtx, this, filters, lowerIdxConditions, upperIdxConditions);
     }
 }

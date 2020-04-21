@@ -75,7 +75,6 @@ public enum PlannerPhase {
                 FilterTraitsPropagationRule.INSTANCE,
                 TableModifyConverterRule.INSTANCE,
                 PushFilterProjectIntoScanRule.FILTER_INTO_SCAN,
-                PushFilterProjectIntoScanRule.PROJECT_INTO_SCAN,
                 new FilterProjectTransposeRule(Filter.class, Project.class, true, true,
                     RelFactories.LOGICAL_BUILDER),
                 ProjectFilterTransposeRule.INSTANCE

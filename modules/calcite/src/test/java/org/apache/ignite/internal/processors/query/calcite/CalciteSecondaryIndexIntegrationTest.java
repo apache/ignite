@@ -38,7 +38,7 @@ import org.junit.Test;
 public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
 
     @Override protected void beforeTestsStarted() throws Exception {
-        Ignite grid = startGridsMultiThreaded(1);
+        Ignite grid = startGridsMultiThreaded(2);
 
         QueryEntity projEntity = new QueryEntity();
         projEntity.setKeyType(Integer.class.getName());
@@ -110,6 +110,8 @@ public class CalciteSecondaryIndexIntegrationTest extends GridCommonAbstractTest
         FieldsQueryCursor<List<?>> cur = cursors.get(0);
 
         List<List<?>> res = cur.getAll();
+
+        System.out.println("res===" + res);
     }
 
 //    @Test

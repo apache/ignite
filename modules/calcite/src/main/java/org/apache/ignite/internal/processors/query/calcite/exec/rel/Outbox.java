@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -146,6 +147,7 @@ public class Outbox<T> extends AbstractNode<T> implements SingleNode<T>, Downstr
 
     /** {@inheritDoc} */
     @Override public void onError(Throwable e) {
+        System.out.println("ERROR!=" + X.getFullStackTrace(e));
         cancel(); // TODO send cause to originator.
     }
 

@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.trait.Destination;
@@ -142,8 +143,6 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
         Predicate<Object[]> filters = scan.filters() == null ? null :
             expressionFactory.predicate(ctx, scan.filters(), scan.getRowType());
 
-        int[] projects = scan.projects();
-
         Object[] lowerBound = scan.lowerIndexCondition() == null ? null :
             expressionFactory.singleRowValuesRex(ctx, scan.lowerIndexCondition());
 
@@ -152,7 +151,9 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
         IgniteTable tbl = scan.getTable().unwrap(IgniteTable.class);
 
-        Iterable<Object[]> rowsIterator = tbl.scan(ctx, filters, projects, lowerBound, upperBound);
+        IgniteIndex idx = tbl.getIndex(scan.indexName());
+
+        Iterable<Object[]> rowsIterator = idx.scan(ctx, filters, lowerBound, upperBound);
 
         return new ScanNode(ctx, rowsIterator); // TODO refactor other methods.
     }

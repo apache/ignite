@@ -147,6 +147,18 @@ public class ExpressionFactory {
      * Creates a Filter predicate.
      * @param ctx Execution context, holds a planner context, query and its parameters,
      *             execution specific variables (like queryId, current user, session, etc).
+     * @param filters Filter expression.
+     * @param rowType Input row type.
+     * @return Filter predicate.
+     */
+    public <T> Predicate<T> predicate(ExecutionContext ctx, List<Expression> filters, DataType rowType) {
+        return predicate(ctx, expToRexTranslator.translate(filters), rowType.logicalType(typeFactory));
+    }
+
+    /**
+     * Creates a Filter predicate.
+     * @param ctx Execution context, holds a planner context, query and its parameters,
+     *             execution specific variables (like queryId, current user, session, etc).
      * @param filter Filter expression.
      * @param rowType Input row type.
      * @return Filter predicate.

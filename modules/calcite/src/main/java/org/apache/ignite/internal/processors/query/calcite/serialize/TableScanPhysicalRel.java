@@ -40,10 +40,7 @@ public class TableScanPhysicalRel implements PhysicalRel {
     private DataType rowType;
 
     /** */
-    private Expression cond;
-
-    /** */
-    private int[] projects;
+    private List<Expression> filters;
 
     /** */
     private List<Expression> lowerBound;
@@ -58,9 +55,19 @@ public class TableScanPhysicalRel implements PhysicalRel {
     /**
      * @param tblName Qualified table name
      */
-    public TableScanPhysicalRel(List<String> tblName, String idxName) {
+    public TableScanPhysicalRel(
+        List<String> tblName,
+        String idxName,
+        DataType rowType,
+        List<Expression> filters,
+        List<Expression> lowerBound,
+        List<Expression> upperBound) {
         this.tblName = tblName;
         this.idxName = idxName;
+        this.rowType = rowType;
+        this.filters = filters;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
     }
 
     /**
@@ -80,15 +87,8 @@ public class TableScanPhysicalRel implements PhysicalRel {
     /**
      * @return Filter confition.
      */
-    public Expression condition() {
-        return cond;
-    }
-
-    /**
-     * @return Projection.
-     */
-    public int[] projects() {
-        return projects;
+    public List<Expression> filters() {
+        return filters;
     }
 
     /**
@@ -120,25 +120,24 @@ public class TableScanPhysicalRel implements PhysicalRel {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(rowType);
-        out.writeObject(cond);
         out.writeUTF(idxName);
 
         out.writeInt(tblName.size());
         for (String name : tblName)
             out.writeUTF(name);
 
-        if (projects == null)
+        if (filters == null)
             out.writeInt(0);
         else {
-            out.writeInt(projects.length);
-            for (int i = 0; i < projects.length; i++)
-                out.writeInt(projects[i]);
+            out.writeInt(filters.size());
+            for (int i = 0; i < filters.size(); i++)
+                out.writeObject(filters.get(i));
         }
 
         if (lowerBound == null)
             out.writeInt(0);
         else {
-            out.writeObject(lowerBound.size());
+            out.writeInt(lowerBound.size());
             for (int i = 0; i < lowerBound.size(); i++)
                 out.writeObject(lowerBound.get(i));
         }
@@ -146,17 +145,15 @@ public class TableScanPhysicalRel implements PhysicalRel {
         if (upperBound == null)
             out.writeInt(0);
         else {
-            out.writeObject(upperBound.size());
+            out.writeInt(upperBound.size());
             for (int i = 0; i < upperBound.size(); i++)
                 out.writeObject(upperBound.get(i));
         }
-
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rowType = (DataType) in.readObject();
-        cond = (Expression) in.readObject();
         idxName = in.readUTF();
 
         int tblNameSize = in.readInt();
@@ -165,11 +162,11 @@ public class TableScanPhysicalRel implements PhysicalRel {
             tblName.add(in.readUTF());
         this.tblName = tblName;
 
-        int projectsSize = in.readInt();
-        if (projectsSize > 0) {
-            projects = new int[projectsSize];
-            for (int i = 0; i < projectsSize; i++)
-                projects[i] = in.readInt();
+        int filtersSize = in.readInt();
+        if (filtersSize > 0) {
+            filters = new ArrayList<>(filtersSize);
+            for (int i = 0; i < filtersSize; i++)
+                filters.add((Expression)in.readObject());
         }
 
         int lowerBoundSize = in.readInt();

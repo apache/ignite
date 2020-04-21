@@ -787,6 +787,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
     /** */
     private void onMessage(UUID nodeId, QueryStartRequest msg) {
+        System.out.println("onMessage!!!=" + localNodeId);
         assert nodeId != null && msg != null;
 
         PlanningContext ctx = createContext(msg.schema(), nodeId, msg.topologyVersion());

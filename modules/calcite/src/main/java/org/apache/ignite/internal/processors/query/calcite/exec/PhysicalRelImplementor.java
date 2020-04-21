@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.serialize.FilterPhysicalRel;
@@ -75,17 +76,8 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(TableScanPhysicalRel scan) {
-        IgniteTable tbl = ctx.planningContext()
-            .catalogReader()
-            .getTable(scan.tableName())
-            .unwrap(IgniteTable.class);
-
-        IgniteTable idxTable = null ;//; tbl.getIndex(scan.indexName());
-
-        Predicate<Object[]> filters = scan.condition() == null ? null :
-            expressionFactory.predicate(ctx, scan.condition(), scan.rowType());
-
-        int[] projects = scan.projects();
+        Predicate<Object[]> filters = F.isEmpty(scan.filters()) ? null :
+            expressionFactory.predicate(ctx, scan.filters(), scan.rowType());
 
         Object[] lowerBound = scan.lowerBound() == null ? null :
             expressionFactory.singleRowValuesExp(ctx, scan.lowerBound());
@@ -93,7 +85,14 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
         Object[] upperBound = scan.upperBound() == null ? null :
             expressionFactory.singleRowValuesExp(ctx, scan.upperBound());
 
-        Iterable<Object[]> rowsIter = tbl.scan(ctx, filters, projects, lowerBound, upperBound);
+        IgniteTable tbl = ctx.planningContext()
+            .catalogReader()
+            .getTable(scan.tableName())
+            .unwrap(IgniteTable.class);
+
+        IgniteIndex index = tbl.getIndex(scan.indexName());
+
+        Iterable<Object[]> rowsIter = index.scan(ctx, filters, lowerBound, upperBound);
 
         return new ScanNode(ctx, rowsIter);
     }

@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
+import static org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType.fromType;
+
 /**
  * Converts RelNode tree to physical rel tree.
  */
@@ -74,19 +76,19 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteFilter rel) {
-        return new FilterPhysicalRel(DataType.fromType(rel.getRowType()),
+        return new FilterPhysicalRel(fromType(rel.getRowType()),
             rexTranslator.translate(rel.getCondition()), visit((IgniteRel) rel.getInput()));
     }
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteProject rel) {
-        return new ProjectPhysicalRel(DataType.fromType(rel.getInput().getRowType()),
+        return new ProjectPhysicalRel(fromType(rel.getInput().getRowType()),
             rexTranslator.translate(rel.getProjects()), visit((IgniteRel) rel.getInput()));
     }
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteJoin rel) {
-        DataType dataType = DataType.fromType(
+        DataType dataType = fromType(
             Commons.combinedRowType(
                 typeFactory, rel.getLeft().getRowType(), rel.getRight().getRowType()));
 
@@ -94,13 +96,25 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     }
 
     /** {@inheritDoc} */
-    @Override public PhysicalRel visit(IgniteTableScan rel) {
-        return new TableScanPhysicalRel(rel.getTable().getQualifiedName(), rel.indexName());
+    @Override public PhysicalRel visit(IgniteTableScan scan) {
+        List<Expression> filters = rexTranslator.translate(scan.filters());
+
+        List<Expression> lowerBound = scan.lowerIndexCondition() == null ? null :
+            rexTranslator.translate(scan.lowerIndexCondition());
+        List<Expression> upperBound = scan.upperIndexCondition() == null ? null :
+            rexTranslator.translate(scan.upperIndexCondition());
+
+        return new TableScanPhysicalRel(scan.getTable().getQualifiedName(),
+            scan.indexName(),
+            fromType(scan.getRowType()),
+            filters,
+            lowerBound,
+            upperBound);
     }
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteReceiver rel) {
-        return new ReceiverPhysicalRel(DataType.fromType(rel.getRowType()),
+        return new ReceiverPhysicalRel(fromType(rel.getRowType()),
             rel.source().fragmentId(), rel.source().mapping().nodes(), rel.collations());
     }
 

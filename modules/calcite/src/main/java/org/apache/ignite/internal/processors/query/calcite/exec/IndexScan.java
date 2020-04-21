@@ -15,10 +15,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.query.GridIndex;
-import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -40,9 +42,6 @@ public class IndexScan implements Iterable<Object[]> {
     private final Predicate<Object[]> filters;
 
     /** */
-    private final int[] proj;
-
-    /** */
     private final Object[] lowerBound;
 
     /** */
@@ -53,17 +52,15 @@ public class IndexScan implements Iterable<Object[]> {
 
     public IndexScan(
         ExecutionContext ctx,
-        IgniteTable tbl,
+        IgniteIndex igniteIdx,
         Predicate<Object[]> filters,
-        int[] projects,
         Object[] lowerBound,
         Object[] upperBound
     ) {
         this.ectx = ctx;
-        this.desc = tbl.descriptor();
-        this.idx = null;// tbl.index();
+        this.desc = igniteIdx.table().descriptor();
+        this.idx = igniteIdx.index();
         this.filters = filters;
-        this.proj = projects;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
     }
@@ -71,9 +68,19 @@ public class IndexScan implements Iterable<Object[]> {
     @NotNull @Override public Iterator<Object[]> iterator() {
         GridCursor<H2Row> cur =  idx.find(null, null, null); // TODO: CODE: implement.
 
-        System.out.println(cur);
+        System.out.println("upperBound=" + Arrays.toString(upperBound));
+        System.out.println("lowerBound=" + Arrays.toString(lowerBound));
+        try {
+            while (cur.next())
+                System.out.println(this + "next=" + cur.get());
+        }
+        catch (Exception e) {
+            System.out.println("Exc===" + e);
+            throw new RuntimeException(e);
+        }
 
-        return null;
+
+        return Collections.emptyIterator();
     }
 
     private static class CalciteH2Row extends H2Row {

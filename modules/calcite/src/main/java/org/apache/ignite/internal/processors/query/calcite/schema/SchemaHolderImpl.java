@@ -115,12 +115,12 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         IgniteTable tbl = new IgniteTable(tblName, desc, pkCollation);
         schema.addTable(tblName, tbl);
 
-        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTable.PK_INDEX_NAME, pk);
+        IgniteIndex pkIdx = new IgniteIndex(pkCollation, IgniteTable.PK_INDEX_NAME, pk, tbl);
         tbl.addIndex(pkIdx);
 
         if (desc.keyField() != QueryUtils.KEY_COL) {
             RelCollation pkAliasCollation = RelCollations.of(new RelFieldCollation(desc.keyField()));
-            IgniteIndex pkAliasIdx = new IgniteIndex(pkAliasCollation, IgniteTable.PK_ALIAS_INDEX_NAME, pk);
+            IgniteIndex pkAliasIdx = new IgniteIndex(pkAliasCollation, IgniteTable.PK_ALIAS_INDEX_NAME, pk, tbl);
             tbl.addIndex(pkAliasIdx);
         }
 
@@ -158,7 +158,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, gridIdx);
+        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, gridIdx, tbl);
         tbl.addIndex(idx);
     }
 

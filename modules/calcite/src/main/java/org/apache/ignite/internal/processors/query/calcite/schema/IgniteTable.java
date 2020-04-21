@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptCluster;
@@ -48,8 +47,6 @@ import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -149,7 +146,7 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
 
         traitSet = traitSet.replaceIf(RelCollationTraitDef.INSTANCE, idx::collation);
 
-        return new IgniteTableScan(cluster, traitSet, relOptTable, idxName,  null, null);
+        return new IgniteTableScan(cluster, traitSet, relOptTable, idxName,  null);
     }
 
     /**
@@ -222,23 +219,17 @@ public class IgniteTable extends AbstractTable implements TranslatableTable, Pro
     /** {@inheritDoc} */
     @Override public Enumerable<Object[]> scan(DataContext dataCtx, List<RexNode> filters, int[] projects) {
         throw new UnsupportedOperationException();
-//        ExecutionContext execCtx = (ExecutionContext)dataCtx;
-//        ExpressionFactory expFactory = execCtx.planningContext().expressionFactory();
-////        expFactory.predicate();
-////        SearchRow
+    }
 //
-//        return Linq4j.asEnumerable(new TableScan((ExecutionContext) dataCtx, desc));
-    }
-
-
-    public Iterable<Object[]> scan(
-        ExecutionContext execCtx,
-        Predicate<Object[]> filters,
-        int[] projects,
-        Object[] lowerIdxConditions,
-        Object[] upperIdxConditions) {
-        return new IndexScan(execCtx, this, filters, projects, lowerIdxConditions, upperIdxConditions);
-    }
+//
+//    public Iterable<Object[]> scan(
+//        ExecutionContext execCtx,
+//        Predicate<Object[]> filters,
+//        int[] projects,
+//        Object[] lowerIdxConditions,
+//        Object[] upperIdxConditions) {
+//        return new IndexScan(execCtx, this, filters, projects, lowerIdxConditions, upperIdxConditions);
+//    }
 
     /** {@inheritDoc} */
     @Override public <C> C unwrap(Class<C> aClass) {

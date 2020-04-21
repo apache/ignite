@@ -21,13 +21,9 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.mapping.Mapping;
-import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 
 /**
@@ -38,12 +34,9 @@ public class PushFilterProjectIntoScanRule  extends RelOptRule {
     public static final PushFilterProjectIntoScanRule FILTER_INTO_SCAN =
         new PushFilterProjectIntoScanRule(Filter.class, "IgniteFilterIntoScanRule");
 
-    public static final PushFilterProjectIntoScanRule PROJECT_INTO_SCAN =
-        new PushFilterProjectIntoScanRule(Project.class, "IgniteProjectIntoScanRule");
-
     private PushFilterProjectIntoScanRule(Class<? extends RelNode> clazz, String desc) {
         super(operand(clazz,
-            operand(TableScan.class, none())),
+            operand(IgniteTableScan.class, none())),
             RelFactories.LOGICAL_BUILDER,
             desc);
     }
@@ -54,65 +47,18 @@ public class PushFilterProjectIntoScanRule  extends RelOptRule {
 
     @Override public void onMatch(RelOptRuleCall call) {
         IgniteTableScan scan = call.rel(1);
-        RelNode rel = call.rel(0);
+        Filter rel = call.rel(0);
 
-        assert rel instanceof Filter || rel instanceof Project : "Wrong rel class: " + rel;
-
-        if (rel instanceof Project && !((Project)rel).isMapping())
-            return; // We can push the mapping only.
-
-        int[] projects = currentProjects(scan);
         List<RexNode> filters = currentFilters(scan);
 
-        if (rel instanceof Filter) {
-           // if (fiObjects.equals(filters, ((Filter)rel).getCondition()))
+        if (filters == null)
+            filters = new ArrayList<>(1);
 
-            System.out.println("Old filters=" + filters + ", new filters=" + ((Filter)rel).getCondition());
-            filters = pushFilter(scan, (Filter)rel, projects, filters);
-        }
-        else
-            projects = pushProject(scan, (Project)rel, projects);
+        filters.add(rel.getCondition());
+
 
         call.transformTo(
-            new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), filters, projects));
-    }
-
-    public int[] pushProject(TableScan scan, Project proj, int[] projects) {
-        if (projects == null)
-            projects = scan.identity().toIntArray();
-
-        Mapping mapping = (Mapping)Project.getPartialMapping(
-            proj.getInput().getRowType().getFieldCount(),
-            proj.getProjects());
-
-        List<Integer> projects0 = Mappings.apply(mapping, ImmutableIntList.of(projects));
-
-        projects = ImmutableIntList.copyOf(projects0).toIntArray();
-
-        return projects;
-    }
-
-    public List<RexNode> pushFilter(TableScan scan, Filter filter, int[] projects, List<RexNode> filters) {
-        RexNode newFilter;
-
-//        if (projects != null) { TODO projects and filters mapping to each other
-//            Mapping mapping = Mappings.target(ImmutableIntList.of(projects), scan.getTable().getRowType().getFieldCount());
-//
-//            newFilter = RexUtil.apply(mapping, filter.getCondition());
-//        }
-//        else
-            newFilter = filter.getCondition();
-
-
-        filters = filters == null ? new ArrayList<>(1) : new ArrayList<>(filters);
-
-        filters.add(newFilter);
-
-        return filters;
-    }
-
-    private static int[] currentProjects(TableScan scan) {
-        return scan instanceof IgniteTableScan ? ((IgniteTableScan)scan).projects() : null;
+            new IgniteTableScan(scan.getCluster(), scan.getTraitSet(), scan.getTable(), scan.indexName(), filters));
     }
 
     private static List<RexNode> currentFilters(TableScan scan) {

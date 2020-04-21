@@ -38,9 +38,6 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexInputRef;
@@ -76,7 +73,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
     private final String idxName;
     private final List<RexNode> filters;
-    private final int[] projects;
     private final RexNode[] lowerIdxCondition;
     private final RexNode[] upperIdxCondition;
     private final IgniteTable igniteTable;
@@ -95,14 +91,12 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
         RelTraitSet traits,
         RelOptTable tbl,
         String idxName,
-        @Nullable List<RexNode> filters,
-        @Nullable int[] projects
+        @Nullable List<RexNode> filters
     ) {
         super(cluster, traits, ImmutableList.of(), tbl);
 
         this.idxName = idxName;
         this.filters = filters;
-        this.projects = projects;
         this.igniteTable = tbl.unwrap(IgniteTable.class);
         this.collation = traits.getTrait(RelCollationTraitDef.INSTANCE);
         this.predicateMasks = new int[collation.getFieldCollations().size()];
@@ -263,15 +257,35 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
 
 
     public List<RexNode> lowerIndexCondition() {
-        return allNulls(lowerIdxCondition) ? null : Arrays.asList(lowerIdxCondition);
+        if (allNulls(lowerIdxCondition))
+            return null;
+        return fillNulls(lowerIdxCondition);
     }
 
+
+
     public List<RexNode>  upperIndexCondition() {
-        return allNulls(upperIdxCondition) ? null : Arrays.asList(upperIdxCondition);
+        if (allNulls(upperIdxCondition))
+            return null;
+        return fillNulls(upperIdxCondition);
     }
 
     public String indexName() {
         return idxName;
+    }
+
+    private  List<RexNode> fillNulls(RexNode[] boundsArr) {
+        List<RexNode> idxConds = new ArrayList<>(boundsArr.length);
+        for (int i = 0; i < boundsArr.length; i++) {
+
+            if (boundsArr[i] == null) {
+                RexNode nullLiteral = getCluster().getRexBuilder().makeNullLiteral(getCluster().getTypeFactory().createJavaType(Object.class));
+                idxConds.add(nullLiteral);
+            }
+            else
+                idxConds.add(boundsArr[i]);
+        }
+        return idxConds;
     }
 
     //    private static List<RexNode> makeListOfNulls(int cols) {
@@ -388,8 +402,7 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             //.item("index", idxName)
             .item("lower", allNulls(lowerIdxCondition) ? null : Arrays.toString(lowerIdxCondition))
             .item("upper", allNulls(upperIdxCondition) ? null : Arrays.toString(upperIdxCondition))
-            .item("filters", F.isEmpty(filters) ? null : filters)
-            .item("projects", F.isEmpty(projects) ? null : Arrays.toString(projects));
+            .item("filters", F.isEmpty(filters) ? null : filters);
     }
 
     /** {@inheritDoc} */
@@ -407,13 +420,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      */
     public List<RexNode> filters() {
         return filters;
-    }
-
-    /**
-     *
-     */
-    public int[] projects() {
-        return projects;
     }
 
     private static double guessSelectivity(RexNode predicate) {
@@ -452,26 +458,12 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             ((RexCall)exp).getOperands().size() == 2;
     }
 
-    @Override public RelDataType deriveRowType() {
-        if (projects == null)
-            return super.deriveRowType();
-
-        final RelDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
-
-        final List<RelDataTypeField> fieldList = table.getRowType().getFieldList();
-
-        for (int project : projects)
-            builder.add(fieldList.get(project));
-
-        return builder.build();
-    }
-
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = estimateRowCount(mq);
 
         RelOptCost cost = planner.getCostFactory().makeCost(rows, 0, 0);
 
-        System.out.println("TableScanCost==" + cost + ", filters=" + filters + ", projects=" + Arrays.toString(projects) + ", tbl=" + table.getQualifiedName());
+        System.out.println("TableScanCost==" + cost + ", filters=" + filters  + ", tbl=" + table.getQualifiedName());
         // TODO count projects.
         return cost;
     }
@@ -495,10 +487,6 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
             Double selectivity = mq.getSelectivity(this, filters.get(0)); // TODO handle multiple items in filter.
             rows *= selectivity;
         }
-
-        if (!F.isEmpty(projects))
-            rows *= 0.99; // Encourage projects merged with scans TODO do we really need this multiplication?
-
 
         if (!F.isEmpty(filters)) {
             Double selectivity = mq.getSelectivity(this, filters.get(0)); // TODO handle multiple items in filter.
