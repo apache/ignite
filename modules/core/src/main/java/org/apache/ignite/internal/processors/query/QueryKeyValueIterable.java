@@ -22,6 +22,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import javax.cache.Cache;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
 
 /**
  * SqlQuery key-value iterable.
@@ -42,6 +43,11 @@ public class QueryKeyValueIterable<K, V> implements Iterable<Cache.Entry<K, V>> 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         return new QueryKeyValueIterator<>(cur.iterator());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Spliterator<Cache.Entry<K, V>> spliterator() {
+        return new QueryKeyValueSpliterator<>(cur.spliterator());
     }
 
     /**

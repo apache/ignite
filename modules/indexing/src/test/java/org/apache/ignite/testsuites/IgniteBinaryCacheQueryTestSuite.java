@@ -214,6 +214,7 @@ import org.apache.ignite.internal.processors.query.KillQueryFromNeighbourTest;
 import org.apache.ignite.internal.processors.query.KillQueryOnClientDisconnectTest;
 import org.apache.ignite.internal.processors.query.KillQueryTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.query.QueryCursorSpliteratorCallsTest;
 import org.apache.ignite.internal.processors.query.RunningQueriesTest;
 import org.apache.ignite.internal.processors.query.SqlIllegalSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.SqlIncompatibleDataTypeExceptionTest;
@@ -392,6 +393,7 @@ import org.junit.runners.Suite;
     IgniteCacheMultipleIndexedTypesTest.class,
     CacheDataPageScanQueryTest.class,
     QueryDataPageScanTest.class,
+    QueryCursorSpliteratorCallsTest.class,
 
     // DML.
     IgniteCacheMergeSqlQuerySelfTest.class,
