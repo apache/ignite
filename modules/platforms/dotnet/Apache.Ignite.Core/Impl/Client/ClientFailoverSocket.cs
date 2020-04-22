@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly Marshaller _marsh;
 
         /** Endpoints with corresponding hosts. */
-        private readonly List<SocketEndpoint> _endPoints;
+        private volatile List<SocketEndpoint> _endPoints;
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -608,15 +608,47 @@ namespace Apache.Ignite.Core.Impl.Client
             // TODO: Asynchronously discover all nodes, update _endPoints
             // TODO: Make sure not to connect to the same node twice!
             var res = GetServerEndpoints(startTopVer, endTopVer);
+            var endPoints = _endPoints.ToList();
             
             foreach (var addedNode in res.JoinedNodes)
             {
                 Console.WriteLine(addedNode.Id);
 
-                foreach (var endpoint in addedNode.Endpoints)
+                if (endPoints.Any(e => e.Socket != null && e.Socket.ServerNodeId == addedNode.Id))
                 {
-                    Console.WriteLine(" - {0}", endpoint);
+                    // Already connected to that node.
+                    continue;
                 }
+
+                foreach (var endPointString in addedNode.Endpoints)
+                {
+                    try
+                    {
+                        var endpoint = Endpoint.ParseEndpoint(endPointString);
+                        
+                        IPAddress ip;
+                        if (IPAddress.TryParse(endpoint.Host, out ip))
+                        {
+                            var ipEndPoint = new IPEndPoint(ip, endpoint.Port);
+                            var socket = new ClientSocket(_config, ipEndPoint, endpoint.Host,
+                                _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+                            var socketEndPoint = new SocketEndpoint(ipEndPoint, endpoint.Host)
+                            {
+                                Socket = socket
+                            };
+                            
+                            endPoints.Add(socketEndPoint);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Ignore: failure to connect is expected.
+                        // TODO: Log as Debug or Info?
+                    }
+                }
+
+                _endPoints = endPoints;
             }
         }
 
