@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
-            var oldVer = (AffinityTopologyVersion) _affinityTopologyVersion;
+            var oldVer = _affinityTopologyVersion;
             _affinityTopologyVersion = affinityTopologyVersion;
 
             if (_config.EnablePartitionAwareness)
@@ -368,7 +368,8 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Re-discover nodes when major topology version has changed.
-            if (_config.EnableDiscovery && oldVer.Version > affinityTopologyVersion.Version)
+            if (_config.EnableDiscovery && oldVer != null && 
+                ((AffinityTopologyVersion)oldVer).Version > affinityTopologyVersion.Version)
             {
                 // TODO: Update endpoint info, connect to more nodes if necessary.
             }

@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             var cfg = new IgniteClientConfiguration(GetClientConfiguration())
             {
-                EnableDiscovery = true,
+                EnableDiscovery = true
             };
 
             using (var client = Ignition.StartClient(cfg))
