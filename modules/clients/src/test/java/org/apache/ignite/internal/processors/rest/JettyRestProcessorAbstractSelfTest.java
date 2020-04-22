@@ -631,6 +631,36 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      * @throws Exception If failed.
      */
     @Test
+    public void testPutIncorrectJson() throws Exception {
+        // Check wrong format.
+        String json = "incorrect JSON format";
+
+        String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "keyType", "int",
+            "key", "5",
+            "valueType", Character[].class.getName(),
+            "val", json
+        );
+
+        assertResponseContainsError(ret, "Failed to convert value to specified type");
+
+        // Check incorrect type.
+        json = JSON_MAPPER.writeValueAsString(new Character[] {'a', 'b', 'c'});
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "keyType", "int",
+            "key", "5",
+            "valueType", Person.class.getName(),
+            "val", json
+        );
+
+        assertResponseContainsError(ret, "Failed to convert value to specified type");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testGetBinaryObjects() throws Exception {
         Person p = new Person(1, "John", "Doe", 300);
 
