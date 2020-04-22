@@ -19,45 +19,24 @@ namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
 
     /// <summary>
-    /// Represents a discovered node.
+    /// Represents the result of <see cref="ClientOp.ClusterGroupGetNodesEndpoints"/>.
     /// </summary>
-    internal class ClientDiscoveryNode
+    internal class ClientDiscoveryResult
     {
-        /** */
-        private readonly Guid _id;
+        public ClientDiscoveryResult(long topologyVersion, IList<ClientDiscoveryNode> joinedNodes, 
+            IList<Guid> removedNodes)
+        {
+            TopologyVersion = topologyVersion;
+            JoinedNodes = joinedNodes;
+            RemovedNodes = removedNodes;
+        }
+
+        public long TopologyVersion { get; private set; }
         
-        /** */
-        private readonly IList<string> _endpoints;
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="ClientDiscoveryNode"/>.
-        /// </summary>
-        public ClientDiscoveryNode(Guid id, IList<string> endpoints)
-        {
-            Debug.Assert(endpoints != null);
-            Debug.Assert(endpoints.Count > 0);
-            
-            _id = id;
-            _endpoints = endpoints;
-        }
-
-        /// <summary>
-        /// Gets the id.
-        /// </summary>
-        public Guid Id
-        {
-            get { return _id; }
-        }
-
-        /// <summary>
-        /// Gets the endpoints.
-        /// </summary>
-        public IList<string> Endpoints
-        {
-            get { return _endpoints; }
-        }
+        public IList<ClientDiscoveryNode> JoinedNodes { get; private set; }
+        
+        public IList<Guid> RemovedNodes { get; private set; }
     }
 }
