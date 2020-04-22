@@ -102,8 +102,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 return new Endpoint(endpoint);
             }
 
-            var host = endpoint.Substring(0, HostSeparator);
-            var port = endpoint.Substring(HostSeparator);
+            var host = endpoint.Substring(0, idx);
+            var port = endpoint.Substring(idx + 1);
 
             var ports = port.Split(PortsSeparators, StringSplitOptions.None);
 
