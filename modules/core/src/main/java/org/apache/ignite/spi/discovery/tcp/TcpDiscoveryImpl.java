@@ -24,13 +24,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,8 +44,12 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 /**
  *
@@ -58,6 +66,9 @@ abstract class TcpDiscoveryImpl {
 
     /** Response join impossible. */
     protected static final int RES_JOIN_IMPOSSIBLE = 255;
+
+    /** How often the warning message should occur in logs to prevent log spam. */
+    public static final long LOG_WARN_MSG_TIMEOUT = 60 * 60 * 1000L;
 
     /** */
     protected final TcpDiscoverySpi spi;
@@ -76,6 +87,12 @@ abstract class TcpDiscoveryImpl {
 
     /** Received messages. */
     protected ConcurrentLinkedDeque<String> debugLogQ;
+
+    /** Logging a warning message when metrics quantity exceeded a specified number. */
+    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, 500);
+
+    /** */
+    protected long endTimeMetricsSizeProcessWait = System.currentTimeMillis();
 
     /** */
     protected final ServerImpl.DebugLogger debugLog = new DebugLogger() {
@@ -347,6 +364,17 @@ abstract class TcpDiscoveryImpl {
     protected abstract Collection<IgniteSpiThread> threads();
 
     /**
+     * @param nodeId Node ID.
+     * @param metrics Metrics.
+     * @param cacheMetrics Cache metrics.
+     * @param tsNanos Timestamp as returned by {@link System#nanoTime()}.
+     */
+    public abstract void updateMetrics(UUID nodeId,
+        ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics,
+        long tsNanos);
+
+    /**
      * @throws IgniteSpiException If failed.
      */
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
@@ -405,6 +433,32 @@ abstract class TcpDiscoveryImpl {
         }
 
         return true;
+    }
+
+    /** */
+    public void processMsgCacheMetrics(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
+        for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
+            UUID nodeId = e.getKey();
+
+            TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
+
+            Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
+                msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
+
+            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis()
+                && cacheMetrics.size() >= METRICS_QNT_WARN)
+            {
+                log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
+                    "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
+
+                endTimeMetricsSizeProcessWait = U.currentTimeMillis() + LOG_WARN_MSG_TIMEOUT;
+            }
+
+            updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tsNanos);
+
+            for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
+                updateMetrics(t.get1(), t.get2(), cacheMetrics, tsNanos);
+        }
     }
 
     /**

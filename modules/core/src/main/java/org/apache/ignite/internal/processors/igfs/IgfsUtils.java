@@ -664,7 +664,7 @@ public class IgfsUtils {
         if (entry != null) {
             out.writeBoolean(true);
 
-            IgniteUtils.writeGridUuid(out, entry.fileId());
+            IgniteUtils.writeIgniteUuid(out, entry.fileId());
 
             out.writeBoolean(entry.isDirectory());
         }
@@ -681,7 +681,7 @@ public class IgfsUtils {
      */
     @Nullable public static IgfsListingEntry readListingEntry(DataInput in) throws IOException {
         if (in.readBoolean()) {
-            IgniteUuid id = IgniteUtils.readGridUuid(in);
+            IgniteUuid id = IgniteUtils.readIgniteUuid(in);
             boolean dir = in.readBoolean();
 
             return new IgfsListingEntry(id, dir);

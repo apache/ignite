@@ -100,13 +100,13 @@ public class IgfsMetaDirectoryListingRemoveProcessor implements EntryProcessor<I
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, fileName);
-        U.writeGridUuid(out, fileId);
+        U.writeIgniteUuid(out, fileId);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         fileName = U.readString(in);
-        fileId = U.readGridUuid(in);
+        fileId = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */
