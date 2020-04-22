@@ -293,6 +293,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             }, REBALANCE_AWAIT_TIME));
 
         TestRecordingCommunicationSpi.stopBlockAll();
+
+        assertPartitionsSame(idleVerify(snpIg0, dfltCacheCfg.getName(), atomicCcfg.getName()));
     }
 
     /** @throws Exception If fails. */

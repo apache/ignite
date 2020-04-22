@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -26,6 +29,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.junit.Test;
 
 /**
@@ -45,20 +50,19 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotWithIndex() throws Exception {
+        String tblName =  "Person";
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key), indexedCcfg);
 
-        String tblName =  "Person";
-
         executeSql(ignite, "CREATE TABLE " + tblName + " (id int, name varchar, age int, city varchar, " +
-            "primary key (id, name)) WITH \"affinity_key=name\"");
+            "primary key (id, name)) WITH \"cache_name=" + tblName + "\"");
         executeSql(ignite, "CREATE INDEX ON " + tblName + "(city, age)");
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             executeSql(ignite, "INSERT INTO " + tblName + " (id, name, age, city) VALUES(?, 'name', 3, 'city')", i);
 
-        assertEquals(CACHE_KEYS_RANGE, executeSql(ignite, selectStartSQLStatement(tblName)).size());
-        assertEquals(CACHE_KEYS_RANGE, executeSql(ignite.context().cache().jcache(indexedCcfg.getName()),
-            selectStartSQLStatement(Account.class.getSimpleName())).size());
+        assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(ignite, selectStartSQLStatement(tblName))));
+        assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(ignite.context().cache().jcache(indexedCcfg.getName()),
+            selectStartSQLStatement(Account.class.getSimpleName()))));
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
@@ -67,8 +71,14 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
 
-        List<List<?>> results = executeSql(snp, explainSQLStatement(tblName) + "id=0");
-        assertUsingPkIndex(results);
+        assertTrue(snp.cache(indexedCcfg.getName()).indexReadyFuture().isDone());
+        assertTrue(snp.cache(tblName).indexReadyFuture().isDone());
+
+        List<List<?>> results = executeSql(snp, explainSQLStatement(tblName) + "id > 10");
+
+        String explainPlan = (String)results.get(0).get(0);
+        assertTrue(explainPlan.toUpperCase().contains("\"_KEY_PK"));
+        assertFalse(explainPlan.toUpperCase().contains("_SCAN_"));
 
         results = executeSql(snp, explainSQLStatement(tblName) + "city='city' and age=2");
         assertUsingSecondaryIndex(results);
@@ -77,9 +87,19 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
             explainSQLStatement(Account.class.getSimpleName()) + "id=0");
         assertUsingSecondaryIndex(results);
 
-        assertEquals(CACHE_KEYS_RANGE, executeSql(snp, selectStartSQLStatement(tblName)).size());
-        assertEquals(CACHE_KEYS_RANGE, executeSql(snp.context().cache().jcache(indexedCcfg.getName()),
-            selectStartSQLStatement(Account.class.getSimpleName())).size());
+        assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(snp, selectStartSQLStatement(tblName))));
+        assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(snp.context().cache().jcache(indexedCcfg.getName()),
+            selectStartSQLStatement(Account.class.getSimpleName()))));
+
+        // Validate indexes on start.
+        ValidateIndexesClosure clo = new ValidateIndexesClosure(new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
+            0, 0, false, true);
+
+        for (Ignite node : G.allGrids()) {
+            ((IgniteEx)node).context().resource().injectGeneric(clo);
+
+            assertFalse(clo.call().hasIssues());
+        }
     }
 
     /**
@@ -87,7 +107,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
      * @return Select statement.
      */
     private static String selectStartSQLStatement(String name) {
-        return "SELECT * FROM " + name;
+        return "SELECT count(*) FROM " + name;
     }
 
     /**
@@ -118,6 +138,14 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
     }
 
     /**
+     * @param res Statement results.
+     * @return Number of rows.
+     */
+    private static long rowsCount(List<List<?>> res) {
+        return (Long)res.get(0).get(0);
+    }
+
+    /**
      * @param results Result of execute explain plan query.
      */
     private static void assertUsingSecondaryIndex(List<List<?>> results) {
@@ -125,16 +153,6 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
         assertTrue(explainPlan, explainPlan.toUpperCase().contains("_IDX"));
         assertFalse(explainPlan, explainPlan.toUpperCase().contains("_SCAN_"));
-    }
-
-    /**
-     * @param results Result of execute explain plan query.
-     */
-    private static void assertUsingPkIndex(List<List<?>> results) {
-        String explainPlan = (String)results.get(0).get(0);
-
-        assertTrue(explainPlan.toUpperCase().contains("\"_KEY_PK"));
-        assertFalse(explainPlan.toUpperCase().contains("_SCAN_"));
     }
 
     // todo cache configuration can be changed during SchemaAbstractDiscoveryMessage
