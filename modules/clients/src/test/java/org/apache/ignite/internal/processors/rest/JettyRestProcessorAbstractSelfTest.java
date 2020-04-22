@@ -364,32 +364,31 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         Person simple = new Person(100, "John", "Doe", 10000);
 
-        putObject(cacheName, "300", simple);
+        try {
+            putObject(cacheName, "300", simple);
 
-        String ret = content(cacheName, GridRestCommand.CACHE_GET,
-            "keyType", "int",
-            "key", "300"
-        );
+            String ret = content(cacheName, GridRestCommand.CACHE_GET, "keyType", "int", "key", "300");
 
-        info("Get command result: " + ret);
+            info("Get command result: " + ret);
 
-        checkJson(ret, simple);
+            checkJson(ret, simple);
 
-        JsonNode val = queryObject(
-            cacheName,
-            GridRestCommand.EXECUTE_SQL_QUERY,
-            "type", Person.class.getSimpleName(),
-            "pageSize", "1",
-            "qry", "orgId = ?",
-            "arg1", String.valueOf(simple.getOrganizationId())
-        );
+            JsonNode val = queryObject(
+                cacheName,
+                GridRestCommand.EXECUTE_SQL_QUERY,
+                "type", Person.class.getSimpleName(),
+                "pageSize", "1",
+                "qry", "orgId = ?",
+                "arg1", String.valueOf(simple.getOrganizationId())
+            );
 
-        assertEquals(simple.getOrganizationId().intValue(), val.get("orgId").intValue());
-        assertEquals(simple.getSalary(), val.get("salary").doubleValue());
-        assertEquals(simple.getFirstName(), val.get("firstName").textValue());
-        assertEquals(simple.getLastName(), val.get("lastName").textValue());
-
-        initCache();
+            assertEquals(simple.getOrganizationId().intValue(), val.get("orgId").intValue());
+            assertEquals(simple.getSalary(), val.get("salary").doubleValue());
+            assertEquals(simple.getFirstName(), val.get("firstName").textValue());
+            assertEquals(simple.getLastName(), val.get("lastName").textValue());
+        } finally {
+            grid(0).cache(cacheName).remove(300);
+        }
     }
 
     /**
