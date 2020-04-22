@@ -607,15 +607,13 @@ namespace Apache.Ignite.Core.Impl.Client
             
             // TODO: Asynchronously discover all nodes, update _endPoints
             // TODO: Make sure not to connect to the same node twice!
-            var endpoints = GetServerEndpoints(startTopVer, endTopVer);
-            var addedNodes = endpoints.Key;
-            var removedNodes = endpoints.Value;
+            var res = GetServerEndpoints(startTopVer, endTopVer);
             
-            foreach (var addedNode in addedNodes)
+            foreach (var addedNode in res.JoinedNodes)
             {
-                Console.WriteLine(addedNode.Key);
+                Console.WriteLine(addedNode.Id);
 
-                foreach (var endpoint in addedNode.Value)
+                foreach (var endpoint in addedNode.Endpoints)
                 {
                     Console.WriteLine(" - {0}", endpoint);
                 }
@@ -625,8 +623,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets all server endpoints.
         /// </summary>
-        private KeyValuePair<IList<KeyValuePair<Guid, IList<string>>>, IList<Guid>> GetServerEndpoints(
-            long startTopVer, long endTopVer)
+        private ClientDiscoveryResult GetServerEndpoints(long startTopVer, long endTopVer)
         {
             // TODO: Pass only unknown node ids for efficiency.
             // TODO: Group endpoints by node id in results, so we don't connect to the same node twice.
@@ -643,7 +640,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     var topVer = s.ReadLong();
 
                     var addedCnt = s.ReadInt();
-                    var addedNodes = new List<KeyValuePair<Guid, IList<string>>>(addedCnt);
+                    var addedNodes = new List<ClientDiscoveryNode>(addedCnt);
 
                     for (var i = 0; i < addedCnt; i++)
                     {
@@ -656,7 +653,7 @@ namespace Apache.Ignite.Core.Impl.Client
                             endpoints.Add(ctx.Reader.ReadString());
                         }
                         
-                        addedNodes.Add(new KeyValuePair<Guid, IList<string>>(id, endpoints));
+                        addedNodes.Add(new ClientDiscoveryNode(id, endpoints));
                     }
 
                     var removedCnt = s.ReadInt();
@@ -667,8 +664,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         removedNodeIds.Add(BinaryUtils.ReadGuid(s));
                     }
                     
-                    return new KeyValuePair<IList<KeyValuePair<Guid, IList<string>>>, IList<Guid>>(
-                        addedNodes, removedNodeIds);
+                    return new ClientDiscoveryResult(topVer, addedNodes, removedNodeIds);
                 });
         }
 
