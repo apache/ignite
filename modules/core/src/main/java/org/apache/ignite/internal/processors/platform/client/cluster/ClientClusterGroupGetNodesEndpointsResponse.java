@@ -29,39 +29,25 @@ import java.util.Collection;
  * Cluster group get nodes endpoints response.
  */
 public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse {
-    /** Nodes collection. */
-    private final Collection<ClusterNode> nodes;
+    /** Endpoints. */
+    private final String[] endpoints;
 
     /**
      * Constructor.
      *
      * @param reqId Request identifier.
      */
-    public ClientClusterGroupGetNodesEndpointsResponse(long reqId, Collection<ClusterNode> nodes) {
+    public ClientClusterGroupGetNodesEndpointsResponse(long reqId, String[] endpoints) {
         super(reqId);
-        this.nodes = nodes;
+        this.endpoints = endpoints;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        // TODO: Write endpoints: IP+port
-        // TODO: How do we handle IPv6 and IPv4?
-        // String is probably the easiest way for different platforms, but it is dirty.
-        writer.writeInt(nodes.size());
-
-        for (ClusterNode node: nodes){
-            writer.writeUuid(node.id());
-            PlatformUtils.writeNodeAttributes(writer, node.attributes());
-            writer.writeCollection(node.addresses());
-            writer.writeCollection(node.hostNames());
-            writer.writeLong(node.order());
-            writer.writeBoolean(node.isLocal());
-            writer.writeBoolean(node.isDaemon());
-            writer.writeBoolean(node.isClient());
-            writer.writeObjectDetached(node.consistentId());
-            PlatformUtils.writeNodeVersion(writer, node.version());
-        }
+        // TODO: String is probably the easiest way for different platforms, but it is dirty.
+        // Should we write IPs as bytes?
+        writer.writeStringArray(endpoints);
     }
 }

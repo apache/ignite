@@ -24,8 +24,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import java.util.Arrays;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Cluster group get nodes endpoints request.
@@ -50,13 +50,17 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        // TODO: New compute func to get all endpoints
-        // TODO: Cache results somehow? Because endpoints do not change for a node. Or do they? In case of restarts?
-
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
         ClusterGroup clusterGrp = cluster.forNodeIds(Arrays.asList(nodeIds));
-        //ctx.kernalContext().grid().compute(clusterGrp).broadcast()
 
-        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), clusterGrp.nodes());
+        String[] endpoints = ctx.kernalContext()
+                .grid()
+                .compute(clusterGrp)
+                .broadcast(new ClientClusterGroupGetNodeEndpointsJob())
+                .stream()
+                .flatMap(Collection::stream)
+                .toArray(String[]::new);
+
+        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), endpoints);
     }
 }
