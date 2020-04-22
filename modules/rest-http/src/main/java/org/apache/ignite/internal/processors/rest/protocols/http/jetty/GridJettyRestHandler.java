@@ -47,10 +47,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -1141,7 +1141,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                                 .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
                                 .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
 
-                            return jsonMapper.reader(prop).forType(BinaryObjectImpl.class).readValue(str);
+                            return jsonMapper.reader(prop).forType(BinaryObject.class).readValue(str);
                         } catch (IOException e) {
                             log.warning("Unable to parse JSON, object will be stored as a text " +
                                 "[type=" + type + ", value=\"" + str + "\", reason=\"" + e.getMessage() + "\"]");

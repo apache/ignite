@@ -26,10 +26,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 /**
  * JSON deserializer into the Ignite binary object.
  */
-public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryObjectImpl> {
+public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryObject> {
     /** Property name to set binary type name. */
     public static final String BINARY_TYPE_PROPERTY = "binaryTypeName";
 
@@ -58,7 +58,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectImpl deserialize(JsonParser parser, DeserializationContext dCtx) throws IOException {
+    @Override public BinaryObject deserialize(JsonParser parser, DeserializationContext dCtx) throws IOException {
         String type = (String)dCtx.findInjectableValue(BINARY_TYPE_PROPERTY, null, null);
         String cacheName = (String)dCtx.findInjectableValue(CACHE_NAME_PROPERTY, null, null);
 
@@ -89,7 +89,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             builder.setField(field, mapper.treeToValue(node, fieldCls));
         }
 
-        return (BinaryObjectImpl)builder.build();
+        return builder.build();
     }
 
     /**

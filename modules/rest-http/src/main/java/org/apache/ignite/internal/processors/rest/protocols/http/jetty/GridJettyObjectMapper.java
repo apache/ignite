@@ -89,7 +89,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
         module.addDeserializer(Date.class, IGNITE_SQLDATE_DESERIALIZER);
 
         if (ctx != null)
-            module.addDeserializer(BinaryObjectImpl.class, new IgniteBinaryObjectJsonDeserializer(ctx));
+            module.addDeserializer(BinaryObject.class, new IgniteBinaryObjectJsonDeserializer(ctx));
 
         configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
