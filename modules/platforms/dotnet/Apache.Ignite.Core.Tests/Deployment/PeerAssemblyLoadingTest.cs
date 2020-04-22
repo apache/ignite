@@ -189,31 +189,41 @@ namespace Apache.Ignite.Core.Tests.Deployment
 
             // Start separate Ignite process without loading current dll.
             // ReSharper disable once AssignNullToNotNullAttribute
-            var config = Path.Combine(Path.GetDirectoryName(typeof(PeerAssemblyLoadingTest).Assembly.Location),
-                "Deployment\\peer_assembly_app.config");
+            var config = Path.Combine(
+                Path.GetDirectoryName(typeof(PeerAssemblyLoadingTest).Assembly.Location),
+                "Deployment",
+                "peer_assembly_app.config");
 
             var proc = IgniteProcess.Start(exePath, IgniteHome.Resolve(), null,
                 "-ConfigFileName=" + config, "-ConfigSectionName=igniteConfiguration");
 
-            Thread.Sleep(300);
-            Assert.IsFalse(proc.HasExited);
-
-            // Start Ignite and execute computation on remote node.
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            try
             {
-                PeerAssemblyLoadingMode = enablePeerDeployment
-                    ? PeerAssemblyLoadingMode.CurrentAppDomain
-                    : PeerAssemblyLoadingMode.Disabled
-            };
+                Thread.Sleep(300);
+                Assert.IsFalse(proc.HasExited);
 
-            using (var ignite = Ignition.Start(cfg))
-            {
-                Assert.IsTrue(ignite.WaitTopology(2));
-
-                for (var i = 0; i < 10; i++)
+                // Start Ignite and execute computation on remote node.
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    test(ignite);
+                    PeerAssemblyLoadingMode = enablePeerDeployment
+                        ? PeerAssemblyLoadingMode.CurrentAppDomain
+                        : PeerAssemblyLoadingMode.Disabled
+                };
+
+                using (var ignite = Ignition.Start(cfg))
+                {
+                    Assert.IsTrue(ignite.WaitTopology(2));
+
+                    for (var i = 0; i < 10; i++)
+                    {
+                        test(ignite);
+                    }
                 }
+            }
+            finally
+            {
+                proc.Kill();
+                proc.WaitForExit();
             }
         }
 
