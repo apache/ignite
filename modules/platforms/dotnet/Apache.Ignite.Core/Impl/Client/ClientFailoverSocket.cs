@@ -388,6 +388,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 ((AffinityTopologyVersion)oldVer).Version > affinityTopologyVersion.Version)
             {
                 // TODO: Update endpoint info, connect to more nodes if necessary.
+                // TODO: Request info based on two topology versions: get the diff to minimize the load.
             }
         }
 
