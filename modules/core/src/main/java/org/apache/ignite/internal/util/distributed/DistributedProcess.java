@@ -31,6 +31,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -257,11 +258,20 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
             (Exception)p.resFut.error());
 
-        if (F.eq(ctx.localNodeId(), p.crdId))
-            onSingleNodeMessageReceived(singleMsg, p.crdId);
+        UUID crdId = p.crdId;
+
+        if (F.eq(ctx.localNodeId(), crdId))
+            onSingleNodeMessageReceived(singleMsg, crdId);
         else {
             try {
-                ctx.io().sendToGridTopic(p.crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+                ctx.io().sendToGridTopic(crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
+            }
+            catch (ClusterTopologyCheckedException e) {
+                // The coordinator was failed. The single message will be sent when a new coordinator initilized.
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
+                        ", processId=" + p.id +", error=" + e.getMessage() + ']');
+                }
             }
             catch (IgniteCheckedException e) {
                 log.error("Unable to send message to coordinator.", e);
@@ -367,6 +377,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
     /** Defines distributed processes. */
     public enum DistributedProcessType {
+        /** For test purpose only. */
+        TEST_PROCESS,
+
         /**
          * Master key change prepare process.
          *
