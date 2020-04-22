@@ -77,7 +77,7 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             Map.Entry<String, JsonNode> entry = itr.next();
 
             String field = entry.getKey();
-            JsonNode node = tree.get(field);
+            JsonNode node = entry.getValue();
 
             BinaryFieldMetadata meta = binFields.get(field);
 
