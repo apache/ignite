@@ -24,8 +24,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Cluster group get nodes endpoints request.
@@ -51,7 +52,8 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
-        ClusterGroup clusterGrp = cluster.forNodeIds(Arrays.asList(nodeIds));
+
+        ClusterGroup clusterGrp = nodeIds.length > 0 ? cluster.forNodeIds(Arrays.asList(nodeIds)) : cluster;
 
         String[] endpoints = ctx.kernalContext()
                 .grid()

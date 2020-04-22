@@ -62,6 +62,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Node info cache. */
         private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
             new ConcurrentDictionary<Guid, IClientClusterNode>();
+        
+        /** Cluster. */
+        private readonly ClientCluster _cluster;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
@@ -83,6 +86,8 @@ namespace Apache.Ignite.Core.Impl.Client
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
             _binary = new Binary(_marsh);
+            
+            _cluster = new ClientCluster(this, _marsh);
         }
 
         /// <summary>
@@ -160,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IClientCluster GetCluster()
         {
-            return new ClientCluster(this, _marsh);
+            return _cluster;
         }
 
         /** <inheritDoc /> */
