@@ -33,7 +33,6 @@ matrix:
       jdk: openjdk11
       before_script:
         - echo $JVM_EXTRA_ARGS
-        - echo $JDK_PROFILES
         - |
           export JVM_EXTRA_ARGS='--illegal-access=permit
           --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
@@ -52,3 +51,4 @@ matrix:
       dotnet: 3.1.101
       script:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
+        - 
