@@ -1829,12 +1829,12 @@ public abstract class IgniteUtils {
      * Gets 8-character substring of {@link org.apache.ignite.lang.IgniteUuid} (for terse logging).
      * The ID8 will be constructed as follows:
      * <ul>
-     * <li>Take first 4 digits for global ID, i.e. {@code GridUuid.globalId()}.</li>
-     * <li>Take last 4 digits for local ID, i.e. {@code GridUuid.localId()}.</li>
+     * <li>Take first 4 digits for global ID, i.e. {@link IgniteUuid#globalId()}.</li>
+     * <li>Take last 4 digits for local ID, i.e. {@link IgniteUuid#localId()}.</li>
      * </ul>
      *
      * @param id Input ID.
-     * @return 8-character representation of {@code GridUuid}.
+     * @return 8-character representation of {@link IgniteUuid}.
      */
     public static String id8(IgniteUuid id) {
         String s = id.toString();
@@ -5097,35 +5097,35 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Writes Grid UUIDs to output stream. This method is meant to be used by
+     * Writes Ignite UUIDs to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param out Output stream.
-     * @param col Grid UUIDs to write.
+     * @param col Ignite UUIDs to write.
      * @throws IOException If write failed.
      */
-    public static void writeGridUuids(DataOutput out, @Nullable Collection<IgniteUuid> col) throws IOException {
+    public static void writeIgniteUuids(DataOutput out, @Nullable Collection<IgniteUuid> col) throws IOException {
         if (col != null) {
             out.writeBoolean(true);
 
             out.writeInt(col.size());
 
             for (IgniteUuid id : col)
-                writeGridUuid(out, id);
+                writeIgniteUuid(out, id);
         }
         else
             out.writeBoolean(false);
     }
 
     /**
-     * Reads Grid UUIDs from input stream. This method is meant to be used by
+     * Reads Ignite UUIDs from input stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
      * @param in Input stream.
-     * @return Read Grid UUIDs.
+     * @return Read Ignite UUIDs.
      * @throws IOException If read failed.
      */
-    @Nullable public static List<IgniteUuid> readGridUuids(DataInput in) throws IOException {
+    @Nullable public static List<IgniteUuid> readIgniteUuids(DataInput in) throws IOException {
         List<IgniteUuid> col = null;
 
         // Check null flag.
@@ -5135,7 +5135,7 @@ public abstract class IgniteUtils {
             col = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
-                col.add(readGridUuid(in));
+                col.add(readIgniteUuid(in));
         }
 
         return col;
@@ -5225,7 +5225,7 @@ public abstract class IgniteUtils {
      * @param uid UUID to write.
      * @throws IOException If write failed.
      */
-    public static void writeGridUuid(DataOutput out, IgniteUuid uid) throws IOException {
+    public static void writeIgniteUuid(DataOutput out, IgniteUuid uid) throws IOException {
         // Write null flag.
         out.writeBoolean(uid == null);
 
@@ -5245,7 +5245,7 @@ public abstract class IgniteUtils {
      * @return Read UUID.
      * @throws IOException If read failed.
      */
-    @Nullable public static IgniteUuid readGridUuid(DataInput in) throws IOException {
+    @Nullable public static IgniteUuid readIgniteUuid(DataInput in) throws IOException {
         // If UUID is not null.
         if (!in.readBoolean()) {
             long most = in.readLong();
@@ -5262,9 +5262,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts GridUuid to bytes.
+     * Converts {@link IgniteUuid} to bytes.
      *
-     * @param uuid GridUuid to convert.
+     * @param uuid {@link IgniteUuid} to convert.
      * @return Bytes.
      */
     public static byte[] igniteUuidToBytes(IgniteUuid uuid) {
@@ -5278,9 +5278,9 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts GridUuid to bytes.
+     * Converts {@link IgniteUuid} to bytes.
      *
-     * @param uuid GridUuid to convert.
+     * @param uuid {@link IgniteUuid} to convert.
      * @param out Output array to write to.
      * @param off Offset from which to write.
      */
@@ -5293,11 +5293,11 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Converts bytes to GridUuid.
+     * Converts bytes to {@link IgniteUuid}.
      *
      * @param in Input byte array.
      * @param off Offset from which start reading.
-     * @return GridUuid instance.
+     * @return {@link IgniteUuid} instance.
      */
     public static IgniteUuid bytesToIgniteUuid(byte[] in, int off) {
         long most = bytesToLong(in, off);
