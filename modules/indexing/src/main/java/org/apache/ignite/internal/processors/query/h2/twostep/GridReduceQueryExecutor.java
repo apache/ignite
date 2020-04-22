@@ -563,9 +563,8 @@ public class GridReduceQueryExecutor {
                             .parameterIndexes(mapQry.parameterIndexes()));
                 }
 
-                final long qryReqId0 = qryReqId;
-
-                cancel.set(() -> send(finalNodes, new GridQueryCancelRequest(qryReqId0), null, true));
+                Collection<ClusterNode> fNodes = nodes;
+                cancel.add(() -> send(fNodes, new GridQueryCancelRequest(qryReqId), null, true));
 
                 boolean retry = false;
 
@@ -838,7 +837,7 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> finalNodes = nodes;
 
-            cancel.set(() -> {
+            cancel.add(() -> {
                 r.future().onCancelled();
 
                 send(finalNodes, new GridQueryCancelRequest(reqId), null, true);
