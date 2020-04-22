@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -31,13 +35,24 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Col
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** <inheritdoc /> */
     @Override public Collection<String> call() throws Exception {
-        // TODO: Include current client bound port
+        int port = ((IgniteEx)ignite).context().sqlListener().port();
 
-        IgniteBiTuple<Collection<String>, Collection<String>> locAddrs =
+        // TODO: Exclude loopbacks?
+        IgniteBiTuple<Collection<String>, Collection<String>> locAddrsAndHosts =
                 IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"), true);
 
-        return locAddrs.get1();
+        Collection<String> addrs = locAddrsAndHosts.get1();
+        Collection<String> res = new ArrayList<>(addrs.size());
+
+        for (String addr : addrs)
+            res.add(addr + ":" + port);
+
+        return addrs;
     }
 }
