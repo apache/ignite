@@ -20,36 +20,67 @@ package org.apache.ignite.internal.processors.platform.client.cluster;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Cluster group get nodes endpoints response.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse {
-    /** Endpoints. */
-    private final String[] endpoints;
+    /** */
+    private final Collection<IgniteBiTuple<UUID, Collection<String>>> addedNodes;
+
+    /** */
+    private final Collection<UUID> removedNodeIds;
 
     /**
      * Constructor.
      *
      * @param reqId Request identifier.
+     * @param topVer Topology version.
+     * @param addedNodes Added nodes.
+     * @param removedNodeIds Removed node ids.
      */
-    public ClientClusterGroupGetNodesEndpointsResponse(long reqId, String[] endpoints) {
+    public ClientClusterGroupGetNodesEndpointsResponse(long reqId,
+                                                       long topVer,
+                                                       Collection<IgniteBiTuple<UUID, Collection<String>>> addedNodes,
+                                                       Collection<UUID> removedNodeIds) {
         super(reqId);
-        this.endpoints = endpoints;
+
+        assert addedNodes != null;
+        assert removedNodeIds != null;
+
+        this.addedNodes = addedNodes;
+        this.removedNodeIds = removedNodeIds;
     }
 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
 
-        // TODO: String is probably the easiest way for different platforms, but it is dirty.
-        // Should we write IPs as bytes?
-        writer.writeInt(endpoints.length);
+        writer.writeInt(addedNodes.size());
 
-        for (String endpoint : endpoints) {
-            assert endpoint != null;
-            writer.writeString(endpoint);
+        for (IgniteBiTuple<UUID, Collection<String>> node : addedNodes) {
+            UUID id = node.get1();
+            writer.writeLong(id.getMostSignificantBits());
+            writer.writeLong(id.getLeastSignificantBits());
+
+            Collection<String> endpoints = node.get2();
+            writer.writeInt(endpoints.size());
+
+            for (String e : endpoints) {
+                writer.writeString(e);
+            }
+        }
+
+        writer.writeInt(removedNodeIds.size());
+
+        for (UUID id : removedNodeIds) {
+            writer.writeLong(id.getMostSignificantBits());
+            writer.writeLong(id.getLeastSignificantBits());
         }
     }
 }

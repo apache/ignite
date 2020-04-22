@@ -19,21 +19,27 @@ package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Cluster group get nodes endpoints request.
  */
 public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
-    /** Node ids. */
-    private final UUID[] nodeIds;
+    /** Indicates unknown topology version. */
+    private static final long UNKNOWN_TOP_VER = -1;
+
+    /** Start topology version. -1 for earliest. */
+    private final long startTopVer;
+
+    /** End topology version. -1 for latest. */
+    private final long endTopVer;
 
     /**
      * Constructor.
@@ -42,28 +48,58 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
      */
     public ClientClusterGroupGetNodesEndpointsRequest(BinaryRawReader reader) {
         super(reader);
-        int cnt = reader.readInt();
-        nodeIds = new UUID[cnt];
-        for (int i = 0; i < cnt; i++) {
-            nodeIds[i] = new UUID(reader.readLong(), reader.readLong());
-        }
+        startTopVer = reader.readLong();
+        endTopVer = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
 
-        ClusterGroup clusterGrp = nodeIds.length > 0 ? cluster.forNodeIds(Arrays.asList(nodeIds)) : cluster;
+        Set<UUID> startNodes = toSet(startTopVer == UNKNOWN_TOP_VER
+                ? Collections.emptyList()
+                : cluster.topology(startTopVer));
 
-        // TODO: Cache results in ctx by node id. This is going to be a frequent request.
-        String[] endpoints = ctx.kernalContext()
-                .grid()
-                .compute(clusterGrp)
-                .broadcast(new ClientClusterGroupGetNodeEndpointsJob())
-                .stream()
-                .flatMap(Collection::stream)
-                .toArray(String[]::new);
+        long endTopVer0 = endTopVer == UNKNOWN_TOP_VER ? cluster.topologyVersion() : endTopVer;
 
-        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), endpoints);
+        Set<UUID> endNodes = toSet(cluster.topology(endTopVer0));
+
+        Collection<UUID> removedNodeIds = new ArrayList<>();
+
+        Collection<IgniteBiTuple<UUID, Collection<String>>> addedNodes = new ArrayList<>();
+
+        for (UUID startNode : startNodes) {
+            if (!endNodes.contains(startNode)) {
+                removedNodeIds.add(startNode);
+            }
+        }
+
+        for (UUID endNode : endNodes) {
+            if (!startNodes.contains(endNode)) {
+                ClusterGroup grp = cluster.forNodeId(endNode);
+
+                Collection<String> endpoints = ctx.kernalContext().grid().compute(grp)
+                        .call(new ClientClusterGroupGetNodeEndpointsJob());
+
+                addedNodes.add(new IgniteBiTuple<>(endNode, endpoints));
+            }
+        }
+
+        return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), endTopVer0, addedNodes, removedNodeIds);
+    }
+
+    /**
+     * Converts collection to a set of node ids.
+     *
+     * @param nodes Nodes.
+     * @return Set of node ids.
+     */
+    private Set<UUID> toSet(Collection<ClusterNode> nodes) {
+        Set<UUID> res = new HashSet<>(nodes.size());
+
+        for (ClusterNode node : nodes)
+            res.add(node.id());
+
+        return res;
     }
 }
