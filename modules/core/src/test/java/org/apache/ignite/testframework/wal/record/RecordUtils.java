@@ -571,4 +571,14 @@ public class RecordUtils {
     public static UnsupportedWalRecord buildBtreeMetaPageInitRootV3() {
         return new UnsupportedWalRecord(BTREE_META_PAGE_INIT_ROOT_V3);
     }
+
+    /**
+     * Return {@code true} if include to write-ahead log.
+     *
+     * @param walRecord Instance of {@link WALRecord}.
+     * @return {@code True} if include to write-ahead log.
+     */
+    public static boolean isIncludeIntoLog(WALRecord walRecord) {
+        return !UnsupportedWalRecord.class.isInstance(walRecord) && !SwitchSegmentRecord.class.isInstance(walRecord);
+    }
 }
