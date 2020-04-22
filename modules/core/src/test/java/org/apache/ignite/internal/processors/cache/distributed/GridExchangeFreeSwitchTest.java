@@ -753,7 +753,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
                 }
             }, 1);
 
-
             AtomicReference<GridCacheVersion> replTxVer = new AtomicReference<>();
 
             IgniteInternalFuture<?> replFut = multithreadedAsync(() -> {
@@ -839,7 +838,6 @@ public class GridExchangeFreeSwitchTest extends GridCommonAbstractTest {
 
                     return true;
                 }, 5000));
-
 
             checkTransactionsCount(
                 orig != primary ? orig : null /*stopped*/, 2 /* replicated + partitioned */,
