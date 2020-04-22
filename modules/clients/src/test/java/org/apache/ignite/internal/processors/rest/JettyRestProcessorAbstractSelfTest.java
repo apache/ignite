@@ -405,7 +405,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         fields.put("id", Long.class.getName());
         fields.put("name", String.class.getName());
-        fields.put("doubleVal", Double.class.getName());
         fields.put("timestamp", Timestamp.class.getName());
         fields.put("bytes", long[].class.getName());
         fields.put("igniteUuid", IgniteUuid.class.getName());

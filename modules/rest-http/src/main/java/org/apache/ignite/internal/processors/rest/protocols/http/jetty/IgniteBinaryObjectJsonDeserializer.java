@@ -23,10 +23,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.GridKernalContext;
@@ -36,7 +34,6 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * JSON deserializer into the Ignite binary object.
@@ -85,57 +82,17 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
             String field = entry.getKey();
             JsonNode node = tree.get(field);
 
-            Class<?> fieldCls = qryFields.get(QueryUtils.normalizeObjectName(field, true));
+            BinaryFieldMetadata meta = binFields.get(field);
 
-            if (fieldCls == null) {
-                BinaryFieldMetadata meta = binFields.get(field);
+            Class<?> fieldCls = meta != null ? BinaryUtils.FLAG_TO_CLASS.get((byte)meta.typeId()) : null;
 
-                fieldCls = meta != null ? BinaryUtils.FLAG_TO_CLASS.get((byte)meta.typeId()) : null;
-            }
+            if (fieldCls == null)
+                fieldCls = qryFields.getOrDefault(QueryUtils.normalizeObjectName(field, true), Object.class);
 
-            builder.setField(field, fieldCls != null ? mapper.treeToValue(node, fieldCls) : readField(node, mapper));
+            builder.setField(field, mapper.treeToValue(node, fieldCls));
         }
 
         return (BinaryObjectImpl)builder.build();
-    }
-
-    /**
-     * Read JSON field value into required format.
-     *
-     * @param node JSON node.
-     * @param mapper JSON object mapper.
-     * @return value.
-     * @throws IOException In case of error.
-     */
-    @Nullable private Object readField(JsonNode node, ObjectCodec mapper) throws IOException {
-        switch (node.getNodeType()) {
-            case BINARY:
-                return node.binaryValue();
-
-            case BOOLEAN:
-                return node.booleanValue();
-
-            case ARRAY:
-                List<Object> list = new ArrayList<>(node.size());
-                Iterator<JsonNode> itr = node.elements();
-
-                while (itr.hasNext())
-                    list.add(readField(itr.next(), mapper));
-
-                return list;
-
-            case NUMBER:
-                return node.numberValue();
-
-            case OBJECT:
-                return mapper.treeToValue(node, Map.class);
-
-            case STRING:
-                return node.asText();
-
-            default:
-                return null;
-        }
     }
 
     /**
