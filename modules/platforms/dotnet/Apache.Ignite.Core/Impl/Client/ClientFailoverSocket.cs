@@ -106,16 +106,6 @@ namespace Apache.Ignite.Core.Impl.Client
             _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
             
             Connect();
-
-            if (_config.EnableDiscovery)
-            {
-                // TODO: Asynchronously discover all nodes, update _endPoints
-                var endpoints = GetServerEndpoints();
-                foreach (var endpoint in endpoints)
-                {
-                    Console.WriteLine(endpoint);
-                }
-            }
         }
 
         /// <summary>
@@ -356,17 +346,34 @@ namespace Apache.Ignite.Core.Impl.Client
                                              "examine inner exceptions for details.", errors);
             }
 
-            if (_socket != null &&
-                _config.EnablePartitionAwareness &&
-                _socket.ServerVersion < ClientOp.CachePartitions.GetMinVersion())
+            if (_socket != null)
             {
-                _config.EnablePartitionAwareness = false;
+                if (_config.EnablePartitionAwareness &&
+                    _socket.ServerVersion < ClientOp.CachePartitions.GetMinVersion())
+                {
+                    _config.EnablePartitionAwareness = false;
 
-                _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
-                             "is lower than required {1}",
-                    _socket.ServerVersion,
-                    ClientOp.CachePartitions.GetMinVersion()
-                );
+                    _logger.Warn("Partition awareness has been disabled: server protocol version {0} " +
+                                 "is lower than required {1}",
+                        _socket.ServerVersion,
+                        ClientOp.CachePartitions.GetMinVersion()
+                    );
+                }
+
+                // TODO: Use feature flags.
+                if (_config.EnableDiscovery &&
+                    _socket.ServerVersion < ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion())
+                {
+                    _config.EnableDiscovery = false;
+                    
+                    _logger.Warn("Automatic server node discovery has been disabled: server protocol version {0} " +
+                                 "is lower than required {1}",
+                        _socket.ServerVersion,
+                        ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion()
+                    );
+                }
+                
+                DiscoverEndpoints();
             }
         }
 
@@ -384,11 +391,12 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Re-discover nodes when major topology version has changed.
-            if (_config.EnableDiscovery && oldVer != null && 
-                ((AffinityTopologyVersion)oldVer).Version > affinityTopologyVersion.Version)
+            if (_config.EnableDiscovery && 
+                (oldVer == null || ((AffinityTopologyVersion)oldVer).Version < affinityTopologyVersion.Version))
             {
                 // TODO: Update endpoint info, connect to more nodes if necessary.
                 // TODO: Request info based on two topology versions: get the diff to minimize the load.
+                DiscoverEndpoints();
             }
         }
 
@@ -585,6 +593,24 @@ namespace Apache.Ignite.Core.Impl.Client
             _nodeSocketMap = map;
         }
         
+        /// <summary>
+        /// Updates endpoint info.
+        /// </summary>
+        private void DiscoverEndpoints()
+        {
+            if (!_config.EnableDiscovery)
+            {
+                return;
+            }
+            
+            // TODO: Asynchronously discover all nodes, update _endPoints
+            var endpoints = GetServerEndpoints();
+            foreach (var endpoint in endpoints)
+            {
+                Console.WriteLine(endpoint);
+            }
+        }
+
         /// <summary>
         /// Gets all server endpoints.
         /// </summary>
