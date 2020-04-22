@@ -39,8 +39,8 @@ namespace Apache.Ignite.Core.Impl.Client
     /// </summary>
     internal class ClientFailoverSocket : IDisposable
     {
-        /** Unknown top ver. */
-        private const long UnknownTopVer = -1;
+        /** Unknown topology version. */
+        private const long UnknownTopologyVersion = -1;
         
         /** Underlying socket. */
         private ClientSocket _socket;
@@ -376,7 +376,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     );
                 }
                 
-                DiscoverEndpoints();
+                DiscoverEndpoints(UnknownTopologyVersion, UnknownTopologyVersion);
             }
         }
 
@@ -385,7 +385,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
-            var oldVer = _affinityTopologyVersion;
+            var oldTopologyVersion = GetTopologyVersion();
             _affinityTopologyVersion = affinityTopologyVersion;
 
             if (_config.EnablePartitionAwareness)
@@ -394,12 +394,11 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             // Re-discover nodes when major topology version has changed.
-            if (_config.EnableDiscovery && 
-                (oldVer == null || ((AffinityTopologyVersion)oldVer).Version < affinityTopologyVersion.Version))
+            var newTopologyVersion = affinityTopologyVersion.Version;
+            
+            if (_config.EnableDiscovery && oldTopologyVersion < newTopologyVersion)
             {
-                // TODO: Update endpoint info, connect to more nodes if necessary.
-                // TODO: Request info based on two topology versions: get the diff to minimize the load.
-                DiscoverEndpoints();
+                DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
             }
         }
 
@@ -637,16 +636,50 @@ namespace Apache.Ignite.Core.Impl.Client
                     ctx.Writer.WriteLong(startTopVer);
                     ctx.Writer.WriteLong(endTopVer);
                 },
-                readFunc: ctx =>
+                ctx =>
                 {
-                    var r = ctx.Reader;
+                    var s = ctx.Stream;
 
-                    var addedCount = r.ReadInt();
-                    var addedNodes = new List<KeyValuePair<Guid, IList<string>>>();
-                    var removedNodeIds = new List<Guid>();
+                    var topVer = s.ReadLong();
+
+                    var addedCnt = s.ReadInt();
+                    var addedNodes = new List<KeyValuePair<Guid, IList<string>>>(addedCnt);
+
+                    for (var i = 0; i < addedCnt; i++)
+                    {
+                        var id = BinaryUtils.ReadGuid(s);
+                        var cnt = s.ReadInt();
+                        var endpoints = new List<string>(cnt);
+                        
+                        for (var j = 0; j < cnt; j++)
+                        {
+                            endpoints.Add(ctx.Reader.ReadString());
+                        }
+                        
+                        addedNodes.Add(new KeyValuePair<Guid, IList<string>>(id, endpoints));
+                    }
+
+                    var removedCnt = s.ReadInt();
+                    var removedNodeIds = new List<Guid>(removedCnt);
+
+                    for (int i = 0; i < removedCnt; i++)
+                    {
+                        removedNodeIds.Add(BinaryUtils.ReadGuid(s));
+                    }
                     
-                    return new KeyValuePair<IList<KeyValuePair<Guid, IList<string>>>, IList<Guid>>();
+                    return new KeyValuePair<IList<KeyValuePair<Guid, IList<string>>>, IList<Guid>>(
+                        addedNodes, removedNodeIds);
                 });
+        }
+
+        /// <summary>
+        /// Gets current topology version.
+        /// </summary>
+        private long GetTopologyVersion()
+        {
+            var ver = _affinityTopologyVersion;
+            
+            return ver == null ? UnknownTopologyVersion : ((AffinityTopologyVersion) ver).Version;
         }
     }
 }
