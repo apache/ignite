@@ -201,6 +201,22 @@ namespace Apache.Ignite.Core.Impl.Client
                 return socket != null ? socket.LocalEndPoint : null;
             }
         }
+        
+        /// <summary>
+        /// Gets active connections.
+        /// </summary>
+        public IEnumerable<IClientConnection> GetConnections()
+        {
+            foreach (var socketEndpoint in _endPoints)
+            {
+                var socket = socketEndpoint.Socket;
+                
+                if (socket != null && !socket.IsDisposed)
+                {
+                    yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint);
+                }
+            }
+        }
 
         /// <summary>
         /// Checks the disposed state.

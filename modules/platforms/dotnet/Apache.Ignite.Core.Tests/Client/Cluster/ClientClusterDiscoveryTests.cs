@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using System.Linq;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -48,6 +49,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             using (var client = Ignition.StartClient(cfg))
             {
                 Assert.IsTrue(client.GetConfiguration().EnableDiscovery);
+                
+                Assert.AreEqual(3, client.GetConnections().Count());
             }
         }
     }

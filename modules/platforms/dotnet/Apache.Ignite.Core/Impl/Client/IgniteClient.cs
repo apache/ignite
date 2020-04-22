@@ -226,6 +226,12 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public IEnumerable<IClientConnection> GetConnections()
+        {
+            return _socket.GetConnections();
+        }
+
+        /** <inheritDoc /> */
         public IBinaryProcessor BinaryProcessor
         {
             get { return _binProc; }
