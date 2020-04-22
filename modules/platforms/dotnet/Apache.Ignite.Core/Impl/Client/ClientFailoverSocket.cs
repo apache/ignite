@@ -605,8 +605,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 return;
             }
             
-            // TODO: Asynchronously discover all nodes, update _endPoints
-            // TODO: Make sure not to connect to the same node twice!
+            // TODO: perform async request!
             var res = GetServerEndpoints(startTopVer, endTopVer);
             var endPoints = _endPoints.ToList();
             
