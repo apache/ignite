@@ -88,6 +88,12 @@ namespace Apache.Ignite.Core.Impl.Client
             _binary = new Binary(_marsh);
             
             _cluster = new ClientCluster(this, _marsh);
+
+            var endpoints = _cluster.GetServerEndpoints();
+            foreach (var endpoint in endpoints)
+            {
+                Console.WriteLine(endpoint);
+            }
         }
 
         /// <summary>

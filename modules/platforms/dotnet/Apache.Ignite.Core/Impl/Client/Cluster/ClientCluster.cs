@@ -93,8 +93,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         {
             // TODO: Optionally pass node ids.
             return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints, 
-                ctx => ctx.Writer.WriteGuidArray(new Guid?[0]),
-                ctx => ctx.Reader.ReadStringArray());
+                ctx => ctx.Writer.WriteInt(0),
+                ctx => ctx.Reader.ReadStringCollection());
         }
     }
 }

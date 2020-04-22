@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-
-import java.util.Collection;
 
 /**
  * Cluster group get nodes endpoints response.
@@ -48,6 +44,11 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
 
         // TODO: String is probably the easiest way for different platforms, but it is dirty.
         // Should we write IPs as bytes?
-        writer.writeStringArray(endpoints);
+        writer.writeInt(endpoints.length);
+
+        for (String endpoint : endpoints) {
+            assert endpoint != null;
+            writer.writeString(endpoint);
+        }
     }
 }
