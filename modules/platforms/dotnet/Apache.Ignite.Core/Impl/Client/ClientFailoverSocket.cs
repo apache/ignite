@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Client
     /// </summary>
     internal class ClientFailoverSocket : IDisposable
     {
+        /** Unknown top ver. */
+        private const long UnknownTopVer = -1;
+        
         /** Underlying socket. */
         private ClientSocket _socket;
 
@@ -596,7 +599,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Updates endpoint info.
         /// </summary>
-        private void DiscoverEndpoints()
+        private void DiscoverEndpoints(long startTopVer, long endTopVer)
         {
             if (!_config.EnableDiscovery)
             {
@@ -605,23 +608,45 @@ namespace Apache.Ignite.Core.Impl.Client
             
             // TODO: Asynchronously discover all nodes, update _endPoints
             // TODO: Make sure not to connect to the same node twice!
-            var endpoints = GetServerEndpoints();
-            foreach (var endpoint in endpoints)
+            var endpoints = GetServerEndpoints(startTopVer, endTopVer);
+            var addedNodes = endpoints.Key;
+            var removedNodes = endpoints.Value;
+            
+            foreach (var addedNode in addedNodes)
             {
-                Console.WriteLine(endpoint);
+                Console.WriteLine(addedNode.Key);
+
+                foreach (var endpoint in addedNode.Value)
+                {
+                    Console.WriteLine(" - {0}", endpoint);
+                }
             }
         }
 
         /// <summary>
         /// Gets all server endpoints.
         /// </summary>
-        private IList<string> GetServerEndpoints()
+        private KeyValuePair<IList<KeyValuePair<Guid, IList<string>>>, IList<Guid>> GetServerEndpoints(
+            long startTopVer, long endTopVer)
         {
             // TODO: Pass only unknown node ids for efficiency.
             // TODO: Group endpoints by node id in results, so we don't connect to the same node twice.
-            return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints, 
-                ctx => ctx.Writer.WriteInt(0),
-                ctx => ctx.Reader.ReadStringCollection());
+            return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints,
+                ctx =>
+                {
+                    ctx.Writer.WriteLong(startTopVer);
+                    ctx.Writer.WriteLong(endTopVer);
+                },
+                readFunc: ctx =>
+                {
+                    var r = ctx.Reader;
+
+                    var addedCount = r.ReadInt();
+                    var addedNodes = new List<KeyValuePair<Guid, IList<string>>>();
+                    var removedNodeIds = new List<Guid>();
+                    
+                    return new KeyValuePair<IList<KeyValuePair<Guid, IList<string>>>, IList<Guid>>();
+                });
         }
     }
 }

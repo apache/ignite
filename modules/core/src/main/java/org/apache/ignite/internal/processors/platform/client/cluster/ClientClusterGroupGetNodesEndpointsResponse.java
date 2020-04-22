@@ -36,6 +36,9 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     /** */
     private final Collection<UUID> removedNodeIds;
 
+    /** */
+    private final long topVer;
+
     /**
      * Constructor.
      *
@@ -53,6 +56,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
         assert addedNodes != null;
         assert removedNodeIds != null;
 
+        this.topVer = topVer;
         this.addedNodes = addedNodes;
         this.removedNodeIds = removedNodeIds;
     }
@@ -60,6 +64,8 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     /** {@inheritDoc} */
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         super.encode(ctx, writer);
+
+        writer.writeLong(topVer);
 
         writer.writeInt(addedNodes.size());
 
