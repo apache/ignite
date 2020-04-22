@@ -148,7 +148,8 @@ public class GridDhtPartitionsStateValidator {
     }
 
     /**
-     * Returns set of partitions that did not pass validation for the given cache group.
+     * Returns set of partitions that did not pass validation
+     * for the given cache group.
      *
      * @param groupId Cache group id.
      * @return Set of invalid partitions.
