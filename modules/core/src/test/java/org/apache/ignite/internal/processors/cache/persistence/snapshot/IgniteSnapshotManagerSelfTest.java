@@ -80,12 +80,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
-        // Start grid node with data before each test.
-        IgniteEx ig = startGridWithCache(txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME)), 2048);
-
-        // The following data will be included into checkpoint.
-        for (int i = 2048; i < 4096; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i));
+        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         for (int i = 4096; i < 8192; i++) {
             ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
@@ -161,17 +157,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         // Start grid node with data before each test.
-        IgniteEx ig = startGrid(0);
+        IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key , key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        ig.cluster().baselineAutoAdjustEnabled(false);
-        ig.cluster().state(ClusterState.ACTIVE);
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
-
-        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i));
-
-        forceCheckpoint(ig);
-
         AtomicInteger cntr = new AtomicInteger();
         CountDownLatch ldrLatch = new CountDownLatch(1);
         IgniteSnapshotManager mgr = snp(ig);

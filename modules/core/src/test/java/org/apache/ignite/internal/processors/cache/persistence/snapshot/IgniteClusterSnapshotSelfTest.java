@@ -94,8 +94,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private static CacheConfiguration<Integer, Integer> atomicCcfg = new CacheConfiguration<Integer, Integer>("atomicCacheName")
         .setAtomicityMode(CacheAtomicityMode.ATOMIC)
         .setBackups(2)
-        .setAffinity(new RendezvousAffinityFunction(false)
-            .setPartitions(CACHE_PARTS_COUNT));
+        .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
@@ -311,21 +310,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
-        for (int i = 0; i < grids; i++)
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration(eastCcfg, westCcfg)));
-
-        grid(0).cluster().state(ACTIVE);
+        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
         Ignite client = startClientGrid(grids);
-
-        IgniteCache<Integer, Account> eastCache = client.cache(eastCcfg.getName());
-        IgniteCache<Integer, Account> westCache = client.cache(westCcfg.getName());
-
-        // Create clients with initial balance.
-        for (int i = 0; i < clientsCnt; i++) {
-            eastCache.put(i, new Account(i, balance));
-            westCache.put(i, new Account(i, balance));
-        }
 
         assertEquals("The initial summary value in all caches is not correct.",
             total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()));

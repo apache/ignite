@@ -45,6 +45,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -165,8 +166,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setAffinity(new RendezvousAffinityFunction(false)
-                .setPartitions(CACHE_PARTS_COUNT));
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
     }
 
     /**
@@ -216,28 +216,50 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    protected IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg, int range) throws Exception {
-        return startGridsWithCache(1, ccfg, range);
+    protected IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg, int keys) throws Exception {
+        return startGridsWithCache(1, ccfg, keys);
     }
 
     /**
-     * @param cnt Number of grids to start.
+     * @param grids Number of grids to start.
      * @param ccfg Default cache configuration.
-     * @param range Range of cache keys to insert.
+     * @param keys Range of cache keys to insert.
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    protected IgniteEx startGridsWithCache(int cnt, CacheConfiguration<Integer, Integer> ccfg, int range) throws Exception {
+    protected IgniteEx startGridsWithCache(int grids, CacheConfiguration<Integer, Integer> ccfg, int keys) throws Exception {
         dfltCacheCfg = ccfg;
 
-        // Start grid node with data before each test.
-        IgniteEx ig = startGrids(cnt);
+        return startGridsWithCache(grids, keys, Integer::new, ccfg);
+    }
+
+    /**
+     * @param grids Number of ignite instances to start.
+     * @param keys Number of keys to create.
+     * @param factory Factory which produces values.
+     * @param <V> Cache value type.
+     * @return Ignite coordinator instance.
+     * @throws Exception If fails.
+     */
+    protected <V> IgniteEx startGridsWithCache(
+        int grids,
+        int keys,
+        Function<Integer, V> factory,
+        CacheConfiguration<Integer, V>... ccfgs
+    ) throws Exception {
+        for (int g = 0; g < grids; g++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
+                .setCacheConfiguration(ccfgs)));
+
+        IgniteEx ig = grid(0);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
         ig.cluster().state(ClusterState.ACTIVE);
 
-        for (int i = 0; i < range; i++)
-            ig.cache(DEFAULT_CACHE_NAME).put(i, i);
+        for (int i = 0; i < keys; i++) {
+            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
+                ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
+        }
 
         forceCheckpoint();
 
@@ -431,9 +453,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         private static final long serialVersionUID = 0L;
 
         /** User id. */
+        @QuerySqlField(index = true)
         private final int id;
 
         /** Order value. */
+        @QuerySqlField
         protected int balance;
 
         /**
