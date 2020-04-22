@@ -64,9 +64,6 @@ public class IgniteBinaryObjectJsonDeserializer extends JsonDeserializer<BinaryO
 
         assert type != null;
 
-        if (ctx.marshallerContext().isSystemType(type))
-            throw new IllegalArgumentException("Cannot make binary object [type=" + type + "]");
-
         JsonNode tree = parser.readValueAsTree();
         ObjectCodec mapper = parser.getCodec();
 

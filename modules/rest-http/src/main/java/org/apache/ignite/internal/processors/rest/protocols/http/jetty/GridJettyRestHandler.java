@@ -1130,11 +1130,13 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                     default:
                         try {
+                            // Creating an object of the specified type, if its class is available.
                             Class<?> cls = U.classForName(type, null);
 
                             if (cls != null)
                                 return jsonMapper.readValue(str, cls);
 
+                            // Creating a binary object if the type is not a class name or it cannot be loaded.
                             InjectableValues.Std prop = new InjectableValues.Std()
                                 .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
                                 .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
