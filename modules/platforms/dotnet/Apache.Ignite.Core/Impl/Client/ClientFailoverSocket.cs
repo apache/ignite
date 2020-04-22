@@ -604,6 +604,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
             
             // TODO: Asynchronously discover all nodes, update _endPoints
+            // TODO: Make sure not to connect to the same node twice!
             var endpoints = GetServerEndpoints();
             foreach (var endpoint in endpoints)
             {
