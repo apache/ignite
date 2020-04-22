@@ -55,6 +55,7 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
 
         ClusterGroup clusterGrp = nodeIds.length > 0 ? cluster.forNodeIds(Arrays.asList(nodeIds)) : cluster;
 
+        // TODO: Cache results in ctx by node id. This is going to be a frequent request.
         String[] endpoints = ctx.kernalContext()
                 .grid()
                 .compute(clusterGrp)
