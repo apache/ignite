@@ -614,6 +614,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 Console.WriteLine(addedNode.Id);
 
+                // TODO: More efficient check - use socketMap.
                 if (endPoints.Any(e => e.Socket != null && e.Socket.ServerNodeId == addedNode.Id))
                 {
                     // Already connected to that node.
@@ -657,8 +658,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private ClientDiscoveryResult GetServerEndpoints(long startTopVer, long endTopVer)
         {
-            // TODO: Pass only unknown node ids for efficiency.
-            // TODO: Group endpoints by node id in results, so we don't connect to the same node twice.
             return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints,
                 ctx =>
                 {
