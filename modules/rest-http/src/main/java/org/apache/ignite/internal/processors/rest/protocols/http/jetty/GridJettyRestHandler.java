@@ -1127,33 +1127,25 @@ public class GridJettyRestHandler extends AbstractHandler {
                     case "string":
                     case "java.lang.string":
                         return str;
-
-                    default:
-                        try {
-                            // Creating an object of the specified type, if its class is available.
-                            Class<?> cls = U.classForName(type, null);
-
-                            if (cls != null)
-                                return jsonMapper.readValue(str, cls);
-
-                            // Creating a binary object if the type is not a class name or it cannot be loaded.
-                            InjectableValues.Std prop = new InjectableValues.Std()
-                                .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
-                                .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
-
-                            return jsonMapper.reader(prop).forType(BinaryObject.class).readValue(str);
-                        } catch (IOException e) {
-                            log.warning("Unable to parse JSON, object will be stored as a text " +
-                                "[type=" + type + ", value=\"" + str + "\", reason=\"" + e.getMessage() + "\"]");
-                        }
                 }
+
+                // Creating an object of the specified type, if its class is available.
+                Class<?> cls = U.classForName(type, null);
+
+                if (cls != null)
+                    return jsonMapper.readValue(str, cls);
+
+                // Creating a binary object if the type is not a class name or it cannot be loaded.
+                InjectableValues.Std prop = new InjectableValues.Std()
+                    .addValue(IgniteBinaryObjectJsonDeserializer.BINARY_TYPE_PROPERTY, type)
+                    .addValue(IgniteBinaryObjectJsonDeserializer.CACHE_NAME_PROPERTY, cacheName);
+
+                return jsonMapper.reader(prop).forType(BinaryObject.class).readValue(str);
             }
             catch (Throwable e) {
                 throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
                     ", val=" + str + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]", e);
             }
-
-            return str;
         }
     }
 

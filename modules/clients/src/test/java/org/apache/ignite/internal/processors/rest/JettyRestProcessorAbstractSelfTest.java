@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -46,7 +45,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -379,6 +377,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         JsonNode val = queryObject(
             cacheName,
+            GridRestCommand.EXECUTE_SQL_QUERY,
             "type", Person.class.getSimpleName(),
             "pageSize", "1",
             "qry", "orgId = ?",
@@ -406,7 +405,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         fields.put("id", Long.class.getName());
         fields.put("name", String.class.getName());
         fields.put("timestamp", Timestamp.class.getName());
-        fields.put("bytes", long[].class.getName());
+        fields.put("longs", long[].class.getName());
         fields.put("igniteUuid", IgniteUuid.class.getName());
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>("testCache");
@@ -424,40 +423,62 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         IgniteCache cache = grid(0).createCache(ccfg);
 
-        List<Integer> list = F.asList(1, 2, 3);
+        try {
+            List<Integer> list = F.asList(1, 2, 3);
 
-        OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list,
-            Timestamp.valueOf("2004-08-26 16:47:03.141592"),  new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE},
-            UUID.randomUUID(), IgniteUuid.randomUuid(), null);
+            OuterClass newType = new OuterClass(Long.MAX_VALUE, "unregistered", 0.1d, list,
+                Timestamp.valueOf("2004-08-26 16:47:03.141592"), new long[] {Long.MAX_VALUE, -1, Long.MAX_VALUE},
+                UUID.randomUUID(), IgniteUuid.randomUuid(), null);
 
-        putObject(cache.getName(), "300", newType, valType);
+            putObject(cache.getName(), "300", newType, valType);
 
-        GridTestUtils.assertThrowsWithCause(() -> cache.get(300), ClassNotFoundException.class);
+            GridTestUtils.assertThrowsWithCause(() -> cache.get(300), ClassNotFoundException.class);
 
-        assertEquals(newType, getObject(cache.getName(), "300", OuterClass.class));
+            assertEquals(newType, getObject(cache.getName(), "300", OuterClass.class));
 
-        // Sending "optional" (new) field for registered binary type.
-        OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list,
-            Timestamp.valueOf("2004-08-26 16:47:03.14"), new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE},
-            UUID.randomUUID(), IgniteUuid.randomUuid(), new OuterClass.OptionalObject("test"));
+            // Sending "optional" (new) field for registered binary type.
+            OuterClass newTypeUpdate = new OuterClass(-1, "update", 0.7d, list,
+                Timestamp.valueOf("2004-08-26 16:47:03.14"), new long[] {Long.MAX_VALUE, 0, Long.MAX_VALUE},
+                UUID.randomUUID(), IgniteUuid.randomUuid(), new OuterClass.OptionalObject("test"));
 
-        putObject(cache.getName(), "301", newTypeUpdate, valType);
+            putObject(cache.getName(), "301", newTypeUpdate, valType);
 
-        assertEquals(newTypeUpdate, getObject(cache.getName(), "301", OuterClass.class));
+            assertEquals(newTypeUpdate, getObject(cache.getName(), "301", OuterClass.class));
 
-        // Check query result.
-        JsonNode res = queryObject(
-            cache.getName(),
-            "type", valType,
-            "pageSize", "1",
-            "keepBinary", "true",
-            "qry", "timestamp < ?",
-            "arg1", "2004-08-26 16:47:03.141"
-        );
+            // Check query result.
+            JsonNode res = queryObject(
+                cache.getName(),
+                GridRestCommand.EXECUTE_SQL_QUERY,
+                "type", valType,
+                "pageSize", "1",
+                "keepBinary", "true",
+                "qry", "timestamp < ?",
+                "arg1", "2004-08-26 16:47:03.141"
+            );
 
-        assertEquals(newTypeUpdate, JSON_MAPPER.treeToValue(res, OuterClass.class));
+            assertEquals(newTypeUpdate, JSON_MAPPER.treeToValue(res, OuterClass.class));
 
-        grid(0).destroyCache(ccfg.getName());
+            // Check fields query result.
+            String qry = "select id, name, timestamp, igniteUuid, longs from " + valType +
+                " where timestamp < '2004-08-26 16:47:03.141'";
+
+            res = queryObject(
+                cache.getName(),
+                GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
+                "keepBinary", "true",
+                "pageSize", "10",
+                "qry", qry
+            );
+
+            assertEquals(5, res.size());
+            assertEquals(newTypeUpdate.id, res.get(0).longValue());
+            assertEquals(newTypeUpdate.name, res.get(1).textValue());
+            assertEquals(newTypeUpdate.timestamp, Timestamp.valueOf(res.get(2).textValue()));
+            assertEquals(newTypeUpdate.igniteUuid, IgniteUuid.fromString(res.get(3).textValue()));
+            assertTrue(Arrays.equals(newTypeUpdate.longs, JSON_MAPPER.treeToValue(res.get(4), long[].class)));
+        } finally {
+            grid(0).destroyCache(ccfg.getName());
+        }
     }
 
     /**
@@ -484,17 +505,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         parent.setField("byteVal", (byte)1);
         parent.setField("timestamp", new Timestamp(new java.util.Date().getTime()));
 
-        BinaryObject obj = parent.build();
-
         // Registering "Parent" type.
-        jcache().put(2, obj);
+        jcache().put(2, parent.build());
 
         // Adding another "Parent" object via REST.
-        JsonNode jsonNode = JSON_MAPPER.valueToTree(obj);
+        parent.setField("id", Long.MIN_VALUE);
 
-        ((ObjectNode)jsonNode).put("id", Long.MIN_VALUE);
-
-        String jsonText = JSON_MAPPER.writeValueAsString(jsonNode);
+        String jsonText = JSON_MAPPER.writeValueAsString(parent.build());
 
         info("Put: " + jsonText);
 
@@ -515,7 +532,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         JsonNode res = assertResponseSucceeded(ret, false);
 
-        assertEquals(jsonNode, res);
+        assertEquals(jsonText, JSON_MAPPER.writeValueAsString(res));
     }
 
     /**
@@ -563,6 +580,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         // Check query result.
         JsonNode res = queryObject(
             cacheName,
+            GridRestCommand.EXECUTE_SQL_QUERY,
             "type", Complex.class.getSimpleName(),
             "pageSize", "1",
             "qry", "sqlDate > ? and sqlDate < ?",
@@ -574,12 +592,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
-     * Test adding a system (java.*) type object.
+     * Test adding an array in JSON format.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testPutJvmType() throws Exception {
+    public void testPutJsonArray() throws Exception {
         Map<String, int[]> map = U.map("1", new int[] {1, 2, 3});
         putObject(DEFAULT_CACHE_NAME, "1", map, Map.class.getName());
         assertTrue(Map.class.isAssignableFrom(jcache().get(1).getClass()));
@@ -599,6 +617,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         Character[] chars = {'a', 'b', 'c'};
         putObject(DEFAULT_CACHE_NAME, "5", chars, Character[].class.getName());
         assertTrue(Arrays.equals(chars, (Object[])jcache().get(5)));
+
+        OuterClass[] objects = new OuterClass[] {
+            new OuterClass(111, "out-0", 0.7d, F.asList(9, 1)),
+            new OuterClass(112, "out-1", 0.1d, F.asList(9, 1)),
+            new OuterClass(113, "out-2", 0.3d, F.asList(9, 1))
+        };
+
+        putObject(DEFAULT_CACHE_NAME, "6", objects, OuterClass[].class.getName());
+        assertTrue(Arrays.equals(objects, (Object[])jcache().get(6)));
     }
 
     /**
@@ -3096,12 +3123,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /**
      * @param cacheName Cache name.
+     * @param cmd Rest command.
      * @param params Query parameters.
      * @return Json query result.
      * @throws Exception If failed.
      */
-    private JsonNode queryObject(String cacheName, String... params) throws Exception {
-        String ret = content(cacheName, GridRestCommand.EXECUTE_SQL_QUERY, params);
+    private JsonNode queryObject(String cacheName, GridRestCommand cmd, String... params) throws Exception {
+        String ret = content(cacheName, cmd, params);
 
         info("SQL command result: " + ret);
 
@@ -3115,9 +3143,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         assertFalse(queryCursorFound());
 
-        JsonNode pair = items.get(0);
+        JsonNode item = items.get(0);
 
-        return pair.get("value");
+        JsonNode val = item.get("value");
+
+        return val != null ? val : item;
     }
 
     /**
