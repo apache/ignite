@@ -78,6 +78,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
             writer.writeInt(endpoints.size());
 
             for (String e : endpoints) {
+                // TODO: Send host name for SSL?
                 writer.writeString(e);
             }
         }
