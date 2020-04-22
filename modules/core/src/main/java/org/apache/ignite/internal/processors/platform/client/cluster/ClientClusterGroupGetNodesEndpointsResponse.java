@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cluster group get nodes endpoints response.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse {
     /** Endpoints. */
     private final String[] endpoints;

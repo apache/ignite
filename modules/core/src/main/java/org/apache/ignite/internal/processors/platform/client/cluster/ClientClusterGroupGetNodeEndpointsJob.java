@@ -43,16 +43,18 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Col
     @Override public Collection<String> call() throws Exception {
         int port = ((IgniteEx)ignite).context().sqlListener().port();
 
-        // TODO: Exclude loopbacks?
+        // TODO: Exclude loopbacks
         IgniteBiTuple<Collection<String>, Collection<String>> locAddrsAndHosts =
                 IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"), true);
 
         Collection<String> addrs = locAddrsAndHosts.get1();
         Collection<String> res = new ArrayList<>(addrs.size());
 
-        for (String addr : addrs)
+        for (String addr : addrs) {
+            // TODO: Wrap ipv6 addrs with []
             res.add(addr + ":" + port);
+        }
 
-        return addrs;
+        return res;
     }
 }
