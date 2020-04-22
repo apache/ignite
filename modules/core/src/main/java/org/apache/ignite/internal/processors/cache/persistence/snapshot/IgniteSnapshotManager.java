@@ -367,7 +367,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String.class,
             "The error message of last started cluster snapshot request which fail with an error. " +
                 "This value will be empty if last snapshot request has been completed successfully.");
-        mreg.register("LocalSnapshotList", this::getSnapshotNamesLocal, List.class,
+        mreg.register("LocalSnapshotNames", this::localSnapshotNames, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
@@ -958,8 +958,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public List<String> getSnapshotNamesLocal() {
+    /**
+     * @return List of all known snapshots on the local node.
+     */
+    public List<String> localSnapshotNames() {
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
@@ -999,7 +1001,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                if (getSnapshotNamesLocal().contains(name))
+                if (localSnapshotNames().contains(name))
                     throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists on local node.");
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);

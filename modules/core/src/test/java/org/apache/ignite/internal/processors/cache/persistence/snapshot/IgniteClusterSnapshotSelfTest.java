@@ -588,7 +588,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite1).isPresent());
 
-        List<String> allSnapshots = snp(ignite).getSnapshotNamesLocal();
+        List<String> allSnapshots = snp(ignite).localSnapshotNames();
 
         assertTrue("Snapshot directory must be empty due to snapshot fail: " + allSnapshots,
             allSnapshots.isEmpty());
@@ -645,7 +645,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue("Snapshot directory must be empty", grid2.snapshot().getSnapshotNamesLocal().isEmpty());
+        assertTrue("Snapshot directory must be empty", grid2.context().cache().context().snapshotMgr().localSnapshotNames().isEmpty());
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
@@ -739,7 +739,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         LongMetric endTime = mreg0.findMetric("LastSnapshotEndTime");
         ObjectGauge<String> snpName = mreg0.findMetric("LastSnapshotName");
         ObjectGauge<String> errMsg = mreg0.findMetric("LastSnapshotErrorMessage");
-        ObjectGauge<List<String>> snpList = mreg0.findMetric("LocalSnapshotList");
+        ObjectGauge<List<String>> snpList = mreg0.findMetric("LocalSnapshotNames");
 
         // Snapshot process will be blocked when delta partition files processing starts.
         snp(ignite).localSnapshotSenderFactory(

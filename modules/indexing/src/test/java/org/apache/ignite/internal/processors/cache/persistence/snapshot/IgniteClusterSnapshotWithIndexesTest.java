@@ -49,7 +49,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotWithIndex() throws Exception {
+    public void testClusterSnapshotWithIndexes() throws Exception {
         String tblName =  "Person";
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key), indexedCcfg);
 

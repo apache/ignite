@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import java.util.List;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -34,14 +33,9 @@ import org.apache.ignite.lang.IgniteFuture;
  */
 public interface IgniteSnapshot {
     /**
-     * @return List of all known snapshots on the local node.
-     */
-    public List<String> getSnapshotNamesLocal();
-
-    /**
      * Create a consistent copy of all persistence cache groups from the whole cluster.
      *
-     * @param name Snapshot name which satisfies the following name pattern [a-zA-Z0-9_].
+     * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
      * @return Future which will be completed when a process ends.
      */
     public IgniteFuture<Void> createSnapshot(String name);
