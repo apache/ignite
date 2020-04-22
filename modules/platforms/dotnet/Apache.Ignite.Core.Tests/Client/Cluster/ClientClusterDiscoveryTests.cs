@@ -53,5 +53,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 Assert.AreEqual(3, client.GetConnections().Count());
             }
         }
+
+        /// <summary>
+        /// Tests that client discovers new servers automatically when they join the cluster.
+        /// </summary>
+        [Test]
+        public void TestClientDiscoversNewServers()
+        {
+            Assert.Fail("TODO");
+        }
     }
 }
