@@ -96,6 +96,7 @@
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
     <Compile Include="Impl\Client\ClientConnection.cs" />
     <Compile Include="Impl\Client\ClientContextBase.cs" />
+    <Compile Include="Impl\Client\ClientDiscoveryNode.cs" />
     <Compile Include="Impl\Client\ClientOpExtensions.cs" />
     <Compile Include="Impl\Client\ClientRequestContext.cs" />
     <Compile Include="Impl\Client\ClientResponseContext.cs" />
