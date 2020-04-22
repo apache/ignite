@@ -52,8 +52,11 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         // TODO: New compute func to get all endpoints
         // TODO: Cache results somehow? Because endpoints do not change for a node. Or do they? In case of restarts?
+
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
         ClusterGroup clusterGrp = cluster.forNodeIds(Arrays.asList(nodeIds));
+        //ctx.kernalContext().grid().compute(clusterGrp).broadcast()
+
         return new ClientClusterGroupGetNodesEndpointsResponse(requestId(), clusterGrp.nodes());
     }
 }
