@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client.Cluster
 {
     using System;
-    using System.Collections.Generic;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -84,17 +83,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
             IgniteArgumentCheck.NotNullOrEmpty(cacheName, "cacheName");
 
             return DoOutInOp(ClientOp.ClusterGetWalState, ctx => ctx.Writer.WriteString(cacheName), ctx => ctx.Stream.ReadBool());
-        }
-
-        /// <summary>
-        /// Gets endpoints for all known servers.
-        /// </summary>
-        internal IList<string> GetServerEndpoints()
-        {
-            // TODO: Optionally pass node ids.
-            return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints, 
-                ctx => ctx.Writer.WriteInt(0),
-                ctx => ctx.Reader.ReadStringCollection());
         }
     }
 }

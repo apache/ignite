@@ -106,7 +106,17 @@ namespace Apache.Ignite.Core.Impl.Client
             _logger = (_config.Logger ?? NoopLogger.Instance).GetLogger(GetType());
             
             Connect();
-       }
+
+            if (_config.EnableDiscovery)
+            {
+                // TODO: Asynchronously discover all nodes, update _endPoints
+                var endpoints = GetServerEndpoints();
+                foreach (var endpoint in endpoints)
+                {
+                    Console.WriteLine(endpoint);
+                }
+            }
+        }
 
         /// <summary>
         /// Performs a send-receive operation.
@@ -349,11 +359,18 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
+            var oldVer = (AffinityTopologyVersion) _affinityTopologyVersion;
             _affinityTopologyVersion = affinityTopologyVersion;
 
             if (_config.EnablePartitionAwareness)
             {
                 InitSocketMap();
+            }
+
+            // Re-discover nodes when major topology version has changed.
+            if (_config.EnableDiscovery && oldVer.Version > affinityTopologyVersion.Version)
+            {
+                // TODO: Update endpoint info, connect to more nodes if necessary.
             }
         }
 
@@ -548,6 +565,18 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             _nodeSocketMap = map;
+        }
+        
+        /// <summary>
+        /// Gets all server endpoints.
+        /// </summary>
+        private IList<string> GetServerEndpoints()
+        {
+            // TODO: Pass only unknown node ids for efficiency.
+            // TODO: Group endpoints by node id in results, so we don't connect to the same node twice.
+            return DoOutInOp(ClientOp.ClusterGroupGetNodesEndpoints, 
+                ctx => ctx.Writer.WriteInt(0),
+                ctx => ctx.Reader.ReadStringCollection());
         }
     }
 }
