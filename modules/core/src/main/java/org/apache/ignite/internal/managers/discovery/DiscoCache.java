@@ -320,6 +320,23 @@ public class DiscoCache {
     }
 
     /**
+     * Get current coordinator node.
+     *
+     * @return Coordinator node.
+     */
+    @Nullable public ClusterNode coordinator() {
+        ClusterNode srv = null;
+        if (!srvNodes.isEmpty())
+            srv = srvNodes.get(0);
+
+        ClusterNode daemon = null;
+        if (!daemonNodes.isEmpty())
+            daemon = daemonNodes.get(0);
+
+        return srv == null ? daemon : (daemon == null ? srv : (srv.order() < daemon.order() ? srv : daemon));
+    }
+
+    /**
      * @param nodeId Node ID.
      * @return {@code True} if node is in alives list.
      */
