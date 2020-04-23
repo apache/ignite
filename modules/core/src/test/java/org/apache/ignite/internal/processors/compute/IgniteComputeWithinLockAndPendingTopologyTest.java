@@ -25,10 +25,10 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -40,8 +40,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -110,15 +111,16 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testExplicitLockPartitioned() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            assertThrows(log, new Callable<Void>() {
+            assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     doTestExplicitLock(CacheMode.PARTITIONED, syncMode);
 
                     return null;
                 }
-            }, IgniteCheckedException.class, EXPECTED_ERROR_MESSAGE);
+            }, ComputeExecutionRejectedException.class, EXPECTED_ERROR_MESSAGE);
         }
     }
 
@@ -127,15 +129,16 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testExplicitLockReplicated() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            assertThrows(log, new Callable<Void>() {
+            assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     doTestExplicitLock(CacheMode.REPLICATED, syncMode);
 
                     return null;
                 }
-            }, IgniteCheckedException.class, EXPECTED_ERROR_MESSAGE);
+            }, ComputeExecutionRejectedException.class, EXPECTED_ERROR_MESSAGE);
         }
     }
 
@@ -144,6 +147,7 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testExplicitLockLocal() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values())
             doTestExplicitLock(CacheMode.LOCAL, syncMode);
@@ -155,6 +159,7 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testTransactionLockPessimisticLocal() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             for (final TransactionIsolation isolation : TransactionIsolation.values())
@@ -168,16 +173,17 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testTransactionLockPessimisticReplicated() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                assertThrows(log, new Callable<Void>() {
+                assertThrowsAnyCause(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         doTestTx(CacheMode.REPLICATED, syncMode, TransactionConcurrency.PESSIMISTIC, isolation);
 
                         return null;
                     }
-                }, IgniteCheckedException.class, EXPECTED_ERROR_MESSAGE);
+                }, ComputeExecutionRejectedException.class, EXPECTED_ERROR_MESSAGE);
             }
         }
     }
@@ -188,16 +194,17 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testTransactionLockPessimisticPartitioned() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             for (final TransactionIsolation isolation : TransactionIsolation.values()) {
-                assertThrows(log, new Callable<Void>() {
+                assertThrowsAnyCause(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         doTestTx(CacheMode.PARTITIONED, syncMode, TransactionConcurrency.PESSIMISTIC, isolation);
 
                         return null;
                     }
-                }, IgniteCheckedException.class, EXPECTED_ERROR_MESSAGE);
+                }, ComputeExecutionRejectedException.class, EXPECTED_ERROR_MESSAGE);
             }
         }
     }
@@ -208,6 +215,7 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testTransactionLockOptimisticReplicated() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             for (final TransactionIsolation isolation : TransactionIsolation.values())
@@ -221,6 +229,7 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testTransactionLockOptimisticPartitioned() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             for (final TransactionIsolation isolation : TransactionIsolation.values())
@@ -234,6 +243,7 @@ public class IgniteComputeWithinLockAndPendingTopologyTest extends GridCommonAbs
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testTransactionLockOptimisticLocal() throws Exception {
         for (final CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             for (final TransactionIsolation isolation : TransactionIsolation.values())
