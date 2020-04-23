@@ -43,13 +43,13 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Tests {@link DistributedProcess} in case of coordinator node left.
  */
 public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTest {
-    /** */
+    /** Timeout to wait latches. */
     public static final long TIMEOUT = 20_000L;
 
-    /** */
+    /** Nodes count. */
     public static final int NODES_CNT = 3;
 
-    /** */
+    /** Stop node index. */
     public static final int STOP_NODE_IDX = 0;
 
     /** Latch to send single message on node left. */

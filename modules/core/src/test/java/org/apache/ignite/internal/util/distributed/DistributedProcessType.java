@@ -19,7 +19,10 @@ package org.apache.ignite.internal.util.distributed;
 
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 
-/** Overrides {@link DistributedProcessType}. */
+/**
+ * Overrides {@link DistributedProcessType} and adds new types for testing. The package and inherited types should be
+ * identical to the origin enum.
+ */
 public enum DistributedProcessType {
     /**
      * Master key change prepare process.
