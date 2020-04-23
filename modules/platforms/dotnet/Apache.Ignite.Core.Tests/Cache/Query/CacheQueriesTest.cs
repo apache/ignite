@@ -874,7 +874,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Custom order, key-val, get after iteration.
             qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
             cur = cache.Query(qry);
-            var list = cur.GetAll();
+            cur.GetAll();
 
             ValidateFieldsMetadata(
                 cur.Fields,

@@ -98,13 +98,13 @@ public final class IgfsMetaDirectoryListingReplaceProcessor implements EntryProc
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
     }
 
     /** {@inheritDoc} */

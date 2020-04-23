@@ -134,7 +134,7 @@ class GridAffinityMessage implements Externalizable {
 
         out.writeInt(depMode.ordinal());
 
-        U.writeGridUuid(out, clsLdrId);
+        U.writeIgniteUuid(out, clsLdrId);
         U.writeString(out, srcClsName);
         U.writeString(out, userVer);
         U.writeMap(out, ldrParties);
@@ -146,7 +146,7 @@ class GridAffinityMessage implements Externalizable {
 
         depMode = DeploymentMode.fromOrdinal(in.readInt());
 
-        clsLdrId = U.readGridUuid(in);
+        clsLdrId = U.readIgniteUuid(in);
         srcClsName = U.readString(in);
         userVer = U.readString(in);
         ldrParties = U.readMap(in);
