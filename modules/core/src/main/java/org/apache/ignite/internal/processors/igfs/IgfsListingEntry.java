@@ -98,13 +98,13 @@ public class IgfsListingEntry implements Externalizable, Binarylizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
         out.writeBoolean(dir);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
         dir = in.readBoolean();
     }
 

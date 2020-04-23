@@ -299,7 +299,79 @@
             <id>release</id>
             <build>
                 <plugins>
-                     <plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>exec-libtoolize</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>libtoolize</executable>
+                                    <arguments>
+                                        <argument>--copy</argument>
+                                    </arguments>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-aclocal</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>aclocal</executable>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-autoheader</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>autoheader</executable>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-automake</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>automake</executable>
+                                    <arguments>
+                                        <argument>--add-missing</argument>
+                                        <argument>--copy</argument>
+                                    </arguments>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-autoreconf</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>autoreconf</executable>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
@@ -320,6 +392,8 @@
                                 <phase>initialize</phase>
                                 <configuration>
                                     <target>
+                                        <delete dir="${basedir}/target/release-package-${ignite.edition}/platforms/cpp/autom4te.cache" quiet="true"/>
+
                                         <replaceregexp byline="true">
                                             <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
                                             <substitution expression="pushd &quot;%~dp0&quot;/.." />

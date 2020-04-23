@@ -366,7 +366,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
                 Consumer<CompositeData> checkThin = c -> {
                     assertEquals("THIN", c.get("type"));
                     assertTrue(c.get("localAddress").toString().endsWith(Integer.toString(port)));
-                    assertEquals(c.get("version"), ProtocolVersion.CURRENT_VER.toString());
+                    assertEquals(c.get("version"), ProtocolVersion.LATEST_VER.toString());
                 };
 
                 Consumer<CompositeData> checkJdbc = c -> {
