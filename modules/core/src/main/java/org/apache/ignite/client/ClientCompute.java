@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.util.concurrent.Future;
 import org.apache.ignite.compute.ComputeTask;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +56,7 @@ public interface ClientCompute {
      * @throws ClientException If task failed.
      * @see ComputeTask for information about task execution.
      */
-    public <T, R> ClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException;
+    public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException;
 
     /**
      * Sets timeout for tasks executed by returned {@code ClientCompute} instance.

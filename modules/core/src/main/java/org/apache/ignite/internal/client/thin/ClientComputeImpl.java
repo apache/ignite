@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -30,7 +32,6 @@ import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
-import org.apache.ignite.client.ClientFuture;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -106,11 +107,11 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(String taskName, @Nullable T arg) throws ClientException, InterruptedException {
-        return (R)executeAsync(taskName, arg).get();
+        return execute0(taskName, arg, cluster, (byte)0, 0L);
     }
 
     /** {@inheritDoc} */
-    @Override public <T, R> ClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+    @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
         return executeAsync0(taskName, arg, cluster, (byte)0, 0L);
     }
 
@@ -141,8 +142,36 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /**
      * @param taskName Task name.
      * @param arg Argument.
+     * @param clusterGrp Cluster group.
+     * @param flags Flags.
+     * @param timeout Timeout.
      */
-    private <T, R> ClientFuture<R> executeAsync0(
+    private <T, R> R execute0(
+        String taskName,
+        @Nullable T arg,
+        ClientClusterGroupImpl clusterGrp,
+        byte flags,
+        long timeout
+    ) throws ClientException {
+        try {
+            return (R)executeAsync0(taskName, arg, clusterGrp, flags, timeout).get();
+        }
+        catch (ExecutionException | InterruptedException e) {
+            if (e.getCause() instanceof ClientException)
+                throw (ClientException)e.getCause();
+            else
+                throw new ClientException(e);
+        }
+    }
+
+    /**
+     * @param taskName Task name.
+     * @param arg Argument.
+     * @param clusterGrp Cluster group.
+     * @param flags Flags.
+     * @param timeout Timeout.
+     */
+    private <T, R> Future<R> executeAsync0(
         String taskName,
         @Nullable T arg,
         ClientClusterGroupImpl clusterGrp,
@@ -180,7 +209,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
             task.fut.listen(f -> removeTask(task.ch, task.taskId));
 
-            return new ClientFutureImpl<>((IgniteInternalFuture<R>)task.fut);
+            return new ClientFutureImpl<>((GridFutureAdapter<R>)task.fut);
         }
     }
 
@@ -329,11 +358,11 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(String taskName, @Nullable T arg) throws ClientException, InterruptedException {
-            return (R)executeAsync(taskName, arg).get();
+            return delegate.execute0(taskName, arg, clusterGrp, flags, timeout);
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> ClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+        @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
             return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 

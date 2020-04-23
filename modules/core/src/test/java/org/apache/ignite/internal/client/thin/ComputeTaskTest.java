@@ -29,6 +29,8 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,7 +43,6 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.ClientFuture;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -166,7 +167,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         try (IgniteClient client = startClient(0)) {
             TestLatchTask.latch = new CountDownLatch(1);
 
-            ClientFuture<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync(TestLatchTask.class.getName(), null);
+            Future<T2<UUID, Set<UUID>>> fut = client.compute().executeAsync(TestLatchTask.class.getName(), null);
 
             GridTestUtils.assertThrowsAnyCause(
                 null,
@@ -193,12 +194,12 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     @Test(expected = CancellationException.class)
     public void testTaskCancellation() throws Exception {
         try (IgniteClient client = startClient(0)) {
-            ClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<T2<UUID, List<UUID>>> fut = client.compute().executeAsync(TestTask.class.getName(), TIMEOUT);
 
             assertFalse(fut.isCancelled());
             assertFalse(fut.isDone());
 
-            fut.cancel();
+            fut.cancel(true);
 
             assertTrue(((ClientComputeImpl)client.compute()).activeTaskFutures().isEmpty());
 
@@ -320,17 +321,17 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         try (IgniteClient client = startClient(0, 1)) {
             ClientComputeImpl compute = (ClientComputeImpl)client.compute();
 
-            ClientFuture<Object> fut1  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<Object> fut1  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
 
             dropAllThinClientConnections();
 
-            ClientFuture<Object> fut2  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<Object> fut2  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
 
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);
 
-            ClientFuture<Object> fut3  = compute.executeAsync(TestLatchTask.class.getName(), null);
+            Future<Object> fut3  = compute.executeAsync(TestLatchTask.class.getName(), null);
 
             assertEquals(1, compute.activeTaskFutures().size());
 
@@ -367,11 +368,11 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
 
-            ClientFuture<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
 
-            ClientFuture<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
 
             latch2.countDown();
 
@@ -396,11 +397,11 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             CountDownLatch latch1 = TestLatchTask.latch = new CountDownLatch(1);
 
-            ClientFuture<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
+            Future<T2<UUID, Set<UUID>>> fut1 = compute1.executeAsync(TestLatchTask.class.getName(), null);
 
             CountDownLatch latch2 = TestLatchTask.latch = new CountDownLatch(1);
 
-            ClientFuture<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
+            Future<T2<UUID, Set<UUID>>> fut2 = compute2.executeAsync(TestLatchTask.class.getName(), null);
 
             latch2.countDown();
 
@@ -424,7 +425,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             CountDownLatch latch = TestLatchTask.latch = new CountDownLatch(1);
 
-            List<ClientFuture<T2<UUID, Set<UUID>>>> futs = new ArrayList<>(ACTIVE_TASKS_LIMIT);
+            List<Future<T2<UUID, Set<UUID>>>> futs = new ArrayList<>(ACTIVE_TASKS_LIMIT);
 
             for (int i = 0; i < ACTIVE_TASKS_LIMIT; i++)
                 futs.add(compute.executeAsync(TestLatchTask.class.getName(), null));
@@ -439,7 +440,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             // Check that cancelled tasks restore limit.
             for (int i = 0; i < ACTIVE_TASKS_LIMIT / 2; i++)
-                futs.get(i).cancel();
+                futs.get(i).cancel(true);
 
             latch.countDown();
 
@@ -465,7 +466,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
 
             latch.countDown();
 
-            for (ClientFuture<T2<UUID, Set<UUID>>> fut : futs)
+            for (Future<T2<UUID, Set<UUID>>> fut : futs)
                 assertEquals(nodeIds(1), fut.get(TIMEOUT, TimeUnit.MILLISECONDS).get2());
         }
     }
@@ -502,12 +503,17 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
                             
                             ClientCompute compute = client.compute(client.cluster().forNodeId(nodeId(nodeIdx)));
                             
-                            ClientFuture<T2<UUID, Set<UUID>>> fut = compute.executeAsync(TestTask.class.getName(), null);
+                            Future<T2<UUID, Set<UUID>>> fut = compute.executeAsync(TestTask.class.getName(), null);
                             
                             assertEquals((Integer)i, cache.get(threadIdx));
 
                             assertEquals(nodeIds(nodeIdx), fut.get().get2());
                         }
+                    }
+                    catch (ExecutionException e) {
+                        log.error("Task failed: ", e);
+
+                        fail("Task failed");
                     }
                     catch (InterruptedException | BrokenBarrierException ignore) {
                         // No-op.

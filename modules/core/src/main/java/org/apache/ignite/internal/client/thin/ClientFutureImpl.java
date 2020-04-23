@@ -18,48 +18,52 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.ClientFuture;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
- * Implementation of {@link ClientFuture}.
+ * Implementation of {@link Future} for thin-client operations.
  */
-class ClientFutureImpl<R>  implements ClientFuture<R> {
+class ClientFutureImpl<R> implements Future<R> {
     /** Delegate. */
-    private final IgniteInternalFuture<R> delegate;
+    private final GridFutureAdapter<R> delegate;
 
     /**
      * Default constructor.
      *
      * @param delegate Delegate internal future.
      */
-    ClientFutureImpl(IgniteInternalFuture<R> delegate) {
+    ClientFutureImpl(GridFutureAdapter<R> delegate) {
         this.delegate = delegate;
     }
 
     /** {@inheritDoc} */
-    @Override public R get() throws ClientException, CancellationException, InterruptedException {
+    @Override public R get() throws ExecutionException, CancellationException, InterruptedException {
         try {
             return delegate.get();
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new InterruptedException(e.getMessage());
         }
-        catch (IgniteCheckedException e) {
-            throw convertException(e);
+        catch (IgniteFutureCancelledCheckedException e) {
+            throw new CancellationException(e.getMessage());
+        }
+        catch (Exception e) {
+            throw new ExecutionException(unwrapException(e));
         }
     }
 
     /** {@inheritDoc} */
     @Override public R get(long timeout, TimeUnit unit)
-        throws ClientException, TimeoutException, CancellationException, InterruptedException {
+        throws ExecutionException, TimeoutException, CancellationException, InterruptedException {
         try {
             return delegate.get(timeout, unit);
         }
@@ -69,8 +73,11 @@ class ClientFutureImpl<R>  implements ClientFuture<R> {
         catch (IgniteFutureTimeoutCheckedException e) {
             throw new TimeoutException(e.getMessage());
         }
-        catch (IgniteCheckedException e) {
-            throw convertException(e);
+        catch (IgniteFutureCancelledCheckedException e) {
+            throw new CancellationException(e.getMessage());
+        }
+        catch (Exception e) {
+            throw new ExecutionException(unwrapException(e));
         }
     }
 
@@ -80,12 +87,12 @@ class ClientFutureImpl<R>  implements ClientFuture<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cancel() throws ClientException {
+    @Override public boolean cancel(boolean mayInterruptIfRunning) throws ClientException {
         try {
-            return delegate.cancel();
+            return mayInterruptIfRunning ? delegate.cancel() : delegate.onCancelled();
         }
-        catch (IgniteCheckedException ignore) {
-            return false;
+        catch (IgniteCheckedException e) {
+            throw unwrapException(e);
         }
     }
 
@@ -95,18 +102,16 @@ class ClientFutureImpl<R>  implements ClientFuture<R> {
     }
 
     /**
-     * Converts checked exception to corresponding unchecked exception.
+     * Unwraps checked exception to client exception.
      *
      * @param e Exception.
      */
-    private static RuntimeException convertException(IgniteCheckedException e) {
-        if (e instanceof IgniteFutureCancelledCheckedException)
-            return new CancellationException(e.getMessage());
-        else if (e.getCause() instanceof ClientException)
-            return (RuntimeException)e.getCause();
-        else if (e.getCause() != null)
-            return new ClientException(e.getMessage(), e.getCause());
-        else
-            return new ClientException(e.getMessage(), e);
+    private static ClientException unwrapException(Exception e) {
+        Throwable e0 = e instanceof IgniteCheckedException && e.getCause() != null ? e.getCause() : e;
+
+        if (e0 instanceof ClientException)
+            return (ClientException)e0;
+
+        return new ClientException(e0);
     }
 }
