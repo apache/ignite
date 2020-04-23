@@ -27,10 +27,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -38,6 +37,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcessType.TEST_PROCESS;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests {@link DistributedProcess} in case of coordinator node left.
@@ -49,6 +49,9 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
     /** */
     public static final int NODES_CNT = 3;
 
+    /** */
+    public static final int STOP_NODE_IDX = 0;
+
     /** Latch to send single message on node left. */
     private final CountDownLatch nodeLeftLatch = new CountDownLatch(NODES_CNT - 1);
 
@@ -58,14 +61,9 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
     /** Failure handler invocation flag. */
     private final AtomicBoolean failure = new AtomicBoolean();
 
-    /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(true, log);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setGridLogger(listeningLog);
 
         cfg.setLocalEventListeners(Collections.singletonMap(event -> {
             nodeLeftLatch.countDown();
@@ -117,18 +115,27 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
 
         for (Ignite grid : G.allGrids()) {
             DistributedProcess<Integer, Integer> dp = new DistributedProcess<>(((IgniteEx)grid).context(), TEST_PROCESS,
-                req -> GridTestUtils.runAsync(() -> {
+                req -> {
+                    IgniteInternalFuture<Integer> fut = runAsync(() -> {
+                        try {
+                            nodeLeftLatch.await();
+                        }
+                        catch (InterruptedException ignored) {
+                            fail("Unexpected interrupt.");
+                        }
+
+                        return req;
+                    });
+
                     startLatch.countDown();
 
-                    try {
-                        nodeLeftLatch.await();
-                    }
-                    catch (InterruptedException ignored) {
-                        fail("Unexpected interrupt.");
-                    }
+                    // A single message will be sent before this latch released.
+                    // It is guaranteed by the LIFO order of future listeners notifying.
+                    if (!grid.name().equals(getTestIgniteInstanceName(STOP_NODE_IDX)))
+                        fut.listen(f -> msgSendLatch.countDown());
 
-                    return req;
-                }),
+                    return fut;
+                },
                 (uuid, res, err) -> {
                     if (res.values().size() == NODES_CNT - 1 && res.values().stream().allMatch(i -> i == processRes))
                         finishLatch.countDown();
@@ -140,16 +147,11 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
             processes.put(grid.name(), dp);
         }
 
-        listeningLog.registerListener(s -> {
-            if (s.startsWith("Failed to send a single message to coordinator"))
-                msgSendLatch.countDown();
-        });
-
-        processes.get(grid(0).name()).start(UUID.randomUUID(), processRes);
+        processes.get(grid(STOP_NODE_IDX).name()).start(UUID.randomUUID(), processRes);
 
         assertTrue(startLatch.await(TIMEOUT, MILLISECONDS));
 
-        stopGrid(0);
+        stopGrid(STOP_NODE_IDX);
 
         assertTrue(finishLatch.await(TIMEOUT, MILLISECONDS));
 
