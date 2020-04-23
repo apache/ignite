@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.GridDiscoveryManagerChangeCoordinatorTest;
 import org.apache.ignite.internal.IgniteDiscoveryMassiveNodeFailTest;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategyTest;
 import org.apache.ignite.spi.GridTcpSpiForwardingSelfTest;
@@ -172,6 +173,8 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgniteMetricsOverflowTest.class));
 
         suite.addTest(new TestSuite(MetricsCompactionTest.class));
+
+        suite.addTest(new TestSuite(GridDiscoveryManagerChangeCoordinatorTest.class));
 
         return suite;
     }
