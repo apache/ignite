@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.processors.platform.client.ClientFeature;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -196,7 +195,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         byte flags,
         long timeout
     ) throws ClientException {
-        if (!ch.clientChannel().isFeatureSupported(ClientFeature.EXECUTE_TASK_BY_NAME)) {
+        if (!ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.EXECUTE_TASK_BY_NAME)) {
             throw new ClientFeatureNotSupportedByServerException("Compute grid functionality for thin " +
                 "client not supported by server node (" + ch.clientChannel().serverNodeId() + ')');
         }

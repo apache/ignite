@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientFlag;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
@@ -119,9 +120,6 @@ class TcpClientChannel implements ClientChannel {
         V1_1_0,
         V1_0_0
     );
-
-    /** Timeout before next attempt to lock channel and process next response by current thread. */
-    private static final long PAYLOAD_WAIT_TIMEOUT = 10L;
 
     /** Protocol context. */
     private ProtocolContext protocolCtx;
