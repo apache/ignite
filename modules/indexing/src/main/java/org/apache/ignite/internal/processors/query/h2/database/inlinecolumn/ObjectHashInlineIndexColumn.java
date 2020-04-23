@@ -35,7 +35,9 @@ public class ObjectHashInlineIndexColumn extends AbstractInlineIndexColumn {
 
     /** {@inheritDoc} */
     @Override protected int compare0(long pageAddr, int off, Value v, int type) {
-        if (type() != type)
+        // Exact type matching is required here to avoid cases when SQL types compare with JAVA_OBJECT.
+        // It's may be cause of unexpected behavior.
+        if (type() != type || type != v.getType())
             return COMPARE_UNSUPPORTED;
 
         int val1 = PageUtils.getInt(pageAddr, off + 1);
