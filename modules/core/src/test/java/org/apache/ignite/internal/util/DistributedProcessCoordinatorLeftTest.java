@@ -37,7 +37,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcessType.TEST_PROCESS;
 
 /**
  * Tests {@link DistributedProcess} in case of coordinator node left.
