@@ -77,7 +77,7 @@ public class DistributedProcessCoordinatorLeftTest extends GridCommonAbstractTes
                 fail("Unexpected interrupt.");
             }
 
-            return false;
+            return true;
         }, new int[] {EVT_NODE_LEFT, EVT_NODE_FAILED}));
 
         cfg.setFailureHandler(new FailureHandler() {
