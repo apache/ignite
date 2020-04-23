@@ -1083,7 +1083,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
         private volatile SecurityCredentials creds;
 
         /** User attributes. */
-        private Map<String, String> userAttrs;
+        private volatile Map<String, String> userAttrs;
 
         /**
          * @param clientId Client ID.
