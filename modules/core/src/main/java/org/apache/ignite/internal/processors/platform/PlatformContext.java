@@ -23,6 +23,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
@@ -289,4 +290,32 @@ public interface PlatformContext {
      * @return Current platform name.
      */
     public String platform();
+
+    /**
+     * Gets a value indicating whether current platform supports native cache.
+     *
+     * @return True when native caching is supported; false otherwise.
+     */
+    boolean isPlatformCacheSupported();
+
+    /**
+     * Updates the platform cache cache.
+     *
+     * @param cacheId Cache id.
+     * @param keyBytes Serialized key to update.
+     * @param valBytes Serialized value.
+     * @param part Key partition.
+     * @param ver Key version.
+     */
+    public void updatePlatformCache(int cacheId, byte[] keyBytes, byte[] valBytes, int part, AffinityTopologyVersion ver);
+
+    /**
+     * Enables thread-local optimization for platform cache update.
+     */
+    void enableThreadLocalForPlatformCacheUpdate();
+
+    /**
+     * Disables thread-local optimization for platform cache update.
+     */
+    void disableThreadLocalForPlatformCacheUpdate();
 }

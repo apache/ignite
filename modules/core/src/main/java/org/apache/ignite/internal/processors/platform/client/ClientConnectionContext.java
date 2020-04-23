@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +38,10 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.AUTHORIZATION;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
 
 /**
  * Thin Client connection context.
@@ -64,18 +68,22 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.6.0. Added: Expiration Policy configuration. */
     public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
 
-    /** Version 1.7.0. Added: User attributes support. */
+    /**
+     * Version 1.7.0. Added: protocol features.
+     * ATTENTION! Do not add any new protocol versions unless totally necessary. Use {@link ClientBitmaskFeature}
+     * instead.
+     */
     public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
 
-    /** Version 2.0.0. Added: Client features, notifications. */
-    public static final ClientListenerProtocolVersion VER_2_0_0 = ClientListenerProtocolVersion.create(2, 0, 0);
-
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_2_0_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
+
+    /** Default protocol context. */
+    public static final ClientProtocolContext DEFAULT_PROTOCOL_CONTEXT =
+        new ClientProtocolContext(DEFAULT_VER, ClientBitmaskFeature.allFeaturesAsEnumSet());
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
-        VER_2_0_0,
         VER_1_7_0,
         VER_1_6_0,
         VER_1_5_0,
@@ -98,17 +106,14 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Max cursors. */
     private final int maxCursors;
 
-    /** Current protocol version. */
-    private ClientListenerProtocolVersion currentVer;
+    /** Current protocol context. */
+    private ClientProtocolContext currentProtocolContext;
 
     /** Last reported affinity topology version. */
     private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
 
     /** Client session. */
     private GridNioSession ses;
-
-    /** Features, supported by the client. */
-    private BitSet supportedFeatures;
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
@@ -167,28 +172,35 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     }
 
     /**
-     * @return Currently used protocol version.
+     * @return Currently used protocol context.
      */
-    public ClientListenerProtocolVersion currentVersion() {
-        return currentVer;
+    public ClientProtocolContext currentProtocolContext() {
+        return currentProtocolContext;
     }
 
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(GridNioSession ses,
         ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-        boolean hasMore;
+
+        EnumSet<ClientBitmaskFeature> features = null;
+
+        if (ClientProtocolContext.isFeatureSupported(ver, BITMAP_FEATURES)) {
+            byte [] cliFeatures = reader.readByteArray();
+
+            features = ClientBitmaskFeature.enumSet(cliFeatures);
+        }
+
+        currentProtocolContext = new ClientProtocolContext(ver, features);
 
         String user = null;
         String pwd = null;
 
-        if (ver.compareTo(VER_2_0_0) >= 0)
-            supportedFeatures = BitSet.valueOf(reader.readByteArray());
-
-        if (ver.compareTo(VER_1_7_0) >= 0)
+        if (currentProtocolContext.isFeatureSupported(USER_ATTRIBUTES))
             userAttrs = reader.readMap();
 
-        if (ver.compareTo(VER_1_1_0) >= 0) {
+        if (currentProtocolContext.isFeatureSupported(AUTHORIZATION)) {
+            boolean hasMore;
             try {
                 hasMore = reader.available() > 0;
             }
@@ -204,11 +216,8 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
 
-        currentVer = ver;
-
-        handler = new ClientRequestHandler(this, authCtx, ver);
-
-        parser = new ClientMessageParser(this, ver);
+        handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
+        parser = new ClientMessageParser(this, currentProtocolContext);
 
         this.ses = ses;
     }
@@ -230,16 +239,6 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
         cleanupTxs();
 
         super.onDisconnected();
-    }
-
-    /**
-     * Check if feature is supported by the client.
-     *
-     * @param feature Feature to check.
-     * @return {@code True} if feature is supported by the client.
-     */
-    public boolean isFeatureSupported(ClientFeature feature) {
-        return supportedFeatures != null && supportedFeatures.get(feature.getFeatureId());
     }
 
     /**

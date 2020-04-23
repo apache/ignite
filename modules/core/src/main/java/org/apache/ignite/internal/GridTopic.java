@@ -289,13 +289,13 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
-            U.writeGridUuid(out, id);
+            U.writeIgniteUuid(out, id);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id = U.readGridUuid(in);
+            id = U.readIgniteUuid(in);
         }
 
         /** {@inheritDoc} */
@@ -357,14 +357,14 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
-            U.writeGridUuid(out, id1);
+            U.writeIgniteUuid(out, id1);
             U.writeUuid(out, id2);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id1 = U.readGridUuid(in);
+            id1 = U.readIgniteUuid(in);
             id2 = U.readUuid(in);
         }
 
@@ -799,14 +799,14 @@ public enum GridTopic {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeByte(topic.ordinal());
-            U.writeGridUuid(out, id1);
+            U.writeIgniteUuid(out, id1);
             out.writeLong(id2);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             topic = fromOrdinal(in.readByte());
-            id1 = U.readGridUuid(in);
+            id1 = U.readIgniteUuid(in);
             id2 = in.readLong();
         }
 

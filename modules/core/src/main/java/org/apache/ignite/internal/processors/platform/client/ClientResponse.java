@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
 
 /**
  * Thin client response.
@@ -76,11 +75,11 @@ public class ClientResponse extends ClientListenerResponse implements ClientOutg
         ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
 
-        ClientListenerProtocolVersion ver = ctx.currentVersion();
+        ClientProtocolContext protocolCtx = ctx.currentProtocolContext();
 
-        assert ver != null;
+        assert protocolCtx != null;
 
-        if (ver.compareTo(VER_1_4_0) >= 0) {
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
             boolean error = status() != ClientStatus.SUCCESS;
 
             short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());

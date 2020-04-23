@@ -179,17 +179,7 @@ class VisorOpenCommand extends VisorConsoleCommand {
                 // Setting up 'Config URL' for properly print in console.
                 System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)
 
-                var cpuCnt = Runtime.getRuntime.availableProcessors
-
-                if (cpuCnt < 4)
-                    cpuCnt = 4
-
                 cfg.setConnectorConfiguration(null)
-
-                // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setPublicThreadPoolSize(cpuCnt)
-                cfg.setSystemThreadPoolSize(cpuCnt)
-                cfg.setPeerClassLoadingThreadPoolSize(cpuCnt)
 
                 var ioSpi = cfg.getCommunicationSpi
 
@@ -230,10 +220,11 @@ class VisorOpenCommand extends VisorConsoleCommand {
         }
         catch {
             case e: IgniteException =>
-                warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
                 status("q")
+
+                throw e;
         }
     }
 

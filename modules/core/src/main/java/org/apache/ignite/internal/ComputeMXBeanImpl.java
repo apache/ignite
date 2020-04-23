@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
-import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ComputeMXBean;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * ComputeMXBean implementation.
@@ -54,14 +55,38 @@ public class ComputeMXBeanImpl implements ComputeMXBean {
      */
     public void cancel(IgniteUuid sesId) {
         try {
-            IgniteCompute compute = ctx.cluster().get().compute();
-
-            compute.execute(new VisorComputeCancelSessionTask(),
-                new VisorTaskArgument<>(ctx.localNodeId(),
-                    new VisorComputeCancelSessionTaskArg(sesId), false));
+            ctx.grid().compute(ctx.grid().cluster()).broadcast(new ComputeCancelSession(), sesId);
         }
         catch (IgniteException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Cancel compute session closure.
+     */
+    private static class ComputeCancelSession implements IgniteClosure<IgniteUuid, Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void apply(IgniteUuid sesId) {
+            ignite.context().job().cancelJob(sesId, null, false);
+
+            IgniteCompute compute = ignite.compute(ignite.cluster().forLocal());
+
+            Map<IgniteUuid, ComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
+
+            ComputeTaskFuture<Object> fut = futs.get(sesId);
+
+            if (fut != null)
+                fut.cancel();
+
+            return null;
         }
     }
 }

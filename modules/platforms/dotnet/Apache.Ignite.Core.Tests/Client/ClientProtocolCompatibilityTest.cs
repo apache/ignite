@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         [Test]
         public void TestCacheOperationsAreSupportedOnAllProtocols(
-            [Values(0, 1, 2, 3, 4, 5)] short minor)
+            [Values(0, 1, 2, 3, 4, 5, 6)] short minor)
         {
             var version = new ClientProtocolVersion(1, minor, 0);
             
@@ -90,6 +90,32 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(expectedMessage, log.Message);
                 Assert.AreEqual(LogLevel.Warn, log.Level);
                 Assert.AreEqual(typeof(ClientFailoverSocket).Name, log.Category);
+            }
+        }
+
+        /// <summary>
+        /// Tests that client can connect to old server nodes and negotiate common protocol version.
+        /// </summary>
+        [Test]
+        public void TestClientNewerThanServerReconnectsOnServerVersion()
+        {
+            // Use a non-existent version that is not supported by the server
+            var version = new ClientProtocolVersion(short.MaxValue, short.MaxValue, short.MaxValue);
+
+            using (var client = GetClient(version))
+            {
+                Assert.AreEqual(ClientSocket.CurrentProtocolVersion, client.Socket.CurrentProtocolVersion);
+
+                var logs = GetLogs(client);
+
+                var expectedMessage = "Handshake failed on 127.0.0.1:10800, " +
+                                      "requested protocol version = 32767.32767.32767, server protocol version = , " +
+                                      "status = Fail, message = Unsupported version: 32767.32767.32767";
+
+                var message = Regex.Replace(
+                    logs[2].Message, @"server protocol version = \d\.\d\.\d", "server protocol version = ");
+
+                Assert.AreEqual(expectedMessage, message);
             }
         }
 

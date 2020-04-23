@@ -49,9 +49,9 @@ interface ClientChannel extends AutoCloseable {
     ) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException;
 
     /**
-     * @return Server version.
+     * @return Protocol context.
      */
-    public ProtocolVersion serverVersion();
+    public ProtocolContext protocolCtx();
 
     /**
      * @return Server node ID.

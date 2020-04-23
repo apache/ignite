@@ -463,4 +463,16 @@ public interface GridQueryIndexing {
      * @return Column information filtered by given patterns.
      */
     Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
+
+    /**
+     * Return index size by schema, table and index name.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @return Index size (Number of elements) or {@code 0} if index not found.
+     */
+    default long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
 }

@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -129,6 +130,54 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
             else // All that divides by 10 evenly should point to numbers 100 times greater - see above
                 assertEquals(nameForId(i * 100), nameForIdInCache(i));
         }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testStreamedBatchedInsertFunctionSuppliedValues() throws Exception {
+        doStreamedInsertFunctionSuppliedValues(true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testStreamedInsertFunctionSuppliedValues() throws Exception {
+        doStreamedInsertFunctionSuppliedValues(false);
+    }
+
+    /**
+     * Inserts data using built-in function for column value.
+     *
+     * @param batch Batch mode flag.
+     * @throws Exception if failed.
+     */
+    private void doStreamedInsertFunctionSuppliedValues(boolean batch) throws Exception {
+        try (Connection conn = createStreamedConnection(false)) {
+            assertStreamingState(true);
+
+            try (PreparedStatement stmt = conn.prepareStatement(
+                "insert into Person(\"id\", \"name\") values (?, RANDOM_UUID())")) {
+                for (int i = 1; i <= 10; i++) {
+                    stmt.setInt(1, i);
+
+                    if (batch)
+                        stmt.addBatch();
+                    else
+                        stmt.execute();
+                }
+
+                if (batch)
+                    stmt.executeBatch();
+            }
+        }
+
+        U.sleep(500);
+
+        for (int i = 1; i <= 10; i++)
+            UUID.fromString(nameForIdInCache(i));
     }
 
     /**

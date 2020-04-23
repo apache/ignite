@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
 import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
 import org.apache.ignite.util.GridCommandHandlerBrokenIndexTest;
+import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
@@ -37,6 +38,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexingWithSSLTest.class,
     GridCommandHandlerIndexingClusterByClassTest.class,
     GridCommandHandlerIndexingClusterByClassWithSSLTest.class,
+    GridCommandHandlerIndexingCheckSizeTest.class,
     StartCachesInParallelTest.class,
     IoStatisticsBasicIndexSelfTest.class
 })
