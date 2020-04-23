@@ -267,7 +267,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 ctx.io().sendToGridTopic(crdId, GridTopic.TOPIC_DISTRIBUTED_PROCESS, singleMsg, SYSTEM_POOL);
             }
             catch (ClusterTopologyCheckedException e) {
-                // The coordinator was failed. The single message will be sent when a new coordinator initilized.
+                // The coordinator has failed. The single message will be sent when a new coordinator initialized.
                 if (log.isDebugEnabled()) {
                     log.debug("Failed to send a single message to coordinator: [crdId=" + crdId +
                         ", processId=" + p.id +", error=" + e.getMessage() + ']');

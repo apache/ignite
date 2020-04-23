@@ -139,7 +139,6 @@ import org.junit.runners.Suite;
 
     GridCountDownCallbackTest.class,
 
-    // Distributed process.
     DistributedProcessCoordinatorLeftTest.class
 })
 public class IgniteUtilSelfTestSuite {
