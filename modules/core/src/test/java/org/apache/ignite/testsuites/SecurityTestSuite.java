@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.security.client.AdditionalSecurityC
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientSecurityContextOnRemoteNodeTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientSslPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskCancelRemoteSecurityContextCheckTest;
@@ -80,6 +81,7 @@ import org.junit.runners.Suite;
     ContinuousQueryRemoteSecurityContextCheckTest.class,
     ContinuousQueryWithTransformerRemoteSecurityContextCheckTest.class,
     ThinClientSslPermissionCheckTest.class,
+    ThinClientSecurityContextOnRemoteNodeTest.class,
     MessagingRemoteSecurityContextCheckTest.class,
 
     InvalidServerTest.class,
