@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.distributed;
 
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 
-/** Defines distributed processes. */
+/** Overrides {@link DistributedProcessType}. */
 public enum DistributedProcessType {
     /**
      * Master key change prepare process.
