@@ -127,7 +127,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteLogger log;
 
     /** Grid id. */
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
 
     /**
      * @param cfg Configuration.
@@ -167,6 +167,7 @@ public class IgniteProcessProxy implements IgniteEx {
     )
         throws Exception {
         this.cfg = cfg;
+        this.id = cfg.getNodeId() == null ? UUID.randomUUID() : cfg.getNodeId();
         this.locJvmGrid = locJvmGrid;
         this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 

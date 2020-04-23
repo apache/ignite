@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -126,4 +128,28 @@ public interface GridClientNode {
      * @return Node startup order.
      */
     public long order();
+
+    /**
+     * Whether this node is client (see {@link IgniteConfiguration#isClientMode()}).
+     *
+     * @return {@code True if client}.
+     * @see IgniteConfiguration#isClientMode()
+     */
+    public boolean isClient();
+
+    /**
+     * Tests whether or not this node is a daemon (see {@link IgniteConfiguration#isDaemon()}).
+     *
+     * @return {@code True} if this node is a daemon, {@code false} otherwise.
+     * @see IgniteConfiguration#isDaemon()
+     */
+    public boolean isDaemon();
+
+    /**
+     * Checks that feature supported by node.
+     *
+     * @param feature Feature to check.
+     * @return {@code True} if feature is declared to be supported by node.
+     */
+    public boolean supports(IgniteFeatures feature);
 }
