@@ -148,6 +148,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Marshal data.
+        /// </summary>
+        /// <param name="stream"></param>
+        /// <param name="action"></param>
+        public void Marshal(IBinaryStream stream, Action<BinaryWriter> action)
+        {
+            BinaryWriter writer = StartMarshal(stream);
+
+            action(writer);
+
+            FinishMarshal(writer);
+        }
+
+        /// <summary>
         /// Marshals an object.
         /// </summary>
         /// <param name="val">Value.</param>

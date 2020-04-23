@@ -408,7 +408,7 @@ namespace Apache.Ignite.Core
             // 3. Send configuration details to Java
             cfg.Validate(log);
             // Use system marshaller.
-            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream), ClientSocket.CurrentProtocolVersion);
+            cfg.Write(BinaryUtils.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>
