@@ -37,6 +37,9 @@ public class IgfsLazySecondaryFileSystemPositionedReadable implements IgfsSecond
     /** Buffer size. */
     private final int bufSize;
 
+    /** Synchronization mutex. */
+    private final Object mux = new Object();
+
     /** Target stream. */
     private IgfsSecondaryFileSystemPositionedReadable target;
 
@@ -58,16 +61,20 @@ public class IgfsLazySecondaryFileSystemPositionedReadable implements IgfsSecond
 
     /** {@inheritDoc} */
     @Override public int read(long pos, byte[] buf, int off, int len) throws IOException {
-        if (target == null)
-            target = fs.open(path, bufSize);
+        synchronized (mux) {
+            if (target == null)
+                target = fs.open(path, bufSize);
+        }
 
         return target.read(pos, buf, off, len);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        if (target != null)
-            target.close();
+        synchronized (mux) {
+            if (target != null)
+                target.close();
+        }
     }
 
     /** {@inheritDoc} */

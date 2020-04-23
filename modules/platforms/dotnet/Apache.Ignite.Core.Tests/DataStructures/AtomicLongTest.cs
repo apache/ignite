@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
     /// <summary>
     /// Atomic long test.
     /// </summary>
-    public class AtomicLongTest : IgniteTestBase
+    public class AtomicLongTest : SpringTestBase
     {
         /** */
         private const string AtomicLongName = "testAtomicLong";
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicLongTest"/> class.
         /// </summary>
-        public AtomicLongTest() : base("config\\compute\\compute-grid1.xml")
+        public AtomicLongTest() : base("Config\\Compute\\compute-grid1.xml")
         {
             // No-op.
         }

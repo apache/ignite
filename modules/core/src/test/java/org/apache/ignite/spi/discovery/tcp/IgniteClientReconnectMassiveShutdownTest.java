@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -30,18 +32,21 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -59,21 +64,11 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /** */
     private static final int CLIENT_GRID_CNT = 14;
 
-    /** */
-    private static volatile boolean clientMode;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+        cfg.setFailureDetectionTimeout(5_000);
 
         return cfg;
     }
@@ -81,27 +76,20 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        super.afterTest();
-
-        Thread.sleep(5000);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 5 * 60 * 1000;
     }
 
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMassiveServersShutdown1() throws Exception {
+    @Test
+    public void testMassiveServersShutdown1() throws Exception {
         massiveServersShutdown(StopType.FAIL_EVENT);
     }
 
     /**
      * @throws Exception If any error occurs.
      */
+    @Test
     public void testMassiveServersShutdown2() throws Exception {
         massiveServersShutdown(StopType.SIMULATE_FAIL);
     }
@@ -109,22 +97,19 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     /**
      * @throws Exception If any error occurs.
      */
-    public void _testMassiveServersShutdown3() throws Exception {
+    @Test
+    public void testMassiveServersShutdown3() throws Exception {
         massiveServersShutdown(StopType.CLOSE);
     }
 
     /**
-     * @param stopType How tp stop node.
+     * @param stopType How to stop node.
      * @throws Exception If any error occurs.
      */
     private void massiveServersShutdown(final StopType stopType) throws Exception {
-        clientMode = false;
-
         startGridsMultiThreaded(GRID_CNT);
 
-        clientMode = true;
-
-        startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
+        startClientGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
 
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -181,33 +166,25 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
                         latch.countDown();
 
+                        IgniteFuture<?> retryFut = new IgniteFinishedFutureImpl<>();
+
                         while (!done.get()) {
+                            try {
+                                retryFut.get();
+                            }
+                            catch (IgniteException | CacheException e) {
+                                retryFut = getRetryFuture(e);
+
+                                continue;
+                            }
+
                             try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                 cache.put(String.valueOf(rand.nextInt(10_000)), rand.nextInt(50_000));
 
                                 tx.commit();
                             }
-                            catch (ClusterTopologyException ex) {
-                                ex.retryReadyFuture().get();
-                            }
                             catch (IgniteException | CacheException e) {
-                                if (X.hasCause(e, IgniteClientDisconnectedException.class)) {
-                                    IgniteClientDisconnectedException cause = X.cause(e,
-                                        IgniteClientDisconnectedException.class);
-
-                                    assert cause != null;
-
-                                    cause.reconnectFuture().get();
-                                }
-                                else if (X.hasCause(e, ClusterTopologyException.class)) {
-                                    ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
-
-                                    assert cause != null;
-
-                                    cause.retryReadyFuture().get();
-                                }
-                                else
-                                    throw e;
+                                retryFut = getRetryFuture(e);
                             }
                         }
 
@@ -294,7 +271,34 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
             clientsFut.get();
 
+            // Checks that failing servers was stopped after segmentation policy applying.
+            if (stopType == StopType.FAIL_EVENT) {
+                assertTrue("Servers was not stopped.", GridTestUtils.waitForCondition(() -> {
+                    for (int i = 0; i < srvsToKill; i++) {
+                        try {
+                            grid(i);
+
+                            return false;
+                        }
+                        catch (IgniteIllegalStateException ignored) {
+                            // No-op.
+                        }
+                    }
+
+                    return true;
+                }, 15_000));
+            }
+
+            // Clean up ignite instance from static map in IgnitionEx.grids
+            if (stopType == StopType.SIMULATE_FAIL){
+                for (int i = 0; i < srvsToKill; i++) {
+                    grid(i).close();
+                }
+            }
+
             awaitPartitionMapExchange();
+
+            List<Object> values = new ArrayList<>(GRID_CNT - srvsToKill);
 
             for (int k = 0; k < 10_000; k++) {
                 String key = String.valueOf(k);
@@ -302,12 +306,65 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                 Object val = cache.get(key);
 
                 for (int i = srvsToKill; i < GRID_CNT; i++)
-                    assertEquals(val, ignite(i).cache(DEFAULT_CACHE_NAME).get(key));
+                    values.add(ignite(i).cache(DEFAULT_CACHE_NAME).get(key));
+
+                for (Object val0 : values) {
+                    if (val == null && val0 == null)
+                        continue;
+
+                    if (!val.equals(val0)) {
+                        SB sb = new SB();
+
+                        sb.a("\nExp:").a(val);
+
+                        sb.a("\nActual:");
+
+                        for (int i = 0; i < values.size(); i++) {
+                            sb.a("[grid=")
+                                .a(grid(srvsToKill + i).name())
+                                .a(" val=")
+                                .a(values.get(i))
+                                .a("]\n");
+                        }
+
+                        fail(sb.toString());
+                    }
+                }
+
+                values.clear();
             }
         }
         finally {
             done.set(true);
         }
+    }
+
+    /**
+     * Gets retry or reconnect future if passed in {@code 'Exception'} has corresponding class in {@code 'cause'}
+     * hierarchy.
+     *
+     * @param e {@code Exception}.
+     * @return Internal future.
+     * @throws Exception If unable to find retry or reconnect future.
+     */
+    private IgniteFuture<?> getRetryFuture(Exception e) throws Exception {
+        if (X.hasCause(e, IgniteClientDisconnectedException.class)) {
+            IgniteClientDisconnectedException cause = X.cause(e,
+                IgniteClientDisconnectedException.class);
+
+            assertNotNull(cause);
+
+            return cause.reconnectFuture();
+        }
+        else if (X.hasCause(e, ClusterTopologyException.class)) {
+            ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
+
+            assertNotNull(cause);
+
+            return cause.retryReadyFuture();
+        }
+        else
+            throw e;
     }
 
     /**

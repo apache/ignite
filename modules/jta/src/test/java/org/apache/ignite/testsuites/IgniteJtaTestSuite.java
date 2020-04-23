@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheJndiTmFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaFactoryConfigValidationSelfTest;
@@ -29,37 +28,31 @@ import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFac
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * JTA integration tests.
  */
-public class IgniteJtaTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new IgniteTestSuite("JTA Integration Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridPartitionedCacheJtaFactorySelfTest.class,
+    GridReplicatedCacheJtaFactorySelfTest.class,
 
-        suite.addTestSuite(GridPartitionedCacheJtaFactorySelfTest.class);
-        suite.addTestSuite(GridReplicatedCacheJtaFactorySelfTest.class);
+    GridPartitionedCacheJtaLookupClassNameSelfTest.class,
+    GridReplicatedCacheJtaLookupClassNameSelfTest.class,
 
-        suite.addTestSuite(GridPartitionedCacheJtaLookupClassNameSelfTest.class);
-        suite.addTestSuite(GridReplicatedCacheJtaLookupClassNameSelfTest.class);
+    GridPartitionedCacheJtaFactoryUseSyncSelfTest.class,
+    GridReplicatedCacheJtaFactoryUseSyncSelfTest.class,
 
-        suite.addTestSuite(GridPartitionedCacheJtaFactoryUseSyncSelfTest.class);
-        suite.addTestSuite(GridReplicatedCacheJtaFactoryUseSyncSelfTest.class);
+    GridJtaLifecycleAwareSelfTest.class,
+    GridCacheJtaConfigurationValidationSelfTest.class,
+    GridCacheJtaFactoryConfigValidationSelfTest.class,
 
-        suite.addTestSuite(GridJtaLifecycleAwareSelfTest.class);
-        suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
-        suite.addTestSuite(GridCacheJtaFactoryConfigValidationSelfTest.class);
+    GridJtaTransactionManagerSelfTest.class,
 
-        suite.addTestSuite(GridJtaTransactionManagerSelfTest.class);
-
-        // Factory
-        suite.addTestSuite(CacheJndiTmFactorySelfTest.class);
-
-        return suite;
-    }
+    // Factory
+    CacheJndiTmFactorySelfTest.class
+})
+public class IgniteJtaTestSuite {
 }

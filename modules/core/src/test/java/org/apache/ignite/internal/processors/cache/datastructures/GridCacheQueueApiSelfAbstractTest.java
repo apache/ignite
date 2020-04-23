@@ -29,6 +29,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,6 +45,8 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,6 +56,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Queue basic tests.
  */
 public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollectionAbstractTest {
+    /** To be used as a boolean system property. If true then run binary tests. */
+    public static final String BINARY_QUEUE = "BINARY_QUEUE";
+
+    /** Binary queue mode. */
+    private static final boolean BINARY_QUEUE_MODE = IgniteSystemProperties.getBoolean(BINARY_QUEUE, false);
+
     /** */
     private static final int QUEUE_CAPACITY = 3;
 
@@ -64,10 +74,24 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     /**
+     * Intialize Ignite queue
+     */
+    protected <T> IgniteQueue<T> initQueue(int idx, String name, int cap,
+        @Nullable CollectionConfiguration cfg) {
+        IgniteQueue<T> queue = grid(idx).queue(name, cap, cfg);
+
+        if (queue != null && BINARY_QUEUE_MODE)
+            return queue.withKeepBinary();
+
+        return queue;
+    }
+
+    /**
      * JUnit.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepareQueue() throws Exception {
         // Random sequence names.
         String queueName1 = UUID.randomUUID().toString();
@@ -75,9 +99,9 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         CollectionConfiguration colCfg = config(false);
 
-        IgniteQueue queue1 = grid(0).queue(queueName1, 0, colCfg);
-        IgniteQueue queue2 = grid(0).queue(queueName2, 0, colCfg);
-        IgniteQueue queue3 = grid(0).queue(queueName1, 0, colCfg);
+        IgniteQueue queue1 = initQueue(0, queueName1, 0, colCfg);
+        IgniteQueue queue2 = initQueue(0, queueName2, 0, colCfg);
+        IgniteQueue queue3 = initQueue(0, queueName1, 0, colCfg);
 
         assertNotNull(queue1);
         assertNotNull(queue2);
@@ -90,8 +114,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         queue2.close();
         queue3.close();
 
-        assertNull(grid(0).queue(queueName1, 0, null));
-        assertNull(grid(0).queue(queueName2, 0, null));
+        assertNull(initQueue(0, queueName1, 0, null));
+        assertNull(initQueue(0, queueName2, 0, null));
     }
 
     /**
@@ -99,13 +123,14 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
         String val = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         assert queue.add(val);
 
@@ -117,13 +142,14 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDeleteUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
         String val = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         assert queue.add(val);
 
@@ -137,73 +163,72 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
-    public void testCollectionMethods() throws Exception {
+    @Test
+    public <T> void testCollectionMethods() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<SameHashItem> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<T> queue = initQueue(0, queueName, 0, config(false));
+
+        SameHashInstanceFactory<T> factory = new SameHashInstanceFactory<T>(grid(0));
 
         int retries = 100;
 
         // Initialize queue.
         for (int i = 0; i < retries; i++)
-            queue.addAll(Arrays.asList(new SameHashItem(Integer.toString(i)), new SameHashItem(Integer.toString(i))));
+            queue.addAll(Arrays.asList(factory.instance(i), factory.instance(i)));
 
         // Get arrays from queue.
         assertEquals(retries * 2, queue.toArray().length);
 
-        SameHashItem[] arr2 = new SameHashItem[retries * 3];
+        T[] arr2 = factory.array(retries * 3);
 
         Object[] arr3 = queue.toArray(arr2);
 
         assertEquals(arr2, arr3);
-        assertEquals(arr3[0], new SameHashItem("0"));
+        assertEquals(arr3[0], factory.instance(0));
 
         // Check queue items.
         assertEquals(retries * 2, queue.size());
 
-        assertTrue(queue.contains(new SameHashItem(Integer.toString(14))));
+        assertTrue(queue.contains(factory.instance(14)));
 
-        assertFalse(queue.contains(new SameHashItem(Integer.toString(144))));
+        assertFalse(queue.contains(factory.instance(144)));
 
-        Collection<SameHashItem> col1 = Arrays.asList(new SameHashItem(Integer.toString(14)),
-            new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(18)));
+        Collection<T> col1 = Arrays.asList(factory.instance(14), factory.instance(14), factory.instance(18));
 
         assertTrue(queue.containsAll(col1));
 
-        Collection<SameHashItem> col2 = Arrays.asList(new SameHashItem(Integer.toString(245)),
-            new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(18)));
+        Collection<T> col2 = Arrays.asList(factory.instance(245), factory.instance(14), factory.instance(18));
 
         assertFalse(queue.containsAll(col2));
 
         // Try to remove item.
-        assertTrue(queue.remove(new SameHashItem(Integer.toString(14))));
+        assertTrue(queue.remove(factory.instance(14)));
 
         assertEquals((retries * 2) - 1, queue.size());
 
-        assertTrue(queue.contains(new SameHashItem(Integer.toString(14))));
+        assertTrue(queue.contains(factory.instance(14)));
 
-        assertTrue(queue.remove(new SameHashItem(Integer.toString(14))));
+        assertTrue(queue.remove(factory.instance(14)));
 
         assertEquals((retries - 1) * 2, queue.size());
 
-        assertFalse(queue.remove(new SameHashItem(Integer.toString(14))));
+        assertFalse(queue.remove(factory.instance(14)));
 
         // Try to remove some items.
-        assertTrue(queue.contains(new SameHashItem(Integer.toString(33))));
+        assertTrue(queue.contains(factory.instance(33)));
 
-        assertTrue(queue.removeAll(Arrays.asList(new SameHashItem(Integer.toString(15)),
-            new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(33)),
-            new SameHashItem(Integer.toString(1)))));
+        assertTrue(queue.removeAll(Arrays.asList(factory.instance(15), factory.instance(14), factory.instance(33),
+            factory.instance(1))));
 
-        assertFalse(queue.contains(new SameHashItem(Integer.toString(33))));
+        assertFalse(queue.contains(factory.instance(33)));
 
         // Try to retain all items.
-        assertTrue(queue.retainAll(Arrays.asList(new SameHashItem(Integer.toString(15)),
-            new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(33)),
-            new SameHashItem(Integer.toString(1)))));
+        assertTrue(queue.retainAll(Arrays.asList(factory.instance(15), factory.instance(14), factory.instance(33),
+            factory.instance(1))));
 
-        assertFalse(queue.contains(new SameHashItem(Integer.toString(2))));
+        assertFalse(queue.contains(factory.instance(2)));
 
         assert queue.isEmpty();
     }
@@ -213,11 +238,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPollUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         assert queue.add("1");
 
@@ -235,11 +261,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddPeekUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         String item1 = "1";
         assert queue.add(item1);
@@ -258,6 +285,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIterator() throws Exception {
         checkIterator(false);
     }
@@ -265,6 +293,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIteratorCollocated() throws Exception {
         checkIterator(true);
     }
@@ -276,7 +305,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(collocated));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(collocated));
 
         for (int i = 0; i < 100; i++)
             assert queue.add(Integer.toString(i));
@@ -328,11 +357,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, QUEUE_CAPACITY, config(false));
 
         String thName = Thread.currentThread().getName();
 
@@ -350,11 +380,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetMultithreadUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
+        final IgniteQueue<String> queue = initQueue(0, queueName, QUEUE_CAPACITY, config(false));
 
         multithreaded(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -378,11 +409,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetMultithreadBounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
+        final IgniteQueue<String> queue = initQueue(0, queueName, QUEUE_CAPACITY, config(false));
 
         multithreaded(new Callable<String>() {
                 @Override public String call() throws Exception {
@@ -405,11 +437,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testQueueRemoveMultithreadBounded() throws Exception {
         // Random queue name.
         final String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
+        final IgniteQueue<String> queue = initQueue(0, queueName, QUEUE_CAPACITY, config(false));
 
         final CountDownLatch putLatch = new CountDownLatch(THREAD_NUM);
 
@@ -445,7 +478,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         IgniteInternalFuture<?> closeFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 try {
-                    IgniteQueue<String> queue = grid(0).queue(queueName, 0, null);
+                    IgniteQueue<String> queue = initQueue(0, queueName, 0, null);
 
                     if (queue != null)
                         queue.close();
@@ -485,11 +518,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         String thread = Thread.currentThread().getName();
 
@@ -510,11 +544,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemoveMultiThreadedUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        final IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         multithreaded(
             new Callable<String>() {
@@ -544,11 +579,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutRemovePeekPollUnbounded() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         for (int i = 0; i < QUEUE_CAPACITY; i++)
             queue.put("Item-" + i);
@@ -575,11 +611,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRemovePeek() throws Exception {
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+        IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
         for (int i = 0; i < 5; i++)
             queue.put("Item-" + i);
@@ -608,12 +645,13 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReuseCache() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
-        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg);
+        IgniteQueue queue1 = initQueue(0, "Queue1", 0, colCfg);
 
-        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg);
+        IgniteQueue queue2 = initQueue(0, "Queue2", 0, colCfg);
 
         assertEquals(getQueueCache(queue1), getQueueCache(queue2));
     }
@@ -621,6 +659,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReuseCache() throws Exception {
         CollectionConfiguration colCfg1 = collectionConfiguration();
 
@@ -631,9 +670,9 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         else
             colCfg2.setAtomicityMode(ATOMIC);
 
-        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
+        IgniteQueue queue1 = initQueue(0, "Queue1", 0, colCfg1);
 
-        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
+        IgniteQueue queue2 = initQueue(0, "Queue2", 0, colCfg2);
 
         assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
     }
@@ -641,6 +680,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFilterNode() throws Exception {
         CollectionConfiguration colCfg1 = collectionConfiguration();
 
@@ -652,10 +692,10 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
             }
         });
 
-        grid(0).queue("Queue1", 0, colCfg1);
+        initQueue(0, "Queue1", 0, colCfg1);
 
         try {
-            grid(0).queue("Queue2", 0, colCfg2);
+            initQueue(0, "Queue2", 0, colCfg2);
 
             fail("Exception was expected.");
         }
@@ -667,10 +707,11 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSystemCache() throws Exception {
         CollectionConfiguration colCfg = collectionConfiguration();
 
-        IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
+        IgniteQueue queue = initQueue(0, "Queue1", 0, colCfg);
 
         final CacheConfiguration ccfg = getQueueCache(queue);
 
@@ -687,6 +728,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityRun() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -694,7 +736,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         colCfg.setGroupName("testGroup");
         colCfg.setCacheMode(CacheMode.PARTITIONED);
 
-        try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
+        try (final IgniteQueue<Integer> queue1 = initQueue(0, "Queue1", 0, colCfg)) {
             GridTestUtils.assertThrows(
                 log,
                 new Callable<Void>() {
@@ -715,7 +757,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         colCfg.setCollocated(true);
 
-        try (final IgniteQueue<Integer> queue2 = grid(0).queue("Queue2", 0, colCfg)) {
+        try (final IgniteQueue<Integer> queue2 = initQueue(0, "Queue2", 0, colCfg)) {
             queue2.add(100);
 
             queue2.affinityRun(new IgniteRunnable() {
@@ -735,6 +777,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityCall() throws Exception {
         final CollectionConfiguration colCfg = collectionConfiguration();
 
@@ -742,7 +785,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         colCfg.setGroupName("testGroup");
         colCfg.setCacheMode(CacheMode.PARTITIONED);
 
-        try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
+        try (final IgniteQueue<Integer> queue1 = initQueue(0, "Queue1", 0, colCfg)) {
             GridTestUtils.assertThrows(
                 log,
                 new Callable<Void>() {
@@ -763,7 +806,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         colCfg.setCollocated(true);
 
-        try (final IgniteQueue<Integer> queue2 = grid(0).queue("Queue2", 0, colCfg)) {
+        try (final IgniteQueue<Integer> queue2 = initQueue(0, "Queue2", 0, colCfg)) {
             queue2.add(100);
 
             Integer res = queue2.affinityCall(new IgniteCallable<Integer>() {
@@ -788,6 +831,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -802,7 +846,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         try {
             String queueName = UUID.randomUUID().toString();
 
-            IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+            IgniteQueue<String> queue = initQueue(0, queueName, 0, config(false));
 
             try (Transaction tx = ignite.transactions().txStart()) {
                 cache.put(1, 1);
@@ -841,23 +885,22 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheReuse() throws Exception {
-        Ignite ignite = grid(0);
-
         CollectionConfiguration colCfg = collectionConfiguration();
 
         colCfg.setAtomicityMode(ATOMIC);
         colCfg.setGroupName("grp1");
 
-        IgniteQueue queue1 = ignite.queue("queue1", 100, colCfg);
-        IgniteQueue queue2 = ignite.queue("queue2", 100, colCfg);
+        IgniteQueue queue1 = initQueue(0, "queue1", 100, colCfg);
+        IgniteQueue queue2 = initQueue(0, "queue2", 100, colCfg);
 
         assert cctx(queue1).cacheId() == cctx(queue2).cacheId();
 
         colCfg.setAtomicityMode(TRANSACTIONAL);
 
-        IgniteQueue queue3 = ignite.queue("queue3", 100, colCfg);
-        IgniteQueue queue4 = ignite.queue("queue4", 100, colCfg);
+        IgniteQueue queue3 = initQueue(0, "queue3", 100, colCfg);
+        IgniteQueue queue4 = initQueue(0, "queue4", 100, colCfg);
 
         assert cctx(queue3).cacheId() == cctx(queue4).cacheId();
         assert cctx(queue1).cacheId() != cctx(queue3).cacheId();
@@ -865,8 +908,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         colCfg.setGroupName("gtp2");
 
-        IgniteQueue queue5 = ignite.queue("queue5", 100, colCfg);
-        IgniteQueue queue6 = ignite.queue("queue6", 100, colCfg);
+        IgniteQueue queue5 = initQueue(0, "queue5", 100, colCfg);
+        IgniteQueue queue6 = initQueue(0, "queue6", 100, colCfg);
 
         assert cctx(queue5).cacheId() == cctx(queue6).cacheId();
         assert cctx(queue1).groupId() != cctx(queue5).groupId();
@@ -877,16 +920,15 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleStructuresInDifferentGroups() throws Exception {
-        Ignite ignite = grid(0);
-
         CollectionConfiguration cfg1 = collectionConfiguration();
         CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
 
-        IgniteQueue<String> queue1 = ignite.queue("queue1", 100, cfg1);
-        IgniteQueue<String> queue2 = ignite.queue("queue2", 100, cfg1);
-        IgniteQueue<String> queue3 = ignite.queue("queue3", 100, cfg2);
-        IgniteQueue<String> queue4 = ignite.queue("queue4", 100, cfg2);
+        IgniteQueue<String> queue1 = initQueue(0, "queue1", 100, cfg1);
+        IgniteQueue<String> queue2 = initQueue(0, "queue2", 100, cfg1);
+        IgniteQueue<String> queue3 = initQueue(0, "queue3", 100, cfg2);
+        IgniteQueue<String> queue4 = initQueue(0, "queue4", 100, cfg2);
 
         assertTrue(queue1.offer("a"));
         assertTrue(queue2.offer("b"));
@@ -932,8 +974,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         assertFalse(queue1.removed());
         assertFalse(queue3.removed());
 
-        assertNotNull(ignite.queue("queue1", 100, null));
-        assertNull(ignite.queue("queue2", 100, null));
+        assertNotNull(initQueue(0, "queue1", 100, null));
+        assertNull(initQueue(0, "queue2", 100, null));
 
         queue1.close();
         queue3.close();
@@ -942,14 +984,14 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     /**
      *  Test class with the same hash code.
      */
-    private static class SameHashItem implements Serializable {
-        /** Data field*/
+    protected static class SameHashItem implements Serializable {
+        /** Data field */
         private final String s;
 
         /**
          * @param s Item data.
          */
-        private SameHashItem(String s) {
+        protected SameHashItem(String s) {
             this.s = s;
         }
 
@@ -978,4 +1020,37 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         }
     }
 
+    /**
+     * Class to generate {@link SameHashItem} or {@link BinaryObject} objects based on wheter the queue mode is
+     * binary.
+     */
+    private static class SameHashInstanceFactory<T> {
+        /** Ignite instance. */
+        private Ignite ignite;
+
+        /**
+         * @param ignite Ignite instance.
+         */
+        SameHashInstanceFactory(Ignite ignite) {
+            this.ignite = ignite;
+        }
+
+        /**
+         * @param val value to be used for creating the instance.
+         */
+        public T instance(int val) {
+            return BINARY_QUEUE_MODE
+                ? (T)ignite.binary().toBinary(new SameHashItem(Integer.toString(val)))
+                : (T)new SameHashItem(Integer.toString(val));
+        }
+
+        /**
+         * @param size Size of array.
+         */
+        public T[] array(int size) {
+            return BINARY_QUEUE_MODE
+                ? (T[])new BinaryObject[size]
+                : (T[])new SameHashItem[size];
+        }
+    }
 }

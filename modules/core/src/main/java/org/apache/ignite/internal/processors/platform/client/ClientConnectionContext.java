@@ -17,54 +17,116 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
-
-import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * Thin Client connection context.
  */
-public class ClientConnectionContext implements ClientListenerConnectionContext {
+public class ClientConnectionContext extends ClientListenerAbstractConnectionContext {
     /** Version 1.0.0. */
-    private static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
+    public static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
+
+    /** Version 1.1.0. */
+    public static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
+
+    /** Version 1.2.0. */
+    public static final ClientListenerProtocolVersion VER_1_2_0 = ClientListenerProtocolVersion.create(1, 2, 0);
+
+    /** Version 1.3.0. */
+    public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
+
+    /** Version 1.4.0. Added: Partition awareness, IEP-23. */
+    public static final ClientListenerProtocolVersion VER_1_4_0 = ClientListenerProtocolVersion.create(1, 4, 0);
+
+    /** Version 1.5.0. Added: Transactions support, IEP-34. */
+    public static final ClientListenerProtocolVersion VER_1_5_0 = ClientListenerProtocolVersion.create(1, 5, 0);
+
+    /** Version 1.6.0. Added: Expiration Policy configuration. */
+    public static final ClientListenerProtocolVersion VER_1_6_0 = ClientListenerProtocolVersion.create(1, 6, 0);
+
+    /** Version 1.7.0. Added: User attributes support. */
+    public static final ClientListenerProtocolVersion VER_1_7_0 = ClientListenerProtocolVersion.create(1, 7, 0);
+
+    /** Default version. */
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_7_0;
+
+    /** Supported versions. */
+    private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_7_0,
+        VER_1_6_0,
+        VER_1_5_0,
+        VER_1_4_0,
+        VER_1_3_0,
+        VER_1_2_0,
+        VER_1_1_0,
+        VER_1_0_0
+    );
 
     /** Message parser. */
-    private final ClientMessageParser parser;
+    private ClientMessageParser parser;
 
     /** Request handler. */
-    private final ClientRequestHandler handler;
+    private ClientRequestHandler handler;
 
     /** Handle registry. */
     private final ClientResourceRegistry resReg = new ClientResourceRegistry();
 
-    /** Kernal context. */
-    private final GridKernalContext kernalCtx;
-
     /** Max cursors. */
     private final int maxCursors;
 
+    /** Current protocol version. */
+    private ClientListenerProtocolVersion currentVer;
+
+    /** Last reported affinity topology version. */
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopologyVersion = new AtomicReference<>();
+
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
+
+    /** Active tx count limit. */
+    private final int maxActiveTxCnt;
+
+    /** Tx id. */
+    private final AtomicInteger txIdSeq = new AtomicInteger();
+
+    /** Transactions by transaction id. */
+    private final Map<Integer, ClientTxContext> txs = new ConcurrentHashMap<>();
+
+    /** Active transactions count. */
+    private final AtomicInteger txsCnt = new AtomicInteger();
 
     /**
      * Ctor.
      *
      * @param ctx Kernal context.
+     * @param connId Connection ID.
      * @param maxCursors Max active cursors.
+     * @param thinCfg Thin-client configuration.
      */
-    public ClientConnectionContext(GridKernalContext ctx, int maxCursors) {
-        assert ctx != null;
+    public ClientConnectionContext(GridKernalContext ctx, long connId, int maxCursors, ThinClientConfiguration thinCfg) {
+        super(ctx, connId);
 
-        kernalCtx = ctx;
-
-        parser = new ClientMessageParser(ctx);
-        handler = new ClientRequestHandler(this);
         this.maxCursors = maxCursors;
+        maxActiveTxCnt = thinCfg.getMaxActiveTxPerConnection();
     }
 
     /**
@@ -76,28 +138,56 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         return resReg;
     }
 
-    /**
-     * Gets the kernal context.
-     *
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext() {
-        return kernalCtx;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
-        return VER_1_0_0.equals(ver);
+        return SUPPORTED_VERS.contains(ver);
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProtocolVersion currentVersion() {
-        return VER_1_0_0;
+    @Override public ClientListenerProtocolVersion defaultVersion() {
+        return DEFAULT_VER;
+    }
+
+    /**
+     * @return Currently used protocol version.
+     */
+    public ClientListenerProtocolVersion currentVersion() {
+        return currentVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
-        // No-op.
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
+        boolean hasMore;
+
+        String user = null;
+        String pwd = null;
+
+        if (ver.compareTo(VER_1_7_0) >= 0)
+            userAttrs = reader.readMap();
+
+        if (ver.compareTo(VER_1_1_0) >= 0) {
+            try {
+                hasMore = reader.available() > 0;
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+            }
+
+            if (hasMore) {
+                user = reader.readString();
+                pwd = reader.readString();
+            }
+        }
+
+        AuthorizationContext authCtx = authenticate(ses.certificates(), user, pwd);
+
+        currentVer = ver;
+
+        handler = new ClientRequestHandler(this, authCtx, ver);
+
+        parser = new ClientMessageParser(this, ver);
     }
 
     /** {@inheritDoc} */
@@ -113,6 +203,10 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /** {@inheritDoc} */
     @Override public void onDisconnected() {
         resReg.clean();
+
+        cleanupTxs();
+
+        super.onDisconnected();
     }
 
     /**
@@ -136,5 +230,84 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      */
     public void decrementCursors() {
         curCnt.decrementAndGet();
+    }
+
+    /**
+     * Atomically check whether affinity topology version has changed since the last call and sets new version as a last.
+     * @return New version, if it has changed since the last call.
+     */
+    public ClientAffinityTopologyVersion checkAffinityTopologyVersion() {
+        while (true) {
+            AffinityTopologyVersion oldVer = lastAffinityTopologyVersion.get();
+            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
+
+            if (changed) {
+                boolean success = lastAffinityTopologyVersion.compareAndSet(oldVer, newVer);
+
+                if (!success)
+                    continue;
+            }
+
+            return new ClientAffinityTopologyVersion(newVer, changed);
+        }
+    }
+
+    /**
+     * Next transaction id for this connection.
+     */
+    public int nextTxId() {
+        int txId = txIdSeq.incrementAndGet();
+
+        return txId == 0 ? txIdSeq.incrementAndGet() : txId;
+    }
+
+    /**
+     * Transaction context by transaction id.
+     *
+     * @param txId Tx ID.
+     */
+    public ClientTxContext txContext(int txId) {
+        return txs.get(txId);
+    }
+
+    /**
+     * Add new transaction context to connection.
+     *
+     * @param txCtx Tx context.
+     */
+    public void addTxContext(ClientTxContext txCtx) {
+        if (txsCnt.incrementAndGet() > maxActiveTxCnt) {
+            txsCnt.decrementAndGet();
+
+            throw new IgniteClientException(ClientStatus.TX_LIMIT_EXCEEDED, "Active transactions per connection limit " +
+                "(" + maxActiveTxCnt + ") exceeded. To start a new transaction you need to wait for some of currently " +
+                "active transactions complete. To change the limit set up " +
+                "ThinClientConfiguration.MaxActiveTxPerConnection property.");
+        }
+
+        txs.put(txCtx.txId(), txCtx);
+    }
+
+    /**
+     * Remove transaction context from connection.
+     *
+     * @param txId Tx ID.
+     */
+    public void removeTxContext(int txId) {
+        txs.remove(txId);
+
+        txsCnt.decrementAndGet();
+    }
+
+    /**
+     *
+     */
+    private void cleanupTxs() {
+        for (ClientTxContext txCtx : txs.values())
+            txCtx.close();
+
+        txs.clear();
     }
 }

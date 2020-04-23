@@ -21,12 +21,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests cache puts in mixed mode.
+ *
+ * TODO IGNITE-10345: Remove test in ignite 3.0.
  */
 public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -36,9 +38,6 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
-
-        if (F.eq(igniteInstanceName, getTestIgniteInstanceName(0)))
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -57,19 +56,17 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(4);
-    }
+        startGrids(3);
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        startClientGrid(3);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBasicOps() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache = grid(3).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);

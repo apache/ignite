@@ -23,10 +23,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -40,6 +42,8 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -57,7 +61,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
@@ -79,6 +85,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysCommit() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 
@@ -91,6 +98,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyKeysRollback() throws Exception {
         Collection<Integer> keys = new ArrayList<>(200);
 
@@ -103,6 +111,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureCommit() throws Exception {
         checkPrimaryNodeCrash(true);
     }
@@ -110,6 +119,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureRollback() throws Exception {
         checkPrimaryNodeCrash(false);
     }
@@ -268,8 +278,10 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                         assertNotNull(cache);
 
-                        assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            fullFailure ? initVal : val, cache.localPeek(key));
+                        if (atomicityMode() != TRANSACTIONAL_SNAPSHOT) {
+                            assertEquals("Failed to check entry value on node: " + checkNodeId,
+                                fullFailure ? initVal : val, cache.localPeek(key));
+                        }
 
                         return null;
                     }
@@ -277,9 +289,25 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         }
 
+        awaitPartitionMapExchange();
+
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Ignite g : G.allGrids())
-                assertEquals(fullFailure ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(e.getKey()));
+            long cntr0 = -1;
+
+            for (Ignite g : G.allGrids()) {
+                Integer key = e.getKey();
+
+                assertEquals(fullFailure ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(key));
+
+                if (g.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(((IgniteEx)g).localNode(), key)) {
+                    long nodeCntr = updateCoutner(g, key);
+
+                    if (cntr0 == -1)
+                        cntr0 = nodeCntr;
+
+                    assertEquals(cntr0, nodeCntr);
+                }
+            }
         }
     }
 
@@ -402,6 +430,9 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
             assertFalse(e.getValue().isEmpty());
 
+            if (atomicityMode() == TRANSACTIONAL_SNAPSHOT)
+                continue;
+
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
@@ -424,9 +455,25 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         }
 
+        awaitPartitionMapExchange();
+
         for (Map.Entry<Integer, String> e : map.entrySet()) {
-            for (Ignite g : G.allGrids())
-                assertEquals(!commmit ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(e.getKey()));
+            long cntr0 = -1;
+
+            for (Ignite g : G.allGrids()) {
+                Integer key = e.getKey();
+
+                assertEquals(!commmit ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(key));
+
+                if (g.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(((IgniteEx)g).localNode(), key)) {
+                    long nodeCntr = updateCoutner(g, key);
+
+                    if (cntr0 == -1)
+                        cntr0 = nodeCntr;
+
+                    assertEquals(cntr0, nodeCntr);
+                }
+            }
         }
     }
 
@@ -528,5 +575,22 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         }
         else
             return false;
+    }
+
+    /** */
+    private static long updateCoutner(Ignite ign, Object key) {
+        return dataStore(((IgniteEx)ign).cachex(DEFAULT_CACHE_NAME).context(), key)
+            .map(IgniteCacheOffheapManager.CacheDataStore::updateCounter)
+            .orElse(0L);
+    }
+
+    /** */
+    private static Optional<IgniteCacheOffheapManager.CacheDataStore> dataStore(
+        GridCacheContext<?, ?> cctx, Object key) {
+        int p = cctx.affinity().partition(key);
+
+        return StreamSupport.stream(cctx.offheap().cacheDataStores().spliterator(), false)
+            .filter(ds -> ds.partId() == p)
+            .findFirst();
     }
 }

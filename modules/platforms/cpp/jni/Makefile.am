@@ -39,6 +39,7 @@ AM_CXXFLAGS = \
 
 libignite_jni_la_LIBADD = \
     -L$(JAVA_HOME)/jre/lib/amd64/server \
+    -L$(JAVA_HOME)/lib/server \
     @top_srcdir@/common/libignite-common.la
 
 libignite_jni_la_LDFLAGS = \

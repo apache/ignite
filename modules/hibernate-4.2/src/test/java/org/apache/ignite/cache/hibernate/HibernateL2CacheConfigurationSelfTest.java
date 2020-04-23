@@ -40,11 +40,11 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistryBuilder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_CACHE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
 import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
@@ -79,17 +79,9 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
-    /** If {@code true} then sets default cache in configuration. */
-    private boolean dfltCache;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -164,26 +156,15 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         cfg.setProperty(REGION_CACHE_PROPERTY + TIMESTAMP_CACHE, TIMESTAMP_CACHE);
         cfg.setProperty(REGION_CACHE_PROPERTY + QUERY_CACHE, QUERY_CACHE);
 
-        if (dfltCache)
-            cfg.setProperty(DFLT_CACHE_NAME_PROPERTY, "cache3");
-
         return cfg;
     }
 
     /**
      * Tests property {@link HibernateAccessStrategyFactory#REGION_CACHE_PROPERTY}.
      */
+    @Test
     public void testPerRegionCacheProperty() {
         testCacheUsage(1, 1, 0, 1, 1);
-    }
-
-    /**
-     * Tests property {@link HibernateAccessStrategyFactory#DFLT_CACHE_NAME_PROPERTY}.
-     */
-    public void testDefaultCache() {
-        dfltCache = true;
-
-        testCacheUsage(1, 1, 2, 0, 0);
     }
 
     /**

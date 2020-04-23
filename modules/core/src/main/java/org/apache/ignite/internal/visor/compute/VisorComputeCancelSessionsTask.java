@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -31,9 +32,10 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cancels given tasks sessions.
+ * Cancels given task session.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorComputeCancelSessionsTask extends VisorOneNodeTask<VisorComputeCancelSessionsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -50,7 +52,7 @@ public class VisorComputeCancelSessionsTask extends VisorOneNodeTask<VisorComput
     }
 
     /**
-     * Job that cancel tasks.
+     * Job that cancel task.
      */
     private static class VisorComputeCancelSessionsJob extends VisorJob<VisorComputeCancelSessionsTaskArg, Void> {
         /** */

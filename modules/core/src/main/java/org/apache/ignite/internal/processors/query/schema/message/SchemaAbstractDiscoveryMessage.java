@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract discovery message for schema operations.
@@ -49,6 +53,12 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
     }
 
     /**

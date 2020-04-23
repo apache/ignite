@@ -23,9 +23,11 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
- *
+ * Page IO for Partition Counters, IO for pages containing cache ID mapping to its size. Used only for caches in shared
+ * cache groups.
  */
 public class PagePartitionCountersIO extends PageIO {
     /** */
@@ -40,8 +42,14 @@ public class PagePartitionCountersIO extends PageIO {
     /** */
     private static final int ITEMS_OFF = NEXT_COUNTERS_PAGE_OFF + 8;
 
-    /** */
-    private static final int ITEM_SIZE = 12;
+    /** Serialized size in bytes of cache ID (int) */
+    private static final int CACHE_ID_SIZE = 4;
+
+    /** Serialized size in bytes of cache ID (int) */
+    private static final int CACHE_SIZE_SIZE = 8;
+
+    /** One serialized entry size: Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes */
+    public static final int ITEM_SIZE = CACHE_ID_SIZE + CACHE_SIZE_SIZE;
 
     /** */
     private static final byte LAST_FLAG = 0b1;
@@ -56,6 +64,22 @@ public class PagePartitionCountersIO extends PageIO {
      */
     public PagePartitionCountersIO(int ver) {
         super(T_PART_CNTRS, ver);
+    }
+
+    /**
+     * @param cacheSizes Cache sizes: cache Id in shared group mapped to its size. Not null.
+     * @return Serialized cache sizes or 0-byte length array if map was empty.
+     */
+    public byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
+        byte[] data = new byte[cacheSizes.size() * ITEM_SIZE];
+        long off = GridUnsafe.BYTE_ARR_OFF;
+
+        for (Map.Entry<Integer, Long> entry : cacheSizes.entrySet()) {
+            GridUnsafe.putInt(data, off, entry.getKey()); off += CACHE_ID_SIZE;
+            GridUnsafe.putLong(data, off, entry.getValue()); off += CACHE_SIZE_SIZE;
+        }
+
+        return data;
     }
 
     /** {@inheritDoc} */
@@ -83,7 +107,7 @@ public class PagePartitionCountersIO extends PageIO {
     }
 
     /**
-     * @param pageSize Page size.
+     * @param pageSize Page size without encryption overhead.
      * @param pageAddr Page address.
      * @param cacheSizes Serialized cache size items (pairs of cache ID and its size).
      * @return Number of written pairs.
@@ -125,12 +149,12 @@ public class PagePartitionCountersIO extends PageIO {
 
         for (int i = 0; i < cnt; i++) {
             int cacheId = PageUtils.getInt(pageAddr, off);
-            off += 4;
+            off += CACHE_ID_SIZE;
 
             assert cacheId != 0;
 
             long cacheSize = PageUtils.getLong(pageAddr, off);
-            off += 8;
+            off += CACHE_SIZE_SIZE;
 
             assert cacheSize >= 0 : cacheSize;
 

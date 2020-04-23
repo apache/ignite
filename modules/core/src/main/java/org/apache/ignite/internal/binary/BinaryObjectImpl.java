@@ -135,7 +135,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         Object obj0 = obj;
 
@@ -189,7 +188,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        this.ctx = ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).binaryContext();
+        CacheObjectBinaryProcessorImpl binaryProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
+
+        this.ctx = binaryProc.binaryContext();
+
+        binaryProc.waitMetadataWriteIfNeeded(typeId());
     }
 
     /** {@inheritDoc} */
@@ -205,7 +208,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * @return Detached binary object.
      */
-    public BinaryObject detach() {
+    public BinaryObjectImpl detach() {
         if (!detachAllowed || detached())
             return this;
 
@@ -303,13 +306,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldId);
     }
@@ -352,7 +353,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F fieldByOrder(int order) {
         if (order == BinarySchema.ORDER_NOT_FOUND)
             return null;
@@ -504,7 +504,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("IfMayBeConditional")
     @Override public boolean writeFieldByOrder(int order, ByteBuffer buf) {
         // Calculate field position.
         int schemaOffset = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
@@ -545,6 +544,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             case GridBinaryMarshaller.LONG:
             case GridBinaryMarshaller.DOUBLE:
             case GridBinaryMarshaller.DATE:
+            case GridBinaryMarshaller.TIME:
                 totalLen = 9;
 
                 break;
@@ -620,7 +620,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
         return (F)reader(rCtx, false).unmarshalField(fieldName);
     }
@@ -631,7 +630,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
         Object obj0 = obj;
 
@@ -699,6 +697,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         start = in.readInt();
     }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -843,6 +842,72 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         return reader(rCtx, null, forUnmarshal);
+    }
+
+    /**
+     * Compare two objects for DML operation.
+     *
+     * @param first First.
+     * @param second Second.
+     * @return Comparison result.
+     */
+    @SuppressWarnings("unchecked")
+    public static int compareForDml(Object first, Object second) {
+        boolean firstBinary = first instanceof BinaryObjectImpl;
+        boolean secondBinary = second instanceof BinaryObjectImpl;
+
+        if (firstBinary) {
+            if (secondBinary)
+                return compareForDml0((BinaryObjectImpl)first, (BinaryObjectImpl)second);
+            else
+                return 1; // Go to the right part.
+        }
+        else {
+            if (secondBinary)
+                return -1; // Go to the left part.
+            else
+                return ((Comparable)first).compareTo(second);
+        }
+    }
+
+    /**
+     * Internal DML comparison routine.
+     *
+     * @param first First item.
+     * @param second Second item.
+     * @return Comparison result.
+     */
+    private static int compareForDml0(BinaryObjectImpl first, BinaryObjectImpl second) {
+        int res = Integer.compare(first.typeId(), second.typeId());
+
+        if (res == 0) {
+            res = Integer.compare(first.hashCode(), second.hashCode());
+
+            if (res == 0) {
+                // Pessimistic case: need to perform binary comparison.
+                int firstDataStart = first.dataStartOffset();
+                int secondDataStart = second.dataStartOffset();
+
+                int firstLen = first.footerStartOffset() - firstDataStart;
+                int secondLen = second.footerStartOffset() - secondDataStart;
+
+                res = Integer.compare(firstLen, secondLen);
+
+                if (res == 0) {
+                    for (int i = 0; i < firstLen; i++) {
+                        byte firstByte = first.arr[firstDataStart + i];
+                        byte secondByte = second.arr[secondDataStart + i];
+
+                        res = Byte.compare(firstByte, secondByte);
+
+                        if (res != 0)
+                            break;
+                    }
+                }
+            }
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */

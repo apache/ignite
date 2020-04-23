@@ -45,7 +45,7 @@ namespace ignite
 
             static int32_t GetFieldId(const char* name);
 
-            static bool IsNull(const IgniteError& obj)
+            static bool IsNull(const IgniteError&)
             {
                 return false;
             }
@@ -66,7 +66,7 @@ namespace ignite
             template<typename W>
             static void Write(W& writer, const T& val)
             {
-                writer.WriteTopObject0(val);
+                writer.template WriteTopObject0<BinaryWriter>(val);
             }
         };
 
@@ -82,7 +82,7 @@ namespace ignite
                 if (!val)
                     writer.WriteNull0();
                 else
-                    writer.WriteTopObject0(*val);
+                    writer.template WriteTopObject0<BinaryWriter>(*val);
             }
         };
 
@@ -97,9 +97,15 @@ namespace ignite
             {
                 T res;
 
-                reader.template ReadTopObject0<T>(res);
+                Read<R>(reader, res);
 
                 return res;
+            }
+
+            template<typename R>
+            static void Read(R& reader, T& val)
+            {
+                reader.template ReadTopObject0<BinaryReader, T>(val);
             }
         };
 
@@ -117,9 +123,15 @@ namespace ignite
 
                 std::auto_ptr<T> res(new T());
 
-                reader.template ReadTopObject0<T>(*res);
+                reader.template ReadTopObject0<BinaryReader, T>(*res);
 
                 return res.release();
+            }
+
+            template<typename R>
+            static void Read(R& reader, T*& ptr)
+            {
+                ptr = Read<R>(reader);
             }
         };
     }

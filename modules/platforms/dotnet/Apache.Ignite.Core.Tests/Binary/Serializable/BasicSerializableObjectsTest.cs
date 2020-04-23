@@ -44,12 +44,13 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         public void TestEmptyObjectOnline()
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "1")))
             {
                 var cache = ignite.CreateCache<int, EmptyObject>("c");
 
                 cache[1] = new EmptyObject();
 
-                var res = cache[1];
+                var res = ignite2.GetCache<int, EmptyObject>("c")[1];
 
                 Assert.IsNotNull(res);
             }

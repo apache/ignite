@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.marshaller.optimized;
 
-import junit.framework.TestCase;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,18 +24,23 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  *
  */
-public class OptimizedMarshallerEnumSelfTest extends TestCase {
+public class OptimizedMarshallerEnumSelfTest {
 
     private String igniteHome = System.getProperty("user.dir");
 
     private final IgniteLogger rootLog = new GridTestLog4jLogger(false);
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnumSerialisation() throws Exception {
         OptimizedMarshaller marsh = new OptimizedMarshaller();
 

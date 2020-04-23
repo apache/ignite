@@ -26,7 +26,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -142,8 +143,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     /** */
     private boolean loadPrevVal;
 
-    /** Name of {@link MemoryPolicyConfiguration} for this cache */
-    private String memPlcName;
+    /** Name of {@link DataRegionConfiguration} for this cache */
+    private String dataRegName;
 
     /** Maximum inline size for sql indexes. */
     private int sqlIdxMaxInlineSize;
@@ -165,6 +166,12 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
 
     /** Dynamic deployment ID. */
     private IgniteUuid dynamicDeploymentId;
+
+    /** Disk page compression algorithm. */
+    private DiskPageCompression diskPageCompression;
+
+    /** Algorithm specific disk page compression level. */
+    private Integer diskPageCompressionLevel;
 
     /**
      * Default constructor.
@@ -219,13 +226,16 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = compactClass(ccfg.getEvictionFilter());
         lsnrConfigurations = compactIterable(ccfg.getCacheEntryListenerConfigurations());
         loadPrevVal = ccfg.isLoadPreviousValue();
-        memPlcName = ccfg.getMemoryPolicyName();
+        dataRegName = ccfg.getDataRegionName();
         sqlIdxMaxInlineSize = ccfg.getSqlIndexMaxInlineSize();
         nodeFilter = compactClass(ccfg.getNodeFilter());
         qryDetailMetricsSz = ccfg.getQueryDetailMetricsSize();
         readFromBackup = ccfg.isReadFromBackup();
         tmLookupClsName = ccfg.getTransactionManagerLookupClassName();
         topValidator = compactClass(ccfg.getTopologyValidator());
+
+        diskPageCompression = ccfg.getDiskPageCompression();
+        diskPageCompressionLevel = ccfg.getDiskPageCompressionLevel();
     }
 
     /**
@@ -460,10 +470,11 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@link MemoryPolicyConfiguration} name.
+     * @return {@link DataRegionConfiguration} name.
      */
+    @Deprecated
     public String getMemoryPolicyName() {
-        return memPlcName;
+        return dataRegName;
     }
 
     /**
@@ -488,8 +499,8 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return {@code true} if data can be read from backup node or {@code false} if data always
-     *      should be read from primary node and never from backup.
+     * @return {@code true} if data can be read from backup node or {@code false} if data always should be read from
+     * primary node and never from backup.
      */
     public boolean isReadFromBackup() {
         return readFromBackup;
@@ -515,6 +526,25 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
      */
     public IgniteUuid getDynamicDeploymentId() {
         return dynamicDeploymentId;
+    }
+
+    /**
+     * @return Disk page compression algorithm.
+     */
+    public DiskPageCompression getDiskPageCompression() {
+        return diskPageCompression;
+    }
+
+    /**
+     * @return Algorithm specific disk page compression level.
+     */
+    public Integer getDiskPageCompressionLevel() {
+        return diskPageCompressionLevel;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
@@ -551,7 +581,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, evictFilter);
         U.writeString(out, lsnrConfigurations);
         out.writeBoolean(loadPrevVal);
-        U.writeString(out, memPlcName);
+        U.writeString(out, dataRegName);
         out.writeInt(sqlIdxMaxInlineSize);
         U.writeString(out, nodeFilter);
         out.writeInt(qryDetailMetricsSz);
@@ -559,6 +589,10 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         U.writeString(out, tmLookupClsName);
         U.writeString(out, topValidator);
         U.writeGridUuid(out, dynamicDeploymentId);
+
+        // V2
+        U.writeEnum(out, diskPageCompression);
+        out.writeObject(diskPageCompressionLevel);
     }
 
     /** {@inheritDoc} */
@@ -595,7 +629,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         evictFilter = U.readString(in);
         lsnrConfigurations = U.readString(in);
         loadPrevVal = in.readBoolean();
-        memPlcName = U.readString(in);
+        dataRegName = U.readString(in);
         sqlIdxMaxInlineSize = in.readInt();
         nodeFilter = U.readString(in);
         qryDetailMetricsSz = in.readInt();
@@ -603,6 +637,11 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
         tmLookupClsName = U.readString(in);
         topValidator = U.readString(in);
         dynamicDeploymentId = U.readGridUuid(in);
+
+        if (protoVer > V1) {
+            diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
+            diskPageCompressionLevel = (Integer) in.readObject();
+        }
     }
 
     /** {@inheritDoc} */

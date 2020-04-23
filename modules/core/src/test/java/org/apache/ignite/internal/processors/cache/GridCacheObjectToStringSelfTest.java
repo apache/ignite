@@ -27,11 +27,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -44,9 +43,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests that common cache objects' toString() methods do not lead to stack overflow.
  */
 public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache mode for test. */
     private CacheMode cacheMode;
 
@@ -57,12 +53,17 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(discoSpi);
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -85,6 +86,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocalCacheFifoEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
         evictionPlc = new FifoEvictionPolicy();
@@ -93,6 +95,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testLocalCacheLruEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
         evictionPlc = new LruEvictionPolicy();
@@ -101,6 +104,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
         evictionPlc = new FifoEvictionPolicy();
@@ -109,6 +113,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testReplicatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
         evictionPlc = new LruEvictionPolicy();
@@ -117,6 +122,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -126,6 +132,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPartitionedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -135,6 +142,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testColocatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -144,6 +152,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testColocatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;

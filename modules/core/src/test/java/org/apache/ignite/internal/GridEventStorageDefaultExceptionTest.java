@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Event storage tests with default no-op spi.
@@ -48,6 +49,7 @@ public class GridEventStorageDefaultExceptionTest  extends GridCommonAbstractTes
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testLocalNodeEventStorage() throws Exception {
         try {
             grid().events().localQuery(F.<Event>alwaysTrue());
@@ -64,6 +66,7 @@ public class GridEventStorageDefaultExceptionTest  extends GridCommonAbstractTes
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testRemoteNodeEventStorage() throws Exception {
         try {
             grid().events().remoteQuery(F.<Event>alwaysTrue(), 0);

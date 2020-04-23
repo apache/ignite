@@ -145,7 +145,6 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T attribute(String name) {
         return (T)attrs.get(name);
     }
@@ -191,7 +190,7 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    public long order() {
+    @Override public long order() {
         return order;
     }
 

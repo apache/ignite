@@ -28,10 +28,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -39,9 +37,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Tests affinity mapping when {@link AffinityKeyMapper} is used.
  */
 public class GridAffinityMappedTest extends GridCommonAbstractTest {
-    /** VM ip finder for TCP discovery. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      *
      */
@@ -52,14 +47,6 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setFailureDetectionTimeout(Integer.MAX_VALUE);
 
         if (igniteInstanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
@@ -87,16 +74,10 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-        stopGrid(3);
-    }
-
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testMappedAffinity() throws IgniteCheckedException {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);

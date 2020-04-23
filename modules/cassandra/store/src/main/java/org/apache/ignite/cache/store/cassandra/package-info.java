@@ -18,4 +18,5 @@
 /**
  * Contains {@link org.apache.ignite.cache.store.CacheStore} implementation backed by Cassandra database
  */
+
 package org.apache.ignite.cache.store.cassandra;

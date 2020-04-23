@@ -21,38 +21,34 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 
 /**
- *
+ * Tests grid node kicking on communication failure.
  */
 public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Nodes count. */
     private static final int NODES_CNT = 4;
 
@@ -73,11 +69,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 
-        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi) cfg.getDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
         cfg.setCommunicationSpi(spi);
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -91,8 +83,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -111,8 +101,11 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Server node shouldn't be failed by other server node if IGNITE_ENABLE_FORCIBLE_NODE_KILL=true.
+     *
      * @throws Exception If failed.
      */
+    @Test
     public void testOneNode() throws Exception {
         pred = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode locNode, ClusterNode rmtNode) {
@@ -122,12 +115,11 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
         startGrids(NODES_CNT);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger evts = new AtomicInteger();
 
         grid(0).events().localListen(new IgnitePredicate<Event>() {
-            @Override
-            public boolean apply(Event event) {
-                latch.countDown();
+            @Override public boolean apply(Event evt) {
+                evts.incrementAndGet();
 
                 return true;
             }
@@ -137,58 +129,29 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
         block = true;
 
-        grid(0).compute().broadcast(new IgniteRunnable() {
-            @Override public void run() {
-                // No-op.
-            }
-        });
-
-        assertTrue(latch.await(15, TimeUnit.SECONDS));
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return grid(3).cluster().topologyVersion() == NODES_CNT + 1;
-            }
-        }, 5000));
-
-        for (int i = 0; i < 10; i++) {
-            U.sleep(1000);
-
-            assertEquals(NODES_CNT - 1, grid(0).cluster().nodes().size());
-
-            int liveNodesCnt = 0;
-
-            for (int j = 0; j < NODES_CNT; j++) {
-                IgniteEx ignite;
-
-                try {
-                    ignite = grid(j);
-
-                    log.info("Checking topology for grid(" + j + "): " + ignite.cluster().nodes());
-
-                    ClusterNode locNode = ignite.localNode();
-
-                    if (locNode.order() != 3) {
-                        assertEquals(NODES_CNT - 1, ignite.cluster().nodes().size());
-
-                        for (ClusterNode node : ignite.cluster().nodes())
-                            assertTrue(node.order() != 3);
-
-                        liveNodesCnt++;
-                    }
+        try {
+            grid(0).compute().broadcast(new IgniteRunnable() {
+                @Override public void run() {
+                    // No-op.
                 }
-                catch (Exception e) {
-                    log.info("Checking topology for grid(" + j + "): no grid in topology.");
-                }
-            }
+            });
 
-            assertEquals(NODES_CNT - 1, liveNodesCnt);
+            fail("Should have exception here.");
+        } catch (IgniteException e) {
+            assertTrue(e.getCause() instanceof IgniteSpiException);
         }
+
+        block = false;
+
+        assertEquals(NODES_CNT, grid(0).cluster().nodes().size());
+        assertEquals(0, evts.get());
     }
 
     /**
+     * Servers shouldn't fail each other if IGNITE_ENABLE_FORCIBLE_NODE_KILL=true.
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoNodesEachOther() throws Exception {
         pred = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
             @Override public boolean apply(ClusterNode locNode, ClusterNode rmtNode) {
@@ -199,11 +162,11 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
         startGrids(NODES_CNT);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger evts = new AtomicInteger();
 
         grid(0).events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
-                latch.countDown();
+                evts.incrementAndGet();
 
                 return true;
             }
@@ -243,65 +206,40 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return grid(2).cluster().nodes().size() == NODES_CNT - 1;
-            }
-        }, 5000);
-
         try {
             fut1.get();
+
+            fail("Should fail with SpiException");
         }
         catch (IgniteCheckedException e) {
-            // No-op.
+            assertTrue(e.getCause().getCause() instanceof IgniteSpiException);
         }
 
         try {
             fut2.get();
+
+            fail("Should fail with SpiException");
         }
         catch (IgniteCheckedException e) {
-            // No-op.
+            assertTrue(e.getCause().getCause() instanceof IgniteSpiException);
         }
 
-        long failedNodeOrder = 1 + 2 + 3 + 4;
+        assertEquals(NODES_CNT , grid(0).cluster().nodes().size());
+        assertEquals(0, evts.get());
 
-        for (ClusterNode node : grid(0).cluster().nodes())
-            failedNodeOrder -= node.order();
+        for (int j = 0; j < NODES_CNT; j++) {
+            IgniteEx ignite;
 
-        for (int i = 0; i < 10; i++) {
-            U.sleep(1000);
+            try {
+                ignite = grid(j);
 
-            assertEquals(NODES_CNT - 1, grid(0).cluster().nodes().size());
+                log.info("Checking topology for grid(" + j + "): " + ignite.cluster().nodes());
 
-            int liveNodesCnt = 0;
-
-            for (int j = 0; j < NODES_CNT; j++) {
-                IgniteEx ignite;
-
-                try {
-                    ignite = grid(j);
-
-                    log.info("Checking topology for grid(" + j + "): " + ignite.cluster().nodes());
-
-                    ClusterNode locNode = ignite.localNode();
-
-                    if (locNode.order() != failedNodeOrder) {
-                        assertEquals(NODES_CNT - 1, ignite.cluster().nodes().size());
-
-                        for (ClusterNode node : ignite.cluster().nodes())
-                            assertTrue(node.order() != failedNodeOrder);
-
-                        liveNodesCnt++;
-                    }
-                }
-                catch (Exception e) {
-                    log.info("Checking topology for grid(" + j + "): no grid in topology.");
-                }
+                assertEquals(NODES_CNT, ignite.cluster().nodes().size());
             }
-
-            assertEquals(NODES_CNT - 1, liveNodesCnt);
+            catch (Exception e) {
+                log.info("Checking topology for grid(" + j + "): no grid in topology.");
+            }
         }
     }
 

@@ -22,11 +22,12 @@ import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-strap';
 import 'angular-strap/dist/angular-strap.tpl';
-import 'angular-socket-io';
-import 'angular-retina';
+import 'angular1-async-filter';
 
+import 'angular-messages';
 import '@uirouter/angularjs';
-import '@uirouter/angularjs/lib/legacy/stateEvents';
+
+import 'resize-observer-polyfill';
 
 import 'tf-metatags';
 import 'angular-translate';
@@ -36,8 +37,6 @@ import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-tree-control';
 import 'angular-gridster';
-import 'bootstrap-sass/assets/javascripts/bootstrap/transition';
-import 'bootstrap-sass/assets/javascripts/bootstrap/carousel';
 import 'brace';
 import 'brace/mode/xml';
 import 'brace/mode/sql';
@@ -57,5 +56,4 @@ import 'angular-gridster/dist/angular-gridster.min.css';
 import 'angular-tree-control/css/tree-control-attribute.css';
 import 'angular-tree-control/css/tree-control.css';
 import 'angular-ui-grid/ui-grid.css';
-import 'angular-motion/dist/angular-motion.css';
 import 'nvd3/build/nv.d3.css';

@@ -25,12 +25,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -71,11 +72,11 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
 
         cfg.setPublicThreadPoolSize(THREAD_COUNT);
 
-        MemoryConfiguration mem = new MemoryConfiguration();
+        DataStorageConfiguration mem = new DataStorageConfiguration();
 
         mem.setPageSize(PAGE_SIZE);
 
-        cfg.setMemoryConfiguration(mem);
+        cfg.setDataStorageConfiguration(mem);
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHE_COUNT];
 
@@ -95,6 +96,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryUpdate() throws Exception {
         try (Ignite ignite = startGrid()) {
             for (int i = 0; i < CACHE_COUNT; ++i) {

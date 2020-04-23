@@ -18,6 +18,7 @@
 package org.apache.ignite.stream.kafka;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -27,17 +28,23 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import kafka.consumer.ConsumerConfig;
-import kafka.message.MessageAndMetadata;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.stream.StreamMultipleTupleExtractor;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -72,6 +79,11 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
@@ -92,6 +104,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
      * @throws TimeoutException If timed out.
      * @throws InterruptedException If interrupted.
      */
+    @Test
     public void testKafkaStreamer() throws TimeoutException, InterruptedException {
         embeddedBroker.createTopic(TOPIC_NAME, PARTITIONS, REPLICATION_FACTOR);
 
@@ -167,23 +180,22 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr.setStreamer(stmr);
 
             // Set the topic.
-            kafkaStmr.setTopic(topic);
+            kafkaStmr.setTopic(Arrays.asList(topic));
 
             // Set the number of threads.
             kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
             kafkaStmr.setConsumerConfig(
-                createDefaultConsumerConfig(embeddedBroker.getZookeeperAddress(), "groupX"));
+                createDefaultConsumerConfig(embeddedBroker.getBrokerAddress(), "groupX"));
 
             kafkaStmr.setMultipleTupleExtractor(
-                new StreamMultipleTupleExtractor<MessageAndMetadata<byte[], byte[]>, String, String>() {
-                @Override public Map<String, String> extract(MessageAndMetadata<byte[], byte[]> msg) {
+                record -> {
                     Map<String, String> entries = new HashMap<>();
 
                     try {
-                        String key = new String(msg.key());
-                        String val = new String(msg.message());
+                        String key = (String)record.key();
+                        String val = (String)record.value();
 
                         // Convert the message into number of cache entries with same key or dynamic key from actual message.
                         // For now using key as cache entry key and value as cache entry value - for test purpose.
@@ -194,8 +206,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
                     }
 
                     return entries;
-                }
-            });
+                });
 
             // Start kafka streamer.
             kafkaStmr.start();
@@ -203,8 +214,23 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             final CountDownLatch latch = new CountDownLatch(CNT);
 
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
+                @IgniteInstanceResource
+                private Ignite ig;
+
+                @LoggerResource
+                private IgniteLogger log;
+
+                /** {@inheritDoc} */
                 @Override public boolean apply(UUID uuid, CacheEvent evt) {
                     latch.countDown();
+
+                    if (log.isInfoEnabled()) {
+                        IgniteEx igEx = (IgniteEx)ig;
+
+                        UUID nodeId = igEx.localNode().id();
+
+                        log.info("Recive event=" + evt + ", nodeId=" + nodeId);
+                    }
 
                     return true;
                 }
@@ -213,7 +239,8 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
             // Checks all events successfully processed in 10 seconds.
-            assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
+                latch.await(10, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));
@@ -227,23 +254,22 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /**
      * Creates default consumer config.
      *
-     * @param zooKeeper ZooKeeper address &lt;server:port&gt;.
+     * @param servers Bootstrap servers' address in the form of &lt;server:port;server:port&gt;.
      * @param grpId Group Id for kafka subscriber.
      * @return Kafka consumer configuration.
      */
-    private ConsumerConfig createDefaultConsumerConfig(String zooKeeper, String grpId) {
-        A.notNull(zooKeeper, "zookeeper");
+    private Properties createDefaultConsumerConfig(String servers, String grpId) {
+        A.notNull(servers, "bootstrap servers");
         A.notNull(grpId, "groupId");
 
         Properties props = new Properties();
 
-        props.put("zookeeper.connect", zooKeeper);
-        props.put("group.id", grpId);
-        props.put("zookeeper.session.timeout.ms", "400");
-        props.put("zookeeper.sync.time.ms", "200");
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("auto.offset.reset", "smallest");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, servers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, grpId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 
-        return new ConsumerConfig(props);
+        return props;
     }
 }

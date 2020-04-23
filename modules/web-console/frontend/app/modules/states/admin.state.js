@@ -17,39 +17,16 @@
 
 import angular from 'angular';
 
-import templateUrl from 'views/settings/admin.tpl.pug';
-import template from 'views/base2.pug';
-
 angular
 .module('ignite-console.states.admin', [
     'ui.router'
 ])
-.config(['$stateProvider', function($stateProvider) {
+.config(['$stateProvider', /** @param {import('@uirouter/angularjs').StateProvider} $stateProvider */ function($stateProvider) {
     // set up the states
     $stateProvider
     .state('base.settings.admin', {
         url: '/admin',
-        views: {
-            '@': {
-                template
-            },
-            '@base.settings.admin': {
-                templateUrl,
-                controller: class {
-                    static $inject = ['UserNotifications'];
-
-                    constructor(UserNotifications) {
-                        this.UserNotifications = UserNotifications;
-                    }
-
-                    changeUserNotifications() {
-                        this.UserNotifications.editor();
-                    }
-                },
-                controllerAs: 'ctrl'
-            }
-        },
-        // templateUrl,
+        component: 'pageAdmin',
         permission: 'admin_page',
         tfMetaTags: {
             title: 'Admin panel'

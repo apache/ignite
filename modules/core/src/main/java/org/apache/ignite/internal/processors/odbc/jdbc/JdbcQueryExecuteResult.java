@@ -21,14 +21,17 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResultMarshaler;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC query execute result.
  */
 public class JdbcQueryExecuteResult extends JdbcResult {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /** Query result rows. */
     private List<List<Object>> items;
@@ -42,45 +45,52 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Update count. */
     private long updateCnt;
 
+    /** Partition result. */
+    private PartitionResult partRes;
+
     /**
-     * Condtructor.
+     * Constructor.
      */
     JdbcQueryExecuteResult() {
         super(QRY_EXEC);
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
+     * @param partRes partition result to use for best affort affinity on the client side.
      */
-    JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
+    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last, PartitionResult partRes) {
         super(QRY_EXEC);
 
-        this.queryId = queryId;
+        this.cursorId = cursorId;
         this.items = items;
         this.last = last;
-        this.isQuery = true;
+        isQuery = true;
+        this.partRes = partRes;
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param updateCnt Update count for DML queries.
+     * @param partRes partition result to use for best affort affinity on the client side.
      */
-    public JdbcQueryExecuteResult(long queryId, long updateCnt) {
+    public JdbcQueryExecuteResult(long cursorId, long updateCnt, PartitionResult partRes) {
         super(QRY_EXEC);
 
-        this.queryId = queryId;
-        this.last = true;
-        this.isQuery = false;
+        this.cursorId = cursorId;
+        last = true;
+        isQuery = false;
         this.updateCnt = updateCnt;
+        this.partRes = partRes;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long getQueryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -112,10 +122,11 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
-        super.writeBinary(writer);
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.writeBinary(writer, ver);
 
-        writer.writeLong(queryId);
+        writer.writeLong(cursorId);
         writer.writeBoolean(isQuery);
 
         if (isQuery) {
@@ -127,14 +138,19 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         }
         else
             writer.writeLong(updateCnt);
+
+        writer.writeBoolean(partRes != null);
+
+        if (partRes != null)
+            PartitionResultMarshaler.marshal(writer, partRes);
     }
 
-
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        super.readBinary(reader);
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+        super.readBinary(reader, ver);
 
-        queryId = reader.readLong();
+        cursorId = reader.readLong();
         isQuery = reader.readBoolean();
 
         if (isQuery) {
@@ -147,10 +163,20 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
             updateCnt = reader.readLong();
         }
+
+        if (reader.readBoolean())
+            partRes = PartitionResultMarshaler.unmarshal(reader);
+    }
+
+    /**
+     * @return Partition result.
+     */
+    public PartitionResult partitionResult() {
+        return partRes;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteResult.class, this);
+        return S.toString(JdbcQueryExecuteResult.class, this, super.toString());
     }
 }

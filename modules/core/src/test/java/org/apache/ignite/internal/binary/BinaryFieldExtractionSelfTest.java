@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.sql.Time;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TYPE_ID_POS;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  *
@@ -59,6 +66,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimitiveMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -91,7 +99,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
             buf.flip();
 
             for (BinaryFieldEx field : fields)
-                assertEquals(field.value(bObj), field.readField(buf));
+                assertEquals((Object)field.value(bObj), field.readField(buf));
 
             buf.flip();
         }
@@ -100,6 +108,138 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testTimeMarshalling() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        TimeValue obj = new TimeValue(11111L);
+
+        BinaryObjectImpl binObj = toBinary(obj, marsh);
+
+        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("time");
+
+        ByteBuffer buf = ByteBuffer.allocate(16);
+
+        field.writeField(binObj, buf);
+
+        buf.flip();
+
+        assertEquals(field.value(binObj), field.<Time>readField(buf));
+    }
+
+    /**
+     * Checking the exception and its text when changing the typeId of a
+     * BinaryField.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testChangeTypeIdOfBinaryField() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        TimeValue timeVal = new TimeValue(11111L);
+        DecimalValue decimalVal = new DecimalValue(BigDecimal.ZERO);
+
+        BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
+        BinaryObjectImpl decimalValBinObj = toBinary(decimalVal, marsh);
+
+        BinaryFieldEx timeBinField = (BinaryFieldEx)timeValBinObj.type().field("time");
+
+        Field typeIdField = U.findField(timeBinField.getClass(), "typeId");
+        typeIdField.set(timeBinField, decimalValBinObj.typeId());
+
+        String expMsg = exceptionMessageOfDifferentTypeIdBinaryField(
+            decimalValBinObj.typeId(),
+            decimalVal.getClass().getName(),
+            timeValBinObj.typeId(),
+            timeVal.getClass().getName(),
+            U.field(timeBinField, "fieldId"),
+            timeBinField.name(),
+            null
+        );
+
+        assertThrows(log, () -> timeBinField.value(timeValBinObj), BinaryObjectException.class, expMsg);
+    }
+
+    /**
+     * Checking the exception and its text when changing the typeId of a
+     * BinaryField in case of not finding the expected BinaryType.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testChangeTypeIdOfBinaryFieldCaseNotFoundExpectedTypeId() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        TimeValue timeVal = new TimeValue(11111L);
+
+        BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
+
+        BinaryFieldEx timeBinField = (BinaryFieldEx)timeValBinObj.type().field("time");
+
+        int newTypeId = timeValBinObj.typeId() + 1;
+
+        Field typeIdField = U.findField(timeBinField.getClass(), "typeId");
+        typeIdField.set(timeBinField, newTypeId);
+
+        String expMsg = exceptionMessageOfDifferentTypeIdBinaryField(
+            newTypeId,
+            null,
+            timeValBinObj.typeId(),
+            timeVal.getClass().getName(),
+            U.field(timeBinField, "fieldId"),
+            timeBinField.name(),
+            null
+        );
+
+        assertThrows(log, () -> timeBinField.value(timeValBinObj), BinaryObjectException.class, expMsg);
+    }
+
+    /**
+     * Check that when changing typeId of BinaryObject, when trying to get the
+     * field value BinaryObjectException will be thrown with the corresponding
+     * text.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testChangeTypeIdOfBinaryFieldCaseNotFoundActualTypeId() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        TimeValue timeVal = new TimeValue(11111L);
+
+        BinaryObjectImpl timeValBinObj = toBinary(timeVal, marsh);
+
+        BinaryFieldEx timeBinField = (BinaryFieldEx)timeValBinObj.type().field("time");
+
+        int beforeTypeId = timeValBinObj.typeId();
+
+        String fieldType = binaryContext(marsh).metadata(timeValBinObj.typeId()).fieldTypeName(timeBinField.name());
+
+        Field startField = U.findField(timeValBinObj.getClass(), "start");
+        int start = (int)startField.get(timeValBinObj);
+
+        Field arrField = U.findField(timeValBinObj.getClass(), "arr");
+        byte[] arr = (byte[])arrField.get(timeValBinObj);
+        arr[start + TYPE_ID_POS] += 1;
+
+        String expMsg = exceptionMessageOfDifferentTypeIdBinaryField(
+            beforeTypeId,
+            timeVal.getClass().getName(),
+            timeValBinObj.typeId(),
+            null,
+            U.field(timeBinField, "fieldId"),
+            timeBinField.name(),
+            fieldType
+        );
+
+        assertThrows(log, () -> timeBinField.value(timeValBinObj), BinaryObjectException.class, expMsg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDecimalFieldMarshalling() throws Exception {
         BinaryMarshaller marsh = createMarshaller();
 
@@ -125,7 +265,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
             buf.flip();
 
-            assertEquals(field.value(binObj), field.readField(buf));
+            assertEquals((Object)field.value(binObj), field.readField(buf));
 
             buf.clear();
         }
@@ -157,7 +297,6 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class TestObject {
         /** */
         private byte bVal;
@@ -194,10 +333,22 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    private static class TimeValue {
+        /** */
+        private Time time;
+
+        /**
+         * @param time Time.
+         */
+        TimeValue(long time) {
+            this.time = new Time(time);
+        }
+    }
+
     /**
      *
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class DecimalValue {
         /** */
         private BigDecimal decVal;
@@ -209,5 +360,33 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
         private DecimalValue(BigDecimal decVal) {
             this.decVal = decVal;
         }
+    }
+
+    /**
+     * Creates an exception text for the case when the typeId differs in the
+     * BinaryField and the BinaryObject.
+     *
+     * @param expTypeId Expected typeId.
+     * @param expTypeName Expected typeName.
+     * @param actualTypeId Actual typeId.
+     * @param actualTypeName Actual typeName.
+     * @param fieldId FieldId.
+     * @param fieldName FieldName.
+     * @param fieldType FieldType.
+     * @return Exception message.
+     */
+    private String exceptionMessageOfDifferentTypeIdBinaryField(
+        int expTypeId,
+        String expTypeName,
+        int actualTypeId,
+        String actualTypeName,
+        int fieldId,
+        String fieldName,
+        String fieldType
+    ) {
+        return "Failed to get field because type ID of passed object differs from type ID this " +
+            "BinaryField belongs to [expected=[typeId=" + expTypeId + ", typeName=" + expTypeName +
+            "], actual=[typeId=" + actualTypeId + ", typeName=" + actualTypeName + "], fieldId=" + fieldId +
+            ", fieldName=" + fieldName + ", fieldType=" + fieldType + "]";
     }
 }

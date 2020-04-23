@@ -22,7 +22,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -33,6 +36,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
  */
 @SuppressWarnings("RedundantMethodOverride")
 public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest {
+    /** */
+    @Before
+    public void beforeIgniteCacheNearReadCommittedTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
@@ -51,6 +60,7 @@ public class IgniteCacheNearReadCommittedTest extends GridCacheAbstractSelfTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadCommittedCacheCleanup() throws Exception {
         IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 

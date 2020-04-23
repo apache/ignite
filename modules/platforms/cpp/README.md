@@ -1,8 +1,6 @@
-# Apache Ignite C++ In-Memory Computing Platform
+# Apache Ignite C++ SDK
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a>
-
-[![Join the chat at https://gitter.im/apacheignite/ignite](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/apacheignite/ignite?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
 ## Getting Started
@@ -15,9 +13,9 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is the <b>in-memory</b> computing platform
-that is <b>durable</b>, <b>strongly consistent</b>, and <b>highly available</b>
-with powerful <b>SQL</b>, <b>key-value</b> and <b>processing</b> APIs.
+[Apache Ignite][apache-ignite-homepage] is a memory-centric multi-model distributed
+ <strong>database</strong>, <strong>caching</strong>, and <strong>processing</strong> platform for
+ transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
 
 <p align="center">
     <a href="https://apacheignite-cpp.readme.io/docs/">
@@ -69,9 +67,9 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 
 [Read More](https://apacheignite-cpp.readme.io/docs/cluster)
 
-## Ignite and Ignite С++
+## Ignite and Ignite C++
 * Ignite C++ is built on top of Ignite.
-* Ignite С++ starts the JVM in the same process and communicates with it via JNI.
+* Ignite C++ starts the JVM in the same process and communicates with it via JNI.
 * .NET, C++ and Java nodes can join the same cluster, use the same caches, and interoperate using common binary protocol.
 * Java compute jobs can execute on any node (Java, .NET, C++).
 

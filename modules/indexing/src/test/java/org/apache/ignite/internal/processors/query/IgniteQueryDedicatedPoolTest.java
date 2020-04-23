@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import javax.cache.Cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import javax.cache.Cache;
+import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -33,43 +34,51 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Ensures that SQL queries are executed in a dedicated thread pool.
  */
 public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Name of the cache for test */
     private static final String CACHE_NAME = "query_pool_test";
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** Listener log messages. */
+    private static ListeningTestLogger testLog;
 
-        startGrid("server");
+    /** Query thread pool size. */
+    private Integer qryPoolSize;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        testLog = new ListeningTestLogger(false, log);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
+        IgniteConfiguration cfg = super.getConfiguration(gridName)
+            .setGridLogger(testLog);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -79,11 +88,10 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         ccfg.setName(CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
-
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
-
         cfg.setIndexingSpi(new TestIndexingSpi());
+
+        if (nonNull(qryPoolSize))
+            cfg.setQueryThreadPoolSize(qryPoolSize);
 
         return cfg;
     }
@@ -93,17 +101,27 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        testLog.clearListeners();
     }
 
     /**
-     * Tests that SQL queries are executed in dedicated pool
+     * Tests that SQL queries involving actual network IO are executed in dedicated pool.
      * @throws Exception If failed.
      */
+    @Test
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        startGrid("server");
+
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
-            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy()"));
+            // We do this in order to have 1 row in results of select - function is called once per each row of result.
+            cache.put(1, 1);
+
+            // We have to refer to a cache explicitly in the query in order for it to be executed
+            // in non local distributed manner (yes, there's a "local distributed" manner too - see link above...)
+            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy() from Integer"));
 
             List<List<?>> result = cursor.getAll();
 
@@ -113,8 +131,8 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
             Byte plc = (Byte)result.get(0).get(0);
 
-            assert plc != null;
-            assert plc == GridIoPolicy.QUERY_POOL;
+            assertNotNull(plc);
+            assertEquals(GridIoPolicy.QUERY_POOL, (byte)plc);
         }
     }
 
@@ -122,8 +140,11 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * Tests that Scan queries are executed in dedicated pool
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQueryUsesDedicatedThreadPool() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        startGrid("server");
+
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
             cache.put(0, 0);
@@ -145,8 +166,11 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
      * Tests that SPI queries are executed in dedicated pool
      * @throws Exception If failed.
      */
+    @Test
     public void testSpiQueryUsesDedicatedThreadPool() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        startGrid("server");
+
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Byte, Byte> cache = client.cache(CACHE_NAME);
 
             for (byte b = 0; b < Byte.MAX_VALUE; ++b)
@@ -161,6 +185,86 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
             cursor.close();
         }
+    }
+
+    /**
+     * Test for messages about query pool starvation in the logs.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "10")
+    public void testContainsStarvationQryPoolInLog() throws Exception {
+        checkStarvationQryPoolInLog(
+            10_000,
+            "Possible thread pool starvation detected (no task completed in last 10ms, is query thread pool size " +
+                "large enough?)",
+            true
+        );
+    }
+
+    /**
+     * Test to verify that there are no query pool starvation messages in log.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "0")
+    public void testNotContainsStarvationQryPoolInLog() throws Exception {
+        checkStarvationQryPoolInLog(
+            1_000,
+            "Possible thread pool starvation detected (no task completed in",
+            false
+        );
+    }
+
+    /**
+     * Check messages about starvation query pool in log.
+     *
+     * @param checkTimeout Check timeout.
+     * @param findLogMsg Log message of interest.
+     * @param contains Expect whether or not messages are in log.
+     * @throws Exception If failed.
+     */
+    private void checkStarvationQryPoolInLog(long checkTimeout, String findLogMsg ,boolean contains) throws Exception {
+        assertNotNull(findLogMsg);
+
+        qryPoolSize = 1;
+
+        startGrid("server");
+
+        IgniteEx clientNode = startClientGrid("client");
+
+        IgniteCache<Integer, Integer> cache = clientNode.cache(CACHE_NAME);
+        cache.put(0, 0);
+
+        int qrySize = 2;
+
+        CyclicBarrier barrier = new CyclicBarrier(qrySize);
+
+        LogListener logLsnr = LogListener.matches(findLogMsg).build();
+
+        testLog.registerListener(logLsnr);
+
+        for (int i = 0; i < qrySize; i++) {
+            runAsync(() -> {
+                barrier.await();
+
+                cache.query(new ScanQuery<>((o, o2) -> {
+                        doSleep(500);
+
+                        return true;
+                    })
+                ).getAll();
+
+                return null;
+            });
+        }
+
+        if (contains)
+            assertTrue(waitForCondition(logLsnr::check, checkTimeout));
+        else
+            assertFalse(waitForCondition(logLsnr::check, checkTimeout));
     }
 
     /**

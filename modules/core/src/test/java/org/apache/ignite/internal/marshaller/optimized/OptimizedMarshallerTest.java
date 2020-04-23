@@ -28,6 +28,7 @@ import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,8 +42,10 @@ import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -66,6 +69,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -81,6 +85,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable1() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -102,6 +107,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable2() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -135,6 +141,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable3() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -147,11 +154,12 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertFalse(ipFinder.isShared());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable4() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -166,11 +174,12 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         assertTrue(bean.isFlag());
     }
 
-     /**
+    /**
      * Tests ability to marshal non-serializable objects.
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testNonSerializable5() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -186,6 +195,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testSerializable() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -197,6 +207,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testSerializableAfterChangingValue() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -218,6 +229,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testExternalizable() throws IgniteCheckedException {
         Marshaller marsh = marshaller();
 
@@ -231,6 +243,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests {@link OptimizedMarshaller#setRequireSerializable(boolean)}.
      */
+    @Test
     public void testRequireSerializable() {
         OptimizedMarshaller marsh = marshaller();
 
@@ -251,6 +264,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException If marshalling failed.
      */
+    @Test
     public void testProxy() throws IgniteCheckedException {
         OptimizedMarshaller marsh = marshaller();
 
@@ -284,6 +298,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDescriptorCache() throws Exception {
         try {
             Ignite ignite = startGridsMultiThreaded(2);
@@ -320,6 +335,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPerformance() throws Exception {
         System.gc();
 
@@ -387,6 +403,64 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests checks for arithmetic overflow when trying to serialize huge object.
+     * WARNING! Requires a lot of heap space. Should not be run on CI.
+     * Minimal memory requirement is about 6-7 gigabytes of heap.
+     */
+    public void _testAllocationOverflow() {
+        allocationOverflowCheck(() -> marshaller().marshal(new HugeObject()));
+
+        allocationOverflowCheck(() -> marshaller().marshal(new short[1 << 30]));
+
+        allocationOverflowCheck(() -> marshaller().marshal(new char[1 << 30]));
+
+        allocationOverflowCheck(() -> marshaller().marshal(new int[1 << 29]));
+
+        allocationOverflowCheck(() -> marshaller().marshal(new float[1 << 29]));
+
+        allocationOverflowCheck(() -> marshaller().marshal(new long[1 << 28]));
+
+        allocationOverflowCheck(() -> marshaller().marshal(new double[1 << 28]));
+
+        // This particular case requires about 13G of heap space.
+        // It failed because of bug in previous implementation of GridUnsafeDataOutput, mainly line
+        // "if (bytesToAlloc < arrLen)" in method "checkArrayAllocationOverflow". That check doesn't
+        // work as desired on the length in the example below.
+        allocationOverflowCheck(() -> marshaller().marshal(new long[0x2800_0000]));
+    }
+
+    /**
+     * Asserts that {@link IOException} will be thrown.
+     *
+     * @param call Callable that cause allocation overflow.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    private void allocationOverflowCheck(Callable<?> call) {
+        GridTestUtils.assertThrowsAnyCause(log, call, IOException.class, "Failed to allocate required memory");
+    }
+
+    /**
+     *
+     */
+    public static class HugeObject implements Externalizable {
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            byte[] bytes = new byte[1 << 31 - 2];
+
+            out.write(bytes);
+            out.write(bytes);
+            out.write(bytes);
+            out.write(bytes);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+        }
+    }
+
+    /**
      * Some non-serializable class.
      */
     @SuppressWarnings( {"PublicField","TransientFieldInNonSerializableClass","FieldMayBeStatic"})
@@ -422,7 +496,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          * @param strArr Array.
          * @param shortVal Short value.
          */
-        @SuppressWarnings( {"UnusedDeclaration"})
         private NonSerializableA(@Nullable String[] strArr, @Nullable Short shortVal) {
             // No-op.
         }
@@ -519,7 +592,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          *
          * @param aVal Unused.
          */
-        @SuppressWarnings( {"UnusedDeclaration"})
         private NonSerializable(NonSerializableA aVal) {
         }
 
@@ -614,6 +686,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
             return null;
         }
     }
+
     /**
      * Some serializable class.
      */
@@ -623,7 +696,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
          *
          * @param id Unused.
          */
-        @SuppressWarnings( {"UnusedDeclaration"})
         private SomeSerializable(Long id) {
             init();
         }
@@ -641,7 +713,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Some externalizable class.
      */
-    @SuppressWarnings( {"UnusedDeclaration", "PublicField"})
+    @SuppressWarnings( {"PublicField"})
     private static class ExternalizableA implements Externalizable {
         /** */
         private boolean boolVal;
@@ -693,7 +765,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         private String key;
 
         /** */
-        @SuppressWarnings({"UnusedDeclaration"})
         private String terminalId;
 
         /**
@@ -724,7 +795,6 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
         private String key;
 
         /** */
-        @SuppressWarnings({"UnusedDeclaration"})
         private String terminalId;
 
         /**

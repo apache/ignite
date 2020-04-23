@@ -52,11 +52,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -70,9 +70,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetectionTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -85,31 +82,16 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /** Custom start key. */
     private static final IncrementalTestObject CUSTOM_START_KEY = new KeyObject(1);
 
-    /** Client mode flag. */
-    private static boolean client;
-
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        if (isDebug()) {
-            discoSpi.failureDetectionTimeoutEnabled(false);
-
-            cfg.setDiscoverySpi(discoSpi);
-        }
+        if (isDebug())
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).failureDetectionTimeoutEnabled(false);
 
         TcpCommunicationSpi commSpi = new TestCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         return cfg;
     }
@@ -118,26 +100,16 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = false;
-
         startGrids(NODES_CNT);
 
-        client = true;
-
         for (int i = 0; i < NODES_CNT; i++)
-            startGrid(i + NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+            startClientGrid(i + NODES_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitioned() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
@@ -148,6 +120,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
@@ -158,6 +131,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksReplicated() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(REPLICATED, syncMode, false), ORDINAL_START_KEY);
@@ -168,6 +142,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);
@@ -182,7 +157,12 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
      * @return Created cache.
      */
     @SuppressWarnings("unchecked")
-    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near) {
+    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near)
+        throws IgniteInterruptedCheckedException, InterruptedException {
+        awaitPartitionMapExchange();
+
+        int minorTopVer = grid(0).context().discovery().topologyVersionEx().minorTopologyVersion();
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
@@ -202,6 +182,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
         }
+
+        waitForLateAffinityAssignment(minorTopVer);
 
         return cache;
     }
@@ -303,7 +285,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                 Ignite ignite = ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
-                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
+                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                 List<Object> keys = keySets.get(threadNum - 1);
 
@@ -478,14 +460,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
                     if (TX_IDS.contains(txId) && TX_IDS.size() < TX_CNT) {
                         GridTestUtils.runAsync(new Callable<Void>() {
                             @Override public Void call() throws Exception {
-                                while (TX_IDS.size() < TX_CNT) {
-                                    try {
-                                        U.sleep(50);
-                                    }
-                                    catch (IgniteInterruptedCheckedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
+                                while (TX_IDS.size() < TX_CNT)
+                                    U.sleep(50);
 
                                 TestCommunicationSpi.super.sendMessage(node, msg, ackC);
 

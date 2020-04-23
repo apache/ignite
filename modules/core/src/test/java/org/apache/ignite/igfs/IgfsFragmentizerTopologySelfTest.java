@@ -18,6 +18,7 @@
 package org.apache.ignite.igfs;
 
 import org.apache.ignite.IgniteFileSystem;
+import org.junit.Test;
 
 /**
  * Tests coordinator transfer from one node to other.
@@ -26,6 +27,7 @@ public class IgfsFragmentizerTopologySelfTest extends IgfsFragmentizerAbstractSe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCoordinatorLeave() throws Exception {
         stopGrid(0);
 

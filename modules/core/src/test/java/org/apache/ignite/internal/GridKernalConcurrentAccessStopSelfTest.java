@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -38,15 +39,10 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = GRIDS; i-- >= 0;)
-            stopGrid(i);
-    }
-
     /**
      *
      */
+    @Test
     public void testConcurrentAccess() {
         for (int i = 0; i < GRIDS; i++) {
             grid(i).events().localListen(new IgnitePredicate<Event>() {

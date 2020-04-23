@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
@@ -26,20 +27,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -47,40 +55,44 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.cluster.ClusterState.lesserOf;
+import static org.apache.ignite.testframework.GridTestUtils.assertActive;
+import static org.apache.ignite.testframework.GridTestUtils.assertInactive;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
  */
 public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     static final String CACHE_NAME_PREFIX = "cache-";
 
-    /** */
-    boolean client;
+    /** Non-persistent data region name. */
+    private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
 
     /** */
-    private boolean active = true;
+    private static final int DEFAULT_CACHES_COUNT = 2;
+
+    /** */
+    private ClusterState stateOnStart;
 
     /** */
     CacheConfiguration[] ccfgs;
 
     /** */
     private boolean testSpi;
-
-    /** */
-    private boolean testDiscoSpi;
 
     /** */
     private boolean testReconnectSpi;
@@ -99,16 +111,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
             spi.setJoinTimeout(2 * 60_000);
         }
-        else if (testDiscoSpi)
-            cfg.setDiscoverySpi(new TestTcpDiscoverySpi());
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setConsistentId(igniteInstanceName);
 
-        cfg.setClientMode(client);
-
-        cfg.setActiveOnStart(active);
+        if (stateOnStart != null)
+            cfg.setClusterStateOnStart(stateOnStart);
 
         if (ccfgs != null) {
             cfg.setCacheConfiguration(ccfgs);
@@ -116,19 +125,23 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             ccfgs = null;
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
+        memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(150L * 1024 * 1024)
+            .setPersistenceEnabled(persistenceEnabled()));
+        memCfg.setWalSegments(2);
+        memCfg.setWalSegmentSize(512 * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
+            .setMaxSize(150L * 1024 * 1024)
+            .setName(NO_PERSISTENCE_REGION)
+            .setPersistenceEnabled(false));
 
-        if (persistenceEnabled()) {
-            PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        if (persistenceEnabled())
+            memCfg.setWalMode(WALMode.LOG_ONLY);
 
-            pCfg.setWalMode(WALMode.LOG_ONLY);
-
-            cfg.setPersistentStoreConfiguration(pCfg);
-        }
+        cfg.setDataStorageConfiguration(memCfg);
+        cfg.setFailureDetectionTimeout(60_000);
 
         if (testSpi) {
             TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
@@ -159,114 +172,317 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testEnableReadOnlyFromActivateSimple_SingleNode() throws Exception {
+        changeActiveClusterStateSimple(1, 0, 0, ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFromActivateSimple_5_Servers() throws Exception {
+        changeActiveClusterStateSimple(5, 0, 0, ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFromActivateSimple_5_Servers2() throws Exception {
+        changeActiveClusterStateSimple(5, 0, 4, ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFromActivateSimple_5_Servers_5_Clients() throws Exception {
+        changeActiveClusterStateSimple(5, 4, 0, ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFromActivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
+        changeActiveClusterStateSimple(5, 4, 6, ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFromActivateSimple_SingleNode() throws Exception {
+        changeActiveClusterStateSimple(1, 0, 0, ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFromActivateSimple_5_Servers() throws Exception {
+        changeActiveClusterStateSimple(5, 0, 0, ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFromActivateSimple_5_Servers2() throws Exception {
+        changeActiveClusterStateSimple(5, 0, 4, ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFromActivateSimple_5_Servers_5_Clients() throws Exception {
+        changeActiveClusterStateSimple(5, 4, 0, ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFromActivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
+        changeActiveClusterStateSimple(5, 4, 6, ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateSimple_SingleNode() throws Exception {
-        activateSimple(1, 0, 0);
+        activateSimple(1, 0, 0, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateInReadOnlySimple_SingleNode() throws Exception {
+        activateSimple(1, 0, 0, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateSimple_5_Servers() throws Exception {
-        activateSimple(5, 0, 0);
+        activateSimple(5, 0, 0, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateInReadOnlySimple_5_Servers() throws Exception {
+        activateSimple(5, 0, 0, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateSimple_5_Servers2() throws Exception {
-        activateSimple(5, 0, 4);
+        activateSimple(5, 0, 4, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateInReadOnlySimple_5_Servers2() throws Exception {
+        activateSimple(5, 0, 4, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateSimple_5_Servers_5_Clients() throws Exception {
-        activateSimple(5, 4, 0);
+        activateSimple(5, 4, 0, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateInReadOnlySimple_5_Servers_5_Clients() throws Exception {
+        activateSimple(5, 4, 0, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
-        activateSimple(5, 4, 6);
+        activateSimple(5, 4, 6, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testActivateInReadOnlySimple_5_Servers_5_Clients_FromClient() throws Exception {
+        activateSimple(5, 4, 6, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @param srvs Number of servers.
+     * @param clients Number of clients.
+     * @param changeFrom Index of node stating activation.
+     * @param state Activation state.
+     * @throws Exception If failed.
+     */
+    private void activateSimple(int srvs, int clients, int changeFrom, ClusterState state) throws Exception {
+        assertActive(state);
+
+        changeStateSimple(srvs, clients, changeFrom, INACTIVE, state);
+    }
+
+    /**
+     * @param srvs Number of servers.
+     * @param clients Number of clients.
+     * @param changeFrom Index of node stating deactivation.
+     * @param initialState Initial cluster state.
+     * @throws Exception If failed.
+     */
+    private void deactivateSimple(int srvs, int clients, int changeFrom, ClusterState initialState) throws Exception {
+        assertActive(initialState);
+
+        changeStateSimple(srvs, clients, changeFrom, initialState, INACTIVE);
+    }
+
+    /**
+     * @param srvs Number of servers.
+     * @param clients Number of clients.
+     * @param deactivateFrom Index of node stating deactivation.
+     * @param initialState Initial cluster state.
+     * @param targetState Targer cluster state.
+     * @throws Exception If failed.
+     */
+    private void changeActiveClusterStateSimple(
+        int srvs,
+        int clients,
+        int deactivateFrom,
+        ClusterState initialState,
+        ClusterState targetState
+    ) throws Exception {
+        assertActive(initialState);
+        assertActive(targetState);
+
+        assertNotSame(initialState, targetState);
+
+        changeStateSimple(srvs, clients, deactivateFrom, initialState, targetState);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReActivateSimple_5_Servers_4_Clients_FromClient() throws Exception {
+        reactivateSimple(5, 4, 6, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReActivateInReadOnlySimple_5_Servers_4_Clients_FromClient() throws Exception {
+        reactivateSimple(5, 4, 6, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReActivateSimple_5_Servers_4_Clients_FromServer() throws Exception {
+        reactivateSimple(5, 4, 0, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReActivateInReadOnlySimple_5_Servers_4_Clients_FromServer() throws Exception {
+        reactivateSimple(5, 4, 0, ACTIVE_READ_ONLY);
     }
 
     /**
      * @param srvs Number of servers.
      * @param clients Number of clients.
      * @param activateFrom Index of node stating activation.
+     * @param state Activation state.
      * @throws Exception If failed.
      */
-    private void activateSimple(int srvs, int clients, int activateFrom) throws Exception {
-        active = false;
+    private void reactivateSimple(int srvs, int clients, int activateFrom, ClusterState state) throws Exception {
+        activateSimple(srvs, clients, activateFrom, state);
 
-        final int CACHES = 2;
-
-        for (int i = 0; i < srvs + clients; i++) {
-            client = i >= srvs;
-
-            ccfgs = cacheConfigurations1();
-
-            startGrid(i);
-
-            checkNoCaches(i);
-        }
+        if (state == ACTIVE)
+            rolloverSegmentAtLeastTwice(activateFrom);
 
         for (int i = 0; i < srvs + clients; i++)
-            assertFalse(ignite(i).active());
+            checkCachesOnNode(i, DEFAULT_CACHES_COUNT);
 
-        ignite(activateFrom).active(false); // Should be no-op.
+        ignite(activateFrom).cluster().state(INACTIVE);
+        ignite(activateFrom).cluster().state(state);
 
-        ignite(activateFrom).active(true);
+        if (state == ACTIVE)
+            rolloverSegmentAtLeastTwice(activateFrom);
 
         for (int i = 0; i < srvs + clients; i++)
-            assertTrue(ignite(i).active());
+            checkCachesOnNode(i, DEFAULT_CACHES_COUNT);
+    }
 
-        for (int i = 0; i < srvs + clients; i++) {
-            for (int c = 0; c < 2; c++)
-                checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
+    /**
+     * Work directory have 2 segments by default. This method do full circle.
+     */
+    private void rolloverSegmentAtLeastTwice(int activateFrom) {
+        for (int c = 0; c < DEFAULT_CACHES_COUNT; c++) {
+            IgniteCache<Object, Object> cache = ignite(activateFrom).cache(CACHE_NAME_PREFIX + c);
 
-            checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
+            //this should be enough including free-,meta- page and etc.
+            for (int i = 0; i < 1000; i++)
+                cache.put(i, i);
         }
-
-        checkCaches(srvs + clients, CACHES);
-
-        client = false;
-
-        startGrid(srvs + clients);
-
-        for (int c = 0; c < 2; c++)
-            checkCache(ignite(srvs + clients), CACHE_NAME_PREFIX + c, true);
-
-        checkCaches(srvs + clients + 1, CACHES);
-
-        client = true;
-
-        startGrid(srvs + clients + 1);
-
-        for (int c = 0; c < 2; c++)
-            checkCache(ignite(srvs + clients + 1), CACHE_NAME_PREFIX + c, false);
-
-        checkCaches(srvs + clients + 2, CACHES);
     }
 
     /**
      * @param nodes Number of nodes.
      * @param caches Number of caches.
      */
-    final void checkCaches(int nodes, int caches) {
-        for (int i  = 0; i < nodes; i++) {
+    final void checkCaches(int nodes, int caches) throws InterruptedException {
+        checkCaches(nodes, caches, true);
+    }
+
+    /**
+     * @param nodes Number of nodes.
+     * @param caches Number of caches.
+     */
+    final void checkCaches(int nodes, int caches, boolean awaitExchange) throws InterruptedException {
+        if (awaitExchange)
+            awaitPartitionMapExchange();
+
+        ClusterState state = ignite(0).cluster().state();
+
+        assertActive(state);
+
+        for (int i = 0; i < nodes; i++) {
             for (int c = 0; c < caches; c++) {
                 IgniteCache<Integer, Integer> cache = ignite(i).cache(CACHE_NAME_PREFIX + c);
 
                 for (int j = 0; j < 10; j++) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                    Integer key = ThreadLocalRandom.current().nextInt(1000);
+                    Integer value = j;
 
-                    Integer key = rnd.nextInt(1000);
+                    if (state == ACTIVE)
+                        cache.put(key, j);
+                    else
+                        assertThrowsWithCause(() -> cache.put(key, value), IgniteClusterReadOnlyException.class);
 
-                    cache.put(key, j);
-
-                    assertEquals((Integer)j, cache.get(key));
+                    assertEquals(state == ACTIVE ? value : null, cache.get(key));
                 }
             }
         }
@@ -275,109 +491,94 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileActivate1_Server() throws Exception {
-        joinWhileActivate1(false, false);
+        joinWhileActivate1(false, false, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testJoinWhileActivateInReadOnly1_Server() throws Exception {
+        joinWhileActivate1(false, false, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testJoinWhileActivate1_WithCache_Server() throws Exception {
-        joinWhileActivate1(false, true);
+        joinWhileActivate1(false, true, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testJoinWhileActivateInReadOnly1_WithCache_Server() throws Exception {
+        joinWhileActivate1(false, true, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testJoinWhileActivate1_Client() throws Exception {
-        joinWhileActivate1(true, false);
+        joinWhileActivate1(true, false, ACTIVE);
     }
 
     /**
-     * @param startClient If {@code true} joins client node, otherwise server.
-     * @param withNewCache If {@code true} joining node has new cache in configuration.
      * @throws Exception If failed.
      */
-    private void joinWhileActivate1(final boolean startClient, final boolean withNewCache) throws Exception {
-        IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(2, 0, 0, false);
-
-        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                client = startClient;
-
-                ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
-
-                startGrid(2);
-
-                return null;
-            }
-        });
-
-        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite(1));
-
-        spi1.stopBlock();
-
-        activeFut.get();
-        startFut.get();
-
-        for (int c = 0; c < 2; c++)
-            checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
-
-        if (withNewCache) {
-            for (int i = 0; i < 3; i++) {
-                for (int c = 0; c < 4; c++)
-                    checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
-            }
-        }
-
-        awaitPartitionMapExchange();
-
-        checkCaches(3, withNewCache ? 4 : 2);
-
-        client = false;
-
-        startGrid(3);
-
-        checkCaches(4, withNewCache ? 4 : 2);
-
-        client = true;
-
-        startGrid(4);
-
-        checkCaches(5, withNewCache ? 4 : 2);
+    @Test
+    public void testJoinWhileActivateInReadOnly1_Client() throws Exception {
+        joinWhileActivate1(true, false, ACTIVE_READ_ONLY);
     }
 
     /**
      * @param srvs Number of servers.
      * @param clients Number of clients.
      * @param stateChangeFrom Index of node initiating changes.
-     * @param initiallyActive If {@code true} start cluster in active state (otherwise in inactive).
+     * @param initialState Cluster state on start nodes.
+     * @param targetState State of started cluster.
      * @param blockMsgNodes Nodes whcis block exchange messages.
      * @return State change future.
      * @throws Exception If failed.
      */
-    private IgniteInternalFuture<?> startNodesAndBlockStatusChange(int srvs,
+    private IgniteInternalFuture<?> startNodesAndBlockStatusChange(
+        int srvs,
         int clients,
         final int stateChangeFrom,
-        final boolean initiallyActive,
-        int... blockMsgNodes) throws Exception {
-        active = initiallyActive;
+        final ClusterState initialState,
+        final ClusterState targetState,
+        int... blockMsgNodes
+    ) throws Exception {
+        assertNotSame(initialState, targetState);
+
+        if (!persistenceEnabled())
+            stateOnStart = initialState;
+
         testSpi = true;
 
         startWithCaches1(srvs, clients);
 
-        int minorVer = 1;
+        AffinityTopologyVersion affTopVer = new AffinityTopologyVersion(srvs + clients);
 
-        if (initiallyActive && persistenceEnabled()) {
-            ignite(0).active(true);
+        if (ClusterState.active(initialState)) {
+            ignite(0).cluster().state(initialState);
 
-            minorVer++;
+            awaitPartitionMapExchange();
+
+            affTopVer = grid(0).cachex(CU.UTILITY_CACHE_NAME).context().topology().readyTopologyVersion();
+
+            assertEquals(srvs + clients, affTopVer.topologyVersion());
         }
 
         if (blockMsgNodes.length == 0)
-            blockMsgNodes = new int[]{1};
+            blockMsgNodes = new int[] {1};
 
-        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(srvs + clients, minorVer);
+        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = affTopVer.nextMinorVersion();
 
         List<TestRecordingCommunicationSpi> spis = new ArrayList<>();
 
@@ -389,11 +590,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             blockExchangeSingleMessage(spi, STATE_CHANGE_TOP_VER);
         }
 
-        IgniteInternalFuture<?> stateChangeFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                ignite(stateChangeFrom).active(!initiallyActive);
-            }
-        });
+        IgniteInternalFuture<?> stateChangeFut = runAsync(() -> ignite(stateChangeFrom).cluster().state(targetState));
 
         for (TestRecordingCommunicationSpi spi : spis)
             spi.waitForBlocked();
@@ -410,148 +607,204 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param topVer Exchange topology version.
      */
     private void blockExchangeSingleMessage(TestRecordingCommunicationSpi spi, final AffinityTopologyVersion topVer) {
-        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
-                if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage pMsg = (GridDhtPartitionsSingleMessage)msg;
+        spi.blockMessages((IgniteBiPredicate<ClusterNode, Message>)(clusterNode, msg) -> {
+            if (msg instanceof GridDhtPartitionsSingleMessage) {
+                GridDhtPartitionsSingleMessage pMsg = (GridDhtPartitionsSingleMessage)msg;
 
-                    if (pMsg.exchangeId() != null && pMsg.exchangeId().topologyVersion().equals(topVer))
-                        return true;
-                }
-
-                return false;
+                if (pMsg.exchangeId() != null && pMsg.exchangeId().topologyVersion().equals(topVer))
+                    return true;
             }
+
+            return false;
         });
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWhileDeactivate1_Server() throws Exception {
-        joinWhileDeactivate1(false, false);
+        joinWhileDeactivate1(false, false, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testJoinWhileDeactivateFromReadOnly1_Server() throws Exception {
+        joinWhileDeactivate1(false, false, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testJoinWhileDeactivate1_WithCache_Server() throws Exception {
-        joinWhileDeactivate1(false, true);
+        joinWhileDeactivate1(false, true, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testJoinWhileDeactivateFromReadOnly1_WithCache_Server() throws Exception {
+        joinWhileDeactivate1(false, true, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testJoinWhileDeactivate1_Client() throws Exception {
-        joinWhileDeactivate1(true, false);
+        joinWhileDeactivate1(true, false, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testJoinWhileDeactivateFromReadOnly1_Client() throws Exception {
+        joinWhileDeactivate1(true, false, ACTIVE_READ_ONLY);
     }
 
     /**
      * @param startClient If {@code true} joins client node, otherwise server.
      * @param withNewCache If {@code true} joining node has new cache in configuration.
+     * @param state Target cluster state.
      * @throws Exception If failed.
      */
-    private void joinWhileDeactivate1(final boolean startClient, final boolean withNewCache) throws Exception {
-        IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(2, 0, 0, true);
+    private void joinWhileActivate1(boolean startClient, boolean withNewCache, ClusterState state) throws Exception {
+        joinWhileClusterStateChange(startClient, withNewCache, INACTIVE, state);
+    }
 
-        IgniteInternalFuture<?> startFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                client = startClient;
+    /**
+     * @param startClient If {@code true} joins client node, otherwise server.
+     * @param withNewCache If {@code true} joining node has new cache in configuration.
+     * @param state Initial cluster state.
+     * @throws Exception If failed.
+     */
+    private void joinWhileDeactivate1(boolean startClient, boolean withNewCache, ClusterState state) throws Exception {
+        joinWhileClusterStateChange(startClient, withNewCache, state, INACTIVE);
+    }
 
-                ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
+    /**
+     * @param startClient If {@code true} joins client node, otherwise server.
+     * @param withNewCache If {@code true} joining node has new cache in configuration.
+     * @param initialState Initial cluster state.
+     * @param targetState Target cluster state.
+     * @throws Exception If failed.
+     */
+    private void joinWhileClusterStateChange(
+        boolean startClient,
+        boolean withNewCache,
+        ClusterState initialState,
+        ClusterState targetState
+    ) throws Exception {
+        checkStatesAreDifferent(initialState, targetState);
 
-                startGrid(2);
+        int nodesCnt = 2;
 
-                return null;
-            }
-        });
+        IgniteInternalFuture<?> activeFut = startNodesAndBlockStatusChange(nodesCnt, 0, 0, initialState, targetState);
 
-        TestRecordingCommunicationSpi spi1 = TestRecordingCommunicationSpi.spi(ignite(1));
+        ccfgs = withNewCache ? cacheConfigurations2() : cacheConfigurations1();
 
-        spi1.stopBlock();
+        final int numberOfCaches = ccfgs.length;
+
+        IgniteInternalFuture<?> startFut = startNodeAsync(nodesCnt++, startClient);
+
+        TestRecordingCommunicationSpi.spi(ignite(1)).stopBlock();
 
         activeFut.get();
         startFut.get();
 
-        checkNoCaches(3);
+        if (ClusterState.active(targetState))
+            checkCachesOnNode(nodesCnt - 1, DEFAULT_CACHES_COUNT);
+        else {
+            checkNoCaches(nodesCnt);
 
-        ignite(2).active(true);
+            ignite(nodesCnt - 1).cluster().state(initialState);
 
-        for (int c = 0; c < 2; c++)
-            checkCache(ignite(2), CACHE_NAME_PREFIX + c, true);
+            for (int c = 0; c < DEFAULT_CACHES_COUNT; c++)
+                checkCache(ignite(nodesCnt - 1), CACHE_NAME_PREFIX + c, true);
+        }
 
         if (withNewCache) {
-            for (int i = 0; i < 3; i++) {
-                for (int c = 0; c < 4; c++)
-                    checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
-            }
+            for (int i = 0; i < nodesCnt; i++)
+                checkCachesOnNode(i, numberOfCaches);
         }
 
         awaitPartitionMapExchange();
 
-        checkCaches(3, withNewCache ? 4 : 2);
+        checkCaches(nodesCnt, numberOfCaches);
 
-        client = false;
+        startGrid(nodesCnt++, false);
 
-        startGrid(3);
+        checkCaches(nodesCnt, numberOfCaches);
 
-        checkCaches(4, withNewCache ? 4 : 2);
+        startGrid(nodesCnt++, true);
 
-        client = true;
-
-        startGrid(4);
-
-        checkCaches(5, withNewCache ? 4 : 2);
+        checkCaches(nodesCnt, numberOfCaches);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentJoinAndActivate() throws Exception {
+        testConcurrentJoinAndActivate(ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConcurrentJoinAndActivateInReadOnly() throws Exception {
+        testConcurrentJoinAndActivate(ACTIVE_READ_ONLY);
+    }
+
+    /** */
+    private void testConcurrentJoinAndActivate(ClusterState activateState) throws Exception {
+        assertActive(activateState);
+
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
 
-            active = false;
-
-            for (int i = 0; i < 3; i++) {
-                ccfgs = cacheConfigurations1();
-
-                startGrid(i);
-            }
+            stateOnStart = INACTIVE;
 
             final int START_NODES = 3;
 
+            startWithCaches1(START_NODES, 0);
+
+            final int numberOfCaches = cacheConfigurations1().length;
+
             final CyclicBarrier b = new CyclicBarrier(START_NODES + 1);
 
-            IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    b.await();
+            IgniteInternalFuture<Void> fut1 = runAsync(() -> {
+                b.await();
 
-                    Thread.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
+                U.sleep(ThreadLocalRandom.current().nextLong(100) + 1);
 
-                    ignite(0).active(true);
+                ignite(0).cluster().state(activateState);
 
-                    return null;
-                }
+                return null;
             });
 
-            final AtomicInteger nodeIdx = new AtomicInteger(3);
+            final AtomicInteger nodeIdx = new AtomicInteger(START_NODES);
 
-            IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    int idx = nodeIdx.getAndIncrement();
+            IgniteInternalFuture<Long> fut2 = GridTestUtils.runMultiThreadedAsync((Callable<Void>)() -> {
+                int idx = nodeIdx.getAndIncrement();
 
-                    b.await();
+                b.await();
 
-                    startGrid(idx);
+                startGrid(idx);
 
-                    return null;
-                }
+                return null;
             }, START_NODES, "start-node");
 
             fut1.get();
             fut2.get();
 
-            checkCaches(6, 2);
+            checkCaches(2 * START_NODES, numberOfCaches);
 
             afterTest();
         }
@@ -560,103 +813,163 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeactivateSimple_SingleNode() throws Exception {
-        deactivateSimple(1, 0, 0);
+        deactivateSimple(1, 0, 0, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeactivateFromReadOnlySimple_SingleNode() throws Exception {
+        deactivateSimple(1, 0, 0, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateSimple_5_Servers() throws Exception {
-        deactivateSimple(5, 0, 0);
+        deactivateSimple(5, 0, 0, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeactivateFromReadOnlySimple_5_Servers() throws Exception {
+        deactivateSimple(5, 0, 0, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateSimple_5_Servers2() throws Exception {
-        deactivateSimple(5, 0, 4);
+        deactivateSimple(5, 0, 4, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeactivateFromReadOnlySimple_5_Servers2() throws Exception {
+        deactivateSimple(5, 0, 4, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateSimple_5_Servers_5_Clients() throws Exception {
-        deactivateSimple(5, 4, 0);
+        deactivateSimple(5, 4, 0, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeactivateFromReadOnlySimple_5_Servers_5_Clients() throws Exception {
+        deactivateSimple(5, 4, 0, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateSimple_5_Servers_5_Clients_FromClient() throws Exception {
-        deactivateSimple(5, 4, 6);
+        deactivateSimple(5, 4, 6, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeactivateFromReadOnlySimple_5_Servers_5_Clients_FromClient() throws Exception {
+        deactivateSimple(5, 4, 6, ACTIVE_READ_ONLY);
     }
 
     /**
      * @param srvs Number of servers.
      * @param clients Number of clients.
-     * @param deactivateFrom Index of node stating deactivation.
+     * @param changeFrom Index of node starting cluster state change from {@code initialState} to {@code targetState}.
+     * @param initialState Initial cluster state.
+     * @param targetState Target cluster state.
      * @throws Exception If failed.
      */
-    private void deactivateSimple(int srvs, int clients, int deactivateFrom) throws Exception {
-        active = true;
+    private void changeStateSimple(
+        int srvs,
+        int clients,
+        int changeFrom,
+        ClusterState initialState,
+        ClusterState targetState
+    ) throws Exception {
+        assertNotSame(initialState, targetState);
 
-        final int CACHES = 2;
+        stateOnStart = initialState;
 
-        for (int i = 0; i < srvs + clients; i++) {
-            client = i >= srvs;
+        int nodesCnt = srvs + clients;
 
-            ccfgs = cacheConfigurations1();
+        startWithCaches1(srvs, clients);
 
-            startGrid(i);
+        if (persistenceEnabled() && ClusterState.active(initialState))
+            grid(0).cluster().state(initialState);
+
+        checkClusterState(nodesCnt, initialState);
+
+        if (!ClusterState.active(initialState))
+            checkNoCaches(nodesCnt);
+
+        ignite(changeFrom).cluster().state(initialState); // Should be no-op.
+
+        checkClusterState(nodesCnt, initialState);
+
+        ignite(changeFrom).cluster().state(targetState);
+
+        checkClusterState(nodesCnt, targetState);
+
+        if (ClusterState.active(targetState)) {
+            for (int i = 0; i < nodesCnt; i++)
+                checkCachesOnNode(i, DEFAULT_CACHES_COUNT);
+
+            checkCaches(nodesCnt, DEFAULT_CACHES_COUNT);
         }
+        else
+            checkNoCaches(nodesCnt);
 
-        if (persistenceEnabled())
-            ignite(deactivateFrom).active(true);
+        startNodeAndCheckCaches(nodesCnt++, false, DEFAULT_CACHES_COUNT);
+        startNodeAndCheckCaches(nodesCnt++, true, DEFAULT_CACHES_COUNT);
 
-        ignite(deactivateFrom).active(true); // Should be no-op.
+        if (!ClusterState.active(targetState)) {
+            checkNoCaches(nodesCnt);
 
-        checkCaches(srvs + clients, CACHES);
+            checkClusterState(nodesCnt, targetState);
 
-        for (int i = 0; i < srvs + clients; i++)
-            assertTrue(ignite(i).active());
+            ignite(changeFrom).cluster().state(initialState);
 
-        ignite(deactivateFrom).active(false);
+            checkClusterState(nodesCnt, initialState);
 
-        for (int i = 0; i < srvs + clients; i++)
-            assertFalse(ignite(i).active());
-
-        checkNoCaches(srvs + clients);
-
-        client = false;
-
-        startGrid(srvs + clients);
-
-        checkNoCaches(srvs + clients + 1);
-
-        client = true;
-
-        startGrid(srvs + clients + 1);
-
-        checkNoCaches(srvs + clients + 2);
-
-        for (int i = 0; i < srvs + clients + 2; i++)
-            assertFalse(ignite(i).active());
-
-        ignite(deactivateFrom).active(true);
-
-        for (int i = 0; i < srvs + clients + 2; i++) {
-            assertTrue(ignite(i).active());
-
-            checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
+            for (int i = 0; i < nodesCnt; i++) {
+                if (ignite(i).configuration().isClientMode())
+                    checkCache(ignite(i), CU.UTILITY_CACHE_NAME, true);
+                else
+                    checkCachesOnNode(i, DEFAULT_CACHES_COUNT);
+            }
         }
+    }
 
-        for (int i = 0; i < srvs; i++) {
-            for (int c = 0; c < 2; c++)
-                checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
+    /** */
+    private void startNodeAndCheckCaches(int nodeIdx, boolean client, int cachesCount) throws Exception {
+        startGrid(nodeIdx, client);
+
+        ClusterState state = grid(0).cluster().state();
+
+        if (ClusterState.active(state)) {
+            checkCachesOnNode(nodeIdx, cachesCount, !client);
+
+            checkCaches(nodeIdx + 1, cachesCount);
         }
-
-        checkCaches1(srvs + clients + 2);
     }
 
     /**
@@ -668,261 +981,214 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int i = 0; i < srvs + clients; i++) {
             ccfgs = cacheConfigurations1();
 
-            client = i >= srvs;
-
-            startGrid(i);
+            startGrid(i, i >= srvs);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnectClusterActive() throws Exception {
+        testClientReconnect(ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientReconnectClusterActiveReadOnly() throws Exception {
+        testClientReconnect(ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientReconnectClusterInactive() throws Exception {
+        testClientReconnect(INACTIVE);
+    }
+
+    /** */
+    private void testClientReconnect(ClusterState initialState) throws Exception {
         testReconnectSpi = true;
+
+        stateOnStart = initialState;
 
         ccfgs = cacheConfigurations1();
 
         final int SRVS = 3;
         final int CLIENTS = 3;
+        int nodesCnt = SRVS + CLIENTS;
 
         startWithCaches1(SRVS, CLIENTS);
 
-        if (persistenceEnabled())
-            ignite(0).active(true);
+        if (persistenceEnabled() && ClusterState.active(initialState))
+            ignite(0).cluster().state(initialState);
 
         Ignite srv = ignite(0);
         Ignite client = ignite(SRVS);
 
-        checkCache(client, CU.UTILITY_CACHE_NAME, true);
+        if (ClusterState.active(initialState)) {
+            checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
-        checkCaches1(SRVS + CLIENTS);
+            checkCaches(nodesCnt);
+        }
+        else
+            checkNoCaches(nodesCnt);
 
         IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, null);
 
-        checkCaches1(SRVS + CLIENTS);
+        if (!ClusterState.active(initialState)) {
+            checkNoCaches(nodesCnt);
 
-        this.client = false;
+            srv.cluster().state(ACTIVE);
 
-        startGrid(SRVS + CLIENTS);
+            checkCache(client, CU.UTILITY_CACHE_NAME, true);
+        }
 
-        this.client = true;
+        checkCaches(nodesCnt);
 
-        startGrid(SRVS + CLIENTS + 1);
+        startGrid(nodesCnt++, false);
+        startGrid(nodesCnt++, true);
 
-        checkCaches1(SRVS + CLIENTS + 2);
+        checkCaches(nodesCnt);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClientReconnectClusterInactive() throws Exception {
-        testReconnectSpi = true;
-
-        active = false;
-
-        final int SRVS = 3;
-        final int CLIENTS = 3;
-
-        startWithCaches1(SRVS, CLIENTS);
-
-        Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
-
-        checkNoCaches(SRVS + CLIENTS);
-
-        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, null);
-
-        checkNoCaches(SRVS + CLIENTS);
-
-        ignite(0).active(true);
-
-        checkCache(client, CU.UTILITY_CACHE_NAME, true);
-
-        checkCaches1(SRVS + CLIENTS);
-
-        this.client = false;
-
-        startGrid(SRVS + CLIENTS);
-
-        this.client = true;
-
-        startGrid(SRVS + CLIENTS + 1);
-
-        checkCaches1(SRVS + CLIENTS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @Test
     public void testClientReconnectClusterDeactivated() throws Exception {
-        clientReconnectClusterDeactivated(false);
+        clientReconnectClusterState(ACTIVE, INACTIVE, false);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testClientReconnectClusterDeactivatedFromReadOnly() throws Exception {
+        clientReconnectClusterState(ACTIVE_READ_ONLY, INACTIVE, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClientReconnectClusterDeactivateInProgress() throws Exception {
-        clientReconnectClusterDeactivated(true);
-    }
-
-    /**
-     * @param transition If {@code true} client reconnects while cluster state transition is in progress.
-     * @throws Exception If failed.
-     */
-    private void clientReconnectClusterDeactivated(final boolean transition) throws Exception {
-        testReconnectSpi = true;
-        testSpi = transition;
-
-        final int SRVS = 3;
-        final int CLIENTS = 3;
-
-        startWithCaches1(SRVS, CLIENTS);
-
-        final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
-
-        if (persistenceEnabled())
-            ignite(0).active(true);
-
-        checkCache(client, CU.UTILITY_CACHE_NAME, true);
-
-        checkCaches1(SRVS + CLIENTS);
-
-        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(SRVS + CLIENTS + 1, 1);
-
-        final TestRecordingCommunicationSpi spi1 = transition ? TestRecordingCommunicationSpi.spi(ignite(1)) : null;
-
-        final AtomicReference<IgniteInternalFuture> stateFut = new AtomicReference<>();
-
-        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, new Runnable() {
-            @Override public void run() {
-                if (transition) {
-                    blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
-
-                    stateFut.set(GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            srv.active(false);
-                        }
-                    }, "deactivate"));
-
-                    try {
-                        U.sleep(500);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                else
-                    srv.active(false);
-            }
-        });
-
-        checkCache(client, CACHE_NAME_PREFIX + 0, false);
-
-        if (transition) {
-            assertFalse(stateFut.get().isDone());
-
-            assertFalse(client.active());
-
-            spi1.waitForBlocked();
-
-            spi1.stopBlock();
-
-            stateFut.get().get();
-        }
-
-        checkNoCaches(SRVS + CLIENTS);
-
-        ignite(0).active(true);
-
-        checkCache(client, CU.UTILITY_CACHE_NAME, true);
-
-        assertTrue(client.active());
-
-        checkCaches1(SRVS + CLIENTS);
-
-        checkCache(client, CACHE_NAME_PREFIX + 0, true);
-
-        this.client = false;
-
-        startGrid(SRVS + CLIENTS);
-
-        this.client = true;
-
-        startGrid(SRVS + CLIENTS + 1);
-
-        checkCaches1(SRVS + CLIENTS + 2);
+        clientReconnectClusterState(ACTIVE, INACTIVE, true);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testClientReconnectClusterDeactivateFromReadOnlyInProgress() throws Exception {
+        clientReconnectClusterState(ACTIVE_READ_ONLY, INACTIVE, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testClientReconnectClusterActivated() throws Exception {
-        clientReconnectClusterActivated(false);
+        clientReconnectClusterState(INACTIVE, ACTIVE, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClientReconnectClusterActivateInProgress() throws Exception {
-        clientReconnectClusterActivated(true);
+    @Test
+    public void testClientReconnectClusterActivatedReadOnly() throws Exception {
+        clientReconnectClusterState(INACTIVE, ACTIVE_READ_ONLY, false);
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientReconnectClusterActivateInProgress() throws Exception {
+        clientReconnectClusterState(INACTIVE, ACTIVE, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientReconnectClusterActivateReadOnlyInProgress() throws Exception {
+        clientReconnectClusterState(INACTIVE, ACTIVE_READ_ONLY, true);
+    }
+
+    /**
+     * @param initialState Initial cluster state.
+     * @param targetState Cluster state after transition.
      * @param transition If {@code true} client reconnects while cluster state transition is in progress.
      * @throws Exception If failed.
      */
-    private void clientReconnectClusterActivated(final boolean transition) throws Exception {
+    private void clientReconnectClusterState(
+        ClusterState initialState,
+        ClusterState targetState,
+        final boolean transition
+    ) throws Exception {
+        assertNotSame(initialState, targetState);
+
         testReconnectSpi = true;
         testSpi = transition;
-
-        active = false;
+        stateOnStart = initialState;
 
         final int SRVS = 3;
         final int CLIENTS = 3;
+        int nodesCnt = SRVS + CLIENTS;
 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
-        checkNoCaches(SRVS + CLIENTS);
+        if (persistenceEnabled() && ClusterState.active(initialState))
+            ignite(0).cluster().state(initialState);
 
-        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(SRVS + CLIENTS + 1, 1);
+        if (ClusterState.active(initialState)) {
+            checkCache(client, CU.UTILITY_CACHE_NAME, true);
+
+            checkCaches(nodesCnt);
+
+            // Wait for late affinity assignment to finish.
+            awaitPartitionMapExchange();
+        }
+        else
+            checkNoCaches(nodesCnt);
+
+        final AffinityTopologyVersion STATE_CHANGE_TOP_VER = new AffinityTopologyVersion(nodesCnt + 1, 1);
 
         final TestRecordingCommunicationSpi spi1 = transition ? TestRecordingCommunicationSpi.spi(ignite(1)) : null;
 
         final AtomicReference<IgniteInternalFuture> stateFut = new AtomicReference<>();
 
-        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, new Runnable() {
-            @Override public void run() {
-                if (transition) {
-                    blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
+        IgniteClientReconnectAbstractTest.reconnectClientNode(log, client, srv, () -> {
+            if (transition) {
+                blockExchangeSingleMessage(spi1, STATE_CHANGE_TOP_VER);
 
-                    stateFut.set(GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            srv.active(true);
-                        }
-                    }, "activate"));
+                stateFut.set(runAsync(() -> srv.cluster().state(targetState), initialState + "->" + targetState));
 
-                    try {
-                        U.sleep(500);
-                    }
-                    catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    U.sleep(500);
                 }
-                else
-                    srv.active(true);
+                catch (IgniteInterruptedCheckedException e) {
+                    U.error(log, e);
+                }
             }
+            else
+                srv.cluster().state(targetState);
         });
-
-        checkCache(client, CACHE_NAME_PREFIX + 0, !transition);
 
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            assertTrue(client.context().state().clusterState().transition());
+
+            // Public API method would block forever because we blocked the exchange message.
+            assertEquals(lesserOf(initialState, targetState), client.context().state().publicApiState(false));
 
             spi1.waitForBlocked();
 
@@ -931,35 +1197,55 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             stateFut.get().get();
         }
 
+        if (!ClusterState.active(targetState)) {
+            checkNoCaches(nodesCnt);
+
+            ignite(0).cluster().state(initialState);
+
+            checkClusterState(nodesCnt, initialState);
+        }
+
         checkCache(client, CU.UTILITY_CACHE_NAME, true);
 
-        checkCaches1(SRVS + CLIENTS);
+        checkCaches(nodesCnt);
 
         checkCache(client, CACHE_NAME_PREFIX + 0, true);
 
-        this.client = false;
+        startGrid(nodesCnt++, false);
+        startGrid(nodesCnt++, true);
 
-        startGrid(SRVS + CLIENTS);
-
-        this.client = true;
-
-        startGrid(SRVS + CLIENTS + 1);
-
-        checkCaches1(SRVS + CLIENTS + 2);
+        checkCaches(nodesCnt);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInactiveTopologyChanges() throws Exception {
+        checkInactiveTopologyChanges(ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInactiveTopologyChangesReadOnly() throws Exception {
+        checkInactiveTopologyChanges(ACTIVE_READ_ONLY);
+    }
+
+    /** */
+    private void checkInactiveTopologyChanges(ClusterState state) throws Exception {
+        assertActive(state);
+
         testSpi = true;
 
-        testSpiRecord = new Class[]{GridDhtPartitionsSingleMessage.class, GridDhtPartitionsFullMessage.class};
+        testSpiRecord = new Class[] {GridDhtPartitionsSingleMessage.class, GridDhtPartitionsFullMessage.class};
 
-        active = false;
+        stateOnStart = INACTIVE;
 
         final int SRVS = 4;
         final int CLIENTS = 4;
+        int nodesCnt = SRVS + CLIENTS;
 
         startWithCaches1(SRVS, CLIENTS);
 
@@ -968,9 +1254,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int i = 0; i < 2; i++) {
             stopGrid(i);
 
-            client = false;
-
-            startGrid(i);
+            startGrid(i, false);
         }
 
         checkRecordedMessages(false);
@@ -978,224 +1262,350 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         for (int i = 0; i < 2; i++) {
             stopGrid(SRVS + i);
 
-            client = true;
-
-            startGrid(SRVS + i);
+            startGrid(SRVS + i, true);
         }
 
         checkRecordedMessages(false);
 
-        ignite(0).active(true);
+        ignite(0).cluster().state(state);
 
-        checkCaches1(SRVS + CLIENTS);
-
-        checkRecordedMessages(true);
-
-        client = false;
-
-        startGrid(SRVS + CLIENTS);
-
-        client = true;
-
-        startGrid(SRVS + CLIENTS + 1);
+        checkCaches(nodesCnt);
 
         checkRecordedMessages(true);
 
-        checkCaches1(SRVS + CLIENTS + 2);
+        startGrid(nodesCnt++, false);
+        startGrid(nodesCnt++, true);
+
+        checkRecordedMessages(true);
+
+        checkCaches(nodesCnt);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateFailover1() throws Exception {
-        stateChangeFailover1(true);
+        stateChangeFailover1(INACTIVE, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateWithReadOnlyFailover1() throws Exception {
+        stateChangeFailover1(INACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateFailover1() throws Exception {
-        stateChangeFailover1(false);
-    }
-
-    /**
-     * @param activate If {@code true} tests activation, otherwise deactivation.
-     * @throws Exception If failed.
-     */
-    private void stateChangeFailover1(boolean activate) throws Exception {
-        // Nodes 1 and 4 do not reply to coordinator.
-        IgniteInternalFuture<?> fut = startNodesAndBlockStatusChange(4, 4, 3, !activate, 1, 4);
-
-        client = false;
-
-        // Start one more node while transition is in progress.
-        IgniteInternalFuture startFut = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(8);
-
-                return null;
-            }
-        }, "start-node");
-
-        U.sleep(500);
-
-        stopGrid(getTestIgniteInstanceName(1), true, false);
-        stopGrid(getTestIgniteInstanceName(4), true, false);
-
-        fut.get();
-
-        startFut.get();
-
-        client = false;
-
-        startGrid(1);
-
-        client = true;
-
-        startGrid(4);
-
-        if (!activate) {
-            checkNoCaches(9);
-
-            ignite(0).active(true);
-        }
-
-        checkCaches1(9);
+        stateChangeFailover1(ACTIVE, INACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeactivateFromReadOnlyFailover1() throws Exception {
+        stateChangeFailover1(ACTIVE_READ_ONLY, INACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFailover1() throws Exception {
+        stateChangeFailover1(ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFailover1() throws Exception {
+        stateChangeFailover1(ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateFailover2() throws Exception {
-        stateChangeFailover2(true);
+        stateChangeFailover2(INACTIVE, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateWithReadOnlyFailover2() throws Exception {
+        stateChangeFailover2(INACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateFailover2() throws Exception {
-        stateChangeFailover2(false);
-    }
-
-    /**
-     * @param activate If {@code true} tests activation, otherwise deactivation.
-     * @throws Exception If failed.
-     */
-    private void stateChangeFailover2(boolean activate) throws Exception {
-        // Nodes 1 and 4 do not reply to coordinator.
-        IgniteInternalFuture<?> fut = startNodesAndBlockStatusChange(4, 4, 3, !activate, 1, 4);
-
-        client = false;
-
-        // Start more nodes while transition is in progress.
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(8);
-
-                return null;
-            }
-        }, "start-node1");
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(9);
-
-                return null;
-            }
-        }, "start-node2");
-
-        U.sleep(500);
-
-        // Stop coordinator.
-        stopGrid(getTestIgniteInstanceName(0), true, false);
-
-        stopGrid(getTestIgniteInstanceName(1), true, false);
-        stopGrid(getTestIgniteInstanceName(4), true, false);
-
-        fut.get();
-
-        startFut1.get();
-        startFut2.get();
-
-        client = false;
-
-        startGrid(0);
-        startGrid(1);
-
-        client = true;
-
-        startGrid(4);
-
-        if (!activate) {
-            checkNoCaches(10);
-
-            ignite(0).active(true);
-        }
-
-        checkCaches1(10);
+        stateChangeFailover2(ACTIVE, INACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDeactivateFromReadOnlyFailover2() throws Exception {
+        stateChangeFailover2(ACTIVE_READ_ONLY, INACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFailover2() throws Exception {
+        stateChangeFailover2(ACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFailover2() throws Exception {
+        stateChangeFailover2(ACTIVE_READ_ONLY, ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testActivateFailover3() throws Exception {
-        stateChangeFailover3(true);
+        stateChangeFailover3(INACTIVE, ACTIVE);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testActivateWithReadOnlyFailover3() throws Exception {
+        stateChangeFailover3(INACTIVE, ACTIVE_READ_ONLY);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDeactivateFailover3() throws Exception {
-        stateChangeFailover3(false);
+        stateChangeFailover3(ACTIVE, INACTIVE);
     }
 
     /**
-     * @param activate If {@code true} tests activation, otherwise deactivation.
      * @throws Exception If failed.
      */
-    private void stateChangeFailover3(boolean activate) throws Exception {
-        testDiscoSpi = true;
+    @Test
+    public void testDeactivateFromReadOnlyFailover3() throws Exception {
+        stateChangeFailover3(ACTIVE_READ_ONLY, INACTIVE);
+    }
 
-        startNodesAndBlockStatusChange(4, 0, 0, !activate);
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEnableReadOnlyFailover3() throws Exception {
+        stateChangeFailover3(ACTIVE, ACTIVE_READ_ONLY);
+    }
 
-        client = false;
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDisableReadOnlyFailover3() throws Exception {
+        stateChangeFailover3(ACTIVE_READ_ONLY, ACTIVE);
+    }
 
-        IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(4);
+    /**
+     * @param initialState Initial cluster state.
+     * @param targetState Target cluster state.
+     * @throws Exception If failed.
+     */
+    private void stateChangeFailover1(ClusterState initialState, ClusterState targetState) throws Exception {
+        stateChangeFailover(initialState, targetState, 1, 1, 4);
+    }
 
-                return null;
-            }
-        }, "start-node1");
+    /**
+     * @param initialState Initial cluster state.
+     * @param targetState Target cluster state.
+     * @throws Exception If failed.
+     */
+    private void stateChangeFailover2(ClusterState initialState, ClusterState targetState) throws Exception {
+        stateChangeFailover(initialState, targetState, 2, 0, 1, 4);
+    }
 
-        IgniteInternalFuture startFut2 = GridTestUtils.runAsync(new Callable() {
-            @Override public Object call() throws Exception {
-                startGrid(5);
+    /**
+     * @param initialState Initial cluster state.
+     * @param targetState Target cluster state.
+     * @throws Exception If failed.
+     */
+    private void stateChangeFailover3(ClusterState initialState, ClusterState targetState) throws Exception {
+        assertNotSame(initialState, targetState);
 
-                return null;
-            }
-        }, "start-node2");
+        testReconnectSpi = true;
 
-        U.sleep(1000);
+        final int servers = 4;
+        final int clients = 0;
+        int nodesCnt = servers + clients;
+
+        startNodesAndBlockStatusChange(servers, clients, 0, initialState, targetState);
+
+        IgniteInternalFuture<?> startFut1 = startNodeAsync(nodesCnt++, false);
+        IgniteInternalFuture<?> startFut2 = startNodeAsync(nodesCnt++, false);
+
+        final int expNodesCnt = nodesCnt;
+
+        assertTrue(waitForCondition(() -> grid(0).cluster().nodes().size() == expNodesCnt, 30000L));
 
         // Stop all nodes participating in state change and not allow last node to finish exchange.
-        for (int i = 0; i < 4; i++)
-            ((TestTcpDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
+        for (int i = 0; i < servers; i++)
+            ((IgniteDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < servers; i++)
             stopGrid(getTestIgniteInstanceName(i), true, false);
 
         startFut1.get();
         startFut2.get();
 
-        assertFalse(ignite(4).active());
-        assertFalse(ignite(5).active());
+        for (int i = servers; i < nodesCnt; i++)
+            assertEquals(ignite(i).name(), INACTIVE, ignite(i).cluster().state());
 
-        ignite(4).active(true);
+        ignite(servers).cluster().state(ClusterState.active(initialState) ? initialState : targetState);
 
-        for (int i = 0; i < 4; i++)
+        doFinalChecks(servers, nodesCnt);
+    }
+
+    /**
+     * @param initialState Initial cluster state.
+     * @param targetState Target cluster state.
+     * @param startExtraNodes Number of started server nodes during blocked status change.
+     * @param restartNodes Indexes of ignite instances for restart.
+     * @throws Exception If failed.
+     */
+    private void stateChangeFailover(
+        ClusterState initialState,
+        ClusterState targetState,
+        int startExtraNodes,
+        int... restartNodes
+    ) throws Exception {
+        assertNotSame(initialState, targetState);
+
+        assertTrue(Arrays.toString(restartNodes) + " doesn't contain element 1", U.containsIntArray(restartNodes, 1));
+        assertTrue(Arrays.toString(restartNodes) + " doesn't contain element 4", U.containsIntArray(restartNodes, 4));
+
+        final int servers = 4;
+        final int clients = 4;
+        int nodesCnt = servers + clients;
+
+        // Nodes 1 and 4 do not reply to coordinator.
+        IgniteInternalFuture<?> fut = startNodesAndBlockStatusChange(servers, clients, 3, initialState, targetState, 1, 4);
+
+        List<IgniteInternalFuture<?>> startFuts = new ArrayList<>();
+
+        // Start more nodes while transition is in progress.
+        for (int i = 0; i < startExtraNodes; i++)
+            startFuts.add(startNodeAsync(nodesCnt++, false));
+
+        final int exceptedNodesCnt = nodesCnt;
+
+        assertTrue(waitForCondition(() -> grid(0).cluster().nodes().size() == exceptedNodesCnt, 30000L));
+
+        for (int idx : restartNodes)
+            stopGrid(getTestIgniteInstanceName(idx), true, false);
+
+        fut.get();
+
+        for (IgniteInternalFuture<?> startFut : startFuts)
+            startFut.get();
+
+        for (int idx : restartNodes)
+            startGrid(idx, idx >= servers & idx < (servers + clients));
+
+        if (!ClusterState.active(targetState)) {
+            checkNoCaches(nodesCnt);
+
+            ignite(0).cluster().state(initialState);
+        }
+
+        checkCaches(nodesCnt);
+    }
+
+    /** */
+    protected void doFinalChecks(int startNodes, int nodesCnt) throws Exception {
+        for (int i = 0; i < startNodes; i++)
             startGrid(i);
 
-        checkCaches1(6);
+        checkCaches(nodesCnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterStateNotWaitForDeactivation() throws Exception {
+        checkClusterStateNotWaitForDeactivation(ACTIVE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadOnlyClusterStateNotWaitForDeactivation() throws Exception {
+        checkClusterStateNotWaitForDeactivation(ACTIVE_READ_ONLY);
+    }
+
+    /** */
+    private void checkClusterStateNotWaitForDeactivation(ClusterState initialState) throws Exception {
+        assertActive(initialState);
+
+        testSpi = true;
+
+        final int nodes = 2;
+
+        IgniteEx crd = startGrids(nodes);
+
+        crd.cluster().state(initialState);
+
+        AffinityTopologyVersion curTopVer = crd.context().discovery().topologyVersionEx();
+
+        AffinityTopologyVersion deactivationTopVer = new AffinityTopologyVersion(
+            curTopVer.topologyVersion(),
+            curTopVer.minorTopologyVersion() + 1
+        );
+
+        for (int gridIdx = 0; gridIdx < nodes; gridIdx++)
+            blockExchangeSingleMessage(TestRecordingCommunicationSpi.spi(grid(gridIdx)), deactivationTopVer);
+
+        IgniteInternalFuture deactivationFut = runAsync(() -> crd.cluster().state(INACTIVE));
+
+        // Wait for deactivation start.
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> {
+                DiscoveryDataClusterState clusterState = crd.context().state().clusterState();
+
+                return clusterState.transition() && !ClusterState.active(clusterState.state());
+            },
+            getTestTimeout()
+        ));
+
+        // Check that deactivation transition wait is not happened.
+        ClusterState state = crd.context().state().publicApiState(true);
+
+        assertInactive(state);
+
+        for (int gridIdx = 0; gridIdx < nodes; gridIdx++)
+            TestRecordingCommunicationSpi.spi(grid(gridIdx)).stopBlock();
+
+        deactivationFut.get();
     }
 
     /**
@@ -1203,21 +1613,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     private void checkRecordedMessages(boolean exp) {
         for (Ignite node : G.allGrids()) {
-            List<Object> recorded =
-                TestRecordingCommunicationSpi.spi(node).recordedMessages(false);
+            List<Object> recorded = TestRecordingCommunicationSpi.spi(node).recordedMessages(false);
 
             if (exp)
                 assertFalse(F.isEmpty(recorded));
             else
                 assertTrue(F.isEmpty(recorded));
         }
-    }
-
-    /**
-     * @param nodes Expected nodes number.
-     */
-    private void checkCaches1(int nodes) {
-        checkCaches(nodes, 2);
     }
 
     /**
@@ -1236,12 +1638,16 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @return Cache configurations.
      */
     final CacheConfiguration[] cacheConfigurations2() {
-        CacheConfiguration[] ccfgs = new CacheConfiguration[4];
+        CacheConfiguration[] ccfgs = new CacheConfiguration[5];
 
         ccfgs[0] = cacheConfiguration(CACHE_NAME_PREFIX + 0, ATOMIC);
         ccfgs[1] = cacheConfiguration(CACHE_NAME_PREFIX + 1, TRANSACTIONAL);
         ccfgs[2] = cacheConfiguration(CACHE_NAME_PREFIX + 2, ATOMIC);
         ccfgs[3] = cacheConfiguration(CACHE_NAME_PREFIX + 3, TRANSACTIONAL);
+        ccfgs[4] = cacheConfiguration(CACHE_NAME_PREFIX + 4, TRANSACTIONAL);
+
+        ccfgs[4].setDataRegionName(NO_PERSISTENCE_REGION);
+        ccfgs[4].setDiskPageCompression(null);
 
         return ccfgs;
     }
@@ -1266,8 +1672,17 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param node Node.
      * @param exp {@code True} if expect that cache is started on node.
      */
-    void checkCache(Ignite node, String cacheName, boolean exp) {
-        GridCacheAdapter cache = ((IgniteKernal)node).context().cache().internalCache(cacheName);
+    void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(
+            () -> ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture() != null,
+            1000
+        );
+
+        ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();
+
+        ((IgniteEx)node).context().state().publicApiState(true);
+
+        GridCacheAdapter cache = ((IgniteEx)node).context().cache().internalCache(cacheName);
 
         if (exp)
             assertNotNull("Cache not found [cache=" + cacheName + ", node=" + node.name() + ']', cache);
@@ -1280,10 +1695,74 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
-            GridCacheProcessor cache = ((IgniteKernal)ignite(i)).context().cache();
+            assertEquals(INACTIVE, grid(i).context().state().publicApiState(true));
+
+            GridCacheProcessor cache = ignite(i).context().cache();
 
             assertTrue(cache.caches().isEmpty());
-            assertTrue(cache.internalCaches().isEmpty());
+            assertTrue(cache.internalCaches().stream().allMatch(c -> c.context().isRecoveryMode()));
         }
+    }
+
+    /** */
+    private void checkClusterState(int nodesCnt, ClusterState state) {
+        for (int i = 0; i < nodesCnt; i++)
+            assertEquals(ignite(i).name(), state, ignite(i).cluster().state());
+    }
+
+    /** */
+    protected void checkCachesOnNode(int nodeNumber, int cachesCnt) throws IgniteCheckedException {
+        checkCachesOnNode(nodeNumber, cachesCnt, true);
+    }
+
+    /** */
+    protected void checkCachesOnNode(int nodeNumber, int cachesCnt, boolean expUserCaches) throws IgniteCheckedException {
+        for (int c = 0; c < cachesCnt; c++)
+            checkCache(ignite(nodeNumber), CACHE_NAME_PREFIX + c, expUserCaches);
+
+        checkCache(ignite(nodeNumber), CU.UTILITY_CACHE_NAME, true);
+    }
+
+    /**
+     * @param nodes Expected nodes number.
+     */
+    private void checkCaches(int nodes) throws InterruptedException {
+        checkCaches(nodes, 2, false);
+    }
+
+    /** */
+    private static void checkStatesAreDifferent(ClusterState state1, ClusterState state2) {
+        assertTrue(state1 + " " + state2, ClusterState.active(state1) != ClusterState.active(state2));
+    }
+
+    /** */
+    protected void startGrid(int nodeNumber, boolean client) throws Exception {
+        startGrid(nodeNumber, client, null);
+    }
+
+    /** */
+    protected void startGrid(int nodeNumber, boolean client, CacheConfiguration[] cacheConfigs) throws Exception {
+        if (cacheConfigs != null)
+            this.ccfgs = cacheConfigs;
+
+        if (client)
+            startClientGrid(nodeNumber);
+        else
+            startGrid(nodeNumber);
+    }
+
+    /** */
+    private IgniteInternalFuture<?> startNodeAsync(int nodeNumber, boolean client) {
+        return runAsync(() -> {
+            try {
+                if (client)
+                    startClientGrid(nodeNumber);
+                else
+                    startGrid(nodeNumber);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }, "start" + "-" + (client ? "client" : "server") + "-node" + nodeNumber);
     }
 }

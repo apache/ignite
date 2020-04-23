@@ -32,10 +32,8 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -43,16 +41,12 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 /**
  * Partitioned affinity test.
  */
-@SuppressWarnings({"PointlessArithmeticExpression", "FieldCanBeLocal"})
 public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends GridCommonAbstractTest {
     /** Number of backups. */
     private int backups = 2;
 
     /** Number of girds. */
     private int gridInstanceNum;
-
-    /** Ip finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
@@ -73,7 +67,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
             }
         };
 
-        spi.setIpFinder(ipFinder);
+        spi.setIpFinder(sharedStaticIpFinder);
 
         c.setDiscoverySpi(spi);
 
@@ -109,6 +103,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityMultiNode() throws Exception {
         int grids = 9;
 
@@ -124,12 +119,9 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
 
                 Affinity<Object> aff = g.affinity(DEFAULT_CACHE_NAME);
 
-                List<TcpDiscoveryNode> top = new ArrayList<>();
+                List<ClusterNode> top = new ArrayList<>(g.cluster().nodes());
 
-                for (ClusterNode node : g.cluster().nodes())
-                    top.add((TcpDiscoveryNode) node);
-
-                Collections.sort(top);
+                Collections.sort((List)top);
 
                 assertEquals(grids, top.size());
 
@@ -163,6 +155,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinitySingleNode() throws Exception {
         Ignite g = startGrid();
 

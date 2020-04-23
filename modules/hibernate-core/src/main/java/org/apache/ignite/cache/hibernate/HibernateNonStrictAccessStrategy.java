@@ -109,6 +109,9 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
     @Override public boolean afterUpdate(Object key, Object val) {
         WriteContext ctx = writeCtx.get();
 
+        if (log.isDebugEnabled())
+            log.debug("Put after update [cache=" + cache.name() + ", key=" + key + ", val=" + val + ']');
+
         if (ctx != null) {
             ctx.updated(key, val);
 
@@ -127,6 +130,9 @@ public class HibernateNonStrictAccessStrategy extends HibernateAccessStrategyAda
 
     /** {@inheritDoc} */
     @Override public boolean afterInsert(Object key, Object val) {
+        if (log.isDebugEnabled())
+            log.debug("Put after insert [cache=" + cache.name() + ", key=" + key + ", val=" + val + ']');
+
         try {
             cache.put(key, val);
 

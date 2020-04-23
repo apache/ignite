@@ -27,15 +27,15 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
- * Partition map.
+ * Partition map from single node.
  */
 public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable {
     /** */
@@ -242,6 +242,11 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     /** {@inheritDoc} */
     @Override public int compareTo(GridDhtPartitionMap o) {
         assert nodeId.equals(o.nodeId);
+
+        int topVerCompare = top.compareTo(o.top);
+
+        if (topVerCompare != 0)
+            return topVerCompare;
 
         return Long.compare(updateSeq, o.updateSeq);
     }

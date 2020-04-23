@@ -19,24 +19,36 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+
+import javax.cache.expiry.ExpiryPolicy;
 
 /**
- * Cache get request.
+ * Cache request.
  */
 class ClientCacheRequest extends ClientRequest {
-    /** Flag: keep binary. */
-    private static final byte FLAG_KEEP_BINARY = 1;
+    /** "Keep binary" flag mask. */
+    private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
+
+    /** "Under transaction" flag mask. */
+    private static final byte TRANSACTIONAL_FLAG_MASK = 0x02;
+
+    /** "With expiry policy" flag mask. */
+    private static final byte FLAG_WITH_EXPIRY_POLICY = 0x04;
 
     /** Cache ID. */
     private final int cacheId;
 
     /** Flags. */
     private final byte flags;
+
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPolicy;
 
     /**
      * Constructor.
@@ -49,6 +61,10 @@ class ClientCacheRequest extends ClientRequest {
         cacheId = reader.readInt();
 
         flags = reader.readByte();
+
+        expiryPolicy = withExpiryPolicy()
+                ? new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong())
+                : null;
     }
 
     /**
@@ -62,12 +78,30 @@ class ClientCacheRequest extends ClientRequest {
     }
 
     /**
-     *  Gets a value indicating whether keepBinary flag is set in this request.
+     * Gets a value indicating whether keepBinary flag is set in this request.
      *
      * @return keepBinary flag value.
      */
     protected boolean isKeepBinary() {
-        return (flags & FLAG_KEEP_BINARY) == FLAG_KEEP_BINARY;
+        return (flags & KEEP_BINARY_FLAG_MASK) != 0;
+    }
+
+    /**
+     * Gets a value indicating whether request was made under transaction.
+     *
+     * @return Flag value.
+     */
+    protected boolean isTransactional() {
+        return (flags & TRANSACTIONAL_FLAG_MASK) != 0;
+    }
+
+    /**
+     *  Gets a value indicating whether expiry policy is set in this request.
+     *
+     * @return expiry policy flag value.
+     */
+    private boolean withExpiryPolicy() {
+        return (flags & FLAG_WITH_EXPIRY_POLICY) == FLAG_WITH_EXPIRY_POLICY;
     }
 
     /**
@@ -77,14 +111,50 @@ class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected IgniteCache rawCache(ClientConnectionContext ctx) {
-        GridCacheContext<Object, Object> cacheCtx = ctx.kernalContext().cache().context().cacheContext(cacheId);
+        DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx);
 
-        if (cacheCtx == null)
+        String cacheName = cacheDesc.cacheName();
+
+        IgniteCache<Object, Object> cache = ctx.kernalContext().grid().cache(cacheName);
+        if (withExpiryPolicy())
+            cache = cache.withExpiryPolicy(expiryPolicy);
+        
+        return cache;
+    }
+
+    /**
+     * Gets the cache descriptor.
+     *
+     * @param ctx Context.
+     * @return Cache descriptor.
+     */
+    protected DynamicCacheDescriptor cacheDescriptor(ClientConnectionContext ctx) {
+        return cacheDescriptor(ctx, cacheId);
+    }
+
+    /**
+     * Gets the cache descriptor.
+     *
+     * @param ctx Context.
+     * @param cacheId Cache id.
+     * @return Cache descriptor.
+     */
+    public static DynamicCacheDescriptor cacheDescriptor(ClientConnectionContext ctx, int cacheId) {
+        DynamicCacheDescriptor desc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
+
+        if (desc == null)
             throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " +
-                cacheId + "]", null);
+                    cacheId + "]", null);
 
-        String cacheName = cacheCtx.cache().name();
+        return desc;
+    }
 
-        return ctx.kernalContext().grid().cache(cacheName);
+    /**
+     * Gets the cache id.
+     *
+     * @return Cache id.
+     */
+    protected int cacheId() {
+        return cacheId;
     }
 }

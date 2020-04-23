@@ -18,4 +18,5 @@
 /**
  * Contains sample POJO objects used in unit tests
  */
+
 package org.apache.ignite.tests.pojos;

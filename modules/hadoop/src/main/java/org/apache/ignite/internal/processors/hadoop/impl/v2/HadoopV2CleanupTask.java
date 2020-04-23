@@ -45,7 +45,6 @@ public class HadoopV2CleanupTask extends HadoopV2Task {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void run0(HadoopV2TaskContext taskCtx) throws IgniteCheckedException {
         JobContextImpl jobCtx = taskCtx.jobContext();
 

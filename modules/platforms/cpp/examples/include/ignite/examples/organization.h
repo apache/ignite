@@ -66,48 +66,23 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<ignite::examples::Organization>
+        struct BinaryType<examples::Organization> : BinaryTypeDefaultAll<examples::Organization>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("Organization");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "Organization";
             }
 
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static int32_t GetHashCode(const ignite::examples::Organization& obj)
-            {
-                return 0;
-            }
-
-            static bool IsNull(const ignite::examples::Organization& obj)
-            {
-                return false;
-            }
-
-            static void GetNull(ignite::examples::Organization& dst)
-            {
-                dst = ignite::examples::Organization("", ignite::examples::Address());
-            }
-
-            static void Write(BinaryWriter& writer, const ignite::examples::Organization& obj)
+            static void Write(BinaryWriter& writer, const examples::Organization& obj)
             {
                 writer.WriteString("name", obj.name);
-                writer.WriteObject<ignite::examples::Address>("addr", obj.addr);
+                writer.WriteObject<examples::Address>("addr", obj.addr);
             }
 
-            static void Read(BinaryReader& reader, ignite::examples::Organization& dst)
+            static void Read(BinaryReader& reader, examples::Organization& dst)
             {
                 dst.name = reader.ReadString("name");
-                dst.addr = reader.ReadObject<ignite::examples::Address>("addr");
+                dst.addr = reader.ReadObject<examples::Address>("addr");
             }
         };
     }

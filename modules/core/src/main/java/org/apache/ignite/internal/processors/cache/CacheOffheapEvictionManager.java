@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -32,13 +31,15 @@ import org.jetbrains.annotations.Nullable;
 public class CacheOffheapEvictionManager extends GridCacheManagerAdapter implements CacheEvictionManager {
     /** {@inheritDoc} */
     @Override public void touch(IgniteTxEntry txEntry, boolean loc) {
-        touch(txEntry.cached(), null);
+        touch(txEntry.cached());
     }
 
     /** {@inheritDoc} */
-    @Override public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+    @Override public void touch(GridCacheEntryEx e) {
         if (e.detached())
             return;
+
+        cctx.shared().database().checkpointReadLock();
 
         try {
             boolean evicted = e.evictInternal(GridCacheVersionManager.EVICT_VER, null, false)
@@ -49,6 +50,9 @@ public class CacheOffheapEvictionManager extends GridCacheManagerAdapter impleme
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
     }
 

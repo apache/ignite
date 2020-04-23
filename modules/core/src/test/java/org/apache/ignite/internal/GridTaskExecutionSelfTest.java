@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Task execution test.
@@ -68,11 +69,6 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *  {@inheritDoc}
      */
@@ -83,6 +79,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         ComputeTaskFuture<?> fut = ignite.compute().executeAsync(GridTestTask.class,  "testArg");
 
@@ -96,6 +93,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobIdCollision() throws Exception {
         fail("Test refactoring is needed: https://issues.apache.org/jira/browse/IGNITE-4706");
 
@@ -160,6 +158,7 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteTaskWithInvalidName() throws Exception {
         try {
             ComputeTaskFuture<?> fut = ignite.compute().execute("invalid.task.name", null);

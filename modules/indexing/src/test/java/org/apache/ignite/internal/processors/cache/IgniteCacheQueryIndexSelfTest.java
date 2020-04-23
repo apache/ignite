@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -54,6 +55,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithoutStoreLoad() throws Exception {
         IgniteCache<Integer, CacheValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -72,6 +74,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithStoreLoad() throws Exception {
         for (int i = 0; i < ENTRY_CNT; i++)
             storeStgy.putToStore(i, new CacheValue(i));

@@ -20,11 +20,10 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
@@ -33,21 +32,11 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int TOP_SIZE = 3;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private static volatile boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
-
         cfg.setCacheConfiguration();
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -57,14 +46,10 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
         return Long.MAX_VALUE;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        client = false;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStart() throws Exception {
         for (int i = 0; i < 10; i++) {
             try {
@@ -79,20 +64,17 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentStartClients() throws Exception {
         for (int i = 0; i < 20; i++) {
             try {
-                client = false;
-
                 startGrid(0);
-
-                client = true;
 
                 final AtomicInteger gridIdx = new AtomicInteger(1);
 
                 GridTestUtils.runMultiThreaded(new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
-                            startGrid(gridIdx.getAndIncrement());
+                            startClientGrid(gridIdx.getAndIncrement());
 
                             return null;
                         }
@@ -107,10 +89,5 @@ public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
                 stopAllGrids();
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 }

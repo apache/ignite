@@ -1,0 +1,90 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+form(id='cluster' name='ui.inputForm' novalidate)
+    .panel-group
+        include ./templates/general
+
+        include ./templates/atomic
+        include ./templates/binary
+        include ./templates/cache-key-cfg
+        include ./templates/checkpoint
+
+        //- Since ignite 2.3
+        include ./templates/client-connector
+
+        include ./templates/collision
+        include ./templates/communication
+        include ./templates/connector
+        include ./templates/deployment
+
+        //- Since ignite 2.3
+        include ./templates/data-storage
+
+        include ./templates/discovery
+
+        //- Since ignite 2.7
+        include ./templates/encryption
+
+        include ./templates/events
+        include ./templates/failover
+        include ./templates/hadoop
+        include ./templates/load-balancing
+        include ./templates/logger
+        include ./templates/marshaller
+
+        //- Since ignite 2.0, deprecated in ignite 2.3
+        include ./templates/memory
+
+        include ./templates/misc
+        include ./templates/metrics
+
+        //- Since ignite 2.7
+        include ./templates/mvcc
+
+        //- Deprecated in ignite 2.1
+        include ./templates/odbc
+
+        //- Since ignite 2.1, deprecated in ignite 2.3
+        include ./templates/persistence
+
+        //- Deprecated in ignite 2.3
+        include ./templates/sql-connector
+
+        include ./templates/service
+        include ./templates/ssl
+
+        //- Removed in ignite 2.0
+        include ./templates/swap
+
+        include ./templates/thread
+        include ./templates/time
+        include ./templates/transactions
+        include ./templates/attributes
+
+.pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
+    button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')
+
+    .pc-form-actions-panel__right-after
+
+    button.btn-ignite.btn-ignite--link-success(
+        type='button'
+        ng-click='$ctrl.confirmAndReset()'
+    )
+        | Cancel
+    pc-split-button(actions=`::$ctrl.formActions`)

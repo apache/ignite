@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Ignite Hadoop Accelerator utility classes.
  */
+
 package org.apache.ignite.hadoop.util;

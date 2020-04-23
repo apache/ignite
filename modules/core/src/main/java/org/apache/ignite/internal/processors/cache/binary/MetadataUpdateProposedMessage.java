@@ -20,7 +20,10 @@ import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -74,22 +77,22 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Node UUID which initiated metadata update. */
     private final UUID origNodeId;
 
     /** */
     private BinaryMetadata metadata;
 
-    /** */
+    /** Metadata type id. */
     private final int typeId;
 
-    /** */
+    /** Metadata version which is pending for update. */
     private int pendingVer;
 
-    /** */
+    /** Metadata version which is already accepted by entire cluster. */
     private int acceptedVer;
 
-    /** */
+    /** Message acceptance status. */
     private ProposalStatus status = ProposalStatus.SUCCESSFUL;
 
     /** */
@@ -128,6 +131,12 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      */
     @Override public boolean isMutable() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -208,7 +217,7 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
         return typeId;
     }
 
-    /** */
+    /** Message acceptance status. */
     private enum ProposalStatus {
         /** */
         SUCCESSFUL,

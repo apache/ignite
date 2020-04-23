@@ -21,18 +21,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Abstract class for REST protocols tests.
  */
-abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /** Local host. */
     protected static final String LOC_HOST = "127.0.0.1";
 
@@ -43,12 +37,9 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(gridCount());
-    }
+        cleanPersistenceDir();
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        startGrids(gridCount());
     }
 
     /** {@inheritDoc} */
@@ -60,7 +51,14 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         jcache().clear();
 
-        assertTrue(jcache().localSize() == 0);
+        assertEquals(0, jcache().localSize());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -79,12 +77,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
         clientCfg.setIdleQueryCursorCheckFrequency(5000);
 
         cfg.setConnectorConfiguration(clientCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 

@@ -256,7 +256,6 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K> UUID affinity(K key) throws GridClientException {
         A.notNull(key, "key");
 

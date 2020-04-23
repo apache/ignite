@@ -17,10 +17,15 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
 /**
  *  IgniteBinaryObjectsCacheTestSuite3 is kept together with {@link IgniteCacheTestSuite3}
@@ -38,19 +43,27 @@ import org.apache.ignite.testframework.config.GridTestProperties;
  *  In future this suite may be merged with {@link IgniteCacheTestSuite3}
  *
  */
+@RunWith(DynamicSuite.class)
 public class IgniteBinaryObjectsCacheTestSuite3 {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static List<Class<?>> suite() {
+        return suite(null);
+    }
+
+    /**
+     * @param ignoredTests Tests to ignore.
+     * @return Test suite.
+     */
+    public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         GridTestProperties.setProperty(GridTestProperties.ENTRY_PROCESSOR_CLASS_NAME,
             "org.apache.ignite.tests.p2p.CacheDeploymentBinaryEntryProcessor");
 
-        TestSuite suite = IgniteCacheTestSuite3.suite();
+        List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite3.suite(ignoredTests));
 
-        suite.addTestSuite(GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheBinaryAtomicEntryProcessorDeploymentSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheBinaryTransactionalEntryProcessorDeploymentSelfTest.class, ignoredTests);
 
         return suite;
     }

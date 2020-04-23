@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.io.Serializable;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -134,5 +135,10 @@ public class PdsFolderSettings {
      */
     @Nullable public File persistentStoreRootPath() {
         return persistentStoreRootPath;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PdsFolderSettings.class, this);
     }
 }

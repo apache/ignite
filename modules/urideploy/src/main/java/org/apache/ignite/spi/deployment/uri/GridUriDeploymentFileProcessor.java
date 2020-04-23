@@ -28,6 +28,7 @@ import java.net.URLClassLoader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import org.apache.commons.codec.binary.Hex;
@@ -35,6 +36,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -56,53 +58,54 @@ final class GridUriDeploymentFileProcessor {
     }
 
     /**
-     * Method processes given GAR file and extracts all tasks from it which are
-     * either mentioned in GAR descriptor or implements interface {@link org.apache.ignite.compute.ComputeTask}
+     * Method processes given package and extracts all tasks from it which are
+     * either mentioned in a task descriptor or implement interface {@link org.apache.ignite.compute.ComputeTask}
      * if there is no descriptor in file.
      *
-     * @param file GAR file with tasks.
-     * @param uri GAR file deployment URI.
-     * @param deployDir deployment directory with downloaded GAR files.
+     * @param file Package file with tasks.
+     * @param uri URI of the package.
+     * @param deployDir deployment directory with downloaded files.
      * @param log Logger.
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if file could not be read.
      * @return List of tasks from given file.
      */
     @Nullable static GridUriDeploymentFileProcessorResult processFile(File file, String uri, File deployDir,
         IgniteLogger log) throws IgniteSpiException {
-        File gar = file;
+        File pkg = file;
 
         if (!checkIntegrity(file, log)) {
-            U.error(log, "Tasks in GAR not loaded in configuration (invalid file signature) [uri=" +
+            U.error(log, "Failed to load tasks from a package (invalid file signature) [uri=" +
                 U.hidePassword(uri) + ']');
 
             return null;
         }
 
         if (!file.isDirectory()) {
-            gar = new File(deployDir, "dirzip_" + file.getName());
+            pkg = new File(deployDir, "dirzip_" + file.getName());
 
-            gar.mkdirs();
+            pkg.mkdirs();
 
             try {
-                U.unzip(file, gar, log);
+                U.unzip(file, pkg, log);
             }
             catch (IOException e) {
-                throw new IgniteSpiException("IO error when unzipping GAR file: " + file.getAbsolutePath(), e);
+                throw new IgniteSpiException("IO error when unzipping a package: "
+                        + file.getAbsolutePath(), e);
             }
         }
 
         GridUriDeploymentFileProcessorResult res = null;
 
-        if (gar.isDirectory()) {
+        if (pkg.isDirectory()) {
             try {
-                File xml = new File(gar, XML_DESCRIPTOR_PATH);
+                File xml = new File(pkg, XML_DESCRIPTOR_PATH);
 
                 if (!xml.exists() || xml.isDirectory()) {
                     U.warn(log,
                         "Processing deployment without descriptor file (it will cause full classpath scan) [path="
-                        + XML_DESCRIPTOR_PATH + ", gar=" + gar.getAbsolutePath() + ']');
+                        + XML_DESCRIPTOR_PATH + ", package=" + pkg.getAbsolutePath() + ']');
 
-                    res = processNoDescriptorFile(gar, uri, log);
+                    res = processNoDescriptorFile(pkg, uri, log);
                 }
                 else {
                     InputStream in = null;
@@ -115,7 +118,7 @@ final class GridUriDeploymentFileProcessor {
 
                         assert doc != null;
 
-                        res = processWithDescriptorFile(doc, gar, uri, log);
+                        res = processWithDescriptorFile(doc, pkg, uri, log);
                     }
                     finally {
                         U.close(in, log);
@@ -123,12 +126,13 @@ final class GridUriDeploymentFileProcessor {
                 }
             }
             catch (IOException e) {
-                throw new IgniteSpiException("IO error when parsing GAR directory: " + gar.getAbsolutePath(), e);
+                throw new IgniteSpiException("IO error when parsing a package: "
+                        + pkg.getAbsolutePath(), e);
             }
         }
 
         if (res != null)
-            res.setMd5(md5(gar, log));
+            res.setMd5(md5(pkg, log));
 
         return res;
     }
@@ -227,6 +231,8 @@ final class GridUriDeploymentFileProcessor {
         if (files == null)
             return true;
 
+        Arrays.sort(files);
+
         for (File visited : files) {
             if (visited.isFile()) {
                 if (!addFileDigest(visited, digest, log))
@@ -292,43 +298,40 @@ final class GridUriDeploymentFileProcessor {
     static void cleanupUnit(ClassLoader clsLdr, IgniteLogger log) {
         assert clsLdr != null;
         assert log != null;
+        assert clsLdr instanceof URLClassLoader;
 
-        if (clsLdr instanceof URLClassLoader) {
-            URLClassLoader clsLdr0 = (URLClassLoader)clsLdr;
+        URLClassLoader clsLdr0 = (URLClassLoader)clsLdr;
 
-            U.close(clsLdr0, log);
+        U.close(clsLdr0, log);
 
-            try {
-                URL url = clsLdr0.getURLs()[0];
+        try {
+            URL url = IgniteUtils.classLoaderUrls(clsLdr)[0];
 
-                File dir = new File(url.toURI());
+            File dir = new File(url.toURI());
 
-                U.delete(dir);
+            U.delete(dir);
 
-                if (dir.getName().startsWith("dirzip_")) {
-                    File jarFile = new File(dir.getParentFile(), dir.getName().substring(7));
+            if (dir.getName().startsWith("dirzip_")) {
+                File jarFile = new File(dir.getParentFile(), dir.getName().substring(7));
 
-                    U.delete(jarFile);
-                }
+                U.delete(jarFile);
             }
-            catch (Exception e) {
-                U.error(log, "Failed to cleanup unit [clsLdr=" + clsLdr + ']', e);
-            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to cleanup unit [clsLdr=" + clsLdr + ']', e);
         }
     }
 
     /**
-     * Processes given GAR file and returns back all tasks which are in
-     * descriptor.
+     * Processes given package and returns back all tasks which are in its descriptor.
      *
-     * @param doc GAR file descriptor.
-     * @param file GAR file.
-     * @param uri GAR file deployment URI.
+     * @param doc Package descriptor.
+     * @param file Package file.
+     * @param uri URI of the package file.
      * @param log Logger.
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if it's impossible to open file.
      * @return List of tasks from descriptor.
      */
-    @SuppressWarnings({"ClassLoader2Instantiation"})
     private static GridUriDeploymentFileProcessorResult processWithDescriptorFile(GridUriDeploymentSpringDocument doc,
         File file, String uri, IgniteLogger log) throws IgniteSpiException {
         ClassLoader clsLdr = GridUriDeploymentClassLoaderFactory.create(U.gridClassLoader(), file, log);
@@ -369,11 +372,11 @@ final class GridUriDeploymentFileProcessor {
     }
 
     /**
-     * Processes GAR files which have no descriptor. It scans every class and
+     * Processes packages which have no descriptor. It scans every class and
      * checks if it is a valid task or not. All valid tasks are returned back.
      *
-     * @param file GAR file or directory.
-     * @param uri GAR file deployment URI.
+     * @param file Package file or directory.
+     * @param uri URI of the package file.
      * @param log Logger.
      * @throws org.apache.ignite.spi.IgniteSpiException Thrown if file reading error happened.
      * @return List of tasks from given file.
@@ -434,10 +437,10 @@ final class GridUriDeploymentFileProcessor {
     }
 
     /**
-     * Make integrity check for GAR file.
-     * Method returns {@code false} if GAR file has incorrect signature.
+     * Make integrity check for a package.
+     * Method returns {@code false} if the package has incorrect signature.
      *
-     * @param file GAR file which should be verified.
+     * @param file package which should be verified.
      * @param log Logger.
      * @return {@code true} if given file is a directory of verification
      *      completed successfully otherwise returns {@code false}.

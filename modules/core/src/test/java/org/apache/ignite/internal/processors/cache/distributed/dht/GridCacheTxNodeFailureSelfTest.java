@@ -35,19 +35,21 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionState;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,9 +63,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings("unchecked")
 public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @return Grid count.
      */
@@ -74,8 +73,6 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
@@ -106,6 +103,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitPessimistic() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, true);
     }
@@ -113,6 +111,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitOptimistic() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, true);
     }
@@ -120,6 +119,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitPessimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, true);
     }
@@ -127,6 +127,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitOptimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, true, true);
     }
@@ -134,6 +135,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackPessimistic() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, false, false);
     }
@@ -141,15 +143,16 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1731")
+    @Test
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
-
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackPessimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(PESSIMISTIC, true, false);
     }
@@ -157,6 +160,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackOptimisticOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, true, false);
     }
@@ -164,6 +168,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitImplicit() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, false, true);
     }
@@ -171,6 +176,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupCommitImplicitOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, true, true);
     }
@@ -178,6 +184,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackImplicit() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, false, false);
     }
@@ -185,8 +192,90 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrimaryNodeFailureBackupRollbackImplicitOnBackup() throws Exception {
         checkPrimaryNodeFailureBackupCommit(null, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPrimaryNodeCrashesWhenPessimisticTxIsSuspended() throws Exception {
+        try {
+            startGrids(gridCount());
+
+            awaitPartitionMapExchange();
+
+            Integer key = primaryKey(ignite(0).cache(DEFAULT_CACHE_NAME));
+
+            Ignite nearNode = ignite(1);
+
+            Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+            nearNode.cache(DEFAULT_CACHE_NAME).put(key, 1);
+
+            tx.suspend();
+
+            stopGrid(0, true);
+
+            ((IgniteKernal)ignite(1)).context().discovery().topologyFuture(gridCount() + 1).get();
+
+            tx.resume();
+
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    tx.commit();
+
+                    return null;
+                }
+            }, IgniteTxRollbackCheckedException.class);
+
+            assertEquals(TransactionState.ROLLED_BACK, tx.state());
+
+            for (Ignite ignite : G.allGrids())
+                assertNull(ignite.cache(DEFAULT_CACHE_NAME).localPeek(key));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOriginatingNodeCrashesWhenPessimisticTxIsSuspended() throws Exception {
+        try {
+            startGrids(gridCount());
+
+            awaitPartitionMapExchange();
+
+            Integer key = primaryKey(ignite(0).cache(DEFAULT_CACHE_NAME));
+
+            Ignite nearNode = ignite(1);
+
+            Transaction tx = nearNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+
+            nearNode.cache(DEFAULT_CACHE_NAME).put(key, 1);
+
+            tx.suspend();
+
+            stopGrid(1, true);
+
+            ((IgniteKernal)ignite(0)).context().discovery().topologyFuture(gridCount() + 1).get();
+
+            awaitPartitionMapExchange();
+
+            for (Ignite ignite : G.allGrids()) {
+                assertNull(ignite.cache(DEFAULT_CACHE_NAME).localPeek(key));
+
+                assertEquals(0, ((IgniteEx)ignite).context().cache().context().tm().idMapSize());
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -345,14 +434,14 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             assertNotNull(dhtEntry);
             assertTrue("dhtEntry=" + dhtEntry, dhtEntry.remoteMvccSnapshot().isEmpty());
             assertTrue("dhtEntry=" + dhtEntry, dhtEntry.localCandidates().isEmpty());
-            assertEquals(key, backupCache.localPeek(key, null, null));
+            assertEquals(key, backupCache.localPeek(key, null));
 
             if (nearEntry != null) {
                 assertTrue("near=" + nearEntry, nearEntry.remoteMvccSnapshot().isEmpty());
                 assertTrue("near=" + nearEntry, nearEntry.localCandidates().isEmpty());
 
                 // Near peek wil be null since primary node has changed.
-                assertNull("near=" + nearEntry, origCache.localPeek(key, null, null));
+                assertNull("near=" + nearEntry, origCache.localPeek(key, null));
             }
         }
         else {
@@ -360,7 +449,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             assertTrue("Invalid backup cache entry: " + dhtEntry, dhtEntry.rawGet() == null);
         }
 
-        backupCache.context().evicts().touch(dhtEntry, null);
+        dhtEntry.touch();
     }
 
     /**

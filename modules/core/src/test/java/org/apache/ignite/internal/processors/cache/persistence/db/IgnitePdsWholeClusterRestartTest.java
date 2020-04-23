@@ -21,57 +21,44 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRID_CNT = 5;
+    private static final int GRID_CNT = SF.applyLB(5, 3);
 
     /** */
-    private static final int ENTRIES_COUNT = 1_000;
-
-    /** */
-    public static final String CACHE_NAME = "cache1";
+    private static final int ENTRIES_COUNT = SF.apply(1_000);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        cfg.setDataStorageConfiguration(memCfg);
 
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
+        CacheConfiguration ccfg1 = defaultCacheConfiguration();
 
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        CacheConfiguration ccfg1 = new CacheConfiguration();
-
-        ccfg1.setName(CACHE_NAME);
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg1.setRebalanceMode(CacheRebalanceMode.SYNC);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -85,11 +72,6 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
-
         cfg.setConsistentId(gridName);
 
         return cfg;
@@ -99,36 +81,28 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRestarts() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5741");
-
         startGrids(GRID_CNT);
 
         ignite(0).active(true);
 
         awaitPartitionMapExchange();
 
-        try (IgniteDataStreamer<Object, Object> ds = ignite(0).dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<Object, Object> ds = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < ENTRIES_COUNT; i++)
                 ds.addData(i, i);
         }
@@ -140,7 +114,7 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             idxs.add(i);
 
-        for (int r = 0; r < 10; r++) {
+        for (int r = 0; r < SF.applyLB(10, 3); r++) {
             Collections.shuffle(idxs);
 
             info("Will start in the following order: " + idxs);
@@ -155,9 +129,9 @@ public class IgnitePdsWholeClusterRestartTest extends GridCommonAbstractTest {
                     Ignite ig = ignite(g);
 
                     for (int k = 0; k < ENTRIES_COUNT; k++)
-                        assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(CACHE_NAME).partition(k) +
-                            ", nodes=" + ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
-                            k, ig.cache(CACHE_NAME).get(k));
+                        assertEquals("Failed to read [g=" + g + ", part=" + ig.affinity(DEFAULT_CACHE_NAME).partition(k) +
+                                ", nodes=" + ig.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(k) + ']',
+                            k, ig.cache(DEFAULT_CACHE_NAME).get(k));
                 }
             }
             finally {

@@ -23,7 +23,7 @@ export default class {
     }
 
     $onChanges(changes) {
-        if (changes && 'gridApi' in changes && changes.gridApi.currentValue) {
+        if (changes && 'gridApi' in changes && changes.gridApi.currentValue && this.gridApi.selection) {
             this.applyValues();
 
             this.gridApi.grid.registerDataChangeCallback(() => this.applyValues(), [this.uiGridConstants.dataChange.ROW]);
@@ -35,7 +35,7 @@ export default class {
     }
 
     applyValues() {
-        this.selected = this.gridApi.selection.getSelectedRows().length;
+        this.selected = this.gridApi.selection.legacyGetSelectedRows().length;
         this.count = this.gridApi.grid.rows.length;
     }
 }

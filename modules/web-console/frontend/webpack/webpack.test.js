@@ -15,19 +15,31 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
+const merge = require('webpack-merge');
+const commonCfg = require('./webpack.common');
 
-import commonCfg from './webpack.common';
-
-export default merge(commonCfg, {
+module.exports = merge(commonCfg, {
+    mode: 'development',
     cache: true,
     node: {
-        fs: 'empty'
+        fs: 'empty',
+        child_process: 'empty'
     },
 
     // Entry points.
     entry: null,
 
     // Output system.
-    output: null
+    output: null,
+    optimization: {
+        splitChunks: {
+            chunks: 'async'
+        }
+    },
+    module: {
+        exprContextCritical: false,
+        rules: [
+            {test: /\.s?css$/, use: ['ignore-loader']}
+        ]
+    }
 });

@@ -35,9 +35,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -50,9 +48,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * IPC cache test.
  */
 public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Path to test hadoop configuration. */
     private static final String HADOOP_FS_CFG = "modules/core/src/test/config/hadoop/core-site.xml";
 
@@ -65,11 +60,6 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -155,6 +145,7 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testIpcCache() throws Exception {
         Field cacheField = HadoopIgfsIpcIo.class.getDeclaredField("ipcCache");
 

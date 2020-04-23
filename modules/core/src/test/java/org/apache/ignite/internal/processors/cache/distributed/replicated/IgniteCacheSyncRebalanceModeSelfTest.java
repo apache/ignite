@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -60,6 +61,7 @@ public class IgniteCacheSyncRebalanceModeSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testStaticCache() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -85,6 +87,7 @@ public class IgniteCacheSyncRebalanceModeSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDynamicCache() throws Exception {
         IgniteEx ignite = startGrid(0);
 

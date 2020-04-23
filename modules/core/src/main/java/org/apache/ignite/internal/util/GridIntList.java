@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -427,7 +426,7 @@ public class GridIntList implements Message, Externalizable {
 
         b.a(']');
 
-        return S.toString(GridIntList.class, this, "arr", b);
+        return b.toString();
     }
 
     /**

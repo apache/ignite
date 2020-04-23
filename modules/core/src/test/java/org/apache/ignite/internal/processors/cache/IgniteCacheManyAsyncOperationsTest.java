@@ -26,9 +26,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.lang.IgniteFuture;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,21 +57,12 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(2)))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManyAsyncOperations() throws Exception {
-        try (Ignite client = startGrid(gridCount())) {
+        try (Ignite client = startClientGrid(gridCount())) {
             assertTrue(client.configuration().isClientMode());
 
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);

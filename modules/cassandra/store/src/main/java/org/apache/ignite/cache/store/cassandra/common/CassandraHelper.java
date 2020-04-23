@@ -24,7 +24,6 @@ import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
-
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -49,6 +48,9 @@ public class CassandraHelper {
 
     /** Cassandra error message if specified table doesn't exist. */
     private static final String TABLE_EXIST_ERROR2 = "Error preparing query, got ERROR INVALID: unconfigured table";
+    
+    /** Cassandra error message if specified table doesn't exist. */
+    private static final Pattern TABLE_EXIST_ERROR3 = Pattern.compile("unconfigured columnfamily [0-9a-zA-Z_]+");
 
     /** Cassandra error message if trying to use prepared statement created from another session. */
     private static final String PREP_STATEMENT_CLUSTER_INSTANCE_ERROR = "You may have used a PreparedStatement that " +
@@ -97,6 +99,7 @@ public class CassandraHelper {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
                 (TABLE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
+                    TABLE_EXIST_ERROR3.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;
@@ -105,7 +108,6 @@ public class CassandraHelper {
                 NoHostAvailableException ex = (NoHostAvailableException)e;
 
                 for (Map.Entry<InetSocketAddress, Throwable> entry : ex.getErrors().entrySet()) {
-                    //noinspection ThrowableResultOfMethodCallIgnored
                     Throwable error = entry.getValue();
 
                     if (error instanceof DriverException &&

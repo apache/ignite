@@ -17,17 +17,18 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
-
+import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
+import org.jetbrains.annotations.Nullable;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DOUBLE;
 import static java.sql.Types.FLOAT;
 import static java.sql.Types.INTEGER;
@@ -37,6 +38,7 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
+import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
  * Utility methods for thin JDBC driver.
@@ -45,81 +47,20 @@ public class JdbcThinUtils {
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
 
-    /** Prefix for property names. */
-    public static final String PROP_PREFIX = "ignite.jdbc.";
-
     /** Port number property name. */
     public static final String PROP_PORT = PROP_PREFIX + "port";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
-    /** Parameter: distributed joins flag (SQL hint). */
-    public static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
+    /** Byte representation of value "default" */
+    private static final byte BYTE_DEFAULT = 2;
 
-    /** Parameter: enforce join order flag (SQL hint). */
-    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+    /** Byte representation of value "disabled". */
+    private static final byte BYTE_ENABLED = 1;
 
-    /** Parameter: collocated flag (SQL hint). */
-    public static final String PARAM_COLLOCATED = "collocated";
-
-    /** Parameter: lazy query execution flag (SQL hint). */
-    public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
-
-    /** Parameter: replicated only flag (SQL hint). */
-    public static final String PARAM_LAZY = "lazy";
-
-    /** Parameter: socket send buffer. */
-    public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
-
-    /** Parameter: socket receive buffer. */
-    public static final String PARAM_SOCK_RCV_BUF = "socketReceiveBuffer";
-
-    /** Parameter: TCP no-delay flag. */
-    public static final String PARAM_TCP_NO_DELAY = "tcpNoDelay";
-
-    /** Parameter: Automatically close server cursor. */
-    public static final String PARAM_AUTO_CLOSE_SERVER_CURSOR = "autoCloseServerCursor";
-
-    /** Distributed joins property name. */
-    public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
-
-    /** Transactions allowed property name. */
-    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
-
-    /** Collocated property name. */
-    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
-
-    /** Lazy property name. */
-    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
-
-    /** Replicated only property name. */
-    public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;
-
-    /** Socket send buffer property name. */
-    public static final String PROP_SOCK_SND_BUF = PROP_PREFIX + PARAM_SOCK_SND_BUF;
-
-    /** Socket receive buffer property name. */
-    public static final String PROP_SOCK_RCV_BUF = PROP_PREFIX + PARAM_SOCK_RCV_BUF;
-
-    /** TCP no delay property name. */
-    public static final String PROP_TCP_NO_DELAY = PROP_PREFIX + PARAM_TCP_NO_DELAY;
-
-    /** Automatically close server cursor. */
-    public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSOR;
-
-    /** Default port. */
-    public static final int DFLT_PORT = ClientConnectorConfiguration.DFLT_PORT;
-
-    /**
-     * Trim prefix from property.
-     *
-     * @param prop Property.
-     * @return Parameter name.
-     */
-    public static String trimPrefix(String prop) {
-        return prop.substring(PROP_PREFIX.length());
-    }
+    /** Byte representation of value "disabled". */
+    private static final byte BYTE_DISABLED = 0;
 
     /**
      * Converts Java class name to type from {@link Types}.
@@ -127,7 +68,6 @@ public class JdbcThinUtils {
      * @param cls Java class name.
      * @return Type from {@link Types}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static int type(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return BOOLEAN;
@@ -151,8 +91,10 @@ public class JdbcThinUtils {
             return TIME;
         else if (Timestamp.class.getName().equals(cls))
             return TIMESTAMP;
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return DATE;
+        else if (BigDecimal.class.getName().equals(cls))
+            return DECIMAL;
         else
             return OTHER;
     }
@@ -163,7 +105,6 @@ public class JdbcThinUtils {
      * @param cls Java class name.
      * @return SQL type name.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public static String typeName(String cls) {
         if (Boolean.class.getName().equals(cls) || boolean.class.getName().equals(cls))
             return "BOOLEAN";
@@ -187,8 +128,10 @@ public class JdbcThinUtils {
             return "TIME";
         else if (Timestamp.class.getName().equals(cls))
             return "TIMESTAMP";
-        else if (Date.class.getName().equals(cls))
+        else if (Date.class.getName().equals(cls) || java.sql.Date.class.getName().equals(cls))
             return "DATE";
+        else if (BigDecimal.class.getName().equals(cls))
+            return "DECIMAL";
         else
             return "OTHER";
     }
@@ -228,5 +171,37 @@ public class JdbcThinUtils {
             long.class.getName().equals(cls) ||
             float.class.getName().equals(cls) ||
             double.class.getName().equals(cls));
+    }
+
+    /**
+     * Converts raw byte value to the nullable Boolean. Useful for the deserialization in the handshake.
+     *
+     * @param raw byte value to convert to Boolean.
+     * @return converted value.
+     */
+    @Nullable public static Boolean nullableBooleanFromByte(byte raw) {
+        switch (raw) {
+            case BYTE_DEFAULT:
+                return null;
+            case BYTE_ENABLED:
+                return Boolean.TRUE;
+            case BYTE_DISABLED:
+                return Boolean.FALSE;
+            default:
+                throw new NumberFormatException("Incorrect byte: " + raw + ". Impossible to read nullable Boolean from it.");
+        }
+    }
+
+    /**
+     * Converts nullable Boolean to the raw byte. Useful for the serialization in the handshake.
+     *
+     * @param val value to convert.
+     * @return byte representation.
+     */
+    public static byte nullableBooleanToByte(@Nullable Boolean val) {
+        if (val == null)
+            return BYTE_DEFAULT;
+
+        return val ? BYTE_ENABLED : BYTE_DISABLED;
     }
 }

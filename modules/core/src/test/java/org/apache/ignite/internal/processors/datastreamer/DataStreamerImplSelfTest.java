@@ -38,6 +38,7 @@ import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,16 +50,13 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,9 +65,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for {@code IgniteDataStreamerImpl}.
  */
 public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
@@ -96,11 +91,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         cfg.setCommunicationSpi(new StaleTopologyCommunicationSpi());
 
         if (cnt < MAX_CACHE_COUNT)
@@ -114,6 +104,36 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testCloseWithCancellation() throws Exception {
+        cnt = 0;
+
+        startGrids(2);
+
+        Ignite g1 = grid(1);
+
+        List<IgniteFuture> futures = new ArrayList<>();
+
+        IgniteDataStreamer<Object, Object> dataLdr = g1.dataStreamer(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++)
+            futures.add(dataLdr.addData(i, i));
+
+        try {
+            dataLdr.close(true);
+        }
+        catch (CacheException e) {
+            // No-op.
+        }
+
+        for (IgniteFuture fut : futures)
+            assertTrue(fut.isDone());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testNullPointerExceptionUponDataStreamerClosing() throws Exception {
         cnt = 0;
 
@@ -161,6 +181,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         cnt = 0;
 
@@ -197,6 +218,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testNoDataNodesOnClose() throws Exception {
         boolean failed = false;
 
@@ -226,6 +248,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testNoDataNodesOnFlush() throws Exception {
         boolean failed = false;
 
@@ -239,6 +262,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             IgniteFuture fut = null;
 
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                streamer.perThreadBufferSize(1);
+
                 fut = streamer.addData(1, "1");
 
                 streamer.flush();
@@ -266,6 +291,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
@@ -318,6 +344,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemapOnTopologyChangeDuringUpdatePreparation() throws Exception {
         cnt = 0;
 
@@ -334,6 +361,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         final IgniteDataStreamer ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ldr.perThreadBufferSize(1);
 
         final IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -398,6 +427,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed
      */
+    @Test
     public void testRetryWhenTopologyMismatch() throws Exception {
         final int KEY = 1;
         final String VAL = "1";
@@ -428,6 +458,88 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientEventsNotCausingRemaps() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ((DataStreamerImpl)streamer).maxRemapCount(3);
+
+        streamer.addData(1, 1);
+
+        for (int topChanges = 0; topChanges < 30; topChanges++) {
+            IgniteEx node = startClientGrid(getConfiguration("flapping-client"));
+
+            streamer.addData(1, 1);
+
+            node.close();
+
+            streamer.addData(1, 1);
+        }
+
+        streamer.flush();
+        streamer.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testServerEventsCauseRemaps() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        streamer.perThreadBufferSize(1);
+
+        ((DataStreamerImpl)streamer).maxRemapCount(0);
+
+        streamer.addData(1, 1);
+
+        startGrid(2);
+
+        try {
+            streamer.addData(1, 1);
+
+            streamer.flush();
+        }
+        catch (IllegalStateException ex) {
+            assert ex.getMessage().contains("Data streamer has been closed");
+
+            return;
+        }
+
+        fail("Expected exception wasn't thrown");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDataStreamerWaitsUntilDynamicCacheStartIsFinished() throws Exception {
+        final Ignite ignite0 = startGrids(2);
+        final Ignite ignite1 = grid(1);
+
+        final String cacheName = "testCache";
+
+        IgniteCache<Integer, Integer> cache = ignite0.getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>().setName(cacheName));
+
+        try (IgniteDataStreamer<Integer, Integer> ldr = ignite1.dataStreamer(cacheName)) {
+            ldr.addData(0, 0);
+        }
+
+        assertEquals(Integer.valueOf(0), cache.get(0));
     }
 
     /**

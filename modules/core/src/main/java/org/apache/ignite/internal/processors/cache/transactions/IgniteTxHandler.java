@@ -17,15 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -34,14 +44,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -52,6 +62,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -61,10 +76,17 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.EnlistOperation;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -75,6 +97,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -84,7 +108,9 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -139,13 +165,13 @@ public class IgniteTxHandler {
      * @param nearNode Sender node.
      * @param req Request.
      */
-    private void processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
+    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
         IgniteInternalFuture<GridNearTxPrepareResponse> fut;
 
         if (req.firstClientRequest() && req.allowWaitTopologyFuture()) {
             for (;;) {
                 if (waitForExchangeFuture(nearNode, req))
-                    return;
+                    return new GridFinishedFuture<>();
 
                 fut = prepareNearTx(nearNode, req);
 
@@ -158,6 +184,8 @@ public class IgniteTxHandler {
 
         assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -239,6 +267,20 @@ public class IgniteTxHandler {
                     processCheckPreparedTxResponse(nodeId, res);
                 }
             });
+
+        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastRequest.class,
+            new CI2<UUID, PartitionCountersNeighborcastRequest>() {
+                @Override public void apply(UUID nodeId, PartitionCountersNeighborcastRequest req) {
+                    processPartitionCountersRequest(nodeId, req);
+                }
+            });
+
+        ctx.io().addCacheHandler(0, PartitionCountersNeighborcastResponse.class,
+            new CI2<UUID, PartitionCountersNeighborcastResponse>() {
+                @Override public void apply(UUID nodeId, PartitionCountersNeighborcastResponse res) {
+                    processPartitionCountersResponse(nodeId, res);
+                }
+            });
     }
 
     /**
@@ -255,9 +297,6 @@ public class IgniteTxHandler {
         req.txState(locTx.txState());
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
-
-        if (locTx.isRollbackOnly())
-            locTx.rollbackNearTxLocalAsync();
 
         return fut.chain(new C1<IgniteInternalFuture<GridNearTxPrepareResponse>, GridNearTxPrepareResponse>() {
             @Override public GridNearTxPrepareResponse apply(IgniteInternalFuture<GridNearTxPrepareResponse> f) {
@@ -310,14 +349,17 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param originTx Transaction for copy.
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(
+        final GridNearTxLocal originTx,
+        final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.
         req.cloneEntries();
 
-        return prepareNearTx(ctx.localNode(), req);
+        return prepareNearTx(originTx, ctx.localNode(), req);
     }
 
     /**
@@ -326,6 +368,20 @@ public class IgniteTxHandler {
      * @return Prepare future or {@code null} if need retry operation.
      */
     @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final ClusterNode nearNode,
+        final GridNearTxPrepareRequest req
+    ) {
+        return prepareNearTx(null, nearNode, req);
+    }
+
+    /**
+     * @param originTx Transaction for copy.
+     * @param nearNode Node that initiated transaction.
+     * @param req Near prepare request.
+     * @return Prepare future or {@code null} if need retry operation.
+     */
+    @Nullable private IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTx(
+        final GridNearTxLocal originTx,
         final ClusterNode nearNode,
         final GridNearTxPrepareRequest req
     ) {
@@ -340,8 +396,6 @@ public class IgniteTxHandler {
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
         }
-
-        assert firstEntry != null : req;
 
         GridDhtTxLocal tx = null;
 
@@ -362,8 +416,10 @@ public class IgniteTxHandler {
             GridDhtPartitionTopology top = null;
 
             if (req.firstClientRequest()) {
+                assert firstEntry != null : req;
+
                 assert req.concurrency() == OPTIMISTIC : req;
-                assert CU.clientNode(nearNode) : nearNode;
+                assert nearNode.isClient() : nearNode;
 
                 top = firstEntry.context().topology();
 
@@ -476,7 +532,9 @@ public class IgniteTxHandler {
                     req.txSize(),
                     req.transactionNodes(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel(),
+                    originTx
                 );
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -549,7 +607,7 @@ public class IgniteTxHandler {
     /**
      * @param node Sender node.
      * @param req Request.
-     * @return {@code True} if update will be retried from future listener.
+     * @return {@code True} if update will be retried from future listener or topology version future is timed out.
      */
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearTxPrepareRequest req) {
         assert req.firstClientRequest() : req;
@@ -563,27 +621,53 @@ public class IgniteTxHandler {
                 final IgniteThread thread = (IgniteThread)curThread;
 
                 if (thread.cachePoolThread()) {
-                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
-                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, new Runnable() {
-                                @Override public void run() {
-                                    try {
-                                        processNearTxPrepareRequest0(node, req);
+                    ctx.time().waitAsync(topFut, req.timeout(), (e, timedOut) -> {
+                            if (e != null || timedOut) {
+                                sendResponseOnTimeoutOrError(e, topFut, node, req);
+
+                                return;
+                            }
+                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, () -> {
+                                IgniteInternalFuture<GridNearTxPrepareResponse> fut = null;
+
+                                Throwable err = null;
+
+                                try {
+                                    for (IgniteTxEntry itm : F.concat(false, req.writes(), req.reads())) {
+                                        err = topFut.validateCache(itm.context(), req.recovery(), isEmpty(req.writes()),
+                                            null, null);
+
+                                        if (err != null)
+                                            break;
                                     }
-                                    finally {
-                                        ctx.io().onMessageProcessed(req);
-                                    }
+
+                                    if (err == null)
+                                        fut = processNearTxPrepareRequest0(node, req);
+                                }
+                                finally {
+                                    if (fut == null || fut.error() != null || err != null)
+                                        sendResponseOnTimeoutOrError(e, topFut, node, req);
+
+                                    ctx.io().onMessageProcessed(req);
                                 }
                             });
                         }
-                    });
+                    );
 
                     return true;
                 }
             }
 
             try {
-                topFut.get();
+                if (req.timeout() > 0)
+                    topFut.get(req.timeout());
+                else
+                    topFut.get();
+            }
+            catch (IgniteFutureTimeoutCheckedException e) {
+                sendResponseOnTimeoutOrError(null, topFut, node, req);
+
+                return true;
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Topology future failed: " + e, e);
@@ -591,6 +675,48 @@ public class IgniteTxHandler {
         }
 
         return false;
+    }
+
+    /**
+     * @param e Exception or null if timed out.
+     * @param topFut Topology future.
+     * @param node Node.
+     * @param req Prepare request.
+     */
+    private void sendResponseOnTimeoutOrError(@Nullable IgniteCheckedException e,
+        GridDhtTopologyFuture topFut,
+        ClusterNode node,
+        GridNearTxPrepareRequest req) {
+        if (e == null)
+            e = new IgniteTxTimeoutCheckedException("Failed to wait topology version for near prepare " +
+                "[txId=" + req.version() +
+                ", topVer=" + topFut.initialVersion() +
+                ", node=" + node.id() +
+                ", req=" + req + ']');
+
+        GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
+            req.partition(),
+            req.version(),
+            req.futureId(),
+            req.miniId(),
+            req.version(),
+            req.version(),
+            null,
+            e,
+            null,
+            req.onePhaseCommit(),
+            req.deployInfo() != null);
+
+        try {
+            ctx.io().send(node.id(), res, req.policy());
+        }
+        catch (IgniteCheckedException e0) {
+            U.error(txPrepareMsgLog, "Failed to send wait topology version response for near prepare " +
+                "[txId=" + req.version() +
+                ", topVer=" + topFut.initialVersion() +
+                ", node=" + node.id() +
+                ", req=" + req + ']', e0);
+        }
     }
 
     /**
@@ -602,8 +728,15 @@ public class IgniteTxHandler {
     private boolean needRemap(AffinityTopologyVersion expVer,
         AffinityTopologyVersion curVer,
         GridNearTxPrepareRequest req) {
-        if (expVer.equals(curVer))
+        if (curVer.equals(expVer))
             return false;
+
+        AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
+
+        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
+            return false;
+
+        // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
@@ -664,8 +797,6 @@ public class IgniteTxHandler {
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
         if (txFinishMsgLog.isDebugEnabled())
             txFinishMsgLog.debug("Received near finish response [txId=" + res.xid() + ", node=" + nodeId + ']');
-
-        ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
         GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
@@ -800,9 +931,9 @@ public class IgniteTxHandler {
         if (locTx != null)
             req.txState(locTx.txState());
 
-        // 'baseVersion' message field is re-used for version to be added in completed versions.
-        if (!req.commit() && req.baseVersion() != null)
-            ctx.tm().addRolledbackTx(null, req.baseVersion());
+        // Always add near version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
@@ -859,8 +990,11 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
-        if (tx != null)
+        if (tx != null) {
+            tx.mvccSnapshot(req.mvccSnapshot());
+
             req.txState(tx.txState());
+        }
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -885,7 +1019,7 @@ public class IgniteTxHandler {
                 req.threadId(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException("Transaction has been already completed."));
+                new IgniteTxRollbackCheckedException("Transaction has been already completed or not started yet."));
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
@@ -932,14 +1066,14 @@ public class IgniteTxHandler {
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
 
+            if (!tx.markFinalizing(USER_FINISH)) {
+                if (log.isDebugEnabled())
+                    log.debug("Will not finish transaction (it is handled by another thread) [commit=" + req.commit() + ", tx=" + tx + ']');
+
+                return null;
+            }
+
             if (req.commit()) {
-                if (!tx.markFinalizing(USER_FINISH)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not finish transaction (it is handled by another thread): " + tx);
-
-                    return null;
-                }
-
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitDhtLocalAsync();
 
                 // Only for error logging.
@@ -957,30 +1091,35 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
+            try {
+                if (tx != null) {
+                    tx.commitError(e);
 
-            if (tx != null) {
-                tx.commitError(e);
+                    tx.systemInvalidate(true);
 
-                tx.systemInvalidate(true);
+                    try {
+                        IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
 
-                try {
-                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
+                        // Only for error logging.
+                        res.listen(CU.errorLogger(log));
 
-                    // Only for error logging.
-                    res.listen(CU.errorLogger(log));
+                        return res;
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
 
-                    return res;
+                    tx.logTxFinishErrorSafe(log, req.commit(), e);
                 }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
+
+                if (e instanceof Error)
+                    throw (Error)e;
+
+                return new GridFinishedFuture<>(e);
             }
-
-            if (e instanceof Error)
-                throw (Error)e;
-
-            return new GridFinishedFuture<>(e);
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1005,20 +1144,26 @@ public class IgniteTxHandler {
                 return tx.rollbackAsyncLocal();
         }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + commit + ", tx=" + tx + ']', e);
+            try {
+                if (tx != null) {
+                    try {
+                        return tx.rollbackNearTxLocalAsync();
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
 
-            if (e instanceof Error)
-                throw e;
-
-            if (tx != null)
-                try {
-                    return tx.rollbackNearTxLocalAsync();
+                    tx.logTxFinishErrorSafe(log, commit, e);
                 }
-                catch (Throwable e1) {
-                    e.addSuppressed(e1);
-                }
 
-            return new GridFinishedFuture<>(e);
+                if (e instanceof Error)
+                    throw e;
+
+                return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1101,10 +1246,6 @@ public class IgniteTxHandler {
             else if (e instanceof IgniteTxOptimisticCheckedException) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure for remote transaction (will rollback): " + req);
-            }
-            else if (e instanceof IgniteTxHeuristicCheckedException) {
-                U.warn(log, "Failed to commit transaction (all transaction entries were invalidated): " +
-                    CU.txString(dhtTx));
             }
             else
                 U.error(log, "Failed to process prepare request: " + req, e);
@@ -1212,23 +1353,34 @@ public class IgniteTxHandler {
             return;
         }
 
-        final GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
+        // Always add version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
+
+        GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
         GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
-        final GridCacheVersion nearTxId =
-            (dhtTx != null ? dhtTx.nearXidVersion() : (nearTx != null ? nearTx.nearXidVersion() : null));
+        IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);
 
-        if (txFinishMsgLog.isDebugEnabled()) {
-            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId +
-                ", dhtTxId=" + req.version() +
+        final GridCacheVersion nearTxId = anyTx != null ? anyTx.nearXidVersion() : null;
+
+        if (txFinishMsgLog.isDebugEnabled())
+            txFinishMsgLog.debug("Received dht finish request [txId=" + nearTxId + ", dhtTxId=" + req.version() +
                 ", node=" + nodeId + ']');
+
+        if (anyTx == null && req.commit())
+            ctx.tm().addCommittedTx(null, req.version(), null);
+
+        if (dhtTx != null)
+            finish(nodeId, dhtTx, req);
+        else {
+            try {
+                applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit(), false);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
-
-        // Safety - local transaction will finish explicitly.
-        if (nearTx != null && nearTx.local())
-            nearTx = null;
-
-        finish(nodeId, dhtTx, req);
 
         if (nearTx != null)
             finish(nodeId, nearTx, req);
@@ -1281,52 +1433,37 @@ public class IgniteTxHandler {
         IgniteTxRemoteEx tx,
         GridDhtTxFinishRequest req
     ) {
-        // We don't allow explicit locks for transactions and
-        // therefore immediately return if transaction is null.
-        // However, we may decide to relax this restriction in
-        // future.
-        if (tx == null) {
-            if (req.commit())
-                // Must be some long time duplicate, but we add it anyway.
-                ctx.tm().addCommittedTx(tx, req.version(), null);
-            else
-                ctx.tm().addRolledbackTx(tx, req.version());
-
-            if (log.isDebugEnabled())
-                log.debug("Received finish request for non-existing transaction (added to completed set) " +
-                    "[senderNodeId=" + nodeId + ", res=" + req + ']');
-
-            return;
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
-                ", tx=" + tx + ']');
+        assert tx != null;
 
         req.txState(tx.txState());
 
         try {
             if (req.commit() || req.isSystemInvalidate()) {
                 tx.commitVersion(req.commitVersion());
-                tx.invalidate(req.isInvalidate());
-                tx.systemInvalidate(req.isSystemInvalidate());
+                if (req.isInvalidate())
+                    tx.invalidate(true);
+                if (req.isSystemInvalidate())
+                    tx.systemInvalidate(true);
+                tx.mvccSnapshot(req.mvccSnapshot());
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
-                tx.setPartitionUpdateCounters(
-                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
-
                 tx.commitRemoteTx();
             }
             else {
-                tx.doneRemote(req.baseVersion(), null, null, null);
+                if (tx.dht() && req.updateCounters() != null)
+                    tx.txCounters(true).updateCounters(req.updateCounters());
 
+                tx.doneRemote(req.baseVersion(), null, null, null);
+                tx.mvccSnapshot(req.mvccSnapshot());
                 tx.rollbackRemoteTx();
             }
         }
+        catch (IgniteTxHeuristicCheckedException e) {
+            // Already uncommitted.
+        }
         catch (Throwable e) {
-            U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
-
             // Mark transaction for invalidate.
             tx.invalidate(true);
             tx.systemInvalidate(true);
@@ -1344,6 +1481,8 @@ public class IgniteTxHandler {
     }
 
     /**
+     * Finish for one-phase distributed tx.
+     *
      * @param tx Transaction.
      * @param req Request.
      */
@@ -1355,6 +1494,7 @@ public class IgniteTxHandler {
         try {
             tx.commitVersion(req.writeVersion());
             tx.invalidate(req.isInvalidate());
+            tx.mvccSnapshot(req.mvccSnapshot());
 
             // Complete remote candidates.
             tx.doneRemote(req.version(), null, null, null);
@@ -1366,22 +1506,26 @@ public class IgniteTxHandler {
             throw e;
         }
         catch (Throwable e) {
-            U.error(log, "Failed committing transaction [tx=" + tx + ']', e);
-
-            // Mark transaction for invalidate.
-            tx.invalidate(true);
-            tx.systemInvalidate(true);
-
             try {
-                tx.rollbackRemoteTx();
-            }
-            catch (Throwable e1) {
-                e.addSuppressed(e1);
-                U.error(log, "Failed to automatically rollback transaction: " + tx, e1);
-            }
+                // Mark transaction for invalidate.
+                tx.invalidate(true);
+                tx.systemInvalidate(true);
 
-            if (e instanceof Error)
-                throw (Error)e;
+                try {
+                    tx.rollbackRemoteTx();
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
+
+                tx.logTxFinishErrorSafe(log, true, e);
+
+                if (e instanceof Error)
+                    throw (Error)e;
+            }
+            finally {
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
     }
 
@@ -1539,7 +1683,7 @@ public class IgniteTxHandler {
         GridDhtTxPrepareRequest req,
         GridDhtTxPrepareResponse res
     ) throws IgniteCheckedException {
-        if (!F.isEmpty(req.writes())) {
+        if (req.queryUpdate() || !F.isEmpty(req.writes())) {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
@@ -1565,8 +1709,10 @@ public class IgniteTxHandler {
                     req.subjectId(),
                     req.taskNameHash(),
                     single,
-                    req.storeWriteThrough());
+                    req.storeWriteThrough(),
+                    req.txLabel());
 
+                tx.onePhaseCommit(req.onePhaseCommit());
                 tx.writeVersion(req.writeVersion());
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1574,6 +1720,8 @@ public class IgniteTxHandler {
                 if (tx == null || !ctx.tm().onStarted(tx)) {
                     if (log.isDebugEnabled())
                         log.debug("Attempt to start a completed transaction (will ignore): " + tx);
+
+                    applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
 
                     return null;
                 }
@@ -1585,12 +1733,22 @@ public class IgniteTxHandler {
 
                     ctx.tm().uncommitTx(tx);
 
+                    applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
+
                     return null;
                 }
             }
             else {
                 tx.writeVersion(req.writeVersion());
                 tx.transactionNodes(req.transactionNodes());
+            }
+
+            TxCounters txCounters = null;
+
+            if (req.updateCounters() != null) {
+                txCounters = tx.txCounters(true);
+
+                txCounters.updateCounters(req.updateCounters());
             }
 
             if (!tx.isSystemInvalidate()) {
@@ -1608,6 +1766,17 @@ public class IgniteTxHandler {
                     if (locPart != null && locPart.reserve()) {
                         try {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
+
+                            // Entry will be invalidated if a partition was moved to RENTING.
+                            if (locPart.state() == RENTING)
+                                continue;
+
+                            if (txCounters != null) {
+                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), part);
+
+                                if (cntr != null) // Counter is null if entry is no-op.
+                                    entry.updateCounter(cntr);
+                            }
 
                             if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
                                 invalidateNearEntry(cacheCtx, entry.key(), req.version());
@@ -1669,7 +1838,7 @@ public class IgniteTxHandler {
                             }
                         }
                         catch (GridDhtInvalidPartitionException e) {
-                            tx.addInvalidPartition(cacheCtx, e.partition());
+                            tx.addInvalidPartition(cacheCtx.cacheId(), e.partition());
 
                             tx.clearEntry(entry.txKey());
                         }
@@ -1678,7 +1847,7 @@ public class IgniteTxHandler {
                         }
                     }
                     else
-                        tx.addInvalidPartition(cacheCtx, part);
+                        tx.addInvalidPartition(cacheCtx.cacheId(), part);
 
                     idx++;
                 }
@@ -1697,7 +1866,9 @@ public class IgniteTxHandler {
 
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
-            if (tx.empty() && req.last()) {
+            if (!req.queryUpdate() && tx.empty() && req.last()) {
+                tx.skipCompletedVersions(req.skipCompletedVersion());
+
                 tx.rollbackRemoteTx();
 
                 return null;
@@ -1707,6 +1878,165 @@ public class IgniteTxHandler {
         }
 
         return null;
+    }
+
+    /**
+     * Writes updated values on the backup node.
+     *
+     * @param tx Transaction.
+     * @param ctx Cache context.
+     * @param op Operation.
+     * @param keys Keys.
+     * @param vals Values sent from the primary node.
+     * @param snapshot Mvcc snapshot.
+     * @param batchNum Batch number.
+     * @param futId Future id.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void mvccEnlistBatch(GridDhtTxRemote tx, GridCacheContext ctx, EnlistOperation op, List<KeyCacheObject> keys,
+        List<Message> vals, MvccSnapshot snapshot, IgniteUuid futId, int batchNum) throws IgniteCheckedException {
+        assert keys != null && (vals == null || vals.size() == keys.size());
+        assert tx != null;
+
+        GridDhtCacheAdapter dht = ctx.dht();
+
+        tx.addActiveCache(ctx, false);
+
+        for (int i = 0; i < keys.size(); i++) {
+            KeyCacheObject key = keys.get(i);
+
+            assert key != null;
+
+            int part = ctx.affinity().partition(key);
+
+            try {
+                GridDhtLocalPartition locPart = ctx.topology().localPartition(part, tx.topologyVersion(), false);
+
+                if (locPart != null && locPart.reserve()) {
+                    try {
+                        // Skip renting partitions.
+                        if (locPart.state() == RENTING) {
+                            tx.addInvalidPartition(ctx.cacheId(), part);
+
+                            continue;
+                        }
+
+                        CacheObject val = null;
+                        EntryProcessor entryProc = null;
+                        Object[] invokeArgs = null;
+
+                        boolean needOldVal = tx.txState().useMvccCaching(ctx.cacheId());
+
+                        Message val0 = vals != null ? vals.get(i) : null;
+
+                        CacheEntryInfoCollection entries =
+                            val0 instanceof CacheEntryInfoCollection ? (CacheEntryInfoCollection)val0 : null;
+
+                        if (entries == null && !op.isDeleteOrLock() && !op.isInvoke())
+                            val = (val0 instanceof CacheObject) ? (CacheObject)val0 : null;
+
+                        if (entries == null && op.isInvoke()) {
+                            assert val0 instanceof GridInvokeValue;
+
+                            GridInvokeValue invokeVal = (GridInvokeValue)val0;
+
+                            entryProc = invokeVal.entryProcessor();
+                            invokeArgs = invokeVal.invokeArgs();
+                        }
+
+                        assert entries != null || entryProc != null || !op.isInvoke() : "entryProc=" + entryProc + ", op=" + op;
+
+                        GridDhtCacheEntry entry = dht.entryExx(key, tx.topologyVersion());
+
+                        GridCacheUpdateTxResult updRes;
+
+                        while (true) {
+                            ctx.shared().database().checkpointReadLock();
+
+                            try {
+                                if (entries == null) {
+                                    switch (op) {
+                                        case DELETE:
+                                            updRes = entry.mvccRemove(
+                                                tx,
+                                                ctx.localNodeId(),
+                                                tx.topologyVersion(),
+                                                snapshot,
+                                                false,
+                                                needOldVal,
+                                                null,
+                                                false);
+
+                                            break;
+
+                                        case INSERT:
+                                        case TRANSFORM:
+                                        case UPSERT:
+                                        case UPDATE:
+                                            updRes = entry.mvccSet(
+                                                tx,
+                                                ctx.localNodeId(),
+                                                val,
+                                                entryProc,
+                                                invokeArgs,
+                                                0,
+                                                tx.topologyVersion(),
+                                                snapshot,
+                                                op.cacheOperation(),
+                                                false,
+                                                false,
+                                                needOldVal,
+                                                null,
+                                                false,
+                                                false);
+
+                                            break;
+
+                                        default:
+                                            throw new IgniteSQLException("Cannot acquire lock for operation [op= "
+                                                + op + "]" + "Operation is unsupported at the moment ",
+                                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                                    }
+                                }
+                                else {
+                                    updRes = entry.mvccUpdateRowsWithPreloadInfo(tx,
+                                        ctx.localNodeId(),
+                                        tx.topologyVersion(),
+                                        entries.infos(),
+                                        op.cacheOperation(),
+                                        snapshot,
+                                        futId,
+                                        batchNum);
+                                }
+
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                entry = dht.entryExx(key);
+                            }
+                            finally {
+                                ctx.shared().database().checkpointReadUnlock();
+                            }
+                        }
+
+                        if (!updRes.filtered())
+                            ctx.shared().mvccCaching().addEnlisted(key, updRes.newValue(), 0, 0, tx.xidVersion(),
+                                updRes.oldValue(), tx.local(), tx.topologyVersion(), snapshot, ctx.cacheId(), tx, futId, batchNum);
+
+                        assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
+                    }
+
+                    finally {
+                        locPart.release();
+                    }
+                }
+                else
+                    tx.addInvalidPartition(ctx.cacheId(), part);
+            }
+            catch (GridDhtInvalidPartitionException e) {
+                tx.addInvalidPartition(ctx.cacheId(), e.partition());
+            }
+        }
     }
 
     /**
@@ -1758,7 +2088,8 @@ public class IgniteTxHandler {
                     req.nearWrites(),
                     req.txSize(),
                     req.subjectId(),
-                    req.taskNameHash()
+                    req.taskNameHash(),
+                    req.txLabel()
                 );
 
                 tx.writeVersion(req.writeVersion());
@@ -1878,8 +2209,8 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
-        if (txRecoveryMsgLog.isDebugEnabled()) {
-            txRecoveryMsgLog.debug("Received tx recovery response [txId=" + res.version() +
+        if (txRecoveryMsgLog.isInfoEnabled()) {
+            txRecoveryMsgLog.info("Received tx recovery response [txId=" + res.version() +
                 ", node=" + nodeId +
                 ", res=" + res + ']');
         }
@@ -1887,8 +2218,8 @@ public class IgniteTxHandler {
         GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
-            if (txRecoveryMsgLog.isDebugEnabled()) {
-                txRecoveryMsgLog.debug("Failed to find future for tx recovery response [txId=" + res.version() +
+            if (txRecoveryMsgLog.isInfoEnabled()) {
+                txRecoveryMsgLog.info("Failed to find future for tx recovery response [txId=" + res.version() +
                     ", node=" + nodeId + ", res=" + res + ']');
             }
 
@@ -1898,5 +2229,186 @@ public class IgniteTxHandler {
             res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param req Request.
+     */
+    private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
+        try {
+            applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        try {
+            ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId(), req.topologyVersion()), SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException ignored) {
+            if (txRecoveryMsgLog.isDebugEnabled())
+                txRecoveryMsgLog.debug("Failed to send partition counters response, node left [node=" + nodeId + ']');
+        }
+        catch (IgniteCheckedException e) {
+            U.error(txRecoveryMsgLog, "Failed to send partition counters response [node=" + nodeId + ']', e);
+        }
+    }
+
+    /**
+     * @param nodeId Node id.
+     * @param res Response.
+     */
+    private void processPartitionCountersResponse(UUID nodeId, PartitionCountersNeighborcastResponse res) {
+        PartitionCountersNeighborcastFuture fut = ((PartitionCountersNeighborcastFuture)ctx.mvcc().future(res.futId()));
+
+        if (fut == null) {
+            log.warning("Failed to find future for partition counters response [futId=" + res.futId() +
+                ", node=" + nodeId + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId);
+    }
+
+    /**
+     * Applies partition counter updates for transactions.
+     * <p>
+     * Called after entries are written to WAL on commit or during rollback to close gaps in update counter sequence.
+     *
+     * @param counters Counters.
+     */
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters)
+        throws IgniteCheckedException {
+        applyPartitionsUpdatesCounters(counters, false, false);
+    }
+
+    /**
+     * Applies partition counter updates for transactions.
+     * <p>
+     * Called after entries are written to WAL on commit or during rollback to close gaps in update counter sequence.
+     * <p>
+     * On rollback counters should be applied on the primary only after backup nodes, otherwise if the primary fail
+     * before sending rollback requests to backups remote transactions can be committed by recovery protocol and
+     * partition consistency will not be restored when primary returns to the grid because RollbackRecord was written
+     * (actual for persistent mode only).
+     *
+     * @param counters Counter values to be updated.
+     * @param rollback {@code True} if applied during rollbacks.
+     * @param rollbackOnPrimary {@code True} if rollback happens on primary node. Passed to CQ engine.
+     */
+    public void applyPartitionsUpdatesCounters(
+        Iterable<PartitionUpdateCountersMessage> counters,
+        boolean rollback,
+        boolean rollbackOnPrimary
+    ) throws IgniteCheckedException {
+        if (counters == null)
+            return;
+
+        WALPointer ptr = null;
+
+        try {
+            for (PartitionUpdateCountersMessage counter : counters) {
+                GridCacheContext ctx0 = ctx.cacheContext(counter.cacheId());
+
+                GridDhtPartitionTopology top = ctx0.topology();
+
+                AffinityTopologyVersion topVer = top.readyTopologyVersion();
+
+                assert top != null;
+
+                for (int i = 0; i < counter.size(); i++) {
+                    boolean invalid = false;
+
+                    try {
+                        GridDhtLocalPartition part = top.localPartition(counter.partition(i));
+
+                        if (part != null && part.reserve()) {
+                            try {
+                                if (part.state() != RENTING) { // Check is actual only for backup node.
+                                    long start = counter.initialCounter(i);
+                                    long delta = counter.updatesCount(i);
+
+                                    boolean updated = part.updateCounter(start, delta);
+
+                                    // Need to log rolled back range for logical recovery.
+                                    if (updated && rollback) {
+                                        CacheGroupContext grpCtx = part.group();
+
+                                        if (grpCtx.persistenceEnabled() && grpCtx.walEnabled() && !grpCtx.mvccEnabled()) {
+                                            RollbackRecord rec =
+                                                new RollbackRecord(grpCtx.groupId(), part.id(), start, delta);
+
+                                            ptr = ctx.wal().log(rec);
+                                        }
+
+                                        for (int cntr = 1; cntr <= delta; cntr++) {
+                                            ctx0.continuousQueries().skipUpdateCounter(null, part.id(), start + cntr,
+                                                topVer, rollbackOnPrimary);
+                                        }
+                                    }
+                                }
+                                else
+                                    invalid = true;
+                            }
+                            finally {
+                                part.release();
+                            }
+                        }
+                        else
+                            invalid = true;
+                    }
+                    catch (GridDhtInvalidPartitionException e) {
+                        invalid = true;
+                    }
+
+                    if (log.isDebugEnabled() && invalid) {
+                        log.debug("Received partition update counters message for invalid partition, ignoring: " +
+                            "[cacheId=" + counter.cacheId() + ", part=" + counter.partition(i) + ']');
+                    }
+                }
+            }
+        }
+        finally {
+            if (ptr != null)
+                ctx.wal().flush(ptr, false);
+        }
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param node Backup node.
+     * @return Partition counters for the given backup node.
+     */
+    @Nullable public List<PartitionUpdateCountersMessage> filterUpdateCountersForBackupNode(
+        IgniteInternalTx tx, ClusterNode node) {
+        TxCounters txCntrs = tx.txCounters(false);
+        Collection<PartitionUpdateCountersMessage> updCntrs;
+
+        if (txCntrs == null || F.isEmpty(updCntrs = txCntrs.updateCounters()))
+            return null;
+
+        List<PartitionUpdateCountersMessage> res = new ArrayList<>(updCntrs.size());
+
+        AffinityTopologyVersion top = tx.topologyVersionSnapshot();
+
+        for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
+            GridDhtPartitionTopology topology = ctx.cacheContext(partCntrs.cacheId()).topology();
+
+            PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
+
+            for (int i = 0; i < partCntrs.size(); i++) {
+                int part = partCntrs.partition(i);
+
+                if (topology.nodes(part, top).indexOf(node) > 0)
+                    resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
+            }
+
+            if (resCntrs.size() > 0)
+                res.add(resCntrs);
+        }
+
+        return res;
     }
 }

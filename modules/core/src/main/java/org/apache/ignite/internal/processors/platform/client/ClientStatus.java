@@ -40,6 +40,24 @@ public final class ClientStatus {
     /** Cache does not exist. */
     public static final int CACHE_DOES_NOT_EXIST = 1000;
 
+    /** Cache already exists. */
+    public static final int CACHE_EXISTS = 1001;
+
     /** Too many cursors. */
     public static final int TOO_MANY_CURSORS = 1010;
+
+    /** Resource does not exist. */
+    public static final int RESOURCE_DOES_NOT_EXIST = 1011;
+
+    /** Authorization failure. */
+    public static final int SECURITY_VIOLATION = 1012;
+
+    /** Active transactions per connection limit exceeded. */
+    public static final int TX_LIMIT_EXCEEDED = 1020;
+
+    /** Transaction not found. */
+    public static final int TX_NOT_FOUND = 1021;
+
+    /** Authentication failed. */
+    public static final int AUTH_FAILED = 2000;
 }

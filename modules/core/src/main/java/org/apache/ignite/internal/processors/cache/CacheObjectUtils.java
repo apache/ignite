@@ -162,7 +162,6 @@ public class CacheObjectUtils {
      * @param o Object to unwrap.
      * @return Unwrapped object.
      */
-    @SuppressWarnings("unchecked")
     private static Object unwrapBinary(CacheObjectValueContext ctx, Object o, boolean keepBinary, boolean cpy) {
         if (o == null)
             return o;

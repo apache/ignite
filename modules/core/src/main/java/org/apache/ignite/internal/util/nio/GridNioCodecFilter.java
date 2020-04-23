@@ -28,8 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
- * Filter that transforms byte buffers to user-defined objects and vice-versa
- * with specified {@link GridNioParser}.
+ * Filter that transforms byte buffers to user-defined objects and vice-versa with specified {@link GridNioParser}.
  */
 public class GridNioCodecFilter extends GridNioFilterAdapter {
     /** Parser used. */

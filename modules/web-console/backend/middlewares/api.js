@@ -19,26 +19,39 @@
 
 // Fire me up!
 
+const _ = require('lodash');
+
 module.exports = {
     implements: 'middlewares:api'
 };
 
 module.exports.factory = () => {
     return (req, res, next) => {
+        // Set headers to avoid API caching in browser (esp. IE)
+        res.header('Cache-Control', 'must-revalidate');
+        res.header('Expires', '-1');
+        res.header('Last-Modified', new Date().toUTCString());
+
         res.api = {
             error(err) {
-                if (err.name === 'MongoError')
+                if (_.includes(['MongoError', 'MongooseError'], err.name))
                     return res.status(500).send(err.message);
+
+                if (_.isObject(err.data))
+                    return res.status(err.httpCode || err.code || 500).json(err.data);
 
                 res.status(err.httpCode || err.code || 500).send(err.message);
             },
+
             ok(data) {
+                if (_.isNil(data))
+                    return res.sendStatus(404);
+
                 res.status(200).json(data);
             },
-            serverError(err) {
-                err.httpCode = 500;
 
-                res.api.error(err);
+            done() {
+                res.sendStatus(200);
             }
         };
 

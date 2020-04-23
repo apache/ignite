@@ -18,19 +18,31 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
+import org.apache.ignite.internal.processors.compress.FileSystemUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * File I/O implementation based on {@link FileChannel}.
  */
-public class RandomAccessFileIO implements FileIO {
+public class RandomAccessFileIO extends AbstractFileIO {
     /**
      * File channel.
      */
     private final FileChannel ch;
+
+    /** Native file descriptor. */
+    private final int fd;
+
+    /** */
+    private final int fsBlockSize;
 
     /**
      * Creates I/O implementation for specified {@code file}
@@ -40,6 +52,32 @@ public class RandomAccessFileIO implements FileIO {
      */
     public RandomAccessFileIO(File file, OpenOption... modes) throws IOException {
         ch = FileChannel.open(file.toPath(), modes);
+        fd = getNativeFileDescriptor(ch);
+        fsBlockSize = FileSystemUtils.getFileSystemBlockSize(fd);
+    }
+
+    /**
+     * @param ch File channel.
+     * @return Native file descriptor.
+     */
+    private static int getNativeFileDescriptor(FileChannel ch) {
+        FileDescriptor fd = U.field(ch, "fd");
+        return U.field(fd, "fd");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize() {
+        return fsBlockSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return FileSystemUtils.getSparseFileSize(fd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long position, int len) {
+        return (int)FileSystemUtils.punchHole(fd, position, len, fsBlockSize);
     }
 
     /** {@inheritDoc} */
@@ -53,38 +91,38 @@ public class RandomAccessFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        return ch.read(destinationBuffer);
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        return ch.read(destBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        return ch.read(destinationBuffer, position);
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        return ch.read(destBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        return ch.read(ByteBuffer.wrap(buffer, offset, length));
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        return ch.read(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        return ch.write(sourceBuffer);
+    @Override public int write(ByteBuffer srcBuf) throws IOException {
+        return ch.write(srcBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        return ch.write(sourceBuffer, position);
+    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        return ch.write(srcBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        ch.write(ByteBuffer.wrap(buffer, offset, length));
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return ch.write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
-    @Override public void force() throws IOException {
-        ch.force(false);
+    @Override public void force(boolean withMetadata) throws IOException {
+        ch.force(withMetadata);
     }
 
     /** {@inheritDoc} */
@@ -100,5 +138,30 @@ public class RandomAccessFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         ch.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        return ch.map(FileChannel.MapMode.READ_WRITE, 0, sizeBytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force() throws IOException {
+        force(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
+        return ch.transferTo(position, count, target);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+        long written = ch.transferFrom(src, position, count);
+
+        if (written > 0)
+            position(position + written);
+
+        return written;
     }
 }

@@ -31,10 +31,10 @@ import org.springframework.data.domain.PageRequest;
  * The example demonstrates how to interact with an Apache Ignite cluster by means of Spring Data API.
  *
  * Additional cluster nodes can be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/spring/example-spring-data.xml'}.
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start an additional node with {@code examples/config/example-ignite.xml} configuration.
+ * start an additional node with {@code examples/config/spring/example-spring-data.xml} configuration.
  */
 public class SpringDataExample {
     /** Spring Application Context. */
@@ -74,7 +74,7 @@ public class SpringDataExample {
         ctx = new AnnotationConfigApplicationContext();
 
         // Explicitly registering Spring configuration.
-        ctx.register(SpringAppCfg.class);
+        ctx.register(SpringApplicationConfiguration.class);
 
         ctx.refresh();
 
@@ -108,7 +108,7 @@ public class SpringDataExample {
      */
     private static void findPersons() {
         // Getting Person with specific ID.
-        Person person = repo.findOne(2L);
+        Person person = repo.findById(2L).orElse(null);
 
         System.out.println("\n>>> Found Person [id=" + 2L + ", val=" + person + "]");
 
@@ -119,7 +119,7 @@ public class SpringDataExample {
         for (long i = 0; i < 5; i++)
             ids.add(i);
 
-        Iterator<Person> persons = repo.findAll(ids).iterator();
+        Iterator<Person> persons = repo.findAllById(ids).iterator();
 
         System.out.println("\n>>> Persons list for specific ids: ");
 
@@ -138,11 +138,9 @@ public class SpringDataExample {
         for (Person person: persons)
             System.out.println("   >>>   " + person);
 
-
         Cache.Entry<Long, Person> topPerson = repo.findTopByLastNameLike("Smith");
 
         System.out.println("\n>>> Top Person with surname 'Smith': " + topPerson.getValue());
-
 
         List<Long> ids = repo.selectId(1000L, new PageRequest(0, 4));
 

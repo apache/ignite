@@ -158,15 +158,13 @@ public class GridifySetToSetAbstractAspect {
      * @param taskRes Result of last task execution.
      * @return Calculation result.
      */
-    @SuppressWarnings({"unchecked"})
     private Object result(Class<?> cls, Iterable taskRes) {
         assert taskRes != null;
 
         Collection<Object> res = new LinkedList<>();
 
-        for (Object element : taskRes) {
+        for (Object element : taskRes)
             res.addAll(GridifyUtils.parameterToCollection(element));
-        }
 
         return GridifyUtils.collectionToParameter(cls, res);
     }

@@ -40,7 +40,10 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
@@ -72,10 +75,7 @@ import org.jetbrains.annotations.Nullable;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,9 +84,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * Implementation of platform context.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class PlatformContextImpl implements PlatformContext {
+public class PlatformContextImpl implements PlatformContext, PartitionsExchangeAware {
     /** Supported event types. */
     private static final Set<Integer> evtTyps;
+
+    /** Whether to use thread-local data to update platform near cache. */
+    private static final ThreadLocal<Boolean> platformCacheUpdateUseThreadLocal = new ThreadLocal<>();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -151,6 +154,8 @@ public class PlatformContextImpl implements PlatformContext {
         cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
         marsh = cacheObjProc.marshaller();
+
+        ctx.cache().context().exchange().registerExchangeAwareComponent(this);
     }
 
     /** {@inheritDoc} */
@@ -205,27 +210,16 @@ public class PlatformContextImpl implements PlatformContext {
             BinaryRawWriterEx w = writer(out);
 
             w.writeUuid(node.id());
-
-            Map<String, Object> attrs = new HashMap<>(node.attributes());
-
-            Iterator<Map.Entry<String, Object>> attrIter = attrs.entrySet().iterator();
-
-            while (attrIter.hasNext()) {
-                Map.Entry<String, Object> entry = attrIter.next();
-
-                Object val = entry.getValue();
-
-                if (val != null && !val.getClass().getName().startsWith("java.lang"))
-                    attrIter.remove();
-            }
-
-            w.writeMap(attrs);
+            PlatformUtils.writeNodeAttributes(w, node.attributes());
             w.writeCollection(node.addresses());
             w.writeCollection(node.hostNames());
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
             w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
+            w.writeObjectDetached(node.consistentId());
+            PlatformUtils.writeNodeVersion(w, node.version());
+
             writeClusterMetrics(w, node.metrics());
 
             out.synchronize();
@@ -342,19 +336,18 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
         Collection<BinaryMetadata> metas = PlatformUtils.readBinaryMetadataCollection(reader);
 
         BinaryContext binCtx = cacheObjProc.binaryContext();
 
         for (BinaryMetadata meta : metas)
-            binCtx.updateMetadata(meta.typeId(), meta);
+            binCtx.updateMetadata(meta.typeId(), meta, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void writeMetadata(BinaryRawWriterEx writer, int typeId) {
-        writeMetadata0(writer, cacheObjProc.metadata(typeId));
+    @Override public void writeMetadata(BinaryRawWriterEx writer, int typeId, boolean includeSchemas) {
+        writeMetadata0(writer, cacheObjProc.metadata(typeId), includeSchemas);
     }
 
     /** {@inheritDoc} */
@@ -364,7 +357,7 @@ public class PlatformContextImpl implements PlatformContext {
         writer.writeInt(metas.size());
 
         for (BinaryType m : metas)
-            writeMetadata0(writer, m);
+            writeMetadata0(writer, m, false);
     }
 
     /** {@inheritDoc} */
@@ -378,7 +371,7 @@ public class PlatformContextImpl implements PlatformContext {
      * @param writer Writer.
      * @param meta Metadata.
      */
-    private void writeMetadata0(BinaryRawWriterEx writer, BinaryType meta) {
+    private void writeMetadata0(BinaryRawWriterEx writer, BinaryType meta, boolean includeSchemas) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
@@ -386,7 +379,7 @@ public class PlatformContextImpl implements PlatformContext {
 
             BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
 
-            PlatformUtils.writeBinaryMetadata(writer, meta0, false);
+            PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
         }
     }
 
@@ -599,5 +592,73 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @Override public String platform() {
         return platform;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPlatformCacheSupported() {
+        return platform.equals(PlatformUtils.PLATFORM_DOTNET);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updatePlatformCache(int cacheId, byte[] keyBytes, byte[] valBytes,
+                                              int part, AffinityTopologyVersion ver) {
+        if (!isPlatformCacheSupported())
+            return;
+
+        Boolean useTls = platformCacheUpdateUseThreadLocal.get();
+        if (useTls != null && useTls) {
+            long cacheIdAndPartition = ((long)part << 32) + cacheId;
+
+            gateway().platformCacheUpdateFromThreadLocal(
+                    cacheIdAndPartition, ver.topologyVersion(), ver.minorTopologyVersion());
+
+            return;
+        }
+
+        assert keyBytes != null;
+        assert part >= 0;
+
+        try (PlatformMemory mem0 = mem.allocate()) {
+            PlatformOutputStream out = mem0.output();
+
+            out.writeInt(cacheId);
+            out.writeByteArray(keyBytes);
+
+            if (valBytes != null) {
+                out.writeBoolean(true);
+                out.writeByteArray(valBytes);
+
+                assert ver != null;
+
+                out.writeInt(part);
+                out.writeLong(ver.topologyVersion());
+                out.writeInt(ver.minorTopologyVersion());
+            } else {
+                out.writeBoolean(false);
+            }
+
+            out.synchronize();
+
+            gateway().platformCacheUpdate(mem0.pointer());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableThreadLocalForPlatformCacheUpdate() {
+        platformCacheUpdateUseThreadLocal.set(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableThreadLocalForPlatformCacheUpdate() {
+        platformCacheUpdateUseThreadLocal.set(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        AffinityTopologyVersion ver = fut.topologyVersion();
+
+        if (ver != null) {
+            gateway().onAffinityTopologyVersionChanged(ver);
+        }
     }
 }

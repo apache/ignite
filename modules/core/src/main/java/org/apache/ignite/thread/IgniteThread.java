@@ -38,9 +38,6 @@ public class IgniteThread extends Thread {
     /** Index for unassigned thread. */
     public static final int GRP_IDX_UNASSIGNED = -1;
 
-    /** Default thread's group. */
-    private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
-
     /** Number of all grid threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();
 
@@ -55,6 +52,12 @@ public class IgniteThread extends Thread {
 
     /** */
     private final byte plc;
+
+    /** */
+    private boolean holdsTopLock;
+
+    /** */
+    private boolean forbiddenToRequestBinaryMetadata;
 
     /**
      * Creates thread with given worker.
@@ -87,7 +90,7 @@ public class IgniteThread extends Thread {
      * @param stripe Non-negative stripe number if this thread is striped pool thread.
      */
     public IgniteThread(String igniteInstanceName, String threadName, Runnable r, int grpIdx, int stripe, byte plc) {
-        super(DFLT_GRP, r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
+        super(r, createName(cntr.incrementAndGet(), threadName, igniteInstanceName));
 
         A.ensure(grpIdx >= -1, "grpIdx >= -1");
 
@@ -158,9 +161,65 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * @return {@code True} if thread is not allowed to request binary metadata to avoid potential deadlock.
+     */
+    public boolean isForbiddenToRequestBinaryMetadata() {
+        return holdsTopLock || forbiddenToRequestBinaryMetadata;
+    }
+
+    /**
+     * @return {@code True} if thread is not allowed to request binary metadata to avoid potential deadlock.
+     */
+    public static boolean currentThreadCanRequestBinaryMetadata() {
+        IgniteThread curThread = current();
+
+        return curThread == null || !curThread.isForbiddenToRequestBinaryMetadata();
+    }
+
+    /**
+     * Callback before entry processor execution is started.
+     */
+    public static void onEntryProcessorEntered(boolean holdsTopLock) {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).holdsTopLock = holdsTopLock;
+    }
+
+    /**
+     * Callback after entry processor execution is finished.
+     */
+    public static void onEntryProcessorLeft() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).holdsTopLock = false;
+    }
+
+    /**
+     * Callback on entering critical section where binary metadata requests are forbidden.
+     */
+    public static void onForbidBinaryMetadataRequestSectionEntered() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).forbiddenToRequestBinaryMetadata = true;
+    }
+
+    /**
+     * Callback on leaving critical section where binary metadata requests are forbidden.
+     */
+    public static void onForbidBinaryMetadataRequestSectionLeft() {
+        Thread curThread = Thread.currentThread();
+
+        if (curThread instanceof IgniteThread)
+            ((IgniteThread)curThread).forbiddenToRequestBinaryMetadata = false;
+    }
+
+    /**
      * @return IgniteThread or {@code null} if current thread is not an instance of IgniteThread.
      */
-    public static IgniteThread current(){
+    public static IgniteThread current() {
         Thread thread = Thread.currentThread();
 
         return thread.getClass() == IgniteThread.class || thread instanceof IgniteThread ?

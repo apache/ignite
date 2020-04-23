@@ -23,10 +23,10 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  * Scan query request.
  */
 @SuppressWarnings("unchecked")
-public class ClientCacheScanQueryRequest extends ClientCacheRequest {
+public class ClientCacheScanQueryRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
     /** Java filter. */
     private static final byte FILTER_PLATFORM_JAVA = 1;
 
@@ -94,13 +94,13 @@ public class ClientCacheScanQueryRequest extends ClientCacheRequest {
         try {
             QueryCursor cur = cache.query(qry);
 
-            ClientCacheScanQueryCursor cliCur = new ClientCacheScanQueryCursor((QueryCursorEx)cur, pageSize, ctx);
+            ClientCacheEntryQueryCursor cliCur = new ClientCacheEntryQueryCursor(cur, pageSize, ctx);
 
             long cursorId = ctx.resources().put(cliCur);
 
             cliCur.id(cursorId);
 
-            return new ClientCacheScanQueryResponse(requestId(), cliCur);
+            return new ClientCacheQueryResponse(requestId(), cliCur);
         }
         catch (Exception e) {
             ctx.decrementCursors();

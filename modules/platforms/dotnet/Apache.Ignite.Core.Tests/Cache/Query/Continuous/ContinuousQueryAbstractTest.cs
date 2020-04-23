@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 CheckCallbackSingle(key1, Entry(key1), Entry(key1 + 1), CacheEntryEventType.Updated);
 
                 cache1.Remove(key1);
-                CheckCallbackSingle(key1, Entry(key1 + 1), null, CacheEntryEventType.Removed);
+                CheckCallbackSingle(key1, Entry(key1 + 1), Entry(key1 + 1), CacheEntryEventType.Removed);
 
                 // Put from remote node.
                 cache2.GetAndPut(key2, Entry(key2));
@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2 + 1), null, CacheEntryEventType.Removed);
+                    CheckCallbackSingle(key2, Entry(key2 + 1), Entry(key2 + 1), CacheEntryEventType.Removed);
             }
 
             cache1.Put(key1, Entry(key1));
@@ -652,10 +652,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 cbEntry = cbEvt.entries.Single();
                 Assert.IsTrue(cbEntry.HasOldValue);
-                Assert.IsFalse(cbEntry.HasValue);
+                Assert.IsTrue(cbEntry.HasValue);
                 Assert.AreEqual(key, cbEntry.Key);
                 Assert.AreEqual(2, cbEntry.OldValue);
-                Assert.AreEqual(null, cbEntry.Value);
+                Assert.AreEqual(2, cbEntry.Value);
             }
         }
 
@@ -921,7 +921,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Craate entry.
+        /// Create entry.
         /// </summary>
         /// <param name="val">Value.</param>
         /// <returns>Entry.</returns>
@@ -945,13 +945,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
         {
-            if (!e.HasOldValue)
-                return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
-
-            if (!e.HasValue)
-                return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
-
-            return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+            switch (e.EventType)
+            {
+                case CacheEntryEventType.Created:
+                    return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
+                case CacheEntryEventType.Updated:
+                    return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+                default:
+                    return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
+            }
         }
 
         /// <summary>

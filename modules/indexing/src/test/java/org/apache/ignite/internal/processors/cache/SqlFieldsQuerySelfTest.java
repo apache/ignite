@@ -26,11 +26,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
+    /** INSERT statement. */
+    private static final String INSERT = "insert into Person(_key, name) values (5, 'x')";
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -39,6 +43,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If error.
      */
+    @Test
     public void testSqlFieldsQuery() throws Exception {
         startGrids(2);
 
@@ -50,6 +55,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If error.
      */
+    @Test
     public void testSqlFieldsQueryWithTopologyChanges() throws Exception {
         startGrid(0);
 
@@ -79,7 +85,6 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         assertEquals("AGE", qryCursor.getFieldName(1));
     }
 
-
     /**
      *
      */
@@ -99,6 +104,10 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         cache.put(2, new Person("moon", 50));
 
         return cache;
+    }
+
+    private void destroyCache() {
+        grid(0).destroyCache("person");
     }
 
     /**

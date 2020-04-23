@@ -93,13 +93,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;ODBC_DEBUG;ODBC_LOG_PATH="D:\\odbc.log";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src;$(OPENSSL_HOME_X86)\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -107,13 +109,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src;$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -122,7 +126,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src;$(OPENSSL_HOME_X86)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
@@ -131,7 +135,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -140,7 +144,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\..\network\include;$(ProjectDir)\..\..\..\network\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include;$(ProjectDir)\..\..\src;$(OPENSSL_HOME)\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;IGNITE_IMPL;IGNITE_FRIEND;TARGET_MODULE_FULL_NAME="$(TargetFileName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
@@ -149,12 +153,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\system_dsn.cpp" />
-    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\custom_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\dsn_configuration_window.cpp" />
     <ClCompile Include="..\..\os\win\src\system\ui\window.cpp" />
@@ -164,6 +167,8 @@
     <ClCompile Include="..\..\src\column.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\config\configuration.cpp" />
+    <ClCompile Include="..\..\src\config\config_tools.cpp" />
+    <ClCompile Include="..\..\src\config\connection_string_parser.cpp" />
     <ClCompile Include="..\..\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\cursor.cpp" />
@@ -176,6 +181,7 @@
     <ClCompile Include="..\..\src\message.cpp" />
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
     <ClCompile Include="..\..\src\meta\table_meta.cpp" />
+    <ClCompile Include="..\..\src\nested_tx_mode.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\protocol_version.cpp" />
     <ClCompile Include="..\..\src\query\batch_query.cpp" />
@@ -184,11 +190,19 @@
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\primary_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\special_columns_query.cpp" />
+    <ClCompile Include="..\..\src\query\streaming_query.cpp" />
     <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
     <ClCompile Include="..\..\src\query\type_info_query.cpp" />
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_lexer.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_parser.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_set_streaming_command.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_utils.cpp" />
+    <ClCompile Include="..\..\src\ssl_mode.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
+    <ClCompile Include="..\..\src\streaming\streaming_batch.cpp" />
+    <ClCompile Include="..\..\src\streaming\streaming_context.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
     <ClCompile Include="..\..\src\utility.cpp" />
     <ClCompile Include="..\..\src\log.cpp" />
@@ -204,7 +218,10 @@
     <ClInclude Include="..\..\include\ignite\odbc\column.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\config_tools.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\settable_value.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable.h" />
@@ -212,11 +229,13 @@
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h" />
     <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\end_point.h" />
     <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\nested_tx_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h" />
@@ -224,16 +243,26 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\internal_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\special_columns_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\streaming_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_command.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_lexer.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_parser.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_set_streaming_command.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_token.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_utils.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\ssl_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_batch.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\streaming\streaming_context.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
@@ -247,6 +276,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
       <Project>{b63f2e01-5157-4719-8491-0e1c7cd3b701}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\network\project\vs\network.vcxproj">
+      <Project>{cb77ac4d-88d4-4a8c-922c-a28c19060a97}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

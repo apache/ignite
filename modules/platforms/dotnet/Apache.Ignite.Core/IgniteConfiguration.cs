@@ -24,8 +24,8 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Xml;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -39,14 +39,20 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Deployment;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Encryption;
+    using Apache.Ignite.Core.Encryption.Keystore;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -160,6 +166,9 @@ namespace Apache.Ignite.Core
         private TimeSpan? _clientFailureDetectionTimeout;
 
         /** */
+        private TimeSpan? _sysWorkerBlockedTimeout;
+
+        /** */
         private int? _publicThreadPoolSize;
 
         /** */
@@ -192,11 +201,23 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** */
+        private bool? _authenticationEnabled;
+
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
         /** Map from user-defined listener to it's id. */
         private Dictionary<object, int> _localEventListenerIds;
+
+        /** MVCC vacuum frequency. */
+        private long? _mvccVacuumFreq;
+
+        /** MVCC vacuum thread count. */
+        private int? _mvccVacuumThreadCnt;
+
+        /** SQL query history size. */
+        private int? _sqlQueryHistorySize;
 
         /// <summary>
         /// Default network retry count.
@@ -214,6 +235,31 @@ namespace Apache.Ignite.Core
         public const bool DefaultIsActiveOnStart = true;
 
         /// <summary>
+        /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
+        /// </summary>
+        public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
+        /// Default value for <see cref="AuthenticationEnabled"/> property.
+        /// </summary>
+        public const bool DefaultAuthenticationEnabled = false;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumFrequency"/> property.
+        /// </summary>
+        public const long DefaultMvccVacuumFrequency = 5000;
+
+        /// <summary>
+        /// Default value for <see cref="MvccVacuumThreadCount"/> property.
+        /// </summary>
+        public const int DefaultMvccVacuumThreadCount = 2;
+
+        /// <summary>
+        /// Default value for <see cref="SqlQueryHistorySize"/> property.
+        /// </summary>
+        public const int DefaultSqlQueryHistorySize = 1000;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
@@ -221,6 +267,7 @@ namespace Apache.Ignite.Core
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
             ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
+            RedirectJavaConsoleOutput = DefaultRedirectJavaConsoleOutput;
         }
 
         /// <summary>
@@ -235,13 +282,13 @@ namespace Apache.Ignite.Core
             {
                 var marsh = BinaryUtils.Marshaller;
 
-                configuration.Write(marsh.StartMarshal(stream));
+                configuration.Write(marsh.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
 
                 stream.SynchronizeOutput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                ReadCore(marsh.StartUnmarshal(stream));
+                ReadCore(marsh.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
             }
 
             CopyLocalProperties(configuration);
@@ -252,12 +299,14 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         /// <param name="baseConfig">The base configuration.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig)
+        /// <param name="srvVer">Server version.</param>
+        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig,
+            ClientProtocolVersion srvVer)
         {
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            Read(binaryReader);
+            Read(binaryReader, srvVer);
             CopyLocalProperties(baseConfig);
         }
 
@@ -265,7 +314,8 @@ namespace Apache.Ignite.Core
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(BinaryWriter writer)
+        /// <param name="srvVer">Server version.</param>
+        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
         {
             Debug.Assert(writer != null);
 
@@ -287,6 +337,24 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
+            writer.WriteBooleanNullable(_authenticationEnabled);
+            writer.WriteLongNullable(_mvccVacuumFreq);
+            writer.WriteIntNullable(_mvccVacuumThreadCnt);
+            writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
+            writer.WriteIntNullable(_sqlQueryHistorySize);
+
+            if (SqlSchemas == null)
+                writer.WriteInt(0);
+            else
+            {
+                writer.WriteInt(SqlSchemas.Count);
+
+                foreach (string sqlSchema in SqlSchemas)
+                {
+                    writer.WriteString(sqlSchema);
+                }
+            }
+
             writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
@@ -301,17 +369,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            var caches = CacheConfiguration;
-
-            if (caches == null)
-                writer.WriteInt(0);
-            else
-            {
-                writer.WriteInt(caches.Count);
-
-                foreach (var cache in caches)
-                    cache.Write(writer);
-            }
+            writer.WriteCollectionRaw(CacheConfiguration, srvVer);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -326,6 +384,26 @@ namespace Apache.Ignite.Core
                     throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
 
                 tcpDisco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            var enc = EncryptionSpi;
+
+            if (enc != null)
+            {
+                writer.WriteBoolean(true);
+
+                var keystoreEnc = enc as KeystoreEncryptionSpi;
+
+                if (keystoreEnc == null)
+                    throw new InvalidOperationException("Unsupported encryption SPI: " + enc.GetType());
+
+                writer.WriteString(keystoreEnc.MasterKeyName);
+                writer.WriteInt(keystoreEnc.KeySize);
+                writer.WriteString(keystoreEnc.KeyStorePath);
+                writer.WriteCharArray(
+                    keystoreEnc.KeyStorePassword == null ? null : keystoreEnc.KeyStorePassword.ToCharArray());
             }
             else
                 writer.WriteBoolean(false);
@@ -409,6 +487,8 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DeadlockTimeout.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -439,6 +519,7 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
+#pragma warning disable 618  // Obsolete
             if (MemoryConfiguration != null)
             {
                 writer.WriteBoolean(true);
@@ -448,6 +529,7 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(false);
             }
+#pragma warning restore 618
 
             // SQL connector.
 #pragma warning disable 618  // Obsolete
@@ -476,6 +558,7 @@ namespace Apache.Ignite.Core
             writer.WriteBoolean(ClientConnectorConfigurationEnabled);
 
             // Persistence.
+#pragma warning disable 618  // Obsolete
             if (PersistentStoreConfiguration != null)
             {
                 writer.WriteBoolean(true);
@@ -484,6 +567,71 @@ namespace Apache.Ignite.Core
             else
             {
                 writer.WriteBoolean(false);
+            }
+#pragma warning restore 618
+
+            // Data storage.
+            if (DataStorageConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                DataStorageConfiguration.Write(writer, srvVer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            // SSL Context factory.
+            SslFactorySerializer.Write(writer, SslContextFactory);
+
+            // Failure handler.
+            if (FailureHandler == null)
+            {
+                writer.WriteBoolean(false);
+            }
+            else
+            {
+                writer.WriteBoolean(true);
+
+                if (FailureHandler is NoOpFailureHandler)
+                {
+                    writer.WriteByte(0);
+                }
+                else if (FailureHandler is StopNodeFailureHandler)
+                {
+                    writer.WriteByte(1);
+                }
+                else
+                {
+                    var failHnd = FailureHandler as StopNodeOrHaltFailureHandler;
+
+                    if (failHnd == null)
+                    {
+                        throw new InvalidOperationException(string.Format(
+                            "Unsupported IgniteConfiguration.FailureHandler: '{0}'. " +
+                            "Supported implementations: '{1}', '{2}', '{3}'.",
+                            FailureHandler.GetType(), typeof(NoOpFailureHandler), typeof(StopNodeFailureHandler),
+                            typeof(StopNodeOrHaltFailureHandler)));
+                    }
+
+                    writer.WriteByte(2);
+
+                    failHnd.Write(writer);
+                }
+            }
+
+            if (ExecutorConfiguration == null)
+            {
+                writer.WriteInt(0);
+            }
+            else
+            {
+                writer.WriteInt(ExecutorConfiguration.Count);
+                foreach (var exec in ExecutorConfiguration)
+                {
+                    writer.WriteString(exec.Name);
+                    writer.WriteInt(exec.Size);
+                }
             }
 
             // Plugins (should be last).
@@ -574,7 +722,8 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        private void ReadCore(BinaryReader r)
+        /// <param name="srvVer">Server version.</param>
+        private void ReadCore(BinaryReader r, ClientProtocolVersion srvVer)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -593,6 +742,22 @@ namespace Apache.Ignite.Core
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
+            _authenticationEnabled = r.ReadBooleanNullable();
+            _mvccVacuumFreq = r.ReadLongNullable();
+            _mvccVacuumThreadCnt = r.ReadIntNullable();
+            _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
+            _sqlQueryHistorySize = r.ReadIntNullable();
+
+            int sqlSchemasCnt = r.ReadInt();
+
+            if (sqlSchemasCnt > 0)
+            {
+                SqlSchemas = new List<string>(sqlSchemasCnt);
+
+                for (int i = 0; i < sqlSchemasCnt; i++)
+                    SqlSchemas.Add(r.ReadString());
+            }
+
             ConsistentId = r.ReadObject<object>();
 
             // Thread pools
@@ -607,13 +772,13 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            var cacheCfgCount = r.ReadInt();
-            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
-            for (int i = 0; i < cacheCfgCount; i++)
-                CacheConfiguration.Add(new CacheConfiguration(r));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x, srvVer));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
+                new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
@@ -658,14 +823,17 @@ namespace Apache.Ignite.Core
                     DefaultTransactionConcurrency = (TransactionConcurrency) r.ReadInt(),
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
-                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
+                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong()),
+                    DeadlockTimeout = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
             // Event storage
             switch (r.ReadByte())
             {
-                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                case 1:
+                    EventStorageSpi = new NoopEventStorageSpi();
                     break;
 
                 case 2:
@@ -675,7 +843,9 @@ namespace Apache.Ignite.Core
 
             if (r.ReadBoolean())
             {
+#pragma warning disable 618  // Obsolete
                 MemoryConfiguration = new MemoryConfiguration(r);
+#pragma warning restore 618  // Obsolete
             }
 
             // SQL.
@@ -697,7 +867,65 @@ namespace Apache.Ignite.Core
             // Persistence.
             if (r.ReadBoolean())
             {
+#pragma warning disable 618 // Obsolete
                 PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
+#pragma warning restore 618
+            }
+
+            // Data storage.
+            if (r.ReadBoolean())
+            {
+                DataStorageConfiguration = new DataStorageConfiguration(r, srvVer);
+            }
+
+            // SSL context factory.
+            SslContextFactory = SslFactorySerializer.Read(r);
+
+            // Failure handler.
+            if (r.ReadBoolean())
+            {
+                switch (r.ReadByte())
+                {
+                    case 0:
+                        FailureHandler = new NoOpFailureHandler();
+
+                        break;
+
+                    case 1:
+                        FailureHandler = new StopNodeFailureHandler();
+
+                        break;
+
+                    case 2:
+                        FailureHandler = StopNodeOrHaltFailureHandler.Read(r);
+
+                        break;
+
+                    default:
+                        FailureHandler = null;
+
+                        break;
+                }
+            }
+            else
+            {
+                FailureHandler = null;
+            }
+
+            // Executor configuration.
+            var count = r.ReadInt();
+            if (count >= 0)
+            {
+                ExecutorConfiguration = new List<ExecutorConfiguration>(count);
+
+                for (var i = 0; i < count; i++)
+                {
+                    ExecutorConfiguration.Add(new ExecutorConfiguration
+                    {
+                        Name = r.ReadString(),
+                        Size = r.ReadInt()
+                    });
+                }
             }
         }
 
@@ -705,20 +933,16 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        /// <param name="srvVer">Server version.</param>
+        private void Read(BinaryReader binaryReader, ClientProtocolVersion srvVer)
         {
-            ReadCore(binaryReader);
+            ReadCore(binaryReader, srvVer);
 
             // Misc
             IgniteHome = binaryReader.ReadString();
 
             JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
             JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
-
-            // Local data (not from reader)
-            JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
-                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
-                .FileName;
         }
 
         /// <summary>
@@ -734,8 +958,10 @@ namespace Apache.Ignite.Core
             }
 
             SpringConfigUrl = cfg.SpringConfigUrl;
+            IgniteHome = cfg.IgniteHome;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
+            JvmDllPath = cfg.JvmDllPath;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleHandlers = cfg.LifecycleHandlers;
@@ -746,6 +972,7 @@ namespace Apache.Ignite.Core
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
             PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
             LocalEventListeners = cfg.LocalEventListeners;
+            RedirectJavaConsoleOutput = cfg.RedirectJavaConsoleOutput;
 
             if (CacheConfiguration != null && cfg.CacheConfiguration != null)
             {
@@ -792,6 +1019,7 @@ namespace Apache.Ignite.Core
         /// This property is used to when there are multiple Ignite nodes in one process to distinguish them.
         /// </summary>
         [Obsolete("Use IgniteInstanceName instead.")]
+        [XmlIgnore]
         public string GridName
         {
             get { return IgniteInstanceName; }
@@ -822,17 +1050,16 @@ namespace Apache.Ignite.Core
         /// Null property values do not override Spring values.
         /// Value-typed properties are tracked internally: if setter was not called, Spring value won't be overwritten.
         /// <para />
-        /// This merging happens on the top level only; e. g. if there are cache configurations defined in Spring 
+        /// This merging happens on the top level only; e. g. if there are cache configurations defined in Spring
         /// and in .NET, .NET caches will overwrite Spring caches.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
         public string SpringConfigUrl { get; set; }
 
         /// <summary>
-        /// Path jvm.dll file. If not set, it's location will be determined
-        /// using JAVA_HOME environment variable.
-        /// If path is neither set nor determined automatically, an exception
-        /// will be thrown.
+        /// Path to jvm.dll (libjvm.so on Linux, libjvm.dylib on Mac) file.
+        /// If not set, it's location will be determined using JAVA_HOME environment variable.
+        /// If path is neither set nor determined automatically, an exception will be thrown.
         /// </summary>
         public string JvmDllPath { get; set; }
 
@@ -854,7 +1081,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// List of additional .Net assemblies to load on Ignite start. Each item can be either
-        /// fully qualified assembly name, path to assembly to DLL or path to a directory when 
+        /// fully qualified assembly name, path to assembly to DLL or path to a directory when
         /// assemblies reside.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
@@ -900,6 +1127,12 @@ namespace Apache.Ignite.Core
         public ICommunicationSpi CommunicationSpi { get; set; }
 
         /// <summary>
+        /// Gets or sets the encryption service provider.
+        /// Null for disabled encryption.
+        /// </summary>
+        public IEncryptionSpi EncryptionSpi { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
         /// Client node cannot hold data in the caches.
         /// </summary>
@@ -910,7 +1143,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite. 
+        /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> IncludedEventTypes { get; set; }
@@ -1050,11 +1283,11 @@ namespace Apache.Ignite.Core
         public string WorkDirectory { get; set; }
 
         /// <summary>
-        /// Gets or sets system-wide local address or host for all Ignite components to bind to. 
+        /// Gets or sets system-wide local address or host for all Ignite components to bind to.
         /// If provided it will override all default local bind settings within Ignite.
         /// <para />
-        /// If <c>null</c> then Ignite tries to use local wildcard address.That means that all services 
-        /// will be available on all network interfaces of the host machine. 
+        /// If <c>null</c> then Ignite tries to use local wildcard address.That means that all services
+        /// will be available on all network interfaces of the host machine.
         /// <para />
         /// It is strongly recommended to set this parameter for all production environments.
         /// </summary>
@@ -1063,11 +1296,11 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets a value indicating whether this node should be a daemon node.
         /// <para />
-        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs, 
+        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs,
         /// i.e. they are not part of any cluster groups.
         /// <para />
-        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite 
-        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
+        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite
+        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology,
         /// so that it won't participate in the task execution or in-memory data grid storage.
         /// </summary>
         public bool IsDaemon
@@ -1079,7 +1312,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the user attributes for this node.
         /// <para />
-        /// These attributes can be retrieved later via <see cref="IClusterNode.GetAttributes"/>.
+        /// These attributes can be retrieved later via <see cref="IBaselineNode.Attributes"/>.
         /// Environment variables are added to node attributes automatically.
         /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
         /// </summary>
@@ -1104,14 +1337,14 @@ namespace Apache.Ignite.Core
         /// affinity assignment mode is disabled then new affinity mapping is applied immediately.
         /// <para />
         /// With late affinity assignment mode, if primary node was changed for some partition, but data for this
-        /// partition is not rebalanced yet on this node, then current primary is not changed and new primary 
-        /// is temporary assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary 
-        /// partitions is finished. This mode can show better performance for cache operations, since when cache 
-        /// primary node executes some operation and data is not rebalanced yet, then it sends additional message 
+        /// partition is not rebalanced yet on this node, then current primary is not changed and new primary
+        /// is temporary assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary
+        /// partitions is finished. This mode can show better performance for cache operations, since when cache
+        /// primary node executes some operation and data is not rebalanced yet, then it sends additional message
         /// to force rebalancing from other nodes.
         /// <para />
         /// Note, that <see cref="ICacheAffinity"/> interface provides assignment information taking late assignment
-        /// into account, so while rebalancing for new primary nodes is not finished it can return assignment 
+        /// into account, so while rebalancing for new primary nodes is not finished it can return assignment
         /// which differs from assignment calculated by AffinityFunction.
         /// <para />
         /// This property should have the same value for all nodes in cluster.
@@ -1136,9 +1369,6 @@ namespace Apache.Ignite.Core
         /// <param name="rootElementName">Name of the root element.</param>
         public void ToXml(XmlWriter writer, string rootElementName)
         {
-            IgniteArgumentCheck.NotNull(writer, "writer");
-            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
-
             IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
         }
 
@@ -1147,19 +1377,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public string ToXml()
         {
-            var sb = new StringBuilder();
-
-            var settings = new XmlWriterSettings
-            {
-                Indent = true
-            };
-
-            using (var xmlWriter = XmlWriter.Create(sb, settings))
-            {
-                ToXml(xmlWriter, "igniteConfiguration");
-            }
-
-            return sb.ToString();
+            return IgniteConfigurationXmlSerializer.Serialize(this, "igniteConfiguration");
         }
 
         /// <summary>
@@ -1169,9 +1387,7 @@ namespace Apache.Ignite.Core
         /// <returns>Deserialized instance.</returns>
         public static IgniteConfiguration FromXml(XmlReader reader)
         {
-            IgniteArgumentCheck.NotNull(reader, "reader");
-
-            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
         }
 
         /// <summary>
@@ -1179,20 +1395,9 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
         public static IgniteConfiguration FromXml(string xml)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
-
-            using (var stringReader = new StringReader(xml))
-            using (var xmlReader = XmlReader.Create(stringReader))
-            {
-                // Skip XML header.
-                xmlReader.MoveToContent();
-
-                return FromXml(xmlReader);
-            }
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(xml);
         }
 
         /// <summary>
@@ -1204,7 +1409,7 @@ namespace Apache.Ignite.Core
         public ILogger Logger { get; set; }
 
         /// <summary>
-        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/> 
+        /// Gets or sets the failure detection timeout used by <see cref="TcpDiscoverySpi"/>
         /// and <see cref="TcpCommunicationSpi"/>.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:10")]
@@ -1212,6 +1417,15 @@ namespace Apache.Ignite.Core
         {
             get { return _failureDetectionTimeout ?? DefaultFailureDetectionTimeout; }
             set { _failureDetectionTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the timeout for blocked system workers detection.
+        /// </summary>
+        public TimeSpan? SystemWorkerBlockedTimeout
+        {
+            get { return _sysWorkerBlockedTimeout; }
+            set { _sysWorkerBlockedTimeout = value; }
         }
 
         /// <summary>
@@ -1242,8 +1456,24 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the page memory configuration.
         /// <see cref="MemoryConfiguration"/> for more details.
+        /// <para />
+        /// Obsolete, use <see cref="DataStorageConfiguration"/>.
         /// </summary>
+        [Obsolete("Use DataStorageConfiguration.")]
         public MemoryConfiguration MemoryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the data storage configuration.
+        /// </summary>
+        public DataStorageConfiguration DataStorageConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SSL context factory that will be used for creating a secure socket layer b/w nodes.
+        /// <para />
+        /// Default is null (no SSL).
+        /// <para />
+        /// </summary>
+        public ISslContextFactory SslContextFactory { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
@@ -1373,14 +1603,17 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets or sets the persistent store configuration.
+        /// <para />
+        /// Obsolete, use <see cref="DataStorageConfiguration"/>.
         /// </summary>
+        [Obsolete("Use DataStorageConfiguration.")]
         public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
-        /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// See also <see cref="ICluster.IsActive"/> and <see cref="ICluster.SetActive"/>.
         /// <para />
-        /// This property is ignored when <see cref="PersistentStoreConfiguration"/> is present:
+        /// This property is ignored when <see cref="DataStorageConfiguration"/> is present:
         /// cluster is always inactive on start when Ignite Persistence is enabled.
         /// </summary>
         [DefaultValue(DefaultIsActiveOnStart)]
@@ -1394,5 +1627,96 @@ namespace Apache.Ignite.Core
         /// Gets or sets consistent globally unique node identifier which survives node restarts.
         /// </summary>
         public object ConsistentId { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Java console output should be redirected
+        /// to <see cref="Console.Out"/> and <see cref="Console.Error"/>, respectively.
+        /// <para />
+        /// Default is <see cref="DefaultRedirectJavaConsoleOutput"/>.
+        /// <para />
+        /// Java code outputs valuable information to console. However, since that is Java console,
+        /// it is not possible to capture that output with standard .NET APIs (<see cref="Console.SetOut"/>).
+        /// As a result, many tools (IDEs, test runners) are not able to display Ignite console output in UI.
+        /// <para />
+        /// This property is enabled by default and redirects Java console output to standard .NET console.
+        /// It is recommended to disable this in production.
+        /// </summary>
+        [DefaultValue(DefaultRedirectJavaConsoleOutput)]
+        public bool RedirectJavaConsoleOutput { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>.
+        /// </summary>
+        [DefaultValue(DefaultAuthenticationEnabled)]
+        public bool AuthenticationEnabled
+        {
+            get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
+            set { _authenticationEnabled = value; }
+        }
+
+        /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
+        /// Time interval between MVCC vacuum runs in milliseconds.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumFrequency)]
+        [IgniteExperimentalAttribute]
+        public long MvccVacuumFrequency
+        {
+            get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
+            set { _mvccVacuumFreq = value; }
+        }
+
+        /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
+        /// Number of MVCC vacuum threads.
+        /// </summary>
+        [DefaultValue(DefaultMvccVacuumThreadCount)]
+        [IgniteExperimentalAttribute]
+        public int MvccVacuumThreadCount
+        {
+            get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
+            set { _mvccVacuumThreadCnt = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the value indicating the number of SQL query history elements to keep in memory.
+        /// Zero or negative value disables the history.
+        /// </summary>
+        [DefaultValue(DefaultSqlQueryHistorySize)]
+        public int SqlQueryHistorySize
+        {
+            get { return _sqlQueryHistorySize ?? DefaultSqlQueryHistorySize; }
+            set { _sqlQueryHistorySize = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets predefined failure handlers implementation.
+        /// A failure handler handles critical failures of Ignite instance accordingly:
+        /// <para><see cref="NoOpFailureHandler"/> -- do nothing.</para>
+        /// <para><see cref="StopNodeFailureHandler"/> -- stop node.</para>
+        /// <para><see cref="StopNodeOrHaltFailureHandler"/> -- try to stop node if tryStop value is true.
+        /// If node can't be stopped during provided timeout or tryStop value is false then JVM process will be terminated forcibly.</para>
+        /// <para/>
+        /// Only these implementations are supported:
+        /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>, <see cref="StopNodeFailureHandler"/>.
+        /// </summary>
+        public IFailureHandler FailureHandler { get; set; }
+
+        /// <summary>
+        /// Gets or sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated.
+        /// to other cluster nodes. Created schemas cannot be dropped.
+        /// <para/>
+        /// By default schema names are case-insensitive. Use quotes to enforce case sensitivity.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<string> SqlSchemas { get; set; }
+
+        /// <summary>
+        /// Gets or sets custom executor configuration for compute tasks.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<ExecutorConfiguration> ExecutorConfiguration { get; set; }
     }
 }

@@ -43,6 +43,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
@@ -115,6 +116,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
+        tx.enterSystemSection();
+
         try {
             cctx.kernalContext().gateway().readLock();
         }
@@ -134,6 +137,8 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
     private void leave() {
         try {
             CU.unwindEvicts(cctx);
+
+            tx.leaveSystemSection();
         }
         finally {
             cctx.kernalContext().gateway().readUnlock();
@@ -230,6 +235,14 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         finally {
             leave();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String label() {
+        if (async)
+            save(tx.label());
+
+        return tx.label();
     }
 
     /** {@inheritDoc} */
@@ -353,9 +366,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
         try {
             return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
         }
         finally {
             leave();

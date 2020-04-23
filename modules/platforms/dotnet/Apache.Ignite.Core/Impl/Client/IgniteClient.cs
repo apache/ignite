@@ -18,32 +18,50 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using System.Net;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Client.Cluster;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Impl.Plugin;
 
     /// <summary>
-    /// Thin client implementation
+    /// Thin client implementation.
     /// </summary>
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
         /** Socket. */
-        private readonly ClientSocket _socket;
+        private readonly ClientFailoverSocket _socket;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
         /** Binary processor. */
         private readonly IBinaryProcessor _binProc;
+
+        /** Binary. */
+        private readonly IBinary _binary;
+
+        /** Configuration. */
+        private readonly IgniteClientConfiguration _configuration;
+
+        /** Node info cache. */
+        private readonly ConcurrentDictionary<Guid, IClientClusterNode> _nodes =
+            new ConcurrentDictionary<Guid, IClientClusterNode>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
@@ -53,20 +71,24 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             Debug.Assert(clientConfiguration != null);
 
-            _socket = new ClientSocket(clientConfiguration);
+            _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _marsh = new Marshaller(clientConfiguration.BinaryConfiguration)
+            _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
                 Ignite = this
             };
 
-            _binProc = clientConfiguration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+            _socket = new ClientFailoverSocket(_configuration, _marsh);
+
+            _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+
+            _binary = new Binary(_marsh);
         }
 
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public ClientSocket Socket
+        public ClientFailoverSocket Socket
         {
             get { return _socket; }
         }
@@ -88,6 +110,69 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(string name)
+        {
+            IgniteArgumentCheck.NotNull(name, "name");
+
+            DoOutOp(ClientOp.CacheGetOrCreateWithName, ctx => ctx.Writer.WriteString(name));
+
+            return GetCache<TK, TV>(name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(CacheClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
+
+            return GetCache<TK, TV>(configuration.Name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> CreateCache<TK, TV>(string name)
+        {
+            IgniteArgumentCheck.NotNull(name, "name");
+
+            DoOutOp(ClientOp.CacheCreateWithName, ctx => ctx.Writer.WriteString(name));
+
+            return GetCache<TK, TV>(name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> CreateCache<TK, TV>(CacheClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp(ClientOp.CacheCreateWithConfiguration,
+                ctx => ClientCacheConfigurationSerializer.Write(ctx.Stream, configuration, ctx.ProtocolVersion));
+
+            return GetCache<TK, TV>(configuration.Name);
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            return DoOutInOp(ClientOp.CacheGetNames, null, ctx => ctx.Reader.ReadStringCollection());
+        }
+
+        /** <inheritDoc /> */
+        public IClientCluster GetCluster()
+        {
+            return new ClientCluster(this, _marsh);
+        }
+
+        /** <inheritDoc /> */
+        public void DestroyCache(string name)
+        {
+            IgniteArgumentCheck.NotNull(name, "name");
+
+            DoOutOp(ClientOp.CacheDestroy, ctx => ctx.Stream.WriteInt(BinaryUtils.GetCacheId(name)));
+        }
+
+        /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public IIgnite GetIgnite()
         {
             throw GetClientNotSupportedException();
@@ -96,7 +181,43 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IBinary GetBinary()
         {
+            return _binary;
+        }
+
+        /** <inheritDoc /> */
+        public CacheAffinityImpl GetAffinity(string cacheName)
+        {
             throw GetClientNotSupportedException();
+        }
+
+        /** <inheritDoc /> */
+        public CacheConfiguration GetCacheConfiguration(int cacheId)
+        {
+            throw GetClientNotSupportedException();
+        }
+
+        public object GetJavaThreadLocal()
+        {
+            throw GetClientNotSupportedException();
+        }
+
+        /** <inheritDoc /> */
+        public IgniteClientConfiguration GetConfiguration()
+        {
+            // Return a copy to allow modifications by the user.
+            return new IgniteClientConfiguration(_configuration);
+        }
+
+        /** <inheritDoc /> */
+        public EndPoint RemoteEndPoint
+        {
+            get { return _socket.RemoteEndPoint; }
+        }
+
+        /** <inheritDoc /> */
+        public EndPoint LocalEndPoint
+        {
+            get { return _socket.LocalEndPoint; }
         }
 
         /** <inheritDoc /> */
@@ -106,21 +227,50 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public IgniteConfiguration Configuration
         {
             get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public HandleRegistry HandleRegistry
         {
             get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public ClusterNodeImpl GetNode(Guid? id)
         {
             throw GetClientNotSupportedException();
+        }
+
+        /// <summary>
+        /// Gets client node from the internal cache.
+        /// </summary>
+        /// <param name="id">Node Id.</param>
+        /// <returns>Client node.</returns>
+        public IClientClusterNode GetClientNode(Guid id)
+        {
+            IClientClusterNode result;
+            if (!_nodes.TryGetValue(id, out result))
+            {
+                throw new ArgumentException(string.Format(
+                    CultureInfo.InvariantCulture, "Unable to find node with id='{0}'", id));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Check whether <see cref="IgniteClient">Ignite Client</see> contains a node. />
+        /// </summary>
+        /// <param name="id">Node id.</param>
+        /// <returns>True if contains, False otherwise.</returns>
+        public bool ContainsNode(Guid id)
+        {
+            return _nodes.ContainsKey(id);
         }
 
         /** <inheritDoc /> */
@@ -130,15 +280,33 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public PluginProcessor PluginProcessor
         {
             get { throw GetClientNotSupportedException(); }
         }
 
         /** <inheritDoc /> */
+        public PlatformCacheManager PlatformCacheManager
+        {
+            get { throw GetClientNotSupportedException(); }
+        }
+
+        /** <inheritDoc /> */
+        [ExcludeFromCodeCoverage]
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
         {
             throw GetClientNotSupportedException();
+        }
+
+        /// <summary>
+        /// Saves the node information from stream to internal cache.
+        /// </summary>
+        /// <param name="reader">Reader.</param>
+        public void SaveClientClusterNode(IBinaryRawReader reader)
+        {
+            var node = new ClientClusterNode(reader);
+            _nodes[node.Id] = node;
         }
 
         /// <summary>
@@ -154,6 +322,23 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             return new NotSupportedException(msg);
+        }
+
+        /// <summary>
+        /// Does the out in op.
+        /// </summary>
+        private T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
+            Func<ClientResponseContext, T> readFunc)
+        {
+            return _socket.DoOutInOp(opId, writeAction, readFunc);
+        }
+
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
+        private void DoOutOp(ClientOp opId, Action<ClientRequestContext> writeAction = null)
+        {
+            DoOutInOp<object>(opId, writeAction, null);
         }
     }
 }

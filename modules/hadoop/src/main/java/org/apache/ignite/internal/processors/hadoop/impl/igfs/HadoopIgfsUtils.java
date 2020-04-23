@@ -118,7 +118,6 @@ public class HadoopIgfsUtils {
      * @param path Path for exceptions.
      * @return Casted exception.
      */
-    @SuppressWarnings("unchecked")
     public static IOException cast(IgniteCheckedException e, @Nullable String path) {
         assert e != null;
 

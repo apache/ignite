@@ -112,7 +112,6 @@ public class GridDsiClient implements Callable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
         IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode()));
 
@@ -163,7 +162,7 @@ public class GridDsiClient implements Callable {
      */
     private static void displayReqCount() {
         new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 int interval = 30;
 
@@ -322,7 +321,7 @@ public class GridDsiClient implements Callable {
                 }
 
                 collector = new Thread(new Runnable() {
-                    @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+                    @SuppressWarnings({"BusyWait"})
                     @Override public void run() {
                         long txPerSecond = -1;
                         long avgLatency = -1;

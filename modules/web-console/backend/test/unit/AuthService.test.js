@@ -37,17 +37,6 @@ suite('AuthServiceTestsSuite', () => {
 
     setup(() => db.init());
 
-    test('Check token generator', () => {
-        const tokenLength = 16;
-        const token1 = authService.generateResetToken(tokenLength);
-        const token2 = authService.generateResetToken(tokenLength);
-
-        assert.equal(token1.length, tokenLength);
-        assert.equal(token2.length, tokenLength);
-        assert.notEqual(token1, token2);
-    });
-
-
     test('Reset password token for non existing user', (done) => {
         authService.resetPasswordToken('non-exisitng@email.ee')
             .catch((err) => {
@@ -57,7 +46,7 @@ suite('AuthServiceTestsSuite', () => {
     });
 
     test('Reset password token for existing user', (done) => {
-        authService.resetPasswordToken(testAccounts[0].email)
+        authService.resetPasswordToken(null, testAccounts[0].email)
             .then((account) => {
                 assert.notEqual(account.resetPasswordToken.length, 0);
                 assert.notEqual(account.resetPasswordToken, testAccounts[0].resetPasswordToken);
@@ -75,7 +64,7 @@ suite('AuthServiceTestsSuite', () => {
     });
 
     test('Reset password by token for existing user', (done) => {
-        authService.resetPasswordByToken(testAccounts[0].resetPasswordToken, 'NewUniquePassword$1')
+        authService.resetPasswordByToken(null, testAccounts[0].resetPasswordToken, 'NewUniquePassword$1')
             .then((account) => {
                 assert.isUndefined(account.resetPasswordToken);
                 assert.notEqual(account.hash, 0);

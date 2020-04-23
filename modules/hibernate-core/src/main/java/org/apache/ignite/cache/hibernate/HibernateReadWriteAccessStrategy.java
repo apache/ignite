@@ -65,7 +65,8 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
      * @param txCtx Thread local instance used to track updates done during one Hibernate transaction.
      * @param eConverter Exception converter.
      */
-    protected HibernateReadWriteAccessStrategy(Ignite ignite,
+    protected HibernateReadWriteAccessStrategy(
+        Ignite ignite,
         HibernateCacheProxy cache,
         ThreadLocal txCtx,
         HibernateExceptionConverter eConverter) {
@@ -78,12 +79,14 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
     @Override public Object get(Object key) {
         boolean success = false;
 
+        Object val = null;
+
         try {
-            Object o = cache.get(key);
+            val = cache.get(key);
 
             success = true;
 
-            return o;
+            return val;
         }
         catch (IgniteCheckedException e) {
             throw convertException(e);
@@ -91,6 +94,11 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Get [cache=" + cache.name() + ", key=" + key + ", val=" + val +
+                    ", success=" + success + ']');
+            }
         }
     }
 
@@ -109,6 +117,11 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Put from load [cache=" + cache.name() + ", key=" + key + ", val=" + val +
+                    ", success=" + success + ']');
+            }
         }
     }
 
@@ -134,6 +147,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled())
+                log.debug("Lock [cache=" + cache.name() + ", key=" + key + ", success=" + success + ']');
         }
     }
 
@@ -155,6 +171,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled())
+                log.debug("Unlock [cache=" + cache.name() + ", key=" + key + ", success=" + success + ']');
         }
     }
 
@@ -189,6 +208,11 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Put after update [cache=" + cache.name() + ", key=" + key + ", val=" + val +
+                    ", success=" + success + ']');
+            }
         }
     }
 
@@ -214,6 +238,11 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Put after insert [cache=" + cache.name() + ", key=" + key + ", val=" + val +
+                    ", success=" + success + ']');
+            }
         }
     }
 
@@ -235,6 +264,9 @@ public class HibernateReadWriteAccessStrategy extends HibernateAccessStrategyAda
         finally {
             if (!success)
                 rollbackCurrentTx();
+
+            if (log.isDebugEnabled())
+                log.debug("Remove [cache=" + cache.name() + ", key=" + key + ", success=" + success + ']');
         }
     }
 

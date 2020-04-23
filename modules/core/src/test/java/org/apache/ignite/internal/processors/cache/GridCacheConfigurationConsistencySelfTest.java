@@ -29,8 +29,10 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
+import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -40,15 +42,14 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -91,9 +92,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /** */
     private int backups;
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -107,12 +105,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             strLog = new GridStringLogger(false, cfg.getGridLogger());
             cfg.setGridLogger(strLog);
         }
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setDeploymentMode(depMode);
 
@@ -139,6 +131,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheUtilsCheckAttributeMismatch() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -186,6 +179,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullCacheMode() throws Exception {
         // Grid with null cache mode.
         // This is a legal case. The default cache mode should be used.
@@ -200,6 +194,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithCacheAndWithoutCache() throws Exception {
         // 1st grid without cache.
         cacheEnabled = false;
@@ -219,6 +214,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSameCacheDifferentModes() throws Exception {
         // 1st grid with replicated cache.
         cacheEnabled = true;
@@ -247,6 +243,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentCacheDifferentModes() throws Exception {
         // 1st grid with local cache.
         cacheEnabled = true;
@@ -284,6 +281,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentDeploymentModes() throws Exception {
         // 1st grid with SHARED mode.
         cacheEnabled = true;
@@ -309,6 +307,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentAffinities() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -333,6 +332,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentPreloadModes() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -355,6 +355,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentEvictionEnabled() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -377,6 +378,30 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDifferentEvictionPolicyEnabled() throws Exception {
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
+                    cfg.setOnheapCacheEnabled(true);
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDifferentEvictionPolicies() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -401,6 +426,32 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDifferentEvictionPolicyFactories() throws Exception {
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionPolicyFactory(new SortedEvictionPolicyFactory());
+                    cfg.setOnheapCacheEnabled(true);
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
+                    cfg.setOnheapCacheEnabled(true);
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDifferentEvictionFilters() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -423,6 +474,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentAffinityMappers() throws Exception {
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
@@ -445,6 +497,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentAtomicity() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -471,6 +524,34 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testDifferentTxAtomicity() throws Exception {
+        cacheMode = PARTITIONED;
+
+        checkSecondGridStartFails(
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setNearConfiguration(null);
+                    cfg.setAtomicityMode(TRANSACTIONAL);
+                    return null;
+                }
+            },
+            new C1<CacheConfiguration, Void>() {
+                /** {@inheritDoc} */
+                @Override public Void apply(CacheConfiguration cfg) {
+                    cfg.setNearConfiguration(null);
+                    cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+                    return null;
+                }
+            }
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testDifferentSynchronization() throws Exception {
         cacheMode = PARTITIONED;
 
@@ -495,6 +576,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityFunctionConsistency() throws Exception {
         cacheEnabled = true;
         cacheMode = PARTITIONED;
@@ -541,6 +623,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAttributesWarnings() throws Exception {
         cacheEnabled = true;
 
@@ -576,6 +659,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedOnlyAttributesIgnoredForReplicated() throws Exception {
         cacheEnabled = true;
 
@@ -585,6 +669,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
+                nearCfg.setNearEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 nearCfg.setNearEvictionPolicy(new LruEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
@@ -599,6 +684,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
+                nearCfg.setNearEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
@@ -613,6 +699,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIgnoreMismatchForLocalCaches() throws Exception {
         cacheEnabled = true;
 
@@ -624,6 +711,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new TestRendezvousAffinityFunction());
 
+                cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 cfg.setEvictionPolicy(new FifoEvictionPolicy());
                 cfg.setOnheapCacheEnabled(true);
 
@@ -643,6 +731,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
             @Override public Void apply(CacheConfiguration cfg) {
                 cfg.setAffinity(new RendezvousAffinityFunction());
 
+                cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
                 cfg.setEvictionPolicy(new LruEvictionPolicy());
                 cfg.setOnheapCacheEnabled(true);
 
@@ -658,6 +747,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreCheckAtomic() throws Exception {
         cacheEnabled = true;
 
@@ -703,6 +793,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreCheckTransactional() throws Exception {
         cacheEnabled = true;
 
@@ -750,6 +841,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityForReplicatedCache() throws Exception {
         cacheEnabled = true;
 
@@ -770,6 +862,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDifferentInterceptors() throws Exception {
         cacheMode = PARTITIONED;
 

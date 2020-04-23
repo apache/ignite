@@ -42,7 +42,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 
@@ -77,7 +76,7 @@ public class ConfigVariations {
         Parameters.parameter("setRebalanceBatchSize", 2028 * 1024),
         Parameters.parameter("setRebalanceBatchesPrefetchCount", 5L),
         Parameters.parameter("setRebalanceThreadPoolSize", 5),
-        Parameters.parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
+        Parameters.parameter("setRebalanceTimeout", IgniteConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
         Parameters.parameter("setRebalanceDelay", 1000L)
     );
 
@@ -92,7 +91,7 @@ public class ConfigVariations {
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<CacheConfiguration>[][] BASIC_CACHE_SET = new ConfigParameter[][] {
         Parameters.objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
-        Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
+        Parameters.objectParameters("setAtomicityMode", CacheAtomicityMode.ATOMIC, CacheAtomicityMode.TRANSACTIONAL),
         // Set default parameters.
         Parameters.objectParameters("setLoadPreviousValue", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),

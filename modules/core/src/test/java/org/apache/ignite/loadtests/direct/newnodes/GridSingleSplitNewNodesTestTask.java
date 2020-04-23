@@ -33,6 +33,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Single split on new nodes test task.
@@ -47,7 +48,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
         assert !subgrid.isEmpty() : "Subgrid cannot be empty.";
 
         Map<ComputeJobAdapter, ClusterNode> jobs = new HashMap<>(subgrid.size());

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.sql.Timestamp;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -62,9 +64,9 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.EventType;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -81,7 +83,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
 public class PlatformUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
@@ -612,6 +613,23 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+        writeEventType(writer, evt.getEventType());
+    }
+
+    /**
+     * Write event type to the writer.
+     * @param writer Writer.
+     * @param evtType Type of event.
+     */
+    private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
+        switch (evtType){
+            case CREATED: writer.writeByte((byte) 0); break;
+            case UPDATED: writer.writeByte((byte) 1); break;
+            case REMOVED: writer.writeByte((byte) 2); break;
+            case EXPIRED: writer.writeByte((byte) 3); break;
+            default:
+                throw new IllegalArgumentException("Unknown event type: " + evtType);
+        }
     }
 
     /**
@@ -620,7 +638,6 @@ public class PlatformUtils {
      * @param ex Error.
      * @param writer Writer.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
 
@@ -694,7 +711,7 @@ public class PlatformUtils {
     }
 
     /**
-     * Get GridGain platform processor.
+     * Get platform processor.
      *
      * @param grid Ignite instance.
      * @return Platform processor.
@@ -731,7 +748,6 @@ public class PlatformUtils {
      * @param err Error.
      * @return Error data.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static byte[] errorData(Throwable err) {
         if (err instanceof PlatformExtendedException) {
             PlatformContext ctx = ((PlatformExtendedException)err).context();
@@ -850,14 +866,13 @@ public class PlatformUtils {
      *
      * @return Marshaller.
      */
-    @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         BinaryContext ctx =
             new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null));
+        marsh.setContext(new MarshallerContextImpl(null, null));
 
         ctx.configure(marsh, new IgniteConfiguration());
 
@@ -982,6 +997,7 @@ public class PlatformUtils {
 
         return map0;
     }
+
     /**
      * Create Java object.
      *
@@ -1144,7 +1160,13 @@ public class PlatformUtils {
 
         for (BinarySchema schema : schemas) {
             writer.writeInt(schema.schemaId());
-            writer.writeIntArray(schema.fieldIds());
+
+            int[] ids = schema.fieldIds();
+            writer.writeInt(ids.length);
+
+            for (int id : ids) {
+                writer.writeInt(id);
+            }
         }
     }
 
@@ -1177,8 +1199,7 @@ public class PlatformUtils {
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
                 new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override
-                    public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
                         String name = reader.readString();
                         int typeId = reader.readInt();
                         int fieldId = reader.readInt();
@@ -1222,6 +1243,62 @@ public class PlatformUtils {
         }
 
         return new BinaryMetadata(typeId, typeName, fields, affKey, schemas, isEnum, enumMap);
+    }
+
+    /**
+     * Writes node attributes.
+     *
+     * @param writer Writer.
+     * @param attrs Attributes.
+     */
+    public static void writeNodeAttributes(BinaryRawWriterEx writer, Map<String, Object> attrs) {
+        assert writer != null;
+        assert attrs != null;
+
+        if (attrs != null) {
+            writer.writeInt(attrs.size());
+
+            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                writer.writeString(e.getKey());
+                writer.writeObjectDetached(e.getValue());
+            }
+        } else {
+            writer.writeInt(0);
+        }
+    }
+
+    /**
+     * Reads node attributes.
+     *
+     * @param reader Reader.
+     * @return Attributes.
+     */
+    public static Map<String, Object> readNodeAttributes(BinaryRawReaderEx reader) {
+        assert reader != null;
+
+        int attrCnt = reader.readInt();
+        Map<String, Object> attrs = new HashMap<>(attrCnt);
+
+        for (int j = 0; j < attrCnt; j++) {
+            attrs.put(reader.readString(), reader.readObjectDetached());
+        }
+
+        return attrs;
+    }
+
+    /**
+     * Write binary productVersion.
+     *
+     * @param out Writer.
+     * @param productVersion IgniteProductVersion.
+     */
+    public static void writeNodeVersion(BinaryRawWriterEx out, IgniteProductVersion productVersion) {
+        out.writeByte(productVersion.major());
+        out.writeByte(productVersion.minor());
+        out.writeByte(productVersion.maintenance());
+        out.writeString(productVersion.stage());
+        out.writeLong(productVersion.revisionTimestamp());
+        out.writeByteArray(productVersion.revisionHash());
     }
 
     /**

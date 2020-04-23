@@ -22,48 +22,45 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridFilteredClosableIterator;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionState;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
  *
  */
 public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+                .setMaxSize(100L * 1024 * 1024)));
 
         return cfg;
     }
@@ -71,7 +68,10 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersions() throws Exception {
+        System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "1");
+
         IgniteEx ig0 = (IgniteEx)startGrid();
 
         IgniteWriteAheadLogManager wal0 = ig0.context().cache().context().wal();
@@ -120,18 +120,13 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCheckDifferentSerializerVersionsAndLogTimestamp() throws Exception {
         IgniteCallable<List<WALRecord>> recordsFactory = new IgniteCallable<List<WALRecord>>() {
             @Override public List<WALRecord> call() throws Exception {
                 WALRecord rec0 = new DataRecord(Collections.<DataEntry>emptyList());
 
-                WALRecord rec1 = new TxRecord(
-                    TransactionState.PREPARED,
-                    null,
-                    null,
-                    null,
-                    null
-                );
+                WALRecord rec1 = new TxRecord(PREPARED, null, null, null);
 
                 return Arrays.asList(rec0, rec1);
             }
@@ -230,7 +225,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
                 }
             }
             else
-                fail();
+                fail(String.valueOf(act));
         }
     }
 
@@ -242,7 +237,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrid();
 
-        ig0.active(true);
+        ig0.cluster().active(true);
 
         IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
 
@@ -263,11 +258,11 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
                 p = p0;
         }
 
-        wal.fsync(null);
+        wal.flush(null, false);
 
         Iterator<Long> itToCheck = checker.getTimeStamps().iterator();
 
-        try (WALIterator it = wal.replay(p)) {
+        try (TimestampRecordIterator it = new TimestampRecordIterator(wal.replay(p))) {
             while (it.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup0 = it.next();
 
@@ -286,7 +281,9 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
 
     /** {@inheritDoc} */
@@ -295,13 +292,30 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IGNITE_WAL_SERIALIZER_VERSION);
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+    private static class TimestampRecordIterator extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+        /**
+         * @param it Iterator.
+         */
+        private TimestampRecordIterator(GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
+            super(it);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean accept(IgniteBiTuple<WALPointer, WALRecord> tup) {
+            return tup.get2() instanceof TimeStampRecord;
+        }
     }
 }

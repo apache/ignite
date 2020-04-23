@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     +----------------+---------------+---------+----------+
  * </pre>
  */
-@SuppressWarnings({"NakedNotify", "SynchronizationOnLocalVariableOrMethodParameter", "CallToThreadYield", "WaitWhileNotSynced"})
 public class OffheapReadWriteLock {
     /**
      * TODO benchmark optimal spin count.
@@ -171,6 +170,8 @@ public class OffheapReadWriteLock {
                     lockObj.lock();
 
                     try {
+                        // Note that we signal all waiters for this stripe. Since not all waiters in this
+                        // stripe/index belong to this particular lock, we can't wake up just one of them.
                         writeConditions[idx].signalAll();
                     }
                     finally {
@@ -261,7 +262,7 @@ public class OffheapReadWriteLock {
 
             if (lockCount(state) != -1)
                 throw new IllegalMonitorStateException("Attempted to release write lock while not holding it " +
-                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state));
+                    "[lock=" + U.hexLong(lock) + ", state=" + U.hexLong(state) + ']');
 
             updated = releaseWithTag(state, tag);
 
@@ -296,6 +297,8 @@ public class OffheapReadWriteLock {
      * @param idx Lock index.
      */
     private void signalNextWaiter(int writeWaitCnt, int readWaitCnt, int idx) {
+        // Note that we signal all waiters for this stripe. Since not all waiters in this stripe/index belong
+        // to this particular lock, we can't wake up just one of them.
         if (writeWaitCnt == 0) {
             Condition readCondition = readConditions[idx];
 
@@ -496,8 +499,10 @@ public class OffheapReadWriteLock {
     }
 
     /**
+     * Returns index of lock object corresponding to the stripe of this lock address.
+     *
      * @param lock Lock address.
-     * @return Lock monitor object.
+     * @return Lock monitor object that corresponds to the stripe for this lock address.
      */
     private int lockIndex(long lock) {
         return U.safeAbs(U.hash(lock)) & monitorsMask;

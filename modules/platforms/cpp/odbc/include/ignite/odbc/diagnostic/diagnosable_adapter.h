@@ -45,6 +45,18 @@ namespace ignite
             {
             public:
                 /**
+                 * Constructor.
+                 *
+                 * @param connection Pointer to connection. Used to create
+                 *     diagnostic records with connection info.
+                 */
+                DiagnosableAdapter(const Connection* connection = 0) :
+                    connection(connection)
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
                 virtual ~DiagnosableAdapter()
@@ -57,7 +69,7 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual const diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords() const
+                virtual const DiagnosticRecordStorage& GetDiagnosticRecords() const
                 {
                     return diagnosticRecords;
                 }
@@ -67,7 +79,7 @@ namespace ignite
                  *
                  * @return Diagnostic record.
                  */
-                virtual diagnostic::DiagnosticRecordStorage& GetDiagnosticRecords()
+                virtual DiagnosticRecordStorage& GetDiagnosticRecords()
                 {
                     return diagnosticRecords;
                 }
@@ -98,21 +110,16 @@ namespace ignite
                  */
                 virtual void AddStatusRecord(const OdbcError& err);
 
-            protected:
                 /**
-                 * Constructor.
+                 * Add new status record.
                  *
-                 * @param connection Pointer to connection. Used to create
-                 *                   diagnostic records with connection info.
+                 * @param rec Record.
                  */
-                DiagnosableAdapter(const Connection* connection = 0) :
-                    connection(connection)
-                {
-                    // No-op.
-                }
+                virtual void AddStatusRecord(const DiagnosticRecord& rec);
 
+            protected:
                 /** Diagnostic records. */
-                diagnostic::DiagnosticRecordStorage diagnosticRecords;
+                DiagnosticRecordStorage diagnosticRecords;
 
             private:
                 /** Connection. */

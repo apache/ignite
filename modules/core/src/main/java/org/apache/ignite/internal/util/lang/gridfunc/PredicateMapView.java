@@ -70,12 +70,10 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
                 return F.size(map.keySet(), preds);
             }
 
-            @SuppressWarnings({"unchecked"})
             @Override public boolean remove(Object o) {
                 return F.isAll((Entry<K, V>)o, entryPred) && map.entrySet().remove(o);
             }
 
-            @SuppressWarnings({"unchecked"})
             @Override public boolean contains(Object o) {
                 return F.isAll((Entry<K, V>)o, entryPred) && map.entrySet().contains(o);
             }
@@ -92,7 +90,6 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public V get(Object key) {
         return GridFunc.isAll((K)key, preds) ? map.get(key) : null;
     }
@@ -108,7 +105,6 @@ public class PredicateMapView<K, V> extends GridSerializableMap<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public boolean containsKey(Object key) {
         return GridFunc.isAll((K)key, preds) && map.containsKey(key);
     }

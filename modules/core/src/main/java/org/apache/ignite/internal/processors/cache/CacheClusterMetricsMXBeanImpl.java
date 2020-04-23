@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
@@ -111,6 +112,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getSize() {
         return cache.clusterMetrics().getSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return cache.clusterMetrics().getCacheSize();
     }
 
     /** {@inheritDoc} */
@@ -245,7 +251,12 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        throw new UnsupportedOperationException("Cluster metrics can't be cleared. Use local metrics clear instead.");
+        try {
+            cache.context().shared().cache().clearStatistics(Collections.singleton(cache.name()));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */
@@ -276,6 +287,61 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
         return cache.clusterMetrics().getCachePuts();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorPuts() {
+        return cache.clusterMetrics().getEntryProcessorPuts();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorRemovals() {
+        return cache.clusterMetrics().getEntryProcessorRemovals();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorReadOnlyInvocations() {
+        return cache.clusterMetrics().getEntryProcessorReadOnlyInvocations();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorInvocations() {
+        return cache.clusterMetrics().getEntryProcessorInvocations();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorHits() {
+        return cache.clusterMetrics().getEntryProcessorHits();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorHitPercentage() {
+        return cache.clusterMetrics().getEntryProcessorHitPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMissPercentage() {
+        return cache.clusterMetrics().getEntryProcessorMissPercentage();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorMisses() {
+        return cache.clusterMetrics().getEntryProcessorMisses();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorAverageInvocationTime() {
+        return cache.clusterMetrics().getEntryProcessorAverageInvocationTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMinInvocationTime() {
+        return cache.clusterMetrics().getEntryProcessorMinInvocationTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMaxInvocationTime() {
+        return cache.clusterMetrics().getEntryProcessorMaxInvocationTime();
     }
 
     /** {@inheritDoc} */
@@ -364,6 +430,16 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalancedKeys() {
+        return cache.clusterMetrics().getRebalancedKeys();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingKeys() {
+        return cache.clusterMetrics().getEstimatedRebalancingKeys();
+    }
+
+    /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
         return cache.clusterMetrics().getRebalancingPartitionsCount();
     }
@@ -391,5 +467,50 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
         return cache.clusterMetrics().rebalancingStartTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return cache.clusterMetrics().getEstimatedRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return cache.clusterMetrics().getRebalancingStartTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return cache.clusterMetrics().getRebalanceClearingPartitionsLeft();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return cache.clusterMetrics().isValidForReading();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return cache.clusterMetrics().isValidForWriting();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), true);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), false);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

@@ -100,7 +100,6 @@ public final class GridCacheAtomicStampedValue<T, S> extends AtomicDataStructure
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val = (T)in.readObject();
         stamp = (S)in.readObject();

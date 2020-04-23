@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,16 +39,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -62,31 +62,29 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
-    /** */
     private static final int SRVS = 4;
 
     /** */
     private static final int CLIENTS = 3;
 
     /** */
-    private static Map<Integer, Integer> storeMap = new ConcurrentHashMap8<>();
+    private static Map<Integer, Integer> storeMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
-
         return cfg;
+    }
+
+    /** */
+    @Before
+    public void beforeCacheNearReaderUpdateTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -94,19 +92,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
-
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
-
-        client = false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
     }
 
     /** {@inheritDoc} */
@@ -117,35 +103,39 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoBackups() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackup() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackupNearEnabled() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, true));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, true));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOneBackupStoreEnabled() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+    private void runTestGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
         final List<Ignite> putNodes = new ArrayList<>();
 
         for (int i = 0; i < SRVS + CLIENTS - 1; i++)
@@ -158,14 +148,14 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
         logCacheInfo(ccfg);
 
-        getUpdateMultithreaded(ccfg, putNodes, getNodes, null, null);
+        runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, null, null);
 
         if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-            getUpdateMultithreaded(ccfg, putNodes, getNodes, PESSIMISTIC,  REPEATABLE_READ);
+            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, PESSIMISTIC,  REPEATABLE_READ);
 
-            getUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC,  REPEATABLE_READ);
+            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC,  REPEATABLE_READ);
 
-            getUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC,  SERIALIZABLE);
+            runTestGetUpdateMultithreaded(ccfg, putNodes, getNodes, OPTIMISTIC,  SERIALIZABLE);
         }
     }
 
@@ -177,13 +167,13 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @throws Exception If failed.
      */
-    private void getUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg,
+    private void runTestGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg,
         final List<Ignite> putNodes,
         final List<Ignite> getNodes,
         final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-627");
-        
+
         log.info("Execute updates [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
         final Ignite ignite0 = ignite(0);
@@ -343,6 +333,9 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         int backups,
         boolean storeEnabled,
         boolean nearCache) {
+        if (storeEnabled)
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);

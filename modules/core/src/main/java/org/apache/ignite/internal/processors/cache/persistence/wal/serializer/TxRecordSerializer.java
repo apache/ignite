@@ -21,11 +21,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -36,60 +37,69 @@ import org.apache.ignite.transactions.TransactionState;
  * {@link TxRecord} WAL serializer.
  */
 public class TxRecordSerializer {
-    /** Cache shared context. */
-    private GridCacheSharedContext cctx;
-
-    /** Class loader to unmarshal consistent ids. */
-    private ClassLoader classLoader;
+    /** Mvcc version record size. */
+    static final int MVCC_VERSION_SIZE = 8 + 8 + 4;
 
     /**
-     * Create an instance of serializer.
+     * Reads {@link MvccVersion} from given input.
      *
-     * @param cctx Cache shared context.
+     * @param in Data input to read from.
+     * @return Mvcc version.
      */
-    public TxRecordSerializer(GridCacheSharedContext cctx) {
-        this.cctx = cctx;
+    public MvccVersion readMvccVersion(ByteBufferBackedDataInput in) throws IOException {
+        in.ensure(MVCC_VERSION_SIZE);
 
-        classLoader = U.resolveClassLoader(cctx.gridConfig());
+        long coordVer = in.readLong();
+        long cntr = in.readLong();
+        int opCntr = in.readInt();
+
+        return new MvccVersionImpl(coordVer, cntr, opCntr);
+    }
+
+    /**
+     * Writes {@link MvccVersion} to given buffer.
+     *
+     * @param buf Buffer to write.
+     * @param mvccVer Mvcc version.
+     */
+    public void putMvccVersion(ByteBuffer buf, MvccVersion mvccVer) {
+        buf.putLong(mvccVer.coordinatorVersion());
+        buf.putLong(mvccVer.counter());
+
+        buf.putInt(mvccVer.operationCounter());
     }
 
     /**
      * Writes {@link TxRecord} to given buffer.
      *
-     * @param record TxRecord.
+     * @param rec TxRecord.
      * @param buf Byte buffer.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public void writeTxRecord(TxRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        buf.put((byte) record.state().ordinal());
-        RecordV1Serializer.putVersion(buf, record.nearXidVersion(), true);
-        RecordV1Serializer.putVersion(buf, record.writeVersion(), true);
+    public void write(TxRecord rec, ByteBuffer buf) {
+        buf.put((byte)rec.state().ordinal());
+        RecordV1Serializer.putVersion(buf, rec.nearXidVersion(), true);
+        RecordV1Serializer.putVersion(buf, rec.writeVersion(), true);
 
-        if (record.participatingNodes() != null) {
-            buf.putInt(record.participatingNodes().keySet().size());
+        Map<Short, Collection<Short>> participatingNodes = rec.participatingNodes();
 
-            for (Object primaryNode : record.participatingNodes().keySet()) {
-                writeConsistentId(primaryNode, buf);
+        if (participatingNodes != null && !participatingNodes.isEmpty()) {
+            buf.putInt(participatingNodes.size());
 
-                Collection<Object> backupNodes = record.participatingNodes().get(primaryNode);
+            for (Map.Entry<Short, Collection<Short>> e : participatingNodes.entrySet()) {
+                buf.putShort(e.getKey());
+
+                Collection<Short> backupNodes = e.getValue();
 
                 buf.putInt(backupNodes.size());
 
-                for (Object backupNode : backupNodes)
-                    writeConsistentId(backupNode, buf);
+                for (short backupNode : backupNodes)
+                    buf.putShort(backupNode);
             }
         }
-        else {
-            // Put zero size of participating nodes.
-            buf.putInt(0);
-        }
+        else
+            buf.putInt(0); // Put zero size of participating nodes.
 
-        buf.put((byte) (record.remote() ? 1 : 0));
-
-        if (record.remote())
-            writeConsistentId(record.primaryNode(), buf);
-
-        buf.putLong(record.timestamp());
+        buf.putLong(rec.timestamp());
     }
 
     /**
@@ -98,9 +108,8 @@ public class TxRecordSerializer {
      * @param in Input
      * @return TxRecord.
      * @throws IOException In case of fail.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public TxRecord readTxRecord(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
+    public TxRecord readTx(ByteBufferBackedDataInput in) throws IOException {
         byte txState = in.readByte();
         TransactionState state = TransactionState.fromOrdinal(txState);
 
@@ -108,17 +117,18 @@ public class TxRecordSerializer {
         GridCacheVersion writeVer = RecordV1Serializer.readVersion(in, true);
 
         int participatingNodesSize = in.readInt();
-        Map<Object, Collection<Object>> participatingNodes = new HashMap<>(2 * participatingNodesSize);
+
+        Map<Short, Collection<Short>> participatingNodes = U.newHashMap(participatingNodesSize);
 
         for (int i = 0; i < participatingNodesSize; i++) {
-            Object primaryNode = readConsistentId(in);
+            short primaryNode = in.readShort();
 
             int backupNodesSize = in.readInt();
 
-            Collection<Object> backupNodes = new ArrayList<>(backupNodesSize);
+            Collection<Short> backupNodes = new ArrayList<>(backupNodesSize);
 
             for (int j = 0; j < backupNodesSize; j++) {
-                Object backupNode = readConsistentId(in);
+                short backupNode = in.readShort();
 
                 backupNodes.add(backupNode);
             }
@@ -126,55 +136,36 @@ public class TxRecordSerializer {
             participatingNodes.put(primaryNode, backupNodes);
         }
 
-        boolean hasRemote = in.readByte() == 1;
+        long ts = in.readLong();
 
-        Object primaryNode = null;
-
-        if (hasRemote)
-            primaryNode = readConsistentId(in);
-
-        long timestamp = in.readLong();
-
-        return new TxRecord(state, nearXidVer, writeVer, participatingNodes, primaryNode, timestamp);
+        return new TxRecord(state, nearXidVer, writeVer, participatingNodes, ts);
     }
 
     /**
      * Returns size of marshalled {@link TxRecord} in bytes.
      *
-     * @param record TxRecord.
+     * @param rec TxRecord.
      * @return Size of TxRecord in bytes.
-     * @throws IgniteCheckedException In case of fail.
      */
-    public int sizeOfTxRecord(TxRecord record) throws IgniteCheckedException {
+    public int size(TxRecord rec) {
         int size = 0;
 
         size += /* transaction state. */ 1;
-        size += CacheVersionIO.size(record.nearXidVersion(), true);
-        size += CacheVersionIO.size(record.writeVersion(), true);
+        size += CacheVersionIO.size(rec.nearXidVersion(), true);
+        size += CacheVersionIO.size(rec.writeVersion(), true);
 
         size += /* primary nodes count. */ 4;
 
-        if (record.participatingNodes() != null) {
-            for (Object primaryNode : record.participatingNodes().keySet()) {
-                size += /* byte array length. */ 4;
-                size += marshalConsistentId(primaryNode).length;
+        Map<Short, Collection<Short>> participatingNodes = rec.participatingNodes();
 
-                Collection<Object> backupNodes = record.participatingNodes().get(primaryNode);
+        if (participatingNodes != null && !participatingNodes.isEmpty()) {
+            for (Collection<Short> backupNodes : participatingNodes.values()) {
+                size += /* Compact ID. */ 2;
 
                 size += /* size of backup nodes. */ 4;
 
-                for (Object backupNode : backupNodes) {
-                    size += /* byte array length. */ 4;
-                    size += marshalConsistentId(backupNode).length;
-                }
+                size += /* Compact ID. */ 2 * backupNodes.size();
             }
-        }
-
-        size += /* Is primary node exist. */ 1;
-
-        if (record.remote()) {
-            size += /* byte array length. */ 4;
-            size += marshalConsistentId(record.primaryNode()).length;
         }
 
         size += /* Timestamp */ 8;
@@ -183,45 +174,89 @@ public class TxRecordSerializer {
     }
 
     /**
-     * Marshal consistent id to byte array.
+     * Reads {@link MvccTxRecord} from given input.
      *
-     * @param consistentId Consistent id.
-     * @return Marshalled byte array.
-     * @throws IgniteCheckedException In case of fail.
-     */
-    private byte[] marshalConsistentId(Object consistentId) throws IgniteCheckedException {
-        return cctx.marshaller().marshal(consistentId);
-    }
-
-    /**
-     * Read consistent id from given input.
-     *
-     * @param in Input.
-     * @return Consistent id.
+     * @param in Input
+     * @return MvccTxRecord.
      * @throws IOException In case of fail.
-     * @throws IgniteCheckedException In case of fail.
      */
-    private Object readConsistentId(ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
-        int len = in.readInt();
-        in.ensure(len);
+    public MvccTxRecord readMvccTx(ByteBufferBackedDataInput in) throws IOException {
+        byte txState = in.readByte();
+        TransactionState state = TransactionState.fromOrdinal(txState);
 
-        byte[] content = new byte[len];
-        in.readFully(content);
+        GridCacheVersion nearXidVer = RecordV1Serializer.readVersion(in, true);
+        GridCacheVersion writeVer = RecordV1Serializer.readVersion(in, true);
+        MvccVersion mvccVer = readMvccVersion(in);
 
-        return cctx.marshaller().unmarshal(content, classLoader);
+        int participatingNodesSize = in.readInt();
+
+        Map<Short, Collection<Short>> participatingNodes = U.newHashMap(participatingNodesSize);
+
+        for (int i = 0; i < participatingNodesSize; i++) {
+            short primaryNode = in.readShort();
+
+            int backupNodesSize = in.readInt();
+
+            Collection<Short> backupNodes = new ArrayList<>(backupNodesSize);
+
+            for (int j = 0; j < backupNodesSize; j++) {
+                short backupNode = in.readShort();
+
+                backupNodes.add(backupNode);
+            }
+
+            participatingNodes.put(primaryNode, backupNodes);
+        }
+
+        long ts = in.readLong();
+
+        return new MvccTxRecord(state, nearXidVer, writeVer, participatingNodes, mvccVer, ts);
     }
 
     /**
-     * Write consistent id to given buffer.
+     * Writes {@link MvccTxRecord} to given buffer.
      *
-     * @param consistentId Consistent id.
+     * @param rec MvccTxRecord.
      * @param buf Byte buffer.
      * @throws IgniteCheckedException In case of fail.
      */
-    private void writeConsistentId(Object consistentId, ByteBuffer buf) throws IgniteCheckedException {
-        byte[] content = marshalConsistentId(consistentId);
+    public void write(MvccTxRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        buf.put((byte)rec.state().ordinal());
 
-        buf.putInt(content.length);
-        buf.put(content);
+        RecordV1Serializer.putVersion(buf, rec.nearXidVersion(), true);
+        RecordV1Serializer.putVersion(buf, rec.writeVersion(), true);
+        putMvccVersion(buf, rec.mvccVersion());
+
+        Map<Short, Collection<Short>> participatingNodes = rec.participatingNodes();
+
+        if (participatingNodes != null && !participatingNodes.isEmpty()) {
+            buf.putInt(participatingNodes.size());
+
+            for (Map.Entry<Short, Collection<Short>> e : participatingNodes.entrySet()) {
+                buf.putShort(e.getKey());
+
+                Collection<Short> backupNodes = e.getValue();
+
+                buf.putInt(backupNodes.size());
+
+                for (short backupNode : backupNodes)
+                    buf.putShort(backupNode);
+            }
+        }
+        else
+            buf.putInt(0); // Put zero size of participating nodes.
+
+        buf.putLong(rec.timestamp());
+    }
+
+    /**
+     * Returns size of marshalled {@link TxRecord} in bytes.
+     *
+     * @param rec TxRecord.
+     * @return Size of TxRecord in bytes.
+     * @throws IgniteCheckedException In case of fail.
+     */
+    public int size(MvccTxRecord rec) throws IgniteCheckedException {
+       return size((TxRecord)rec) + MVCC_VERSION_SIZE;
     }
 }

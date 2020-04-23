@@ -27,9 +27,6 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,6 +35,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -51,9 +49,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsInherite
  * {@link IgfsMetaManager} test case.
  */
 public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
-    /** Test IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Meta-information cache name. */
     private static final String META_CACHE_NAME = "replicated";
 
@@ -77,12 +72,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheConfiguration(cacheConfiguration(META_CACHE_NAME));
@@ -94,7 +83,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -126,17 +115,12 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         startGrids(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test properties management in meta-cache.
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("NullableProblems")
+    @Test
     public void testUpdateProperties() throws Exception {
         assertEmpty(mgr.directoryListing(ROOT_ID));
 
@@ -225,6 +209,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStructure() throws Exception {
         IgfsEntryInfo rootInfo = IgfsUtils.createDirectory(ROOT_ID);
 

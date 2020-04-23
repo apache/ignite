@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -28,15 +27,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Test;
 
 /**
  *
@@ -46,27 +44,12 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(200 * 1024 * 1024);
-        memPlcCfg.setMaxSize(200 * 1024 * 1024);
-
-        dbCfg.setPageSize(1024);
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
-
-        if ("client".equals(gridName))
-            cfg.setClientMode(true);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -83,7 +66,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -92,12 +75,13 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
         System.clearProperty(GridCacheDatabaseSharedManager.IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC);
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRestartAndCreate() throws Exception {
         startGrids(3);
 
@@ -110,17 +94,25 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         ccfg1.setName("cache1");
         ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg1.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg1.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg1.setRebalanceMode(CacheRebalanceMode.NONE);
 
         CacheConfiguration ccfg2 = new CacheConfiguration();
 
         ccfg2.setName("cache2");
         ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg2.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg2.setIndexedTypes(Integer.class, Value.class);
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg2.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg2.setRebalanceMode(CacheRebalanceMode.NONE);
 
         CacheConfiguration ccfg3 = new CacheConfiguration();
 
@@ -165,6 +157,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheSavingOnNewNode() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -202,13 +195,6 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
         for (int i = 0; i < 160; i++)
             assertEquals(i, cache.get(i));
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

@@ -46,6 +46,12 @@
             </bean>
         </property>
 
+        <property name="sqlSchemas">
+            <array>
+                <value>PREDEFINED_CLIENT_SCHEMA</value>
+            </array>
+        </property>
+
         <property name="peerClassLoadingEnabled" value="true"/>
     </bean>
 </beans>

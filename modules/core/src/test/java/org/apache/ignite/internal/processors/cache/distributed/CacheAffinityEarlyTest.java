@@ -30,10 +30,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -54,17 +52,9 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
     /** Futs. */
     private Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT);
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -79,6 +69,7 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartNodes() throws Exception {
         for (int i = 0; i < iters; i++) {
             try {
@@ -156,7 +147,7 @@ public class CacheAffinityEarlyTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setBackups(1);
         ccfg.setNearConfiguration(null);
 

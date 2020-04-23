@@ -18,16 +18,23 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsInputStream;
@@ -41,18 +48,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.ThreadLocalRandom8;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -77,9 +74,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
     /** IGFS name. */
     private static final String IGFS_NAME = "test";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** IGFS management port */
     private static int mgmtPort;
@@ -144,11 +138,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setMetaCacheConfiguration(metaCfg);
         igfsCfg.setDataCacheConfiguration(dataCfg);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         if (memIgfsdDataPlcSetter != null)
@@ -174,6 +163,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitioned() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -186,6 +176,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocated() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -198,6 +189,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicated() throws Exception {
         cacheMode = REPLICATED;
 
@@ -209,6 +201,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedOversize() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -221,6 +214,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedOversize() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -233,6 +227,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedOversize() throws Exception {
         cacheMode = REPLICATED;
 
@@ -244,6 +239,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionedPreload() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
@@ -256,6 +252,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testColocatedPreload() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
@@ -390,20 +387,20 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkOversize() throws Exception {
-        final long maxSize = 32 * 1024 * 1024;
+        final long maxSize = 32L * 1024 * 1024;
 
         memIgfsdDataPlcSetter = new IgniteInClosure<IgniteConfiguration>() {
             @Override public void apply(IgniteConfiguration cfg) {
                 String memPlcName = "igfsDataMemPlc";
 
-                cfg.setMemoryConfiguration(new MemoryConfiguration().setMemoryPolicies(
-                    new MemoryPolicyConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(
+                    new DataRegionConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
 
                 FileSystemConfiguration igfsCfg = cfg.getFileSystemConfiguration()[0];
 
-                igfsCfg.getDataCacheConfiguration().setMemoryPolicyName(memPlcName);
+                igfsCfg.getDataCacheConfiguration().setDataRegionName(memPlcName);
 
-                cfg.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setMemoryPolicyName(memPlcName));
+                cfg.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setDataRegionName(memPlcName));
             }
         };
 
@@ -597,7 +594,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private Collection<IgfsFile> write() throws Exception {
         Collection<IgfsFile> res = new HashSet<>(FILES_CNT, 1.0f);
 
-        ThreadLocalRandom8 rand = ThreadLocalRandom8.current();
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
 
         for (int i = 0; i < FILES_CNT; i++) {
             // Create empty file locally.

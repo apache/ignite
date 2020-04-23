@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * REST log command handler tests.
@@ -64,13 +65,12 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         Files.delete(Paths.get(igniteHome + "/work/log/" + "test.log"));
         Files.delete(Paths.get(igniteHome + "/work/log/" + "ignite.log"));
         Files.delete(Paths.get(igniteHome + "/work/log/"));
-
-        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSupportedCommands() throws Exception {
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
 
@@ -83,6 +83,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnSupportedCommands() throws Exception {
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
 
@@ -95,6 +96,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsync() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
@@ -116,6 +118,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsyncForNonExistingLines() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
@@ -137,6 +140,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsyncFromAndToNotSet() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
@@ -155,6 +159,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsyncPathNotSet() throws Exception {
         GridTestKernalContext ctx = newContext();
         ctx.config().setIgniteHome(igniteHome);
@@ -174,6 +179,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsyncPathIsOutsideIgniteHome() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
@@ -195,6 +201,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsyncFromGreaterThanTo() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);
@@ -216,6 +223,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testHandleAsyncFromEqualTo() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setIgniteHome(igniteHome);

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.parseSubFolderName;
 
@@ -46,16 +48,13 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     private static final String CACHE_NAME = "dummy";
 
     /** Key to store in previous version of ignite */
-    private static final String KEY = "ObjectFromPast";
+    private static final String KEY = "StringFromPrevVersion";
 
     /** Value to store in previous version of ignite */
-    private static final String VAL = "ValueFromPast";
+    private static final String VAL = "ValueFromPrevVersion";
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        // No-op. super.afterTest();
-        stopAllGrids();
-    }
+    /** Key to store in previous version of ignite */
+    private static final String KEY_OBJ = "ObjectFromPrevVersion";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -72,6 +71,17 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      *
      * @throws Exception if failed.
      */
+    public void ignored_testFoldersReuseCompatibility_2_3() throws Exception {
+        runFoldersReuse("2.3.0");
+    }
+
+    /**
+     * Test startup of current ignite version using DB storage folder from previous version of Ignite. Expected to start
+     * successfully with existing DB
+     *
+     * @throws Exception if failed.
+     */
+    @Test
     public void testFoldersReuseCompatibility_2_2() throws Exception {
         runFoldersReuse("2.2.0");
     }
@@ -82,6 +92,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testFoldersReuseCompatibility_2_1() throws Exception {
         runFoldersReuse("2.1.0");
     }
@@ -94,9 +105,8 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @throws Exception if failed.
      */
     private void runFoldersReuse(String ver) throws Exception {
-        final IgniteEx grid = startGrid(1, ver, new ConfigurationClosure(), new PostStartupClosure());
+        final IgniteEx oldVer = startGrid(1, ver, new ConfigurationClosure(), new PostStartupClosure());
 
-        grid.close();
         stopAllGrids();
 
         IgniteEx ignite = startGrid(0);
@@ -109,6 +119,9 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
         assertEquals(VAL, ignite.cache(CACHE_NAME).get(KEY));
 
+        final PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted actual = (PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
+        assertEquals(VAL, actual.data);
+
         assertNodeIndexesInFolder();// should not create any new style directories
 
         stopAllGrids();
@@ -119,7 +132,22 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             ignite.active(true);
-            ignite.getOrCreateCache(CACHE_NAME).put(KEY, VAL);
+
+            final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
+            cache.put(KEY, VAL);
+            cache.put("1", "2");
+            cache.put(1, 2);
+            cache.put(1L, 2L);
+            cache.put(PersistenceBasicCompatibilityTest.TestEnum.A, "Enum_As_Key");
+            cache.put("Enum_As_Value", PersistenceBasicCompatibilityTest.TestEnum.B);
+            cache.put(PersistenceBasicCompatibilityTest.TestEnum.C, PersistenceBasicCompatibilityTest.TestEnum.C);
+
+            cache.put("Serializable", new PersistenceBasicCompatibilityTest.TestSerializable(42));
+            cache.put(new PersistenceBasicCompatibilityTest.TestSerializable(42), "Serializable_As_Key");
+            cache.put("Externalizable", new PersistenceBasicCompatibilityTest.TestExternalizable(42));
+            cache.put(new PersistenceBasicCompatibilityTest.TestExternalizable(42), "Externalizable_As_Key");
+            cache.put(KEY_OBJ, new PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted(VAL));
+
         }
     }
 
@@ -150,7 +178,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         final MemoryConfiguration memCfg = new MemoryConfiguration();
         final MemoryPolicyConfiguration memPolCfg = new MemoryPolicyConfiguration();
 
-        memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
+        memPolCfg.setMaxSize(32L * 1024 * 1024); // we don't need much memory for this test
         memCfg.setMemoryPolicies(memPolCfg);
         cfg.setMemoryConfiguration(memCfg);
     }

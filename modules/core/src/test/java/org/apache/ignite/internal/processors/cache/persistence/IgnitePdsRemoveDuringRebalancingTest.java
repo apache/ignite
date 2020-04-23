@@ -25,20 +25,17 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -46,47 +43,28 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  *
  */
 public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration()
+            new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setBackups(1)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setRebalanceMode(CacheRebalanceMode.SYNC)
         );
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-        dbCfg.setPageSize(1024);
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
-        memPlcCfg.setSwapFilePath(DFLT_STORE_DIR);
-
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-        );
+            .setPageSize(1024)
+            .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-            .setIpFinder(IP_FINDER)
-        );
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -95,7 +73,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
@@ -104,7 +82,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         G.stopAll(true);
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         U.delete(new File(U.getIgniteHome(), DFLT_STORE_DIR));
     }
@@ -112,19 +90,20 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRemovesDuringRebalancing() throws Exception {
         IgniteEx ig = startGrid(0);
 
         ig.active(true);
 
-        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(null)) {
+        try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
             for (int i = 0; i < 100_000; i++)
                 streamer.addData(i, i);
         }
 
-        final IgniteCache<Object, Object> cache = ig.cache(null);
+        final IgniteCache<Object, Object> cache = ig.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -139,7 +118,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
 
         IgniteEx another = grid(1);
 
-        IgniteCache<Object, Object> cache1 = another.cache(null);
+        IgniteCache<Object, Object> cache1 = another.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 100_000; i++)
             assertNull(cache1.localPeek(i));

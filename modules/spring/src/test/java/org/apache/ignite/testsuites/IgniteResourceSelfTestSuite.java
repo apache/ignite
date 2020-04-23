@@ -17,30 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.resource.GridLoggerInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfTest;
 import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Ignite resource injection test Suite.
  */
-@SuppressWarnings({"ProhibitedExceptionDeclared"})
-public class IgniteResourceSelfTestSuite extends TestSuite {
-    /**
-     * @return Resource injection test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new IgniteTestSuite("Ignite Resource Injection Test Suite");
-
-        suite.addTestSuite(GridResourceProcessorSelfTest.class);
-        suite.addTestSuite(GridLoggerInjectionSelfTest.class);
-        suite.addTestSuite(GridServiceInjectionSelfTest.class);
-        suite.addTestSuite(GridSpringResourceInjectionSelfTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridResourceProcessorSelfTest.class,
+    GridLoggerInjectionSelfTest.class,
+    GridServiceInjectionSelfTest.class,
+    GridSpringResourceInjectionSelfTest.class,
+})
+public class IgniteResourceSelfTestSuite {
 }

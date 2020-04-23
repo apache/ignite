@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 
 /**
  * Special field set iterator based on database result set.
@@ -31,20 +32,51 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private transient MvccQueryTracker mvccTracker;
+
+    /** Connection. */
+    private final H2PooledConnection conn;
+
     /**
      * @param data Data.
+     * @param mvccTracker Mvcc tracker.
+     * @param pageSize Page size.
+     * @param conn Connection.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data) throws IgniteCheckedException {
-        super(data, false, true);
+    public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker,
+        H2PooledConnection conn,
+        int pageSize,
+        IgniteLogger log, IgniteH2Indexing h2)
+        throws IgniteCheckedException {
+        super(data, pageSize, log, h2);
+
+        assert conn != null;
+
+        this.mvccTracker = mvccTracker;
+        this.conn = conn;
     }
 
     /** {@inheritDoc} */
     @Override protected List<?> createRow() {
-        ArrayList<Object> res = new ArrayList<>(row.length);
+        List<Object> res = new ArrayList<>(row.length);
 
         Collections.addAll(res, row);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onClose() throws IgniteCheckedException {
+        try {
+            super.onClose();
+        }
+        finally {
+            conn.close();
+
+            if (mvccTracker != null)
+                mvccTracker.onDone();
+        }
     }
 }

@@ -19,37 +19,32 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.io.Serializable;
 import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test entry count. */
-    public static final int ENTRY_CNT = 1_000_000;
+    public static final int ENTRY_CNT = SF.applyLB(300_000, 100_000);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -58,22 +53,14 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(50L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(1024)
+            .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        memCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-        memCfg.setPageSize(1024);
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(50 * 1024 * 1024);
-        memPlcCfg.setMaxSize(50 * 1024 * 1024);
-
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration<DbKey, DbValue> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -84,13 +71,6 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
-        cfg.setDiscoverySpi(
-            new TcpDiscoverySpi()
-                .setIpFinder(IP_FINDER)
-        );
-
         cfg.setMarshaller(null);
 
         return cfg;
@@ -98,7 +78,7 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         stopAllGrids();
 
@@ -109,12 +89,13 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageEvictionSql() throws Exception {
         IgniteEx ig = grid(0);
 
@@ -131,14 +112,17 @@ public class IgnitePdsPageEvictionTest extends GridCommonAbstractTest {
 
         IgniteCache<DbKey, DbValue> cache = ignite(0).cache(CACHE_NAME);
 
-        for (int i = 0; i < ENTRY_CNT; i++) {
-            assertEquals(Long.MAX_VALUE - i, cache.get(new DbKey(i)).lVal);
+        int i = 0;
+        for (Cache.Entry<DbKey, DbValue> entry : cache.query(new ScanQuery<DbKey, DbValue>())) {
+            assertEquals(Long.MAX_VALUE - entry.getKey().val, entry.getValue().lVal);
 
             if (i > 0 && i % 10_000 == 0)
                 info("Done get: " + i);
+
+            i++;
         }
 
-        for (int i = 0; i < ENTRY_CNT; i++) {
+        for (i = 0; i < ENTRY_CNT; i++) {
             List<List<?>> rows = cache.query(
                 new SqlFieldsQuery("select lVal from DbValue where iVal=?").setArgs(i)
             ).getAll();

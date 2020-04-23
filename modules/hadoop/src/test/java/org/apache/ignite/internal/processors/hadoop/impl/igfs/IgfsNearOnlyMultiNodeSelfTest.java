@@ -39,10 +39,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -60,23 +58,16 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Group size. */
     public static final int GRP_SIZE = 128;
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Node count. */
-    private int cnt;
+    private static int cnt;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         startGrids(nodeCount());
-
-        grid(0).createNearCache("data", new NearCacheConfiguration());
-
-        grid(0).createNearCache("meta", new NearCacheConfiguration());
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         G.stopAll(true);
     }
 
@@ -84,13 +75,13 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
-
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setName("igfs");
-        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data"));
-        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta"));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data")
+            .setNearConfiguration(new NearCacheConfiguration()));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta")
+            .setNearConfiguration(new NearCacheConfiguration()));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -158,7 +149,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     protected URI getFileSystemURI(int grid) {
         try {
-            return new URI("igfs://127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
+            return new URI("igfs://igfs@127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -166,14 +157,15 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testContentsConsistency() throws Exception {
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<IgniteBiTuple<String, Long>> files = F.asList(
                 F.t("/dir1/dir2/file1", 1024L),
-                F.t("/dir1/dir2/file2", 8 * 1024L),
-                F.t("/dir1/file1", 1024 * 1024L),
-                F.t("/dir1/file2", 5 * 1024 * 1024L),
-                F.t("/file1", 64 * 1024L + 13),
+                F.t("/dir1/dir2/file2", 8L * 1024),
+                F.t("/dir1/file1", 1024L * 1024),
+                F.t("/dir1/file2", 5L * 1024 * 1024),
+                F.t("/file1", 64L * 1024 + 13),
                 F.t("/file2", 13L),
                 F.t("/file3", 123764L)
             );

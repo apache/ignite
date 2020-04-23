@@ -248,9 +248,46 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
 
         Class paramCls = val.getClass();
 
+        String mtdName = sb.toString();
+
+        boolean res = setWithMethod(obj, mtdName, val, paramCls);
+
+        if (!res) {
+            if (Byte.class == paramCls)
+                paramCls = byte.class;
+            else if (Short.class == paramCls)
+                paramCls = short.class;
+            else if (Integer.class == paramCls)
+                paramCls = int.class;
+            else if (Long.class == paramCls)
+                paramCls = long.class;
+            else if (Float.class == paramCls)
+                paramCls = float.class;
+            else if (Double.class == paramCls)
+                paramCls = double.class;
+            else if (Character.class == paramCls)
+                paramCls = char.class;
+            else if (Boolean.class == paramCls)
+                paramCls = boolean.class;
+            else
+                return false;
+
+            res = setWithMethod(obj, mtdName, val, paramCls);
+        }
+        return res;
+    }
+
+    /**
+     * @param obj Object to initialize with properties.
+     * @param mtdName Method name.
+     * @param val Value to set.
+     * @param paramCls Value class.
+     * @return {@code True} if property was set.
+     */
+    private boolean setWithMethod(T obj, String mtdName, Serializable val, Class paramCls) {
         while (paramCls != null) {
             try {
-                Method mtd = obj.getClass().getMethod(sb.toString(), paramCls);
+                Method mtd = obj.getClass().getMethod(mtdName, paramCls);
 
                 mtd.invoke(obj, val);
 
@@ -268,7 +305,7 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
         // Try interfaces.
         for (Class<?> itf : val.getClass().getInterfaces()) {
             try {
-                Method mtd = obj.getClass().getMethod(sb.toString(), itf);
+                Method mtd = obj.getClass().getMethod(mtdName, itf);
 
                 mtd.invoke(obj, val);
 

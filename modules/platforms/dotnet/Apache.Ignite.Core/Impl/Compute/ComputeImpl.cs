@@ -65,6 +65,12 @@ namespace Apache.Ignite.Core.Impl.Compute
         /** */
         private const int OpExecNative = 8;
 
+        /** */
+        private const int OpWithNoResultCache = 9;
+
+        /** */
+        private const int OpWithExecutor = 10;
+
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
 
@@ -118,6 +124,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
+        /// Disables caching for the next executed task in the current thread.
+        /// </summary>
+        public void WithNoResultCache()
+        {
+            DoOutInOp(OpWithNoResultCache);
+        }
+
+        /// <summary>
         /// Sets keep-binary flag for the next executed Java task on this projection in the current
         /// thread so that task argument passed to Java and returned task results will not be
         /// deserialized.
@@ -125,6 +139,18 @@ namespace Apache.Ignite.Core.Impl.Compute
         public void WithKeepBinary()
         {
             _keepBinary.Value = true;
+        }
+
+        /// <summary>
+        /// Returns a new <see cref="ComputeImpl"/> instance associated with a specified executor.
+        /// </summary>
+        /// <param name="executorName">Executor name.</param>
+        /// <returns>New <see cref="ComputeImpl"/> instance associated with a specified executor.</returns>
+        public ComputeImpl WithExecutor(string executorName)
+        {
+            var target = DoOutOpObject(OpWithExecutor, w => w.WriteString(executorName));
+
+            return new ComputeImpl(target, _prj, _keepBinary.Value);
         }
 
         /// <summary>

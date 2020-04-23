@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Task instance execution test.
@@ -48,6 +49,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

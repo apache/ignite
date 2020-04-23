@@ -19,8 +19,9 @@ package org.apache.ignite.cache.hibernate;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -54,9 +55,6 @@ public class HibernateAccessStrategyFactory {
     /** Hibernate L2 cache Ignite instance name property name. */
     public static final String IGNITE_INSTANCE_NAME_PROPERTY = "org.apache.ignite.hibernate.ignite_instance_name";
 
-    /** Default cache property name. */
-    public static final String DFLT_CACHE_NAME_PROPERTY = "org.apache.ignite.hibernate.default_cache";
-
     /** Property prefix used to specify region name to cache name mapping. */
     public static final String REGION_CACHE_PROPERTY = "org.apache.ignite.hibernate.region_cache.";
 
@@ -66,13 +64,16 @@ public class HibernateAccessStrategyFactory {
     /** */
     public static final String GRID_CONFIG_PROPERTY = "org.apache.ignite.hibernate.grid_config";
 
+    /** Disable atomicity check when caches are created lazily. */
+    public static final String VERIFY_ATOMICITY = "org.apache.ignite.hibernate.verify_atomicity";
+
+    /** When set, all cache names in ignite will be fetched using the specified prefix. */
+    public static final String CACHE_PREFIX = "org.apache.ignite.hibernate.cache_prefix";
+
     /** Grid providing caches. */
     private Ignite ignite;
 
-    /** Default cache. */
-    private HibernateCacheProxy dfltCache;
-
-    /** Region name to cache name mapping. */
+    /** Region name to cache name (without prefix) mapping. */
     private final Map<String, String> regionCaches = new HashMap<>();
 
     /** */
@@ -80,6 +81,12 @@ public class HibernateAccessStrategyFactory {
 
     /** */
     private final ConcurrentHashMap<String, ThreadLocal> threadLocMap = new ConcurrentHashMap<>();
+
+    /** */
+    private String cachePrefix;
+
+    /** */
+    private boolean verifyAtomicity = true;
 
     /**
      * @param keyTransformer Key transformer.
@@ -91,51 +98,43 @@ public class HibernateAccessStrategyFactory {
     }
 
     /**
-     * @param props Properties.
+     * @param cfgValues {@link Map} of config values.
      */
-    public void start(Properties props)  {
-        String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
-        String igniteInstanceName = props.getProperty(IGNITE_INSTANCE_NAME_PROPERTY);
+    public void start(Map<Object, Object> cfgValues)  {
+        cachePrefix = cfgValues.getOrDefault(CACHE_PREFIX, "").toString();
 
-        if (igniteInstanceName == null)
-            igniteInstanceName = props.getProperty(GRID_NAME_PROPERTY);
+        verifyAtomicity = Boolean.valueOf(cfgValues.getOrDefault(VERIFY_ATOMICITY, verifyAtomicity).toString());
+
+        Object gridCfg = cfgValues.get(GRID_CONFIG_PROPERTY);
+
+        Object igniteInstanceName = cfgValues.get(IGNITE_INSTANCE_NAME_PROPERTY);
 
         if (gridCfg != null) {
             try {
-                ignite = G.start(gridCfg);
+                ignite = G.start(gridCfg.toString());
             }
             catch (IgniteException e) {
                 throw eConverter.convert(e);
             }
         }
         else
-            ignite = Ignition.ignite(igniteInstanceName);
+            ignite = Ignition.ignite(igniteInstanceName == null ? null : igniteInstanceName.toString());
 
-        for (Map.Entry<Object, Object> prop : props.entrySet()) {
-            String key = prop.getKey().toString();
+        for (Map.Entry entry : cfgValues.entrySet()) {
+            String key = entry.getKey().toString();
 
             if (key.startsWith(REGION_CACHE_PROPERTY)) {
                 String regionName = key.substring(REGION_CACHE_PROPERTY.length());
 
-                String cacheName = prop.getValue().toString();
+                String cacheName = entry.getValue().toString();
 
-                if (((IgniteKernal)ignite).getCache(cacheName) == null)
+                if (((IgniteKernal) ignite).getCache(cachePrefix + cacheName) == null) {
                     throw new IllegalArgumentException("Cache '" + cacheName + "' specified for region '" + regionName + "' " +
                         "is not configured.");
+                }
 
                 regionCaches.put(regionName, cacheName);
             }
-        }
-
-        String dfltCacheName = props.getProperty(DFLT_CACHE_NAME_PROPERTY);
-
-        if (dfltCacheName != null) {
-            IgniteInternalCache<Object, Object> dfltCache = ((IgniteKernal)ignite).getCache(dfltCacheName);
-
-            if (dfltCache == null)
-                throw new IllegalArgumentException("Cache specified as default is not configured: " + dfltCacheName);
-
-            this.dfltCache = new HibernateCacheProxy(dfltCache, keyTransformer);
         }
 
         IgniteLogger log = ignite.log().getLogger(getClass());
@@ -158,19 +157,48 @@ public class HibernateAccessStrategyFactory {
     HibernateCacheProxy regionCache(String regionName) {
         String cacheName = regionCaches.get(regionName);
 
-        if (cacheName == null) {
-            if (dfltCache != null)
-                return dfltCache;
-
+        if (cacheName == null)
             cacheName = regionName;
+
+        cacheName = cachePrefix + cacheName;
+
+        Supplier<IgniteInternalCache<Object, Object>> lazyCache = new LazyCacheSupplier(cacheName, regionName);
+
+        return new HibernateCacheProxy(cacheName, lazyCache, keyTransformer);
+    }
+
+    /** */
+    private class LazyCacheSupplier implements Supplier<IgniteInternalCache<Object, Object>> {
+        /** */
+        private final AtomicReference<IgniteInternalCache<Object, Object>> reference = new AtomicReference<>();
+
+        /** */
+        private final String cacheName;
+
+        /** */
+        private final String regionName;
+
+        /** */
+        private LazyCacheSupplier(String cacheName, String regionName) {
+            this.cacheName = cacheName;
+            this.regionName = regionName;
         }
 
-        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+        /** {@inheritDoc} */
+        @Override public IgniteInternalCache<Object, Object> get() {
+            IgniteInternalCache<Object, Object> cache = reference.get();
 
-        if (cache == null)
-            throw new IllegalArgumentException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");
+            if (cache == null) {
+                cache = ((IgniteKernal)ignite).getCache(cacheName);
 
-        return new HibernateCacheProxy(cache, keyTransformer);
+                if (cache == null)
+                    throw new IllegalArgumentException("Cache '" + cacheName + "' for region '" + regionName + "' is not configured.");
+
+                reference.compareAndSet(null, cache);
+            }
+
+            return cache;
+        }
     }
 
     /**
@@ -203,9 +231,12 @@ public class HibernateAccessStrategyFactory {
      * @return Access strategy implementation.
      */
     HibernateAccessStrategyAdapter createReadWriteStrategy(HibernateCacheProxy cache) {
-        if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
-            throw new IllegalArgumentException("Hibernate READ-WRITE access strategy must have Ignite cache with " +
-                "'TRANSACTIONAL' atomicity mode: " + cache.name());
+        if (verifyAtomicity) {
+            if (cache.configuration().getAtomicityMode() != TRANSACTIONAL) {
+                throw new IllegalArgumentException("Hibernate READ-WRITE access strategy must have Ignite cache with " +
+                    "'TRANSACTIONAL' atomicity mode: " + cache.name());
+            }
+        }
 
         return new HibernateReadWriteAccessStrategy(ignite, cache, threadLoc, eConverter);
     }
@@ -215,19 +246,22 @@ public class HibernateAccessStrategyFactory {
      * @return Access strategy implementation.
      */
     HibernateAccessStrategyAdapter createTransactionalStrategy(HibernateCacheProxy cache) {
-        if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
-            throw new IllegalArgumentException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
-                "'TRANSACTIONAL' atomicity mode: " + cache.name());
+        if (verifyAtomicity) {
+            if (cache.configuration().getAtomicityMode() != TRANSACTIONAL) {
+                throw new IllegalArgumentException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
+                    "'TRANSACTIONAL' atomicity mode: " + cache.name());
+            }
 
-        TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
+            TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
 
-        if (txCfg == null ||
-            (txCfg.getTxManagerFactory() == null
-                && txCfg.getTxManagerLookupClassName() == null
-                && cache.configuration().getTransactionManagerLookupClassName() == null)) {
-            throw new IllegalArgumentException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
-                "Factory<TransactionManager> configured (see IgniteConfiguration." +
-                "getTransactionConfiguration().setTxManagerFactory()): " + cache.name());
+            if (txCfg == null ||
+                (txCfg.getTxManagerFactory() == null
+                    && txCfg.getTxManagerLookupClassName() == null
+                    && cache.configuration().getTransactionManagerLookupClassName() == null)) {
+                throw new IllegalArgumentException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
+                    "Factory<TransactionManager> configured (see IgniteConfiguration." +
+                    "getTransactionConfiguration().setTxManagerFactory()): " + cache.name());
+            }
         }
 
         return new HibernateTransactionalAccessStrategy(ignite, cache, eConverter);

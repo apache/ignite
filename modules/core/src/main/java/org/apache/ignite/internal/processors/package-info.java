@@ -16,7 +16,12 @@
  */
 
 /**
- * <!-- Package description. -->
- * TODO.
+ * Package with Apache Ignite internal Processors.
+ * Processor is Ignite component with lifecycle associated with node lifecycle.
+ *
+ * See also
+ * <a href='https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/'>Package Readme</a>
+ *
  */
+
 package org.apache.ignite.internal.processors;

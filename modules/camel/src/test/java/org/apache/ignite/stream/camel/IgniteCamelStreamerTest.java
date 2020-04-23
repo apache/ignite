@@ -48,7 +48,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -56,6 +58,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -95,6 +98,11 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
     @SuppressWarnings("unchecked")
     @Override public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
@@ -127,6 +135,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception
      */
+    @Test
     public void testSendOneEntryPerMessage() throws Exception {
         streamer.setSingleTupleExtractor(singleTupleExtractor());
 
@@ -147,6 +156,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception
      */
+    @Test
     public void testMultipleEntriesInOneMessage() throws Exception {
         streamer.setMultipleTupleExtractor(multipleTupleExtractor());
 
@@ -167,6 +177,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception
      */
+    @Test
     public void testResponseProcessorIsCalled() throws Exception {
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setResponseProcessor(new Processor() {
@@ -195,6 +206,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception
      */
+    @Test
     public void testUserSpecifiedCamelContext() throws Exception {
         final AtomicInteger cnt = new AtomicInteger();
 
@@ -228,6 +240,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception
      */
+    @Test
     public void testUserSpecifiedCamelContextWithPropertyPlaceholders() throws Exception {
         // Create a CamelContext with a custom property placeholder.
         CamelContext context = new DefaultCamelContext();
@@ -266,6 +279,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception
      */
+    @Test
     public void testInvalidEndpointUri() throws Exception {
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setEndpointUri("abc");

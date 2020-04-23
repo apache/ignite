@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Client
     using System;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Ignite thin client exception.
@@ -29,17 +28,17 @@ namespace Apache.Ignite.Core.Client
     public class IgniteClientException : IgniteException
     {
         /** Error code field. */
-        private const string ErrorCodeField = "ErrorCode";
+        private const string ErrorCodeField = "StatusCode";
 
         /** Error code. */
-        private readonly int _errorCode = (int) ClientStatus.Fail;
+        private readonly ClientStatusCode _statusCode = ClientStatusCode.Fail;
 
         /// <summary>
-        /// Gets the error code.
+        /// Gets the status code code.
         /// </summary>
-        public int ErrorCode
+        public ClientStatusCode StatusCode
         {
-            get { return _errorCode; }
+            get { return _statusCode; }
         }
 
         /// <summary>
@@ -74,10 +73,11 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
-        /// <param name="errorCode">The error code.</param>
-        public IgniteClientException(string message, Exception cause, int errorCode) : base(message, cause)
+        /// <param name="statusCode">The error code.</param>
+        public IgniteClientException(string message, Exception cause, ClientStatusCode statusCode) 
+            : base(message, cause)
         {
-            _errorCode = errorCode;
+            _statusCode = statusCode;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Client
         /// <param name="ctx">Streaming context.</param>
         protected IgniteClientException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
         {
-            _errorCode = info.GetInt32(ErrorCodeField);
+            _statusCode = (ClientStatusCode) info.GetInt32(ErrorCodeField);
         }
 
         /// <summary>
@@ -102,7 +102,15 @@ namespace Apache.Ignite.Core.Client
         {
             base.GetObjectData(info, context);
 
-            info.AddValue(ErrorCodeField, _errorCode);
+            info.AddValue(ErrorCodeField, (int) _statusCode);
+        }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        public override string ToString()
+        {
+            return string.Format("{0} [StatusCode={1}]", base.ToString(), StatusCode);
         }
     }
 }

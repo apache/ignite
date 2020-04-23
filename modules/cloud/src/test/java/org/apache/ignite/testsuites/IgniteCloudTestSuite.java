@@ -19,27 +19,16 @@ package org.apache.ignite.testsuites;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinderSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Ignite Cloud integration test.
  */
-public class IgniteCloudTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new IgniteTestSuite("Cloud Integration Test Suite");
-
-        // Cloud Nodes IP finder.
-        suite.addTestSuite(TcpDiscoveryCloudIpFinderSelfTest.class);
-
-        return suite;
-    }
-
+@RunWith(Suite.class)
+@Suite.SuiteClasses({TcpDiscoveryCloudIpFinderSelfTest.class})
+public class IgniteCloudTestSuite {
     /**
      * <a href="http://jclouds.apache.org/guides/google/">Service Account email<a/> for GCE.
      * <a href="http://jclouds.apache.org/guides/aws/">Access Key ID</a> for Amazon.
@@ -51,7 +40,7 @@ public class IgniteCloudTestSuite extends TestSuite {
         String key = System.getenv("test." + provider + ".access.key");
 
         assert key != null : "Environment variable 'test." + provider + ".access.key' is not set";
-        
+
         return key;
     }
 

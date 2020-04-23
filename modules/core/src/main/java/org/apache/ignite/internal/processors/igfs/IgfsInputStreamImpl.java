@@ -59,7 +59,6 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     private final IgfsContext igfsCtx;
 
     /** Secondary file system reader. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private final IgfsSecondaryFileSystemPositionedReadable secReader;
 
     /** Logger. */
@@ -212,7 +211,6 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
         if (pos < 0)
             throw new IOException("Seek position cannot be negative: " + pos);
 
-
         this.pos = pos;
     }
 
@@ -265,7 +263,6 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
      * @return Array of chunks with respect to chunk file representation.
      * @throws IOException If read failed.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public synchronized byte[][] readChunks(long pos, int len) throws IOException {
         // Readable bytes in the file, starting from the specified position.
         long readable = this.len - pos;
@@ -543,8 +540,7 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
                     pendingFuts.add(evictFut);
 
                     evictFut.listen(new IgniteInClosure<IgniteInternalFuture<byte[]>>() {
-                        @Override
-                        public void apply(IgniteInternalFuture<byte[]> t) {
+                        @Override public void apply(IgniteInternalFuture<byte[]> t) {
                             pendingFuts.remove(evictFut);
 
                             pendingFutsLock.lock();

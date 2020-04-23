@@ -31,30 +31,21 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_CNT = 3;
 
@@ -65,25 +56,13 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
-
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
-
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -99,8 +78,6 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-
         cfg.setMarshaller(null);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
@@ -114,19 +91,20 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         startGrids(GRID_CNT);
 
@@ -162,6 +140,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPutMultithreaded() throws Exception {
         startGrids(4);
 
@@ -191,7 +170,7 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
     private void checkPutGetSql(Ignite ig, boolean write) {
         IgniteCache<Integer, DbValue> cache = ig.cache(CACHE_NAME);
 
-        int entryCnt = 50_000;
+        int entryCnt = GridTestUtils.SF.apply(50_000);
 
         if (write) {
             try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(CACHE_NAME)) {
@@ -217,20 +196,20 @@ public class IgnitePdsCacheIntegrationTest extends GridCommonAbstractTest {
             assertEquals("i = " + i, new DbValue(i, "value-" + i, i), cache.get(i));
 
         List<List<?>> res = cache.query(new SqlFieldsQuery("select ival from dbvalue where ival < ? order by ival asc")
-            .setArgs(10_000)).getAll();
+            .setArgs(2_000)).getAll();
 
-        assertEquals(10_000, res.size());
+        assertEquals(2_000, res.size());
 
-        for (int i = 0; i < 10_000; i++) {
+        for (int i = 0; i < 2_000; i++) {
             assertEquals(1, res.get(i).size());
             assertEquals(i, res.get(i).get(0));
         }
 
-        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
-        assertEquals(5000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 10000"))
+        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 799")).getAll().size());
+        assertEquals(500, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 500 and ival < 1000"))
             .getAll().size());
 
-        for (int i = 0; i < 10_000; i++)
+        for (int i = 0; i < 1_000; i++)
             assertEquals(new DbValue(i, "value-" + i, i), cache.get(i));
     }
 

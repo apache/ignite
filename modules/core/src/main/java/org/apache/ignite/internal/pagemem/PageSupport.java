@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 
 /**
  * Supports operations on pages.
@@ -34,6 +35,19 @@ public interface PageSupport {
      * @throws IgniteCheckedException If failed.
      */
     public long acquirePage(int grpId, long pageId) throws IgniteCheckedException;
+
+    /**
+     * Gets the page absolute pointer associated with the given page ID. Each page obtained with this method must be
+     * released by calling {@link #releasePage(int, long, long)}. This method will allocate page with given ID if it
+     * doesn't exist.
+     *
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Page pointer.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
      *

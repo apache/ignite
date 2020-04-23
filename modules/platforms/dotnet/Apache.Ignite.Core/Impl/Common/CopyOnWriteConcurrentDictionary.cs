@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
 
@@ -27,7 +28,8 @@ namespace Apache.Ignite.Core.Impl.Common
     /// Good for frequent reads / infrequent writes scenarios.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public class CopyOnWriteConcurrentDictionary<TKey, TValue>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public class CopyOnWriteConcurrentDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     {
         /** */
         private volatile Dictionary<TKey, TValue> _dict = new Dictionary<TKey, TValue>();
@@ -90,11 +92,39 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Determines whether the specified key exists in the dictionary.
+        /// Removes the value with the specified key.
         /// </summary>
-        public bool ContainsKey(TKey key)
+        /// <param name="key">The key.</param>
+        /// <param name="val">Removed value, if any.</param>
+        public bool Remove(TKey key, out TValue val)
         {
-            return _dict.ContainsKey(key);
+            lock (this)
+            {
+                if (!_dict.TryGetValue(key, out val))
+                {
+                    return false;
+                }
+
+                var dict0 = new Dictionary<TKey, TValue>(_dict);
+
+                dict0.Remove(key);
+
+                _dict = dict0;
+                
+                return true;
+            }
+        }
+        
+        /** <inheritDoc /> */
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            return _dict.GetEnumerator();
+        }
+
+        /** <inheritDoc /> */
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

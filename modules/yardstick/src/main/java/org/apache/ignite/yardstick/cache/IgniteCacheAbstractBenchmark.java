@@ -29,7 +29,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -105,6 +107,8 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        ignite().cluster().active(true);
+
         cache = cache();
 
         CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
@@ -112,8 +116,8 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         String grpName = ccfg.getGroupName();
 
         BenchmarkUtils.println(cfg, "Benchmark setUp [name=" + getClass().getSimpleName() +
-            ", cacheName="+ cache.getName() +
-            ", cacheGroup="+ grpName +
+            ", cacheName=" + cache.getName() +
+            ", cacheGroup=" + grpName +
             ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
 
         caches = args.cachesCount();
@@ -168,7 +172,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 }
             }
 
-            BenchmarkUtils.println(cfg, "Partition stats. [cacheName: "+ cache.getName() +", topVer: "
+            BenchmarkUtils.println(cfg, "Partition stats. [cacheName: " + cache.getName() + ", topVer: "
                 + ignite().cluster().topologyVersion() + "]");
             BenchmarkUtils.println(cfg, "(Node id,  Number of Primary, Percent, Number of Backup, Percent, Total, Percent)");
 
@@ -177,13 +181,55 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 List<Integer> backup = e.getValue().get2();
 
                 BenchmarkUtils.println(cfg, e.getKey().id() + "  "
-                    + primary.size() + "  " + primary.size() * 1. /aff.partitions() + "  "
+                    + primary.size() + "  " + primary.size() * 1. / aff.partitions() + "  "
                     + backup.size() + "  "
                     + backup.size() * 1. / (aff.partitions() * (args.backups() == 0 ? 1 : args.backups())) + "  "
                     + (primary.size() + backup.size()) + "  "
                     + (primary.size() + backup.size() * 1.) / (aff.partitions() * args.backups() + aff.partitions())
                 );
             }
+        }
+
+        if(args.enablePreload()) {
+            startPreloadLogging(args.preloadLogsInterval());
+
+            preload();
+
+            stopPreloadLogging();
+        }
+    }
+
+    /**
+     * Preload data before benchmarking.
+     */
+    protected void preload() {
+        IgniteSemaphore semaphore = ignite().semaphore("preloadSemaphore",1,true,true);
+
+        semaphore.acquire();
+
+        try {
+            IgniteCache<String, Integer> preloadCache = ignite().getOrCreateCache("preloadCache");
+
+            if(preloadCache.get("loaded") == null) {
+                IgniteCompute compute = ignite().compute(ignite().cluster().forServers().forOldest());
+
+                IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
+
+                Integer res = compute.apply(new Loader(cache, args, ignite()), 0);
+
+                preloadCache.put("loaded", res);
+
+                if (res != null)
+                    args.setRange(res);
+            }
+            else {
+                BenchmarkUtils.println("Setting range to " + preloadCache.get("loaded"));
+
+                args.setRange(preloadCache.get("loaded"));
+            }
+        }
+        finally {
+            semaphore.release();
         }
     }
 
@@ -302,6 +348,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     static class ThreadRange {
         /** */
         final int min;
+
         /** */
         final int max;
 

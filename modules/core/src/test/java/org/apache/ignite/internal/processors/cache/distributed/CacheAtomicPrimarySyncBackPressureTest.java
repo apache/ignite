@@ -34,6 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Checks that back-pressure control restricts uncontrolled growing
@@ -59,7 +60,6 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
         spi.setMessageQueueLimit(100);
 
         cfg.setCommunicationSpi(spi);
-        cfg.setClientMode(gridName.contains("client"));
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -73,11 +73,12 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientPut() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");
 
-        final Ignite client = startGrid("client");
+        final Ignite client = startClientGrid("client");
 
         checkBackPressure(client, srv1, srv2);
     }
@@ -85,6 +86,7 @@ public class CacheAtomicPrimarySyncBackPressureTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerPut() throws Exception {
         Ignite srv1 = startGrid("server1");
         Ignite srv2 = startGrid("server2");

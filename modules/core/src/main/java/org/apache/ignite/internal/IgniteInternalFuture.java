@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Async;
 
 /**
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
@@ -107,6 +108,7 @@ public interface IgniteInternalFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
+    @Async.Schedule
     public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
 
     /**
@@ -116,6 +118,7 @@ public interface IgniteInternalFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
+    @Async.Schedule
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
 
     /**
@@ -126,6 +129,7 @@ public interface IgniteInternalFuture<R> {
      * @param exec Executor to run callback.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
+    @Async.Schedule
     public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb, Executor exec);
 
     /**

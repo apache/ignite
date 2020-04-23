@@ -18,35 +18,49 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
-import junit.framework.TestCase;
+import java.net.URL;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j SPI test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jLoggingUrlTest extends TestCase {
+public class GridLog4jLoggingUrlTest {
     /** */
     private IgniteLogger log;
 
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    /** Logger config */
+    private URL url;
+
+    /** */
+    @Before
+    public void setUp() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
         assert xml.exists();
 
-        log = new Log4JLogger(xml.toURI().toURL()).getLogger(getClass());
+        url = xml.toURI().toURL();
+        log = new Log4JLogger(url).getLogger(getClass());
     }
 
     /**
      * Tests log4j logging SPI.
      */
+    @Test
     public void testLog() {
-        assert log.isDebugEnabled();
-        assert log.isInfoEnabled();
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Log4JLogger"));
+        assertTrue(log.toString().contains(url.getPath()));
+
+        assertTrue(log.isInfoEnabled());
 
         log.debug("This is 'debug' message.");
         log.info("This is 'info' message.");

@@ -33,7 +33,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PE;
@@ -41,6 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
 
@@ -66,6 +69,11 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
     /**
      * @param execId Execution ID.
      */
@@ -84,6 +92,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -109,6 +118,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsynchronousTimeout() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -126,6 +136,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousTimeoutMultithreaded() throws Exception {
         final Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -151,7 +162,6 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         }).start();
 
         multithreaded(new Runnable() {
-            @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 while (!finish.get()) {
                     try {

@@ -46,24 +46,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     CompactFooter = false
                 },
-                Host = IPAddress.Loopback.ToString()
+                Endpoints = new[] {IPAddress.Loopback.ToString()}
             };
 
             using (var client = Ignition.StartClient(cfg))
             {
                 var serverCache = Ignition.GetIgnite().GetOrCreateCache<int?, Person>(
-                    new CacheConfiguration(CacheName, new QueryEntity
-                    {
-                        KeyType = typeof(int),
-                        ValueType = typeof(Person),
-                        Fields = new[]
-                        {
-                            new QueryField("id", typeof(int)),
-                            new QueryField("name", typeof(string))
-                        }
-                    }));
+                    new CacheConfiguration("person", new QueryEntity(typeof(int?), typeof(Person))));
 
-                var clientCache = client.GetCache<int?, Person>(CacheName);
+                var clientCache = client.GetCache<int?, Person>(serverCache.Name);
 
                 // Put through client cache.
                 clientCache.Put(1, new Person { Id = 100, Name = "foo" });
@@ -80,10 +71,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.AreEqual(200, serverCache[2].Id);
 
                 // SQL from server cache.
+#pragma warning disable 618
                 var sqlRes = serverCache.Query(new SqlQuery(typeof(Person), "where id = 100")).GetAll().Single();
                 Assert.AreEqual(1, sqlRes.Key);
                 Assert.AreEqual(100, sqlRes.Value.Id);
                 Assert.AreEqual("foo", sqlRes.Value.Name);
+#pragma warning restore 618
             }
         }
 
@@ -100,12 +93,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             /** <inheritdoc /> */
             public List<IBinaryType> GetBinaryTypes()
-            {
-                return null;
-            }
-
-            /** <inheritdoc /> */
-            public int[] GetSchema(int typeId, int schemaId)
             {
                 return null;
             }

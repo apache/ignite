@@ -27,10 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -41,9 +39,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for complex queries with distributed joins enabled (joins, etc.).
  */
 public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=default:distributedJoins=true@modules/clients/src/test/config/jdbc-config.xml";
 
@@ -63,12 +58,6 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
         cache.setIndexedTypes(String.class, Organization.class, String.class, Person.class);
 
         cfg.setCacheConfiguration(cache);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -96,11 +85,6 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stmt = DriverManager.getConnection(BASE_URL).createStatement();
 
@@ -121,6 +105,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoin() throws Exception {
         ResultSet rs = stmt.executeQuery(
             "select p.id, p.name, o.name as orgName from Person p, Organization o where p.orgId = o.id");
@@ -156,6 +141,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWithoutAlias() throws Exception {
         ResultSet rs = stmt.executeQuery(
             "select p.id, p.name, o.name from Person p, Organization o where p.orgId = o.id");
@@ -194,6 +180,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIn() throws Exception {
         ResultSet rs = stmt.executeQuery("select name from Person where age in (25, 35)");
 
@@ -214,6 +201,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBetween() throws Exception {
         ResultSet rs = stmt.executeQuery("select name from Person where age between 24 and 36");
 
@@ -234,6 +222,7 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCalculatedValue() throws Exception {
         ResultSet rs = stmt.executeQuery("select age * 2 from Person");
 
@@ -255,7 +244,6 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField
@@ -294,7 +282,6 @@ public class JdbcDistributedJoinsQueryTest extends GridCommonAbstractTest {
     /**
      * Organization.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
         @QuerySqlField

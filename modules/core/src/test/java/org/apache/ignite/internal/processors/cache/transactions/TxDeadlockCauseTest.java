@@ -21,11 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -42,6 +40,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.Test;
 
 /**
  *
@@ -51,7 +50,6 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     private CacheConfiguration ccfg;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -63,17 +61,10 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
             cfg.setDiscoverySpi(discoSpi);
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024));
 
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setMaxSize(100L * 1024 * 1024);
-
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
-        memCfg.setMemoryPolicies(plc);
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg0 = ccfg == null ? new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL) : ccfg;
@@ -90,16 +81,10 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCause() throws Exception {
         startGrids(1);
 
@@ -112,6 +97,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseSeveralNodes() throws Exception {
         startGrids(2);
 
@@ -124,6 +110,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseNear() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -140,6 +127,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseSeveralNodesNear() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -162,6 +150,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
      *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)} operations sequence.
      * @throws Exception If failed.
      */
+    @Test
     public void testCauseObject(int nodes, final int keysCnt, final long timeout, final TransactionIsolation isolation, final boolean oneOp) throws Exception {
         final Ignite ignite = grid(new Random().nextInt(nodes));
 
@@ -181,9 +170,9 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override
-            public void applyx() throws IgniteCheckedException {
-                try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation, timeout, keys.size())) {
+            @Override public void applyx() throws IgniteCheckedException {
+                try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation,
+                    timeout, keys.size())) {
 
                     List<Integer> keys0 = getAndFlip(reverse) ? keys : keysReversed;
 

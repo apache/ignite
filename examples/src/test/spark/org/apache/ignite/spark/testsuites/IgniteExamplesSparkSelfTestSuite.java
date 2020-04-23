@@ -17,9 +17,13 @@
 
 package org.apache.ignite.spark.testsuites;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.spark.examples.IgniteDataFrameSelfTest;
+import org.apache.ignite.spark.examples.JavaIgniteDataFrameSelfTest;
 import org.apache.ignite.spark.examples.SharedRDDExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -28,19 +32,17 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  * <p>
  * Contains only Spring ignite examples tests.
  */
-public class IgniteExamplesSparkSelfTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    SharedRDDExampleSelfTest.class,
+    IgniteDataFrameSelfTest.class,
+    JavaIgniteDataFrameSelfTest.class,
+})
+public class IgniteExamplesSparkSelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesSparkSelfTestSuite.class));
-
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
-
-        suite.addTest(new TestSuite(SharedRDDExampleSelfTest.class));
-
-        return suite;
     }
 }

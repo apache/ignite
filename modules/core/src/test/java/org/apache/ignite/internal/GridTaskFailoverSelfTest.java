@@ -32,6 +32,7 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for task failover.
@@ -49,7 +50,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testFailover() throws Exception {
         Ignite ignite = startGrid();
 

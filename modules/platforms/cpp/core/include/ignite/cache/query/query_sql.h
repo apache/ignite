@@ -38,6 +38,8 @@ namespace ignite
         {
             /**
              * Sql query.
+             *
+             * @deprecated Will be removed in future releases. Use SqlFieldsQuery instead.
              */
             class SqlQuery
             {

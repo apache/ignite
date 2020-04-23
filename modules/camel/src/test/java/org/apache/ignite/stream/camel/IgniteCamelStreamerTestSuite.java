@@ -17,31 +17,13 @@
 
 package org.apache.ignite.stream.camel;
 
-import java.util.Set;
-import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Camel streamer tests.
+ * Camel streamer tests. Included into 'Streamers' run configuration.
  */
-public class IgniteCamelStreamerTestSuite extends TestSuite {
-    /**
-     * @return {@link IgniteCamelStreamerTest} test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        return suite(null);
-    }
-
-    /**
-     * @param ignoredTests
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
-        TestSuite suite = new TestSuite("IgniteCamelStreamer Test Suite");
-
-        suite.addTestSuite(IgniteCamelStreamerTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({IgniteCamelStreamerTest.class})
+public class IgniteCamelStreamerTestSuite {
 }

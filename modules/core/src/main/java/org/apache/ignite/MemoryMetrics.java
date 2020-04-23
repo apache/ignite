@@ -19,7 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
  * This interface provides page memory related metrics of a specific Apache Ignite node. The overall page memory
@@ -31,12 +31,12 @@ import org.apache.ignite.mxbean.MemoryMetricsMXBean;
  * There are two ways to get the metrics of an Apache Ignite node.
  * <ol>
  *     <li>
- *       First, a collection of the metrics can be obtained through {@link Ignite#memoryMetrics()} method. Note that
+ *       First, a collection of the metrics can be obtained through {@link Ignite#dataRegionMetrics()} ()} method. Note that
  *       the method returns memory metrics snapshots rather than just in time memory state.
  *     </li>
  *     <li>
  *       Second, all {@link MemoryMetrics} of a local Apache Ignite node are visible through JMX interface. Refer to
- *       {@link MemoryMetricsMXBean} for more details.
+ *       {@link DataRegionMetricsMXBean} for more details.
  *     </li>
  * </ol>
  * </p>
@@ -44,8 +44,11 @@ import org.apache.ignite.mxbean.MemoryMetricsMXBean;
  * Memory metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
  * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property or
- * {@link MemoryMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ *
+ * @deprecated Use {@link DataRegionMetrics} instead.
  */
+@Deprecated
 public interface MemoryMetrics {
     /**
      * A name of a memory region the metrics are collected for.

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -33,7 +33,7 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Unique name of MemoryPolicy. */
+    /** Unique name of DataRegion. */
     private String name;
 
     /** Maximum memory region size defined by this memory policy. */
@@ -69,20 +69,20 @@ public class VisorMemoryPolicyConfiguration extends VisorDataTransferObject {
      *
      * @param plc Memory policy configuration.
      */
-    public VisorMemoryPolicyConfiguration(MemoryPolicyConfiguration plc) {
+    public VisorMemoryPolicyConfiguration(DataRegionConfiguration plc) {
         assert plc != null;
 
         name = plc.getName();
         maxSize = plc.getMaxSize();
         initSize = plc.getInitialSize();
-        swapFilePath = plc.getSwapFilePath();
+        swapFilePath = plc.getSwapPath();
         pageEvictionMode = plc.getPageEvictionMode();
         evictionThreshold = plc.getEvictionThreshold();
         emptyPagesPoolSize = plc.getEmptyPagesPoolSize();
     }
 
     /**
-     * Unique name of MemoryPolicy.
+     * Unique name of DataRegion.
      */
     public String getName() {
         return name;

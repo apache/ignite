@@ -26,6 +26,7 @@ import org.apache.ignite.spi.collision.GridTestCollisionJobContext;
 import org.apache.ignite.spi.collision.GridTestCollisionTaskSession;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.junit.Test;
 
 /**
  * Unit tests for {@link FifoQueueCollisionSpi}.
@@ -35,6 +36,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision0() throws Exception {
         int activeCnt = 2;
 
@@ -67,6 +69,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision1() throws Exception {
 
         getSpi().setParallelJobsNumber(32);
@@ -95,6 +98,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision2() throws Exception {
         getSpi().setParallelJobsNumber(3);
 
@@ -116,6 +120,7 @@ public class GridFifoQueueCollisionSpiSelfTest extends GridSpiAbstractTest<FifoQ
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollision3() throws Exception {
         getSpi().setParallelJobsNumber(15);
 

@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/common/utils.h>
 #include <ignite/common/fixed_size_array.h>
 #include <ignite/binary/binary_object.h>
 #include <ignite/binary/binary_writer.h>
+#include <ignite/binary/binary_enum.h>
+#include <ignite/binary/binary_enum_entry.h>
+#include <ignite/ignition.h>
 
 #include "ignite/binary_test_defs.h"
 #include "ignite/test_type.h"
@@ -325,22 +324,22 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
 {
     try
     {
-        BOOST_CHECKPOINT("Node1 startup");
+        BOOST_TEST_CHECKPOINT("Node1 startup");
 #ifdef IGNITE_TESTS_32
         Ignite node1 = ignite_test::StartNode("cache-test-32.xml", "node1");
 #else
         Ignite node1 = ignite_test::StartNode("cache-test.xml", "node1");
 #endif
 
-        BOOST_CHECKPOINT("Creating cache");
+        BOOST_TEST_CHECKPOINT("Creating cache");
         cache::Cache<int32_t, BinaryFields> cache = node1.GetOrCreateCache<int32_t, BinaryFields>("cache");
 
         BinaryFields some(25675472, 67461, 457542, 87073456);
 
-        BOOST_CHECKPOINT("Putting value");
+        BOOST_TEST_CHECKPOINT("Putting value");
         cache.Put(42, some);
 
-        BOOST_CHECKPOINT("Node2 startup");
+        BOOST_TEST_CHECKPOINT("Node2 startup");
 #ifdef IGNITE_TESTS_32
         Ignite node2 = ignite_test::StartNode("cache-test-32.xml", "node2");
 #else
@@ -353,7 +352,7 @@ BOOST_AUTO_TEST_CASE(RemoteSchemaRetrieval)
         InteropUnpooledMemory mem(1024);
         FillMem<BinaryFields>(mem, some);
 
-        BOOST_CHECKPOINT("Creating BinaryObject");
+        BOOST_TEST_CHECKPOINT("Creating BinaryObject");
         BinaryObject binObj(mem, 0, 0, env->GetTypeManager());
 
         BOOST_CHECK(binObj.HasField("val1"));
@@ -391,6 +390,120 @@ BOOST_AUTO_TEST_CASE(GetEnumValueInvalid)
     BinaryObjectImpl binObj(mem, 0, &resolver, 0);
 
     BOOST_CHECK_THROW(binObj.GetEnumValue(), IgniteError);
+}
+
+void CheckBinaryEnumEntry(int32_t typeId, int32_t ordinal)
+{
+    InteropUnpooledMemory mem(1024);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
+
+    BinaryEnumEntry original(typeId, ordinal);
+
+    writer.WriteBinaryEnum(original);
+
+    outStream.Synchronize();
+
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
+
+    BinaryEnumEntry result = reader.ReadBinaryEnum();
+
+    if (original.IsNull())
+    {
+        BOOST_CHECK(result.IsNull());
+
+        return;
+    }
+
+    BOOST_CHECK_EQUAL(original.GetTypeId(), result.GetTypeId());
+    BOOST_CHECK_EQUAL(original.GetOrdinal(), result.GetOrdinal());
+}
+
+BOOST_AUTO_TEST_CASE(ReadWriteBinaryEnum)
+{
+    CheckBinaryEnumEntry(1234567, 42);
+    CheckBinaryEnumEntry(1234567, 1);
+    CheckBinaryEnumEntry(1, 1);
+    CheckBinaryEnumEntry(6754, 0);
+    CheckBinaryEnumEntry(0, 0);
+    CheckBinaryEnumEntry(0, 1);
+}
+
+template<typename T>
+void CheckUserEnum(T val)
+{
+    InteropUnpooledMemory mem(1024);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
+
+    writer.WriteEnum(val);
+
+    outStream.Synchronize();
+
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
+
+    T result = reader.ReadEnum<T>();
+
+    BOOST_CHECK_EQUAL(val, result);
+}
+
+BOOST_AUTO_TEST_CASE(ReadWriteUserEnum)
+{
+    CheckUserEnum(TestEnum::TEST_ZERO);
+    CheckUserEnum(TestEnum::TEST_NON_ZERO);
+    CheckUserEnum(TestEnum::TEST_NEGATIVE_42);
+    CheckUserEnum(TestEnum::TEST_SOME_BIG);
+}
+
+template<typename T>
+void CheckUserEnumPtr(T val)
+{
+    InteropUnpooledMemory mem(1024);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
+
+    writer.WriteEnum(&val);
+
+    outStream.Synchronize();
+
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
+
+    T* result = reader.ReadEnum<T*>();
+
+    BOOST_CHECK_EQUAL(val, *result);
+
+    delete result;
+}
+
+BOOST_AUTO_TEST_CASE(ReadWriteUserEnumPtr)
+{
+    CheckUserEnumPtr(TestEnum::TEST_ZERO);
+    CheckUserEnumPtr(TestEnum::TEST_NON_ZERO);
+    CheckUserEnumPtr(TestEnum::TEST_NEGATIVE_42);
+    CheckUserEnumPtr(TestEnum::TEST_SOME_BIG);
+}
+
+BOOST_AUTO_TEST_CASE(ReadWriteUserEnumNullPtr)
+{
+    InteropUnpooledMemory mem(1024);
+    InteropOutputStream outStream(&mem);
+    BinaryWriterImpl writer(&outStream, 0);
+
+    writer.WriteEnum<TestEnum::Type*>(0);
+
+    outStream.Synchronize();
+
+    InteropInputStream inStream(&mem);
+    BinaryReaderImpl reader(&inStream);
+
+    TestEnum::Type* result = reader.ReadEnum<TestEnum::Type*>();
+
+    BOOST_CHECK(result == 0);
+
+    delete result;
 }
 
 BOOST_AUTO_TEST_SUITE_END()

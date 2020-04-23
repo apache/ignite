@@ -21,19 +21,20 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
  *
@@ -49,47 +50,38 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(pageSize);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
-        memPlcCfg.setMaxSize(100 * 1024 * 1024);
-
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        memCfg.setPageSize(pageSize);
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(cacheName)
                 .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
+        cfg.setFailureDetectionTimeout(20_000);
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_1k() throws Exception {
         checkPageSize(1024);
     }
@@ -97,6 +89,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_2k() throws Exception {
         checkPageSize(2 * 1024);
     }
@@ -104,6 +97,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_4k() throws Exception {
         checkPageSize(4 * 1024);
     }
@@ -111,6 +105,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_8k() throws Exception {
         checkPageSize(8 * 1024);
     }
@@ -118,6 +113,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageSize_16k() throws Exception {
         checkPageSize(16 * 1024);
     }
@@ -126,6 +122,10 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private void checkPageSize(int pageSize) throws Exception {
+        if (pageSize <= 4 * 1024 &&
+            IgniteSystemProperties.getEnum(DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) != null)
+            return; // Small pages do not work with compression.
+
         this.pageSize = pageSize;
 
         IgniteEx ignite = startGrid(0);
@@ -134,7 +134,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
 
         try {
             final IgniteCache<Object, Object> cache = ignite.cache(cacheName);
-            final long endTime = System.currentTimeMillis() + 60_000;
+            final long endTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(60_000, 10_000);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {

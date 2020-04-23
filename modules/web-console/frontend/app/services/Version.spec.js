@@ -23,7 +23,7 @@ import { suite, test } from 'mocha';
 import { assert } from 'chai';
 
 suite('VersionServiceTestsSuite', () => {
-    test.skip('Parse 1.7.0-SNAPSHOT', () => {
+    test('Parse 1.7.0-SNAPSHOT', () => {
         const version = INSTANCE.parse('1.7.0-SNAPSHOT');
         assert.equal(version.major, 1);
         assert.equal(version.minor, 7);
@@ -33,7 +33,7 @@ suite('VersionServiceTestsSuite', () => {
         assert.isNull(version.revHash);
     });
 
-    test.skip('Parse strip -DEV 1.7.0-DEV', () => {
+    test('Parse strip -DEV 1.7.0-DEV', () => {
         const version = INSTANCE.parse('1.7.0-DEV');
         assert.equal(version.major, 1);
         assert.equal(version.minor, 7);
@@ -41,7 +41,7 @@ suite('VersionServiceTestsSuite', () => {
         assert.equal(version.stage, '');
     });
 
-    test.skip('Parse strip -n/a 1.7.0-n/a', () => {
+    test('Parse strip -n/a 1.7.0-n/a', () => {
         const version = INSTANCE.parse('1.7.0-n/a');
         assert.equal(version.major, 1);
         assert.equal(version.minor, 7);
@@ -49,23 +49,23 @@ suite('VersionServiceTestsSuite', () => {
         assert.equal(version.stage, '');
     });
 
-    test.skip('Check patch version', () => {
+    test('Check patch version', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.7.2'), INSTANCE.parse('1.7.1')), 1);
     });
 
-    test.skip('Check minor version', () => {
+    test('Check minor version', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.8.1'), INSTANCE.parse('1.7.1')), 1);
     });
 
-    test.skip('Check major version', () => {
+    test('Check major version', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('2.7.1'), INSTANCE.parse('1.7.1')), 1);
     });
 
-    test.skip('Version a > b', () => {
+    test('Version a > b', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.7.0'), INSTANCE.parse('1.5.0')), 1);
     });
 
-    test.skip('Version a = b', () => {
+    test('Version a = b', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.0.0'), INSTANCE.parse('1.0.0')), 0);
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.2.0'), INSTANCE.parse('1.2.0')), 0);
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.2.3'), INSTANCE.parse('1.2.3')), 0);
@@ -75,7 +75,7 @@ suite('VersionServiceTestsSuite', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.2.3-1'), INSTANCE.parse('1.2.3-1')), 0);
     });
 
-    test.skip('Version a < b', () => {
+    test('Version a < b', () => {
         assert.equal(INSTANCE.compare(INSTANCE.parse('1.5.1'), INSTANCE.parse('1.5.2')), -1);
     });
 

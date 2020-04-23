@@ -54,7 +54,7 @@ public class GridifySpringAspect implements MethodInterceptor {
      *
      * {@inheritDoc}
      */
-    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "CatchGenericClass", "unchecked"})
+    @SuppressWarnings({"ProhibitedExceptionDeclared", "ProhibitedExceptionThrown", "unchecked"})
     @Override public Object invoke(MethodInvocation invoc) throws Throwable {
         Method mtd  = invoc.getMethod();
 

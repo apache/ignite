@@ -1,27 +1,10 @@
 env:
     es6: true
-    node: true
+    browser: false
     mocha: true
-
 parserOptions:
     sourceType: module
-    ecmaFeatures:
-        arrowFunctions: true
-        blockBindings: true
-        classes: true
-        defaultParams: true
-        destructuring: true
-        module: true
-        objectLiteralComputedProperties: true
-        objectLiteralShorthandMethods: true
-        objectLiteralShorthandProperties: true
-        spread: true
-        templateStrings: true
-        experimentalObjectRestSpread: true
-
-globals:
-    _: true
-    io: true
+    ecmaVersion: 2018
 
 rules:
     arrow-parens: [1, "always"]
@@ -138,18 +121,19 @@ rules:
     no-sparse-arrays: 1
     no-sync: 0
     no-ternary: 0
-    no-trailing-spaces: 2
+    no-trailing-spaces: ["error", {"ignoreComments": true}]
     no-throw-literal: 0
     no-this-before-super: 2
     no-unexpected-multiline: 2
-    no-undef: 2
+    // The rule produces undesired results with TS
+    // no-undef: 2
     no-undef-init: 2
     no-undefined: 2
     no-unneeded-ternary: 2
     no-unreachable: 2
     no-unused-expressions: [2, { allowShortCircuit: true }]
-    no-unused-vars: [2, {"vars": "all", "args": "after-used"}]
-    no-use-before-define: 2
+    no-unused-vars: [0, {"vars": "all", "args": "after-used"}]
+    typescript/no-unused-vars: [0]
     no-useless-call: 2
     no-void: 0
     no-var: 2
@@ -175,7 +159,7 @@ rules:
     space-in-parens: 0
     space-infix-ops: 2
     space-unary-ops: [2, { "words": true, "nonwords": false }]
-    spaced-comment: [1, "always"]
+    spaced-comment: [1, "always", {"markers": ["/"]}]
     use-isnan: 2
     valid-jsdoc: 0
     valid-typeof: 2

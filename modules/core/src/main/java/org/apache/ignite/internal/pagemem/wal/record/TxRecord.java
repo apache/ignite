@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -30,45 +31,41 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TxRecord extends TimeStampRecord {
     /** Transaction state. */
-    private TransactionState state;
+    @GridToStringInclude
+    private final TransactionState state;
 
     /** Global transaction identifier within cluster, assigned by transaction coordinator. */
-    private GridCacheVersion nearXidVer;
+    @GridToStringInclude
+    private final GridCacheVersion nearXidVer;
 
     /** Transaction entries write topology version. */
-    private GridCacheVersion writeVer;
+    private final GridCacheVersion writeVer;
 
     /**
      * Transaction participating nodes.
      *
      * Structure:
-     * Primary node -> [Backup nodes...]
+     * Primary node -> [Backup nodes...], where nodes are identified by compact ID for some baseline topology.
      **/
-    @Nullable private Map<Object, Collection<Object>> participatingNodes;
-
-    /** If transaction is remote, primary node for this backup node. */
-    @Nullable private Object primaryNode;
+    @Nullable private Map<Short, Collection<Short>> participatingNodes;
 
     /**
      *
      * @param state Transaction state.
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
-     * @param participatingNodes Primary -> Backup nodes participating in transaction.
-     * @param primaryNode Primary node.
+     * @param participatingNodes Primary -> Backup nodes compact IDs participating in transaction.
      */
     public TxRecord(
         TransactionState state,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
-        @Nullable Map<Object, Collection<Object>> participatingNodes,
-        @Nullable Object primaryNode
+        @Nullable Map<Short, Collection<Short>> participatingNodes
     ) {
         this.state = state;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
         this.participatingNodes = participatingNodes;
-        this.primaryNode = primaryNode;
     }
 
     /**
@@ -76,24 +73,21 @@ public class TxRecord extends TimeStampRecord {
      * @param nearXidVer Transaction id.
      * @param writeVer Transaction entries write topology version.
      * @param participatingNodes Primary -> Backup nodes participating in transaction.
-     * @param primaryNode Primary node.
-     * @param timestamp TimeStamp.
+     * @param ts TimeStamp.
      */
     public TxRecord(
         TransactionState state,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
-        @Nullable Map<Object, Collection<Object>> participatingNodes,
-        @Nullable Object primaryNode,
-        long timestamp
+        @Nullable Map<Short, Collection<Short>> participatingNodes,
+        long ts
     ) {
-        super(timestamp);
+        super(ts);
 
         this.state = state;
         this.nearXidVer = nearXidVer;
         this.writeVer = writeVer;
         this.participatingNodes = participatingNodes;
-        this.primaryNode = primaryNode;
     }
 
     /** {@inheritDoc} */
@@ -109,24 +103,10 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param nearXidVer Near xid version.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
-    }
-
-    /**
      * @return DHT version.
      */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer DHT version.
-     */
-    public void dhtVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -137,38 +117,10 @@ public class TxRecord extends TimeStampRecord {
     }
 
     /**
-     * @param state Transaction state.
+     * @return Primary -> backup participating nodes compact IDs.
      */
-    public void state(TransactionState state) {
-        this.state = state;
-    }
-
-    /**
-     * @return Primary -> backup participating nodes.
-     */
-    public Map<Object, Collection<Object>> participatingNodes() {
+    public Map<Short, Collection<Short>> participatingNodes() {
         return participatingNodes;
-    }
-
-    /**
-     * @param participatingNodeIds Primary -> backup participating nodes.
-     */
-    public void participatingNodes(Map<Object, Collection<Object>> participatingNodeIds) {
-        this.participatingNodes = participatingNodeIds;
-    }
-
-    /**
-     * @return Is transaction remote for backup.
-     */
-    public boolean remote() {
-        return primaryNode != null;
-    }
-
-    /**
-     * @return Primary node for backup if transaction is remote.
-     */
-    @Nullable public Object primaryNode() {
-        return primaryNode;
     }
 
     /** {@inheritDoc} */

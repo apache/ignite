@@ -27,6 +27,8 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/common/include \
     -I@top_srcdir@/common/os/linux/include \
     -I@top_srcdir@/binary/include \
+    -I@top_srcdir@/network/include \
+    -I@top_srcdir@/network/os/linux/include \
     -DIGNITE_IMPL \
     -D__STDC_LIMIT_MACROS \
     -D__STDC_CONSTANT_MACROS
@@ -37,6 +39,7 @@ AM_CXXFLAGS = \
 
 libignite_odbc_la_LIBADD = \
     @top_srcdir@/binary/libignite-binary.la \
+    @top_srcdir@/network/libignite-network.la \
     -lodbcinst
 
 libignite_odbc_la_LDFLAGS = \
@@ -46,16 +49,18 @@ libignite_odbc_la_LDFLAGS = \
     -release $(PACKAGE_VERSION)
 
 libignite_odbc_la_DEPENDENCIES = \
-    @top_srcdir@/binary/libignite-binary.la
+    @top_srcdir@/binary/libignite-binary.la \
+    @top_srcdir@/network/libignite-network.la
 
 libignite_odbc_la_SOURCES = \
-    os/linux/src/system/socket_client.cpp \
     src/app/application_data_buffer.cpp \
     src/app/parameter.cpp \
     src/app/parameter_set.cpp \
     src/common_types.cpp \
+    src/config/config_tools.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \
+    src/config/connection_string_parser.cpp \
     src/connection.cpp \
     src/cursor.cpp \
     src/diagnostic/diagnosable_adapter.cpp \
@@ -75,9 +80,18 @@ libignite_odbc_la_SOURCES = \
     src/query/table_metadata_query.cpp \
     src/query/type_info_query.cpp \
     src/query/special_columns_query.cpp \
+    src/query/streaming_query.cpp \
+    src/sql/sql_parser.cpp \
+    src/sql/sql_lexer.cpp \
+    src/sql/sql_set_streaming_command.cpp \
+    src/sql/sql_utils.cpp \
+    src/streaming/streaming_batch.cpp \
+    src/streaming/streaming_context.cpp \
+    src/ssl_mode.cpp \
     src/protocol_version.cpp \
     src/result_page.cpp \
     src/row.cpp \
+    src/nested_tx_mode.cpp \
     src/message.cpp \
     src/column.cpp \
     src/statement.cpp \

@@ -41,7 +41,7 @@ public @interface QuerySqlField {
      * during updates, but makes select operations faster.
      * <p>
      * When indexing SPI and indexed field is
-     * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then Ignite will
+     * of type {@code org.locationtech.jts.geom.Geometry} (or any subclass of this class) then Ignite will
      * consider this index as spatial providing performance boost for spatial queries.
      *
      * @return {@code True} if index must be created for this field in database.
@@ -55,6 +55,27 @@ public @interface QuerySqlField {
      * @return {@code True} if field index should be in descending order.
      */
     boolean descending() default false;
+
+    /**
+     * Specifies whether the specified field can be {@code null}.
+     *
+     * @return {@code True} if the field is not allowed to accept {@code null} values.
+     */
+    boolean notNull() default false;
+
+    /**
+     * Specifies precision for a decimal field.
+     *
+     * @return precision for a decimal field.
+     */
+    int precision() default -1;
+
+    /**
+     * Specifies scale for a decimal field.
+     *
+     * @return scale for a decimal field.
+     */
+    int scale() default -1;
 
     /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,

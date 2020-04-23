@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -52,6 +54,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -98,13 +101,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Owning transaction. */
     @GridToStringExclude
     @GridDirectTransient
-    private IgniteInternalTx tx;
+    public IgniteInternalTx tx;
 
     /** Cache key. */
-    @GridToStringInclude
+    @GridToStringExclude
     private KeyCacheObject key;
 
     /** Cache ID. */
+    @GridToStringExclude
     private int cacheId;
 
     /** Transient tx key. */
@@ -175,7 +179,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private GridCacheContext<?, ?> ctx;
 
     /** Prepared flag to prevent multiple candidate add. */
-    @SuppressWarnings("UnusedDeclaration")
     @GridDirectTransient
     private transient volatile int prepared;
 
@@ -211,6 +214,11 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** */
     private GridCacheVersion serReadVer;
+
+    /** */
+    @GridDirectTransient
+    @GridToStringExclude
+    private transient @Nullable GridAbsClosureX cqNotifyC;
 
     /**
      * Required by {@link Externalizable}
@@ -661,7 +669,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return {@code True} if has previous value explicitly set.
      */
-    boolean hasPreviousValue() {
+    public boolean hasPreviousValue() {
         return prevVal.hasValue();
     }
 
@@ -762,6 +770,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         Object keyVal = null;
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
+            IgniteThread.onEntryProcessorEntered(true);
+
             try {
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
                     ver, keepBinary(), cached());
@@ -776,6 +786,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             }
             catch (Exception ignore) {
                 // No-op.
+            }
+            finally {
+                IgniteThread.onEntryProcessorLeft();
             }
         }
 
@@ -929,9 +942,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
-            assert cacheCtx != null : "Failed to find cache context [cacheId=" + cacheId +
-                ", readyTopVer=" + ctx.exchange().readyAffinityVersion() + ']';
-
+            if (cacheCtx == null)
+                throw new CacheInvalidStateException(
+                    "Failed to perform cache operation (cache is stopped), cacheId=" + cacheId);
+            
             if (cacheCtx.isNear() && !near)
                 cacheCtx = cacheCtx.near().dht().context();
             else if (!cacheCtx.isNear() && near)
@@ -1255,6 +1269,19 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         // First of all check classes that may be loaded by class loader other than application one.
         return key != null && !clsLdr.equals(key.getClass().getClassLoader()) ?
             key.getClass() : val != null ? val.getClass() : getClass();
+    }
+
+    /**
+     */
+    public GridAbsClosureX cqNotifyClosure() {
+        return cqNotifyC;
+    }
+
+    /**
+     * @param clo Clo.
+     */
+    public void cqNotifyClosure(GridAbsClosureX clo) {
+        cqNotifyC = clo;
     }
 
     /** {@inheritDoc} */

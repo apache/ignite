@@ -32,10 +32,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -156,7 +159,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
                     throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
 
-            SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+            SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
                 .setArgs(args);
 
             qry.setPageSize(fetchSize);
@@ -167,7 +170,15 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
+            FieldsQueryCursor<List<?>> fldQryCursor = cache.withKeepBinary().query(qry);
+
+            if (fldQryCursor instanceof BulkLoadContextCursor) {
+                fldQryCursor.close();
+
+                throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
+            }
+
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)fldQryCursor;
 
             if (isQry == null)
                 isQry = qryCursor.isQuery();
@@ -237,6 +248,13 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
      * @return Flag to update metadata on demand.
      */
     protected boolean updateMetadata() {
+        return false;
+    }
+
+    /**
+     * @return Flag to update enable server side updates.
+     */
+    protected boolean skipReducerOnUpdate() {
         return false;
     }
 

@@ -64,7 +64,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                 if (log.isDebugEnabled())
                     log.debug(errMsg);
 
-                return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);
+                return new IgniteNodeValidationResult(node.id(), errMsg);
             }
         }
 

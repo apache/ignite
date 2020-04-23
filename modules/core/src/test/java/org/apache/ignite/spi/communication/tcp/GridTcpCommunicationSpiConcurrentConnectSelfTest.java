@@ -38,14 +38,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioServer;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -58,13 +62,13 @@ import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
 
 /**
  *
  */
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends CommunicationSpi>
+public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends CommunicationSpi<Message>>
     extends GridSpiAbstractTest<T> {
     /** */
     private static final int SPI_CNT = 2;
@@ -97,17 +101,6 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     private boolean pairedConnections = true;
 
     /**
-     *
-     */
-    static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
-    }
-
-    /**
      * Disable SPI auto-start.
      */
     public GridTcpCommunicationSpiConcurrentConnectSelfTest() {
@@ -125,7 +118,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
         private final AtomicInteger cntr = new AtomicInteger();
 
         /** */
-        private final ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
+        private final GridConcurrentHashSet<Long> msgIds = new GridConcurrentHashSet<>();
 
         /**
          * @param latch Latch.
@@ -160,6 +153,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoThreads() throws Exception {
         concurrentConnect(2, 10, ITERS, false, false);
     }
@@ -167,6 +161,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         int threads = Runtime.getRuntime().availableProcessors() * 5;
 
@@ -176,6 +171,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded_10Connections() throws Exception {
         connectionsPerNode = 10;
 
@@ -185,6 +181,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded_NoPairedConnections() throws Exception {
         pairedConnections = false;
 
@@ -194,6 +191,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded_10ConnectionsNoPaired() throws Exception {
         pairedConnections = false;
         connectionsPerNode = 10;
@@ -204,6 +202,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithLoad() throws Exception {
         int threads = Runtime.getRuntime().availableProcessors() * 5;
 
@@ -213,6 +212,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRandomSleep() throws Exception {
         concurrentConnect(4, 1, ITERS, true, false);
     }
@@ -348,24 +348,24 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
                     assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-                    for (CommunicationSpi spi : spis) {
+                    for (CommunicationSpi<?> spi : spis) {
                         ConcurrentMap<UUID, GridCommunicationClient> clients = U.field(spi, "clients");
 
                         assertEquals(1, clients.size());
 
-                        final GridNioServer srv = U.field(spi, "nioSrvr");
+                        final GridNioServer<?> srv = U.field(spi, "nioSrvr");
 
                         final int conns = pairedConnections ? 2 : 1;
 
                         GridTestUtils.waitForCondition(new GridAbsPredicate() {
                             @Override public boolean apply() {
-                                Collection sessions = U.field(srv, "sessions");
+                                Collection<?> sessions = U.field(srv, "sessions");
 
                                 return sessions.size() == conns * connectionsPerNode;
                             }
                         }, 5000);
 
-                        Collection sessions = U.field(srv, "sessions");
+                        Collection<?> sessions = U.field(srv, "sessions");
 
                         assertEquals(conns * connectionsPerNode, sessions.size());
                     }
@@ -388,7 +388,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     /**
      * @return SPI.
      */
-    private CommunicationSpi createSpi() {
+    private CommunicationSpi<Message> createSpi() {
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
         spi.setLocalAddress("127.0.0.1");
@@ -431,6 +431,16 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             node.order(i + 1);
 
             GridSpiTestContext ctx = initSpiContext();
+
+            MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                }
+            };
+
+            ctx.messageFactory(new IgniteMessageFactoryImpl(
+                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+            );
 
             ctx.setLocalNode(node);
 

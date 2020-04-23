@@ -17,6 +17,16 @@
 
 'use strict';
 
+const _ = require('lodash');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const MongoDBStore = require('connect-mongodb-session');
+const passport = require('passport');
+const passportSocketIo = require('passport.socketio');
+const mongoSanitize = require('express-mongo-sanitize');
+
 // Fire me up!
 
 /**
@@ -24,12 +34,11 @@
  */
 module.exports = {
     implements: 'configure',
-    inject: ['require(lodash)', 'require(morgan)', 'require(cookie-parser)', 'require(body-parser)',
-        'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'require(passport.socketio)', 'settings', 'mongo', 'middlewares:*']
+    inject: ['settings', 'mongo', 'middlewares:*']
 };
 
-module.exports.factory = function(_, logger, cookieParser, bodyParser, session, connectMongo, passport, passportSocketIo, settings, mongo, apis) {
-    const _sessionStore = new (connectMongo(session))({mongooseConnection: mongo.connection});
+module.exports.factory = function(settings, mongo, apis) {
+    const _sessionStore = new (MongoDBStore(session))({uri: settings.mongoUrl});
 
     return {
         express: (app) => {
@@ -39,10 +48,11 @@ module.exports.factory = function(_, logger, cookieParser, bodyParser, session, 
 
             _.forEach(apis, (api) => app.use(api));
 
-            app.use(cookieParser(settings.sessionSecret));
-
             app.use(bodyParser.json({limit: '50mb'}));
             app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+
+
+            app.use(mongoSanitize({replaceWith: '_'}));
 
             app.use(session({
                 secret: settings.sessionSecret,
@@ -59,18 +69,26 @@ module.exports.factory = function(_, logger, cookieParser, bodyParser, session, 
             app.use(passport.initialize());
             app.use(passport.session());
 
-            passport.serializeUser(mongo.Account.serializeUser());
-            passport.deserializeUser(mongo.Account.deserializeUser());
+            passport.serializeUser((user, done) => done(null, user._id));
+
+            passport.deserializeUser((id, done) => {
+                if (mongo.ObjectId.isValid(id))
+                    return mongo.Account.findById(id, done);
+
+                // Invalidates the existing login session.
+                done(null, false);
+            });
 
             passport.use(mongo.Account.createStrategy());
         },
         socketio: (io) => {
-            const _onAuthorizeSuccess = (data, accept) => {
-                accept(null, true);
-            };
+            const _onAuthorizeSuccess = (data, accept) => accept();
 
             const _onAuthorizeFail = (data, message, error, accept) => {
-                accept(null, false);
+                if (error)
+                    accept(new Error(message));
+
+                return accept(new Error(message));
             };
 
             io.use(passportSocketIo.authorize({

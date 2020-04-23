@@ -164,6 +164,11 @@ public class GridByteArrayOutputStream extends OutputStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void close() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridByteArrayOutputStream.class, this);
     }

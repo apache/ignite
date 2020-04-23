@@ -24,9 +24,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
@@ -34,9 +33,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
  * Test routers factory.
  */
 public class RouterFactorySelfTest extends GridCommonAbstractTest {
-    /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int GRID_HTTP_PORT = 11087;
 
@@ -44,7 +40,7 @@ public class RouterFactorySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setIpFinder(sharedStaticIpFinder);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -59,6 +55,7 @@ public class RouterFactorySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testRouterFactory() throws Exception {
         try {
             System.setProperty(IGNITE_JETTY_PORT, String.valueOf(GRID_HTTP_PORT));

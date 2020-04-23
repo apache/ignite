@@ -18,23 +18,28 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
  */
-public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
-        extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "1000000")
+public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
+    IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /**
      * Tests join query within region on unstable topology.
      */
+    @Test
     public void testJoinQueryUnstableTopology() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -93,14 +98,15 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest
             }
         }, RESTART_THREADS_CNT);
 
-        try {
-            fut2.get(60, TimeUnit.SECONDS);
-        } catch (IgniteFutureTimeoutCheckedException ignored) {
-            stop.set(true);
-        }
+        // Test duration.
+        U.sleep(GridTestUtils.SF.applyLB(60_000, 20_000));
+
+        stop.set(true);
 
         try {
             fut.get();
+
+            fut2.get();
         } finally {
             log().info("Queries count: " + cnt.get());
 

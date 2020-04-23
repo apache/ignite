@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test to make sure that if job executes on the same node, it reuses the same class loader as task.
@@ -74,6 +75,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testPrivateMode() throws Exception {
         processTest(DeploymentMode.PRIVATE);
     }
@@ -83,6 +85,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testIsolatedMode() throws Exception {
         processTest(DeploymentMode.ISOLATED);
     }
@@ -92,6 +95,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testContinuousMode() throws Exception {
         processTest(DeploymentMode.CONTINUOUS);
     }
@@ -101,6 +105,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSharedMode() throws Exception {
         processTest(DeploymentMode.SHARED);
     }
@@ -129,7 +134,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonList(new ComputeJobAdapter() {
                     /** {@inheritDoc} */
-                    @SuppressWarnings({"ObjectEquality"})
+                    @Override @SuppressWarnings({"ObjectEquality"})
                     public Serializable execute() {
                         assert getClass().getClassLoader() == ldr;
 

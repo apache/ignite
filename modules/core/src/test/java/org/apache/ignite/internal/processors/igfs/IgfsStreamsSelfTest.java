@@ -35,9 +35,6 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,20 +49,17 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 
 /**
  * Tests for IGFS streams content.
  */
 public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
-    /** Test IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Group size. */
     public static final int CFG_GRP_SIZE = 128;
 
@@ -96,11 +90,6 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         if (NODES_CNT <= 0)
             return;
@@ -118,12 +107,6 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setCacheConfiguration();
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheConfiguration(cacheConfiguration("meta"));
@@ -137,7 +120,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -164,6 +147,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception In case of exception.
      */
+    @Test
     public void testCreateFile() throws Exception {
         IgfsPath path = new IgfsPath("/asdf");
 
@@ -177,6 +161,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateFileColocated() throws Exception {
         IgfsPath path = new IgfsPath("/colocated");
 
@@ -215,6 +200,7 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testCreateFileFragmented() throws Exception {
         IgfsEx impl = (IgfsEx)grid(0).fileSystem("igfs");
         String metaCacheName = grid(0).igfsx("igfs").configuration().getMetaCacheConfiguration().getName();

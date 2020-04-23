@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -49,7 +50,6 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     private int[] inclEvtTypes;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -61,6 +61,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableWithDefaults() throws Exception {
         inclEvtTypes = null;
 
@@ -95,6 +96,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableWithIncludes() throws Exception {
         inclEvtTypes = new int[] { EVT_TASK_STARTED, EVT_TASK_FINISHED };
 
@@ -129,13 +131,14 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisableWithIncludes() throws Exception {
         inclEvtTypes = null;
 
         try {
             Ignite g = startGrid();
 
-            g.events().enableLocal(EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_STARTED);
+            g.events().enableLocal(EVT_TASK_STARTED, EVT_JOB_STARTED);
 
             final AtomicInteger cnt = new AtomicInteger();
 
@@ -145,17 +148,17 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
                     return true;
                 }
-            }, EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_STARTED);
+            }, EVT_TASK_STARTED, EVT_JOB_STARTED);
+
+            g.compute().run(F.noop());
+
+            assertEquals(2, cnt.get());
+
+            g.events().disableLocal(EVT_TASK_STARTED, EVT_JOB_FAILED);
 
             g.compute().run(F.noop());
 
             assertEquals(3, cnt.get());
-
-            g.events().disableLocal(EVT_TASK_STARTED, EVT_TASK_FINISHED, EVT_JOB_FAILED);
-
-            g.compute().run(F.noop());
-
-            assertEquals(4, cnt.get());
         }
         finally {
             stopAllGrids();
@@ -165,6 +168,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnableDisable() throws Exception {
         inclEvtTypes = null;
 
@@ -188,7 +192,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("UnusedDeclaration")
+    @Test
     public void testInvalidTypes() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED};
 
@@ -224,6 +228,7 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetters() throws Exception {
         inclEvtTypes = new int[]{EVT_TASK_STARTED, EVT_TASK_FINISHED, 30000};
 

@@ -17,26 +17,25 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/admin',
-    inject: ['require(lodash)', 'require(express)', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/sessions', 'services/users', 'services/notifications']
+    inject: ['settings', 'mongo', 'services/spaces', 'services/sessions', 'services/users', 'services/notifications']
 };
 
 /**
- * @param _
- * @param express
  * @param settings
  * @param mongo
  * @param spacesService
- * @param {MailsService} mailsService
  * @param {SessionsService} sessionsService
  * @param {UsersService} usersService
  * @param {NotificationsService} notificationsService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, settings, mongo, spacesService, mailsService, sessionsService, usersService, notificationsService) {
+module.exports.factory = function(settings, mongo, spacesService, sessionsService, usersService, notificationsService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -79,10 +78,10 @@ module.exports.factory = function(_, express, settings, mongo, spacesService, ma
                 .catch(res.api.error);
         });
 
-        // Revert to your identity.
+        // Update notifications.
         router.put('/notifications', (req, res) => {
-            notificationsService.merge(req.user._id, req.body.message)
-                .then(res.api.ok)
+            notificationsService.merge(req.user._id, req.body.message, req.body.isShown)
+                .then(res.api.done)
                 .catch(res.api.error);
         });
 

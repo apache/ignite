@@ -17,27 +17,28 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/notebooks',
-    inject: ['require(lodash)', 'mongo', 'services/spaces', 'errors']
+    inject: ['mongo', 'services/spaces', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param {SpacesService} spacesService
  * @param errors
  * @returns {NotebooksService}
  */
-module.exports.factory = (_, mongo, spacesService, errors) => {
+module.exports.factory = (mongo, spacesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
      * @param {RemoveResult} result - The results of remove operation.
      */
-    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+    const convertRemoveStatus = (result) => ({rowsAffected: result.n});
 
     /**
      * Update existing notebook.
@@ -50,6 +51,8 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Notebook with name: "' + notebook.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -64,6 +67,8 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Notebook with name: "' + notebook.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -101,7 +106,7 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
             if (_.isNil(notebookId))
                 return Promise.reject(new errors.IllegalArgumentException('Notebook id can not be undefined or null'));
 
-            return mongo.Notebook.remove({_id: notebookId}).exec()
+            return mongo.Notebook.deleteOne({_id: notebookId}).exec()
                 .then(convertRemoveStatus);
         }
     }

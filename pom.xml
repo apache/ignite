@@ -30,20 +30,14 @@
         <relativePath>parent</relativePath>
     </parent>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>2.3.0-SNAPSHOT</version>
+    <version>2.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <properties>
-        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
-        <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
-    </properties>
-
     <scm>
-        <url>https://git-wip-us.apache.org/repos/asf/ignite</url>
-        <connection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</connection>
-        <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -51,7 +45,9 @@
         <module>modules/apache-license-gen</module>
         <module>modules/tools</module>
         <module>modules/core</module>
+        <module>modules/compress</module>
         <module>modules/dev-utils</module>
+        <module>modules/direct-io</module>
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
@@ -59,6 +55,8 @@
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/spring-data</module>
+        <module>modules/spring-data-2.0</module>
+        <module>modules/spring-data-2.2</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -76,7 +74,6 @@
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/kafka</module>
-        <module>modules/flume</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
         <module>modules/twitter</module>
@@ -91,10 +88,14 @@
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
-        <module>modules/flink</module>
         <module>modules/kubernetes</module>
-        <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
+        <module>modules/sqlline</module>
+        <module>modules/ml</module>
+        <module>modules/ml/spark-model-parser</module>
+        <module>modules/ml/xgboost-model-parser</module>
+        <module>modules/ml/h2o-model-parser</module>
+        <module>modules/opencensus</module>
     </modules>
 
     <profiles>
@@ -107,6 +108,7 @@
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
                 <module>modules/web-console/web-agent</module>
                 <module>modules/yardstick</module>
@@ -118,8 +120,8 @@
             <modules><!-- sorted alphabetically -->
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>
-                <module>modules/spark-2.10</module>
                 <module>modules/spark</module>
+                <module>modules/spark-2.4</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
@@ -129,7 +131,6 @@
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
-                <module>modules/ml</module> <!-- it uses Java8 and can't be compiled by Java7 used to compile Ignite -->
                 <module>modules/web-console</module>
             </modules>
         </profile>
@@ -178,6 +179,24 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>timestamp-property</id>
+                                <goals>
+                                    <goal>timestamp-property</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <name>current.year</name>
+                                    <pattern>yyyy</pattern>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <executions>
@@ -190,8 +209,7 @@
                                 <configuration>
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -246,6 +264,7 @@
             <modules>
                 <module>modules/hibernate-4.2</module>
                 <module>modules/hibernate-5.1</module>
+                <module>modules/hibernate-5.3</module>
                 <module>modules/geospatial</module>
                 <module>modules/schedule</module>
             </modules>
@@ -394,15 +413,15 @@
                                             <include name="**/*.sh" />
                                         </fixcrlf>
 
-                                        <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}" filemode="755">
+                                        <zip destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
                                                 <include name="**/*.sh" />
                                                 <include name="**/configure" />
                                                 <include name="**/install-sh" />
                                                 <include name="**/compile" />
                                                 <include name="**/missing" />
                                             </zipfileset>
-                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.zip.pattern}">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
                                                 <exclude name="**/*.sh" />
                                                 <exclude name="**/configure" />
                                                 <exclude name="**/install-sh" />
@@ -470,6 +489,22 @@
                             </execution>
 
                             <execution>
+                                <id>dependencies-sqlline</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-sqlline.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package-${ignite.edition}</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
                                 <id>scala-scripts</id>
                                 <phase>validate</phase>
                                 <goals>
@@ -528,6 +563,19 @@
         </profile>
 
         <profile>
+            <id>spark-2.4</id>
+
+            <activation>
+                <property><name>!scala-2.10</name></property>
+            </activation>
+
+            <modules>
+                <module>modules/spark-2.4</module>
+                <module>modules/scalar</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>scala-2.10</id>
 
             <activation>
@@ -536,7 +584,6 @@
 
             <modules>
                 <module>modules/scalar-2.10</module>
-                <module>modules/spark-2.10</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-plugins</module>
             </modules>
@@ -554,35 +601,6 @@
             <modules>
                 <module>examples</module>
             </modules>
-        </profile>
-
-        <profile>
-            <id>release-sources</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>source-release-assembly-ignite</id>
-                                <phase>validate</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptors>
-                                        <descriptor>assembly/release-sources.xml</descriptor>
-                                    </descriptors>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <finalName>${project.artifactId}-${project.version}-src</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
@@ -643,7 +661,7 @@
                                             setClientVersion('new.ignite.version.fixed', 'new.client.version');
                                         </script>
 
-                                        <echo message="Update ignite.version in dotnet client" />
+                                        <echo message="Update ignite.version in .NET" />
                                         <echo message="${new.client.version}" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
@@ -664,7 +682,7 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in cpp client" />
+                                        <echo message="Update ignite.version in C++" />
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
                                             <substitution expression="\1${new.client.version}\2" />
@@ -734,13 +752,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <profile>
-            <id>ml</id>
-            <modules>
-                <module>modules/ml</module>
-            </modules>
         </profile>
     </profiles>
 

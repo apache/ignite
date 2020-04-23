@@ -51,6 +51,7 @@ public class HadoopJobStatus implements Externalizable {
 
     /** Total reducers count. */
     private int totalReducerCnt;
+
     /** Phase. */
     private HadoopJobPhase jobPhase;
 

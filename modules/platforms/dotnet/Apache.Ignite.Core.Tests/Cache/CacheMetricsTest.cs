@@ -18,9 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
     using NUnit.Framework;
@@ -40,7 +43,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         public void FixtureSetUp()
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = SecondGridName });
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = SecondGridName
+            });
         }
 
         /// <summary>
@@ -64,10 +70,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = metrics.Item2;
 
             Assert.AreEqual(1, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             Assert.AreEqual(0, remoteMetrics.Size);
+            Assert.AreEqual(0, remoteMetrics.CacheSize);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
         }
@@ -84,12 +92,66 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = metrics.Item2;
 
             Assert.AreEqual(1, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
-            Assert.AreEqual(0, remoteMetrics.Size);
+            Assert.AreEqual(1, remoteMetrics.Size);
+            Assert.AreEqual(1, remoteMetrics.CacheSize);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
+        }
+
+        /// <summary>
+        /// Tests the cache metrics enable/disable 
+        /// </summary>
+        [Test]
+        public void TestCacheEnableStatistics()
+        {
+            TestEnableStatistics("cacheEnableStatistics", (cache, b) => cache.EnableStatistics(b));
+        }
+
+        /// <summary>
+        /// Tests the cache metrics enable/disable for cluster group
+        /// </summary>
+        [Test]
+        public void TestClusterGroupEnableStatistics()
+        {
+            var cacheName = "clusterEnableStatistics";
+            TestEnableStatistics(
+                cacheName,
+                (cache, b) => cache.Ignite.GetCluster().EnableStatistics(new[] {cacheName}, b));
+        }
+
+        /// <summary>
+        /// Tests that empty cache names can be passed to <see cref="IClusterGroup.EnableStatistics"/>
+        /// </summary>
+        [Test]
+        public void  TestClusterEnableStatisticsAllowsEmptyCacheNames()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterEnableStatisticsAllowsEmptyCacheNames"));
+            var cluster = ignite.GetCluster();
+
+            Assert.DoesNotThrow(() => cluster.EnableStatistics(Enumerable.Empty<string>(), true));
+        }
+
+        /// <summary>
+        /// Tests exception when invalid cache name is passed to <see cref="IClusterGroup.EnableStatistics"/>
+        /// </summary>
+        [Test]
+        public void TestClusterEnableStatisticsThrowsOnInvalidCacheName()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterEnableStatisticsThrowsOnInvalidCacheName"));
+            var cluster = ignite.GetCluster();
+
+            var invalidCacheName = "clusterEnableStatsInvalidName";
+
+            var msg = Assert.Throws<IgniteException>(
+                () => cluster.EnableStatistics(new[] {invalidCacheName}, true)).Message;
+            Assert.IsTrue(msg.Contains(invalidCacheName));
+            Assert.IsTrue(msg.Contains("One or more cache descriptors not found"));
         }
 
         /// <summary>
@@ -108,14 +170,68 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = metrics.Item1;
 
             Assert.AreEqual(1, localMetrics.Size);
+            Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
-            Assert.AreEqual(1, remoteMetrics.Size);
+            Assert.AreEqual(0, remoteMetrics.Size);
+            Assert.AreEqual(0, remoteMetrics.CacheSize);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
         }
 
+        /// <summary>
+        /// Test clearing cache metrics
+        /// </summary>
+        [Test]
+        public void TestCacheClearStatistics()
+        {
+            TestClearStatistics("TestCacheClearStatistics", cache => cache.ClearStatistics());
+        }
+
+        /// <summary>
+        /// Tests clearing cache metrics for cluster group
+        /// </summary>
+        [Test]
+        public void TestClusterGroupClearStatistics()
+        {
+            var cacheName = "TestClusterGroupClearStatistics";
+            TestClearStatistics(
+                cacheName,
+                cache => cache.Ignite.GetCluster().ClearStatistics(new[] {cacheName}));
+        }
+        
+        /// <summary>
+        /// Tests that empty cache names can be passed to <see cref="IClusterGroup.ClearStatistics"/>
+        /// </summary>
+        [Test]
+        public void  TestClusterClearStatisticsAllowsEmptyCacheNames()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterClearStatisticsAllowsEmptyCacheNames"));
+            var cluster = ignite.GetCluster();
+        
+            Assert.DoesNotThrow(() => cluster.ClearStatistics(Enumerable.Empty<string>()));
+        }
+        
+        /// <summary>
+        /// Tests exception when invalid cache name is passed to <see cref="IClusterGroup.ClearStatistics"/>
+        /// </summary>
+        [Test]
+        public void TestClusterClearStatisticsThrowsOnInvalidCacheName()
+        {
+            var ignite = Ignition.GetIgnite();
+            ignite.CreateCache<int, int>(new CacheConfiguration("clusterClearStatisticsThrowsOnInvalidCacheName"));
+            var cluster = ignite.GetCluster();
+        
+            var invalidCacheName = "clusterEnableStatsInvalidName";
+        
+            var msg = Assert.Throws<IgniteException>(
+                () => cluster.ClearStatistics(new[] {invalidCacheName})).Message;
+            Assert.IsTrue(msg.Contains(invalidCacheName));
+            Assert.IsTrue(msg.Contains("One or more cache descriptors not found"));
+        }
+        
         /// <summary>
         /// Tests the metrics propagation.
         /// </summary>
@@ -192,6 +308,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(51, metrics.WriteBehindCriticalOverflowCount);
                 Assert.AreEqual(52, metrics.WriteBehindErrorRetryCount);
                 Assert.AreEqual(53, metrics.WriteBehindBufferSize);
+                Assert.AreEqual(54, metrics.TotalPartitionsCount);
+                Assert.AreEqual(55, metrics.RebalancingPartitionsCount);
+                Assert.AreEqual(56, metrics.KeysToRebalanceLeft);
+                Assert.AreEqual(57, metrics.RebalancingKeysRate);
+                Assert.AreEqual(58, metrics.RebalancingBytesRate);
+                Assert.AreEqual(59, metrics.HeapEntriesCount);
+                Assert.AreEqual(62, metrics.EstimatedRebalancingFinishTime);
+                Assert.AreEqual(63, metrics.RebalancingStartTime);
+                Assert.AreEqual(65, metrics.CacheSize);
                 Assert.AreEqual("foo", metrics.KeyType);
                 Assert.AreEqual("bar", metrics.ValueType);
                 Assert.AreEqual(true, metrics.IsStoreByValue);
@@ -199,6 +324,19 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(true, metrics.IsManagementEnabled);
                 Assert.AreEqual(true, metrics.IsReadThrough);
                 Assert.AreEqual(true, metrics.IsWriteThrough);
+                Assert.AreEqual(true, metrics.IsValidForReading);
+                Assert.AreEqual(true, metrics.IsValidForWriting);
+                Assert.AreEqual(68, metrics.EntryProcessorPuts);
+                Assert.AreEqual(69, metrics.EntryProcessorReadOnlyInvocations);
+                Assert.AreEqual(70, metrics.EntryProcessorInvocations);
+                Assert.AreEqual(71, metrics.EntryProcessorHits);
+                Assert.AreEqual(72, metrics.EntryProcessorHitPercentage);
+                Assert.AreEqual(73, metrics.EntryProcessorMissPercentage);
+                Assert.AreEqual(74, metrics.EntryProcessorMisses);
+                Assert.AreEqual(75, metrics.EntryProcessorAverageInvocationTime);
+                Assert.AreEqual(76, metrics.EntryProcessorMinInvocationTime);
+                Assert.AreEqual(77, metrics.EntryProcessorMaxInvocationTime);
+                Assert.AreEqual(78, metrics.EntryProcessorRemovals);
             }
         }
 
@@ -237,6 +375,69 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(cacheName, remoteMetrics.CacheName);
 
             return Tuple.Create(localMetrics, remoteMetrics);
+        }
+
+        /// <summary>
+        /// Creates a cache, enables/disables statistics, validates
+        /// </summary>
+        private static void TestEnableStatistics(string cacheName, Action<ICache<int, int>, bool> enableStatistics)
+        {
+            var ignite = Ignition.GetIgnite();
+            var cache = ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = false
+            });
+
+            var key = 1;
+
+            enableStatistics(cache, true);
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            cache.Put(key, 1);
+            cache.Get(key);
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            var metrics = cache.GetMetrics();
+            Assert.AreEqual(1, metrics.Size);
+            Assert.AreEqual(1, metrics.CacheSize);
+            Assert.AreEqual(1, metrics.CacheGets);
+            Assert.AreEqual(1, metrics.CachePuts);
+
+            enableStatistics(cache, false);
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            metrics = cache.GetMetrics();
+            Assert.AreEqual(0, metrics.Size);
+            Assert.AreEqual(0, metrics.CacheSize);
+            Assert.AreEqual(0, metrics.CacheGets);
+            Assert.AreEqual(0, metrics.CachePuts);
+        }
+
+        /// <summary>
+        /// Creates a cache, performs some actions, clears statistics, validates
+        /// </summary>
+        private static void TestClearStatistics(string cacheName, Action<ICache<int, int>> clearStatistics)
+        {
+            var ignite = Ignition.GetIgnite();
+            var cache = ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
+            {
+                EnableStatistics = true
+            });
+
+            var key = 1;
+            cache.Put(key, 1);
+            cache.Get(key);
+
+            // Wait for metrics to propagate.
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+            var smokeMetrics = cache.GetMetrics();
+            Assert.AreEqual(1, smokeMetrics.CacheGets);
+            Assert.AreEqual(1, smokeMetrics.CachePuts);
+
+            clearStatistics(cache);
+
+            Thread.Sleep(IgniteConfiguration.DefaultMetricsUpdateFrequency);
+
+            var metrics = cache.GetMetrics();
+            Assert.AreEqual(0, metrics.CachePuts);
+            Assert.AreEqual(0, metrics.CacheGets);
         }
     }
 }

@@ -42,6 +42,9 @@ public class GridQueryNextPageRequest implements Message {
     /** */
     private int pageSize;
 
+    /** */
+    private byte flags;
+
     /**
      * Default constructor.
      */
@@ -54,12 +57,21 @@ public class GridQueryNextPageRequest implements Message {
      * @param qry Query.
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
+     * @param flags Flags.
      */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize) {
+    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize, byte flags) {
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.segmentId = segmentId;
         this.pageSize = pageSize;
+        this.flags = flags;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte getFlags() {
+        return flags;
     }
 
     /**
@@ -111,24 +123,30 @@ public class GridQueryNextPageRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("pageSize", pageSize))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("qry", qry))
+                if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("qryReqId", qryReqId))
+                if (!writer.writeInt("qry", qry))
                     return false;
 
                 writer.incrementState();
 
             case 3:
+                if (!writer.writeLong("qryReqId", qryReqId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
                 if (!writer.writeInt("segmentId", segmentId))
                     return false;
 
@@ -148,7 +166,7 @@ public class GridQueryNextPageRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                pageSize = reader.readInt("pageSize");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -156,7 +174,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                qry = reader.readInt("qry");
+                pageSize = reader.readInt("pageSize");
 
                 if (!reader.isLastRead())
                     return false;
@@ -164,7 +182,7 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                qryReqId = reader.readLong("qryReqId");
+                qry = reader.readInt("qry");
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,6 +190,14 @@ public class GridQueryNextPageRequest implements Message {
                 reader.incrementState();
 
             case 3:
+                qryReqId = reader.readLong("qryReqId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 segmentId = reader.readInt("segmentId");
 
                 if (!reader.isLastRead())
@@ -191,6 +217,6 @@ public class GridQueryNextPageRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 5;
     }
 }

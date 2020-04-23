@@ -36,8 +36,8 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -60,9 +60,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
-
-    /** IP finder for the grid with the primary file system. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Primary IGFS instances. */
     private static IgniteFileSystem[] igfsPrimary;
@@ -87,11 +84,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startSecondary();
         startPrimary();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
     }
 
     /**
@@ -154,11 +146,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setIgniteInstanceName("grid-" + idx);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -218,6 +205,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMetrics() throws Exception {
         IgniteFileSystem fs = igfsPrimary[0];
 
@@ -358,6 +346,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testMultipleClose() throws Exception {
         IgniteFileSystem fs = igfsPrimary[0];
 
@@ -383,6 +372,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ResultOfMethodCallIgnored", "ConstantConditions"})
+    @Test
     public void testBlockMetrics() throws Exception {
         IgfsEx igfs = (IgfsEx)igfsPrimary[0];
 

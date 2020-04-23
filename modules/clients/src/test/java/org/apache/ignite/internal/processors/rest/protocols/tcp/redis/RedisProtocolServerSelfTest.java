@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.util.HashMap;
 import org.junit.Assert;
+import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -28,6 +29,7 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDbSize() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(0, (long)jedis.dbSize());
@@ -46,6 +48,7 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushDb() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(0, (long)jedis.dbSize());
@@ -82,6 +85,7 @@ public class RedisProtocolServerSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlushAll() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(0, (long)jedis.dbSize());

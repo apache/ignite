@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -43,8 +45,17 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
 
         cfg.setActiveOnStart(false);
 
-        if (persistenceEnabled)
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        if (persistenceEnabled) {
+            DataStorageConfiguration memCfg = new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                )
+                .setWalMode(WALMode.LOG_ONLY);
+
+            cfg.setDataStorageConfiguration(memCfg);
+        }
 
         return cfg;
     }
@@ -52,6 +63,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyPartitionsNoPersistence() throws Exception {
         checkManyPartitions();
     }
@@ -59,6 +71,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testManyPartitionsWithPersistence() throws Exception {
         persistenceEnabled = true;
 
@@ -81,6 +94,6 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

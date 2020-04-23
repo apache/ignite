@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -118,6 +118,25 @@ namespace Apache.Ignite.Core.Tests.Services
         public Task DeployAsync(ServiceConfiguration configuration)
         {
             return _services.DeployAsync(configuration);
+        }
+
+        /** <inheritDoc /> */
+        public void DeployAll(IEnumerable<ServiceConfiguration> configurations)
+        {
+            try
+            {
+                _services.DeployAllAsync(configurations).Wait();
+            }
+            catch (AggregateException ex)
+            {
+                throw ex.InnerException ?? ex;
+            }
+        }
+
+        /** <inheritDoc /> */
+        public Task DeployAllAsync(IEnumerable<ServiceConfiguration> configurations)
+        {
+            return _services.DeployAllAsync(configurations);
         }
 
         /** <inheritDoc /> */
@@ -172,6 +191,18 @@ namespace Apache.Ignite.Core.Tests.Services
         public T GetServiceProxy<T>(string name, bool sticky) where T : class
         {
             return _services.GetServiceProxy<T>(name, sticky);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name)
+        {
+            return _services.GetDynamicServiceProxy(name);
+        }
+
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky)
+        {
+            return _services.GetDynamicServiceProxy(name, sticky);
         }
 
         /** <inheritDoc /> */

@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Client protocol version.
     /// </summary>
-    internal struct ClientProtocolVersion : IEquatable<ClientProtocolVersion>
+    internal struct ClientProtocolVersion : IEquatable<ClientProtocolVersion>, IComparable<ClientProtocolVersion>
     {
         /** */
         private readonly short _major;
@@ -68,6 +68,26 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Compare this version to other version.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public int CompareTo(ClientProtocolVersion other)
+        {
+            int res = Major - other.Major;
+
+            if (res == 0)
+            {
+                res = Minor - other.Minor;
+
+                if (res == 0)
+                    res = Maintenance - other.Maintenance;
+            }
+
+            return res;
+        }
+
+        /// <summary>
         /// Returns a value indicating whether specified instance equals to current.
         /// </summary>
         public bool Equals(ClientProtocolVersion other)
@@ -86,16 +106,52 @@ namespace Apache.Ignite.Core.Impl.Client
             return obj is ClientProtocolVersion && Equals((ClientProtocolVersion) obj);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Equality operator.
+        /// </summary>
         public static bool operator ==(ClientProtocolVersion left, ClientProtocolVersion right)
         {
             return left.Equals(right);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Inequality operator.
+        /// </summary>
         public static bool operator !=(ClientProtocolVersion left, ClientProtocolVersion right)
         {
             return !left.Equals(right);
+        }
+
+        /// <summary>
+        /// Less-than operator.
+        /// </summary>
+        public static bool operator <(ClientProtocolVersion left, ClientProtocolVersion right)
+        {
+            return left.CompareTo(right) < 0;
+        }
+
+        /// <summary>
+        /// Less-or-equal-than operator.
+        /// </summary>
+        public static bool operator <=(ClientProtocolVersion left, ClientProtocolVersion right)
+        {
+            return left.CompareTo(right) <= 0;
+        }
+
+        /// <summary>
+        /// Greater-than operator.
+        /// </summary>
+        public static bool operator >(ClientProtocolVersion left, ClientProtocolVersion right)
+        {
+            return left.CompareTo(right) > 0;
+        }
+
+        /// <summary>
+        /// Greater-or-equal-than operator.
+        /// </summary>
+        public static bool operator >=(ClientProtocolVersion left, ClientProtocolVersion right)
+        {
+            return left.CompareTo(right) >= 0;
         }
 
         /** <inheritdoc /> */

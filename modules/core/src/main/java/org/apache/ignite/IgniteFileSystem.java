@@ -306,7 +306,6 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
     public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
 
-
     /**
      * Executes IGFS task with overridden maximum range length (see
      * {@link org.apache.ignite.configuration.FileSystemConfiguration#getMaximumTaskRangeLength()} for more information).
@@ -374,7 +373,6 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      */
     public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
-
 
     /**
      * Executes IGFS task with overridden maximum range length (see

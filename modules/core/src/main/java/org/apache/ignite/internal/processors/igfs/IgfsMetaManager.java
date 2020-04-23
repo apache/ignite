@@ -89,6 +89,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T1;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -254,28 +255,19 @@ public class IgfsMetaManager extends IgfsManager {
      */
     <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
         try {
-            return runClientTask(IgfsUtils.ROOT_ID, task);
-        }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
-        }
-    }
-
-    /**
-     * Run client task.
-     *
-     * @param affinityFileId Affinity fileId.
-     * @param task Task.
-     * @return Result.
-     */
-    <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
-        try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(metaCacheName, affinityFileId, task) :
+                clientCompute().affinityCall(metaCacheName, IgfsUtils.ROOT_ID, task) :
                 clientCompute().call(task);
         }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+        catch (Exception e) {
+            if (X.hasCause(e, ClusterTopologyException.class))
+                throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+
+            IgfsException igfsEx = X.cause(e, IgfsException.class);
+            if (igfsEx != null)
+                throw igfsEx;
+
+            throw e;
         }
     }
 
@@ -596,7 +588,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws IgniteCheckedException If the file with such id does not exist, or on another failure.
      */
-    public @Nullable IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
+    @Nullable public IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -2215,8 +2207,6 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else
             throw new IllegalStateException("Failed to synchronize file because Grid is stopping: " + path);
-
-
     }
 
     /**
@@ -2578,7 +2568,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result of task execution.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"Contract", "ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgfsSecondaryFileSystem fs, boolean strict,
         @Nullable Collection<IgniteUuid> extraLockIds, IgfsPath... paths) throws IgniteCheckedException {
         assert task != null;
@@ -2904,7 +2894,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps,
         final boolean create,
         final int blockSize,
-        final @Nullable IgniteUuid affKey,
+        @Nullable final IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps) throws IgniteCheckedException {
         validTxState(false);
@@ -3000,7 +2990,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps,
         final boolean overwrite,
         final int blockSize,
-        final @Nullable IgniteUuid affKey,
+        @Nullable final IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps,
         @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx) throws IgniteCheckedException {

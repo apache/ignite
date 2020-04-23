@@ -25,6 +25,8 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
@@ -34,13 +36,14 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Native transaction wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources"})
+@SuppressWarnings({"unchecked"})
 public class PlatformTransactions extends PlatformAbstractTarget {
     /** */
     public static final int OP_CACHE_CONFIG_PARAMETERS = 1;
@@ -79,6 +82,9 @@ public class PlatformTransactions extends PlatformAbstractTarget {
     public static final int OP_PREPARE = 12;
 
     /** */
+    public static final int OP_LOCAL_ACTIVE_TX = 13;
+
+    /** */
     private final IgniteTransactions txs;
 
     /** Map with currently active transactions. */
@@ -96,6 +102,18 @@ public class PlatformTransactions extends PlatformAbstractTarget {
         super(platformCtx);
 
         txs = platformCtx.kernalContext().grid().transactions();
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     * @param lbl Label.
+     */
+    public PlatformTransactions(PlatformContext platformCtx, String lbl) {
+        super(platformCtx);
+
+        txs = platformCtx.kernalContext().grid().transactions().withLabel(lbl);
     }
 
     /**
@@ -261,6 +279,7 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 writer.writeInt(txCfg.getDefaultTxConcurrency().ordinal());
                 writer.writeInt(txCfg.getDefaultTxIsolation().ordinal());
                 writer.writeLong(txCfg.getDefaultTxTimeout());
+                writer.writeLong(txCfg.getTxTimeoutOnPartitionMapExchange());
 
                 break;
 
@@ -271,6 +290,25 @@ public class PlatformTransactions extends PlatformAbstractTarget {
                 writer.writeTimestamp(new Timestamp(metrics.rollbackTime()));
                 writer.writeInt(metrics.txCommits());
                 writer.writeInt(metrics.txRollbacks());
+
+                break;
+
+            case OP_LOCAL_ACTIVE_TX:
+                Collection<Transaction> activeTxs = txs.localActiveTransactions();
+
+                PlatformUtils.writeCollection(writer, activeTxs, new PlatformWriterClosure<Transaction>() {
+                    @Override public void write(BinaryRawWriterEx writer, Transaction tx) {
+                        writer.writeLong(registerTx(tx));
+
+                        writer.writeInt(tx.concurrency().ordinal());
+
+                        writer.writeInt(tx.isolation().ordinal());
+
+                        writer.writeLong(tx.timeout());
+                        
+                        writer.writeString(tx.label());
+                    }
+                });
 
                 break;
 

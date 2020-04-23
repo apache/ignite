@@ -25,11 +25,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,9 +40,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Test with variable number of nodes.
  */
 public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int INIT_GRID_NUM = 3;
 
@@ -61,12 +56,6 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -94,6 +83,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSimple() throws Exception {
         String key = UUID.randomUUID().toString();
 
@@ -115,6 +105,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCustom() throws Exception {
         String key = UUID.randomUUID().toString();
 
@@ -136,6 +127,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
         String key = UUID.randomUUID().toString();
 

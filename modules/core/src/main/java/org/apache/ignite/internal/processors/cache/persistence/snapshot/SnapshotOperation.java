@@ -28,17 +28,18 @@ public interface SnapshotOperation extends Serializable {
     /**
      * Cache group ids included to this snapshot.
      *
-     * @return Cache names.
+     * @return Cache group identifiers.
      */
-    Set<Integer> cacheGroupIds();
+    public Set<Integer> cacheGroupIds();
 
     /**
-     * Cache names included to this snapshot.
+     * @return Cache names included to this snapshot.
      */
-    Set<String> cacheNames();
+    public Set<String> cacheNames();
 
     /**
-     * Any custom extra parameter.
+     * @return Any custom extra parameter.
+     * In case Map object is provided, contains named snapshot operation attributes.
      */
-    Object extraParameter();
+    public Object extraParameter();
 }

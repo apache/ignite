@@ -113,7 +113,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @param settings string containing xml with persistence settings for Ignite cache key/value
      */
-    @SuppressWarnings("UnusedDeclaration")
     public KeyValuePersistenceSettings(String settings) {
         init(settings);
     }
@@ -123,7 +122,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @param settingsFile xml file with persistence settings for Ignite cache key/value
      */
-    @SuppressWarnings("UnusedDeclaration")
     public KeyValuePersistenceSettings(File settingsFile) {
         InputStream in;
 
@@ -206,7 +204,6 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @return POJO fields list.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public List<PojoField> getFields() {
         List<PojoField> fields = new LinkedList<>();
 
@@ -224,8 +221,7 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @return POJO fields list.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public List<PojoField> getKeyFields() {
+    public List<PojoKeyField> getKeyFields() {
         return keyPersistenceSettings.getFields();
     }
 
@@ -234,8 +230,7 @@ public class KeyValuePersistenceSettings implements Serializable {
      *
      * @return POJO fields list.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    public List<PojoField> getValueFields() {
+    public List<PojoValueField> getValueFields() {
         return valPersistenceSettings.getFields();
     }
 
@@ -321,11 +316,12 @@ public class KeyValuePersistenceSettings implements Serializable {
     public List<String> getIndexDDLStatements(String table) {
         List<String> idxDDLs = new LinkedList<>();
 
-        Set<String> keyColumns = new HashSet<>(keyPersistenceSettings.getTableColumns());
-        List<PojoField> fields = valPersistenceSettings.getFields();
+        Set<String> keyCols = new HashSet<>(keyPersistenceSettings.getTableColumns());
+
+        List<PojoValueField> fields = valPersistenceSettings.getFields();
 
         for (PojoField field : fields) {
-            if (!keyColumns.contains(field.getColumn()) && ((PojoValueField)field).isIndexed())
+            if (!keyCols.contains(field.getColumn()) && ((PojoValueField)field).isIndexed())
                 idxDDLs.add(((PojoValueField)field).getIndexDDL(keyspace, table));
         }
 
@@ -461,8 +457,8 @@ public class KeyValuePersistenceSettings implements Serializable {
                 "there are no value persistence settings specified");
         }
 
-        List<PojoField> keyFields = keyPersistenceSettings.getFields();
-        List<PojoField> valFields = valPersistenceSettings.getFields();
+        List<PojoKeyField> keyFields = keyPersistenceSettings.getFields();
+        List<PojoValueField> valFields = valPersistenceSettings.getFields();
 
         if (PersistenceStrategy.POJO == keyPersistenceSettings.getStrategy() &&
             (keyFields == null || keyFields.isEmpty())) {

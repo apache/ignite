@@ -60,6 +60,14 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public ICompute WithNoResultCache()
+        {
+            _compute.WithNoResultCache();
+
+            return this;
+        }
+
+        /** <inheritDoc /> */
         public ICompute WithTimeout(long timeout)
         {
             _compute.WithTimeout(timeout);
@@ -73,6 +81,14 @@ namespace Apache.Ignite.Core.Impl.Compute
             _compute.WithKeepBinary();
 
             return this;
+        }
+
+        /** <inheritDoc /> */
+        public ICompute WithExecutor(string executorName)
+        {
+            var computeImpl = _compute.WithExecutor(executorName);
+
+            return new Compute(computeImpl);
         }
 
         /** <inheritDoc /> */

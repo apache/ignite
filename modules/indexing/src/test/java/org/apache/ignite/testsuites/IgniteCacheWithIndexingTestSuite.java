@@ -17,14 +17,21 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest;
+import org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsWithIndexBuildFailTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsWithIndexTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationsWithExpirationTest;
+import org.apache.ignite.internal.processors.cache.CacheQueryAfterDynamicCacheStartFailureTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryFilterExpiredTest;
 import org.apache.ignite.internal.processors.cache.CacheRandomOperationsMultithreadedTest;
+import org.apache.ignite.internal.processors.cache.CacheRegisterMetadataLocallyTest;
 import org.apache.ignite.internal.processors.cache.ClientReconnectAfterClusterRestartTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeDoesNotBreakSqlSelectTest;
+import org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeSqlTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
@@ -33,51 +40,72 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimi
 import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
+import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExceptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
+import org.apache.ignite.internal.processors.cache.ttl.CacheTtlReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
+import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelperTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Cache tests using indexing.
  */
-public class IgniteCacheWithIndexingTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache With Indexing Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    InlineIndexHelperTest.class,
 
-        suite.addTestSuite(InlineIndexHelperTest.class);
+    GridIndexingWithNoopSwapSelfTest.class,
+    GridCacheOffHeapSelfTest.class,
 
-        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
+    CacheTtlTransactionalLocalSelfTest.class,
+    CacheTtlTransactionalPartitionedSelfTest.class,
+    CacheTtlAtomicLocalSelfTest.class,
+    CacheTtlAtomicPartitionedSelfTest.class,
+    CacheTtlReadOnlyModeSelfTest.class,
 
-        suite.addTestSuite(CacheTtlTransactionalLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlTransactionalPartitionedSelfTest.class);
-        suite.addTestSuite(CacheTtlAtomicLocalSelfTest.class);
-        suite.addTestSuite(CacheTtlAtomicPartitionedSelfTest.class);
+    GridCacheOffheapIndexGetSelfTest.class,
+    GridCacheOffheapIndexEntryEvictTest.class,
+    CacheIndexStreamerTest.class,
 
-        suite.addTestSuite(GridCacheOffheapIndexGetSelfTest.class);
-        suite.addTestSuite(GridCacheOffheapIndexEntryEvictTest.class);
-        suite.addTestSuite(CacheIndexStreamerTest.class);
+    CacheConfigurationP2PTest.class,
 
-        suite.addTestSuite(CacheConfigurationP2PTest.class);
+    IgniteCacheConfigurationPrimitiveTypesSelfTest.class,
+    IgniteClientReconnectQueriesTest.class,
+    CacheRandomOperationsMultithreadedTest.class,
+    IgniteCacheStarvationOnRebalanceTest.class,
+    CacheOperationsWithExpirationTest.class,
+    CacheBinaryKeyConcurrentQueryTest.class,
+    CacheQueryFilterExpiredTest.class,
 
-        suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
-        suite.addTestSuite(IgniteClientReconnectQueriesTest.class);
-        suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
-        suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
-        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
-        suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
-        suite.addTestSuite(CacheQueryFilterExpiredTest.class);
+    ClientReconnectAfterClusterRestartTest.class,
 
-        suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+    CacheQueryAfterDynamicCacheStartFailureTest.class,
 
-        suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
+    CacheRegisterMetadataLocallyTest.class,
 
-        return suite;
-    }
+    IgniteCacheGroupsSqlTest.class,
+
+    IgniteDataStreamerTest.class,
+
+    BinaryTypeMismatchLoggingTest.class,
+
+    BinaryTypeRegistrationTest.class,
+
+    ClusterReadOnlyModeSqlTest.class,
+
+    ClusterReadOnlyModeDoesNotBreakSqlSelectTest.class,
+
+    CacheGroupMetricsWithIndexTest.class,
+    CacheGroupMetricsWithIndexBuildFailTest.class,
+
+    RebuildIndexLogMessageTest.class,
+
+    H2TreeCorruptedTreeExceptionTest.class
+})
+public class IgniteCacheWithIndexingTestSuite {
 }

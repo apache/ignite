@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.ipc.IpcEndpointFactory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT;
 
@@ -73,7 +74,7 @@ public abstract class IgniteHadoopFileSystemShmemExternalToClientAbstractSelfTes
      *
      * @throws Exception If error occurred.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testOutOfResources() throws Exception {
         final Collection<IpcEndpoint> eps = new LinkedList<>();
 

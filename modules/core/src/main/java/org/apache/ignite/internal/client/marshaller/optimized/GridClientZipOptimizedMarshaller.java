@@ -28,7 +28,6 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -125,6 +124,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
 
         return baos.toByteArray();
     }
+
     /** {@inheritDoc} */
     @Override public ByteBuffer marshal(Object obj, int off) throws IOException {
         try {

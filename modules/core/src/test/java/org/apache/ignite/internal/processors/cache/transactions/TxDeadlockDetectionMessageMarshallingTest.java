@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -41,22 +41,10 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
     /** Topic. */
     private static final String TOPIC = "mytopic";
 
-    /** Client mode. */
-    private static boolean clientMode;
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(clientMode);
-
-        return cfg;
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMessageUnmarshallWithoutCacheContext() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -65,9 +53,7 @@ public class TxDeadlockDetectionMessageMarshallingTest extends GridCommonAbstrac
 
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(ccfg);
 
-            clientMode = true;
-
-            Ignite client = startGrid(1);
+            Ignite client = startClientGrid(1);
 
             final GridCacheSharedContext<Object, Object> clientCtx = ((IgniteKernal)client).context().cache().context();
 

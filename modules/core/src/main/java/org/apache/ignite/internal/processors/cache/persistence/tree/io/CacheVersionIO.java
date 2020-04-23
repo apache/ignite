@@ -155,6 +155,31 @@ public class CacheVersionIO {
     public static int readSize(ByteBuffer buf, boolean allowNull) throws IgniteCheckedException {
         byte protoVer = checkProtocolVersion(buf.get(buf.position()), allowNull);
 
+        return sizeForVersion(protoVer);
+    }
+
+    /**
+     * Gets needed buffer size to read the whole version instance.
+     * Does not change buffer position.
+     *
+     * @param pageAddr Page address.
+     * @param allowNull Is {@code null} version allowed.
+     * @return Size of serialized version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static int readSize(long pageAddr, boolean allowNull) throws IgniteCheckedException {
+        byte protoVer = checkProtocolVersion(PageUtils.getByte(pageAddr, 0), allowNull);
+
+        return sizeForVersion(protoVer);
+    }
+
+    /**
+     * Get size for protocol version.
+     *
+     * @param protoVer Protocol version.
+     * @return Size.
+     */
+    private static int sizeForVersion(int protoVer) {
         switch (protoVer) {
             case NULL_PROTO_VER:
                 return NULL_SIZE;

@@ -23,8 +23,10 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.CharacterCodingException;
@@ -48,15 +50,18 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -69,6 +74,7 @@ import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -106,6 +112,18 @@ public class VisorTaskUtils {
 
     /** Log files count limit */
     public static final int LOG_FILES_COUNT_LIMIT = 5000;
+
+    /** */
+    public static final int NOTHING_TO_REBALANCE = -1;
+
+    /** */
+    public static final int REBALANCE_NOT_AVAILABLE = -2;
+
+    /** */
+    public static final double MINIMAL_REBALANCE = 0.01;
+
+    /** */
+    public static final int REBALANCE_COMPLETE = 1;
 
     /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
@@ -756,12 +774,9 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
-        if (plc instanceof LruEvictionPolicyMBean)
-            return ((LruEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof FifoEvictionPolicyMBean)
-            return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+    public static Integer evictionPolicyMaxSize(@Nullable Factory plc) {
+        if (plc instanceof AbstractEvictionPolicyFactory)
+            return ((AbstractEvictionPolicyFactory) plc).getMaxSize();
 
         return null;
     }
@@ -841,7 +856,7 @@ public class VisorTaskUtils {
      * @param start Start time.
      */
     public static void logFinish(@Nullable IgniteLogger log, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: FINISHED, duration: %s", clazz.getSimpleName(), formatDuration(end - start)));
     }
@@ -854,7 +869,7 @@ public class VisorTaskUtils {
      * @param nodes Mapped nodes.
      */
     public static void logMapped(@Nullable IgniteLogger log, Class<?> clazz, Collection<ClusterNode> nodes) {
-        log0(log, U.currentTimeMillis(),
+        log0(log, System.currentTimeMillis(),
             String.format("[%s]: MAPPED: %s", clazz.getSimpleName(), U.toShortString(nodes)));
     }
 
@@ -868,7 +883,7 @@ public class VisorTaskUtils {
      * @return Time when message was logged.
      */
     public static long log(@Nullable IgniteLogger log, String msg, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
@@ -882,7 +897,7 @@ public class VisorTaskUtils {
      * @param msg Message.
      */
     public static void log(@Nullable IgniteLogger log, String msg) {
-        log0(log, U.currentTimeMillis(), " " + msg);
+        log0(log, System.currentTimeMillis(), " " + msg);
     }
 
     /**
@@ -1112,5 +1127,167 @@ public class VisorTaskUtils {
      */
     public static boolean joinTimedOut(String msg) {
         return msg != null && msg.startsWith("Join process timed out.");
+    }
+
+    /**
+     * Special wrapper over address that can be sorted in following order:
+     *     IPv4, private IPv4, IPv4 local host, IPv6.
+     *     Lower addresses first.
+     */
+    private static class SortableAddress implements Comparable<SortableAddress> {
+        /** */
+        private int type;
+
+        /** */
+        private BigDecimal bits;
+
+        /** */
+        private String addr;
+
+        /**
+         * Constructor.
+         *
+         * @param addr Address as string.
+         */
+        private SortableAddress(String addr) {
+            this.addr = addr;
+
+            if (addr.indexOf(':') > 0)
+                type = 4; // IPv6
+            else {
+                try {
+                    InetAddress inetAddr = InetAddress.getByName(addr);
+
+                    if (inetAddr.isLoopbackAddress())
+                        type = 3;  // localhost
+                    else if (inetAddr.isSiteLocalAddress())
+                        type = 2;  // private IPv4
+                    else
+                        type = 1; // other IPv4
+                }
+                catch (UnknownHostException ignored) {
+                    type = 5;
+                }
+            }
+
+            bits = BigDecimal.valueOf(0L);
+
+            try {
+                String[] octets = addr.contains(".") ? addr.split(".") : addr.split(":");
+
+                int len = octets.length;
+
+                for (int i = 0; i < len; i++) {
+                    long oct = F.isEmpty(octets[i]) ? 0 : Long.valueOf( octets[i]);
+                    long pow = Double.valueOf(Math.pow(256, octets.length - 1 - i)).longValue();
+
+                    bits = bits.add(BigDecimal.valueOf(oct * pow));
+                }
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull SortableAddress o) {
+            return (type == o.type ? bits.compareTo(o.bits) : Integer.compare(type, o.type));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SortableAddress other = (SortableAddress)o;
+
+            return addr != null ? addr.equals(other.addr) : other.addr == null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return addr != null ? addr.hashCode() : 0;
+        }
+
+        /**
+         * @return Address.
+         */
+        public String address() {
+            return addr;
+        }
+    }
+
+    /**
+     * Sort addresses: IPv4 & real addresses first.
+     *
+     * @param addrs Addresses to sort.
+     * @return Sorted list.
+     */
+    public static Collection<String> sortAddresses(Collection<String> addrs) {
+        if (F.isEmpty(addrs))
+            return Collections.emptyList();
+
+        int sz = addrs.size();
+
+        List<SortableAddress> sorted = new ArrayList<>(sz);
+
+        for (String addr : addrs)
+            sorted.add(new SortableAddress(addr));
+
+        Collections.sort(sorted);
+
+        Collection<String> res = new ArrayList<>(sz);
+
+        for (SortableAddress sa : sorted)
+            res.add(sa.address());
+
+        return res;
+    }
+
+    /**
+     * Split addresses.
+     *
+     * @param s String with comma separted addresses.
+     * @return Collection of addresses.
+     */
+    public static Collection<String> splitAddresses(String s) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        String[] addrs = s.split(",");
+
+        for (int i = 0; i < addrs.length; i++)
+            addrs[i] = addrs[i].trim();
+
+        return Arrays.asList(addrs);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param cacheName Cache name to check.
+     * @return {@code true} if cache on local node is not a data cache or near cache disabled.
+     */
+    public static boolean isProxyCache(IgniteEx ignite, String cacheName) {
+        GridDiscoveryManager discovery = ignite.context().discovery();
+
+        ClusterNode locNode = ignite.localNode();
+
+        return !(discovery.cacheAffinityNode(locNode, cacheName) || discovery.cacheNearNode(locNode, cacheName));
+    }
+
+    /**
+     * Check whether cache restarting in progress.
+     *
+     * @param ignite Grid.
+     * @param cacheName Cache name to check.
+     * @return {@code true} when cache restarting in progress.
+     */
+    public static boolean isRestartingCache(IgniteEx ignite, String cacheName)  {
+        IgniteCacheProxy<Object, Object> proxy = ignite.context().cache().jcache(cacheName);
+
+        return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl) proxy).isRestarting();
     }
 }

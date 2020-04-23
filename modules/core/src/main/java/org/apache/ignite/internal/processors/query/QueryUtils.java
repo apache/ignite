@@ -19,11 +19,19 @@ package org.apache.ignite.internal.processors.query;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,16 +45,19 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -55,19 +66,43 @@ import org.apache.ignite.internal.processors.query.property.QueryPropertyAccesso
 import org.apache.ignite.internal.processors.query.property.QueryReadOnlyMethodsAccessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
 
 /**
  * Utility methods for queries.
  */
 public class QueryUtils {
+    /** */
+    public static final int DEFAULT_COLUMNS_COUNT = 2;
+
+    /** Key column. */
+    public static final int KEY_COL = 0;
+
+    /** Value column. */
+    public static final int VAL_COL = 1;
+
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
+
+    /** Schema for system view. */
+    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE, false) ? "IGNITE" : "SYS";
+
+    /** Schema for system view. */
+    public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
 
     /** Field name for key. */
     public static final String KEY_FIELD_NAME = "_KEY";
@@ -75,39 +110,50 @@ public class QueryUtils {
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
 
-    /** Version field name. */
-    public static final String VER_FIELD_NAME = "_VER";
-
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
 
     /** Well-known template name for REPLICATED cache. */
-    public static final String TEMPLATE_REPLICÄTED = "REPLICATED";
+    public static final String TEMPLATE_REPLICATED = "REPLICATED";
 
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE = getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, 1000);
 
     /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("com.vividsolutions.jts.geom.Geometry", null);
+    private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
 
     /** */
-    private static final Set<Class<?>> SQL_TYPES = new HashSet<>(F.<Class<?>>asList(
-        Integer.class,
-        Boolean.class,
-        Byte.class,
-        Short.class,
-        Long.class,
-        BigDecimal.class,
-        Double.class,
-        Float.class,
-        Time.class,
-        Timestamp.class,
-        java.util.Date.class,
-        java.sql.Date.class,
-        String.class,
-        UUID.class,
-        byte[].class
-    ));
+    private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
+    /**
+     * Creates SQL types set.
+     *
+     * @return SQL types set.
+     */
+    @NotNull private static Set<Class<?>> createSqlTypes() {
+        Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
+            Integer.class,
+            Boolean.class,
+            Byte.class,
+            Short.class,
+            Long.class,
+            BigDecimal.class,
+            Double.class,
+            Float.class,
+            Time.class,
+            Timestamp.class,
+            Date.class,
+            java.sql.Date.class,
+            LocalTime.class,
+            LocalDate.class,
+            LocalDateTime.class,
+            String.class,
+            UUID.class,
+            byte[].class
+        ));
+
+        return sqlClasses;
+    }
 
     /**
      * Get table name for entity.
@@ -179,6 +225,27 @@ public class QueryUtils {
     }
 
     /**
+     * Normalize cache query entities.
+     *
+     * @param entities Query entities.
+     * @param cfg Cache config.
+     * @return Normalized query entities.
+     */
+    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
+        CacheConfiguration<?, ?> cfg) {
+        Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
+
+        for (QueryEntity entity : entities) {
+            if (!F.isEmpty(entity.getNotNullFields()))
+                checkNotNullAllowed(cfg);
+
+            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+        }
+
+        return normalEntities;
+    }
+
+    /**
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
      * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
@@ -224,6 +291,9 @@ public class QueryUtils {
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
+        normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
+        normalEntity.setFieldsPrecision(entity.getFieldsPrecision());
+        normalEntity.setFieldsScale(entity.getFieldsScale());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -331,7 +401,7 @@ public class QueryUtils {
      * @param replace Whether to perform replace of special characters.
      * @return Escaped string.
      */
-    public static @Nullable String normalizeObjectName(@Nullable String str, boolean replace) {
+    @Nullable public static String normalizeObjectName(@Nullable String str, boolean replace) {
         if (str == null)
             return null;
 
@@ -346,23 +416,24 @@ public class QueryUtils {
      *
      * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param cctx Cache context.
+     * @param cacheInfo Cache context info.
      * @param qryEntity Query entity.
      * @param mustDeserializeClss Classes which must be deserialized.
      * @param escape Escape flag.
      * @return Type candidate.
      * @throws IgniteCheckedException If failed.
      */
-    public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContext cctx,
-        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
-        GridKernalContext ctx = cctx.kernalContext();
-        CacheConfiguration<?,?> ccfg = cctx.config();
+    public static QueryTypeCandidate typeForQueryEntity(GridKernalContext ctx, String cacheName, String schemaName,
+        GridCacheContextInfo cacheInfo,
+        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape)
+        throws IgniteCheckedException {
+        CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
         boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
 
-        CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
+        CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
 
         desc.schemaName(schemaName);
 
@@ -370,8 +441,10 @@ public class QueryUtils {
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
-        Class<?> keyCls = U.classForName(qryEntity.findKeyType(), null);
-        Class<?> valCls = U.classForName(qryEntity.findValueType(), null);
+        // We better box these types - otherwise, if user provides, say, raw 'byte' for
+        // key or value (which they could), we'll deem key or value as Object which clearly is not right.
+        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -438,32 +511,36 @@ public class QueryUtils {
 
             String affField = null;
 
-            // Need to setup affinity key for distributed joins.
-            String keyType = qryEntity.getKeyType();
+            if (!coCtx.customAffinityMapper()) {
+                String keyType = qryEntity.getKeyType();
 
-            if (!cctx.customAffinityMapper() && keyType != null) {
-                if (coCtx != null) {
+                if (keyType != null) {
                     CacheDefaultBinaryAffinityKeyMapper mapper =
                         (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
 
                     BinaryField field = mapper.affinityKeyField(keyType);
 
-                    if (field != null)
-                        affField = field.name();
+                    if (field != null) {
+                        String affField0 = field.name();
+
+                        if (!F.isEmpty(qryEntity.getKeyFields()) && qryEntity.getKeyFields().contains(affField0)) {
+                            affField = affField0;
+
+                            if (!escape)
+                                affField = normalizeObjectName(affField, false);
+                        }
+                    }
                 }
             }
+            else
+                desc.customAffinityKeyMapper(true);
 
-            if (affField != null) {
-                if (!escape)
-                    affField = normalizeObjectName(affField, false);
-
-                desc.affinityKey(affField);
-            }
+            desc.affinityKey(affField);
         }
         else {
             processClassMeta(qryEntity, desc, coCtx);
 
-            AffinityKeyMapper keyMapper = cctx.config().getAffinityMapper();
+            AffinityKeyMapper keyMapper = cacheInfo.config().getAffinityMapper();
 
             if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
                 String affField =
@@ -476,6 +553,8 @@ public class QueryUtils {
                     desc.affinityKey(affField);
                 }
             }
+            else
+                desc.customAffinityKeyMapper(true);
 
             typeId = new QueryTypeIdKey(cacheName, valCls);
             altTypeId = new QueryTypeIdKey(cacheName, valTypeId);
@@ -496,13 +575,13 @@ public class QueryUtils {
      */
     public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
+        LinkedHashMap<String, String> fields = qryEntity.getFields();
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
+        Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
+        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> scale = qryEntity.getFieldsScale();
 
-        // We have to distinguish between empty and null keyFields when the key is not of SQL type -
-        // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
-        // is a value field, and null keyFields tells us that current configuration
-        // does not tell us anything about this field's ownership.
         boolean hasKeyFields = (keyFields != null);
 
         boolean isKeyClsSqlType = isSqlType(d.keyClass());
@@ -510,30 +589,97 @@ public class QueryUtils {
         if (hasKeyFields && !isKeyClsSqlType) {
             //ensure that 'keyFields' is case sensitive subset of 'fields'
             for (String keyField : keyFields) {
-                if (!qryEntity.getFields().containsKey(keyField))
+                if (!fields.containsKey(keyField))
                     throw new IgniteCheckedException("QueryEntity 'keyFields' property must be a subset of keys " +
                         "from 'fields' property (case sensitive): " + keyField);
             }
         }
 
-        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            Boolean isKeyField;
+        // We are creating binary properties for all the fields, even if field is of sql type (keyFieldName or
+        // valueFieldName). In that case we rely on the fact, that binary property's methods value() and
+        // setValue() will never get called, because there is no value to extract, key/val object itself is a
+        // value.
+        for (Map.Entry<String, String> entry : fields.entrySet()) {
+            String fieldName = entry.getKey();
+            String fieldType = entry.getValue();
 
-            if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
+            boolean isKeyField;
+
+            if (isKeyClsSqlType)
+                // Entire key is not field of itself, even if it is set in "keyFields".
                 isKeyField = false;
             else
-                isKeyField = (hasKeyFields ? keyFields.contains(entry.getKey()) : null);
+                isKeyField = hasKeyFields && keyFields.contains(fieldName);
 
-            boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
+            boolean notNull = notNulls != null && notNulls.contains(fieldName);
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
-                U.classForName(entry.getValue(), Object.class, true),
-                d.aliases(), isKeyField, notNull);
+            Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
+
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
+                U.classForName(fieldType, Object.class, true),
+                d.aliases(), isKeyField, notNull, dfltVal,
+                precision == null ? -1 : precision.getOrDefault(fieldName, -1),
+                scale == null ? -1 : scale.getOrDefault(fieldName, -1));
 
             d.addProperty(prop, false);
         }
 
+        // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
+        String keyFieldName = qryEntity.getKeyFieldName();
+
+        if (keyFieldName == null)
+            keyFieldName = KEY_FIELD_NAME;
+
+        if (!F.isEmpty(precision) && precision.containsKey(keyFieldName) &&
+            !fields.containsKey(keyFieldName)) {
+            addKeyValueValidationProperty(ctx, qryEntity, d, keyFieldName, true);
+        }
+
+        String valFieldName = qryEntity.getValueFieldName();
+
+        if (valFieldName == null)
+            valFieldName = VAL_FIELD_NAME;
+
+        if (!F.isEmpty(precision) && precision.containsKey(valFieldName) &&
+            !fields.containsKey(valFieldName)) {
+            addKeyValueValidationProperty(ctx, qryEntity, d, valFieldName, false);
+        }
+
         processIndexes(qryEntity, d);
+    }
+
+    /**
+     * Add validate property to QueryTypeDescriptor.
+     *
+     * @param ctx Kernel context.
+     * @param qryEntity Query entity.
+     * @param d Descriptor.
+     * @param name Field name.
+     * @throws IgniteCheckedException
+     */
+    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d,
+        String name, boolean isKey) throws IgniteCheckedException {
+
+        Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
+        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> scale = qryEntity.getFieldsScale();
+
+        String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
+
+        Object dfltVal = dfltVals.get(name);
+
+        QueryBinaryProperty prop = buildBinaryProperty(
+            ctx,
+            name,
+            U.classForName(typeName, Object.class, true),
+            d.aliases(),
+            isKey,
+            true,
+            dfltVal,
+            precision == null ? -1 : precision.getOrDefault(name, -1),
+            scale == null ? -1 : scale.getOrDefault(name, -1));
+
+        d.addProperty(prop, true, false);
     }
 
     /**
@@ -668,13 +814,17 @@ public class QueryUtils {
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
-     *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
+     * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
+     * not a field of itself.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param dlftVal Default value.
+     * @param precision Precision.
+     * @param scale Scale.
      * @return Binary property.
      */
-    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull) throws IgniteCheckedException {
+    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr,
+        Class<?> resType, Map<String, String> aliases, boolean isKeyField, boolean notNull, Object dlftVal,
+        int precision, int scale) {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -690,7 +840,8 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull);
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
+                precision, scale);
         }
 
         return res;
@@ -710,17 +861,10 @@ public class QueryUtils {
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
         Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
         throws IgniteCheckedException {
-        QueryClassProperty res = buildClassProperty(
-            true,
-            keyCls,
-            pathStr,
-            resType,
-            aliases,
-            notNull,
-            coCtx);
+        QueryClassProperty res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
 
-        if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
+        if (res == null) // We check value before key consistently with BinaryProperty.
+            res = buildClassProperty(true, keyCls, pathStr, resType, aliases, notNull, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException(propertyInitializationExceptionMessage(keyCls, valCls, pathStr, resType));
@@ -1052,7 +1196,7 @@ public class QueryUtils {
      * @param e Original exception.
      * @return Schema exception.
      */
-    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Exception e) {
+    @Nullable public static SchemaOperationException wrapIfNeeded(@Nullable Throwable e) {
         if (e == null)
             return null;
 
@@ -1153,6 +1297,41 @@ public class QueryUtils {
                         ", queryIdx=" + idx + ']');
             }
         }
+
+        Map<String, Object> dfltVals = entity.getDefaultFieldValues();
+        Map<String, Integer> precision = entity.getFieldsPrecision();
+        Map<String, Integer> scale = entity.getFieldsScale();
+
+        if (!F.isEmpty(precision)) {
+            for (String fld : precision.keySet()) {
+                if (!dfltVals.containsKey(fld))
+                    continue;
+
+                Object dfltVal = dfltVals.get(fld);
+
+                if (dfltVal == null)
+                    continue;
+
+                if (dfltVal.getClass() == String.class && dfltVal.toString().length() > precision.get(fld)) {
+                    throw new IgniteSQLException("Default value '" + dfltVal +
+                        "' is longer than maximum length " + precision.get(fld), TOO_LONG_VALUE);
+                }
+                else if (dfltVal.getClass() == BigDecimal.class) {
+                    BigDecimal dec = (BigDecimal)dfltVal;
+
+                    if (dec.precision() > precision.get(fld)) {
+                        throw new IgniteSQLException("Default value: '" + dfltVal + "' for a column " + fld +
+                            " is out of range. Maximum precision: " + precision.get(fld) +
+                            ", actual precision: " + dec.precision(), TOO_LONG_VALUE);
+                    }
+                    else if (!F.isEmpty(scale) && scale.containsKey(fld) && dec.scale() > scale.get(fld)) {
+                        throw new IgniteSQLException("Default value:: '" + dfltVal + "' for a column " + fld +
+                            " is out of range. Maximum scale: " + scale.get(fld) +
+                            ", actual scale: " + dec.scale(), VALUE_SCALE_OUT_OF_RANGE);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1221,6 +1400,195 @@ public class QueryUtils {
     }
 
     /**
+     * Checks whether affinity key mapper is custom or default.
+     *
+     * @param affinityKeyMapper Affinity key mapper.
+     * @return {@code true} if affinity key mapper is custom.
+     */
+    public static boolean isCustomAffinityMapper(AffinityKeyMapper affinityKeyMapper) {
+        return affinityKeyMapper != null &&
+                !(affinityKeyMapper instanceof CacheDefaultBinaryAffinityKeyMapper) &&
+                !(affinityKeyMapper instanceof GridCacheDefaultAffinityKeyMapper);
+    }
+
+    /**
+     * Checks if given column can be removed from table using its {@link QueryEntity}.
+     *
+     * @param entity Query entity.
+     * @param fieldName Name of the field of the key or value object.
+     * @param colName Name of the column.
+     * @return {@code null} if it's OK to remove the column and exception otherwise.
+     */
+    public static SchemaOperationException validateDropColumn(QueryEntity entity, String fieldName, String colName) {
+        if (F.eq(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache key");
+
+        if (F.eq(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache value");
+
+        Set<String> keyFields = entity.getKeyFields();
+
+        if (keyFields != null && keyFields.contains(fieldName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it is a part of a cache key");
+
+        Collection<QueryIndex> indexes = entity.getIndexes();
+
+        if (indexes != null) {
+            for (QueryIndex idxDesc : indexes) {
+                if (idxDesc.getFields().containsKey(fieldName))
+                    return new SchemaOperationException("Cannot drop column \"" + colName +
+                        "\" because an index exists (\"" + idxDesc.getName() + "\") that uses the column.");
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if given column can be removed from the table using its {@link GridQueryTypeDescriptor}.
+     *
+     * @param type Type descriptor.
+     * @param colName Name of the column.
+     * @return {@code null} if it's OK to remove the column and exception otherwise.
+     */
+    public static SchemaOperationException validateDropColumn(GridQueryTypeDescriptor type, String colName) {
+        if (F.eq(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache key");
+
+        if (F.eq(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache value");
+
+        GridQueryProperty prop = type.property(colName);
+
+        if (prop != null && prop.key())
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it is a part of a cache key");
+
+        Collection<GridQueryIndexDescriptor> indexes = type.indexes().values();
+
+        for (GridQueryIndexDescriptor idxDesc : indexes) {
+            if (idxDesc.fields().contains(colName))
+                return new SchemaOperationException("Cannot drop column \"" + colName +
+                    "\" because an index exists (\"" + idxDesc.name() + "\") that uses the column.");
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns true if the exception is triggered by query cancel.
+     *
+     * @param e Exception.
+     * @return {@code true} if exception is caused by cancel.
+     */
+    public static boolean wasCancelled(Throwable e) {
+        return X.cause(e, QueryCancelledException.class) != null;
+    }
+
+    /**
+     * Converts exception in to IgniteSqlException.
+     * @param e Exception.
+     * @return IgniteSqlException.
+     */
+    @NotNull public static SQLException toSqlException(Exception e) {
+        String sqlState;
+
+        int code;
+
+        if (e instanceof IgniteSQLException) {
+            sqlState = ((IgniteSQLException)e).sqlState();
+
+            code = ((IgniteSQLException)e).statusCode();
+        }
+        else if (e instanceof TransactionDuplicateKeyException){
+            code = IgniteQueryErrorCode.DUPLICATE_KEY;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else if (e instanceof TransactionSerializationException){
+            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else if (e instanceof TransactionAlreadyCompletedException){
+            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else {
+            sqlState = SqlStateCode.INTERNAL_ERROR;
+
+            code = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new SQLException(e.getMessage(), sqlState, code, e);
+    }
+
+    /**
+     * Get global query ID.
+     *
+     * @param nodeId Node ID.
+     * @param qryId Query ID.
+     * @return Global query ID.
+     */
+    public static String globalQueryId(UUID nodeId, long qryId) {
+        return nodeId + "_" + qryId;
+    }
+
+    /**
+     * Checks whether string matches SQL pattern.
+     *
+     * @param str String.
+     * @param sqlPtrn Pattern.
+     * @return Whether string matches pattern.
+     */
+    public static boolean matches(String str, String sqlPtrn) {
+        if (str == null)
+            return false;
+
+        if (sqlPtrn == null)
+            return true;
+
+        String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
+
+        return str.matches(regex);
+    }
+
+    /**
+     * Get field name by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return Field name.
+     */
+    public static String fieldNameByAlias(QueryEntity entity, String alias) {
+        if (!F.isEmpty(entity.getAliases())) {
+            for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
+                if (F.eq(aliasEntry.getValue(), alias))
+                    return aliasEntry.getKey();
+            }
+        }
+
+        return alias;
+    }
+
+    /**
+     * Remove field by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return {@code true} if the field is removed. Otherwise returns {@code false}.
+     */
+    public static boolean removeField(QueryEntity entity, String alias) {
+        return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {
@@ -1278,6 +1646,21 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public boolean notNull() {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object defaultValue() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int precision() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int scale() {
+            return -1;
         }
     }
 }

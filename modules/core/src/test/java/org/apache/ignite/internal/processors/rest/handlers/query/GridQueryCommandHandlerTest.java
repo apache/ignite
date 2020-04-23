@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collection;
+import org.junit.Test;
 
 /**
  * REST query command handler tests.
@@ -48,16 +49,10 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSupportedCommands() throws Exception {
         GridTestKernalContext ctx = newContext(grid().configuration());
 
@@ -79,6 +74,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUnsupportedCommands() throws Exception {
         GridTestKernalContext ctx = newContext(grid().configuration());
 
@@ -94,6 +90,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullCache() throws Exception {
         QueryCommandHandler cmdHnd = new QueryCommandHandler(grid().context());
 
@@ -123,6 +120,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullPageSize() throws Exception {
         grid().getOrCreateCache(getName());
 
@@ -158,6 +156,7 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQuery() throws Exception {
         grid().getOrCreateCache(getName());
 

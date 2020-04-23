@@ -22,23 +22,17 @@ import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String PERSON_CLS_NAME = "org.apache.ignite.tests.p2p.cache.Person";
 
@@ -54,7 +48,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
 
         startGrids(3);
 
-        startGrid("client");
+        startClientGrid("client");
 
         populateCache(ldr);
     }
@@ -62,29 +56,19 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ldr = null;
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setIncludeEventTypes(getIncludeEventTypes());
 
         cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
 
-        if ("client".equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
+        if ("client".equals(igniteInstanceName))
             cfg.setClassLoader(ldr);
-        }
 
         return cfg;
     }
@@ -122,6 +106,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanNoClasses() throws Exception {
         Ignite client = grid("client");
 

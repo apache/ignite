@@ -22,9 +22,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.log4j.Level;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,11 +34,7 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiTh
     /** Cache debug flag. */
     private static final boolean CACHE_DEBUG = false;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
@@ -59,12 +52,6 @@ public class GridCachePartitionedTxMultiThreadedSelfTest extends IgniteTxMultiTh
         cc.setNearConfiguration(nearEnabled() ? new NearCacheConfiguration() : null);
 
         c.setCacheConfiguration(cc);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         if (CACHE_DEBUG)
             resetLog4j(Level.DEBUG, true, GridCacheProcessor.class.getPackage().getName());

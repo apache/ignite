@@ -75,7 +75,6 @@ public final class GridCacheAtomicReferenceValue<T> extends AtomicDataStructureV
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val = (T)in.readObject();
     }

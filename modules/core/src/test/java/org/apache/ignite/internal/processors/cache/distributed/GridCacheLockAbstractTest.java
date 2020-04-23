@@ -33,13 +33,13 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -48,7 +48,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 /**
  * Test cases for multi-threaded tests.
  */
-@SuppressWarnings({"FieldCanBeLocal"})
 public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** Grid1. */
     private static Ignite ignite1;
@@ -62,8 +61,11 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /** (for convenience). */
     private static IgniteCache<Integer, String> cache2;
 
-    /** Ip-finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    /** */
+    @Before
+    public void beforeGridCacheLockAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+    }
 
     /**
      *
@@ -76,12 +78,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
@@ -91,6 +87,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
@@ -117,7 +115,13 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        super.afterTestsStopped();
+
+        ignite1 = null;
+        ignite2 = null;
+
+        cache1 = null;
+        cache2 = null;
     }
 
     /** {@inheritDoc} */
@@ -200,6 +204,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLockSingleThread() throws Exception {
         int k = 1;
         String v = String.valueOf(k);
@@ -234,7 +239,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLock() throws Exception {
         final int kv = 1;
 
@@ -325,6 +330,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockAndPut() throws Exception {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -410,7 +416,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
+    @Test
     public void testLockTimeoutTwoThreads() throws Exception {
         int keyCnt = 1;
 
@@ -506,7 +512,16 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @throws Throwable If failed.
      */
+    @Test
     public void testLockReentrancy() throws Throwable {
+        /**
+         * awaitPartitionMapExchange is needed, otherwise deadlock is possible:
+         * main thread acquires lock and starts and wait for new thread while lock is acquired.
+         * New thread tries to get lock, at this moment exchanges starts and new thread
+         * waits for it. But exchange is not able to finish since there is acquired lock.
+         */
+        awaitPartitionMapExchange();
+
         Affinity<Integer> aff = ignite1.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 10; i < 100; i++) {
@@ -571,6 +586,14 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             finally {
                 lock.unlock();
             }
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    assertTrue(lock.tryLock());
+
+                    lock.unlock();
+                }
+            }, "lock-thread");
         }
     }
 }

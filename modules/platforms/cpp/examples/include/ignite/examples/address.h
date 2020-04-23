@@ -57,45 +57,20 @@ namespace ignite
     namespace binary
     {
         template<>
-        struct BinaryType<ignite::examples::Address>
+        struct BinaryType<examples::Address> : BinaryTypeDefaultAll<examples::Address>
         {
-            static int32_t GetTypeId()
-            {
-                return GetBinaryStringHashCode("Address");
-            }
-
             static void GetTypeName(std::string& dst)
             {
                 dst = "Address";
             }
 
-            static int32_t GetFieldId(const char* name)
-            {
-                return GetBinaryStringHashCode(name);
-            }
-
-            static int32_t GetHashCode(ignite::examples::Address& obj)
-            {
-                return 0;
-            }
-
-            static bool IsNull(ignite::examples::Address obj)
-            {
-                return false;
-            }
-
-            static void GetNull(ignite::examples::Address& dst)
-            {
-                dst = ignite::examples::Address("", 0);
-            }
-
-            static void Write(BinaryWriter& writer, const ignite::examples::Address& obj)
+            static void Write(BinaryWriter& writer, const examples::Address& obj)
             {
                 writer.WriteString("street", obj.street);
                 writer.WriteInt32("zip", obj.zip);
             }
 
-            static void Read(BinaryReader& reader, ignite::examples::Address& dst)
+            static void Read(BinaryReader& reader, examples::Address& dst)
             {
                 dst.street = reader.ReadString("street");
                 dst.zip = reader.ReadInt32("zip");

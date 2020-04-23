@@ -63,8 +63,10 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         writeLock = new WriteLock();
     }
 
-    /** {@inheritDoc} */
-    @NotNull @Override public Lock readLock() {
+    /**
+     * @return Index of current thread stripe.
+     */
+    private int curIdx() {
         int idx;
 
         Thread curThread = Thread.currentThread();
@@ -83,7 +85,12 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         else
             idx = IDX.get();
 
-        return locks[idx % locks.length].readLock();
+        return idx % locks.length;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Lock readLock() {
+        return locks[curIdx()].readLock();
     }
 
     /** {@inheritDoc} */
@@ -102,6 +109,18 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     }
 
     /**
+     * Queries the number of reentrant read holds on this lock by the
+     * current thread.  A reader thread has a hold on a lock for
+     * each lock action that is not matched by an unlock action.
+     *
+     * @return the number of holds on the read lock by the current thread,
+     *         or zero if the read lock is not held by the current thread
+     */
+    public int getReadHoldCount() {
+        return locks[curIdx()].getReadHoldCount();
+    }
+
+    /**
      * Read lock.
      */
     @SuppressWarnings("unused")
@@ -110,7 +129,28 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         private static final long serialVersionUID = 0L;
 
         /** Padding. */
-        private long p0, p1, p2, p3, p4, p5, p6, p7;
+        private long p0;
+
+        /** */
+        private long p1;
+
+        /** */
+        private long p2;
+
+        /** */
+        private long p3;
+
+        /** */
+        private long p4;
+
+        /** */
+        private long p5;
+
+        /** */
+        private long p6;
+
+        /** */
+        private long p7;
     }
 
     /**
@@ -190,7 +230,6 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("NullableProblems")
         @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
             int i = 0;
 

@@ -45,6 +45,7 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Job collision cancel test.
@@ -79,6 +80,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings( {"AssignmentToCatchBlockParameter"})
+    @Test
     public void testCancel() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

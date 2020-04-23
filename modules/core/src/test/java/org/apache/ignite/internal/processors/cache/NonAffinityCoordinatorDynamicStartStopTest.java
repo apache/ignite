@@ -23,22 +23,17 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String TEST_ATTRIBUTE = "test-attribute";
 
@@ -56,18 +51,10 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024));
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-        memPlcCfg.setMaxSize(200 * 1000 * 1000);
-
-        memPlcCfg.setName("dfltMemPlc");
-
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
+        cfg.setDataStorageConfiguration(memCfg);
 
         if (gridName.contains(DUMMY_GRID_NAME))
             cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, false));
@@ -75,9 +62,6 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
             cfg.setUserAttributes(F.asMap(TEST_ATTRIBUTE, true));
 
         cfg.setConsistentId(gridName);
-
-        if (gridName.contains("client"))
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -92,7 +76,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
 
         crd.active(true);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */
@@ -103,6 +87,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartStop() throws Exception {
         startGrids(2);
 

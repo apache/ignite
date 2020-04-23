@@ -32,7 +32,6 @@ public class GridCacheMultinodeUpdateSelfTest extends GridCacheMultinodeUpdateAb
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("RedundantMethodOverride")
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }

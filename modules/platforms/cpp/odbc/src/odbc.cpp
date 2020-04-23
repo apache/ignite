@@ -24,6 +24,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
+#include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/environment.h"
@@ -180,7 +181,7 @@ namespace ignite
     {
         using odbc::Environment;
 
-        LOG_MSG("SQLFreeEnv called");
+        LOG_MSG("SQLFreeEnv called: " << env);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 
@@ -202,6 +203,8 @@ namespace ignite
 
         if (!connection)
             return SQL_INVALID_HANDLE;
+
+        connection->Deregister();
 
         delete connection;
 
@@ -270,16 +273,7 @@ namespace ignite
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
-        odbc::config::Configuration config;
-
-        config.FillFromConnectString(connectStr);
-
-        std::string dsn = config.GetDsn();
-
-        if (!dsn.empty())
-            odbc::ReadDsnConfiguration(dsn.c_str(), config);
-
-        connection->Establish(config);
+        connection->Establish(connectStr);
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
@@ -593,7 +587,7 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        statement->NextResults();
+        statement->MoreResults();
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -753,6 +747,8 @@ namespace ignite
 
         int64_t res = statement->AffectedRows();
 
+        LOG_MSG("Row count: " << res);
+
         if (rowCnt)
             *rowCnt = static_cast<SQLLEN>(res);
 
@@ -813,11 +809,11 @@ namespace ignite
 
         LOG_MSG("SQLGetStmtAttr called");
 
-#ifdef ODBC_DEBUG
+#ifdef _DEBUG
         using odbc::type_traits::StatementAttrIdToString;
 
         LOG_MSG("Attr: " << StatementAttrIdToString(attr) << " (" << attr << ")");
-#endif //ODBC_DEBUG
+#endif //_DEBUG
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -836,13 +832,13 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLSetStmtAttr called");
+        LOG_MSG("SQLSetStmtAttr called: " << attr);
 
-#ifdef ODBC_DEBUG
+#ifdef _DEBUG
         using odbc::type_traits::StatementAttrIdToString;
 
         LOG_MSG("Attr: " << StatementAttrIdToString(attr) << " (" << attr << ")");
-#endif //ODBC_DEBUG
+#endif //_DEBUG
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -984,16 +980,22 @@ namespace ignite
             {
                 Diagnosable *diag = reinterpret_cast<Diagnosable*>(handle);
 
+                if (!diag)
+                    return SQL_INVALID_HANDLE;
+
                 records = &diag->GetDiagnosticRecords();
 
                 break;
             }
 
             default:
-                break;
+                return SQL_INVALID_HANDLE;
         }
 
-        if (!records || recNum < 1 || recNum > records->GetStatusRecordsNumber())
+        if (recNum < 1 || msgBufferLen < 0)
+            return SQL_ERROR;
+
+        if (!records || recNum > records->GetStatusRecordsNumber())
             return SQL_NO_DATA;
 
         const DiagnosticRecord& record = records->GetStatusRecord(recNum);
@@ -1004,13 +1006,24 @@ namespace ignite
         if (nativeError)
             *nativeError = 0;
 
-        SqlLen outResLen;
-        ApplicationDataBuffer outBuffer(OdbcNativeType::AI_CHAR, msgBuffer, msgBufferLen, &outResLen);
+        const std::string& errMsg = record.GetMessageText();
 
-        outBuffer.PutString(record.GetMessageText());
+        if (!msgBuffer || msgBufferLen < static_cast<SQLSMALLINT>(errMsg.size() + 1))
+        {
+            if (!msgLen)
+                return SQL_ERROR;
+
+            CopyStringToBuffer(errMsg, reinterpret_cast<char*>(msgBuffer), static_cast<size_t>(msgBufferLen));
+
+            *msgLen = static_cast<SQLSMALLINT>(errMsg.size());
+
+            return SQL_SUCCESS_WITH_INFO;
+        }
+
+        CopyStringToBuffer(errMsg, reinterpret_cast<char*>(msgBuffer), static_cast<size_t>(msgBufferLen));
 
         if (msgLen)
-            *msgLen = static_cast<SQLSMALLINT>(outResLen);
+            *msgLen = static_cast<SQLSMALLINT>(errMsg.size());
 
         return SQL_SUCCESS;
     }
@@ -1340,7 +1353,7 @@ namespace ignite
     {
         using odbc::Connection;
 
-        LOG_MSG("SQLSetConnectAttr called");
+        LOG_MSG("SQLSetConnectAttr called(" << attr << ", " << value << ")");
 
         Connection *connection = reinterpret_cast<Connection*>(conn);
 

@@ -20,21 +20,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,29 +40,24 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
  */
 public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Slow checkpoint enabled. */
-    private final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
+    private static final AtomicBoolean slowCheckpointEnabled = new AtomicBoolean(true);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";
@@ -73,19 +66,20 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(400L * 1024 * 1024)
+                .setCheckpointPageBufferSize(200L * 1000 * 1000)
+                .setName("dfltDataRegion")
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointFrequency(20_000)
+            .setWriteThrottlingEnabled(true)
+            .setCheckpointThreads(1)
+            .setFileIOFactory(new SlowCheckpointFileIOFactory());
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        dbCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
-            .setMaxSize(400 * 1024 * 1024)
-            .setName("dfltMemPlc")
-            .setMetricsEnabled(true));
-
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -95,15 +89,6 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.BACKGROUND)
-                .setCheckpointingFrequency(20_000)
-                .setCheckpointingPageBufferSize(200 * 1000 * 1000)
-                .setWriteThrottlingEnabled(true)
-                .setCheckpointingThreads(1)
-                .setFileIOFactory(new SlowCheckpointFileIOFactory()));
 
         cfg.setConsistentId(gridName);
 
@@ -134,11 +119,12 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThrottle() throws Exception {
         startGrids(2).active(true);
 
         try {
-            Ignite ig = ignite(0);
+            IgniteEx ig = ignite(0);
 
             final int keyCnt = 2_000_000;
 
@@ -146,9 +132,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
             final AtomicBoolean zeroDropdown = new AtomicBoolean(false);
 
-            final HitRateMetrics putRate10secs = new HitRateMetrics(10_000, 20);
+            final HitRateMetric putRate10secs = new HitRateMetric("putRate10secs", "", 10_000, 20);
 
-            final HitRateMetrics putRate1sec = new HitRateMetrics(1_000, 20);
+            final HitRateMetric putRate1sec = new HitRateMetric("putRate1sec", "", 1_000, 20);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -157,10 +143,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
                         while (run.get()) {
                             System.out.println(
-                                "Put rate over last 10 seconds: " + (putRate10secs.getRate() / 10) +
-                                    " puts/sec, over last 1 second: " + putRate1sec.getRate());
+                                "Put rate over last 10 seconds: " + (putRate10secs.value() / 10) +
+                                    " puts/sec, over last 1 second: " + putRate1sec.value());
 
-                            if (putRate10secs.getRate() == 0) {
+                            if (putRate10secs.value() == 0) {
                                 zeroDropdown.set(true);
 
                                 run.set(false);
@@ -191,9 +177,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                         cache.put(ThreadLocalRandom.current().nextInt(keyCnt), new TestValue(ThreadLocalRandom.current().nextInt(),
                             ThreadLocalRandom.current().nextInt()));
 
-                        putRate10secs.onHit();
+                        putRate10secs.increment();
 
-                        putRate1sec.onHit();
+                        putRate1sec.increment();
                     }
 
                     run.set(false);
@@ -218,10 +204,29 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
                 fail("Put rate degraded to zero for at least 10 seconds");
             }
+
+            LongAdderMetric totalThrottlingTime = totalThrottlingTime(ig);
+
+            assertTrue(totalThrottlingTime.value() > 0);
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @return {@code totalThrottlingTime} metric for the default region.
+     */
+    private LongAdderMetric totalThrottlingTime(IgniteEx ignite) {
+        MetricRegistry mreg = ignite.context().metric().registry(metricName(DATAREGION_METRICS_PREFIX,
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName()));
+
+        LongAdderMetric totalThrottlingTime = mreg.findMetric("TotalThrottlingTime");
+
+        assertNotNull(totalThrottlingTime);
+
+        return totalThrottlingTime;
     }
 
     /**
@@ -235,6 +240,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         private final int v2;
 
         /** */
+        @SuppressWarnings("unused")
         private byte[] payload = new byte[400 + ThreadLocalRandom.current().nextInt(20)];
 
         /**
@@ -275,27 +281,23 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     * @throws Exception If failed.
      */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
+    private void deleteWorkFiles() throws Exception {
+        cleanPersistenceDir();
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
     }
 
     /**
      * Create File I/O that emulates poor checkpoint write speed.
      */
-    private class SlowCheckpointFileIOFactory implements FileIOFactory {
+    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file) throws IOException {
-            return create(file, CREATE, READ, WRITE);
-        }
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
@@ -316,11 +318,16 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                     return delegate.write(srcBuf, position);
                 }
 
-                @Override public void write(byte[] buf, int off, int len) throws IOException {
+                @Override public int write(byte[] buf, int off, int len) throws IOException {
                     if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
                         LockSupport.parkNanos(5_000_000);
 
-                    delegate.write(buf, off, len);
+                    return delegate.write(buf, off, len);
+                }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

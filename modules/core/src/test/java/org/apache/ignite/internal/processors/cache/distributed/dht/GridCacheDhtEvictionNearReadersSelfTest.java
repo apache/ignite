@@ -35,17 +35,13 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 
 /**
  * Tests for dht cache eviction.
@@ -53,9 +49,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
 public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Default constructor. */
     public GridCacheDhtEvictionNearReadersSelfTest() {
@@ -65,12 +58,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -108,7 +95,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -116,13 +102,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
             throw new IgniteCheckedException("GRID_CNT must not be less than 2.");
 
         startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -138,7 +117,6 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             near(grid(i)).removeAll();
@@ -161,7 +139,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @param g Grid.
      * @return Dht cache.
      */
-    @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
+    @SuppressWarnings({"unchecked"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
         return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
@@ -195,6 +173,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testReaders() throws Exception {
         Integer key = 1;
 
@@ -248,17 +227,18 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert nearOther.peekEx(key) == null;
         assert dhtOther.peekEx(key) == null;
 
-        IgniteFuture<Event> futOther =
-            waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
+        // Entry which has readers will not be evicted.
+        //IgniteFuture<Event> futOther =
+        //    waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<Event> futBackup =
-            waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
+        //IgniteFuture<Event> futBackup =
+        //    waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<Event> futPrimary =
-            waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
+        //IgniteFuture<Event> futPrimary =
+        //    waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.
-        assertEquals(val, nearOther.get(key, true, false));
+        assertEquals(val, nearOther.repairableGet(key, true, false));
 
         entryPrimary = (GridDhtCacheEntry)dhtPrimary.peekEx(key);
         entryBackup = (GridDhtCacheEntry)dhtBackup.peekEx(key);
@@ -274,17 +254,17 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // It will trigger dht eviction and eviction on backup node.
         grid(primary).cache(DEFAULT_CACHE_NAME).localEvict(Collections.<Object>singleton(key));
 
-        futOther.get(3000);
-        futBackup.get(3000);
-        futPrimary.get(3000);
+        //futOther.get(3000);
+        //futBackup.get(3000);
+        //futPrimary.get(3000);
 
-        assertNull(localPeek(dhtPrimary, key));
-        assertNull(localPeek(nearPrimary, key));
+        assertNotNull(localPeek(dhtPrimary, key));
+        assertNotNull(localPeek(nearPrimary, key));
 
-        assertNull(localPeek(dhtBackup, key));
-        assertNull(localPeek(nearBackup, key));
+        assertNotNull(localPeek(dhtBackup, key));
+        assertNotNull(localPeek(nearBackup, key));
 
         assertNull(localPeek(dhtOther, key));
-        assertNull(localPeek(nearOther, key));
+        assertNotNull(localPeek(nearOther, key));
     }
 }

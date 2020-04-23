@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for injected logger category.
@@ -40,18 +41,12 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that closure gets right log category injected on all nodes using field injection.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureField() throws Exception {
         Ignite ignite = grid(0);
 
@@ -79,6 +74,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethod() throws Exception {
         Ignite ignite = grid(0);
 
@@ -106,6 +102,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStringCategory() throws Exception {
         Ignite ignite = grid(0);
 

@@ -19,6 +19,8 @@ namespace Apache.Ignite.Benchmarks
 {
     using System;
     using System.Diagnostics;
+    using System.IO;
+    using System.Reflection;
     using System.Text;
     using Apache.Ignite.Benchmarks.Interop;
 
@@ -34,13 +36,22 @@ namespace Apache.Ignite.Benchmarks
         // ReSharper disable once RedundantAssignment
         public static void Main(string[] args)
         {
-            args = new[] { 
-                typeof(GetBenchmark).FullName,
-                "-ConfigPath", @"C:\W\incubator-ignite\modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
+#if (DEBUG)
+            throw new Exception("Don't run benchmarks in Debug mode");
+#endif
+#pragma warning disable 162
+            // ReSharper disable HeuristicUnreachableCode
+
+            args = new[] {
+                //typeof(GetAllBenchmark).FullName,
+                typeof(PutWithPlatformCacheBenchmark).FullName,
+                //typeof(ThinClientGetAllBenchmark).FullName,
+                //typeof(ThinClientGetAllBinaryBenchmark).FullName,
+                "-ConfigPath", GetConfigPath(),
                 "-Threads", "1",
-                "-Warmup", "0",
-                "-Duration", "60",
-                "-BatchSize", "1000"
+                "-Warmup", "5",
+                "-Duration", "30",
+                "-BatchSize", "1"
             };
 
             var gcSrv = System.Runtime.GCSettings.IsServerGC;
@@ -48,7 +59,7 @@ namespace Apache.Ignite.Benchmarks
             Console.WriteLine("GC Server: " + gcSrv);
 
             if (!gcSrv)
-                Console.WriteLine("WARNING! GC server mode is disabled. This could yield in bad preformance.");
+                Console.WriteLine("WARNING! GC server mode is disabled. This could yield in bad performance.");
 
             Console.WriteLine("DotNet benchmark process started: " + Process.GetCurrentProcess().Id);
 
@@ -85,10 +96,28 @@ namespace Apache.Ignite.Benchmarks
             }
 
             benchmark.Run();
+#pragma warning restore 162
+        }
 
-#if (DEBUG)
-            Console.ReadLine();
-#endif
+        /// <summary>
+        /// Gets the config path.
+        /// </summary>
+        private static string GetConfigPath()
+        {
+            var dir = new DirectoryInfo(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
+
+            while (dir != null)
+            {
+                var configPath = Path.Combine(dir.FullName, "Config", "benchmark.xml");
+                if (File.Exists(configPath))
+                {
+                    return configPath;
+                }
+                
+                dir = dir.Parent;
+            }
+
+            throw new InvalidOperationException("Could not locate benchmark config.");
         }
     }
 }

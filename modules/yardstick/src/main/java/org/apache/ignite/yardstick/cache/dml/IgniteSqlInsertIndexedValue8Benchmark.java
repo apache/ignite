@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
-import org.apache.ignite.yardstick.cache.model.Person8;
 
 /**
  * Ignite benchmark that performs SQL INSERT operations for entity with 8 indexed fields.
@@ -35,8 +34,9 @@ public class IgniteSqlInsertIndexedValue8Benchmark extends IgniteCacheAbstractBe
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = insCnt.incrementAndGet();
 
-        cache.query(new SqlFieldsQuery("insert into Person8(_key, _val) values (?, ?)")
-            .setArgs(key, new Person8(key)));
+        cache.query(new SqlFieldsQuery("insert into Person8(_key, val1, val2, val3, val4, val5, val6, val7, val8) " +
+                "values (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                .setArgs(key, key, key+1, key+2, key+3, key+4, key+5, key+6, key+7));
 
         return true;
     }

@@ -33,14 +33,13 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -58,7 +57,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNode,
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
     Comparable<TcpDiscoveryNode>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -67,6 +66,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     private UUID id;
 
     /** Consistent ID. */
+    @GridToStringInclude
     private Object consistentId;
 
     /** Node attributes. */
@@ -104,10 +104,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** The most recent time when metrics update message was received from the node. */
     @GridToStringExclude
-    private volatile long lastUpdateTime = U.currentTimeMillis();
+    private volatile long lastUpdateTimeNanos = System.nanoTime();
 
     /** The most recent time when node exchanged a message with a remote node. */
     private volatile long lastExchangeTime = U.currentTimeMillis();
+
+    /** Same as {@link #lastExchangeTime} but as returned by {@link System#nanoTime()} */
+    @GridToStringExclude
+    private volatile long lastExchangeTimeNanos = System.nanoTime();
 
     /** Metrics provider (transient). */
     @GridToStringExclude
@@ -125,7 +129,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** Alive check time (used by clients). */
     @GridToStringExclude
-    private transient long aliveCheckTime;
+    private transient volatile long aliveCheckTimeNanos;
 
     /** Client router node ID. */
     @GridToStringExclude
@@ -230,7 +234,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      *
      * @param consistentId Consistent globally unique node ID.
      */
-    public void setConsistentId(Serializable consistentId) {
+    @Override public void setConsistentId(Serializable consistentId) {
         this.consistentId = consistentId;
 
         final Map<String, Object> map = new HashMap<>(attrs);
@@ -241,7 +245,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
@@ -291,27 +294,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return metrics;
     }
 
-    /**
-     * Sets node metrics.
-     *
-     * @param metrics Node metrics.
-     */
-    public void setMetrics(ClusterMetrics metrics) {
+    /** {@inheritDoc} */
+    @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
     }
 
-    /**
-     * Gets collections of cache metrics for this node. Note that node cache metrics are constantly updated
-     * and provide up to date information about caches.
-     * <p>
-     * Cache metrics are updated with some delay which is directly related to metrics update
-     * frequency. For example, by default the update will happen every {@code 2} seconds.
-     *
-     * @return Runtime metrics snapshots for this node.
-     */
-    public Map<Integer, CacheMetrics> cacheMetrics() {
+    /** {@inheritDoc} */
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
             Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
 
@@ -323,12 +314,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return cacheMetrics;
     }
 
-    /**
-     * Sets node cache metrics.
-     *
-     * @param cacheMetrics Cache metrics.
-     */
-    public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+    /** {@inheritDoc} */
+    @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 
@@ -426,41 +413,55 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /**
-     * Gets node last update time.
+     * Gets node last update time. Used for logging purposes only.<br/>
+     * Note that this method tries to convert {@code nanoTime} internal JVM time format into a regular timestamp.
+     * This might lead to errors if there was GC between measuring of current timestamp and current nano time,
+     * but generally it might be ignored.
      *
      * @return Time of the last metrics update.
+     * @see System#currentTimeMillis()
+     * @see System#nanoTime()
      */
     public long lastUpdateTime() {
-        return lastUpdateTime;
+        return System.currentTimeMillis() - U.nanosToMillis(System.nanoTime() - lastUpdateTimeNanos);
+    }
+
+    /**
+     * Gets node last update time.
+     *
+     * @return Time of the last metrics update as returned by {@link System#nanoTime()}.
+     */
+    public long lastUpdateTimeNanos() {
+        return lastUpdateTimeNanos;
     }
 
     /**
      * Sets node last update.
      *
-     * @param lastUpdateTime Time of last metrics update.
+     * @param lastUpdateTimeNanos Time of last metrics update.
      */
-    public void lastUpdateTime(long lastUpdateTime) {
-        assert lastUpdateTime > 0;
-
-        this.lastUpdateTime = lastUpdateTime;
+    public void lastUpdateTimeNanos(long lastUpdateTimeNanos) {
+        this.lastUpdateTimeNanos = lastUpdateTimeNanos;
     }
 
     /**
      * Gets the last time a node exchanged a message with a remote node.
      *
-     * @return Time in milliseconds.
+     * @return Time in nanoseconds as returned by {@link System#nanoTime()}.
      */
-    public long lastExchangeTime() {
-        return lastExchangeTime;
+    public long lastExchangeTimeNanos() {
+        return lastExchangeTimeNanos;
     }
 
     /**
      * Sets the last time a node exchanged a message with a remote node.
      *
      * @param lastExchangeTime Time in milliseconds.
+     * @param lastExchangeTimeNanos Time in nanoseconds.
      */
-    public void lastExchangeTime(long lastExchangeTime) {
+    public void lastExchangeTime(long lastExchangeTime, long lastExchangeTimeNanos) {
         this.lastExchangeTime = lastExchangeTime;
+        this.lastExchangeTimeNanos = lastExchangeTimeNanos;
     }
 
     /**
@@ -483,7 +484,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** {@inheritDoc} */
     @Override public boolean isClient() {
-        return clientRouterNodeId != null;
+        if (!cacheCliInit) {
+            Boolean clientModeAttr = ((ClusterNode) this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
+
+            cacheCli = clientModeAttr != null && clientModeAttr;
+
+            cacheCliInit = true;
+        }
+
+        return cacheCli;
     }
 
     /**
@@ -494,7 +503,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     public boolean isClientAlive() {
         assert isClient() : this;
 
-        return (aliveCheckTime - U.currentTimeMillis()) >= 0;
+        return (aliveCheckTimeNanos - System.nanoTime()) >= 0;
     }
 
     /**
@@ -505,7 +514,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     public void clientAliveTime(long aliveTime) {
         assert isClient() : this;
 
-        this.aliveCheckTime = U.currentTimeMillis() + aliveTime;
+        aliveCheckTimeNanos = System.nanoTime() + U.millisToNanos(aliveTime);
+    }
+
+    /**
+     * @return {@code true} if client alive check time initialized.
+     */
+    public boolean clientAliveTimeSet() {
+        return aliveCheckTimeNanos != 0;
     }
 
     /**
@@ -544,21 +560,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return node;
     }
 
-    /**
-     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
-     *
-     * @return {@code True if client}.
-     */
-    public boolean isCacheClient() {
-        if (!cacheCliInit) {
-            cacheCli = CU.clientNodeDirect(this);
-
-            cacheCliInit = true;
-        }
-
-        return cacheCli;
-    }
-
     /** {@inheritDoc} */
     @Override public int compareTo(@Nullable TcpDiscoveryNode node) {
         if (node == null)
@@ -593,16 +594,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         U.writeByteArray(out, mtr);
 
-        // Cache metrics
-        Map<Integer, CacheMetrics> cacheMetrics = this.cacheMetrics;
-
-        out.writeInt(cacheMetrics == null ? 0 : cacheMetrics.size());
-
-        if (!F.isEmpty(cacheMetrics))
-            for (Map.Entry<Integer, CacheMetrics> m : cacheMetrics.entrySet()) {
-                out.writeInt(m.getKey());
-                out.writeObject(m.getValue());
-            }
+        // Legacy: Number of cache metrics
+        out.writeInt(0);
 
         out.writeLong(order);
         out.writeLong(intOrder);
@@ -623,31 +616,29 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
-        consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
-
         // Cluster metrics
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
-        // Cache metrics
+        // Legacy: Cache metrics
         int size = in.readInt();
 
-        Map<Integer, CacheMetrics> cacheMetrics =
-            size > 0 ? U.<Integer, CacheMetrics>newHashMap(size) : Collections.<Integer, CacheMetrics>emptyMap();
-
         for (int i = 0; i < size; i++) {
-            int id = in.readInt();
-            CacheMetrics m = (CacheMetrics)in.readObject();
-
-            cacheMetrics.put(id, m);
+            in.readInt();
+            in.readObject();
         }
 
         order = in.readLong();
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
+
+        if (clientRouterNodeId() != null)
+            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
+        else
+            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */

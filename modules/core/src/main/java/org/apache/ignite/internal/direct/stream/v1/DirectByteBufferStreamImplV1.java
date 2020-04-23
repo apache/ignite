@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,7 +38,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * Direct marshalling I/O stream (version 1).
@@ -275,7 +275,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
-            baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : GridUnsafe.BYTE_ARR_OFF;
+            baseOff = buf.isDirect() ? GridUnsafe.bufferAddress(buf) : GridUnsafe.BYTE_ARR_OFF;
         }
     }
 
@@ -436,6 +436,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, GridUnsafe.LONG_ARR_OFF, len, len << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeFloatArray(float[] val) {
         if (val != null)
             lastFinished = writeArray(val, GridUnsafe.FLOAT_ARR_OFF, val.length, val.length << 2);
@@ -485,6 +493,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public void writeIgniteUuid(IgniteUuid val) {
         writeByteArray(val != null ? U.igniteUuidToBytes(val) : null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -571,7 +584,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType, MessageWriter writer) {
         if (map != null) {
@@ -805,7 +817,11 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
             if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
@@ -849,7 +865,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls,
         MessageReader reader) {
         if (readSize == -1) {
@@ -889,7 +904,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType,
         MessageReader reader) {
         if (readSize == -1) {
@@ -929,7 +943,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked, MessageReader reader) {
         if (readSize == -1) {
@@ -1038,7 +1051,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
      * @param off Base offset.
      * @return Array or special value if it was not fully read.
      */
-    @SuppressWarnings("unchecked")
     private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
         assert creator != null;
 
@@ -1205,6 +1217,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                 break;
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 try {
                     if (val != null)
@@ -1291,6 +1304,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 return readMessage(reader);
 
@@ -1325,7 +1339,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(DirectByteBufferStreamImplV1.class, this);
     }
 

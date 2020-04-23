@@ -14,6 +14,7 @@ Building on Linux With Autotools
 Common Requirements:
 
  * GCC, g++, autotools, automake, and libtool must be installed
+ * OpenSSL, 1.0 or later
  * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
@@ -23,6 +24,7 @@ Common Requirements:
    building a driver.
 
 Building the Apache Ignite C++ components:
+
  * Navigate to the directory $IGNITE_HOME/platforms/cpp
  * Execute the following commands one by one to build the project:
     * libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
@@ -33,17 +35,34 @@ Among standard included by autotools options configure script also include follo
 Ignite-specific options:
  * --enable-odbc - build included ODBC driver. Disabled by default.
  * --enable-core - build Ignite core library. Enabled by default.
+ * --enable-thin-client - build thin client library. Enabled by default.
  * --enable-node - build stand-alone node executable. Enabled by default.
- 
+
 If you only need to build ODBC driver and do not want to build anything else you may just
 use configure script with the following arguments:
- ./configure --enable-odbc --disable-core --disable-node
+ ./configure --enable-odbc --disable-core --disable-thin-client --disable-node
 
 With the config like that you should not have any ignite dependencies as jvm.dll installed
 to build ODBC driver.
 
+Similarly if you only want to build only thin client you may use configure script with
+the following arguments:
+ ./configure --disable-core --disable-node
+
 NOTE: You may want to use "make install" command to install Ignite libraries and headers
 for your operation system. Note however that this action may require superuser privileges.
+
+Building tests:
+
+Boost framework is required to build tests. The following boost libraries are used:
+ * boost_unit_test_framework
+ * boost_thread
+ * boost_system
+ * boost_chrono
+
+Ignite expects for boost libraries and header to be found under default system paths, so
+it is recommended to use package repository for your OS to install boost package for the
+development.
 
 Building on Windows with Visual Studio (tm)
 ----------------------------------
@@ -63,8 +82,38 @@ Building binaries:
  * If you want to build ODBC driver then you should explicitly build it as it is disabled
    in the solution file by default. In IDE it can be done by clicking on the ODBC project
    with the right mouse button and choosing "Build" option.
-   
+
+Building tests:
+
+Boost framework is required to build tests. The following boost libraries are used:
+ * boost_unit_test_framework
+ * boost_thread
+ * boost_system
+ * boost_chrono
+
+You may either download boost with pre-built libraries or download source code and build
+it by yourself. The details can be found by the following web link:
+https://www.boost.org/doc/libs/1_68_0/more/getting_started/windows.html
+
+It is also required to set following enviroment variables for Visual Studio solution to
+be able to locate boost libraries:
+ * BOOST_HOME - path to the directory that contains "boost" directory with header files.
+ * BOOST_LIB64_PATH - path to the directory that contains 64-bit libraries. Only requred
+   to build 64-bit Ignite libraries.
+ * BOOST_LIB32_PATH - path to the directory that contains 32-bit libraries. Only requred
+   to build 32-bit Ignite libraries.
+ * BOOST_LIB_SUFIX_D32 - sufix for debug 32-bit boost liraries. For example for library
+   'libboost_chrono-vc100-mt-gd-x32-1_68.lib' the sufix is 'vc100-mt-gd-x32-1_68'.
+ * BOOST_LIB_SUFIX_R32 - sufix for release 32-bit boost liraries. For example for library
+   'libboost_system-vc141-mt-x32-1_68.lib' the sufix is 'vc141-mt-x32-1_68'.
+ * BOOST_LIB_SUFIX_D64 - sufix for debug 64-bit boost liraries. For example for library
+   'libboost_unit_test_framework-vc140-mt-gd-x64-1_68.lib' the sufix is
+   'vc140-mt-gd-x64-1_68'.
+ * BOOST_LIB_SUFIX_R64 - sufix for release 64-bit boost liraries. For example for library
+   'libboost_thread-vc100-mt-1_58.lib' the sufix is 'vc100-mt-1_58'.
+
 Building installers:
+
  * Install WiX Toolset if you do not have it yet.
  * Add WiX Toolset "bin" directory to your PATH environmental variable.
  * Build ODBC drivers: Release|x64 for 64-bit version and Release|Win32 for 32-bit version.
@@ -77,6 +126,7 @@ Building installers:
     * light.exe -ext WixUIExtension ignite-odbc-amd64.wixobj
 
 Building in later versions of Visual Studio:
+
  * Open project\vs\ignite.sln or project\vs\ignite_86.sln in Visual Studio
  * You will be prompted to "Update VC++ Compiler and Libraries", click "Update"
  * Build the solution.

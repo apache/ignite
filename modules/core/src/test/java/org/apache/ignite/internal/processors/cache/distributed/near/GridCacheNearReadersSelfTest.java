@@ -44,11 +44,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -63,14 +62,16 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     /** Number of grids. */
     private int grids = 2;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Grid counter. */
-    private static AtomicInteger cntr = new AtomicInteger(0);
+    private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Test cache affinity. */
     private GridCacheModuloAffinityFunction aff = new GridCacheModuloAffinityFunction();
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -91,12 +92,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         cacheCfg.setNearConfiguration(nearCfg);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, cntr.getAndIncrement()));
 
@@ -140,6 +135,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodesTwoKeysNoBackups() throws Exception {
         aff.backups(0);
         grids = 2;
@@ -233,6 +229,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testTwoNodesTwoKeysOneBackup() throws Exception {
         aff.backups(1);
         grids = 2;
@@ -264,7 +261,6 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         if (f1 != null)
             f1.get();
-
 
         IgniteInternalFuture<Object> f2 = ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).preloader().request(
             ((IgniteKernal)g2).internalCache(DEFAULT_CACHE_NAME).context(),
@@ -349,6 +345,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPutAllManyKeysOneReader() throws Exception {
         aff.backups(1);
         grids = 4;
@@ -385,6 +382,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testPutAllManyKeysTwoReaders() throws Exception {
         aff.backups(1);
         grids = 5;
@@ -428,6 +426,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testBackupEntryReaders() throws Exception {
         aff.backups(1);
         grids = 2;
@@ -465,7 +464,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    @SuppressWarnings({"SizeReplaceableByIsEmpty"})
+    @Test
     public void testImplicitLockReaders() throws Exception {
         grids = 3;
         aff.reset(grids, 1);
@@ -545,6 +544,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testExplicitLockReaders() throws Exception {
         if (atomicityMode() == ATOMIC)
             return;

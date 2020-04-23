@@ -17,25 +17,34 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.events.CacheQueryReadEvent;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.jdbc.JdbcResultSet;
-import org.h2.result.LazyResult;
-import org.h2.result.ResultInterface;
-import org.h2.value.Value;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
+import org.h2.jdbc.JdbcResultSet;
+import org.h2.result.LazyResult;
+import org.h2.result.ResultInterface;
+import org.h2.value.Value;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 
@@ -64,13 +73,7 @@ class MapQueryResult {
     private final IgniteH2Indexing h2;
 
     /** */
-    private final ResultInterface res;
-
-    /** */
-    private final ResultSet rs;
-
-    /** */
-    private final String cacheName;
+    private final GridCacheContext<?, ?> cctx;
 
     /** */
     private final GridCacheSqlQuery qry;
@@ -79,13 +82,16 @@ class MapQueryResult {
     private final UUID qrySrcNodeId;
 
     /** */
-    private final int cols;
+    private volatile Result res;
+
+    /** */
+    private final IgniteLogger log;
+
+    /** */
+    private final Object[] params;
 
     /** */
     private int page;
-
-    /** */
-    private final int rowCnt;
 
     /** */
     private boolean cpNeeded;
@@ -93,51 +99,41 @@ class MapQueryResult {
     /** */
     private volatile boolean closed;
 
-    /** */
-    private final Object[] params;
+    /** H2 session. */
+    private final Session ses;
 
-    /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    /** Detached connection. Used for lazy execution to prevent connection sharing. */
+    private H2PooledConnection conn;
+
+    /** */
+    private final ReentrantLock lock = new ReentrantLock();
 
     /**
-     * @param rs Result set.
-     * @param cacheName Cache name.
+     * @param h2 H2 indexing.
+     * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
-     * @param lazyWorker Lazy worker.
+     * @param conn H2 connection wrapper.
+     * @param log Logger.
      */
-    MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable String cacheName,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
+    MapQueryResult(IgniteH2Indexing h2, @Nullable GridCacheContext cctx,
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, H2PooledConnection conn, IgniteLogger log) {
         this.h2 = h2;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
-        this.lazyWorker = lazyWorker;
+        this.log = log;
+        this.conn = conn;
 
-        if (rs != null) {
-            this.rs = rs;
+        ses = H2Utils.session(conn.connection());
+    }
 
-            try {
-                res = (ResultInterface)RESULT_FIELD.get(rs);
-            }
-            catch (IllegalAccessException e) {
-                throw new IllegalStateException(e); // Must not happen.
-            }
-
-            rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
-            cols = res.getVisibleColumnCount();
-        }
-        else {
-            this.rs = null;
-            this.res = null;
-            this.cols = -1;
-            this.rowCnt = -1;
-
-            closed = true;
-        }
+    /** */
+    void openResult(@NotNull ResultSet rs) {
+        res = new Result(rs);
     }
 
     /**
@@ -151,14 +147,18 @@ class MapQueryResult {
      * @return Row count.
      */
     int rowCount() {
-        return rowCnt;
+        assert res != null;
+
+        return res.rowCnt;
     }
 
     /**
      * @return Column ocunt.
      */
     int columnCount() {
-        return cols;
+        assert res != null;
+
+        return res.cols;
     }
 
     /**
@@ -171,75 +171,87 @@ class MapQueryResult {
     /**
      * @param rows Collection to fetch into.
      * @param pageSize Page size.
+     * @param dataPageScanEnabled If data page scan is enabled.
      * @return {@code true} If there are no more rows available.
      */
-    synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize) {
-        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+    boolean fetchNextPage(List<Value[]> rows, int pageSize, Boolean dataPageScanEnabled) {
+        assert lock.isHeldByCurrentThread();
 
         if (closed)
             return true;
 
-        boolean readEvt = cacheName != null && h2.kernalContext().event().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+        assert res != null;
+
+        boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
+        QueryContext.threadLocal(H2Utils.context(ses));
 
         page++;
 
-        for (int i = 0 ; i < pageSize; i++) {
-            if (!res.next())
-                return true;
+        h2.enableDataPageScan(dataPageScanEnabled);
 
-            Value[] row = res.currentRow();
+        try {
+            for (int i = 0; i < pageSize; i++) {
+                if (!res.res.next())
+                    return true;
 
-            if (cpNeeded) {
-                boolean copied = false;
+                Value[] row = res.res.currentRow();
 
-                for (int j = 0; j < row.length; j++) {
-                    Value val = row[j];
+                if (cpNeeded) {
+                    boolean copied = false;
 
-                    if (val instanceof GridH2ValueCacheObject) {
-                        GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+                    for (int j = 0; j < row.length; j++) {
+                        Value val = row[j];
 
-                        row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
-                            @Override public Object getObject() {
-                                return getObject(true);
-                            }
-                        };
+                        if (val instanceof GridH2ValueCacheObject) {
+                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
-                        copied = true;
+                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                                @Override public Object getObject() {
+                                    return getObject(true);
+                                }
+                            };
+
+                            copied = true;
+                        }
                     }
+
+                    if (i == 0 && !copied)
+                        cpNeeded = false; // No copy on read caches, skip next checks.
                 }
 
-                if (i == 0 && !copied)
-                    cpNeeded = false; // No copy on read caches, skip next checks.
+                assert row != null;
+
+                if (readEvt) {
+                    GridKernalContext ctx = h2.kernalContext();
+
+                    ctx.event().record(new CacheQueryReadEvent<>(
+                        ctx.discovery().localNode(),
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL.name(),
+                        cctx.name(),
+                        null,
+                        qry.query(),
+                        null,
+                        null,
+                        params,
+                        qrySrcNodeId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row(row)));
+                }
+
+                rows.add(res.res.currentRow());
             }
 
-            assert row != null;
-
-            if (readEvt) {
-                GridKernalContext ctx = h2.kernalContext();
-
-                ctx.event().record(new CacheQueryReadEvent<>(
-                    ctx.discovery().localNode(),
-                    "SQL fields query result set row read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.SQL.name(),
-                    cacheName,
-                    null,
-                    qry.query(),
-                    null,
-                    null,
-                    params,
-                    qrySrcNodeId,
-                    null,
-                    null,
-                    null,
-                    null,
-                    row(row)));
-            }
-
-            rows.add(res.currentRow());
+            return !res.res.hasNext();
         }
-
-        return false;
+        finally {
+            CacheDataTree.setDataPageScanEnabled(false);
+        }
     }
 
     /**
@@ -258,31 +270,90 @@ class MapQueryResult {
     /**
      * Close the result.
      */
-    public void close() {
-        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
-            lazyWorker.submit(new Runnable() {
-                @Override public void run() {
-                    close();
-                }
-            });
+    void close() {
+        assert lock.isHeldByCurrentThread();
 
-            lazyWorker.awaitStop();
-
+        if (closed)
             return;
+
+        closed = true;
+
+        if (res != null)
+            res.close();
+
+        H2Utils.resetSession(conn);
+
+        conn.close();
+    }
+
+    /** */
+    public void lock() {
+        if (!lock.isHeldByCurrentThread())
+            lock.lock();
+    }
+
+    /** */
+    public void lockTables() {
+        if (!closed && ses.isLazyQueryExecution())
+            GridH2Table.readLockTables(ses);
+    }
+
+    /** */
+    public void unlock() {
+        if (lock.isHeldByCurrentThread())
+            lock.unlock();
+    }
+
+    /** */
+    public void unlockTables() {
+        if (!closed && ses.isLazyQueryExecution())
+            GridH2Table.unlockTables(ses);
+    }
+
+    /**
+     *
+     */
+    public void checkTablesVersions() {
+        if (ses.isLazyQueryExecution())
+            GridH2Table.checkTablesVersions(ses);
+    }
+
+    /** */
+    private class Result {
+        /** */
+        private final ResultInterface res;
+
+        /** */
+        private final ResultSet rs;
+
+        /** */
+        private final int cols;
+
+        /** */
+        private final int rowCnt;
+
+        /**
+         * Constructor.
+         *
+         * @param rs H2 result set.
+         */
+        Result(@NotNull ResultSet rs) {
+            this.rs = rs;
+
+            try {
+                res = (ResultInterface)RESULT_FIELD.get(rs);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
+            cols = res.getVisibleColumnCount();
         }
 
-        synchronized (this) {
-            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
-
-            if (closed)
-                return;
-
-            closed = true;
-
-            U.closeQuiet(rs);
-
-            if (lazyWorker != null)
-                lazyWorker.stop();
+        /** */
+        void close() {
+            U.close(rs, log);
         }
     }
 }

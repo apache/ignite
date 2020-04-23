@@ -24,6 +24,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -35,6 +36,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() throws Exception {
         //GridDhtPartitionSupplyMessage unmarshalling failed test.
         readCnt.set(Integer.MAX_VALUE);

@@ -15,13 +15,14 @@
         {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.2"},
         {"groupId": "com.mchange", "artifactId": "mchange-commons-java", "version": "0.2.11"}
     ],
-    "MySQL": {"groupId": "mysql", "artifactId": "mysql-connector-java", "version": "5.1.40"},
-    "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "9.4.1212.jre7"},
+    "MySQL": {"groupId": "mysql", "artifactId": "mysql-connector-java", "version": "8.0.15"},
+    "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "42.2.5"},
     "H2": {"groupId": "com.h2database", "artifactId": "h2", "version": [
         {"range": ["1.0.0", "2.0.0"], "version": "1.4.191"},
-        {"range": "2.0.0", "version": "1.4.195"}
+        {"range": ["2.0.0", "2.7.0"], "version": "1.4.195"},
+        {"range": "2.7.0", "version": "1.4.197"}
     ]},
-    "Oracle": {"groupId": "com.oracle.jdbc", "artifactId": "ojdbc7", "version": "12.1.0.2", "jar": "ojdbc7.jar"},
-    "DB2": {"groupId": "ibm", "artifactId": "jdbc", "version": "4.21.29", "jar": "db2jcc4.jar"},
-    "SQLServer": {"groupId": "microsoft", "artifactId": "jdbc", "version": "4.2", "jar": "sqljdbc41.jar"}
+    "Oracle": {"groupId": "com.oracle.jdbc", "artifactId": "ojdbc8", "version": "18.3.0.0.0", "jar": "ojdbc8.jar", "link": "https://www.oracle.com/technetwork/database/application-development/jdbc/downloads/index.html"},
+    "DB2": {"groupId": "ibm", "artifactId": "jdbc", "version": "4.25.13", "jar": "db2jcc4.jar", "link": "http://www-01.ibm.com/support/docview.wss?uid=swg21363866"},
+    "SQLServer": {"groupId": "com.microsoft.sqlserver", "artifactId": "mssql-jdbc", "version": "7.2.1.jre8"}
 }

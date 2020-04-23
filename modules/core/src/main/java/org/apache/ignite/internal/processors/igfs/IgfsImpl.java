@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,7 +96,6 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
@@ -145,7 +145,7 @@ public final class IgfsImpl implements IgfsEx {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** Writers map. */
-    private final ConcurrentHashMap8<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<IgfsPath, IgfsFileWorkerBatch> workerMap = new ConcurrentHashMap<>();
 
     /** Client log directory. */
     private volatile String logDir;
@@ -237,7 +237,9 @@ public final class IgfsImpl implements IgfsEx {
 
         for (CacheConfiguration cacheCfg : igfsCtx.kernalContext().config().getCacheConfiguration()) {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
-                EvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
+                EvictionPolicy evictPlc = cacheCfg.getEvictionPolicyFactory() != null ?
+                    (EvictionPolicy)cacheCfg.getEvictionPolicyFactory().create()
+                    : cacheCfg.getEvictionPolicy();
 
                 if (evictPlc != null & evictPlc instanceof IgfsPerBlockLruEvictionPolicy)
                     this.evictPlc = (IgfsPerBlockLruEvictionPolicy)evictPlc;
@@ -274,6 +276,9 @@ public final class IgfsImpl implements IgfsEx {
         // Restore interrupted flag.
         if (interrupted)
             Thread.currentThread().interrupt();
+
+        if (dualPool != null)
+            dualPool.shutdownNow();
     }
 
     /**
@@ -409,7 +414,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ConstantConditions")
     @Override public IgfsStatus globalSpace() {
         return safeOp(new Callable<IgfsStatus>() {
             @Override public IgfsStatus call() throws Exception {
@@ -450,6 +454,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         });
     }
+
     /** {@inheritDoc} */
     @Override public long groupBlockSize() {
         return data.groupBlockSize();
@@ -760,7 +765,6 @@ public final class IgfsImpl implements IgfsEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
 
@@ -1549,7 +1553,6 @@ public final class IgfsImpl implements IgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    @SuppressWarnings("unchecked")
     <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
@@ -1785,7 +1788,6 @@ public final class IgfsImpl implements IgfsEx {
     /**
      * IGFS thread factory.
      */
-    @SuppressWarnings("NullableProblems")
     private static class IgfsThreadFactory implements ThreadFactory {
         /** IGFS name. */
         private final String name;

@@ -22,13 +22,10 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,17 +33,14 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class PageEvictionAbstractTest extends GridCommonAbstractTest {
-    /** */
-    protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Offheap size for memory policy. */
-    private static final int SIZE = 96 * 1024 * 1024;
+    private static final int SIZE = 20 * 1024 * 1024;
 
     /** Page size. */
     static final int PAGE_SIZE = 2048;
 
     /** Number of entries. */
-    static final int ENTRIES = 80_000;
+    static final int ENTRIES = 12_000;
 
     /** Empty pages pool size. */
     private static final int EMPTY_PAGES_POOL_SIZE = 100;
@@ -63,10 +57,14 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
      * @return Configuration with given eviction mode set.
      */
     static IgniteConfiguration setEvictionMode(DataPageEvictionMode mode, IgniteConfiguration configuration) {
-        MemoryPolicyConfiguration[] policies = configuration.getMemoryConfiguration().getMemoryPolicies();
+        DataRegionConfiguration[] policies = configuration.getDataStorageConfiguration().getDataRegionConfigurations();
 
-        for (MemoryPolicyConfiguration plcCfg : policies)
-            plcCfg.setPageEvictionMode(mode);
+        if (policies != null) {
+            for (DataRegionConfiguration plcCfg : policies)
+                plcCfg.setPageEvictionMode(mode);
+        }
+
+        configuration.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPageEvictionMode(mode);
 
         return configuration;
     }
@@ -82,11 +80,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
+        DataRegionConfiguration plc = new DataRegionConfiguration();
 
         // This will test additional segment allocation.
         plc.setInitialSize(SIZE / 2);
@@ -95,11 +91,10 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         plc.setEvictionThreshold(EVICTION_THRESHOLD);
         plc.setName(DEFAULT_POLICY_NAME);
 
-        dbCfg.setMemoryPolicies(plc);
+        dbCfg.setDefaultDataRegionConfiguration(plc);
         dbCfg.setPageSize(PAGE_SIZE);
-        dbCfg.setDefaultMemoryPolicyName(DEFAULT_POLICY_NAME);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         return cfg;
     }
@@ -124,7 +119,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setCacheMode(cacheMode)
             .setAtomicityMode(atomicityMode)
-            .setMemoryPolicyName(memoryPlcName)
+            .setDataRegionName(memoryPlcName)
             .setWriteSynchronizationMode(writeSynchronizationMode);
 
         if (cacheMode == CacheMode.PARTITIONED)

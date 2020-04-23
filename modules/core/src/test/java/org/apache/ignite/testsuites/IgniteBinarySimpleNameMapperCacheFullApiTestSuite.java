@@ -17,23 +17,22 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Cache full API suite with binary marshaller and simple name mapper.
  */
-public class IgniteBinarySimpleNameMapperCacheFullApiTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheFullApiSelfTestSuite.class
+})
+public class IgniteBinarySimpleNameMapperCacheFullApiTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
         GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
-
-        return IgniteCacheFullApiSelfTestSuite.suite();
-
     }
 }

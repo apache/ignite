@@ -18,4 +18,5 @@
 /**
  * Contains load tests classes
  */
+
 package org.apache.ignite.tests.load;

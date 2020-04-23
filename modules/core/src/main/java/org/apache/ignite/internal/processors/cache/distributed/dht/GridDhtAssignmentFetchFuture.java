@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridNodeOrderComparator;
+import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteNeedReconnectException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
@@ -105,7 +105,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
                 tmp.add(node);
         }
 
-        Collections.sort(tmp, GridNodeOrderComparator.INSTANCE);
+        Collections.sort(tmp, NodeOrderComparator.getInstance());
 
         this.availableNodes = tmp;
 

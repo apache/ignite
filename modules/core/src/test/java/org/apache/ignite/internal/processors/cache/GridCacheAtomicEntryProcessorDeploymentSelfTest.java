@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashSet;
 import java.util.Map;
+import java.util.TreeSet;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -27,11 +27,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,38 +40,21 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Cache EntryProcessor + Deployment.
  */
 public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Test value. */
     protected static String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
     /** */
     protected DeploymentMode depMode;
 
-    /** */
-    protected boolean clientMode;
-
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
-
-        if (clientMode)
+        if (cfg.isClientMode())
             cfg.setClassLoader(getExternalClassLoader());
 
         cfg.setDeploymentMode(depMode);
-
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setConnectorConfiguration(null);
 
         return cfg;
@@ -119,6 +100,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -128,6 +110,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -137,6 +120,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -146,6 +130,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testInvokeAllDeployment2() throws Exception {
         depMode = DeploymentMode.SHARED;
 
@@ -157,11 +142,8 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      */
     private void doTestInvoke() throws Exception {
         try {
-            clientMode = false;
             startGrid(0);
-
-            clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
@@ -190,11 +172,8 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
      */
     private void doTestInvokeAll() throws Exception {
         try {
-            clientMode = false;
             startGrid(0);
-
-            clientMode = true;
-            startGrid(1);
+            startClientGrid(1);
 
             Class procCls = grid(1).configuration().getClassLoader().loadClass(getEntryProcessor());
             Class valCls = grid(1).configuration().getClassLoader().loadClass(TEST_VALUE);
@@ -204,7 +183,7 @@ public class GridCacheAtomicEntryProcessorDeploymentSelfTest extends GridCommonA
 
             IgniteCache cache = getCache();
 
-            HashSet keys = new HashSet();
+            TreeSet keys = new TreeSet();
 
             for (int i = 0; i < 3; i++) {
                 String key = "key" + i;

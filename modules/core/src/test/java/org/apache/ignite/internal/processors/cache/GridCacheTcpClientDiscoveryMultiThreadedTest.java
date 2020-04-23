@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -82,8 +83,6 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
             clientFinder.setAddresses(addrs);
 
             cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(clientFinder));
-
-            cfg.setClientMode(true);
         }
 
         cfg.setLocalHost("127.0.0.1");
@@ -104,6 +103,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheConcurrentlyWithMultipleClientNodes() throws Exception {
         srvNodesCnt = 2;
         clientNodesCnt = 3;
@@ -113,7 +113,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         client = true;
 
         for (int n = 0; n < 2; n++) {
-            startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
+            startClientGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
 
             checkTopology(gridCount());
 

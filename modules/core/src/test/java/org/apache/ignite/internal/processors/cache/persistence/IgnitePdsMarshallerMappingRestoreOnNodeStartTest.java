@@ -23,9 +23,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -41,8 +43,8 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
 
         cfg.setWorkDirectory(Paths.get(tmpDir, "srv" + gridIndex).toString());
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration()
@@ -59,14 +61,15 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
 
         String tmpDir = System.getProperty("java.io.tmpdir");
 
-        deleteRecursively(Paths.get(tmpDir, "srv0").toFile());
-        deleteRecursively(Paths.get(tmpDir, "srv1").toFile());
+        U.delete(Paths.get(tmpDir, "srv0").toFile());
+        U.delete(Paths.get(tmpDir, "srv1").toFile());
     }
 
     /**
      * Test verifies that binary metadata from regular java classes is saved and restored correctly
      * on cluster restart.
      */
+    @Test
     public void testStaticMetadataIsRestoredOnRestart() throws Exception {
         startGrids(1);
 

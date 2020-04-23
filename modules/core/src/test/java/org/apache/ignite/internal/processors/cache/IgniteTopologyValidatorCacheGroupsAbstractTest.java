@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  *
@@ -79,7 +80,8 @@ public abstract class IgniteTopologyValidatorCacheGroupsAbstractTest extends Ign
     /**
      * @throws Exception If failed.
      */
-    public void testTopologyValidator() throws Exception {
+    @Test
+    @Override public void testTopologyValidator() throws Exception {
         putValid(DEFAULT_CACHE_NAME);
         remove(DEFAULT_CACHE_NAME);
 

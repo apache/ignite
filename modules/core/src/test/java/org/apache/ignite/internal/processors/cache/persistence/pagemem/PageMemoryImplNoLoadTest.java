@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.File;
-import java.nio.ByteBuffer;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import java.util.Collections;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -27,12 +30,24 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryMetricsImpl;
-import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.CIX3;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
+import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
 
 /**
  *
@@ -51,14 +66,33 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
 
         DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), memDir);
 
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setEncryptionSpi(new NoopEncryptionSpi());
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+        cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+
+        GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
+
+        cctx.add(new IgnitePluginProcessor(cctx, cfg, Collections.emptyList()));
+        cctx.add(new GridInternalSubscriptionProcessor(cctx));
+        cctx.add(new GridEncryptionManager(cctx));
+        cctx.add(new GridMetricManager(cctx));
+        cctx.add(new GridSystemViewManager(cctx));
+
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
-            new GridTestKernalContext(log),
+            cctx,
             null,
             null,
             null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
+            null,
             new IgniteCacheDatabaseSharedManager(),
+            null,
+            null,
+            null,
+            null,
             null,
             null,
             null,
@@ -69,15 +103,19 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null
         );
 
+        IgniteOutClosure<CheckpointProgress> clo = new IgniteOutClosure<CheckpointProgress>() {
+            @Override public CheckpointProgress apply() {
+                return Mockito.mock(CheckpointProgressImpl.class);
+            }
+        };
+
         return new PageMemoryImpl(
             provider,
             sizes,
             sharedCtx,
             PAGE_SIZE,
-            new CIX3<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuffer, Integer tag) {
-                    assert false : "No evictions should happen during the test";
-                }
+            (fullPageId, byteBuf, tag) -> {
+                assert false : "No page replacement (rotation with disk) should happen during the test";
             },
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
@@ -88,12 +126,14 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                     return true;
                 }
             },
-            new MemoryMetricsImpl(new MemoryPolicyConfiguration()),
-            false
+            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
+            PageMemoryImpl.ThrottlingPolicy.DISABLED,
+            clo
         );
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testPageHandleDeallocation() throws Exception {
         // No-op.
     }

@@ -23,7 +23,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
@@ -31,12 +30,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -44,13 +41,15 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Statement test.
  */
-@SuppressWarnings({"ThrowableNotThrown", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"ThrowableNotThrown"})
 public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+    private String url = partitionAwareness ?
+        "jdbc:ignite:thin://127.0.0.1:10800..10802?partitionAwareness=true" :
+        "jdbc:ignite:thin://127.0.0.1?partitionAwareness=false";
+
+    /** Nodes count. */
+    private int nodesCnt = partitionAwareness ? 4 : 3;
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -77,12 +76,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -90,19 +83,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(nodesCnt);
 
         fillCache();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        conn = DriverManager.getConnection(URL);
+        conn = DriverManager.getConnection(url);
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
@@ -129,10 +117,11 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecuteQuery0() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
-        assert rs != null;
+        assertNotNull(rs);
 
         int cnt = 0;
 
@@ -140,27 +129,28 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             int id = rs.getInt("id");
 
             if (id == 2) {
-                assert "Joe".equals(rs.getString("firstName"));
-                assert "Black".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 35;
+                assertEquals("Joe", rs.getString("firstName"));
+                assertEquals("Black", rs.getString("lastName"));
+                assertEquals(35, rs.getInt("age"));
             }
             else if (id == 3) {
-                assert "Mike".equals(rs.getString("firstName"));
-                assert "Green".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 40;
+                assertEquals("Mike", rs.getString("firstName"));
+                assertEquals("Green", rs.getString("lastName"));
+                assertEquals(40, rs.getInt("age"));
             }
             else
-                assert false : "Wrong ID: " + id;
+                fail("Wrong ID: " + id);
 
             cnt++;
         }
 
-        assert cnt == 2;
+        assertEquals(2, cnt);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecuteQuery1() throws Exception {
         final String sqlText = "select val from test";
 
@@ -178,7 +168,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeQuery(sqlText);
             }
         });
@@ -187,16 +177,15 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecute() throws Exception {
-        assert stmt.execute(SQL);
+        assertTrue(stmt.execute(SQL));
 
-        assert stmt.getUpdateCount() == -1 : "Update count must be -1 for SELECT query";
+        assertEquals("Update count must be -1 for SELECT query", -1, stmt.getUpdateCount());
 
         ResultSet rs = stmt.getResultSet();
 
-        assert rs != null;
-
-        assert stmt.getResultSet() == null;
+        assertNotNull(rs);
 
         int cnt = 0;
 
@@ -204,35 +193,38 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             int id = rs.getInt("id");
 
             if (id == 2) {
-                assert "Joe".equals(rs.getString("firstName"));
-                assert "Black".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 35;
+                assertEquals("Joe", rs.getString("firstName"));
+                assertEquals("Black", rs.getString("lastName"));
+                assertEquals(35, rs.getInt("age"));
             }
             else if (id == 3) {
-                assert "Mike".equals(rs.getString("firstName"));
-                assert "Green".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 40;
+                assertEquals( "Mike", rs.getString("firstName"));
+                assertEquals( "Green", rs.getString("lastName"));
+                assertEquals(40, rs.getInt("age"));
             }
             else
-                assert false : "Wrong ID: " + id;
+                fail("Wrong ID: " + id);
 
             cnt++;
         }
 
-        assert cnt == 2;
+        assertEquals(2, cnt);
+
+        assertFalse("Statement has more results.", stmt.getMoreResults());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testMaxRows() throws Exception {
         stmt.setMaxRows(1);
 
-        assert stmt.getMaxRows() == 1;
+        assertEquals(1, stmt.getMaxRows());
 
         ResultSet rs = stmt.executeQuery(SQL);
 
-        assert rs != null;
+        assertNotNull(rs);
 
         int cnt = 0;
 
@@ -240,28 +232,28 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             int id = rs.getInt("id");
 
             if (id == 2) {
-                assert "Joe".equals(rs.getString("firstName"));
-                assert "Black".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 35;
+                assertEquals("Joe", rs.getString("firstName"));
+                assertEquals("Black", rs.getString("lastName"));
+                assertEquals(35, rs.getInt("age"));
             }
             else if (id == 3) {
-                assert "Mike".equals(rs.getString("firstName"));
-                assert "Green".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 40;
+                assertEquals( "Mike", rs.getString("firstName"));
+                assertEquals( "Green", rs.getString("lastName"));
+                assertEquals(40, rs.getInt("age"));
             }
             else
-                assert false : "Wrong ID: " + id;
+                fail("Wrong ID: " + id);
 
             cnt++;
         }
 
-        assert cnt == 1;
+        assertEquals(1, cnt);
 
         stmt.setMaxRows(0);
 
         rs = stmt.executeQuery(SQL);
 
-        assert rs != null;
+        assertNotNull(rs);
 
         cnt = 0;
 
@@ -269,45 +261,47 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             int id = rs.getInt("id");
 
             if (id == 2) {
-                assert "Joe".equals(rs.getString("firstName"));
-                assert "Black".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 35;
+                assertEquals("Joe", rs.getString("firstName"));
+                assertEquals("Black", rs.getString("lastName"));
+                assertEquals(35, rs.getInt("age"));
             }
             else if (id == 3) {
-                assert "Mike".equals(rs.getString("firstName"));
-                assert "Green".equals(rs.getString("lastName"));
-                assert rs.getInt("age") == 40;
+                assertEquals( "Mike", rs.getString("firstName"));
+                assertEquals( "Green", rs.getString("lastName"));
+                assertEquals(40, rs.getInt("age"));
             }
             else
-                assert false : "Wrong ID: " + id;
+                fail("Wrong ID: " + id);
 
             cnt++;
         }
 
-        assert cnt == 2;
+        assertEquals(2, cnt);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testCloseResultSet0() throws Exception {
         ResultSet rs0 = stmt.executeQuery(SQL);
         ResultSet rs1 = stmt.executeQuery(SQL);
         ResultSet rs2 = stmt.executeQuery(SQL);
 
-        assert rs0.isClosed() : "ResultSet must be implicitly closed after re-execute statement";
-        assert rs1.isClosed() : "ResultSet must be implicitly closed after re-execute statement";
+        assertTrue("ResultSet must be implicitly closed after re-execute statement", rs0.isClosed());
+        assertTrue("ResultSet must be implicitly closed after re-execute statement", rs1.isClosed());
 
-        assert !rs2.isClosed() : "Last result set must be available";
+        assertFalse("Last result set must be available", rs2.isClosed());
 
         stmt.close();
 
-        assert rs2.isClosed() : "ResultSet must be explicitly closed after close statement";
+        assertTrue("ResultSet must be explicitly closed after close statement", rs2.isClosed());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testCloseResultSet1() throws Exception {
         stmt.execute(SQL);
 
@@ -315,106 +309,88 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         stmt.close();
 
-        assert rs.isClosed() : "ResultSet must be explicitly closed after close statement";
+        assertTrue("ResultSet must be explicitly closed after close statement", rs.isClosed());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testCloseResultSetByConnectionClose() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
         conn.close();
 
-        assert stmt.isClosed() : "Statement must be implicitly closed after close connection";
-        assert rs.isClosed() : "ResultSet must be implicitly closed after close connection";
+        assertTrue("Statement must be implicitly closed after close connection", stmt.isClosed());
+        assertTrue("ResultSet must be implicitly closed after close connection", rs.isClosed());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testCloseOnCompletionAfterQuery() throws Exception {
-        assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
+        assertFalse("Invalid default closeOnCompletion", stmt.isCloseOnCompletion());
 
         ResultSet rs0 = stmt.executeQuery(SQL);
 
         ResultSet rs1 = stmt.executeQuery(SQL);
 
-        assert rs0.isClosed() : "Result set must be closed implicitly";
+        assertTrue("Result set must be closed implicitly", rs0.isClosed());
 
-        assert !stmt.isClosed() : "Statement must not be closed";
+        assertFalse("Statement must not be closed", stmt.isClosed());
 
         rs1.close();
 
-        assert !stmt.isClosed() : "Statement must not be closed";
+        assertFalse("Statement must not be closed", stmt.isClosed());
 
         ResultSet rs2 = stmt.executeQuery(SQL);
 
         stmt.closeOnCompletion();
 
-        assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
+        assertTrue("Invalid closeOnCompletion", stmt.isCloseOnCompletion());
 
         rs2.close();
 
-        assert stmt.isClosed() : "Statement must be closed";
+        assertTrue("Statement must be closed", stmt.isClosed());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testCloseOnCompletionBeforeQuery() throws Exception {
-        assert !stmt.isCloseOnCompletion() : "Invalid default closeOnCompletion";
+        assertFalse("Invalid default closeOnCompletion", stmt.isCloseOnCompletion());
 
         ResultSet rs0 = stmt.executeQuery(SQL);
 
         ResultSet rs1 = stmt.executeQuery(SQL);
 
-        assert rs0.isClosed() : "Result set must be closed implicitly";
+        assertTrue("Result set must be closed implicitly", rs0.isClosed());
 
-        assert !stmt.isClosed() : "Statement must not be closed";
+        assertFalse("Statement must not be closed", stmt.isClosed());
 
         rs1.close();
 
-        assert !stmt.isClosed() : "Statement must not be closed";
+        assertFalse("Statement must not be closed", stmt.isClosed());
 
         stmt.closeOnCompletion();
 
         ResultSet rs2 = stmt.executeQuery(SQL);
 
-        assert stmt.isCloseOnCompletion() : "Invalid closeOnCompletion";
+        assertTrue("Invalid closeOnCompletion", stmt.isCloseOnCompletion());
 
         rs2.close();
 
-        assert stmt.isClosed() : "Statement must be closed";
+        assertTrue("Statement must be closed", stmt.isClosed());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testExecuteQueryTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "select sleep_func(3)";
-
-        stmt.setQueryTimeout(1);
-
-        // Timeout
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeQuery(sqlText);
-                }
-            },
-            SQLTimeoutException.class,
-            "Timeout"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @org.junit.Test
     public void testExecuteQueryMultipleOnlyResultSets() throws Exception {
-        assert conn.getMetaData().supportsMultipleResultSets();
+        assertTrue(conn.getMetaData().supportsMultipleResultSets());
 
         int stmtCnt = 10;
 
@@ -423,24 +399,31 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         for (int i = 0; i < stmtCnt; ++i)
             sql.append("select ").append(i).append("; ");
 
-        assert stmt.execute(sql.toString());
+        assertTrue(stmt.execute(sql.toString()));
 
-        for (int i = 0; i < stmtCnt; ++i) {
-            assert stmt.getMoreResults();
-
+        for (int i = 0; i < stmtCnt - 1; ++i) {
             ResultSet rs = stmt.getResultSet();
 
-            assert rs.next();
-            assert rs.getInt(1) == i;
-            assert !rs.next();
+            assertTrue(rs.next());
+            assertEquals(i, rs.getInt(1));
+            assertFalse(rs.next());
+
+            assertTrue(stmt.getMoreResults());
         }
 
-        assert !stmt.getMoreResults();
+        ResultSet rs = stmt.getResultSet();
+
+        assertTrue(rs.next());
+        assertEquals(stmtCnt - 1, rs.getInt(1));
+        assertFalse(rs.next());
+
+        assertFalse(stmt.getMoreResults());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecuteQueryMultipleOnlyDml() throws Exception {
         conn.setSchema(null);
 
@@ -453,29 +436,32 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         for (int i = 0; i < stmtCnt; ++i)
             sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
 
-        assert !stmt0.execute(sql.toString());
+        assertFalse(stmt0.execute(sql.toString()));
 
         // DROP TABLE statement
-        assert stmt0.getResultSet() == null;
-        assert stmt0.getUpdateCount() == 0;
+        assertNull(stmt0.getResultSet());
+        assertEquals(0, stmt0.getUpdateCount());
+
+        stmt0.getMoreResults();
 
         // CREATE TABLE statement
-        assert stmt0.getResultSet() == null;
-        assert stmt0.getUpdateCount() == 0;
+        assertNull(stmt0.getResultSet());
+        assertEquals(0, stmt0.getUpdateCount());
 
         for (int i = 0; i < stmtCnt; ++i) {
-            assert stmt0.getMoreResults();
+            assertTrue(stmt0.getMoreResults());
 
-            assert stmt0.getResultSet() == null;
-            assert stmt0.getUpdateCount() == 1;
+            assertNull(stmt0.getResultSet());
+            assertEquals(1, stmt0.getUpdateCount());
         }
 
-        assert !stmt0.getMoreResults();
+        assertFalse(stmt0.getMoreResults());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecuteQueryMultipleMixed() throws Exception {
         conn.setSchema(null);
 
@@ -492,27 +478,29 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 sql.append(" select * from test where id < " + i + "; ");
         }
 
-        assert !stmt0.execute(sql.toString());
+        assertFalse(stmt0.execute(sql.toString()));
 
         // DROP TABLE statement
-        assert stmt0.getResultSet() == null;
-        assert stmt0.getUpdateCount() == 0;
+        assertNull(stmt0.getResultSet());
+        assertEquals(0, stmt0.getUpdateCount());
+
+        assertTrue("Result set doesn't have more results.", stmt0.getMoreResults());
 
         // CREATE TABLE statement
-        assert stmt0.getResultSet() == null;
-        assert stmt0.getUpdateCount() == 0;
+        assertNull(stmt0.getResultSet());
+        assertEquals(0, stmt0.getUpdateCount());
 
         boolean notEmptyResult = false;
 
         for (int i = 0; i < stmtCnt; ++i) {
-            assert stmt0.getMoreResults();
+            assertTrue(stmt0.getMoreResults());
 
             if (i % 2 == 0) {
-                assert stmt0.getResultSet() == null;
-                assert stmt0.getUpdateCount() == 1;
+                assertNull(stmt0.getResultSet());
+                assertEquals(1, stmt0.getUpdateCount());
             }
             else {
-                assert stmt0.getUpdateCount() == -1;
+                assertEquals(-1, stmt0.getUpdateCount());
 
                 ResultSet rs = stmt0.getResultSet();
 
@@ -521,21 +509,22 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
                 while(rs.next())
                     rowsCnt++;
 
-                assert rowsCnt <= (i + 1) / 2;
+                assertTrue(rowsCnt <= (i + 1) / 2);
 
                 if (rowsCnt == (i + 1) / 2)
                     notEmptyResult = true;
             }
         }
 
-        assert notEmptyResult;
+        assertTrue(notEmptyResult);
 
-        assert !stmt0.getMoreResults();
+        assertFalse(stmt0.getMoreResults());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecuteUpdate() throws Exception {
         final String sqlText = "update test set val=1 where _key=1";
 
@@ -544,7 +533,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate(sqlText);
             }
         });
@@ -553,6 +542,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testExecuteUpdateProducesResultSet() throws Exception {
         final String sqlText = "select * from test";
 
@@ -570,28 +560,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testExecuteUpdateTimeout() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5438");
-
-        final String sqlText = "update test set val=1 where _key=sleep_func(3)";
-
-        stmt.setQueryTimeout(1);
-
-        // Timeout
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return stmt.executeUpdate(sqlText);
-                }
-            },
-            SQLTimeoutException.class,
-            "Timeout"
-        );
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @org.junit.Test
     public void testClose() throws Exception {
         String sqlText = "select * from test";
 
@@ -614,6 +583,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testGetSetMaxFieldSizeUnsupported() throws Exception {
         assertEquals(0, stmt.getMaxFieldSize());
 
@@ -635,14 +605,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMaxFieldSize();
             }
         });
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setMaxFieldSize(100);
             }
         });
@@ -651,6 +621,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testGetSetMaxRows() throws Exception {
         assertEquals(0, stmt.getMaxRows());
 
@@ -685,14 +656,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMaxRows();
             }
         });
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setMaxRows(maxRows);
             }
         });
@@ -701,9 +672,9 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5440")
     public void testSetEscapeProcessing() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5440");
-
         stmt.setEscapeProcessing(false);
 
         final String sqlText = "select {fn CONVERT(1, SQL_BOOLEAN)}";
@@ -729,7 +700,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setEscapeProcessing(true);
             }
         });
@@ -738,6 +709,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testGetSetQueryTimeout() throws Exception {
         assertEquals(0, stmt.getQueryTimeout());
 
@@ -766,14 +738,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getQueryTimeout();
             }
         });
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setQueryTimeout(timeout);
             }
         });
@@ -782,8 +754,9 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testMaxFieldSize() throws Exception {
-        assert stmt.getMaxFieldSize() >= 0;
+        assertTrue(stmt.getMaxFieldSize() >= 0);
 
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
@@ -798,7 +771,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         );
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setMaxFieldSize(100);
             }
         });
@@ -807,23 +780,24 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testQueryTimeout() throws Exception {
-        assert stmt.getQueryTimeout() == 0 : "Default timeout invalid: " + stmt.getQueryTimeout();
+        assertEquals("Default timeout invalid: " + stmt.getQueryTimeout(), 0, stmt.getQueryTimeout());
 
         stmt.setQueryTimeout(10);
 
-        assert stmt.getQueryTimeout() == 10;
+        assertEquals(10, stmt.getQueryTimeout());
 
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getQueryTimeout();
             }
         });
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setQueryTimeout(10);
             }
         });
@@ -832,21 +806,22 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testWarningsOnClosedStatement() throws Exception {
         stmt.clearWarnings();
 
-        assert stmt.getWarnings() == null;
+        assertNull(null, stmt.getWarnings());
 
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getWarnings();
             }
         });
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.clearWarnings();
             }
         });
@@ -855,9 +830,10 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testCursorName() throws Exception {
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setCursorName("test");
             }
         });
@@ -865,7 +841,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setCursorName("test");
             }
         });
@@ -874,23 +850,24 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testGetMoreResults() throws Exception {
-        assert !stmt.getMoreResults();
+        assertFalse(stmt.getMoreResults());
 
         stmt.execute("select 1; ");
 
         ResultSet rs = stmt.getResultSet();
 
-        assert !stmt.getMoreResults();
+        assertFalse(stmt.getMoreResults());
 
-        assert stmt.getResultSet() == null;
+        assertNull(stmt.getResultSet());
 
-        assert rs.isClosed();
+        assertTrue(rs.isClosed());
 
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMoreResults();
             }
         });
@@ -899,27 +876,24 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetMoreResults1() throws Exception {
-        assert !stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT);
-        assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
-        assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
+    @org.junit.Test
+    public void testGetMoreResultsKeepCurrent() throws Exception {
+        assertFalse(stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT));
+        assertFalse(stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT));
+        assertFalse(stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS));
 
         stmt.execute("select 1; ");
 
         ResultSet rs = stmt.getResultSet();
 
-        assert !stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+        assertFalse(stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT));
 
-        assert !rs.isClosed();
-
-        assert !stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS);
-
-        assert rs.isClosed();
+        assertFalse(rs.isClosed());
 
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
             }
         });
@@ -928,30 +902,49 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
+    public void testGetMoreResultsCloseAll() throws Exception {
+        assertFalse(stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT));
+        assertFalse(stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT));
+        assertFalse(stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS));
+
+        stmt.execute("select 1; ");
+
+        ResultSet rs = stmt.getResultSet();
+
+        assertFalse(stmt.getMoreResults(Statement.CLOSE_ALL_RESULTS));
+
+        stmt.close();
+
+        checkStatementClosed(new RunnableX() {
+            @Override public void runx() throws Exception {
+                stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+            }
+        });
+    }
+
+    /**
+     * Verifies that emty batch can be performed.
+     *
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
     public void testBatchEmpty() throws Exception {
-        assert conn.getMetaData().supportsBatchUpdates();
+        assertTrue(conn.getMetaData().supportsBatchUpdates());
 
         stmt.addBatch("");
         stmt.clearBatch();
 
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.executeBatch();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Batch is empty"
-        );
+        // Just verify that no exception have been thrown.
+        stmt.executeBatch();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testFetchDirection() throws Exception {
-        assert stmt.getFetchDirection() == ResultSet.FETCH_FORWARD;
+        assertEquals(ResultSet.FETCH_FORWARD, stmt.getFetchDirection());
 
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
@@ -968,13 +961,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setFetchDirection(-1);
             }
         });
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getFetchDirection();
             }
         });
@@ -983,6 +976,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testAutogenerated() throws Exception {
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
@@ -1006,46 +1000,46 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             SQLException.class,
             "Invalid autoGeneratedKeys value");
 
-        assert !conn.getMetaData().supportsGetGeneratedKeys();
+        assertFalse(conn.getMetaData().supportsGetGeneratedKeys());
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getGeneratedKeys();
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate("select 1", Statement.RETURN_GENERATED_KEYS);
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate("select 1", new int[] {1, 2});
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate("select 1", new String[] {"a", "b"});
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.execute("select 1", Statement.RETURN_GENERATED_KEYS);
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.execute("select 1", new int[] {1, 2});
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.execute("select 1", new String[] {"a", "b"});
             }
         });
@@ -1054,52 +1048,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCancel() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5439");
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.execute("select sleep_func(3)");
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "The query is canceled");
-
-        IgniteInternalFuture f = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    stmt.cancel();
-                }
-                catch (SQLException e) {
-                    log.error("Unexpected exception", e);
-
-                    fail("Unexpected exception.");
-                }
-            }
-        });
-
-        f.get();
-
-        stmt.close();
-
-        GridTestUtils.assertThrows(log,
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    stmt.cancel();
-
-                    return null;
-                }
-            },
-            SQLException.class,
-            "Statement is closed");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
+    @org.junit.Test
     public void testStatementTypeMismatchSelectForCachedQuery() throws Exception {
         // Put query to cache.
         stmt.executeQuery("select 1;");
@@ -1115,12 +1064,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
             SQLException.class,
             "Given statement type does not match that declared by JDBC driver");
 
-        assert stmt.getResultSet() == null : "Not results expected. Last statement is executed with exception";
+        assertNull("Not results expected. Last statement is executed with exception", stmt.getResultSet());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testStatementTypeMismatchUpdate() throws Exception {
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
@@ -1137,18 +1087,20 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         boolean next = rs.next();
 
-        assert next;
+        assertTrue(next);
 
-        assert rs.getInt(1) == 1 : "The data must not be updated. " +
+        assertEquals("The data must not be updated. " +
             "Because update statement is executed via 'executeQuery' method." +
-            " Data [val=" + rs.getInt(1) + ']';
+            " Data [val=" + rs.getInt(1) + ']',
+            1,
+            rs.getInt(1));
     }
 
     /** */
     private void fillCache() {
         IgniteCache<String, Person> cachePerson = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assert cachePerson != null;
+        assertNotNull(cachePerson);
 
         cachePerson.put("p1", new Person(1, "John", "White", 25));
         cachePerson.put("p2", new Person(2, "Joe", "Black", 35));
@@ -1194,7 +1146,6 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

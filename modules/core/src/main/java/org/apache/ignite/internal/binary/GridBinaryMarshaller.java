@@ -33,14 +33,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridBinaryMarshaller {
     /** */
-    public static final ThreadLocal<Boolean> KEEP_BINARIES = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return true;
-        }
-    };
+    public static final ThreadLocal<Boolean> KEEP_BINARIES = ThreadLocal.withInitial(() -> true);
 
     /** Binary context in TLS store. */
-    private static final ThreadLocal<BinaryContext> BINARY_CTX = new ThreadLocal<>();
+    private static final ThreadLocal<BinaryContextHolder> BINARY_CTX =
+        ThreadLocal.withInitial(BinaryContextHolder::new);
 
     /** */
     public static final byte OPTM_MARSH = -2;
@@ -240,14 +237,17 @@ public class GridBinaryMarshaller {
 
     /**
      * @param obj Object to marshal.
+     * @param failIfUnregistered Throw exception if class isn't registered.
      * @return Byte array.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
+    public byte[] marshal(@Nullable Object obj, boolean failIfUnregistered) throws BinaryObjectException {
         if (obj == null)
             return new byte[] { NULL };
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+            writer.failIfUnregistered(failIfUnregistered);
+
             writer.marshal(obj);
 
             return writer.array();
@@ -259,7 +259,6 @@ public class GridBinaryMarshaller {
      * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> T unmarshal(byte[] bytes, @Nullable ClassLoader clsLdr) throws BinaryObjectException {
         assert bytes != null;
 
@@ -278,7 +277,6 @@ public class GridBinaryMarshaller {
      * @return Binary object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> T unmarshal(BinaryInputStream in) throws BinaryObjectException {
         BinaryContext oldCtx = pushContext(ctx);
 
@@ -296,7 +294,6 @@ public class GridBinaryMarshaller {
      * @return Deserialized object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @SuppressWarnings("unchecked")
     @Nullable public <T> T deserialize(byte[] arr, @Nullable ClassLoader ldr) throws BinaryObjectException {
         assert arr != null;
         assert arr.length > 0;
@@ -304,10 +301,22 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
+        return deserialize(BinaryHeapInputStream.create(arr, 0), ldr, null);
+    }
+
+    /**
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Handles.
+     * @return Deserialized object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
+     */
+    @Nullable public <T> T deserialize(BinaryInputStream in, @Nullable ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds) throws BinaryObjectException {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr, true).deserialize();
+            return (T)new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
         }
         finally {
             popContext(oldCtx);
@@ -330,11 +339,7 @@ public class GridBinaryMarshaller {
      * @return Old binary context.
      */
     @Nullable private static BinaryContext pushContext(BinaryContext ctx) {
-        BinaryContext old = BINARY_CTX.get();
-
-        BINARY_CTX.set(ctx);
-
-        return old;
+        return BINARY_CTX.get().set(ctx);
     }
 
     /**
@@ -343,7 +348,7 @@ public class GridBinaryMarshaller {
      * @param oldCtx Old binary context.
      */
     public static void popContext(@Nullable BinaryContext oldCtx) {
-        BINARY_CTX.set(oldCtx);
+        BINARY_CTX.get().set(oldCtx);
     }
 
     /**
@@ -389,7 +394,7 @@ public class GridBinaryMarshaller {
      * @return Thread-bound context.
      */
     public static BinaryContext threadLocalContext() {
-        BinaryContext ctx = GridBinaryMarshaller.BINARY_CTX.get();
+        BinaryContext ctx = BINARY_CTX.get().get();
 
         if (ctx == null) {
             IgniteKernal ignite = IgnitionEx.localIgnite();

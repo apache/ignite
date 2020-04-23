@@ -34,10 +34,11 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -47,6 +48,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -73,11 +75,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /** Custom start key. */
     private static final IncrementalTestObject CUSTOM_START_KEY = new KeyObject(1);
 
-    /** Client mode flag. */
-    private static boolean client;
-
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -89,19 +87,12 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
             cfg.setDiscoverySpi(discoSpi);
         }
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE * 10)
+                .setName("dfltPlc"));
 
-        MemoryPolicyConfiguration plc = new MemoryPolicyConfiguration();
-
-        plc.setName("dfltPlc");
-        plc.setMaxSize(MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE * 10);
-
-        memCfg.setDefaultMemoryPolicyName("dfltPlc");
-        memCfg.setMemoryPolicies(plc);
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setClientMode(client);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -110,26 +101,16 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = false;
-
-        startGrids(NODES_CNT);
-
-        client = true;
+        startGridsMultiThreaded(NODES_CNT);
 
         for (int i = 0; i < NODES_CNT; i++)
-            startGrid(i + NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+            startClientGrid(i + NODES_CNT);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitioned() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
@@ -140,6 +121,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
@@ -150,6 +132,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksReplicated() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(REPLICATED, syncMode, false), ORDINAL_START_KEY);
@@ -160,6 +143,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlocksLocal() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             IgniteCache cache = null;
@@ -186,7 +170,12 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
      * @return Created cache.
      */
     @SuppressWarnings("unchecked")
-    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near) {
+    private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near)
+        throws IgniteInterruptedCheckedException, InterruptedException {
+        awaitPartitionMapExchange();
+
+        int minorTopVer = grid(0).context().discovery().topologyVersionEx().minorTopologyVersion();
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
@@ -196,7 +185,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
         ccfg.setWriteSynchronizationMode(syncMode);
 
         if (cacheMode == LOCAL)
-            ccfg.setMemoryPolicyName("dfltPlc");
+            ccfg.setDataRegionName("dfltPlc");
 
         IgniteCache cache = ignite(0).createCache(ccfg);
 
@@ -209,6 +198,8 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
             }
         }
+
+        waitForLateAffinityAssignment(minorTopVer);
 
         return cache;
     }
@@ -274,7 +265,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                 Ignite ignite = loc ? ignite(0) : ignite(clientTx ? threadNum - 1 + txCnt : threadNum - 1);
 
-                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME);
+                IgniteCache<Object, Integer> cache = ignite.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
                 List<Object> keys = keySets.get(threadNum - 1);
 

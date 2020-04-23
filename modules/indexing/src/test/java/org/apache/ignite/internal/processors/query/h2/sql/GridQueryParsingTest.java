@@ -40,26 +40,24 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
-import org.h2.jdbc.JdbcConnection;
 import org.h2.message.DbException;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,23 +65,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-public class GridQueryParsingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
+public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     /** */
     private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(
             cacheConfiguration(DEFAULT_CACHE_NAME, "SCH1", String.class, Person.class),
@@ -129,16 +117,13 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite = null;
-
-        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParseSelectAndUnion() throws Exception {
         checkQuery("select 1 from Person p where addrIds in ((1,2,3), (3,4,5))");
         checkQuery("select 1 from Person p where addrId in ((1,))");
@@ -209,6 +194,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select * from Person");
         checkQuery("select distinct * from Person");
         checkQuery("select p.name, date from Person p");
+        checkQuery("select p.name, date from Person p for update");
 
         checkQuery("select * from Person p, sch2.Address a");
         checkQuery("select * from Person, sch2.Address");
@@ -331,6 +317,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUseIndexHints() throws Exception {
         checkQuery("select * from Person use index (\"PERSON_NAME_IDX\")");
         checkQuery("select * from Person use index (\"PERSON_PARENTNAME_IDX\")");
@@ -348,11 +335,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testParseTableFilter() throws Exception {
         Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
             "where exists(select 1 from sch2.Address a where a.id = p1.addrId)");
 
-        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false).parse(prepared);
+        GridSqlSelect select = (GridSqlSelect)new GridSqlQueryParser(false, log).parse(prepared);
 
         GridSqlJoin join = (GridSqlJoin)select.from();
 
@@ -391,76 +379,30 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testParseMerge() throws Exception {
-        /* Plain rows w/functions, operators, defaults, and placeholders. */
-        checkQuery("merge into Person(old, name) values(5, 'John')");
-        checkQuery("merge into Person(name) values(DEFAULT)");
-        checkQuery("merge into Person(name) values(DEFAULT), (null)");
-        checkQuery("merge into Person(name, parentName) values(DEFAULT, null), (?, ?)");
-        checkQuery("merge into Person(old, name) values(5, 'John',), (6, 'Jack')");
-        checkQuery("merge into Person(old, name) values(5 * 3, DEFAULT,)");
-        checkQuery("merge into Person(old, name) values(ABS(-8), 'Max')");
-        checkQuery("merge into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
-        checkQuery("merge into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
-        checkQuery("merge into Person(old, name, parentName) values" +
-            "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
-            "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT)");
-        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
-        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
-        checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
-        checkQuery("merge into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
-            "Person where date='2011-03-12'");
-
-        /* KEY clause. */
-        checkQuery("merge into Person(_key, old, name) key(_key) values('a', 5, 'John')");
-        checkQuery("merge into SCH3.Person(id, old, name) key(id) values(1, 5, 'John')");
-        checkQuery("merge into SCH3.Person(_key, old, name) key(_key) values(?, 5, 'John')");
-        checkQuery("merge into SCH3.Person(_key, id, old, name) key(_key, id) values(?, ?, 5, 'John')");
-        assertParseThrows("merge into Person(old, name) key(name) values(5, 'John')", IgniteSQLException.class,
-            "Invalid column name in KEYS clause of MERGE - it may include only key and/or affinity columns: NAME");
-        assertParseThrows("merge into SCH3.Person(id, stuff, old, name) key(stuff) values(1, 'x', 5, 'John')",
-            IgniteSQLException.class, "Invalid column name in KEYS clause of MERGE - it may include only key and/or " +
-                "affinity columns: STUFF");
-
-        /* Subqueries. */
-        checkQuery("merge into Person(old, name) select old, parentName from Person");
-        checkQuery("merge into Person(old, name) select old, parentName from Person where old > 5");
-        checkQuery("merge into Person(old, name) select 5, 'John'");
-        checkQuery("merge into Person(old, name) select p1.old, 'Name' from person p1 join person p2 on " +
-            "p2.name = p1.parentName where p2.old > 30");
-        checkQuery("merge into Person(old) select 5 from Person UNION select street from sch2.Address limit ? " +
-            "offset ?");
-    }
-
-    /** */
+    @Test
     public void testParseInsert() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("insert into Person(old, name) values(5, 'John')");
-        checkQuery("insert into Person(name) values(DEFAULT)");
-        checkQuery("insert into Person default values");
+        checkQuery("insert into Person(name) values(null)");
         checkQuery("insert into Person() values()");
-        checkQuery("insert into Person(name) values(DEFAULT), (null)");
-        checkQuery("insert into Person(name) values(DEFAULT),");
-        checkQuery("insert into Person(name, parentName) values(DEFAULT, null), (?, ?)");
+        checkQuery("insert into Person(name) values(null), (null)");
+        checkQuery("insert into Person(name) values(null),");
+        checkQuery("insert into Person(name, parentName) values(null, null), (?, ?)");
         checkQuery("insert into Person(old, name) values(5, 'John',), (6, 'Jack')");
-        checkQuery("insert into Person(old, name) values(5 * 3, DEFAULT,)");
+        checkQuery("insert into Person(old, name) values(5 * 3, null,)");
         checkQuery("insert into Person(old, name) values(ABS(-8), 'Max')");
-        checkQuery("insert into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
-        checkQuery("insert into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
+        checkQuery("insert into Person(old, name) values(5, 'Jane'), (null, null), (6, 'Jill')");
+        checkQuery("insert into Person(old, name, parentName) values(8 * 7, null, 'Unknown')");
         checkQuery("insert into Person(old, name, parentName) values" +
             "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
             "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT),");
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null),");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
             "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
             "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
-            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
+            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, NULL, NULL)");
         checkQuery("insert into Person SET old = 5, name = 'John'");
         checkQuery("insert into Person SET name = CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), " +
             "old = select (5, 6)");
@@ -479,6 +421,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseDelete() throws Exception {
         checkQuery("delete from Person");
         checkQuery("delete from Person p where p.old > ?");
@@ -490,12 +433,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseUpdate() throws Exception {
         checkQuery("update Person set name='Peter'");
         checkQuery("update Person per set name='Peter', old = 5");
         checkQuery("update Person p set name='Peter' limit 20");
         checkQuery("update Person p set name='Peter', old = length('zzz') limit 20");
-        checkQuery("update Person p set name=DEFAULT, old = null limit ?");
         checkQuery("update Person p set name=? where old >= ? and old < ? limit ?");
         checkQuery("update Person p set name=(select a.Street from sch2.Address a where a.id=p.addrId), old = " +
             "(select 42) where old = sqrt(?)");
@@ -506,30 +449,37 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
-            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE,"name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index idx on Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create spatial index sch1.idx on sch1.Person (name ASC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", true),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index if not exists sch1.idx on sch1.Person (name)");
 
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
+            QueryIndex.DFLT_INLINE_SIZE,"name", false),
             "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
-            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL, "old", true, "name", false),
+            buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL,
+            QueryIndex.DFLT_INLINE_SIZE, "old", true, "name", false),
             "create spatial index if not exists idx on Person (old, name desc)");
 
         // Schemas for index and table must match
@@ -558,6 +508,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testParseDropIndex() throws Exception {
         // Schema that is not set defaults to default schema of connection which is sch1
         assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index idx");
@@ -575,6 +526,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testParseDropTable() throws Exception {
         // Schema that is not set defaults to default schema of connection which is sch1
         assertDropTableEquals(buildDropTable("sch1", "tbl", false), "drop table tbl");
@@ -590,6 +542,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseCreateTable() throws Exception {
         assertCreateTableEquals(
             buildCreateTable("sch1", "Person", "cache", F.asList("id", "city"),
@@ -628,14 +581,46 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("create table Person (id int as age * 2 primary key, age int) WITH \"template=cache\"",
             IgniteSQLException.class, "Computed columns are not supported [colName=ID]");
 
-        assertParseThrows("create table Person (id int primary key, age int default 5) WITH \"template=cache\"",
-            IgniteSQLException.class, "DEFAULT expressions are not supported [colName=AGE]");
-
         assertParseThrows("create table Int (_key int primary key, _val int) WITH \"template=cache\"",
             IgniteSQLException.class, "Direct specification of _KEY and _VAL columns is forbidden");
+
+        assertParseThrows("create table Person (" +
+                "unquoted_id LONG, " +
+                "\"quoted_id\" LONG, " +
+                "PERSON_NAME VARCHAR(255), " +
+                "PRIMARY KEY (UNQUOTED_ID, quoted_id)) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "PRIMARY KEY column is not defined: QUOTED_ID");
+
+        assertParseThrows("create table Person (" +
+                "unquoted_id LONG, " +
+                "\"quoted_id\" LONG, " +
+                "PERSON_NAME VARCHAR(255), " +
+                "PRIMARY KEY (\"unquoted_id\", \"quoted_id\")) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "PRIMARY KEY column is not defined: unquoted_id");
     }
 
     /** */
+    @Test
+    public void testParseCreateTableWithDefaults() {
+        assertParseThrows("create table Person (id int primary key, age int, " +
+                "ts TIMESTAMP default CURRENT_TIMESTAMP()) WITH \"template=cache\"",
+            IgniteSQLException.class, "Non-constant DEFAULT expressions are not supported [colName=TS]");
+
+        assertParseThrows("create table Person (id int primary key, age int default 'test') " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "Invalid default value for column. " +
+                "[colName=AGE, colType=INTEGER, dfltValueType=VARCHAR]");
+
+        assertParseThrows("create table Person (id int primary key, name varchar default 1) " +
+                "WITH \"template=cache\"",
+            IgniteSQLException.class, "Invalid default value for column. " +
+                "[colName=NAME, colType=VARCHAR, dfltValueType=INTEGER]");
+    }
+
+    /** */
+    @Test
     public void testParseAlterTableAddColumn() throws Exception {
         assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false,
             c("COMPANY", Value.STRING)), "ALTER TABLE SCH2.Person ADD company varchar");
@@ -668,9 +653,16 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists (company varchar, city varchar)",
             DbException.class, null);
 
-        // Both BEFORE and AFTER keywords.
+        // Both BEFORE keyword.
         assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar before addrid",
-            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported");
+            IgniteSQLException.class, "BEFORE keyword is not supported");
+
+        // Both AFTER keyword.
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar after addrid",
+            IgniteSQLException.class, "AFTER keyword is not supported");
+
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar first",
+            IgniteSQLException.class, "FIRST keyword is not supported");
 
         // No such schema.
         assertParseThrows("ALTER TABLE SCH5.\"Person\" ADD (city varchar)", DbException.class, null);
@@ -681,13 +673,12 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @param exCls Exception class.
      * @param msg Expected message.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertParseThrows(final String sql, Class<? extends Exception> exCls, String msg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Prepared p = parse(sql);
 
-                return new GridSqlQueryParser(false).parse(p);
+                return new GridSqlQueryParser(false, log).parse(p);
             }
         }, exCls, msg);
     }
@@ -698,7 +689,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertCreateIndexEquals(GridSqlCreateIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
@@ -711,7 +702,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertDropIndexEquals(GridSqlDropIndex exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 
@@ -746,7 +737,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertCreateTableEquals(GridSqlCreateTable exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlCreateTable);
 
@@ -808,7 +799,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertAlterTableAddColumnEquals(GridSqlAlterTableAddColumn exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlAlterTableAddColumn);
 
@@ -884,7 +875,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void assertDropTableEquals(GridSqlDropTable exp, String sql) throws Exception {
         Prepared prepared = parse(sql);
 
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement stmt = new GridSqlQueryParser(false, log).parse(prepared);
 
         assertTrue(stmt instanceof GridSqlDropTable);
 
@@ -955,7 +946,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private static GridSqlCreateIndex buildCreateIndex(String name, String tblName, String schemaName,
-        boolean ifNotExists, QueryIndexType type, Object... flds) {
+        boolean ifNotExists, QueryIndexType type, int inlineSize, Object... flds) {
         QueryIndex idx = new QueryIndex();
 
         idx.setName(name);
@@ -969,6 +960,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         idx.setFields(trueFlds);
         idx.setIndexType(type);
+        idx.setInlineSize(inlineSize);
 
         GridSqlCreateIndex res = new GridSqlCreateIndex();
 
@@ -983,16 +975,10 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = ((IgniteEx)ignite).context();
+    private H2PooledConnection connection() throws Exception {
+        IgniteH2Indexing idx = (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
 
-        GridQueryProcessor qryProcessor = ctx.query();
-
-        IgniteH2Indexing idx = U.field(qryProcessor, "idx");
-
-        String schemaName = idx.schema(DEFAULT_CACHE_NAME);
-
-        return (JdbcConnection)idx.connectionForSchema(schemaName);
+        return idx.connections().connection(idx.schema(DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -1000,9 +986,14 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     private <T extends Prepared> T parse(String sql) throws Exception {
-        Session ses = (Session)connection().getSession();
+        try (H2PooledConnection conn = connection()) {
+            Session ses = H2Utils.session(conn);
 
-        return (T)ses.prepare(sql);
+            H2Utils.setupConnection(conn,
+                QueryContext.parseContext(null, true), false, false, false);
+
+            return (T)ses.prepare(sql);
+        }
     }
 
     /**
@@ -1035,7 +1026,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     private void checkQuery(String qry) throws Exception {
         Prepared prepared = parse(qry);
 
-        GridSqlStatement gQry = new GridSqlQueryParser(false).parse(prepared);
+        GridSqlStatement gQry = new GridSqlQueryParser(false, log).parse(prepared);
 
         String res = gQry.getSQL();
 

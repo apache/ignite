@@ -28,10 +28,8 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -46,9 +44,6 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     /** Preload mode. */
     private CacheRebalanceMode preloadMode = CacheRebalanceMode.SYNC;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -62,13 +57,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setRebalanceMode(preloadMode);
         cc.setAffinity(new RendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
+        cc.setOnheapCacheEnabled(true);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
-        c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
@@ -88,6 +78,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAutomaticPreload() throws Exception {
         Ignite g0 = startGrid(0);
 

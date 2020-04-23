@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -79,6 +80,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      * Test timeout on {@code DataStreamer.addData()} method
      * @throws Exception If fail.
      */
+    @Test
     public void testTimeoutOnCloseMethod() throws Exception {
         failOn = 1;
 
@@ -109,6 +111,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testTimeoutOnAddData() throws Exception {
         failOn = 1;
 
@@ -142,6 +145,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer ldr = ignite.dataStreamer(CACHE_NAME)) {
                 ldr.timeout(TIMEOUT);
                 ldr.receiver(new TestDataReceiver());
+                ldr.perThreadBufferSize(1);
                 ldr.perNodeBufferSize(1);
                 ldr.perNodeParallelOperations(1);
                 ((DataStreamerImpl)ldr).maxRemapCount(0);

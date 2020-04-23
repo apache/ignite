@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import javax.cache.CacheException;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -26,6 +34,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -61,11 +70,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.ExecutorService;
-import javax.cache.CacheException;
 
 /**
  * Mocked Ignite implementation for IGFS tests.
@@ -178,13 +182,13 @@ public class IgfsIgniteMock implements IgniteEx {
         return null;
     }
 
-    @Override
-    public boolean isRebalanceEnabled() {
+    /** {@inheritDoc} */
+    @Override public boolean isRebalanceEnabled() {
         return true;
     }
 
-    @Override
-    public void rebalanceEnabled(boolean rebalanceEnabled) {
+    /** {@inheritDoc} */
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         throwUnsupported();
     }
 
@@ -584,24 +588,46 @@ public class IgfsIgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         throwUnsupported();
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStorageMetrics dataStorageMetrics() {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
+        throwUnsupported();
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        throwUnsupported();
-
-        return null;
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        throwUnsupported();
-
-        return null;
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /**

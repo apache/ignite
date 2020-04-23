@@ -57,7 +57,7 @@ public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchma
             double maxSalary = salary + 1000;
 
             Long res = (Long)cache().query(new SqlFieldsQuery("update Person set salary = (salary - ?1 + ?2) / 2 " +
-                "where salary >= ?1 and salary <= ?2").setArgs(salary, maxSalary)).getAll().get(0).get(0);
+                    "where salary >= ?1 and salary <= ?2").setArgs(salary, maxSalary)).getAll().get(0).get(0);
 
             updItemsCnt.getAndAdd(res);
 
@@ -82,7 +82,7 @@ public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchma
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         println(cfg, "Finished SQL UPDATE query benchmark [putCnt=" + putCnt.get() + ", updCnt=" + updCnt.get() +
-            ", updItemsCnt=" + updItemsCnt.get() + ']');
+                ", updItemsCnt=" + updItemsCnt.get() + ']');
 
         super.tearDown();
     }

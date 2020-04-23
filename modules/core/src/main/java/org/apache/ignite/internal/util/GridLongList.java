@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -38,9 +39,13 @@ import org.jetbrains.annotations.Nullable;
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
+@IgniteCodeGeneratingFail
 public class GridLongList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Empty array. */
+    public static final long[] EMPTY_ARRAY = new long[0];
 
     /** */
     private long[] arr;
@@ -390,6 +395,9 @@ public class GridLongList implements Message, Externalizable {
      * @return Array copy.
      */
     public long[] array() {
+        if (arr == null)
+            return EMPTY_ARRAY;
+
         long[] res = new long[idx];
 
         System.arraycopy(arr, 0, res, 0, idx);
@@ -530,7 +538,7 @@ public class GridLongList implements Message, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLongArray("arr", arr))
+                if (!writer.writeLongArray("arr", arr, idx))
                     return false;
 
                 writer.incrementState();

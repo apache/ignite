@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -36,6 +35,7 @@ import org.apache.ignite.compute.ComputeTaskTimeoutException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -45,6 +45,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION;
@@ -75,6 +76,8 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -107,8 +110,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         GridClientFactory.stop(client.id());
-
-        stopGrid();
     }
 
     /** {@inheritDoc} */
@@ -119,6 +120,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleTask() throws Exception {
         latch = new CountDownLatch(3);
 
@@ -163,6 +165,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailedTask() throws Exception {
         latch = new CountDownLatch(2);
 
@@ -175,7 +178,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            IgniteCheckedException.class,
+            IgniteException.class,
             null
         );
 
@@ -209,6 +212,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTimedOutTask() throws Exception {
         latch = new CountDownLatch(2);
 
@@ -264,6 +268,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClosure() throws Exception {
         latch = new CountDownLatch(3);
 
@@ -310,8 +315,12 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Events for class tasks that was started from external clients should contain
+     * client subject id instead of the node where it was started. This test checks it.
+     *
      * @throws Exception If failed.
      */
+    @Test
     public void testClient() throws Exception {
         latch = new CountDownLatch(3);
 

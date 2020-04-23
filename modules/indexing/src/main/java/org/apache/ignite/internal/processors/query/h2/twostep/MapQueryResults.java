@@ -17,20 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.ResultSet;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Mapper query results.
  */
 class MapQueryResults {
-    /** H@ indexing. */
+    /** H2 indexing. */
     private final IgniteH2Indexing h2;
 
     /** */
@@ -43,30 +41,39 @@ class MapQueryResults {
     private final GridQueryCancel[] cancels;
 
     /** */
-    private final String cacheName;
+    private final GridCacheContext<?, ?> cctx;
 
-    /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    /** Lazy mode. */
+    private final boolean lazy;
 
     /** */
     private volatile boolean cancelled;
 
+    /** Query context. */
+    private final QueryContext qctx;
+
+    /** Active queries. */
+    private int active;
+
     /**
      * Constructor.
      *
+     * @param h2 Indexing instance.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
-     * @param cacheName Cache name.
-     * @param lazyWorker Lazy worker (if any).
+     * @param cctx Cache context.
+     * @param lazy Lazy flag.
+     * @param qctx Query context.
      */
-    @SuppressWarnings("unchecked")
-    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable String cacheName,
-        @Nullable MapQueryLazyWorker lazyWorker) {
+    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
+        boolean lazy, QueryContext qctx) {
         this.h2 = h2;
         this.qryReqId = qryReqId;
-        this.cacheName = cacheName;
-        this.lazyWorker = lazyWorker;
+        this.cctx = cctx;
+        this.lazy = lazy;
+        this.qctx = qctx;
 
+        active = qrys;
         results = new AtomicReferenceArray<>(qrys);
         cancels = new GridQueryCancel[qrys];
 
@@ -93,70 +100,103 @@ class MapQueryResults {
     }
 
     /**
-     * @return Lazy worker.
-     */
-    MapQueryLazyWorker lazyWorker() {
-        return lazyWorker;
-    }
-
-    /**
      * Add result.
-     *
-     * @param qry Query result index.
-     * @param q Query object.
-     * @param qrySrcNodeId Query source node.
-     * @param rs Result set.
+     * @param qryIdx Query result index.
+     * @param res Result.
      */
-    void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params, lazyWorker);
-
-        if (lazyWorker != null)
-            lazyWorker.result(res);
-
-        if (!results.compareAndSet(qry, null, res))
+    void addResult(int qryIdx, MapQueryResult res) {
+        if (!results.compareAndSet(qryIdx, null, res))
             throw new IllegalStateException();
     }
 
     /**
      * @return {@code true} If all results are closed.
      */
-    boolean isAllClosed() {
-        for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
-
-            if (res == null || !res.closed())
-                return false;
-        }
-
-        return true;
+    synchronized boolean isAllClosed() {
+        return active == 0;
     }
 
     /**
      * Cancels the query.
      */
-    void cancel(boolean forceQryCancel) {
-        if (cancelled)
-            return;
+    void cancel() {
+        synchronized (this) {
+            if (cancelled)
+                return;
 
-        cancelled = true;
+            cancelled = true;
 
-        for (int i = 0; i < results.length(); i++) {
-            MapQueryResult res = results.get(i);
-
-            if (res != null) {
-                res.close();
-
-                continue;
-            }
-
-            // NB: Cancel is already safe even for lazy queries (see implementation of passed Runnable).
-            if (forceQryCancel) {
+            for (int i = 0; i < results.length(); i++) {
                 GridQueryCancel cancel = cancels[i];
 
                 if (cancel != null)
                     cancel.cancel();
             }
         }
+
+        // The closing result set is synchronized by themselves.
+        // Include to synchronize block may be cause deadlock on <this> and MapQueryResult#lock.
+        close();
+    }
+
+    /**
+     * Wrap MapQueryResult#close to synchronize close vs cancel.
+     * We have do it because connection returns to pool after close ResultSet but the whole MapQuery
+     * (that may contains several queries) may be canceled later.
+     *
+     * @param idx Map query (result) index.
+     */
+    void closeResult(int idx) {
+        MapQueryResult res = results.get(idx);
+
+        if (res != null) {
+            boolean lastClosed = false;
+
+            try {
+                // Session isn't set for lazy=false queries.
+                // Also session == null when result already closed.
+                res.lock();
+                res.lockTables();
+
+                synchronized (this) {
+                    if (!res.closed()) {
+                        res.close();
+
+                        // The statement of the closed result must not be canceled
+                        // because statement & connection may be reused.
+                        cancels[idx] = null;
+
+                        active--;
+
+                        lastClosed = active == 0;
+                    }
+                }
+            }
+            finally {
+                res.unlock();
+            }
+
+            if (lastClosed)
+                onAllClosed();
+        }
+    }
+
+    /**
+     * Close map results.
+     */
+    public void close() {
+        for (int i = 0; i < results.length(); i++)
+            closeResult(i);
+    }
+
+    /**
+     * All max results closed callback.
+     */
+    private void onAllClosed() {
+        assert active == 0;
+
+        if (lazy)
+            releaseQueryContext();
     }
 
     /**
@@ -171,5 +211,20 @@ class MapQueryResults {
      */
     long queryRequestId() {
         return qryReqId;
+    }
+
+    /**
+     * Release query context.
+     */
+    public void releaseQueryContext() {
+        if (qctx.distributedJoinContext() == null)
+            qctx.clearContext(false);
+    }
+
+    /**
+     * @return Lazy flag.
+     */
+    public boolean isLazy() {
+        return lazy;
     }
 }

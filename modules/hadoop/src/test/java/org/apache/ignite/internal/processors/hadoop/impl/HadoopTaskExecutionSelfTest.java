@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.cancelledTasks;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.executedTasks;
@@ -88,13 +89,6 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         grid(0).fileSystem(igfsName).clear();
     }
@@ -114,6 +108,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapRun() throws Exception {
         int lineCnt = 10000;
         String fileName = "/testFile";
@@ -143,7 +138,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         job.setJarByClass(getClass());
 
         IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-                createJobInfo(job.getConfiguration()));
+                createJobInfo(job.getConfiguration(), null));
 
         fut.get();
 
@@ -155,6 +150,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapCombineRun() throws Exception {
         int lineCnt = 10001;
         String fileName = "/testFile";
@@ -188,7 +184,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 2);
 
-        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
         fut.get();
 
@@ -203,6 +199,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapperException() throws Exception {
         prepareFile("/testFile", 1000);
 
@@ -226,7 +223,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
         job.setJarByClass(getClass());
 
         final IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 3),
-                createJobInfo(job.getConfiguration()));
+                createJobInfo(job.getConfiguration(), null));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -308,12 +305,13 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskCancelling() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
 
-        final IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(cfg));
+        final IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(cfg, null));
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -352,6 +350,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobKill() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
@@ -364,7 +363,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
 
         assertFalse(killRes);
 
-        final IgniteInternalFuture<?> fut = hadoop.submit(jobId, createJobInfo(cfg));
+        final IgniteInternalFuture<?> fut = hadoop.submit(jobId, createJobInfo(cfg, null));
 
         if (!GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

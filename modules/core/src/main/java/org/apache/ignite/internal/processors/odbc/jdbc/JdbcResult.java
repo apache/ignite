@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC response result.
@@ -62,6 +64,21 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Columns metadata result V2. */
     static final byte META_COLUMNS_V2 = 14;
 
+    /** Columns metadata result V3. */
+    static final byte META_COLUMNS_V3 = 15;
+
+    /** A request to send file from client to server. */
+    static final byte BULK_LOAD_ACK = 16;
+
+    /** Columns metadata result V4. */
+    static final byte META_COLUMNS_V4 = 17;
+
+    /** A result of the processing ordered batch request. */
+    static final byte BATCH_EXEC_ORDERED = 18;
+
+    /** A result of the processing cache partitions distributions request. */
+    static final byte CACHE_PARTITIONS = 19;
+
     /** Success status. */
     private byte type;
 
@@ -75,26 +92,29 @@ public class JdbcResult implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         writer.writeByte(type);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
-        // No-op.
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
     }
 
     /**
      * @param reader Binary reader.
+     * @param ver Protocol verssion.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcResult readResult(BinaryReaderExImpl reader) throws BinaryObjectException {
+    public static JdbcResult readResult(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         int resId = reader.readByte();
 
         JdbcResult res;
 
-        switch(resId) {
+        switch (resId) {
             case QRY_EXEC:
                 res = new JdbcQueryExecuteResult();
 
@@ -155,12 +175,42 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
+            case META_COLUMNS_V3:
+                res = new JdbcMetaColumnsResultV3();
+
+                break;
+
+            case BULK_LOAD_ACK:
+                res = new JdbcBulkLoadAckResult();
+
+                break;
+
+            case META_COLUMNS_V4:
+                res = new JdbcMetaColumnsResultV4();
+
+                break;
+
+            case BATCH_EXEC_ORDERED:
+                res = new JdbcOrderedBatchExecuteResult();
+
+                break;
+
+            case CACHE_PARTITIONS:
+                res = new JdbcCachePartitionsResult();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }
 
-        res.readBinary(reader);
+        res.readBinary(reader, ver);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcResult.class, this);
     }
 }

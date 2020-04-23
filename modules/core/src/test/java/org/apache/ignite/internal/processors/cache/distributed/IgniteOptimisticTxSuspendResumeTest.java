@@ -18,472 +18,34 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CI2;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
-import static org.apache.ignite.transactions.TransactionState.COMMITTED;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
  *
  */
-public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest {
-    /** Transaction timeout. */
-    private static final long TX_TIMEOUT = 100;
-
-    /** Future timeout */
-    private static final int FUT_TIMEOUT = 5000;
-
-    /** */
-    private boolean client = false;
-
-    /**
-     * List of closures to execute transaction operation that prohibited in suspended state.
-     */
-    private static final List<CI1Exc<Transaction>> SUSPENDED_TX_PROHIBITED_OPS = Arrays.asList(
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.suspend();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.close();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.commit();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.commitAsync().get(FUT_TIMEOUT);
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.rollback();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.rollbackAsync().get(FUT_TIMEOUT);
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.setRollbackOnly();
-            }
-        }
-    );
-
+public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspendResumeTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(serversNumber());
-
-        if (serversNumber() > 1) {
-            client = true;
-
-            startGrid(serversNumber());
-
-            startGrid(serversNumber() + 1);
-
-            client = false;
-        }
-
-        awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids(true);
-    }
-
-    /**
-     * @return Number of server nodes.
-     */
-    protected int serversNumber() {
-        return 1;
-    }
-
-    /**
-     * Test for transaction starting in one thread, continuing in another.
-     *
-     * @throws Exception If failed.
-     */
-    public void testResumeTxInAnotherThread() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
-
-                    final AtomicInteger cntr = new AtomicInteger(0);
-
-                    cache.put(-1, -1);
-                    cache.put(cntr.get(), cntr.getAndIncrement());
-
-                    tx.suspend();
-
-                    assertEquals(SUSPENDED, tx.state());
-
-                    assertNull("Thread already have tx", ignite.transactions().tx());
-
-                    assertNull(cache.get(-1));
-                    assertNull(cache.get(cntr.get()));
-
-                    for (int i = 0; i < 10; i++) {
-                        GridTestUtils.runAsync(new Runnable() {
-                            @Override public void run() {
-                                assertEquals(SUSPENDED, tx.state());
-
-                                tx.resume();
-
-                                assertEquals(ACTIVE, tx.state());
-
-                                cache.put(cntr.get(), cntr.getAndIncrement());
-
-                                tx.suspend();
-                            }
-                        }).get(FUT_TIMEOUT);
-                    }
-
-                    tx.resume();
-
-                    cache.remove(-1);
-
-                    tx.commit();
-
-                    assertEquals(COMMITTED, tx.state());
-
-                    for (int i = 0; i < cntr.get(); i++)
-                        assertEquals(i, (int)cache.get(i));
-
-                    assertFalse(cache.containsKey(-1));
-
-                    cache.removeAll();
-                }
-            }
-        });
-    }
-
-    /**
-     * Test for transaction starting in one thread, continuing in another, and resuming in initiating thread.
-     * Cache operations performed for a couple of caches.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCrossCacheTxInAnotherThread() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final IgniteCache<Integer, Integer> otherCache =
-                        ignite.getOrCreateCache(cacheConfiguration(PARTITIONED, 0, false).setName("otherCache"));
-
-                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
-
-                    final AtomicInteger cntr = new AtomicInteger(0);
-
-                    cache.put(-1, -1);
-                    otherCache.put(-1, -1);
-
-                    tx.suspend();
-
-                    for (int i = 0; i < 10; i++) {
-                        GridTestUtils.runAsync(new Runnable() {
-                            @Override public void run() {
-                                tx.resume();
-
-                                assertEquals(ACTIVE, tx.state());
-
-                                cache.put(cntr.get(), cntr.get());
-                                otherCache.put(cntr.get(), cntr.getAndIncrement());
-
-                                tx.suspend();
-                            }
-                        }).get(FUT_TIMEOUT);
-                    }
-
-                    tx.resume();
-
-                    cache.remove(-1);
-                    otherCache.remove(-1);
-
-                    tx.commit();
-
-                    assertEquals(COMMITTED, tx.state());
-
-                    for (int i = 0; i < cntr.get(); i++) {
-                        assertEquals(i, (int)cache.get(i));
-                        assertEquals(i, (int)otherCache.get(i));
-                    }
-
-                    assertFalse(cache.containsKey(-1));
-                    assertFalse(otherCache.containsKey(-1));
-
-                    cache.removeAll();
-                    otherCache.removeAll();
-                }
-            }
-        });
-    }
-
-    /**
-     * Test for transaction rollback.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxRollback() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
-
-                    cache.put(1, 1);
-                    cache.put(2, 2);
-
-                    tx.suspend();
-
-                    assertNull("There is no transaction for current thread", ignite.transactions().tx());
-
-                    assertEquals(SUSPENDED, tx.state());
-
-                    GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            tx.resume();
-
-                            assertEquals(ACTIVE, tx.state());
-
-                            cache.put(3, 3);
-
-                            tx.rollback();
-                        }
-                    }).get(FUT_TIMEOUT);
-
-                    assertEquals(ROLLED_BACK, tx.state());
-
-                    assertFalse(cache.containsKey(1));
-                    assertFalse(cache.containsKey(2));
-                    assertFalse(cache.containsKey(3));
-
-                    cache.removeAll();
-                }
-            }
-        });
-    }
-
-    /**
-     * Test for starting and suspending transactions, and then resuming and committing in another thread.
-     *
-     * @throws Exception If failed.
-     */
-    public void testMultiTxSuspendResume() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final List<Transaction> clientTxs = new ArrayList<>();
-
-                    for (int i = 0; i < 10; i++) {
-                        Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
-
-                        cache.put(i, i);
-
-                        tx.suspend();
-
-                        clientTxs.add(tx);
-                    }
-
-                    GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        public void applyx(Integer idx) throws Exception {
-                            Transaction tx = clientTxs.get(idx);
-
-                            assertEquals(SUSPENDED, tx.state());
-
-                            tx.resume();
-
-                            assertEquals(ACTIVE, tx.state());
-
-                            tx.commit();
-                        }
-                    }, 10, "th-suspend");
-
-                    for (int i = 0; i < 10; i++)
-                        assertEquals(i, (int)cache.get(i));
-
-                    cache.removeAll();
-                }
-            }
-        });
-    }
-
-    /**
-     * Test checking all operations(exception resume) on suspended transaction from the other thread are prohibited.
-     *
-     * @throws Exception If failed.
-     */
-    public void testOpsProhibitedOnSuspendedTxFromOtherThread() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (final CI1Exc<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
-                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                        final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
-
-                        cache.put(1, 1);
-
-                        tx.suspend();
-
-                        multithreaded(new RunnableX() {
-                            @Override public void runx() throws Exception {
-                                GridTestUtils.assertThrowsWithCause(txOperation, tx, IgniteException.class);
-                            }
-                        }, 1);
-
-                        tx.resume();
-                        tx.close();
-
-                        assertNull(cache.get(1));
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Test checking all operations(exception resume) on suspended transaction are prohibited.
-     *
-     * @throws Exception If failed.
-     */
-    public void testOpsProhibitedOnSuspendedTx() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (CI1Exc<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
-                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                        Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
-
-                        cache.put(1, 1);
-
-                        tx.suspend();
-
-                        GridTestUtils.assertThrowsWithCause(txOperation, tx, IgniteException.class);
-
-                        tx.resume();
-                        tx.close();
-
-                        assertNull(cache.get(1));
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Test checking timeout on resumed transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxTimeoutOnResumed() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
-
-                    cache.put(1, 1);
-
-                    tx.suspend();
-
-                    long start = U.currentTimeMillis();
-
-                    while(TX_TIMEOUT >= U.currentTimeMillis() - start)
-                        Thread.sleep(TX_TIMEOUT * 2);
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.resume();
-
-                            return null;
-                        }
-                    }, TransactionTimeoutException.class);
-
-                    assertEquals(ROLLED_BACK, tx.state());
-
-                    tx.close();
-                }
-            }
-        });
-    }
-
-    /**
-     * Test checking timeout on suspended transaction.
-     *
-     * @throws Exception If failed.
-     */
-    public void testTxTimeoutOnSuspend() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation, TX_TIMEOUT, 0);
-
-                    cache.put(1, 1);
-
-                    long start = U.currentTimeMillis();
-
-                    while(TX_TIMEOUT >= U.currentTimeMillis() - start)
-                        Thread.sleep(TX_TIMEOUT * 2);
-
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.suspend();
-
-                            return null;
-                        }
-                    }, TransactionTimeoutException.class);
-
-                    assertEquals(ROLLED_BACK, tx.state());
-
-                    tx.close();
-
-                    assertNull(cache.get(1));
-                }
-            }
-        });
+    @Override protected TransactionConcurrency transactionConcurrency() {
+        return OPTIMISTIC;
     }
 
     /**
@@ -492,6 +54,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSuspendTxAndStartNew() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
@@ -532,6 +95,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSuspendTxAndStartNewWithoutCommit() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
@@ -580,179 +144,135 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSuspendTxAndResumeAfterTopologyChange() throws Exception {
-        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
-            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
+        Ignite srv = ignite(ThreadLocalRandom.current().nextInt(SERVER_CNT));
+        Ignite client = ignite(SERVER_CNT);
+        Ignite clientNear = ignite(SERVER_CNT + 1);
 
-                    cache.put(1, 1);
+        Map<String, List<List<Integer>>> cacheKeys = generateKeys(srv, TransactionIsolation.values().length);
+
+        doCheckSuspendTxAndResume(srv, cacheKeys);
+        doCheckSuspendTxAndResume(client, cacheKeys);
+        doCheckSuspendTxAndResume(clientNear, cacheKeys);
+    }
+
+    /**
+     * @param node Ignite isntance.
+     * @param cacheKeys Different key types mapped to cache name.
+     * @throws Exception If failed.
+     */
+    private void doCheckSuspendTxAndResume(Ignite node, Map<String, List<List<Integer>>> cacheKeys) throws Exception {
+        ClusterNode locNode = node.cluster().localNode();
+
+        log.info("Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
+
+        Map<IgniteCache<Integer, Integer>, Map<Transaction, Integer>> cacheTxMap = new IdentityHashMap<>();
+
+        for (Map.Entry<String, List<List<Integer>>> cacheKeysEntry : cacheKeys.entrySet()) {
+            String cacheName = cacheKeysEntry.getKey();
+
+            IgniteCache<Integer, Integer> cache = node.cache(cacheName);
+
+            Map<Transaction, Integer> suspendedTxs = new IdentityHashMap<>();
+
+            for (List<Integer> keysList : cacheKeysEntry.getValue()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    Transaction tx = node.transactions().txStart(OPTIMISTIC, isolation);
+
+                    int key = keysList.get(isolation.ordinal());
+
+                    cache.put(key, key);
 
                     tx.suspend();
 
-                    assertEquals(SUSPENDED, tx.state());
+                    suspendedTxs.put(tx, key);
 
-                    try (IgniteEx g = startGrid(serversNumber() + 3)) {
-                        tx.resume();
+                    String msg = "node=" + node.cluster().localNode() +
+                        ", cache=" + cacheName + ", isolation=" + isolation + ", key=" + key;
 
-                        assertEquals(ACTIVE, tx.state());
-
-                        assertEquals(1, (int)cache.get(1));
-
-                        tx.commit();
-
-                        assertEquals(1, (int)cache.get(1));
-                    }
-
-                    cache.removeAll();
+                    assertEquals(msg, SUSPENDED, tx.state());
                 }
             }
-        });
-    }
 
-    /**
-     * @return Cache configurations to test.
-     */
-    private List<CacheConfiguration<Integer, Integer>> cacheConfigurations() {
-        List<CacheConfiguration<Integer, Integer>> cfgs = new ArrayList<>();
+            cacheTxMap.put(cache, suspendedTxs);
+        }
 
-        cfgs.add(cacheConfiguration(PARTITIONED, 0, false));
-        cfgs.add(cacheConfiguration(PARTITIONED, 1, false));
-        cfgs.add(cacheConfiguration(PARTITIONED, 1, true));
-        cfgs.add(cacheConfiguration(REPLICATED, 0, false));
+        int newNodeIdx = gridCount();
 
-        return cfgs;
-    }
+        startGrid(newNodeIdx);
 
-    /**
-     * @param cacheMode Cache mode.
-     * @param backups Number of backups.
-     * @param nearCache If {@code true} near cache is enabled.
-     * @return Cache configuration.
-     */
-    private CacheConfiguration<Integer, Integer> cacheConfiguration(
-        CacheMode cacheMode,
-        int backups,
-        boolean nearCache) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        try {
+            for (Map.Entry<IgniteCache<Integer, Integer>, Map<Transaction, Integer>>  entry : cacheTxMap.entrySet()) {
+                IgniteCache<Integer, Integer> cache = entry.getKey();
 
-        ccfg.setCacheMode(cacheMode);
-        ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+                for (Map.Entry<Transaction, Integer> suspendedTx : entry.getValue().entrySet()) {
+                    Transaction tx = suspendedTx.getKey();
 
-        if (cacheMode == PARTITIONED)
-            ccfg.setBackups(backups);
+                    Integer key = suspendedTx.getValue();
 
-        if (nearCache)
-            ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
+                    tx.resume();
 
-        return ccfg;
-    }
+                    String msg = "node=" + node.cluster().localNode() +
+                        ", cache=" + cache.getName() + ", isolation=" + tx.isolation() + ", key=" + key;
 
-    /**
-     * @param c Closure.
-     * @throws Exception If failed.
-     */
-    private void executeTestForAllCaches(CI2<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
-        for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
-            ignite(0).createCache(ccfg);
+                    assertEquals(msg, ACTIVE, tx.state());
 
-            log.info("Run test for cache [cache=" + ccfg.getCacheMode() +
-                ", backups=" + ccfg.getBackups() +
-                ", near=" + (ccfg.getNearConfiguration() != null) + "]");
+                    assertEquals(msg, key, cache.get(key));
 
-            int srvNum = serversNumber();
-            if (serversNumber() > 1) {
-                ignite(serversNumber() + 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
-                srvNum += 2;
-            }
+                    tx.commit();
 
-            try {
-                for (int i = 0; i < srvNum; i++) {
-                    Ignite ignite = ignite(i);
-
-                    log.info("Run test for node [node=" + i + ", client=" + ignite.configuration().isClientMode() + ']');
-
-                    c.apply(ignite, ignite.<Integer, Integer>cache(ccfg.getName()));
+                    assertEquals(msg, key, cache.get(key));
                 }
             }
-            finally {
-                ignite(0).destroyCache(ccfg.getName());
-            }
+        }
+        finally {
+            stopGrid(newNodeIdx);
+
+            for (IgniteCache<Integer, Integer> cache : cacheTxMap.keySet())
+                cache.removeAll();
         }
     }
 
     /**
-     * Closure with 2 parameters that can throw any exception.
+     * Generates list of keys (primary, backup and neither primary nor backup).
      *
-     * @param <E1> Type of first closure parameter.
-     * @param <E2> Type of second closure parameter.
+     * @param ignite Ignite instance.
+     * @param keysCnt The number of keys generated for each type of key.
+     * @return List of different keys mapped to cache name.
      */
-    public static abstract class CI2Exc<E1, E2> implements CI2<E1, E2> {
-        /**
-         * Closure body.
-         *
-         * @param e1 First closure argument.
-         * @param e2 Second closure argument.
-         * @throws Exception If failed.
-         */
-        public abstract void applyx(E1 e1, E2 e2) throws Exception;
+    private Map<String, List<List<Integer>>> generateKeys(Ignite ignite, int keysCnt) {
+        Map<String, List<List<Integer>>> cacheKeys = new HashMap<>();
 
-        /** {@inheritdoc} */
-        @Override public void apply(E1 e1, E2 e2) {
-            try {
-                applyx(e1, e2);
+        for (CacheConfiguration cfg : cacheConfigurations()) {
+            String cacheName = cfg.getName();
+
+            IgniteCache cache = ignite.cache(cacheName);
+
+            List<List<Integer>> keys = new ArrayList<>();
+
+            // Generate different keys: 0 - primary, 1 - backup, 2 - neither primary nor backup.
+            for (int type = 0; type < 3; type++) {
+                if (cfg.getCacheMode() == LOCAL)
+                    continue;
+
+                if (type == 1 && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
+                    continue;
+
+                if (type == 2 && cfg.getCacheMode() == REPLICATED)
+                    continue;
+
+                List<Integer> keys0 = findKeys(cache, keysCnt, type * 100_000, type);
+
+                assertEquals(cacheName, keysCnt, keys0.size());
+
+                keys.add(keys0);
             }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+
+            if (!keys.isEmpty())
+                cacheKeys.put(cacheName, keys);
         }
-    }
 
-    /**
-     * Closure that can throw any exception.
-     *
-     * @param <T> Type of closure parameter.
-     */
-    public static abstract class CI1Exc<T> implements CI1<T> {
-        /**
-         * Closure body.
-         *
-         * @param o Closure argument.
-         * @throws Exception If failed.
-         */
-        public abstract void applyx(T o) throws Exception;
-
-        /** {@inheritdoc} */
-        @Override public void apply(T o) {
-            try {
-                applyx(o);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Runnable that can throw any exception.
-     */
-    public static abstract class RunnableX implements Runnable {
-        /**
-         * Closure body.
-         *
-         * @throws Exception If failed.
-         */
-        public abstract void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override public void run() {
-            try {
-                runx();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        return cacheKeys;
     }
 }

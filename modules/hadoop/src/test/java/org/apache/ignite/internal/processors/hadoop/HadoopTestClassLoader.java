@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 
@@ -32,10 +33,10 @@ import java.util.List;
  */
 public class HadoopTestClassLoader extends URLClassLoader {
     /** Parent class loader. */
-    private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopTestClassLoader.class.getClassLoader();
+   private static final ClassLoader APP_CLS_LDR = HadoopTestClassLoader.class.getClassLoader();
 
     /** */
-    private static final Collection<URL> APP_JARS = F.asList(APP_CLS_LDR.getURLs());
+    private static final Collection<URL> APP_JARS = F.asList(IgniteUtils.classLoaderUrls(APP_CLS_LDR));
 
     /** All participating URLs. */
     private static final URL[] URLS;
@@ -80,15 +81,8 @@ public class HadoopTestClassLoader extends URLClassLoader {
                     // First, check if the class has already been loaded
                     Class c = findLoadedClass(name);
 
-                    if (c == null) {
-                        long t1 = System.nanoTime();
-
+                    if (c == null)
                         c = findClass(name);
-
-                        // this is the defining class loader; record the stats
-                        sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                        sun.misc.PerfCounter.getFindClasses().increment();
-                    }
 
                     if (resolve)
                         resolveClass(c);

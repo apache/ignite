@@ -99,7 +99,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         IgniteInternalFuture<AffinityTopologyVersion> fut = aff.readyFuture(topVer);
 
-        return fut != null ? fut : cctx.shared().exchange().lastFinishedFuture();
+        return fut != null ? fut : new GridFinishedFuture<>(aff.lastVersion());
     }
 
     /**
@@ -123,7 +123,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (cctx.isLocal())
             topVer = LOC_CACHE_TOP_VER;
 
-        return aff.assignments(topVer);
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.assignments(topVer);
     }
 
     /**
@@ -132,7 +137,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public List<List<ClusterNode>> idealAssignment() {
         assert !cctx.isLocal();
 
-        return aff.idealAssignment();
+        return aff.idealAssignmentRaw();
     }
 
     /**
@@ -188,10 +193,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return Affinity key.
      */
     public Object affinityKey(Object key) {
-        if (key instanceof CacheObject && !(key instanceof BinaryObject))
-            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
+        CacheObjectContext coCtx = cctx.cacheObjectContext();
 
-        return (key instanceof GridCacheInternal ? cctx.defaultAffMapper() : affMapper).affinityKey(key);
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
+            key = ((CacheObject)key).value(coCtx, false);
+
+        return (key instanceof GridCacheInternal ? coCtx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 
     /**
@@ -227,15 +234,25 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return Affinity assignment.
      */
     public AffinityAssignment assignment(AffinityTopologyVersion topVer) {
+        return assignment(topVer, cctx.shared().exchange().lastAffinityChangedTopologyVersion(topVer));
+    }
+
+    /**
+     * Get affinity assignment for the given topology version.
+     *
+     * @param topVer Topology version.
+     * @return Affinity assignment.
+     */
+    public AffinityAssignment assignment(AffinityTopologyVersion topVer, AffinityTopologyVersion lastAffChangedTopVer) {
         if (cctx.isLocal())
-            topVer = LOC_CACHE_TOP_VER;
+            topVer = lastAffChangedTopVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        return aff0.cachedAffinity(topVer);
+        return aff0.cachedAffinity(topVer, lastAffChangedTopVer);
     }
 
     /**

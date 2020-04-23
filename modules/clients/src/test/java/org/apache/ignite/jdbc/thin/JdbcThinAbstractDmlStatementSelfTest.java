@@ -20,6 +20,7 @@ package org.apache.ignite.jdbc.thin;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -28,9 +29,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -39,12 +37,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
-
     /** SQL SELECT query for verification. */
     static final String SQL_SELECT = "select _key, id, firstName, lastName, age from Person";
 
@@ -59,15 +51,10 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ignite(0).getOrCreateCache(cacheConfig());
 
-        conn = DriverManager.getConnection(URL);
+        conn = createConnection();
 
         conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
     }
@@ -79,6 +66,14 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
         conn.close();
 
         assertTrue(conn.isClosed());
+    }
+
+    /**
+     * @return JDBC connection.
+     * @throws SQLException On error.
+     */
+    protected Connection createConnection() throws SQLException {
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/");
     }
 
     /** {@inheritDoc} */
@@ -93,12 +88,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
      */
     private IgniteConfiguration getConfiguration0(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -185,7 +174,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

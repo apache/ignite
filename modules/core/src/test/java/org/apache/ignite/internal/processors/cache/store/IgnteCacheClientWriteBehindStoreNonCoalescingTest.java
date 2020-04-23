@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.cache.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.processor.EntryProcessor;
@@ -37,9 +35,9 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -83,6 +81,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonCoalescingIncrementing() throws Exception {
         Ignite ignite = grid(0);
 
@@ -154,7 +153,6 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
             Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
-
 
             if (oldVal != null) {
                 Integer oldInt = (Integer) oldVal;

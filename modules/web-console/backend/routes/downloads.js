@@ -17,11 +17,13 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/downloads',
-    inject: ['require(lodash)', 'require(express)', 'services/agents', 'services/activities']
+    inject: ['services/agents', 'services/activities']
 };
 
 /**
@@ -31,7 +33,7 @@ module.exports = {
  * @param {ActivitiesService} activitiesService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, downloadsService, activitiesService) {
+module.exports.factory = function(downloadsService, activitiesService) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 

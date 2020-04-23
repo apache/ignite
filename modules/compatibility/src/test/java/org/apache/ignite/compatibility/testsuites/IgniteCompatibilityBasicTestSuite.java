@@ -17,25 +17,24 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.compatibility.persistence.DummyPersistenceCompatibilityTest;
+import org.apache.ignite.compatibility.cache.LocalCacheTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
+import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Compatibility tests basic test suite.
  */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    PersistenceBasicCompatibilityTest.class,
+    FoldersReuseCompatibilityTest.class,
+    MigratingToWalV2SerializerWithCompactionTest.class,
+    MetaStorageCompatibilityTest.class,
+    LocalCacheTest.class
+})
 public class IgniteCompatibilityBasicTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception In case of an error.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
-
-        suite.addTestSuite(DummyPersistenceCompatibilityTest.class);
-
-        suite.addTestSuite(FoldersReuseCompatibilityTest.class);
-
-        return suite;
-    }
 }

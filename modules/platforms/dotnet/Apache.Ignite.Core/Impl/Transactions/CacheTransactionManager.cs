@@ -82,6 +82,11 @@ namespace Apache.Ignite.Core.Impl.Transactions
             }
         }
 
+        public bool IsInTx()
+        {
+            return _transactions.Tx != null;
+        }
+
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         void IEnlistmentNotification.Prepare(PreparingEnlistment preparingEnlistment)

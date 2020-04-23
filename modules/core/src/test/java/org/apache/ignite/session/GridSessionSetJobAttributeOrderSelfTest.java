@@ -37,6 +37,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Grid session set job attribute self test.
@@ -55,6 +57,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobSetAttribute() throws Exception {
         try {
             Ignite ignite1 = startGrid(1);
@@ -94,7 +97,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
             assert subgrid.size() == 2;
             assert arg != null;
 

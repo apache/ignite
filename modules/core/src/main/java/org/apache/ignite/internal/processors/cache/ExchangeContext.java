@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -26,6 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.IgniteFeatures.PME_FREE_SWITCH;
+import static org.apache.ignite.internal.IgniteFeatures.allNodesSupports;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 
@@ -36,11 +39,17 @@ public class ExchangeContext {
     /** */
     public static final String IGNITE_EXCHANGE_COMPATIBILITY_VER_1 = "IGNITE_EXCHANGE_COMPATIBILITY_VER_1";
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Cache groups to request affinity for during local join exchange. */
     private Set<Integer> requestGrpsAffOnJoin;
 
     /** Per-group affinity fetch on join (old protocol). */
     private boolean fetchAffOnJoin;
+
+    /** PME is not required. */
+    private boolean exchangeFreeSwitch;
 
     /** Merges allowed flag. */
     private final boolean merge;
@@ -52,15 +61,30 @@ public class ExchangeContext {
     private final boolean compatibilityNode = getBoolean(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, false);
 
     /**
+     * @param cctx Context.
      * @param crd Coordinator flag.
      * @param fut Exchange future.
      */
-    public ExchangeContext(boolean crd, GridDhtPartitionsExchangeFuture fut) {
+    public ExchangeContext(GridCacheSharedContext<?, ?> cctx, boolean crd, GridDhtPartitionsExchangeFuture fut) {
+        log = cctx.logger(getClass());
+
         int protocolVer = exchangeProtocolVersion(fut.firstEventCache().minimumNodeVersion());
 
-        if (compatibilityNode || (crd && fut.localJoinExchange())) {
-            fetchAffOnJoin = true;
+        boolean allNodesSupportsPmeFreeSwitch = allNodesSupports(fut.firstEventCache().allNodes(), PME_FREE_SWITCH);
 
+        if (!allNodesSupportsPmeFreeSwitch)
+            log.warning("Current topology does not support the PME-free switch. Please check all nodes support" +
+                " this feature and it was not explicitly disabled by IGNITE_PME_FREE_SWITCH_DISABLED JVM option.");
+
+        if (!compatibilityNode &&
+            fut.wasRebalanced() &&
+            fut.isBaselineNodeFailed() &&
+            allNodesSupportsPmeFreeSwitch) {
+            exchangeFreeSwitch = true;
+            merge = false;
+        }
+        else if (compatibilityNode || (crd && fut.localJoinExchange())) {
+            fetchAffOnJoin = true;
             merge = false;
         }
         else {
@@ -101,9 +125,16 @@ public class ExchangeContext {
     }
 
     /**
+     * @return {@code True} if it's safe to perform PME-free switch.
+     */
+    public boolean exchangeFreeSwitch() {
+        return exchangeFreeSwitch;
+    }
+
+    /**
      * @param grpId Cache group ID.
      */
-    void addGroupAffinityRequestOnJoin(Integer grpId) {
+    synchronized void addGroupAffinityRequestOnJoin(Integer grpId) {
         if (requestGrpsAffOnJoin == null)
             requestGrpsAffOnJoin = new HashSet<>();
 
@@ -113,7 +144,7 @@ public class ExchangeContext {
     /**
      * @return Groups to request affinity for.
      */
-    @Nullable public Set<Integer> groupsAffinityRequestOnJoin() {
+    @Nullable public synchronized Set<Integer> groupsAffinityRequestOnJoin() {
         return requestGrpsAffOnJoin;
     }
 

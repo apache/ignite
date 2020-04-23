@@ -23,13 +23,14 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for schemas.
  */
-public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
+public class MultipleStatementsSqlQuerySelfTest extends AbstractIndexingCommonTest {
     /** Node. */
     private IgniteEx node;
 
@@ -47,10 +48,9 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test query without caches.
-     *
-     * @throws Exception If failed.
      */
-    public void testQuery() throws Exception {
+    @Test
+    public void testQuery() {
         GridQueryProcessor qryProc = node.context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -60,7 +60,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
                 "select * from test;")
             .setSchema("PUBLIC");
 
-        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache(qry, true, false);
+        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFields(qry, true, false);
 
         assert res.size() == 4 : "Unexpected cursors count: " + res.size();
 
@@ -92,10 +92,9 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Test query without caches.
-     *
-     * @throws Exception If failed.
      */
-    public void testQueryWithParameters() throws Exception {
+    @Test
+    public void testQueryWithParameters() {
         GridQueryProcessor qryProc = node.context().query();
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -106,7 +105,7 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
             .setSchema("PUBLIC")
             .setArgs(1, "name_1", 2, "name2", 3, "name_3");
 
-        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFieldsNoCache(qry, true, false);
+        List<FieldsQueryCursor<List<?>>> res = qryProc.querySqlFields(qry, true, false);
 
         assert res.size() == 4 : "Unexpected cursors count: " + res.size();
 
@@ -137,18 +136,48 @@ public class MultipleStatementsSqlQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
-    public void testQueryMultipleStatementsFailed() throws Exception {
+    @Test
+    public void testQueryMultipleStatementsFailed() {
         final SqlFieldsQuery qry = new SqlFieldsQuery("select 1; select 1;").setSchema("PUBLIC");
 
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    node.context().query().querySqlFieldsNoCache(qry, true);
+                    node.context().query().querySqlFields(qry, true, true);
 
                     return null;
                 }
             }, IgniteSQLException.class, "Multiple statements queries are not supported");
+    }
+
+    /**
+     * Check cached two-steps query.
+     */
+    @Test
+    public void testCachedTwoSteps() {
+        List<FieldsQueryCursor<List<?>>> curs = sql("SELECT 1; SELECT 2");
+
+        assertEquals(2, curs.size());
+        assertEquals(1, curs.get(0).getAll().get(0).get(0));
+        assertEquals(2, curs.get(1).getAll().get(0).get(0));
+
+        curs = sql("SELECT 1; SELECT 2");
+
+        assertEquals(2, curs.size());
+        assertEquals(1, curs.get(0).getAll().get(0).get(0));
+        assertEquals(2, curs.get(1).getAll().get(0).get(0));
+    }
+
+    /**
+     * @param sql SQL query.
+     * @return Results.
+     */
+    private List<FieldsQueryCursor<List<?>>> sql(String sql) {
+        GridQueryProcessor qryProc = node.context().query();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC");
+
+        return qryProc.querySqlFields(qry, true, false);
     }
 }

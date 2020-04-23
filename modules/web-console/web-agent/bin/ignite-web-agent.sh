@@ -16,69 +16,30 @@
 # limitations under the License.
 #
 
-# Check JAVA_HOME.
-if [ "$JAVA_HOME" = "" ]; then
-    JAVA=`type -p java`
-    RETCODE=$?
-
-    if [ $RETCODE -ne 0 ]; then
-        echo $0", ERROR:"
-        echo "JAVA_HOME environment variable is not found."
-        echo "Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8."
-        echo "You can also download latest JDK at http://java.com/download"
-
-        exit 1
-    fi
-
-    JAVA_HOME=
-else
-    JAVA=${JAVA_HOME}/bin/java
-fi
-
-#
-# Check JDK.
-#
-if [ ! -e "$JAVA" ]; then
-    echo $0", ERROR:"
-    echo "JAVA is not found in JAVA_HOME=$JAVA_HOME."
-    echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
-    echo "You can also download latest JDK at http://java.com/download"
-
-    exit 1
-fi
-
-JAVA_VER=`"$JAVA" -version 2>&1 | egrep "1\.[78]\."`
-
-if [ "$JAVA_VER" == "" ]; then
-    echo $0", ERROR:"
-    echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
-    echo "Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8."
-    echo "You can also download latest JDK at http://java.com/download"
-
-    exit 1
-fi
-
 SOURCE="${BASH_SOURCE[0]}"
+
+# Resolve $SOURCE until the file is no longer a symlink.
+while [ -h "$SOURCE" ]
+    do
+        IGNITE_HOME="$(cd -P "$( dirname "$SOURCE"  )" && pwd)"
+
+        SOURCE="$(readlink "$SOURCE")"
+
+        # If $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located.
+        [[ $SOURCE != /* ]] && SOURCE="$IGNITE_HOME/$SOURCE"
+    done
 
 #
 # Set IGNITE_HOME.
 #
-export IGNITE_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+export IGNITE_HOME="$(cd -P "$( dirname "$SOURCE" )" && pwd)"
 
-DIR="$( dirname "$SOURCE" )"
+source "${IGNITE_HOME}"/include/functions.sh
 
-while [ -h "$SOURCE" ]
-    do
-        SOURCE="$(readlink "$SOURCE")"
-
-        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
-
-        DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd )"
-    done
-
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
-
-cd $DIR
+#
+# Discover path to Java executable and check it's version.
+#
+checkJava
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
@@ -87,12 +48,44 @@ cd $DIR
 #
 if [ -z "$JVM_OPTS" ] ; then
     if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxPermSize=256m"
     else
-        JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+        JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
     fi
 fi
 
-JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
+# https://confluence.atlassian.com/kb/basic-authentication-fails-for-outgoing-proxy-in-java-8u111-909643110.html
+JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true -Djdk.http.auth.tunneling.disabledSchemes="
 
-"$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"
+#
+# Final JVM_OPTS for Java 9+ compatibility
+#
+if [ $version -eq 8 ] ; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+         ${JVM_OPTS}"
+
+elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        --add-modules=java.xml.bind \
+        ${JVM_OPTS}"
+
+elif [ $version -ge 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
+fi
+
+"$JAVA" ${JVM_OPTS} -cp "${IGNITE_HOME}/*" org.apache.ignite.console.agent.AgentLauncher "$@"

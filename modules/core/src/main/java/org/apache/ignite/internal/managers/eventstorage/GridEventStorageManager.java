@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -68,13 +69,15 @@ import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY_ALL;
+import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -84,7 +87,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
  */
 public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi> {
     /** Local event listeners. */
-    private final ConcurrentMap<Integer, Listeners> lsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, Listeners> lsnrs = new ConcurrentHashMap<>();
 
     /** Busy lock to control activity of threads. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
@@ -242,7 +245,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop0(boolean cancel) {
         busyLock.writeLock().lock();
 
@@ -316,6 +318,9 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     private void record0(Event evt, Object... params) {
         assert evt != null;
 
+        if (ctx.recoveryMode())
+            return;
+
         if (!enterBusy())
             return;
 
@@ -372,7 +377,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     public synchronized void enableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(null, SecurityPermission.EVENTS_ENABLE, null);
+        ctx.security().authorize(SecurityPermission.EVENTS_ENABLE);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -411,11 +416,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      *
      * @param types Events to disable.
      */
-    @SuppressWarnings("deprecation")
     public synchronized void disableEvents(int[] types) {
         assert types != null;
 
-        ctx.security().authorize(null, SecurityPermission.EVENTS_DISABLE, null);
+        ctx.security().authorize(SecurityPermission.EVENTS_DISABLE);
 
         boolean[] userRecordableEvts0 = userRecordableEvts;
         boolean[] recordableEvts0 = recordableEvts;
@@ -504,7 +508,16 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return {@code true} if this is an internal event.
      */
     private boolean isInternalEvent(int type) {
-        return type == EVT_DISCOVERY_CUSTOM_EVT || F.contains(EVTS_DISCOVERY_ALL, type);
+        switch (type) {
+            case EVT_DISCOVERY_CUSTOM_EVT:
+            case EVT_TASK_FINISHED:
+            case EVT_TASK_FAILED:
+            case EVT_JOB_MAPPED:
+                return true;
+
+            default:
+                return F.contains(EVTS_DISCOVERY_ALL, type);
+        }
     }
 
     /**
@@ -885,7 +898,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @param p Grid event predicate.
      * @return Collection of grid events.
      */
-    @SuppressWarnings("unchecked")
     public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) throws IgniteCheckedException {
         assert p != null;
 
@@ -947,7 +959,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
      * @return Collection of events.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "deprecation"})
     private <T extends Event> List<T> query(IgnitePredicate<T> p, Collection<? extends ClusterNode> nodes,
         long timeout) throws IgniteCheckedException {
         assert p != null;
@@ -986,7 +997,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         };
 
         GridMessageListener resLsnr = new GridMessageListener() {
-            @SuppressWarnings("deprecation")
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 assert nodeId != null;
                 assert msg != null;
@@ -1063,21 +1073,18 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             if (timeout == 0)
                 timeout = Long.MAX_VALUE;
 
-            long now = U.currentTimeMillis();
+            long startNanos = System.nanoTime();
 
-            // Account for overflow of long value.
-            long endTime = now + timeout <= 0 ? Long.MAX_VALUE : now + timeout;
-
-            long delta = timeout;
+            long passedMillis = 0L;
 
             Collection<UUID> uidsCp = null;
 
             synchronized (qryMux) {
                 try {
-                    while (!uids.isEmpty() && err.get() == null && delta > 0) {
-                        qryMux.wait(delta);
+                    while (!uids.isEmpty() && err.get() == null && passedMillis < timeout) {
+                        qryMux.wait(timeout - passedMillis);
 
-                        delta = endTime - U.currentTimeMillis();
+                        passedMillis = U.millisSinceNanos(startNanos);
                     }
                 }
                 catch (InterruptedException e) {
@@ -1468,7 +1475,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         /** {@inheritDoc} */
-        public IgnitePredicate<? extends Event> listener() {
+        @Override public IgnitePredicate<? extends Event> listener() {
             return lsnr;
         }
 

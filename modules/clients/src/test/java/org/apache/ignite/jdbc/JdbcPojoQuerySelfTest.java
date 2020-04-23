@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
@@ -31,6 +32,7 @@ public class JdbcPojoQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJdbcQueryTask2() throws Exception {
         stmt.execute("select * from JdbcTestObject");
 
@@ -42,6 +44,7 @@ public class JdbcPojoQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJdbcQueryTask1() throws Exception {
         ResultSet rs = stmt.executeQuery("select * from JdbcTestObject");
 

@@ -19,15 +19,17 @@ package org.apache.ignite.util;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import junit.framework.TestCase;
 import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for {@link GridRandom}.
  */
-public class GridRandomSelfTest extends TestCase {
+public class GridRandomSelfTest extends GridCommonAbstractTest {
     /**
      */
+    @Test
     public void testRandom() {
         for (int i = 0; i < 100; i++) {
             long seed = ThreadLocalRandom.current().nextLong();

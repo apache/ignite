@@ -108,7 +108,7 @@ public class ClientListenerNioServerBuffer {
 
             return data0;
         }
-        else
-            return null;
+
+        return null;
     }
 }

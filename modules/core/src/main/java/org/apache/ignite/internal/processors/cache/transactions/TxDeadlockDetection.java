@@ -220,7 +220,6 @@ public class TxDeadlockDetection {
          * @param topVer Transaction topology version.
          * @param keys Keys.
          */
-        @SuppressWarnings("unchecked")
         private TxDeadlockFuture(GridCacheSharedContext cctx,
             GridCacheVersion txId,
             AffinityTopologyVersion topVer,

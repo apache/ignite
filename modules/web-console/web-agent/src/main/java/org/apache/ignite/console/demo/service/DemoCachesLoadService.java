@@ -194,7 +194,6 @@ public class DemoCachesLoadService implements Service {
         }, 10, 3, TimeUnit.SECONDS);
     }
 
-
     /**
      * Create base cache configuration.
      *
@@ -208,7 +207,7 @@ public class DemoCachesLoadService implements Service {
         ccfg.setQueryDetailMetricsSize(10);
         ccfg.setStatisticsEnabled(true);
         ccfg.setSqlFunctionClasses(SQLFunctions.class);
-        ccfg.setMemoryPolicyName("demo");
+        ccfg.setDataRegionName("demo");
 
         return ccfg;
     }
@@ -270,6 +269,14 @@ public class DemoCachesLoadService implements Service {
 
         type.setFields(qryFlds);
 
+        // Indexes for DEPARTMENT.
+
+        ArrayList<QueryIndex> indexes = new ArrayList<>();
+
+        indexes.add(new QueryIndex("countryId", QueryIndexType.SORTED, false, "DEP_COUNTRY"));
+
+        type.setIndexes(indexes);
+
         ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
@@ -313,6 +320,11 @@ public class DemoCachesLoadService implements Service {
 
         // Indexes for EMPLOYEE.
 
+        Collection<QueryIndex> indexes = new ArrayList<>();
+
+        indexes.add(new QueryIndex("departmentId", QueryIndexType.SORTED, false, "EMP_DEPARTMENT"));
+        indexes.add(new QueryIndex("managerId", QueryIndexType.SORTED, false, "EMP_MANAGER"));
+
         QueryIndex idx = new QueryIndex();
 
         idx.setName("EMP_NAMES");
@@ -323,8 +335,6 @@ public class DemoCachesLoadService implements Service {
         indFlds.put("lastName", Boolean.FALSE);
 
         idx.setFields(indFlds);
-
-        Collection<QueryIndex> indexes = new ArrayList<>();
 
         indexes.add(idx);
         indexes.add(new QueryIndex("salary", QueryIndexType.SORTED, false, "EMP_SALARY"));
@@ -392,6 +402,13 @@ public class DemoCachesLoadService implements Service {
         qryFlds.put("name", "java.lang.String");
 
         type.setFields(qryFlds);
+
+        // Indexes for CAR.
+
+        ArrayList<QueryIndex> indexes = new ArrayList<>();
+
+        indexes.add(new QueryIndex("parkingId", QueryIndexType.SORTED, false, "CAR_PARKING"));
+        type.setIndexes(indexes);
 
         ccfg.setQueryEntities(qryEntities);
 

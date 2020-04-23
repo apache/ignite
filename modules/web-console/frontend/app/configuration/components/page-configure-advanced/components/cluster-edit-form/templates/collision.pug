@@ -1,0 +1,64 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'collision'
+-var model = '$ctrl.clonedCluster.collision'
+-var modelCollisionKind = model + '.kind';
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Collision configuration
+    panel-description
+        | Configuration Collision SPI allows to regulate how grid jobs get executed when they arrive on a destination node for execution.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/job-scheduling" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label:'CollisionSpi:',
+                    model: modelCollisionKind,
+                    name: '"collisionKind"',
+                    placeholder: 'Choose discovery',
+                    options: '[\
+                        {value: "JobStealing", label: "Job stealing"},\
+                        {value: "FifoQueue", label: "FIFO queue"},\
+                        {value: "PriorityQueue", label: "Priority queue"},\
+                        {value: "Custom", label: "Custom"},\
+                        {value: "Noop", label: "Default"}\
+                    ]',
+                    tip: 'Regulate how grid jobs get executed when they arrive on a destination node for execution\
+                       <ul>\
+                           <li>Job stealing - supports job stealing from over-utilized nodes to under-utilized nodes</li>\
+                           <li>FIFO queue - jobs are ordered as they arrived</li>\
+                           <li>Priority queue - jobs are first ordered by their priority</li>\
+                           <li>Custom - custom CollisionSpi implementation</li>\
+                           <li>Default - jobs are activated immediately on arrival to mapped node</li>\
+                       </ul>'
+                })
+            .pc-form-group(ng-show=`${modelCollisionKind} !== 'Noop'`)
+                .pc-form-grid-row(ng-show=`${modelCollisionKind} === 'JobStealing'`)
+                    include ./collision/job-stealing
+                .pc-form-grid-row(ng-show=`${modelCollisionKind} === 'FifoQueue'`)
+                    include ./collision/fifo-queue
+                .pc-form-grid-row(ng-show=`${modelCollisionKind} === 'PriorityQueue'`)
+                    include ./collision/priority-queue
+                .pc-form-grid-row(ng-show=`${modelCollisionKind} === 'Custom'`)
+                    include ./collision/custom
+        .pca-form-column-6
+            -var model = '$ctrl.clonedCluster.collision'
+            +preview-xml-java(model, 'clusterCollision')

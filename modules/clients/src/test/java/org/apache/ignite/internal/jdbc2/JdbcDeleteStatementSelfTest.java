@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
+import org.junit.Test;
 
 /**
  *
@@ -29,6 +30,7 @@ public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      *
      */
+    @Test
     public void testExecute() throws SQLException {
         conn.createStatement().execute("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
 
@@ -39,6 +41,7 @@ public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      *
      */
+    @Test
     public void testExecuteUpdate() throws SQLException {
         int res =
             conn.createStatement().executeUpdate("delete from Person where cast(substring(_key, 2, 1) as int) % 2 = 0");
@@ -51,6 +54,7 @@ public class JdbcDeleteStatementSelfTest extends JdbcAbstractUpdateStatementSelf
     /**
      *
      */
+    @Test
     public void testBatch() throws SQLException {
         PreparedStatement ps = conn.prepareStatement("delete from Person where firstName = ?");
 

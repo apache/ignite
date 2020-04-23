@@ -25,8 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -37,6 +35,7 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.junit.Test;
 import scala.Tuple2;
 
 /**
@@ -64,7 +63,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /** Sum function. */
     private static final Function2<Integer, Integer, Integer> SUM_F = new Function2<Integer, Integer, Integer>() {
-        public Integer call(Integer x, Integer y) {
+        @Override public Integer call(Integer x, Integer y) {
             return x + y;
         }
     };
@@ -120,6 +119,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStoreDataToIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -129,7 +129,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F), true);
+                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F), true, false);
 
             Ignite ignite = ic.ignite();
 
@@ -153,6 +153,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadDataFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -187,6 +188,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryObjectsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -198,7 +200,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
             int cnt = 1001;
-            cache.savePairs(sc.parallelize(F.range(0, cnt), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
+            cache.savePairs(sc.parallelize(F.range(0, cnt), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true, false);
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -225,6 +227,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFieldsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
 
@@ -235,7 +238,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
+            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true, false);
 
             Dataset<Row> df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
@@ -272,27 +275,15 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Finder. */
-    private static TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * @param igniteInstanceName Ignite instance name.
-     * @param client Client.
      * @throws Exception If failed.
      * @return Confiuration.
      */
-    private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
+    private static IgniteConfiguration igniteConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setClientMode(client);
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 
@@ -323,7 +314,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteConfiguration apply() {
             try {
-                return getConfiguration("worker-" + igniteInstanceNames.get(), false);
+                return igniteConfiguration("worker-" + igniteInstanceNames.get());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

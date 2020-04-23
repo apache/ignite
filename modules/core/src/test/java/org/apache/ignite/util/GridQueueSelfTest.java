@@ -21,6 +21,7 @@ import org.apache.ignite.internal.util.GridQueue;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Grid utils tests.
@@ -30,6 +31,7 @@ public class GridQueueSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testQueue() {
         GridQueue<String> q = new GridQueue<>();
         for (char c = 'a'; c <= 'z'; c++)

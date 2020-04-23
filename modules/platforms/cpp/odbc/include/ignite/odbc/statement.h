@@ -29,6 +29,7 @@
 #include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/common_types.h"
+#include "sql/sql_set_streaming_command.h"
 
 namespace ignite
 {
@@ -264,11 +265,11 @@ namespace ignite
             bool DataAvailable() const;
 
             /**
-             * Next results.
+             * More results.
              *
              * Move to next result set or affected rows number.
              */
-            void NextResults();
+            void MoreResults();
 
             /**
              * Get column attribute.
@@ -454,6 +455,28 @@ namespace ignite
             SqlResult::Type InternalClose();
 
             /**
+             * Stop streaming.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type StopStreaming();
+
+            /**
+             * Process internal SQL command.
+             *
+             * @param query SQL query.
+             * @return Operation result.
+             */
+            SqlResult::Type ProcessInternalCommand(const std::string& query);
+
+            /**
+             * Check if the streaming is active currently.
+             *
+             * @return @c true, if the streaming is active.
+             */
+            bool IsStreamingActive() const;
+
+            /**
              * Prepare SQL query.
              *
              * @param query SQL query.
@@ -475,6 +498,13 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type InternalExecuteSqlQuery();
+
+            /**
+             * Process internal query.
+             *
+             * @return Operation result.
+             */
+            SqlResult::Type ProcessInternalQuery();
 
             /**
              * Fetch query result row with offset
@@ -581,7 +611,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult::Type InternalNextResults();
+            SqlResult::Type InternalMoreResults();
 
             /**
              * Get column attribute.
@@ -657,6 +687,9 @@ namespace ignite
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
 
+            /** Row bind type. */
+            SqlUlen rowBindType;
+
             /** Buffer to store number of rows fetched by the last fetch. */
             size_t* rowsFetched;
 
@@ -666,7 +699,11 @@ namespace ignite
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
+            /** Parameters. */
             app::ParameterSet parameters;
+
+            /** Query timeout in seconds. */
+            int32_t timeout;
         };
     }
 }

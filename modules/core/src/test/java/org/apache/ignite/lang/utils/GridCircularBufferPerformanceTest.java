@@ -19,13 +19,15 @@ package org.apache.ignite.lang.utils;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.LongAdder8;
+import org.apache.ignite.util.deque.FastSizeDeque;
+import org.junit.Test;
 
 /**
  *
@@ -34,11 +36,12 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThroughput() throws Exception {
         int size = 256 * 1024;
 
         final GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(size);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -73,10 +76,11 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDequeueThroughput() throws Exception {
 
-        final ConcurrentLinkedDeque8<Integer> buf = new ConcurrentLinkedDeque8<>();
-        final LongAdder8 cnt = new LongAdder8();
+        final FastSizeDeque<Integer> buf = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -116,11 +120,12 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testArrayBlockingQueueThroughput() throws Exception {
         final int size = 256 * 1024;
 
         final ArrayBlockingQueue<Integer> buf = new ArrayBlockingQueue<>(size);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -157,11 +162,12 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAdderThroughput() throws Exception {
         final int size = 256 * 1024;
 
         final ArrayBlockingQueue<Integer> buf = new ArrayBlockingQueue<>(size);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -193,6 +199,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicLongThroughput() throws Exception {
         final int size = 256 * 1024;
 

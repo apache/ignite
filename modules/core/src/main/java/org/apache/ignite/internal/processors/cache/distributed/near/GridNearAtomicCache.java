@@ -41,12 +41,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -197,7 +197,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     req.keepBinary(),
                     req.nodeId(),
                     req.subjectId(),
-                    taskName);
+                    taskName,
+                    req.operation() == TRANSFORM);
             }
             catch (IgniteCheckedException e) {
                 res.addFailedKey(key, new IgniteCheckedException("Failed to update key in near cache: " + key, e));
@@ -214,6 +215,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param nodeId Node ID.
      * @param subjId Subject ID.
      * @param taskName Task name.
+     * @param transformedValue {@code True} if transformed value.
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
@@ -225,8 +227,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean keepBinary,
         UUID nodeId,
         UUID subjId,
-        String taskName
-    ) throws IgniteCheckedException {
+        String taskName,
+        boolean transformedValue) throws IgniteCheckedException {
         try {
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -266,7 +268,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                         taskName,
                         null,
                         null,
-                        null);
+                        null,
+                        transformedValue);
 
                     if (updRes.removeVersion() != null)
                         ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -281,7 +284,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                 }
                 finally {
                     if (entry != null)
-                        ctx.evicts().touch(entry, topVer);
+                        entry.touch();
                 }
             }
         }
@@ -365,7 +368,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                             taskName,
                             null,
                             null,
-                            null);
+                            null,
+                            false);
 
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
@@ -404,6 +408,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean readRepair,
         boolean skipVals,
         boolean needVer
     ) {
@@ -414,6 +419,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
         if (keyCheck)
             validateCacheKeys(keys);
+
+        warnIfUnordered(keys, BulkOperation.GET);
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -443,13 +450,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
         return dht.getAndPutAsync0(key, val, filter);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate filter) {
         return dht.putAsync0(key, val, filter);
     }
@@ -529,7 +534,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> getAndRemoveAsync(K key) {
         return dht.getAndRemoveAsync(key);
     }
@@ -551,7 +555,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> removeAsync(K key, @Nullable CacheEntryPredicate filter) {
         return dht.removeAsync(key, filter);
     }

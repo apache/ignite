@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -32,6 +31,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -43,6 +44,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testStopPrimaryAndActivateFromServerNode() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
@@ -72,6 +74,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testStopPrimaryAndActivateFromClientNode() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
@@ -113,6 +116,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testConcurrentActivateFromClientNodeAndServerNode() throws Exception {
         final Ignite ig1B = backUp(0);
         final Ignite ig2B = backUp(1);
@@ -210,6 +214,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testConcurrentActivateFromServerNode() throws Exception {
         final Ignite ig1B = backUp(0);
         final Ignite ig2B = backUp(1);
@@ -265,6 +270,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveAndInActiveAtTheSameTimeCluster() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
@@ -302,6 +308,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActivateOnAlreadyActivatedCluster() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
@@ -359,6 +366,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryUseCacheInActiveCluster() throws Exception {
         Ignite ig1B = backUp(0);
         Ignite ig2B = backUp(1);
@@ -401,6 +409,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryUseServiceInActiveCluster() throws Exception {
         Ignite ig1B = backUp(0);
         Ignite ig2B = backUp(1);
@@ -443,6 +452,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTryUseDataStructureInActiveCluster() throws Exception {
         Ignite ig1B = backUp(0);
         Ignite ig2B = backUp(1);
@@ -485,6 +495,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailGetLock() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
@@ -542,6 +553,8 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Test
     public void testActivateAfterFailGetLock() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
@@ -616,6 +629,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testDeActivateFromServerNode() throws Exception {
         Ignite ig1 = primary(0);
         Ignite ig2 = primary(1);
@@ -635,6 +649,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testDeActivateFromClientNode() throws Exception {
         Ignite ig1 = primary(0);
         Ignite ig2 = primary(1);
@@ -662,6 +677,7 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     /**
      * @throws Exception if fail.
      */
+    @Test
     public void testDeActivateCheckCacheDestroy() throws Exception {
         String chName = "myCache";
 

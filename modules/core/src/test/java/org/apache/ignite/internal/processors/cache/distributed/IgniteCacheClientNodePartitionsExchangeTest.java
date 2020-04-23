@@ -42,7 +42,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -53,10 +53,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 
@@ -64,25 +63,19 @@ import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE
  *
  */
 public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
-
-        cfg.setClientMode(client);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -97,16 +90,15 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeave() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        client = true;
-
-        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite1 = startClientGrid(1);
 
         waitForTopologyUpdate(2, 2);
 
-        final Ignite ignite2 = startGrid(2);
+        final Ignite ignite2 = startClientGrid(2);
 
         waitForTopologyUpdate(3, 3);
 
@@ -146,6 +138,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSkipPreload() throws Exception {
         Ignite ignite0 = startGrid(0);
 
@@ -161,9 +154,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        client = true;
-
-        Ignite ignite1 = startGrid(1);
+        Ignite ignite1 = startClientGrid(1);
 
         assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
@@ -171,7 +162,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
-        ignite1 = startGrid(1);
+        ignite1 = startClientGrid(1);
 
         final CountDownLatch evtLatch1 = new CountDownLatch(1);
 
@@ -187,8 +178,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
 
-        client = false;
-
         startGrid(2);
 
         assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
@@ -198,6 +187,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsExchange() throws Exception {
         partitionsExchange(false);
     }
@@ -205,6 +195,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionsExchangeCompatibilityMode() throws Exception {
         System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
 
@@ -240,11 +231,9 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         spi0.reset();
         spi1.reset();
 
-        client = true;
-
         log.info("Start client node1.");
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         waitForTopologyUpdate(3, 3);
 
@@ -265,7 +254,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         log.info("Start client node2.");
 
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         waitForTopologyUpdate(4, 4);
 
@@ -289,8 +278,6 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         spi3.reset();
 
         log.info("Start one more server node.");
-
-        client = false;
 
         Ignite ignite4 = startGrid(4);
 
@@ -474,6 +461,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyCacheStart() throws Exception {
         clientOnlyCacheStart(false, false);
     }
@@ -481,6 +469,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyCacheStart() throws Exception {
         clientOnlyCacheStart(true, false);
     }
@@ -488,6 +477,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientOnlyCacheStartFromServerNode() throws Exception {
         clientOnlyCacheStart(false, true);
     }
@@ -495,6 +485,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearOnlyCacheStartFromServerNode() throws Exception {
         clientOnlyCacheStart(true, true);
     }
@@ -523,11 +514,11 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         ignite0.createCache(ccfg);
 
-        client = !srvNode;
+        Ignite ignite2;
 
-        Ignite ignite2 = startGrid(2);
+        ignite2 = !srvNode ? startClientGrid(2) : startGrid(2);
 
-        int minorVer = !client && lateAff ? 1 : 0;
+        int minorVer = srvNode && lateAff ? 1 : 0;
 
         waitForTopologyUpdate(3, new AffinityTopologyVersion(3, minorVer));
 

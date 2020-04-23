@@ -61,6 +61,7 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
+    /** Constructor. */
     private DataEntry() {
         // No-op, used from factory methods.
     }
@@ -97,8 +98,8 @@ public class DataEntry {
         this.partId = partId;
         this.partCnt = partCnt;
 
-        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
-        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
+        // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
     }
 
     /**
@@ -155,6 +156,18 @@ public class DataEntry {
      */
     public long partitionCounter() {
         return partCnt;
+    }
+
+    /**
+     * Sets partition update counter to entry.
+     *
+     * @param partCnt Partition update counter.
+     * @return {@code this} for chaining.
+     */
+    public DataEntry partitionCounter(long partCnt) {
+        this.partCnt = partCnt;
+
+        return this;
     }
 
     /**

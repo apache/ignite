@@ -42,10 +42,10 @@ public class PersistenceController {
     private final KeyValuePersistenceSettings persistenceSettings;
 
     /** List of key unique POJO fields (skipping aliases pointing to the same Cassandra table column). */
-    private final List<PojoField> keyUniquePojoFields;
+    private final List<? extends PojoField> keyUniquePojoFields;
 
     /** List of value unique POJO fields (skipping aliases pointing to the same Cassandra table column). */
-    private final List<PojoField> valUniquePojoFields;
+    private final List<? extends PojoField> valUniquePojoFields;
 
     /** CQL statement template to insert row into Cassandra table. */
     private final String writeStatementTempl;
@@ -91,7 +91,7 @@ public class PersistenceController {
 
         keyUniquePojoFields = settings.getKeyPersistenceSettings().cassandraUniqueFields();
 
-        List<PojoField> _valUniquePojoFields = settings.getValuePersistenceSettings().cassandraUniqueFields();
+        List<? extends PojoField> _valUniquePojoFields = settings.getValuePersistenceSettings().cassandraUniqueFields();
 
         if (_valUniquePojoFields == null || _valUniquePojoFields.isEmpty()) {
             valUniquePojoFields = _valUniquePojoFields;
@@ -212,7 +212,6 @@ public class PersistenceController {
      *
      * @return key object.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public Object buildKeyObject(Row row) {
         return buildObject(row, persistenceSettings.getKeyPersistenceSettings());
     }
@@ -290,7 +289,6 @@ public class PersistenceController {
         boolean pojoStrategy = PersistenceStrategy.POJO == settings.getStrategy();
         Collection<String> keyCols = settings.getTableColumns();
         StringBuilder hdrWithKeyFields = new StringBuilder();
-
 
         for (String column : keyCols) {
             // omit calculated fields in load statement
@@ -423,7 +421,7 @@ public class PersistenceController {
      *
      * @return next offset
      */
-    private int bindValues(PersistenceStrategy stgy, Serializer serializer, List<PojoField> fields, Object obj,
+    private int bindValues(PersistenceStrategy stgy, Serializer serializer, List<? extends PojoField> fields, Object obj,
                             Object[] values, int offset) {
         if (PersistenceStrategy.PRIMITIVE == stgy) {
             if (PropertyMappingHelper.getCassandraType(obj.getClass()) == null ||

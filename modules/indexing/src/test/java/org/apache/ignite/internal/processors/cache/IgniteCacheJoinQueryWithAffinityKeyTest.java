@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,10 +38,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -52,13 +51,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings("unchecked")
 public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 5;
-
-    /** */
-    private boolean client;
 
     /** */
     private boolean escape;
@@ -67,16 +60,12 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration();
 
         keyCfg.setTypeName(TestKeyWithAffinity.class.getName());
         keyCfg.setAffinityKeyFieldName("affKey");
 
         cfg.setCacheKeyConfiguration(keyCfg);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -87,21 +76,13 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(NODES - 1);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery() throws Exception {
         testJoinQuery(PARTITIONED, 0, false, true);
 
@@ -113,6 +94,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryEscapeAll() throws Exception {
         escape = true;
 
@@ -122,6 +104,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKey() throws Exception {
         testJoinQuery(PARTITIONED, 0, true, true);
 
@@ -133,6 +116,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKeyEscapeAll() throws Exception {
         escape = true;
 
@@ -142,6 +126,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKeyNotQueryField() throws Exception {
         testJoinQuery(PARTITIONED, 0, true, false);
 
@@ -153,6 +138,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQueryWithAffinityKeyNotQueryFieldEscapeAll() throws Exception {
         escape = true;
 
@@ -303,7 +289,6 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
 
         SqlFieldsQuery[] qrys = new SqlFieldsQuery[2];
 
-
         if (escape) {
             qrys[0] = new SqlFieldsQuery("select count(*) " +
                 "from \"Person\" p, \"" + (affKey ? "AccountKeyWithAffinity" : "Account") + "\" a " +
@@ -365,6 +350,7 @@ public class IgniteCacheJoinQueryWithAffinityKeyTest extends GridCommonAbstractT
         QueryEntity person = new QueryEntity();
         person.setKeyType(personKeyType);
         person.setValueType(Person.class.getName());
+        person.setKeyFields(Collections.singleton("id"));
         person.addQueryField("orgId", Integer.class.getName(), null);
         person.addQueryField("id", Integer.class.getName(), null);
         person.addQueryField("name", String.class.getName(), null);

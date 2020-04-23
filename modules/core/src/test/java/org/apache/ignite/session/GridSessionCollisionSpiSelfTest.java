@@ -40,6 +40,7 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Grid session collision SPI self test.
@@ -64,6 +65,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollisionSessionAttribute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

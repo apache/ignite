@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
@@ -36,25 +37,25 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Writes proxy method invocation data to the specified writer.
         /// </summary>
         /// <param name="writer">Writer.</param>
-        /// <param name="method">Method.</param>
+        /// <param name="methodName">Name of the method.</param>
+        /// <param name="method">Method (optional, can be null).</param>
         /// <param name="arguments">Arguments.</param>
-        /// <param name="platform">The platform.</param>
-        public static void WriteProxyMethod(BinaryWriter writer, MethodBase method, object[] arguments, 
-            Platform platform)
+        /// <param name="platformType">The platform.</param>
+        public static void WriteProxyMethod(BinaryWriter writer, string methodName, MethodBase method,
+            object[] arguments, PlatformType platformType)
         {
             Debug.Assert(writer != null);
-            Debug.Assert(method != null);
 
-            writer.WriteString(method.Name);
+            writer.WriteString(methodName);
 
             if (arguments != null)
             {
                 writer.WriteBoolean(true);
                 writer.WriteInt(arguments.Length);
 
-                if (platform == Platform.DotNet)
+                if (platformType == PlatformType.DotNet)
                 {
-                    // Write as is
+                    // Write as is for .NET.
                     foreach (var arg in arguments)
                     {
                         writer.WriteObjectDetached(arg);
@@ -63,11 +64,13 @@ namespace Apache.Ignite.Core.Impl.Services
                 else
                 {
                     // Other platforms do not support Serializable, need to convert arrays and collections
-                    var methodArgs = method.GetParameters();
-                    Debug.Assert(methodArgs.Length == arguments.Length);
+                    var mParams = method != null ? method.GetParameters() : null;
+                    Debug.Assert(mParams == null || mParams.Length == arguments.Length);
 
-                    for (int i = 0; i < arguments.Length; i++)
-                        WriteArgForPlatforms(writer, methodArgs[i], arguments[i]);
+                    for (var i = 0; i < arguments.Length; i++)
+                    {
+                        WriteArgForPlatforms(writer, mParams != null ? mParams[i].ParameterType : null, arguments[i]);
+                    }
                 }
             }
             else
@@ -185,21 +188,36 @@ namespace Apache.Ignite.Core.Impl.Services
                 return;
             }
 
+            // read failed configurations
+            ICollection<ServiceConfiguration> failedCfgs;
+
+            try
+            {
+                // switch to BinaryMode.Deserialize mode to avoid IService casting exception
+                reader = marsh.StartUnmarshal(stream);
+                failedCfgs = reader.ReadNullableCollectionRaw(f => new ServiceConfiguration(f));
+            }
+            catch (Exception e)
+            {
+                throw new ServiceDeploymentException("Service deployment failed with an exception. " +
+                                                     "Examine InnerException for details.", e);
+            }
+
             var binErr = err as IBinaryObject;
 
             throw binErr != null
                 ? new ServiceDeploymentException("Service deployment failed with a binary error. " +
-                                                 "Examine BinaryCause for details.", binErr)
+                                                 "Examine BinaryCause for details.", binErr, failedCfgs)
                 : new ServiceDeploymentException("Service deployment failed with an exception. " +
-                                                 "Examine InnerException for details.", (Exception) err);
+                                                 "Examine InnerException for details.", (Exception) err, failedCfgs);
         }
 
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, object arg)
+        private static void WriteArgForPlatforms(BinaryWriter writer, Type paramType, object arg)
         {
-            var hnd = GetPlatformArgWriter(param, arg);
+            var hnd = GetPlatformArgWriter(paramType, arg);
 
             if (hnd != null)
             {
@@ -214,15 +232,30 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Gets arg writer for platform-compatible service calls.
         /// </summary>
-        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, object arg)
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(Type paramType, object arg)
         {
-            var type = param.ParameterType;
+            if (arg == null)
+            {
+                return null;
+            }
+
+            var type = paramType ?? arg.GetType();
 
             // Unwrap nullable
             type = Nullable.GetUnderlyingType(type) ?? type;
 
-            if (arg == null || type.IsPrimitive)
+            if (type.IsPrimitive)
                 return null;
+
+            if (type.IsArray)
+            {
+                Type elemType = type.GetElementType();
+
+                if (elemType == typeof(Guid?))
+                    return (writer, o) => writer.WriteGuidArray((Guid?[]) o);
+                else if (elemType == typeof(DateTime?))
+                    return (writer, o) => writer.WriteTimestampArray((DateTime?[]) o);
+            }
 
             var handler = BinarySystemHandlers.GetWriteHandler(type);
 
@@ -234,6 +267,9 @@ namespace Apache.Ignite.Core.Impl.Services
 
             if (arg is ICollection)
                 return (writer, o) => writer.WriteCollection((ICollection) o);
+
+            if (arg is DateTime)
+                return (writer, o) => writer.WriteTimestamp((DateTime) o);
 
             return null;
         }

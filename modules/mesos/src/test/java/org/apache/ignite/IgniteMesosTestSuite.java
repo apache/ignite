@@ -17,22 +17,16 @@
 
 package org.apache.ignite;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.mesos.IgniteSchedulerSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Apache Mesos integration tests.
  */
-public class IgniteMesosTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Mesos Integration Test Suite");
-
-        suite.addTest(new TestSuite(IgniteSchedulerSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteSchedulerSelfTest.class
+})
+public class IgniteMesosTestSuite {
 }

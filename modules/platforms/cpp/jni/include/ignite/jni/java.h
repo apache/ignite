@@ -115,6 +115,13 @@ namespace ignite
             typedef long long(JNICALL *InLongLongLongObjectOutLongHandler)(void* target, int type, long long val1, long long val2, long long val3, void* arg);
 
             /**
+             * Is Java 9 or later is used.
+             *
+             * @return true if the Java 9 or later is in use.
+             */
+            bool IGNITE_IMPORT_EXPORT IsJava9OrLater();
+
+            /**
              * JNI handlers holder.
              */
             struct JniHandlers {

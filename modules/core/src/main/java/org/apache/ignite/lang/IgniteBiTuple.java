@@ -200,8 +200,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override
-    public V2 put(V1 key, V2 val) {
+    @Nullable @Override public V2 put(V1 key, V2 val) {
         V2 old = containsKey(key) ? val2 : null;
 
         set(key, val);
@@ -256,7 +255,6 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction", "CloneDoesntDeclareCloneNotSupportedException"})
     @Override public Object clone() {
         try {
             return super.clone();
@@ -273,7 +271,6 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         val1 = (V1)in.readObject();
         val2 = (V2)in.readObject();
@@ -285,7 +282,6 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;

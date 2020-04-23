@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -24,17 +24,17 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Query entity is a description of cache entry (composed of key and value) 
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
-    public sealed class QueryEntity : IQueryEntityInternal
+    public sealed class QueryEntity : IQueryEntityInternal, IBinaryRawWriteAwareEx
     {
         /** */
         private Type _keyType;
@@ -233,16 +233,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal QueryEntity(IBinaryRawReader reader)
+        /// <param name="srvVer">Server version.</param>
+        internal QueryEntity(IBinaryRawReader reader, ClientProtocolVersion srvVer)
         {
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
             TableName = reader.ReadString();
+            KeyFieldName = reader.ReadString();
+            ValueFieldName = reader.ReadString();
 
             var count = reader.ReadInt();
             Fields = count == 0
                 ? null
-                : Enumerable.Range(0, count).Select(x => new QueryField(reader)).ToList();
+                : Enumerable.Range(0, count).Select(x => new QueryField(reader, srvVer)).ToList();
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -250,19 +253,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
-
-            KeyFieldName = reader.ReadString();
-            ValueFieldName = reader.ReadString();
         }
 
         /// <summary>
         /// Writes this instance.
         /// </summary>
-        internal void Write(IBinaryRawWriter writer)
+        void IBinaryRawWriteAwareEx<IBinaryRawWriter>.Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
         {
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
             writer.WriteString(TableName);
+            writer.WriteString(KeyFieldName);
+            writer.WriteString(ValueFieldName);
 
             if (Fields != null)
             {
@@ -270,7 +272,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
                 foreach (var field in Fields)
                 {
-                    field.Write(writer);
+                    field.Write(writer, srvVer);
                 }
             }
             else
@@ -304,9 +306,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
-
-            writer.WriteString(KeyFieldName);
-            writer.WriteString(ValueFieldName);
         }
 
         /// <summary>
@@ -434,7 +433,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             visitedTypes.Add(type);
 
-            foreach (var memberInfo in GetFieldsAndProperties(type))
+            foreach (var memberInfo in ReflectionUtils.GetFieldsAndProperties(type))
             {
                 var customAttributes = memberInfo.Key.GetCustomAttributes(true);
 
@@ -460,7 +459,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     fields.Add(new QueryField(columnName, memberInfo.Value)
                     {
                         IsKeyField = isKey,
-                        NotNull = attr.NotNull
+                        NotNull = attr.NotNull,
+                        DefaultValue = attr.DefaultValue,
+                        Precision = attr.Precision,
+                        Scale = attr.Scale
                     });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
@@ -484,33 +486,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
 
             visitedTypes.Remove(type);
-        }
-
-        /// <summary>
-        /// Gets the fields and properties.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns></returns>
-        private static IEnumerable<KeyValuePair<MemberInfo, Type>> GetFieldsAndProperties(Type type)
-        {
-            Debug.Assert(type != null);
-
-            if (type.IsPrimitive)
-                yield break;
-
-            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                                              BindingFlags.DeclaredOnly;
-
-            while (type != typeof (object) && type != null)
-            {
-                foreach (var fieldInfo in type.GetFields(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(fieldInfo, fieldInfo.FieldType);
-
-                foreach (var propertyInfo in type.GetProperties(bindingFlags))
-                    yield return new KeyValuePair<MemberInfo, Type>(propertyInfo, propertyInfo.PropertyType);
-
-                type = type.BaseType;
-            }
         }
 
         /// <summary>

@@ -52,7 +52,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         GridNioSession ses,
         IgniteLogger log
     ) {
-        super(connIdx, null);
+        super(connIdx);
 
         assert ses != null;
         assert log != null;
@@ -69,7 +69,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
+    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) {
         throw new UnsupportedOperationException();
     }
 

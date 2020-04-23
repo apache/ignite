@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.integration.CompletionListenerFuture;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -35,11 +36,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -54,25 +52,16 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /** Amount of backups in partitioned cache. */
     private static final int BACKUP_CNT = 1;
 
-    /** IP finder. */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Map where dummy cache store values are stored. */
-    private final Map<Integer, String> map = new ConcurrentHashMap8<>();
+    private static final Map<Integer, String> map = new ConcurrentHashMap<>();
 
     /** Collection of caches, one per grid node. */
-    private List<IgniteCache<Integer, String>> caches;
+    private static List<IgniteCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -134,11 +123,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         map.clear();
-
-        caches = null;
     }
 
     /**
@@ -179,6 +164,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testReloadAll() throws Exception {
         // Fill caches with values.
         for (IgniteCache<Integer, String> cache : caches) {

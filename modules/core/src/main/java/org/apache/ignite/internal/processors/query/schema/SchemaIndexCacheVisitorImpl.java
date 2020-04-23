@@ -17,188 +17,195 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFuture;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
- * Traversor operating all primary and backup partitions of given cache.
+ * Visitor who create/rebuild indexes in parallel by partition for a given cache.
  */
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
-    /** Query procssor. */
-    private final GridQueryProcessor qryProc;
+    /** Is extra index rebuild logging enabled. */
+    private final boolean collectStat = getBoolean(IGNITE_ENABLE_EXTRA_INDEX_REBUILD_LOGGING, false);
 
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Cache name. */
-    private final String cacheName;
-
-    /** Table name. */
-    private final String tblName;
+    /** Row filter. */
+    private final SchemaIndexCacheFilter rowFilter;
 
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancel;
+
+    /** Future for create/rebuild index. */
+    protected final GridFutureAdapter<Void> buildIdxFut;
+
+    /** Logger. */
+    protected IgniteLogger log;
 
     /**
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param cacheName Cache name.
-     * @param tblName Table name.
+     * @param rowFilter Row filter.
      * @param cancel Cancellation token.
+     * @param buildIdxFut Future for create/rebuild index.
      */
-    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String cacheName,
-        String tblName, SchemaIndexOperationCancellationToken cancel) {
-        this.qryProc = qryProc;
-        this.cacheName = cacheName;
-        this.tblName = tblName;
-        this.cancel = cancel;
+    public SchemaIndexCacheVisitorImpl(
+        GridCacheContext cctx,
+        @Nullable SchemaIndexCacheFilter rowFilter,
+        @Nullable SchemaIndexOperationCancellationToken cancel,
+        GridFutureAdapter<Void> buildIdxFut
+    ) {
+        assert nonNull(cctx);
+        assert nonNull(buildIdxFut);
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
 
         this.cctx = cctx;
+        this.buildIdxFut = buildIdxFut;
+
+        this.cancel = cancel;
+        this.rowFilter = rowFilter;
+
+        log = cctx.kernalContext().log(getClass());
     }
 
     /** {@inheritDoc} */
-    @Override public void visit(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
-        assert clo != null;
+    @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
+        assert nonNull(clo);
 
-        FilteringVisitorClosure filterClo = new FilteringVisitorClosure(clo);
+        List<GridDhtLocalPartition> locParts = cctx.topology().localPartitions();
 
-        Collection<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+        if (locParts.isEmpty()) {
+            buildIdxFut.onDone();
 
-        for (GridDhtLocalPartition part : parts)
-            processPartition(part, filterClo);
-    }
-
-    /**
-     * Process partition.
-     *
-     * @param part Partition.
-     * @param clo Index closure.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processPartition(GridDhtLocalPartition part, FilteringVisitorClosure clo)
-        throws IgniteCheckedException {
-        checkCancelled();
-
-        boolean reserved = false;
-
-        if (part != null && part.state() != EVICTED)
-            reserved = (part.state() == OWNING || part.state() == RENTING) && part.reserve();
-
-        if (!reserved)
             return;
-
-        try {
-            GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor();
-
-            while (cursor.next()) {
-                CacheDataRow row = cursor.get();
-
-                KeyCacheObject key = row.key();
-
-                processKey(key, row.link(), clo);
-
-                if (part.state() == RENTING)
-                    break;
-            }
         }
-        finally {
-            part.release();
+
+        cctx.group().metrics().addIndexBuildCountPartitionsLeft(locParts.size());
+
+        beforeExecute();
+
+        AtomicInteger partsCnt = new AtomicInteger(locParts.size());
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> buildIdxCompoundFut =
+            new GridCompoundFuture<>();
+
+        for (GridDhtLocalPartition locPart : locParts) {
+            GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();
+
+            GridWorker worker =
+                new SchemaIndexCachePartitionWorker(cctx, locPart, stop, cancel, clo, workerFut, rowFilter, partsCnt);
+
+            workerFut.setWorker(worker);
+            buildIdxCompoundFut.add(workerFut);
+
+            cctx.kernalContext().buildIndexExecutorService().execute(worker);
         }
-    }
 
-    /**
-     * Process single key.
-     *
-     * @param key Key.
-     * @param link Link.
-     * @param clo Closure.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void processKey(KeyCacheObject key, long link, FilteringVisitorClosure clo) throws IgniteCheckedException {
-        while (true) {
-            try {
-                checkCancelled();
+        buildIdxCompoundFut.listen(fut -> {
+            Throwable err = fut.error();
 
-                GridCacheEntryEx entry = cctx.cache().entryEx(key);
-
+            if (isNull(err) && collectStat && log.isInfoEnabled()) {
                 try {
-                    entry.updateIndex(clo, link);
-                }
-                finally {
-                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
-                }
+                    GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> compoundFut =
+                        (GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat>)fut;
 
-                break;
+                    SchemaIndexCacheStat resStat = new SchemaIndexCacheStat();
+
+                    compoundFut.futures().stream()
+                        .map(IgniteInternalFuture::result)
+                        .filter(Objects::nonNull)
+                        .forEach(resStat::accumulate);
+
+                    log.info(indexStatStr(resStat));
+                }
+                catch (Exception e) {
+                    log.error("Error when trying to print index build/rebuild statistics [cacheName=" +
+                        cctx.cache().name() + ", grpName=" + cctx.group().name() + "]", e);
+                }
             }
-            catch (GridDhtInvalidPartitionException ignore) {
-                break;
-            }
-            catch (GridCacheEntryRemovedException ignored) {
-                // No-op.
-            }
-        }
+
+            buildIdxFut.onDone(err);
+        });
+
+        buildIdxCompoundFut.markInitialized();
     }
 
     /**
-     * Check if visit process is not cancelled.
+     * Prints index cache stats to log.
      *
-     * @throws IgniteCheckedException If cancelled.
+     * @param stat Index cache stats.
+     * @throws IgniteCheckedException if failed to get index size.
      */
-    private void checkCancelled() throws IgniteCheckedException {
-        if (cancel.isCancelled())
-            throw new IgniteCheckedException("Index creation was cancelled.");
+    private String indexStatStr(SchemaIndexCacheStat stat) throws IgniteCheckedException {
+        SB res = new SB();
+
+        res.a("Details for cache rebuilding [name=" + cctx.cache().name() + ", grpName=" + cctx.group().name() + ']');
+        res.a(U.nl());
+        res.a("   Scanned rows " + stat.scannedKeys() + ", visited types " + stat.typeNames());
+        res.a(U.nl());
+
+        final GridQueryIndexing idx = cctx.kernalContext().query().getIndexing();
+
+        for (QueryTypeDescriptorImpl type : stat.types()) {
+            res.a("        Type name=" + type.name());
+            res.a(U.nl());
+
+            String pk = "_key_PK";
+            String tblName = type.tableName();
+
+            res.a("            Index: name=" + pk + ", size=" + idx.indexSize(type.schemaName(), tblName, pk));
+            res.a(U.nl());
+
+            for (GridQueryIndexDescriptor descriptor : type.indexes().values()) {
+                long size = idx.indexSize(type.schemaName(), tblName, descriptor.name());
+
+                res.a("            Index: name=" + descriptor.name() + ", size=" + size);
+                res.a(U.nl());
+            }
+        }
+
+        return res.toString();
+    }
+
+    /**
+     * This method is called before creating or rebuilding indexes.
+     * Used only for test.
+     */
+    protected void beforeExecute(){
+        //no-op
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaIndexCacheVisitorImpl.class, this);
-    }
-
-    /**
-     * Filtering visitor closure.
-     */
-    private class FilteringVisitorClosure implements SchemaIndexCacheVisitorClosure {
-
-        /** Target closure. */
-        private final SchemaIndexCacheVisitorClosure target;
-
-        /**
-         * Constructor.
-         *
-         * @param target Target.
-         */
-        public FilteringVisitorClosure(SchemaIndexCacheVisitorClosure target) {
-            this.target = target;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
-            long expiration, long link) throws IgniteCheckedException {
-            if (qryProc.belongsToTable(cctx, cacheName, tblName, key, val))
-                target.apply(key, part, val, ver, expiration, link);
-        }
     }
 }

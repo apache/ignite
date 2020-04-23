@@ -121,6 +121,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -131,6 +132,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         if (keyCheck)
             validateCacheKeys(keys);
+
+        warnIfUnordered(keys, BulkOperation.GET);
 
         GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
@@ -149,6 +152,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         recovery,
+                        readRepair,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -173,6 +177,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
+     * @param forcePrimary Force primary flag.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
@@ -183,6 +188,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         AffinityTopologyVersion topVer,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
+        boolean forcePrimary,
         boolean deserializeBinary,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -193,7 +199,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
-            /*force primary*/needVer || !ctx.config().isReadFromBackup(),
+            forcePrimary,
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
@@ -214,7 +220,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
     public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
@@ -255,7 +260,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         "(added to cancelled locks set): " + req);
                             }
 
-                            ctx.evicts().touch(entry, topVer);
+                            entry.touch();
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Received unlock request for entry that could not be found: " + req);
@@ -279,7 +284,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @SuppressWarnings({"RedundantTypeArguments", "ForLoopReplaceableByForEach"})
     @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<KeyCacheObject> nearKeys = req.nearKeys();
@@ -331,7 +335,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         req.timeout(),
                                         req.txSize(),
                                         req.subjectId(),
-                                        req.taskNameHash()
+                                        req.taskNameHash(),
+                                        req.txLabel()
                                     );
 
                                     tx = ctx.tm().onCreated(null, tx);
@@ -363,7 +368,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             );
 
                             if (!req.inTx())
-                                ctx.evicts().touch(entry, req.topologyVersion());
+                                entry.touch();
                         }
                         else {
                             if (evicted == null)
@@ -596,7 +601,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         if (topVer.equals(AffinityTopologyVersion.NONE))
                             topVer = ctx.affinity().affinityTopologyVersion();
 
-                        ctx.evicts().touch(entry, topVer);
+                        entry.touch();
 
                         break;
                     }
@@ -634,7 +639,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param ver Lock version.
      * @param keys Keys.
      */
-    @SuppressWarnings({"unchecked"})
     public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;

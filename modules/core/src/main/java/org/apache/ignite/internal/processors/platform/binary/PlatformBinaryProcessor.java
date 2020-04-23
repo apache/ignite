@@ -54,6 +54,9 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
     /** */
     private static final int OP_REGISTER_ENUM = 7;
 
+    /** */
+    private static final int OP_GET_META_WITH_SCHEMAS = 8;
+
     /**
      * Constructor.
      *
@@ -76,7 +79,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
                 String typeName = reader.readString();
 
                 return platformContext().kernalContext().marshallerContext()
-                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName)
+                    .registerClassName(MarshallerPlatformIds.DOTNET_ID, typeId, typeName, false)
                     ? TRUE : FALSE;
             }
         }
@@ -99,7 +102,15 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
             case OP_GET_META: {
                 int typeId = reader.readInt();
 
-                platformCtx.writeMetadata(writer, typeId);
+                platformCtx.writeMetadata(writer, typeId, false);
+
+                break;
+            }
+
+            case OP_GET_META_WITH_SCHEMAS: {
+                int typeId = reader.readInt();
+
+                platformCtx.writeMetadata(writer, typeId, true);
 
                 break;
             }
@@ -142,7 +153,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
                 BinaryType binaryType = platformCtx.kernalContext().grid().binary().registerEnum(name, vals);
 
-                platformCtx.writeMetadata(writer, binaryType.typeId());
+                platformCtx.writeMetadata(writer, binaryType.typeId(), false);
 
                 break;
             }

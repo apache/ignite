@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -88,6 +89,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
      * @throws Exception If failed.
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
+    @Test
     public void testNodeRestart() throws Exception {
         IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
@@ -116,8 +118,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                     try {
                         int size = set.size();
 
-                        // TODO: IGNITE-584, check for equality when IGNITE-584 fixed.
-                        assertTrue(size > 0);
+                        assertEquals(ITEMS, size);
                     }
                     catch (IgniteException ignore) {
                         // No-op.
@@ -134,8 +135,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                             cnt++;
                         }
 
-                        // TODO: IGNITE-584, check for equality when IGNITE-584 fixed.
-                        assertTrue(cnt > 0);
+                        assertEquals(ITEMS, cnt);
                     }
                     catch (IgniteException ignore) {
                         // No-op.

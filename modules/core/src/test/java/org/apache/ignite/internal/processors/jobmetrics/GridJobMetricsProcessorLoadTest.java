@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Grid job metrics processor load test.
@@ -55,6 +56,7 @@ public class GridJobMetricsProcessorLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testJobMetricsMultiThreaded() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {

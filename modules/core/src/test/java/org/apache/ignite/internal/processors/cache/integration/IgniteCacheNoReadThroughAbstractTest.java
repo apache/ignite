@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -86,6 +87,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoReadThrough() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 

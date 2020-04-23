@@ -33,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -70,6 +71,7 @@ public class CacheTopologyCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTopologyCommandOnDynamicCacheCreateDestroy() throws Exception {
         GridRestTopologyRequest req = new GridRestTopologyRequest();
         req.command(GridRestCommand.TOPOLOGY);
@@ -80,6 +82,7 @@ public class CacheTopologyCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeCommandOnDynamicCacheCreateDestroy1() throws Exception {
         Ignite node = startGrid();
 
@@ -93,6 +96,7 @@ public class CacheTopologyCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeCommandOnDynamicCacheCreateDestroy2() throws Exception {
         Ignite node = startGrid();
 

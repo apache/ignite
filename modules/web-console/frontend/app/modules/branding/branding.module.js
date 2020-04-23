@@ -19,12 +19,8 @@ import angular from 'angular';
 
 import IgniteBranding from './branding.service';
 
-import igniteHeaderLogo from './header-logo.directive';
-import igniteHeaderTitle from './header-title.directive';
 import igniteTerms from './terms.directive';
 import igniteFeatures from './features.directive';
-import igniteFooter from './footer.directive';
-import ignitePoweredByApache from './powered-by-apache.directive';
 
 angular
 .module('ignite-console.branding', [
@@ -41,9 +37,5 @@ angular
 
     tfMetaTagsProvider.setTitleSuffix(' – Apache Ignite Web Console');
 }])
-.directive(...ignitePoweredByApache)
-.directive(...igniteHeaderLogo)
-.directive(...igniteHeaderTitle)
-.directive(...igniteTerms)
-.directive(...igniteFeatures)
-.directive(...igniteFooter);
+.directive('igniteTerms', igniteTerms)
+.directive('igniteFeatures', igniteFeatures);

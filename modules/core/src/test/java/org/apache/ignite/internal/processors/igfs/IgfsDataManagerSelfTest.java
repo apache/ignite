@@ -32,9 +32,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -55,9 +53,6 @@ import static org.apache.ignite.testframework.GridTestUtils.sleepAndIncrement;
  * {@link IgfsDataManager} test case.
  */
 public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
-    /** Test IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Groups count for data blocks. */
     private static final int DATA_BLOCK_GROUP_CNT = 2;
 
@@ -90,12 +85,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setMetaCacheConfiguration(cacheConfiguration("meta"));
@@ -109,7 +98,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -145,17 +134,13 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         startGrids(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test file system structure in meta-cache.
      *
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testDataStoring() throws Exception {
         for (int i = 0; i < 10; i++) {
             IgfsPath path = IgfsPath.ROOT;
@@ -196,7 +181,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
                     grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -240,6 +225,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDataStoringRemainder() throws Exception {
         final int blockSize = IGFS_BLOCK_SIZE;
 
@@ -289,7 +275,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(
                     grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -331,6 +317,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testDataStoringFlush() throws Exception {
         final int blockSize = IGFS_BLOCK_SIZE;
         final int writesCnt = 64;
@@ -374,7 +361,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
                     grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -405,6 +392,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinity() throws Exception {
         final int blockSize = 10;
         final int grpSize = blockSize * DATA_BLOCK_GROUP_CNT;
@@ -458,6 +446,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity2() throws Exception {
         int blockSize = BLOCK_SIZE;
 
@@ -493,6 +482,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinityFileMap() throws Exception {
         int blockSize = BLOCK_SIZE;
 

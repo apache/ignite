@@ -26,12 +26,12 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary reader with marshaling non-primitive and non-embedded objects with JDK marshaller.
  */
-@SuppressWarnings("unchecked")
 public abstract class SqlListenerUtils {
     /**
      * @param reader Reader.
@@ -252,5 +252,33 @@ public abstract class SqlListenerUtils {
             || cls == Time[].class
             || cls == Timestamp[].class
             || cls == java.util.Date[].class || cls == java.sql.Date[].class;
+    }
+
+    /**
+     * <p>Converts sql pattern wildcards into java regex wildcards.</p>
+     * <p>Translates "_" to "." and "%" to ".*" if those are not escaped with "\" ("\_" or "\%").</p>
+     * <p>All other characters are considered normal and will be escaped if necessary.</p>
+     * <pre>
+     * Example:
+     *      som_    -->     som.
+     *      so%     -->     so.*
+     *      s[om]e  -->     so\[om\]e
+     *      so\_me  -->     so_me
+     *      some?   -->     some\?
+     *      som\e   -->     som\\e
+     * </pre>
+     */
+    public static String translateSqlWildcardsToRegex(String sqlPtrn) {
+        if (F.isEmpty(sqlPtrn))
+            return sqlPtrn;
+
+        String toRegex = ' ' + sqlPtrn;
+
+        toRegex = toRegex.replaceAll("([\\[\\]{}()*+?.\\\\\\\\^$|])", "\\\\$1");
+        toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)%", "$1$2.*");
+        toRegex = toRegex.replaceAll("([^\\\\\\\\])((?:\\\\\\\\\\\\\\\\)*)_", "$1$2.");
+        toRegex = toRegex.replaceAll("([^\\\\\\\\])(\\\\\\\\(?>\\\\\\\\\\\\\\\\)*\\\\\\\\)*\\\\\\\\([_|%])", "$1$2$3");
+
+        return toRegex.substring(1);
     }
 }

@@ -21,7 +21,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
 /**
- * Test to check concurrent operations on dynamic columns on TRANSACTIONAL PARTITIONED cache.
+ * Test to check concurrent operations on dynamic columns on TRANSACTIONAL PARTITIONED cache with flat key.
  */
 public class DynamicColumnsConcurrentTransactionalPartitionedSelfTest extends DynamicColumnsAbstractConcurrentSelfTest {
     /**

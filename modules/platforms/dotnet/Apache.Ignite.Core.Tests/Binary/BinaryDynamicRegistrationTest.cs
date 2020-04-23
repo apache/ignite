@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                         };
 
                         var tasks = Enumerable.Range(0, threads)
-                            .Select(x => Task.Factory.StartNew(registerType))
+                            .Select(x => TaskRunner.Run(registerType))
                             .ToArray();
 
                         Task.WaitAll(tasks);
@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         private static void ClearMarshallerWorkDir()
         {
             // Delete all *.classname files within IGNITE_HOME
-            var home = IgniteHome.Resolve(null);
+            var home = IgniteHome.Resolve();
 
             var files = Directory.GetFiles(home, "*.classname*", SearchOption.AllDirectories);
 

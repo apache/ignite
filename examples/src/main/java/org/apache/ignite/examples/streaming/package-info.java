@@ -16,6 +16,8 @@
  */
 
 /**
+ * <!-- Package description. -->
  * Demonstrates usage of data streamer.
  */
+
 package org.apache.ignite.examples.streaming;

@@ -67,7 +67,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.cache.event.EventType.CREATED;
@@ -104,8 +106,17 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     private static AtomicBoolean serialized = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_EVENTS);
+
         CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         if (lsnrCfg != null)
@@ -139,7 +150,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return syncMsgFuts.size() == 0;
+                    return syncMsgFuts.isEmpty();
                 }
             }, 5000);
 
@@ -152,6 +163,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExceptionIgnored() throws Exception {
         CacheEntryListenerConfiguration<Object, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
             new Factory<CacheEntryListener<Object, Object>>() {
@@ -211,6 +223,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNoOldValue() throws Exception {
         CacheEntryListenerConfiguration<Object, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
             new Factory<CacheEntryListener<Object, Object>>() {
@@ -242,6 +255,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousEventsObjectKeyValue() throws Exception {
         useObjects = true;
 
@@ -251,6 +265,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousEvents() throws Exception {
         final CacheEntryCreatedListener<Object, Object> lsnr = new CreateUpdateRemoveExpireListener() {
             @Override public void onRemoved(Iterable<CacheEntryEvent<?, ?>> evts) {
@@ -314,7 +329,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
                 syncEvent(key, null, cache, 1);
 
-                checkEvent(evts.iterator(), key, REMOVED, null, 2);
+                checkEvent(evts.iterator(), key, REMOVED, 2, 2);
 
                 log.info("Check synchronous expire event [key=" + key + ']');
 
@@ -335,7 +350,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     assertEquals(1, evts.size());
                 }
 
-                checkEvent(evts.iterator(), key, EXPIRED, null, 3);
+                checkEvent(evts.iterator(), key, EXPIRED, 3, 3);
 
                 assertEquals(0, evts.size());
             }
@@ -348,6 +363,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousEventsListenerNodeFailed() throws Exception {
         if (cacheMode() != PARTITIONED)
             return;
@@ -402,6 +418,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRegisterDeregister() throws Exception {
         final int THREADS = 10;
 
@@ -438,6 +455,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         if (cacheMode() == LOCAL)
             return;
@@ -541,6 +559,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEventsObjectKeyValue() throws Exception {
         useObjects = true;
 
@@ -550,6 +569,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEvents() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
@@ -618,7 +638,6 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      * @param vals Values in cache.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void checkListenerOnStart(Map<Object, Object> vals) throws Exception {
         lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
             new CreateUpdateRemoveExpireListenerFactory(),
@@ -764,7 +783,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             switch (evt.getEventType()) {
                 case REMOVED:
-                    assertNull(evt.getValue());
+                    assertEquals(evt.getOldValue(), evt.getValue());
 
                     assertEquals(vals.get(evt.getKey()), evt.getOldValue());
 
@@ -797,7 +816,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     break;
 
                 case EXPIRED:
-                    assertNull(evt.getValue());
+                    assertEquals(evt.getOldValue(), evt.getValue());
 
                     assertEquals(value(-1), evt.getOldValue());
 
@@ -896,7 +915,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         U.sleep(700);
 
         if (!eagerTtl())
-            assertNull(primaryCache(key, cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
+            assertNull(primaryCache(key(key), cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
 
         IgniteCache<Object, Object> cache1 = cache;
 
@@ -917,7 +936,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         U.sleep(200);
 
         if (!eagerTtl())
-            assertNull(primaryCache(key, cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
+            assertNull(primaryCache(key(key), cache.getName()).get(key(key))); // Provoke expire event if eager ttl is disabled.
 
         evtsLatch.await(5000, MILLISECONDS);
 
@@ -934,13 +953,13 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         }
 
         if (rmv)
-            checkEvent(iter, key, REMOVED, null, oldVal ? UPDATES : null);
+            checkEvent(iter, key, REMOVED, oldVal ? UPDATES : null, oldVal ? UPDATES : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 10, null);
 
         if (expire)
-            checkEvent(iter, key, EXPIRED, null, oldVal ? 10 : null);
+            checkEvent(iter, key, EXPIRED, oldVal ? 10 : null, oldVal ? 10 : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 1, null);
@@ -949,13 +968,13 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
             checkEvent(iter, key, UPDATED, 2, oldVal ? 1 : null);
 
         if (rmv)
-            checkEvent(iter, key, REMOVED, null, oldVal ? 2 : null);
+            checkEvent(iter, key, REMOVED, oldVal ? 2 : null, oldVal ? 2 : null);
 
         if (create)
             checkEvent(iter, key, CREATED, 20, null);
 
         if (expire)
-            checkEvent(iter, key, EXPIRED, null, oldVal ? 20 : null);
+            checkEvent(iter, key, EXPIRED, oldVal ? 20 : null, oldVal ? 20 : null);
 
         assertEquals(0, evts.size());
 

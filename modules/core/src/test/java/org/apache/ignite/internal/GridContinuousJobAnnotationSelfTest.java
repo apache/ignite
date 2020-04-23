@@ -40,6 +40,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Test for various job callback annotations.
@@ -70,6 +72,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testJobAnnotation() throws Exception {
         testContinuousJobAnnotation(TestJob.class);
     }
@@ -77,6 +80,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testJobChildAnnotation() throws Exception {
         testContinuousJobAnnotation(TestJobChild.class);
     }
@@ -116,7 +120,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         private ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             try {
                 mapper.send(((Class<ComputeJob>)arg).newInstance());
             }

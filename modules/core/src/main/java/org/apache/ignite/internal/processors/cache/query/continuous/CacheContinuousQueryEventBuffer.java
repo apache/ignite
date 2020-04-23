@@ -24,12 +24,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
@@ -49,7 +50,7 @@ public class CacheContinuousQueryEventBuffer {
     private AtomicReference<Batch> curBatch = new AtomicReference<>();
 
     /** */
-    private ConcurrentLinkedDeque8<CacheContinuousQueryEntry> backupQ = new ConcurrentLinkedDeque8<>();
+    private FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** */
     private ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
@@ -113,9 +114,10 @@ public class CacheContinuousQueryEventBuffer {
     }
 
     /**
+     * @param backup {@code True} if backup context.
      * @return Initial partition counter.
      */
-    protected long currentPartitionCounter() {
+    protected long currentPartitionCounter(boolean backup) {
         return 0;
     }
 
@@ -152,7 +154,7 @@ public class CacheContinuousQueryEventBuffer {
         Object res = null;
 
         for (;;) {
-            batch = initBatch(entry.topologyVersion());
+            batch = initBatch(entry.topologyVersion(), backup);
 
             if (batch == null || cntr < batch.startCntr) {
                 if (backup) {
@@ -184,7 +186,7 @@ public class CacheContinuousQueryEventBuffer {
 
                 res = processPending(res, batch, backup);
 
-                batch0 = initBatch(entry.topologyVersion());
+                batch0 = initBatch(entry.topologyVersion(), backup);
             }
             while (batch != batch0);
         }
@@ -194,16 +196,17 @@ public class CacheContinuousQueryEventBuffer {
 
     /**
      * @param topVer Current event topology version.
+     * @param backup {@code True} if backup entry.
      * @return Current batch.
      */
-    @Nullable private Batch initBatch(AffinityTopologyVersion topVer) {
+    private Batch initBatch(AffinityTopologyVersion topVer, boolean backup) {
         Batch batch = curBatch.get();
 
         if (batch != null)
             return batch;
 
         for (;;) {
-            long curCntr = currentPartitionCounter();
+            long curCntr = currentPartitionCounter(backup);
 
             if (curCntr == -1)
                 return null;
@@ -420,7 +423,6 @@ public class CacheContinuousQueryEventBuffer {
          * @param backup Backup entry flag.
          * @return New result.
          */
-        @SuppressWarnings("unchecked")
         @Nullable private Object processEntry0(
             @Nullable Object res,
             long cntr,

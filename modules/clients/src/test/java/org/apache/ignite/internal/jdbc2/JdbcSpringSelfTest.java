@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
@@ -61,6 +62,7 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testClientNodeId() throws Exception {
         IgniteEx client = (IgniteEx) startGridWithSpringCtx(getTestIgniteInstanceName(), true, configURL());
 
@@ -96,6 +98,7 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testSpringBean() throws Exception {
         String url = CFG_URL_PREFIX + configURL();
 

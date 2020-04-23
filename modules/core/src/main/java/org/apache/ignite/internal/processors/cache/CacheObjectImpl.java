@@ -54,7 +54,6 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
 

@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * Decorator class for File I/O
  */
-public class FileIODecorator implements FileIO {
+public class FileIODecorator extends AbstractFileIO {
     /** File I/O delegate */
-    private final FileIO delegate;
+    protected final FileIO delegate;
 
     /**
      *
@@ -33,6 +36,21 @@ public class FileIODecorator implements FileIO {
      */
     public FileIODecorator(FileIO delegate) {
         this.delegate = delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFileSystemBlockSize() {
+        return delegate.getFileSystemBlockSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseSize() {
+        return delegate.getSparseSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int punchHole(long pos, int len) {
+        return delegate.punchHole(pos, len);
     }
 
     /** {@inheritDoc} */
@@ -46,38 +64,48 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        return delegate.read(destinationBuffer);
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        return delegate.read(destBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        return delegate.read(destinationBuffer, position);
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        return delegate.read(destBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        return delegate.read(buffer, offset, length);
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        return delegate.read(buf, off, len);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        return delegate.write(sourceBuffer);
+    @Override public int write(ByteBuffer srcBuf) throws IOException {
+        return delegate.write(srcBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        return delegate.write(sourceBuffer, position);
+    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        return delegate.write(srcBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        delegate.write(buffer, offset, length);
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
+        return delegate.write(buf, off, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        return delegate.map(sizeBytes);
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
         delegate.force();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
+        delegate.force(withMetadata);
     }
 
     /** {@inheritDoc} */
@@ -93,5 +121,15 @@ public class FileIODecorator implements FileIO {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         delegate.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
+        return delegate.transferTo(position, count, target);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+        return delegate.transferFrom(src, position, count);
     }
 }

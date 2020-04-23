@@ -22,6 +22,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
+import org.junit.Test;
 
 /**
  * Test SQLSTATE codes propagation with thin client driver.
@@ -40,28 +41,34 @@ public class JdbcErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
      * due to <b>communication problems</b> (not due to clear misconfiguration).
      * @throws SQLException if failed.
      */
+    @Test
     public void testConnectionError() throws SQLException {
+        final String path = "jdbc:ignite:сfg://cache=test@/unknown/path";
+
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:сfg://cache=test@/unknown/path");
+                DriverManager.getConnection(path);
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "No suitable driver found for " + path);
     }
 
     /**
      * Test error code for the case when connection string is a mess.
      * @throws SQLException if failed.
      */
+    @Test
     public void testInvalidConnectionStringFormat() throws SQLException {
+        final String cfgPath = "cache=";
+
         checkErrorState(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 // Empty config path yields an error.
-                DriverManager.getConnection("jdbc:ignite:cfg://cache=");
+                DriverManager.getConnection("jdbc:ignite:cfg://" + cfgPath);
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "Failed to start Ignite node. Spring XML configuration path is invalid: " + cfgPath);
     }
 }

@@ -30,6 +30,7 @@ import java.io.FilenameFilter;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD;
 import static org.apache.ignite.internal.igfs.common.IgfsLogger.DELIM_FIELD_VAL;
@@ -107,6 +108,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateDelete() throws Exception {
         IgfsLogger log = IgfsLogger.logger(ENDPOINT, IGFS_NAME, LOG_DIR, 10);
 
@@ -162,6 +164,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLogRead() throws Exception {
         IgfsLogger log = IgfsLogger.logger(ENDPOINT, IGFS_NAME, LOG_DIR, 10);
 
@@ -192,6 +195,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testLogWrite() throws Exception {
         IgfsLogger log = IgfsLogger.logger(ENDPOINT, IGFS_NAME, LOG_DIR, 10);
 
@@ -217,6 +221,7 @@ public class IgniteHadoopFileSystemLoggerSelfTest extends IgfsCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("TooBroadScope")
+    @Test
     public void testLogMisc() throws Exception {
         IgfsLogger log = IgfsLogger.logger(ENDPOINT, IGFS_NAME, LOG_DIR, 10);
 

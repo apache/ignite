@@ -39,6 +39,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 /**
  * Test for local Ignite instance processing during serialization/deserialization.
@@ -63,6 +64,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSimple() throws Exception {
         checkPutGet(new SimpleTestObject("one"), null);
     }
@@ -70,6 +72,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetSerializable() throws Exception {
         checkPutGet(new SerializableTestObject("test"), null);
     }
@@ -77,6 +80,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetExternalizable() throws Exception {
         checkPutGet(new ExternalizableTestObject("test"), null);
     }
@@ -84,6 +88,7 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutGetBinarylizable() throws Exception {
         checkPutGet(new BinarylizableTestObject("test"), "binaryIgnite");
     }
@@ -92,7 +97,6 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkPutGet(final TestObject obj, final String igniteInstanceName) throws Exception {
-
 
         // Run async to emulate user thread.
         GridTestUtils.runAsync(new Callable<Object>() {

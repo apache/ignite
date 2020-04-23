@@ -57,7 +57,7 @@ module.exports.factory = (mongo, errors) => {
          */
         static spaceIds(userId, demo) {
             return this.spaces(userId, demo)
-                .then((spaces) => spaces.map((space) => space._id));
+                .then((spaces) => spaces.map((space) => space._id.toString()));
         }
 
         /**
@@ -77,10 +77,10 @@ module.exports.factory = (mongo, errors) => {
          */
         static cleanUp(spaceIds) {
             return Promise.all([
-                mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
-                mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
-                mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
-                mongo.Igfs.remove({space: {$in: spaceIds}}).exec()
+                mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec(),
+                mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
+                mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
+                mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec()
             ]);
         }
     }

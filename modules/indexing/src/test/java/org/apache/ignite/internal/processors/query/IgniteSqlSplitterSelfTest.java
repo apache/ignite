@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -46,29 +45,24 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.h2.twostep.AbstractReducer;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.springframework.util.StringUtils;
 
 /**
  * Tests for correct distributed partitioned queries.
  */
 @SuppressWarnings("unchecked")
-public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CLIENT = 7;
-
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -80,30 +74,13 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
-        Ignition.setClientMode(true);
-        try {
-            startGrid(CLIENT);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        startClientGrid(CLIENT);
     }
 
     /**
@@ -125,6 +102,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      * Tests offset and limit clauses for query.
      * @throws Exception If failed.
      */
+    @Test
     public void testOffsetLimit() throws Exception {
         IgniteCache<Integer, Integer> c = ignite(0).getOrCreateCache(cacheConfig("ints", true,
             Integer.class, Integer.class));
@@ -165,7 +143,9 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
-    public void _testMergeJoin() {
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10199")
+    @Test
+    public void testMergeJoin() {
         IgniteCache<Integer, Org> c = ignite(CLIENT).getOrCreateCache(cacheConfig("org", true,
             Integer.class, Org.class));
 
@@ -192,6 +172,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
     public void testPushDownSubquery() {
         IgniteCache<Integer, Person> c = ignite(CLIENT).getOrCreateCache(cacheConfig("ps", true,
             Integer.class, Person.class));
@@ -237,6 +219,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testPushDown() {
         IgniteCache<Integer, Person> c = ignite(CLIENT).getOrCreateCache(cacheConfig("ps", true,
             Integer.class, Person.class));
@@ -283,6 +266,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testPushDownLeftJoin() {
         IgniteCache<Integer, Person> c = ignite(0).getOrCreateCache(cacheConfig("ps", true,
             Integer.class, Person.class));
@@ -313,7 +297,6 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                         }
                     }
 
-
                     X.println(" ---> ik: : " + i + " " + k);
                     X.println("\nqry: \n" + qry.toString());
 
@@ -333,48 +316,56 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCache() {
         doTestReplicatedTablesUsingPartitionedCache(1, false, false);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheSegmented() {
         doTestReplicatedTablesUsingPartitionedCache(5, false, false);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheClient() {
         doTestReplicatedTablesUsingPartitionedCache(1, true, false);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheSegmentedClient() {
         doTestReplicatedTablesUsingPartitionedCache(5, true, false);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheRO() {
         doTestReplicatedTablesUsingPartitionedCache(1, false, true);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheSegmentedRO() {
         doTestReplicatedTablesUsingPartitionedCache(5, false, true);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheClientRO() {
         doTestReplicatedTablesUsingPartitionedCache(1, true, true);
     }
 
     /**
      */
+    @Test
     public void testReplicatedTablesUsingPartitionedCacheSegmentedClientRO() {
         doTestReplicatedTablesUsingPartitionedCache(5, true, true);
     }
@@ -418,18 +409,22 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    @Test
     public void testPartitionedTablesUsingReplicatedCache() {
         doTestPartitionedTablesUsingReplicatedCache(1, false);
     }
 
+    @Test
     public void testPartitionedTablesUsingReplicatedCacheSegmented() {
         doTestPartitionedTablesUsingReplicatedCache(7, false);
     }
 
+    @Test
     public void testPartitionedTablesUsingReplicatedCacheClient() {
         doTestPartitionedTablesUsingReplicatedCache(1, true);
     }
 
+    @Test
     public void testPartitionedTablesUsingReplicatedCacheSegmentedClient() {
         doTestPartitionedTablesUsingReplicatedCache(7, true);
     }
@@ -463,6 +458,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testSubQueryWithAggregate() {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             AffinityKey.class, Person2.class);
@@ -493,6 +489,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws InterruptedException If failed.
      */
+    @Test
     public void testDistributedJoinFromReplicatedCache() throws InterruptedException {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class);
@@ -520,6 +517,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
+    @Test
     public void testExists() {
         IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
             Integer.class, Person2.class));
@@ -563,12 +561,13 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSortedMergeIndex() throws Exception {
         IgniteCache<Integer,Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
             Integer.class, Value.class));
 
         try {
-            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 8);
+            GridTestUtils.setFieldValue(null, AbstractReducer.class, "PREFETCH_SIZE", 8);
 
             Random rnd = new GridRandom();
 
@@ -618,7 +617,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 1024);
+            GridTestUtils.setFieldValue(null, AbstractReducer.class, "PREFETCH_SIZE", 1024);
 
             c.destroy();
         }
@@ -627,6 +626,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGroupIndexOperations() throws Exception {
         IgniteCache<Integer, GroupIndexTestValue> c = ignite(0).getOrCreateCache(cacheConfig("grp", false,
             Integer.class, GroupIndexTestValue.class));
@@ -706,6 +706,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testUseIndexHints() {
         CacheConfiguration ccfg = cacheConfig("pers", true,
             Integer.class, Person2.class);
@@ -739,6 +740,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoins() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class);
@@ -770,6 +772,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoinsUnion() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true, Integer.class, Person2.class);
         CacheConfiguration ccfg2 = cacheConfig("org", true, Integer.class, Organization.class);
@@ -824,6 +827,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoinsUnionPartitionedReplicated() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class);
@@ -893,6 +897,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoinsPlan() throws Exception {
         List<IgniteCache<Object, Object>> caches = new ArrayList<>();
 
@@ -1104,8 +1109,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
                 checkQueryPlan(persPart,
                     false,
                     0,
-                    sql,
-                    "persPartAff", "persPart", "orgRepl");
+                    sql);
 
                 checkQueryFails(persPart, sql, true);
 
@@ -1247,6 +1251,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDistributedJoinsEnforceReplicatedNotLast() throws Exception {
         List<IgniteCache<Object, Object>> caches = new ArrayList<>();
 
@@ -1294,24 +1299,28 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
 
     /**
      */
+    @Test
     public void testSchemaQuoted() {
         doTestSchemaName("\"ppAf\"");
     }
 
     /**
      */
+    @Test
     public void testSchemaQuotedUpper() {
         doTestSchemaName("\"PPAF\"");
     }
 
     /**
      */
+    @Test
     public void testSchemaUnquoted() {
         doTestSchemaName("ppAf");
     }
 
     /**
      */
+    @Test
     public void testSchemaUnquotedUpper() {
         doTestSchemaName("PPAF");
     }
@@ -1344,6 +1353,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexSegmentation() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setQueryParallelism(4);
@@ -1375,6 +1385,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicationCacheIndexSegmentationFailure() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1391,6 +1402,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexSegmentationPartitionedReplicated() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setQueryParallelism(4);
@@ -1457,6 +1469,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexWithDifferentSegmentationLevelsFailure() throws Exception {
         CacheConfiguration ccfg1 = cacheConfig("pers", true,
             Integer.class, Person2.class).setQueryParallelism(4);
@@ -1633,6 +1646,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * Test HAVING clause.
      */
+    @Test
     public void testHaving() {
         IgniteCache<Integer, Integer> c = ignite(0).getOrCreateCache(cacheConfig("having", true,
             Integer.class, Integer.class));
@@ -1770,7 +1784,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-1886", forceFailure = true)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1886")
+    @Test
     public void testFunctionNpe() {
         IgniteCache<Integer, User> userCache = ignite(0).createCache(
             cacheConfig("UserCache", true, Integer.class, User.class));
@@ -1803,6 +1818,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testImplicitJoinConditionGeneration() {
         IgniteCache<Integer, Person> p = ignite(0).createCache(cacheConfig("P", true, Integer.class, Person.class));
         IgniteCache<Integer, Department> d = ignite(0).createCache(cacheConfig("D", true, Integer.class, Department.class));
@@ -1831,6 +1847,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinWithSubquery() throws Exception {
         IgniteCache<Integer, Contract> c1 = ignite(0).createCache(
             cacheConfig("Contract", true,
@@ -1860,6 +1877,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception if failed. */
+    @Test
     public void testDistributedAggregates() throws Exception {
         final String cacheName = "ints";
 
@@ -1907,6 +1925,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception if failed. */
+    @Test
     public void testCollocatedAggregates() throws Exception {
         final String cacheName = "ints";
 
@@ -1953,6 +1972,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed,
      */
+    @Test
     public void testEmptyCacheAggregates() throws Exception {
         final String cacheName = "ints";
 
@@ -1983,6 +2003,7 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAvgVariousDataTypes() throws Exception {
         final String cacheName = "avgtypes";
 
@@ -2120,7 +2141,6 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals("min", 3, ((Integer)row.get(5)).intValue());
             assertEquals("max", 3, ((Integer)row.get(6)).intValue());
 
-
             row = result.get(1);
             assertEquals("fst", 2, ((Number)row.get(0)).intValue());
             assertEquals("count", 3L, ((Number)row.get(1)).longValue());
@@ -2129,7 +2149,6 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             assertEquals("avg dbl", 2d, ((Number)row.get(4)).doubleValue(), 0.001);
             assertEquals("min", 1, ((Integer)row.get(5)).intValue());
             assertEquals("max", 3, ((Integer)row.get(6)).intValue());
-
 
             row = result.get(2);
             assertEquals("fst", 3, ((Number)row.get(0)).intValue());

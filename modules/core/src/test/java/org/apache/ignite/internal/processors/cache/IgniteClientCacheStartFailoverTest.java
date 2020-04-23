@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
@@ -41,40 +41,30 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
 public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
@@ -91,6 +81,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartCoordinatorFailsAtomic() throws Exception {
         clientStartCoordinatorFails(ATOMIC);
     }
@@ -98,8 +89,17 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartCoordinatorFailsTx() throws Exception {
         clientStartCoordinatorFails(TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientStartCoordinatorFailsMvccTx() throws Exception {
+        clientStartCoordinatorFails(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -116,9 +116,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        client = true;
-
-        final Ignite c = startGrid(3);
+        final Ignite c = startClientGrid(3);
 
         TestRecordingCommunicationSpi.spi(srv0).blockMessages(GridDhtAffinityAssignmentResponse.class, c.name());
 
@@ -152,6 +150,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartLastServerFailsAtomic() throws Exception {
         clientStartLastServerFails(ATOMIC);
     }
@@ -159,8 +158,17 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartLastServerFailsTx() throws Exception {
         clientStartLastServerFails(TRANSACTIONAL);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClientStartLastServerFailsMvccTx() throws Exception {
+        clientStartLastServerFails(TRANSACTIONAL_SNAPSHOT);
     }
 
     /**
@@ -178,11 +186,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         srv1.createCache(cfg);
 
-        client = true;
-
-        final Ignite c = startGrid(3);
-
-        client = false;
+        final Ignite c = startClientGrid(3);
 
         TestRecordingCommunicationSpi.spi(srv1).blockMessages(GridDhtAffinityAssignmentResponse.class, c.name());
 
@@ -248,6 +252,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceState() throws Exception {
         final int SRVS = 3;
 
@@ -255,15 +260,11 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         List<String> cacheNames = startCaches(ignite(0), 100);
 
-        client = true;
-
-        Ignite c = startGrid(SRVS);
+        Ignite c = startClientGrid(SRVS);
 
         assertTrue(c.configuration().isClientMode());
 
         awaitPartitionMapExchange();
-
-        client = false;
 
         TestRecordingCommunicationSpi.spi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode clusterNode, Message msg) {
@@ -319,6 +320,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebalanceStateConcurrentStart() throws Exception {
         final int SRVS1 = 3;
         final int CLIENTS = 5;
@@ -332,14 +334,10 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         final List<String> cacheNames = startCaches(srv0, KEYS);
 
-        client = true;
-
         final List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++)
-            clients.add(startGrid(SRVS1 + i));
-
-        client = false;
+            clients.add(startClientGrid(SRVS1 + i));
 
         final CyclicBarrier barrier = new CyclicBarrier(clients.size() + SRVS2);
 
@@ -413,6 +411,8 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11810")
+    @Test
     public void testClientStartCloseServersRestart() throws Exception {
         final int SRVS = 4;
         final int CLIENTS = 4;
@@ -421,14 +421,10 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         final List<String> cacheNames = startCaches(ignite(0), 1000);
 
-        client = true;
-
         final List<Ignite> clients = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++)
-            clients.add(startGrid(SRVS + i));
-
-        client = false;
+            clients.add(startClientGrid(SRVS + i));
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -522,7 +518,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
     private List<String> startCaches(Ignite node, int keys) {
         List<String> cacheNames = new ArrayList<>();
 
-        final Map<Integer, Integer> map = new HashMap<>();
+        final Map<Integer, Integer> map = new TreeMap<>();
 
         for (int i = 0; i < keys; i++)
             map.put(i, i);
@@ -539,6 +535,16 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 3; i++) {
             CacheConfiguration<Object, Object> ccfg = cacheConfiguration("tx-" + i, TRANSACTIONAL, i);
+
+            IgniteCache<Object, Object> cache = node.createCache(ccfg);
+
+            cacheNames.add(ccfg.getName());
+
+            cache.putAll(map);
+        }
+
+       for (int i = 0; i < 3; i++) {
+            CacheConfiguration<Object, Object> ccfg = cacheConfiguration("mvcc-" + i, TRANSACTIONAL_SNAPSHOT, i);
 
             IgniteCache<Object, Object> cache = node.createCache(ccfg);
 
@@ -565,6 +571,7 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
         return ccfg;
     }
+
     /**
      *
      */

@@ -31,6 +31,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -140,25 +141,29 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testLifecycleAware() throws Exception {
         // No-op, see anothre tests.
     }
 
-    /** {@inheritDoc} */
+    /** */
+    @Test
     public void testCacheLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.CACHE_LOOKUP;
 
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
+    @Test
     public void testGlobalLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.GLOBAL_LOOKUP;
 
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
+    @Test
     public void testFactoryLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.FACTORY;
 

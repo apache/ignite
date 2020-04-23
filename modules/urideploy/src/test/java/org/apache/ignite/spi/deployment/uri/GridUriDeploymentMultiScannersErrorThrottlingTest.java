@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Tests error and warn messages throttling.
@@ -31,11 +32,11 @@ public class GridUriDeploymentMultiScannersErrorThrottlingTest extends GridUriDe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThrottling() throws Exception {
         LT.throttleTimeout(11000);
 
-        // Sleep for 1 min.
-        Thread.sleep(60 * 1000);
+        Thread.sleep(15 * 1000);
     }
 
     /**

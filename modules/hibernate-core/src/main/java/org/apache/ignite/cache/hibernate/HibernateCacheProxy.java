@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
@@ -37,9 +38,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -53,23 +52,30 @@ import org.jetbrains.annotations.Nullable;
  * Hibernate cache proxy used to substitute hibernate keys with ignite keys.
  */
 public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> {
-    /** Delegate. */
-    private final IgniteInternalCache<Object, Object> delegate;
+    /** Delegate is lazily loaded which allows for creation of caches after the SPI is bootstrapped */
+    private final Supplier<IgniteInternalCache<Object, Object>> delegate;
 
     /** Transformer. */
     private final HibernateKeyTransformer keyTransformer;
 
+    /** */
+    private String cacheName;
+
     /**
+     * @param cacheName Cache name. Should match delegate.get().name(). Needed for lazy loading.
      * @param delegate Delegate.
      * @param keyTransformer Key keyTransformer.
      */
     HibernateCacheProxy(
-        IgniteInternalCache<Object, Object> delegate,
+        String cacheName,
+        Supplier<IgniteInternalCache<Object, Object>> delegate,
         HibernateKeyTransformer keyTransformer
     ) {
+        assert cacheName != null;
         assert delegate != null;
         assert keyTransformer != null;
 
+        this.cacheName = cacheName;
         this.delegate = delegate;
         this.keyTransformer = keyTransformer;
     }
@@ -83,191 +89,190 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return delegate.name();
+        return cacheName;
     }
 
     /** {@inheritDoc} */
     @Override public boolean skipStore() {
-        return delegate.skipStore();
+        return delegate.get().skipStore();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache setSkipStore(boolean skipStore) {
-        return delegate.setSkipStore(skipStore);
+        return delegate.get().setSkipStore(skipStore);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return delegate.isEmpty();
+        return delegate.get().isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(Object key) {
-        return delegate.containsKey(keyTransformer.transform(key));
+        return delegate.get().containsKey(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeyAsync(Object key) {
-        return delegate.containsKeyAsync(keyTransformer.transform(key));
+        return delegate.get().containsKeyAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKeys(Collection keys) {
-        return delegate.containsKey(transform(keys));
+        return delegate.get().containsKey(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection keys) {
-        return delegate.containsKeysAsync(transform(keys));
+        return delegate.get().containsKeysAsync(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object localPeek(
         Object key,
-        CachePeekMode[] peekModes,
-        @Nullable IgniteCacheExpiryPolicy plc
+        CachePeekMode[] peekModes
     ) throws IgniteCheckedException {
-        return delegate.localPeek(keyTransformer.transform(key), peekModes, plc);
+        return delegate.get().localPeek(keyTransformer.transform(key), peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public Iterable<Cache.Entry<Object, Object>> localEntries(
         CachePeekMode[] peekModes
     ) throws IgniteCheckedException {
-        return delegate.localEntries(peekModes);
+        return delegate.get().localEntries(peekModes);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object get(Object key) throws IgniteCheckedException {
-        return delegate.get(keyTransformer.transform(key));
+        return delegate.get().get(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public CacheEntry getEntry(Object key) throws IgniteCheckedException {
-        return delegate.getEntry(keyTransformer.transform(key));
+        return delegate.get().getEntry(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture getAsync(Object key) {
-        return delegate.getAsync(keyTransformer.transform(key));
+        return delegate.get().getAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<CacheEntry<Object, Object>> getEntryAsync(Object key) {
-        return delegate.getEntryAsync(keyTransformer.transform(key));
+        return delegate.get().getEntryAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public Map getAll(@Nullable Collection keys) throws IgniteCheckedException {
-        return delegate.getAll(transform(keys));
+        return delegate.get().getAll(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public Collection<CacheEntry<Object, Object>> getEntries(
         @Nullable Collection keys) throws IgniteCheckedException {
-        return delegate.getEntries(transform(keys));
+        return delegate.get().getEntries(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<Object, Object>> getAllAsync(@Nullable Collection keys) {
-        return delegate.getAllAsync(transform(keys));
+        return delegate.get().getAllAsync(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Collection<CacheEntry<Object,Object>>> getEntriesAsync(
         @Nullable Collection keys
     ) {
-        return delegate.getEntriesAsync(transform(keys));
+        return delegate.get().getEntriesAsync(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object getAndPut(Object key, Object val) throws IgniteCheckedException {
-        return delegate.getAndPut(keyTransformer.transform(key), val);
+        return delegate.get().getAndPut(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture getAndPutAsync(Object key, Object val) {
-        return delegate.getAndPutAsync(keyTransformer.transform(key), val);
+        return delegate.get().getAndPutAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean put(Object key, Object val) throws IgniteCheckedException {
-        return delegate.put(keyTransformer.transform(key), val);
+        return delegate.get().put(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putAsync(Object key, Object val) {
-        return delegate.putAsync(keyTransformer.transform(key), val);
+        return delegate.get().putAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object getAndPutIfAbsent(Object key, Object val) throws IgniteCheckedException {
-        return delegate.getAndPutIfAbsent(keyTransformer.transform(key), val);
+        return delegate.get().getAndPutIfAbsent(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture getAndPutIfAbsentAsync(Object key, Object val) {
-        return delegate.getAndPutIfAbsentAsync(keyTransformer.transform(key), val);
+        return delegate.get().getAndPutIfAbsentAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(Object key, Object val) throws IgniteCheckedException {
-        return delegate.putIfAbsent(keyTransformer.transform(key), val);
+        return delegate.get().putIfAbsent(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putIfAbsentAsync(Object key, Object val) {
-        return delegate.putIfAbsentAsync(keyTransformer.transform(key), val);
+        return delegate.get().putIfAbsentAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object getAndReplace(Object key, Object val) throws IgniteCheckedException {
-        return delegate.getAndReplace(keyTransformer.transform(key), val);
+        return delegate.get().getAndReplace(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture getAndReplaceAsync(Object key, Object val) {
-        return delegate.getAndReplaceAsync(keyTransformer.transform(key), val);
+        return delegate.get().getAndReplaceAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(Object key, Object val) throws IgniteCheckedException {
-        return delegate.replace(keyTransformer.transform(key), val);
+        return delegate.get().replace(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> replaceAsync(Object key, Object val) {
-        return delegate.replaceAsync(keyTransformer.transform(key), val);
+        return delegate.get().replaceAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(Object key, Object oldVal, Object newVal) throws IgniteCheckedException {
-        return delegate.replace(keyTransformer.transform(key), oldVal, newVal);
+        return delegate.get().replace(keyTransformer.transform(key), oldVal, newVal);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> replaceAsync(Object key, Object oldVal, Object newVal) {
-        return delegate.replaceAsync(keyTransformer.transform(key), oldVal, newVal);
+        return delegate.get().replaceAsync(keyTransformer.transform(key), oldVal, newVal);
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable Map m) throws IgniteCheckedException {
-        delegate.putAll(transform(m));
+        delegate.get().putAll(transform(m));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(@Nullable Map m) {
-        return delegate.putAllAsync(transform(m));
+        return delegate.get().putAllAsync(transform(m));
     }
 
     /** {@inheritDoc} */
     @Override public Set keySet() {
-        return delegate.keySet();
+        return delegate.get().keySet();
     }
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<Object, Object>> entrySet() {
-        return delegate.entrySet();
+        return delegate.get().entrySet();
     }
 
     /** {@inheritDoc} */
@@ -275,7 +280,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         TransactionConcurrency concurrency,
         TransactionIsolation isolation
     ) {
-        return delegate.txStart(concurrency, isolation);
+        return delegate.get().txStart(concurrency, isolation);
     }
 
     /** {@inheritDoc} */
@@ -283,7 +288,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         TransactionConcurrency concurrency,
         TransactionIsolation isolation
     ) {
-        return delegate.txStartEx(concurrency, isolation);
+        return delegate.get().txStartEx(concurrency, isolation);
     }
 
     /** {@inheritDoc} */
@@ -293,342 +298,337 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         long timeout,
         int txSize
     ) {
-        return delegate.txStart(concurrency, isolation, timeout, txSize);
+        return delegate.get().txStart(concurrency, isolation, timeout, txSize);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridNearTxLocal tx() {
-        return delegate.tx();
+        return delegate.get().tx();
     }
 
     /** {@inheritDoc} */
     @Override public boolean evict(Object key) {
-        return delegate.evict(keyTransformer.transform(key));
+        return delegate.get().evict(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public void evictAll(@Nullable Collection keys) {
-        delegate.evictAll(transform(keys));
+        delegate.get().evictAll(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
-        delegate.clearLocally(srv, near, readers);
+        delegate.get().clearLocally(srv, near, readers);
     }
 
     /** {@inheritDoc} */
     @Override public boolean clearLocally(Object key) {
-        return delegate.clearLocally(keyTransformer.transform(key));
+        return delegate.get().clearLocally(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public void clearLocallyAll(Set keys, boolean srv, boolean near, boolean readers) {
-        delegate.clearLocallyAll((Set<?>)transform(keys), srv, near, readers);
+        delegate.get().clearLocallyAll((Set<?>)transform(keys), srv, near, readers);
     }
 
     /** {@inheritDoc} */
     @Override public void clear(Object key) throws IgniteCheckedException {
-        delegate.clear(keyTransformer.transform(key));
+        delegate.get().clear(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set keys) throws IgniteCheckedException {
-        delegate.clearAll((Set<?>)transform(keys));
+        delegate.get().clearAll((Set<?>)transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public void clear() throws IgniteCheckedException {
-        delegate.clear();
+        delegate.get().clear();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync() {
-        return delegate.clearAsync();
+        return delegate.get().clearAsync();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAsync(Object key) {
-        return delegate.clearAsync(keyTransformer.transform(key));
+        return delegate.get().clearAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> clearAllAsync(Set keys) {
-        return delegate.clearAllAsync((Set<?>)transform(keys));
+        return delegate.get().clearAllAsync((Set<?>)transform(keys));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object getAndRemove(Object key) throws IgniteCheckedException {
-        return delegate.getAndRemove(keyTransformer.transform(key));
+        return delegate.get().getAndRemove(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture getAndRemoveAsync(Object key) {
-        return delegate.getAndRemoveAsync(keyTransformer.transform(key));
+        return delegate.get().getAndRemoveAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(Object key) throws IgniteCheckedException {
-        return delegate.remove(keyTransformer.transform(key));
+        return delegate.get().remove(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(Object key) {
-        return delegate.removeAsync(keyTransformer.transform(key));
+        return delegate.get().removeAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(Object key, Object val) throws IgniteCheckedException {
-        return delegate.remove(keyTransformer.transform(key), val);
+        return delegate.get().remove(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removeAsync(Object key, Object val) {
-        return delegate.removeAsync(keyTransformer.transform(key), val);
+        return delegate.get().removeAsync(keyTransformer.transform(key), val);
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable Collection keys) throws IgniteCheckedException {
-        delegate.removeAll(transform(keys));
+        delegate.get().removeAll(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection keys) {
-        return delegate.removeAllAsync(transform(keys));
+        return delegate.get().removeAllAsync(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
-        delegate.removeAll();
+        delegate.get().removeAll();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        return delegate.removeAllAsync();
+        return delegate.get().removeAllAsync();
     }
 
     /** {@inheritDoc} */
     @Override public boolean lock(Object key, long timeout) throws IgniteCheckedException {
-        return delegate.lock(keyTransformer.transform(key), timeout);
+        return delegate.get().lock(keyTransformer.transform(key), timeout);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(Object key, long timeout) {
-        return delegate.lockAsync(keyTransformer.transform(key), timeout);
+        return delegate.get().lockAsync(keyTransformer.transform(key), timeout);
     }
 
     /** {@inheritDoc} */
     @Override public boolean lockAll(@Nullable Collection keys, long timeout) throws IgniteCheckedException {
-        return delegate.lockAll(transform(keys), timeout);
+        return delegate.get().lockAll(transform(keys), timeout);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection keys, long timeout) {
-        return delegate.lockAllAsync(transform(keys), timeout);
+        return delegate.get().lockAllAsync(transform(keys), timeout);
     }
 
     /** {@inheritDoc} */
     @Override public void unlock(Object key) throws IgniteCheckedException {
-        delegate.unlock(keyTransformer.transform(key));
+        delegate.get().unlock(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public void unlockAll(@Nullable Collection keys) throws IgniteCheckedException {
-        delegate.unlockAll(transform(keys));
+        delegate.get().unlockAll(transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLocked(Object key) {
-        return delegate.isLocked(keyTransformer.transform(key));
+        return delegate.get().isLocked(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLockedByThread(Object key) {
-        return delegate.isLockedByThread(keyTransformer.transform(key));
+        return delegate.get().isLockedByThread(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return delegate.size();
+        return delegate.get().size();
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong() {
-        return delegate.sizeLong();
+        return delegate.get().sizeLong();
     }
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return delegate.localSize(peekModes);
+        return delegate.get().localSize(peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return delegate.localSizeLong(peekModes);
+        return delegate.get().localSizeLong(peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public long localSizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return delegate.localSizeLong(partition, peekModes);
+        return delegate.get().localSizeLong(partition, peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return delegate.size(peekModes);
+        return delegate.get().size(peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return delegate.sizeLong(peekModes);
+        return delegate.get().sizeLong(peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(int partition, CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return delegate.sizeLong(partition, peekModes);
+        return delegate.get().sizeLong(partition, peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
-        return delegate.sizeAsync(peekModes);
+        return delegate.get().sizeAsync(peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes) {
-        return delegate.sizeLongAsync(peekModes);
+        return delegate.get().sizeLongAsync(peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Long> sizeLongAsync(int partition, CachePeekMode[] peekModes) {
-        return delegate.sizeLongAsync(partition, peekModes);
+        return delegate.get().sizeLongAsync(partition, peekModes);
     }
 
     /** {@inheritDoc} */
     @Override public int nearSize() {
-        return delegate.nearSize();
+        return delegate.get().nearSize();
     }
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        return delegate.primarySize();
+        return delegate.get().primarySize();
     }
 
     /** {@inheritDoc} */
     @Override public long primarySizeLong() {
-        return delegate.primarySizeLong();
+        return delegate.get().primarySizeLong();
     }
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration configuration() {
-        return delegate.configuration();
+        return delegate.get().configuration();
     }
 
     /** {@inheritDoc} */
     @Override public Affinity affinity() {
-        return delegate.affinity();
+        return delegate.get().affinity();
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics clusterMetrics() {
-        return delegate.clusterMetrics();
+        return delegate.get().clusterMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics clusterMetrics(ClusterGroup grp) {
-        return delegate.clusterMetrics(grp);
+        return delegate.get().clusterMetrics(grp);
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        return delegate.localMetrics();
+        return delegate.get().localMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean clusterMxBean() {
-        return delegate.clusterMxBean();
+        return delegate.get().clusterMxBean();
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean localMxBean() {
-        return delegate.localMxBean();
+        return delegate.get().localMxBean();
     }
 
     /** {@inheritDoc} */
     @Override public long offHeapEntriesCount() {
-        return delegate.offHeapEntriesCount();
+        return delegate.get().offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
-        return delegate.offHeapAllocatedSize();
+        return delegate.get().offHeapAllocatedSize();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebalance() {
-        return delegate.rebalance();
+        return delegate.get().rebalance();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache forSubjectId(UUID subjId) {
-        return delegate.forSubjectId(subjId);
+        return delegate.get().forSubjectId(subjId);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object getForcePrimary(Object key) throws IgniteCheckedException {
-        return delegate.getForcePrimary(keyTransformer.transform(key));
+        return delegate.get().getForcePrimary(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture getForcePrimaryAsync(Object key) {
-        return delegate.getForcePrimaryAsync(keyTransformer.transform(key));
+        return delegate.get().getForcePrimaryAsync(keyTransformer.transform(key));
     }
 
     /** {@inheritDoc} */
     @Override public Map getAllOutTx(Set keys) throws IgniteCheckedException {
-        return delegate.getAllOutTx((Set<?>)transform(keys));
+        return delegate.get().getAllOutTx((Set<?>)transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<Object, Object>> getAllOutTxAsync(Set keys) {
-        return delegate.getAllOutTxAsync((Set<?>)transform(keys));
+        return delegate.get().getAllOutTxAsync((Set<?>)transform(keys));
     }
 
     /** {@inheritDoc} */
     @Override public boolean isIgfsDataCache() {
-        return delegate.isIgfsDataCache();
+        return delegate.get().isIgfsDataCache();
     }
 
     /** {@inheritDoc} */
     @Override public long igfsDataSpaceUsed() {
-        return delegate.igfsDataSpaceUsed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoDataCache() {
-        return delegate.isMongoDataCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMongoMetaCache() {
-        return delegate.isMongoMetaCache();
+        return delegate.get().igfsDataSpaceUsed();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
-        return delegate.expiry();
+        return delegate.get().expiry();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache withExpiryPolicy(ExpiryPolicy plc) {
-        return delegate.withExpiryPolicy(plc);
+        return delegate.get().withExpiryPolicy(plc);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache withNoRetries() {
-        return delegate.withNoRetries();
+        return delegate.get().withNoRetries();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx() {
+        return delegate.get().withAllowAtomicOpsInTx();
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheContext context() {
-        return delegate.context();
+        return delegate.get().context();
     }
 
     /** {@inheritDoc} */
@@ -636,7 +636,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         @Nullable IgniteBiPredicate p,
         @Nullable Object... args
     ) throws IgniteCheckedException {
-        delegate.localLoadCache(p, args);
+        delegate.get().localLoadCache(p, args);
     }
 
     /** {@inheritDoc} */
@@ -644,12 +644,27 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         @Nullable IgniteBiPredicate p,
         @Nullable Object... args
     ) {
-        return delegate.localLoadCacheAsync(p, args);
+        return delegate.get().localLoadCacheAsync(p, args);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
-        return delegate.lostPartitions();
+        return delegate.get().lostPartitions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void preloadPartition(int part) throws IgniteCheckedException {
+        delegate.get().preloadPartition(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
+        return delegate.get().preloadPartitionAsync(part);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean localPreloadPartition(int part) throws IgniteCheckedException {
+        return delegate.get().localPreloadPartition(part);
     }
 
     /** {@inheritDoc} */
@@ -659,27 +674,27 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         EntryProcessor entryProcessor,
         Object... args
     ) throws IgniteCheckedException {
-        return delegate.invoke(topVer, key, entryProcessor, args);
+        return delegate.get().invoke(topVer, key, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map> invokeAllAsync(Map map, Object... args) {
-        return delegate.invokeAllAsync(map, args);
+        return delegate.get().invokeAllAsync(map, args);
     }
 
     /** {@inheritDoc} */
     @Override public Map invokeAll(Map map, Object... args) throws IgniteCheckedException {
-        return delegate.invokeAll(map, args);
+        return delegate.get().invokeAll(map, args);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map> invokeAllAsync(Set keys, EntryProcessor entryProcessor, Object... args) {
-        return delegate.invokeAllAsync((Set<?>)transform(keys), entryProcessor, args);
+        return delegate.get().invokeAllAsync((Set<?>)transform(keys), entryProcessor, args);
     }
 
     /** {@inheritDoc} */
     @Override public Map invokeAll(Set keys, EntryProcessor entryProcessor, Object... args) throws IgniteCheckedException {
-        return delegate.invokeAll((Set<?>)transform(keys), entryProcessor, args);
+        return delegate.get().invokeAll((Set<?>)transform(keys), entryProcessor, args);
     }
 
     /** {@inheritDoc} */
@@ -688,7 +703,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         EntryProcessor entryProcessor,
         Object... args
     ) {
-        return delegate.invokeAsync(keyTransformer.transform(key), entryProcessor, args);
+        return delegate.get().invokeAsync(keyTransformer.transform(key), entryProcessor, args);
     }
 
     /** {@inheritDoc} */
@@ -697,7 +712,7 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         EntryProcessor entryProcessor,
         Object... args
     ) throws IgniteCheckedException {
-        return delegate.invoke(keyTransformer.transform(key), entryProcessor, args);
+        return delegate.get().invoke(keyTransformer.transform(key), entryProcessor, args);
     }
 
     /** {@inheritDoc} */
@@ -705,42 +720,42 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
         boolean keepBinary,
         @Nullable IgniteBiPredicate p
     ) throws IgniteCheckedException {
-        return delegate.scanIterator(keepBinary, p);
+        return delegate.get().scanIterator(keepBinary, p);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map drMap) throws IgniteCheckedException {
-        return delegate.removeAllConflictAsync(drMap);
+        return delegate.get().removeAllConflictAsync(drMap);
     }
 
     /** {@inheritDoc} */
     @Override public void removeAllConflict(Map drMap) throws IgniteCheckedException {
-        delegate.removeAllConflictAsync(drMap);
+        delegate.get().removeAllConflictAsync(drMap);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map drMap) throws IgniteCheckedException {
-        return delegate.putAllConflictAsync(drMap);
+        return delegate.get().putAllConflictAsync(drMap);
     }
 
     /** {@inheritDoc} */
     @Override public void putAllConflict(Map drMap) throws IgniteCheckedException {
-        delegate.putAllConflict(drMap);
+        delegate.get().putAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache keepBinary() {
-        return delegate.keepBinary();
+        return delegate.get().keepBinary();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache cache() {
-        return delegate.cache();
+        return delegate.get().cache();
     }
 
     /** {@inheritDoc} */
     @Override public Iterator iterator() {
-        return delegate.iterator();
+        return delegate.get().iterator();
     }
 
     /**

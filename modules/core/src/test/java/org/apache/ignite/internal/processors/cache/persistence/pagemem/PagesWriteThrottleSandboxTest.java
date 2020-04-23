@@ -1,19 +1,19 @@
 /*
-* Licensed to the Apache Software Foundation (ASF) under one or more
-* contributor license agreements.  See the NOTICE file distributed with
-* this work for additional information regarding copyright ownership.
-* The ASF licenses this file to You under the Apache License, Version 2.0
-* (the "License"); you may not use this file except in compliance with
-* the License.  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.io.Serializable;
@@ -21,41 +21,31 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
- * Test to visualize and debug {@link PagesWriteThrottle}.
- * Prints puts/gets rate, number of dirty pages, pages written in current checkpoint and pages in checkpoint buffer.
- * Not intended to be part of any test suite.
+ * Test to visualize and debug {@link PagesWriteThrottle}. Prints puts/gets rate, number of dirty pages, pages written
+ * in current checkpoint and pages in checkpoint buffer. Not intended to be part of any test suite.
  */
 public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache1";
 
@@ -63,19 +53,18 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(4000L * 1024 * 1024)
+                .setCheckpointPageBufferSize(1000L * 1000 * 1000)
+                .setName("dfltDataRegion")
+                .setMetricsEnabled(true)
+                .setPersistenceEnabled(true))
+            .setWalMode(WALMode.BACKGROUND)
+            .setCheckpointFrequency(20_000)
+            .setWriteThrottlingEnabled(true);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
-
-        dbCfg.setMemoryPolicies(new MemoryPolicyConfiguration()
-            .setMaxSize(4000L * 1024 * 1024)
-            .setName("dfltMemPlc")
-            .setMetricsEnabled(true));
-
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -85,13 +74,6 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         ccfg1.setAffinity(new RendezvousAffinityFunction(false, 64));
 
         cfg.setCacheConfiguration(ccfg1);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.BACKGROUND)
-                .setCheckpointingFrequency(20_000)
-                .setCheckpointingPageBufferSize(1000L * 1000 * 1000)
-                .setWriteThrottlingEnabled(true));
 
         cfg.setConsistentId(gridName);
 
@@ -120,6 +102,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testThrottle() throws Exception {
         startGrids(1).active(true);
 
@@ -130,7 +113,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
             final AtomicBoolean run = new AtomicBoolean(true);
 
-            final HitRateMetrics getRate = new HitRateMetrics(5000, 5);
+            final HitRateMetric getRate = new HitRateMetric("getRate", "", 5000, 5);
 
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -141,47 +124,47 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
                         ignite(0).cache(CACHE_NAME).get(key);
 
-                        getRate.onHit();
+                        getRate.increment();
                     }
 
                     return null;
                 }
             }, 2, "read-loader");
 
-            final HitRateMetrics putRate = new HitRateMetrics(1000, 5);
+            final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
                     while (run.get()) {
                         long dirtyPages = 0;
 
-                        for (MemoryMetrics m : ig.memoryMetrics())
-                            if (m.getName().equals("dfltMemPlc"))
+                        for (DataRegionMetrics m : ig.dataRegionMetrics())
+                            if (m.getName().equals("dfltDataRegion"))
                                 dirtyPages = m.getDirtyPages();
 
                         long cpBufPages = 0;
 
                         long cpWrittenPages;
 
-                        AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(((IgniteEx)ignite(0))
-                            .context().cache().context().database())).writtenPagesCounter();
+                        AtomicInteger cntr = ((GridCacheDatabaseSharedManager)((ignite(0))
+                            .context().cache().context().database())).getCheckpointer().currentProgress().writtenPagesCounter();
 
                         cpWrittenPages = cntr == null ? 0 : cntr.get();
 
                         try {
-                            cpBufPages = ((PageMemoryImpl)((IgniteEx)ignite(0)).context().cache().context().database()
-                                .memoryPolicy("dfltMemPlc").pageMemory()).checkpointBufferPagesCount();
+                            cpBufPages = ((ignite(0)).context().cache().context().database()
+                                .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
                         }
                         catch (IgniteCheckedException e) {
                             e.printStackTrace();
                         }
 
-                        System.out.println("@@@ putsPerSec=," + (putRate.getRate()) + ", getsPerSec=," + (getRate.getRate())  + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages +", cpBufPages=," + cpBufPages);
+                        System.out.println("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
 
                         try {
                             Thread.sleep(1000);
                         }
-                        catch (InterruptedException e) {
+                        catch (InterruptedException ignored) {
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -195,7 +178,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                     ds.addData(ThreadLocalRandom.current().nextInt(keyCnt), new TestValue(ThreadLocalRandom.current().nextInt(),
                         ThreadLocalRandom.current().nextInt()));
 
-                    putRate.onHit();
+                    putRate.increment();
                 }
             }
 
@@ -259,8 +242,8 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
+    private void deleteWorkFiles() throws Exception {
+        cleanPersistenceDir();
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
     }
 }

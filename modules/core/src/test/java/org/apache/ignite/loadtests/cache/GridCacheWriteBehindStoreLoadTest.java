@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -125,6 +126,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheSequentialKeys() throws Exception {
         rndKeys = false;
 
@@ -136,6 +138,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadCacheRandomKeys() throws Exception {
         rndKeys = true;
 
@@ -157,7 +160,6 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
 
                 Random rnd = new Random();

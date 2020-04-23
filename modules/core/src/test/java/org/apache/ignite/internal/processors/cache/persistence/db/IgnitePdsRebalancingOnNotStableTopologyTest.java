@@ -28,15 +28,15 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  * We start writing to unstable cluster.
@@ -49,14 +49,12 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     private static final long CHECKPOINT_FREQUENCY = 2_000_000;
 
     /** Cluster size. */
-    private static final int CLUSTER_SIZE = 5;
-
-    /** */
-    private static final String CACHE_NAME = "cache1";
+    private static final int CLUSTER_SIZE = SF.applyLB(5,3 );
 
     /**
      * @throws Exception When fails.
      */
+    @Test
     public void test() throws Exception {
         Ignite ex = startGrid(0);
 
@@ -81,7 +79,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
                     startLatch.countDown();
 
-                    IgniteCache<Object, Object> cache1 = ex1.cache(CACHE_NAME);
+                    IgniteCache<Object, Object> cache1 = ex1.cache(DEFAULT_CACHE_NAME);
 
                     int key = keyCnt.get();
 
@@ -113,14 +111,14 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
         for (int i = 2; i < CLUSTER_SIZE; i++) {
             startGrid(i);
 
-            U.sleep(5000);
+            U.sleep(SF.apply(3000));
         }
 
-        U.sleep(10000);
+        U.sleep(SF.apply(5000));
 
         IgniteProcessProxy.kill("db.RebalancingOnNotStableTopologyTest2");
 
-        Thread.sleep(5000);
+        Thread.sleep(SF.apply(3000));
 
         IgniteProcessProxy.kill("db.RebalancingOnNotStableTopologyTest1");
 
@@ -141,7 +139,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         checkTopology(CLUSTER_SIZE);
 
-        IgniteCache<Object, Object> cache1 = ex.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = ex.cache(DEFAULT_CACHE_NAME);
 
         assert keyCnt.get() > 0;
 
@@ -157,7 +155,7 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         cfg.setActiveOnStart(false);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -167,23 +165,13 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
-        );
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setCheckpointFrequency(CHECKPOINT_FREQUENCY);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(200 * 1024 * 1024);
-        memPlcCfg.setMaxSize(200 * 1024 * 1024);
-
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -202,14 +190,14 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

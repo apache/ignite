@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -34,12 +35,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -54,10 +52,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     private static final String NO_COMMIT = "no_commit";
 
     /** */
-    private final Collection<TestCommunicationSpi> commSpis = new ConcurrentLinkedDeque8<>();
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private final Collection<TestCommunicationSpi> commSpis = new ConcurrentLinkedDeque<>();
 
     /**
      *
@@ -84,12 +79,6 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         commSpis.add(commSpi);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
-
         return c;
     }
 
@@ -103,6 +92,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSynchronousCommit() throws Exception {
         try {
             Ignite firstIgnite = startGrid("1");
@@ -129,6 +119,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSynchronousCommitNodeLeave() throws Exception {
         try {
             Ignite ignite1 = startGrid("1");

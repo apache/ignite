@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
@@ -34,7 +35,9 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Before;
+import org.junit.Test;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Test for {@link Cache#loadAll(Set, boolean, CompletionListener)}.
@@ -44,11 +47,13 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     private volatile boolean writeThrough = true;
 
     /** */
-    private static ConcurrentHashMap8<Object, Object> storeMap;
+    private static ConcurrentHashMap<Object, Object> storeMap;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setWriteThrough(writeThrough);
@@ -60,11 +65,19 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
         return ccfg;
     }
 
+    /** */
+    @Before
+    public void beforeIgniteCacheLoadAllAbstractTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         super.beforeTest();
 
-        storeMap = new ConcurrentHashMap8<>();
+        storeMap = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -77,6 +90,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLoadAll() throws Exception {
         IgniteCache<Integer, String> cache0 = jcache(0);
 

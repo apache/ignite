@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -77,6 +78,7 @@ public class IgniteCacheP2pUnmarshallingTxErrorTest extends IgniteCacheP2pUnmars
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testResponseMessageOnUnmarshallingFailed() {
         //GridNearTxPrepareRequest unmarshalling failed test
         readCnt.set(2);

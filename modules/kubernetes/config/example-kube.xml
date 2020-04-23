@@ -26,7 +26,7 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">

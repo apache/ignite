@@ -107,6 +107,8 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public bool IsKeepBinary { get; private set; }
+            
+            public bool IsAllowAtomicOpsInTx { get; private set; }
 
             public ICache<int, int> WithSkipStore()
             {
@@ -119,6 +121,11 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
+            {
+                throw new NotImplementedException();
+            }
+
+            public ICache<int, int> WithAllowAtomicOpsInTx()
             {
                 throw new NotImplementedException();
             }
@@ -409,12 +416,42 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public void LocalPromote(IEnumerable<int> keys)
+            public long GetSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetSizeLong(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
             {
                 throw new NotImplementedException();
             }
 
             public IQueryCursor<ICacheEntry<int, int>> Query(QueryBase qry)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IFieldsQueryCursor Query(SqlFieldsQuery qry)
             {
                 throw new NotImplementedException();
             }
@@ -489,6 +526,16 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
+            public void EnableStatistics(bool enabled)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ClearStatistics()
+            {
+                throw new NotImplementedException();
+            }
+
             public Task Rebalance()
             {
                 throw new NotImplementedException();
@@ -505,6 +552,31 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICollection<int> GetLostPartitions()
+            {
+                throw new NotImplementedException();
+            }
+
+            public IQueryMetrics GetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ResetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void PreloadPartition(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task PreloadPartitionAsync(int partition)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool LocalPreloadPartition(int partition)
             {
                 throw new NotImplementedException();
             }

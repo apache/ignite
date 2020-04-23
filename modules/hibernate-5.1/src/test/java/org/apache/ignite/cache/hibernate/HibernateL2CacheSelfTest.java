@@ -34,9 +34,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hibernate.ObjectNotFoundException;
@@ -54,12 +51,12 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.GeneralDataRegion;
 import org.hibernate.cache.spi.TransactionalDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Environment;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.stat.NaturalIdCacheStatistics;
 import org.hibernate.stat.SecondLevelCacheStatistics;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -68,7 +65,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
-import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 import static org.hibernate.cfg.Environment.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.Environment.GENERATE_STATISTICS;
 import static org.hibernate.cfg.Environment.HBM2DDL_AUTO;
@@ -81,9 +77,6 @@ import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
  * Tests Hibernate L2 cache.
  */
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
@@ -420,12 +413,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         cfg.setCacheConfiguration(generalRegionConfiguration("org.hibernate.cache.spi.UpdateTimestampsCache"),
             generalRegionConfiguration("org.hibernate.cache.internal.StandardQueryCache"),
             transactionalRegionConfiguration(ENTITY_NAME),
@@ -501,11 +488,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         cleanup();
     }
@@ -520,6 +502,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCollectionCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testCollectionCache(accessType);
@@ -640,6 +623,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntityCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testEntityCache(accessType);
@@ -800,6 +784,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTwoEntitiesSameCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testTwoEntitiesSameCache(accessType);
@@ -1003,6 +988,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionedEntity() throws Exception {
         for (AccessType accessType : accessTypes())
             testVersionedEntity(accessType);
@@ -1113,6 +1099,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNaturalIdCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
@@ -1267,6 +1254,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntityCacheTransactionFails() throws Exception {
         for (AccessType accessType : accessTypes())
             testEntityCacheTransactionFails(accessType);
@@ -1441,6 +1429,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testQueryCache(accessType);
@@ -1605,6 +1594,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRegionClear() throws Exception {
         for (AccessType accessType : accessTypes())
             testRegionClear(accessType);

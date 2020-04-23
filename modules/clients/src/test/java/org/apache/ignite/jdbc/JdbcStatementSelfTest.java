@@ -28,10 +28,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -40,9 +38,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Statement test.
  */
 public class JdbcStatementSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** URL. */
     private static final String URL = "jdbc:ignite://127.0.0.1/";
 
@@ -70,12 +65,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
@@ -92,11 +81,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         cache.put("p1", new Person(1, "John", "White", 25));
         cache.put("p2", new Person(2, "Joe", "Black", 35));
         cache.put("p3", new Person(3, "Mike", "Green", 40));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -122,6 +106,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecuteQuery() throws Exception {
         ResultSet rs = stmt.executeQuery(SQL);
 
@@ -154,6 +139,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecute() throws Exception {
         assert stmt.execute(SQL);
 
@@ -190,6 +176,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxRows() throws Exception {
         stmt.setMaxRows(1);
 
@@ -253,7 +240,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

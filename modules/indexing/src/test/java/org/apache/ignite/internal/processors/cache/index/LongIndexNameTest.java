@@ -17,34 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
  */
-public class LongIndexNameTest extends GridCommonAbstractTest {
+public class LongIndexNameTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setPersistentStoreConfiguration(new PersistentStoreConfiguration())
+            .setDataStorageConfiguration(new DataStorageConfiguration())
             .setCacheConfiguration(new <String, Person>CacheConfiguration("cache")
                 .setQueryEntities(getIndexCfg())
                 .setAffinity(new RendezvousAffinityFunction(false, 16)));
@@ -54,19 +50,20 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongIndexNames() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -98,8 +95,6 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
 
             assertEquals(cursor1.getAll().size(), cursor1Idx.getAll().size());
             assertEquals(cursor2.getAll().size(), cursor2Idx.getAll().size());
-
-
         }
         finally {
             stopAllGrids();
@@ -148,13 +143,6 @@ public class LongIndexNameTest extends GridCommonAbstractTest {
         entities.add(qe);
 
         return entities;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

@@ -31,4 +31,4 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 public abstract class CIX1<T> extends IgniteInClosureX<T> {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

@@ -16,11 +16,12 @@
  */
 
 export default class UserNotificationsController {
-    static $inject = ['deferred', 'message'];
+    static $inject = ['deferred', 'message', 'isShown'];
 
-    constructor(deferred, message) {
+    constructor(deferred, message, isShown) {
         this.deferred = deferred;
         this.message = message;
+        this.isShown = isShown;
     }
 
     onLoad(editor) {
@@ -44,12 +45,12 @@ export default class UserNotificationsController {
         renderer.setOption('fontFamily', 'monospace');
         renderer.setOption('fontSize', '14px');
         renderer.setOption('minLines', '3');
-        renderer.setOption('maxLines', '5');
+        renderer.setOption('maxLines', '3');
 
         editor.focus();
     }
 
     submit() {
-        this.deferred.resolve(this.message);
+        this.deferred.resolve({message: this.message, isShown: this.isShown });
     }
 }

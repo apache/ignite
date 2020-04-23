@@ -89,7 +89,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            return _cache.QueryFields(qry, selector);
+            return _cache.Query(qry, selector);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Linq.Impl
             var qryText = GetQueryData(queryModel).QueryText;
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
+            return args => _cache.Query(GetFieldsQuery(qryText, args), selector);
         }
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Linq.Impl
             // Simple case: lambda with no parameters. Only embedded parameters are used.
             if (!queryLambda.Parameters.Any())
             {
-                return argsUnused => _cache.QueryFields(GetFieldsQuery(qryText, qryParams), selector);
+                return argsUnused => _cache.Query(GetFieldsQuery(qryText, qryParams), selector);
             }
 
             // These are in order of usage in query
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Linq.Impl
             if (qryOrderArgs.Length == qryParams.Length
                 && qryOrderArgs.SequenceEqual(userOrderArgs))
             {
-                return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
+                return args => _cache.Query(GetFieldsQuery(qryText, args), selector);
             }
 
             // General case: embedded args and lambda args are mixed; same args can be used multiple times.
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Linq.Impl
                 return -1;
             }).ToArray();
 
-            return args => _cache.QueryFields(
+            return args => _cache.Query(
                 GetFieldsQuery(qryText, MapQueryArgs(args, qryParams, mapping)), selector);
         }
 
@@ -204,7 +204,9 @@ namespace Apache.Ignite.Linq.Impl
                 PageSize = _options.PageSize,
                 EnforceJoinOrder = _options.EnforceJoinOrder,
                 Timeout = _options.Timeout,
+#pragma warning disable 618
                 ReplicatedOnly = _options.ReplicatedOnly,
+#pragma warning restore 618
                 Colocated = _options.Colocated,
                 Local = _options.Local,
                 Arguments = args,
@@ -212,7 +214,9 @@ namespace Apache.Ignite.Linq.Impl
             };
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Generates <see cref="QueryData"/> from specified <see cref="QueryModel"/>.
+        /// </summary>
         public static QueryData GetQueryData(QueryModel queryModel)
         {
             Debug.Assert(queryModel != null);

@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -49,9 +52,11 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
      * @param startReqs Caches start requests.
      * @param cachesToClose Cache to close.
      */
-    public ClientCacheChangeDummyDiscoveryMessage(UUID reqId,
+    public ClientCacheChangeDummyDiscoveryMessage(
+        UUID reqId,
         @Nullable Map<String, DynamicCacheChangeRequest> startReqs,
-        @Nullable Set<String> cachesToClose) {
+        @Nullable Set<String> cachesToClose
+    ) {
         assert reqId != null;
         assert startReqs != null ^ cachesToClose != null;
 
@@ -98,6 +103,12 @@ public class ClientCacheChangeDummyDiscoveryMessage implements DiscoveryCustomMe
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+        AffinityTopologyVersion topVer, DiscoCache discoCache) {
         throw new UnsupportedOperationException();
     }
 

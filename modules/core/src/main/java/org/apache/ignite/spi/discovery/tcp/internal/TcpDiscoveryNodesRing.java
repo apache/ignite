@@ -17,18 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.PN;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +28,17 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.PN;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Convenient way to represent topology for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
@@ -61,12 +60,14 @@ public class TcpDiscoveryNodesRing {
     /** Client nodes filter. */
     private static final PN CLIENT_NODES = new PN() {
         @Override public boolean apply(ClusterNode node) {
-            return node.isClient();
+            assert node instanceof TcpDiscoveryNode : node;
+
+            return ((TcpDiscoveryNode) node).clientRouterNodeId() != null;
         }
     };
 
     /** Local node. */
-    private TcpDiscoveryNode locNode;
+    private volatile TcpDiscoveryNode locNode;
 
     /** All nodes in topology. */
     @GridToStringInclude
@@ -161,7 +162,7 @@ public class TcpDiscoveryNodesRing {
      * @return Collection of visible remote nodes.
      */
     public Collection<TcpDiscoveryNode> visibleRemoteNodes() {
-        return nodes(VISIBLE_NODES, F.remoteNodes(locNode.id()));
+        return nodes(F.remoteNodes(locNode.id()), VISIBLE_NODES);
     }
 
     /**
@@ -200,7 +201,7 @@ public class TcpDiscoveryNodesRing {
                 return false;
 
             for (TcpDiscoveryNode node : nodes)
-                if (!node.isClient() && !node.id().equals(locNode.id()))
+                if (node.clientRouterNodeId() == null && !node.id().equals(locNode.id()))
                     return true;
 
             return false;
@@ -236,7 +237,7 @@ public class TcpDiscoveryNodesRing {
 
             nodes = new TreeSet<>(nodes);
 
-            node.lastUpdateTime(U.currentTimeMillis());
+            node.lastUpdateTimeNanos(System.nanoTime());
 
             nodes.add(node);
 
@@ -309,7 +310,7 @@ public class TcpDiscoveryNodesRing {
                     firstAdd = false;
                 }
 
-                node.lastUpdateTime(U.currentTimeMillis());
+                node.lastUpdateTimeNanos(System.nanoTime());
 
                 this.nodes.add(node);
             }
@@ -506,6 +507,73 @@ public class TcpDiscoveryNodesRing {
     }
 
     /**
+     * Finds previous node in the topology filtering excluded nodes from search.
+     * <p>
+     * This may be used when detecting and handling nodes failure.
+     *
+     * @param excluded Nodes to exclude from the search (optional). If provided,
+     * cannot contain local node.
+     * @return Previous node or {@code null} if all nodes were filtered out or
+     * topology contains less than two nodes.
+     */
+    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+        rwLock.readLock().lock();
+
+        try {
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
+
+            if (filtered.size() < 2)
+                return null;
+
+            TcpDiscoveryNode previous = null;
+
+            // Get last node that is previous in a ring
+            for (TcpDiscoveryNode node : filtered) {
+                if (locNode.equals(node) && previous != null)
+                    break;
+
+                previous = node;
+            }
+
+            return previous;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param ringNode Node for which to find a predecessor.
+     * @return Previous node of the given node in the ring.
+     * @throws IllegalArgumentException If the given node was not found in the ring.
+     */
+    public TcpDiscoveryNode previousNodeOf(TcpDiscoveryNode ringNode) {
+        rwLock.readLock().lock();
+
+        try {
+            TcpDiscoveryNode prev = null;
+
+            for (TcpDiscoveryNode node : nodes) {
+                if (node.equals(ringNode)) {
+                    if (prev == null)
+                        // ringNode is the first node, return last node in the ring.
+                        return nodes.last();
+
+                    return prev;
+                }
+
+                prev = node;
+            }
+
+            throw new IllegalArgumentException("Failed to find previous node (ringNode is not in the ring) " +
+                "[ring=" + this + ", ringNode=" + ringNode + ']');
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
+
+    /**
      * Gets current topology version.
      *
      * @return Current topology version.
@@ -607,7 +675,7 @@ public class TcpDiscoveryNodesRing {
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
             @Override public boolean apply(TcpDiscoveryNode node) {
-                return !node.isClient() && (excludedEmpty || !excluded.contains(node));
+                return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node));
             }
         });
     }

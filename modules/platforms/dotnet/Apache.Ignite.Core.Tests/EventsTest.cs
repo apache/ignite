@@ -34,10 +34,13 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
+
+    using ImplCompute = Core.Impl.Compute.Compute;
 
     /// <summary>
     /// <see cref="IEvents"/> tests.
@@ -385,14 +388,14 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IEnumerable<Func<IEventFilter<IEvent>, int[], Task<IEvent>>> GetWaitTasks(IEvents events)
         {
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types));
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types.ToList()));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(types));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(types.ToList()));
 
             yield return (filter, types) => events.WaitForLocalAsync(types);
             yield return (filter, types) => events.WaitForLocalAsync(types.ToList());
 
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(filter, types));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(filter, types.ToList()));
 
             yield return (filter, types) => events.WaitForLocalAsync(filter, types);
             yield return (filter, types) => events.WaitForLocalAsync(filter, types.ToList());
@@ -508,7 +511,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestSerialization()
         {
             var grid = (Ignite) _grid1;
-            var comp = (Impl.Compute.Compute) grid.GetCluster().ForLocal().GetCompute();
+            var comp = (ImplCompute) grid.GetCluster().ForLocal().GetCompute();
             var locNode = grid.GetCluster().GetLocalNode();
 
             var expectedGuid = Guid.Parse("00000000-0000-0001-0000-000000000002");
@@ -943,7 +946,9 @@ namespace Apache.Ignite.Core.Tests
             return _invoke(evt);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Invalid Invoke method for tests.
+        /// </summary>
         // ReSharper disable once UnusedMember.Global
         public bool Invoke(T evt)
         {

@@ -29,24 +29,24 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /** Page id to mark. */
     private final long pageIdToMark;
 
-    /** Next snapshot id. */
-    private final long nextSnapshotId;
+    /** Next snapshot tag. */
+    private final long nextSnapshotTag;
 
-    /** Last successful snapshot id. */
-    private final long lastSuccessfulSnapshotId;
+    /** Last successful snapshot tag. */
+    private final long lastSuccessfulSnapshotTag;
 
     /**
      * @param grpId Cache group id.
      * @param pageId Page id.
-     * @param nextSnapshotTag next snapshot tag
-     * @param lastSuccessfulSnapshotId last successful snapshot id
+     * @param nextSnapshotTag Next snapshot tag.
+     * @param lastSuccessfulSnapshotTag Last successful snapshot tag.
      */
-    public TrackingPageDeltaRecord(int grpId, long pageId, long pageIdToMark, long nextSnapshotTag, long lastSuccessfulSnapshotId) {
+    public TrackingPageDeltaRecord(int grpId, long pageId, long pageIdToMark, long nextSnapshotTag, long lastSuccessfulSnapshotTag) {
         super(grpId, pageId);
 
         this.pageIdToMark = pageIdToMark;
-        this.nextSnapshotId = nextSnapshotTag;
-        this.lastSuccessfulSnapshotId = lastSuccessfulSnapshotId;
+        this.nextSnapshotTag = nextSnapshotTag;
+        this.lastSuccessfulSnapshotTag = lastSuccessfulSnapshotTag;
     }
 
     /**
@@ -59,24 +59,24 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /**
      *
      */
-    public long nextSnapshotId() {
-        return nextSnapshotId;
+    public long nextSnapshotTag() {
+        return nextSnapshotTag;
     }
 
     /**
      *
      */
-    public long lastSuccessfulSnapshotId() {
-        return lastSuccessfulSnapshotId;
+    public long lastSuccessfulSnapshotTag() {
+        return lastSuccessfulSnapshotTag;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         TrackingPageIO.VERSIONS.forPage(pageAddr).markChanged(pageMem.pageBuffer(pageAddr),
             pageIdToMark,
-            nextSnapshotId,
-            lastSuccessfulSnapshotId,
-            pageMem.pageSize());
+            nextSnapshotTag,
+            lastSuccessfulSnapshotTag,
+            pageMem.realPageSize(groupId()));
     }
 
     /** {@inheritDoc} */

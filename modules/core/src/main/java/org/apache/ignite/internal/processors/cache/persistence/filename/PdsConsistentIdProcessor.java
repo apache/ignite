@@ -31,12 +31,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -157,8 +158,11 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         //here deprecated method is used to get compatible version of consistentId
         final Serializable consistentId = ctx.discovery().consistentId();
 
-        if (!cfg.isPersistentStoreEnabled())
+        if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
+
+        if (ctx.clientNode())
+            return new PdsFolderSettings(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))
             return compatibleResolve(pstStoreBasePath, consistentId);
@@ -207,17 +211,11 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         }
 
         // was not able to find free slot, allocating new
-        final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath);
-
-        try {
+        try (final GridCacheDatabaseSharedManager.FileLockHolder rootDirLock = lockRootDirectory(pstStoreBasePath)) {
             final List<FolderCandidate> sortedCandidates = getNodeIndexSortedCandidates(pstStoreBasePath);
             final int nodeIdx = sortedCandidates.isEmpty() ? 0 : (sortedCandidates.get(sortedCandidates.size() - 1).nodeIndex() + 1);
 
             return generateAndLockNewDbStorage(pstStoreBasePath, nodeIdx);
-        }
-        finally {
-            rootDirLock.release();
-            rootDirLock.close();
         }
     }
 
@@ -442,12 +440,12 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @throws IgniteCheckedException if I/O failed.
      */
     @Nullable private File resolvePersistentStoreBasePath() throws IgniteCheckedException {
-        final PersistentStoreConfiguration pstCfg = cfg.getPersistentStoreConfiguration();
+        final DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        if (pstCfg == null)
+        if (dsCfg == null)
             return null;
 
-        final String pstPath = pstCfg.getPersistentStorePath();
+        final String pstPath = dsCfg.getStoragePath();
 
         return U.resolveWorkDirectory(
             cfg.getWorkDirectory(),
@@ -501,11 +499,10 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (settings != null) {
             final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = settings.getLockedFileLockHolder();
 
-            if (fileLockHolder != null) {
-                fileLockHolder.release();
+            if (fileLockHolder != null)
                 fileLockHolder.close();
-            }
         }
+
         super.stop(cancel);
     }
 

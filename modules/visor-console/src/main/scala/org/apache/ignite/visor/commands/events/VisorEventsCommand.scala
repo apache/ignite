@@ -127,9 +127,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
      * Starts command in interactive mode.
      */
     def events() {
-        if (!isConnected)
-            adviseToConnect()
-        else
+        if (checkConnected()) {
             askForNode("Select node from:") match {
                 case Some(id) => ask("Sort [c]ronologically or by [e]vent type (c/e) [c]: ", "c") match {
                     case "c" | "C" => nl(); events("-s=t -id=" + id)
@@ -138,6 +136,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
                 }
                 case None => ()
             }
+        }
     }
 
     /**
@@ -208,7 +207,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
      * @param args Command parameters.
      */
     def events(args: String) {
-        if (isConnected) {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             parseNode(argLst) match {
@@ -328,8 +327,6 @@ class VisorEventsCommand extends VisorConsoleCommand {
                     all.render()
             }
         }
-        else
-            adviseToConnect()
     }
 
     /**

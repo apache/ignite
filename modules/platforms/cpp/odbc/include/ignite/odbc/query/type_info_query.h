@@ -96,6 +96,13 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const;
 
+                /**
+                 * Move to the next result set.
+                 *
+                 * @return Operation result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(TypeInfoQuery);
 

@@ -1,0 +1,67 @@
+
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+modal-preview-project {
+    display: block;
+}
+
+.modal-preview-project-structure {
+    @import "public/stylesheets/variables.scss";
+
+    .modal-dialog {
+        width: 900px;
+    }
+    .modal-content .modal-body {
+        display: flex;
+        flex-direction: row;
+        height: 360px;
+        padding-top: 10px;
+        padding-bottom: 0;
+    }
+    .pane-left {
+        width: 330px;
+        overflow: auto;
+        border-right: 1px solid #dddddd;
+    }
+    .pane-right {
+        width: 560px;
+    }
+    treecontrol {
+        white-space: nowrap;
+        font-family: inherit;
+        font-size: 12px;
+        color: #393939;
+
+        ul {
+            overflow: visible;
+        }
+        li {
+            padding-left: 1em;
+        }
+        .fa {
+            margin-right: 5px;
+        }
+        .tree-selected {
+            color: $ignite-brand-success;
+        }
+    }
+    .file-preview {
+        margin: 0;
+        height: 100%;
+    }
+}

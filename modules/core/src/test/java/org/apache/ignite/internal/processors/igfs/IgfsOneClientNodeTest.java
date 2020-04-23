@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,8 +48,6 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
 
-        cfg.setClientMode(true);
-
         cfg.setDiscoverySpi(new TcpDiscoverySpi()
             .setForceServerMode(true)
             .setIpFinder(new TcpDiscoveryVmIpFinder(true)));
@@ -64,7 +63,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -83,7 +82,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGrids(1);
+        startClientGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -94,6 +93,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartIgfs() throws Exception {
         final IgfsImpl igfs = (IgfsImpl) grid(0).fileSystem("igfs");
 

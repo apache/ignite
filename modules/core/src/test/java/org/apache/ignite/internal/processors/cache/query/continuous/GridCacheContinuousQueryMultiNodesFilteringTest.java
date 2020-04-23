@@ -40,6 +40,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cluster.ClusterNode;
@@ -49,12 +50,9 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -65,30 +63,23 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings("unchecked")
 public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int SERVER_GRIDS_COUNT = 6;
 
     /** */
     public static final int KEYS = 2_000;
 
     /** Cache entry operations' counts. */
-    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap8<>();
-
-    /** Client. */
-    private static boolean client = false;
+    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        client = false;
-
         super.afterTest();
     }
 
     /** */
+    @Test
     public void testFiltersAndListeners() throws Exception {
         for (int i = 1; i <= SERVER_GRIDS_COUNT; i++)
             startGrid(i, false);
@@ -146,6 +137,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWithNodeFilter() throws Exception {
         List<QueryCursor> qryCursors = new ArrayList<>();
 
@@ -203,9 +195,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
             log.info("CQ started on node: " + ignite.cluster().localNode().id());
         }
 
-        client = true;
-
-        startGrid(nodesCnt);
+        startClientGrid(nodesCnt);
 
         awaitPartitionMapExchange();
 
@@ -250,8 +240,6 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         String igniteInstanceName = getTestIgniteInstanceName(idx);
 
         IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName)).setClientMode(isClientMode);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setUserAttributes(Collections.singletonMap("idx", idx));
 
@@ -302,15 +290,6 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         return node;
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /**
      * @param filter Node filter.
      * @return Cache configuration.
@@ -319,13 +298,20 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
         return new CacheConfiguration("test-cache-cq")
             .setBackups(1)
             .setNodeFilter(filter)
-            .setAtomicityMode(ATOMIC)
+            .setAtomicityMode(atomicityMode())
             .setWriteSynchronizationMode(FULL_SYNC)
             .setCacheMode(PARTITIONED);
     }
 
+    /**
+     * @return Atomicity mode.
+     */
+    protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
     /** */
-    private final static class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
+    private static final class ListenerConfiguration extends MutableCacheEntryListenerConfiguration {
         /** Operation. */
         enum Op {
             /** Insert. */
@@ -377,7 +363,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
+    private static final class EntryEventFilterFactory implements Factory<CacheEntryEventFilter> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -406,7 +392,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class NodeFilter implements IgnitePredicate<ClusterNode> {
+    private static final class NodeFilter implements IgnitePredicate<ClusterNode> {
         /** */
         private final int idx;
 
@@ -422,7 +408,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** */
-    private final static class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
+    private static final class NodeFilterByRegexp implements IgnitePredicate<ClusterNode> {
         /** */
         private final Pattern pattern;
 

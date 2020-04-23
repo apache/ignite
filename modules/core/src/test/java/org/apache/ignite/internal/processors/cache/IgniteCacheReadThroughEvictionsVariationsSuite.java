@@ -17,24 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.TestSuite;
+import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.runner.RunWith;
 
-/**
- *
- */
-public class IgniteCacheReadThroughEvictionsVariationsSuite extends TestSuite {
-    /**
-     * @return Cache API test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        return new ConfigVariationsTestSuiteBuilder(
-            "Cache Read Through Variations Test",
-            IgniteCacheReadThroughEvictionSelfTest.class)
+/** */
+@RunWith(DynamicSuite.class)
+public class IgniteCacheReadThroughEvictionsVariationsSuite {
+    /** */
+    public static List<Class<?>> suite() {
+        return new ConfigVariationsTestSuiteBuilder(IgniteCacheReadThroughEvictionSelfTest.class)
             .withBasicCacheParams()
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 /** {@inheritDoc} */
@@ -52,7 +48,6 @@ public class IgniteCacheReadThroughEvictionsVariationsSuite extends TestSuite {
             .skipWaitPartitionMapExchange()
             .gridsCount(4).backups(1)
             .testedNodesCount(2).withClients()
-            .build();
+            .classes();
     }
-
 }

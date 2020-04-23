@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -35,13 +35,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  * Check that near cache is updated when entry loaded from store.
@@ -60,19 +61,12 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     private IgniteCache<String, String> cache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (gridName.contains("client"))
-            cfg.setClientMode(true);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+
         srv = startGrid("server");
-        client = startGrid("client");
+        client = startClientGrid("client");
     }
 
     /** {@inheritDoc} */
@@ -83,6 +77,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testAtomicUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
 
@@ -92,6 +87,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testTransactionAtomicUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration(), new NearCacheConfiguration<String, String>());
 
@@ -101,6 +97,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPessimisticRepeatableReadUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
@@ -111,6 +108,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testPessimisticReadCommittedUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
@@ -121,6 +119,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testOptimisticSerializableUpdateNear() throws Exception {
         cache = client.createCache(cacheConfiguration().setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL),
             new NearCacheConfiguration<String, String>());
@@ -150,8 +149,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
 
         boolean tx = txConc != null && txIsolation != null;
 
-        final IgniteCache<String, String> clientCache = this.cache;
-        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME);
+        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> srvCache = srv.<String, String>cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         if (tx) {
             doInTransaction(client, txConc, txIsolation, new Callable<Object>() {
@@ -220,9 +219,7 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
                 }
             });
 
-
 //            IgniteInternalFuture<Object> fut2 = null;
-
             // TODO Sometimes Near cache becomes inconsistent
 //            if (!tx) {
 //                // TODO: IGNITE-3498
@@ -270,16 +267,16 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If fail.
      */
     private void checkNearBatch(TransactionConcurrency txConc, TransactionIsolation txIsolation) throws Exception {
-        final Map<String, String> data1 = new HashMap<>();
-        final Map<String, String> data2 = new HashMap<>();
+        final Map<String, String> data1 = new TreeMap<>();
+        final Map<String, String> data2 = new TreeMap<>();
 
         for (int i = 0; i < 10; i++) {
             data1.put(String.valueOf(i), String.valueOf(i));
             data2.put(String.valueOf(i), "other");
         }
 
-        final IgniteCache<String, String> clientCache = this.cache;
-        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME);
+        final IgniteCache<String, String> clientCache = this.cache.withAllowAtomicOpsInTx();
+        final IgniteCache<String, String> srvCache = srv.cache(CACHE_NAME).withAllowAtomicOpsInTx();
 
         boolean tx = txConc != null && txIsolation != null;
 
@@ -329,8 +326,8 @@ public class GridNearCacheStoreUpdateTest extends GridCommonAbstractTest {
      */
     private void checkNearBatchConcurrent(TransactionConcurrency txConc, TransactionIsolation txIsolation)
         throws Exception {
-        final Map<String, String> data1 = new HashMap<>();
-        final Map<String, String> data2 = new HashMap<>();
+        final Map<String, String> data1 = new TreeMap<>();
+        final Map<String, String> data2 = new TreeMap<>();
 
         for (int j = 0; j < 10; j++) {
             data1.clear();

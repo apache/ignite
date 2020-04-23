@@ -23,25 +23,21 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.util.IgniteUtils.field;
 
 /**
@@ -213,7 +209,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -222,7 +218,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -294,21 +290,22 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             }
         };
 
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         return super.getConfiguration(name)
-            .setDiscoverySpi(
-                new TcpDiscoverySpi()
-                    .setIpFinder(ipFinder)
-            );
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setMaxSize(100 * 1024 * 1024)));
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteConfiguration persistentCfg(IgniteConfiguration cfg) throws Exception {
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(100 * 1024 * 1024)
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -391,8 +388,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             for (IgniteConfiguration cfg : cfgs) {
                 strPlanBuilder.append("node: ")
                     .append(cfg.getIgniteInstanceName())
-                    .append(" activeOnStart - ")
-                    .append(cfg.isActiveOnStart())
+                    .append(" stateOnStart - ")
+                    .append(cfg.getClusterStateOnStart())
                     .append("\n");
 
                 CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
@@ -418,8 +415,8 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
             strPlanBuilder.append("Join node:\n")
                 .append(cfg.getIgniteInstanceName())
                 .append(cfg.isClientMode() != null && cfg.isClientMode() ? " (client)" : "")
-                .append(" activeOnStart - ")
-                .append(cfg.isActiveOnStart())
+                .append(" stateOnStart - ")
+                .append(cfg.getClusterStateOnStart())
                 .append("\n");
 
             CacheConfiguration[] ccfgs = cfg.getCacheConfiguration();
@@ -604,6 +601,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                 nodes.add(nodeCfg.getIgniteInstanceName());
 
+                if (state)
+                    awaitPartitionMapExchange();
+
                 System.out.println(">>> Check after new node join in cluster");
 
                 afterNodeJoin.run();
@@ -777,7 +777,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                     Map<String, GridCacheAdapter> caches = caches(ig);
 
-                    Assert.assertEquals(0, caches.size());
+                    for (GridCacheAdapter cacheAdapter : caches.values())
+                        Assert.assertTrue("Cache should be in recovery mode: " + cacheAdapter.context(),
+                            cacheAdapter.context().isRecoveryMode());
                 }
             });
         }

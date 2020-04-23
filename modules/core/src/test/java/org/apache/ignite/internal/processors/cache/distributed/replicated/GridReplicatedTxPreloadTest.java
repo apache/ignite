@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxPreloadAbstractTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -38,7 +40,9 @@ public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1755")
+    @Test
     @Override public void testLocalTxPreloadingOptimistic() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1755");
+        // No-op
     }
 }

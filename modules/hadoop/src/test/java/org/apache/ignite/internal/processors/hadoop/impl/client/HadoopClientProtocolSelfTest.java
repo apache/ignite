@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Hadoop client protocol tests in external process mode.
@@ -108,13 +109,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         setupLockFile.createNewFile();
         mapLockFile.createNewFile();
@@ -143,7 +137,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private void tstNextJobId() throws Exception {
         IgniteHadoopClientProtocolProvider provider = provider();
 
@@ -167,6 +160,7 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testJobCounters() throws Exception {
         IgniteFileSystem igfs = grid(0).fileSystem(HadoopAbstractSelfTest.igfsName);
 
@@ -430,7 +424,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
      * @param path Path.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ConstantConditions")
     private static void dumpIgfs(IgniteFileSystem igfs, IgfsPath path) throws Exception {
         IgfsFile file = igfs.info(path);
 

@@ -21,49 +21,28 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 2 * 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobWithRestart() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -88,13 +67,13 @@ public class IgniteDataStructureWithJobTest extends GridCommonAbstractTest {
 
             while (System.currentTimeMillis() < endTime) {
                 try {
-                    ignite.compute().broadcast(new IgniteClosure<IgniteSet, Integer>() {
-                        @Override public Integer apply(IgniteSet set) {
-                            assertNotNull(set);
+                    ignite.compute().broadcast(new IgniteClosure<IgniteQueue, Integer>() {
+                        @Override public Integer apply(IgniteQueue queue) {
+                            assertNotNull(queue);
 
                             return 1;
                         }
-                    }, ignite.set("set", new CollectionConfiguration()));
+                    }, ignite.queue("queue", 0, new CollectionConfiguration()));
                 }
                 catch (IgniteException ignore) {
                     // No-op.

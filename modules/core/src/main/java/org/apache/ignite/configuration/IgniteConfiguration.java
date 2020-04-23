@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
+import java.util.zip.Deflater;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
@@ -38,14 +39,19 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -67,6 +73,7 @@ import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.failover.FailoverSpi;
@@ -74,9 +81,13 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
 
 /**
@@ -117,6 +128,9 @@ public class IgniteConfiguration {
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
 
+    /** Default compression level for network messages (value is Deflater.BEST_SPEED. */
+    public static final int DFLT_NETWORK_COMPRESSION = Deflater.BEST_SPEED;
+
     /** Default interval between message send retries. */
     public static final long DFLT_SEND_RETRY_DELAY = 1000;
 
@@ -142,19 +156,34 @@ public class IgniteConfiguration {
     public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT);
+    public static final int DFLT_PUBLIC_THREAD_CNT = max(8, AVAILABLE_PROC_CNT);
 
     /** Default size of data streamer thread pool. */
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default limit of threads used for rebalance. */
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 1;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 4;
+
+    /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
+    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
+
+    /** Default rebalance batches prefetch count (value is {@code 3}). */
+    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 3;
+
+    /** Time to wait between rebalance messages in milliseconds to avoid overloading CPU (value is {@code 0}). */
+    public static final long DFLT_REBALANCE_THROTTLE = 0;
+
+    /** Default rebalance batch size in bytes (value is {@code 512Kb}). */
+    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
 
     /** Default size of system thread pool. */
     public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default size of query thread pool. */
     public static final int DFLT_QUERY_THREAD_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Default size of index create/rebuild thread pool. */
+    public static final int DFLT_BUILD_IDX_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
 
     /** Default Ignite thread keep alive time. */
     public static final long DFLT_THREAD_KEEP_ALIVE_TIME = 60_000L;
@@ -196,8 +225,16 @@ public class IgniteConfiguration {
     @Deprecated
     public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
+    /** Default value for cluster state on start. */
+    public static final ClusterState DFLT_STATE_ON_START = ClusterState.ACTIVE;
+
     /** Default value for active on start flag. */
+    @Deprecated
     public static final boolean DFLT_ACTIVE_ON_START = true;
+
+    /** Default value for auto-activation flag. */
+    @Deprecated
+    public static final boolean DFLT_AUTO_ACTIVATION = true;
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
@@ -209,6 +246,18 @@ public class IgniteConfiguration {
 
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
+
+    /** Default number of MVCC vacuum threads.. */
+    public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
+
+    /** Default time interval between MVCC vacuum runs in milliseconds. */
+    public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
+
+    /** Default SQL query history size. */
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
+
+    /** Default query timeout. */
+    public static final long DFLT_QRY_TIMEOUT = 0;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -258,6 +307,15 @@ public class IgniteConfiguration {
     /** Query pool size. */
     private int qryPoolSize = DFLT_QUERY_THREAD_POOL_SIZE;
 
+    /** Index create/rebuild pool size. */
+    private int buildIdxPoolSize = DFLT_BUILD_IDX_THREAD_POOL_SIZE;
+
+    /** SQL query history size. */
+    private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
+
+    /** Default query timeout. */
+    private long dfltQryTimeout = DFLT_QRY_TIMEOUT;
+
     /** Ignite installation folder. */
     private String igniteHome;
 
@@ -290,6 +348,9 @@ public class IgniteConfiguration {
 
     /** Maximum network requests timeout. */
     private long netTimeout = DFLT_NETWORK_TIMEOUT;
+
+    /** Compression level for network binary messages. */
+    private int netCompressionLevel = DFLT_NETWORK_COMPRESSION;
 
     /** Interval between message send retries. */
     private long sndRetryDelay = DFLT_SEND_RETRY_DELAY;
@@ -357,6 +418,15 @@ public class IgniteConfiguration {
     /** Address resolver. */
     private AddressResolver addrRslvr;
 
+    /** Encryption SPI. */
+    private EncryptionSpi encryptionSpi;
+
+    /** Metric exporter SPI. */
+    private MetricExporterSpi[] metricExporterSpi;
+
+    /** System view exporter SPI. */
+    private SystemViewExporterSpi[] sysViewExporterSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -366,10 +436,23 @@ public class IgniteConfiguration {
     /** Rebalance thread pool size. */
     private int rebalanceThreadPoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
+    /** Rrebalance messages timeout in milliseconds. */
+    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
+
+    /** Rebalance batches prefetch count. */
+    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+
+    /** Time to wait between rebalance messages in milliseconds. */
+    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
+
+    /** Rebalance batch size in bytes. */
+    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
+
     /** Transactions configuration. */
     private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
+    @Deprecated
     private PluginConfiguration[] pluginCfgs;
 
     /** Flag indicating whether cache sanity check is enabled. */
@@ -397,6 +480,9 @@ public class IgniteConfiguration {
     /** Failure detection timeout. */
     private Long failureDetectionTimeout = DFLT_FAILURE_DETECTION_TIMEOUT;
 
+    /** Timeout for blocked system workers detection. */
+    private Long sysWorkerBlockedTimeout;
+
     /** Failure detection timeout for client nodes. */
     private Long clientFailureDetectionTimeout = DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT;
 
@@ -404,7 +490,6 @@ public class IgniteConfiguration {
     private String[] includeProps;
 
     /** Frequency of metrics log print out. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
@@ -457,13 +542,32 @@ public class IgniteConfiguration {
     private ExecutorConfiguration[] execCfgs;
 
     /** Page memory configuration. */
+    @Deprecated
     private MemoryConfiguration memCfg;
 
     /** Persistence store configuration. */
+    @Deprecated
     private PersistentStoreConfiguration pstCfg;
 
+    /** Page memory configuration. */
+    private DataStorageConfiguration dsCfg;
+
     /** Active on start flag. */
+    @Deprecated
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
+
+    /** Indicates that activeOnStart property was set explicitly. */
+    private boolean activeOnStartPropSetFlag;
+
+    /** Auto-activation flag. */
+    @Deprecated
+    private boolean autoActivation = DFLT_AUTO_ACTIVATION;
+
+    /** Indicates that autoActivation property was set explicitly. */
+    private boolean autoActivationPropSetFlag;
+
+    /** Cluster state on start. */
+    private ClusterState clusterStateOnStart;
 
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
@@ -474,6 +578,27 @@ public class IgniteConfiguration {
 
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
+
+    /** Size of MVCC vacuum thread pool. */
+    private int mvccVacuumThreadCnt = DFLT_MVCC_VACUUM_THREAD_CNT;
+
+    /** Time interval between vacuum runs (ms). */
+    private long mvccVacuumFreq = DFLT_MVCC_VACUUM_FREQUENCY;
+
+    /** User authentication enabled. */
+    private boolean authEnabled;
+
+    /** Failure handler. */
+    private FailureHandler failureHnd;
+
+    /** Communication failure resolver */
+    private CommunicationFailureResolver commFailureRslvr;
+
+    /** SQL schemas to be created on node start. */
+    private String[] sqlSchemas;
+
+    /** Plugin providers. */
+    private PluginProvider[] pluginProvs;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -501,15 +626,26 @@ public class IgniteConfiguration {
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
+        encryptionSpi = cfg.getEncryptionSpi();
+        metricExporterSpi = cfg.getMetricExporterSpi();
+        sysViewExporterSpi = cfg.getSystemViewExporterSpi();
+
+        commFailureRslvr = cfg.getCommunicationFailureResolver();
 
         /*
          * Order alphabetically for maintenance purposes.
          */
         activeOnStart = cfg.isActiveOnStart();
+        activeOnStartPropSetFlag = cfg.activeOnStartPropSetFlag;
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        authEnabled = cfg.isAuthenticationEnabled();
+        autoActivation = cfg.isAutoActivationEnabled();
+        autoActivationPropSetFlag = cfg.autoActivationPropSetFlag;
         binaryCfg = cfg.getBinaryConfiguration();
+        clusterStateOnStart = cfg.getClusterStateOnStart();
+        dsCfg = cfg.getDataStorageConfiguration();
         memCfg = cfg.getMemoryConfiguration();
         pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
@@ -524,6 +660,7 @@ public class IgniteConfiguration {
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
+        dfltQryTimeout = cfg.getDefaultQueryTimeout();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -531,6 +668,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
+        failureHnd = cfg.getFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
@@ -549,6 +687,8 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        mvccVacuumThreadCnt = cfg.getMvccVacuumThreadCount();
+        mvccVacuumFreq = cfg.getMvccVacuumFrequency();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -558,9 +698,15 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
+        pluginProvs = cfg.getPluginProviders();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
+        buildIdxPoolSize = cfg.getBuildIndexThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
+        rebalanceTimeout = cfg.getRebalanceTimeout();
+        rebalanceBatchesPrefetchCnt = cfg.getRebalanceBatchesPrefetchCount();
+        rebalanceThrottle = cfg.getRebalanceThrottle();
+        rebalanceBatchSize = cfg.getRebalanceBatchSize();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -568,12 +714,15 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        sqlQryHistSize = cfg.getSqlQueryHistorySize();
+        sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
         svcPoolSize = cfg.getServiceThreadPoolSize();
         sysPoolSize = cfg.getSystemThreadPoolSize();
+        sysWorkerBlockedTimeout = cfg.getSystemWorkerBlockedTimeout();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
@@ -582,6 +731,23 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+    }
+
+    /**
+     * @return Communication failure resovler.
+     */
+    public CommunicationFailureResolver getCommunicationFailureResolver() {
+        return commFailureRslvr;
+    }
+
+    /**
+     * @param commFailureRslvr Communication failure resovler.
+     * @return {@code this} instance.
+     */
+    public IgniteConfiguration setCommunicationFailureResolver(CommunicationFailureResolver commFailureRslvr) {
+        this.commFailureRslvr = commFailureRslvr;
+
+        return this;
     }
 
     /**
@@ -762,13 +928,9 @@ public class IgniteConfiguration {
      * Returns striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @return Positive value if striped pool should be initialized
-     *      with configured number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @return The number of threads (stripes) to be used for requests processing.
      *
      * @see #getPublicThreadPoolSize()
      * @see #getSystemThreadPoolSize()
@@ -781,13 +943,9 @@ public class IgniteConfiguration {
      * Sets striped pool size that should be used for cache requests
      * processing.
      * <p>
-     * If set to non-positive value then requests get processed in system pool.
-     * <p>
      * Striped pool is better for typical cache operations.
      *
-     * @param stripedPoolSize Positive value if striped pool should be initialized
-     *      with passed in number of threads (stripes) and used for requests processing
-     *      or non-positive value to process requests in system pool.
+     * @param stripedPoolSize The number of threads (stripes) to be used for requests processing.
      * @return {@code this} for chaining.
      *
      * @see #getPublicThreadPoolSize()
@@ -930,6 +1088,83 @@ public class IgniteConfiguration {
      */
     public int getQueryThreadPoolSize() {
         return qryPoolSize;
+    }
+
+    /**
+     * Size of thread pool for create/rebuild index.
+     * <p>
+     * If not provided, executor service will have size
+     * {@link #DFLT_BUILD_IDX_THREAD_POOL_SIZE}.
+     *
+     * @return Thread pool size for create/rebuild index.
+     */
+    public int getBuildIndexThreadPoolSize() {
+        return buildIdxPoolSize;
+    }
+
+    /**
+     * Sets index create/rebuild thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getBuildIndexThreadPoolSize()
+     */
+    public IgniteConfiguration setBuildIndexThreadPoolSize(int poolSize) {
+        buildIdxPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * will be switched off.
+     *
+     * @return SQL query history size.
+     */
+    public int getSqlQueryHistorySize() {
+        return sqlQryHistSize;
+    }
+
+    /**
+     * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
+     * #DFLT_SQL_QUERY_HISTORY_SIZE}.
+     *
+     * @param size Number of SQL query history elements kept in memory.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlQueryHistorySize(int size) {
+        sqlQryHistSize = size;
+
+        return this;
+    }
+
+    /**
+     * Defines the default query timeout.
+     *
+     * Defaults to {@link #DFLT_QRY_TIMEOUT}.
+     * {@code 0} means there is no timeout (this
+     * is a default value)
+     *
+     * @return Default query timeout.
+     */
+    public long getDefaultQueryTimeout() {
+        return dfltQryTimeout;
+    }
+
+    /**
+     * Sets timeout in milliseconds for default query timeout.
+     * {@code 0} means there is no timeout (this
+     * is a default value)
+     *
+     * @param dfltQryTimeout Timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
+        A.ensure(dfltQryTimeout >= 0 && dfltQryTimeout <= Integer.MAX_VALUE, "default query timeout value should be valid Integer.");
+        this.dfltQryTimeout = dfltQryTimeout;
+
+        return this;
     }
 
     /**
@@ -1212,7 +1447,6 @@ public class IgniteConfiguration {
         return this;
     }
 
-
     /**
      * Returns {@code true} if peer class loading is enabled, {@code false}
      * otherwise. Default value is {@code false} specified by {@link #DFLT_P2P_ENABLED}.
@@ -1408,6 +1642,29 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Compression level of internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     * @return Network messages default compression level.
+     */
+    public int getNetworkCompressionLevel() {
+        return netCompressionLevel;
+    }
+
+    /**
+     * Compression level for internal network messages.
+     * <p>
+     * If not provided, then default value
+     * Deflater.BEST_SPEED is used.
+     *
+     */
+    public void setNetworkCompressionLevel(int netCompressionLevel) {
+        this.netCompressionLevel = netCompressionLevel;
+    }
+
+    /**
      * Interval in milliseconds between message send retries.
      * <p>
      * If not provided, then default value
@@ -1485,6 +1742,133 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setRebalanceThreadPoolSize(int rebalanceThreadPoolSize) {
         this.rebalanceThreadPoolSize = rebalanceThreadPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Rebalance timeout for supply and demand messages in milliseconds. The {@code rebalanceTimeout} parameter
+     * specifies how long a message will stay in a receiving queue, waiting for other ordered messages that are
+     * ordered ahead of it to arrive will be processed. If timeout expires, then all messages that have not arrived
+     * before this message will be skipped. If an expired supply (demand) message actually does arrive, it will be
+     * ignored.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT}, if {@code 0} than the
+     * {@link IgniteConfiguration#getNetworkTimeout()} will be used instead.
+     *
+     * @return Rebalance message timeout in milliseconds.
+     */
+    public long getRebalanceTimeout() {
+        return rebalanceTimeout;
+    }
+
+    /**
+     * Rebalance timeout for supply and demand messages in milliseconds. The {@code rebalanceTimeout} parameter
+     * specifies how long a message will stay in a receiving queue, waiting for other ordered messages that are
+     * ordered ahead of it to arrive will be processed. If timeout expires, then all messages that have not arrived
+     * before this message will be skipped. If an expired supply (demand) message actually does arrive, it will be
+     * ignored.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT}, if {@code 0} than the
+     * {@link IgniteConfiguration#getNetworkTimeout()} will be used instead.
+     *
+     * @param rebalanceTimeout Rebalance message timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceTimeout(long rebalanceTimeout) {
+        this.rebalanceTimeout = rebalanceTimeout;
+
+        return this;
+    }
+
+    /**
+     * The number of batches generated by supply node at rebalancing procedure start. To gain better rebalancing
+     * performance supplier node can provide more than one batch at rebalancing start and provide one new to each
+     * next demand request.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT}, minimum value is {@code 1}.
+     *
+     * @return The number of batches prefetch count.
+     */
+    public long getRebalanceBatchesPrefetchCount() {
+        return rebalanceBatchesPrefetchCnt;
+    }
+
+    /**
+     * The number of batches generated by supply node at rebalancing procedure start. To gain better rebalancing
+     * performance supplier node can provide more than one batch at rebalancing start and provide one new to each
+     * next demand request.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT}, minimum value is {@code 1}.
+     *
+     * @param rebalanceBatchesCnt The number of batches prefetch count.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceBatchesPrefetchCount(long rebalanceBatchesCnt) {
+        this.rebalanceBatchesPrefetchCnt = rebalanceBatchesCnt;
+
+        return this;
+    }
+
+    /**
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network.
+     * When rebalancing large data sets, the CPU or network can get over-consumed with rebalancing messages,
+     * which consecutively may slow down the application performance. This parameter helps tune
+     * the amount of time to wait between rebalance messages to make sure that rebalancing process
+     * does not have any negative performance impact. Note that application will continue to work
+     * properly while rebalancing is still in progress.
+     * <p>
+     * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
+     * the default is defined by {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} constant.
+     *
+     * @return Time in milliseconds to wait between rebalance messages, {@code 0} to disable throttling.
+     */
+    public long getRebalanceThrottle() {
+        return rebalanceThrottle;
+    }
+
+    /**
+     * Time in milliseconds to wait between rebalance messages to avoid overloading of CPU or network. When rebalancing
+     * large data sets, the CPU or network can get over-consumed with rebalancing messages, which consecutively may slow
+     * down the application performance. This parameter helps tune the amount of time to wait between rebalance messages
+     * to make sure that rebalancing process does not have any negative performance impact. Note that application will
+     * continue to work properly while rebalancing is still in progress.
+     * <p>
+     * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
+     * the default is defined by {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} constant.
+     *
+     * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages, {@code 0} to disable throttling.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceThrottle(long rebalanceThrottle) {
+        this.rebalanceThrottle = rebalanceThrottle;
+
+        return this;
+    }
+
+    /**
+     * The supply message size in bytes to be loaded within a single rebalance batch. The data balancing algorithm
+     * splits all the cache data entries on supply node into multiple batches prior to sending them to the demand node.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE}.
+     *
+     * @return Rebalance message size in bytes.
+     */
+    public int getRebalanceBatchSize() {
+        return rebalanceBatchSize;
+    }
+
+    /**
+     * The supply message size in bytes to be loaded within a single rebalance batch. The data balancing algorithm
+     * splits all the cache data entries on supply node into multiple batches prior to sending them to the demand node.
+     * <p>
+     * Default value is defined by {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE}.
+     *
+     * @param rebalanceBatchSize Rebalance message size in bytes.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setRebalanceBatchSize(int rebalanceBatchSize) {
+        this.rebalanceBatchSize = rebalanceBatchSize;
 
         return this;
     }
@@ -1915,6 +2299,31 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Returns maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
+     * with consequent critical failure handler invocation.
+     *
+     * @see #setSystemWorkerBlockedTimeout(long)
+     * @return Maximum inactivity period for system worker in milliseconds.
+     */
+    public Long getSystemWorkerBlockedTimeout() {
+        return sysWorkerBlockedTimeout;
+    }
+
+    /**
+     * Sets maximum inactivity period for system worker. When this value is exceeded, worker is considered blocked
+     * with consequent critical failure handler invocation.
+     *
+     * @see #setFailureHandler(FailureHandler)
+     * @param sysWorkerBlockedTimeout Maximum inactivity period for system worker in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSystemWorkerBlockedTimeout(long sysWorkerBlockedTimeout) {
+        this.sysWorkerBlockedTimeout = sysWorkerBlockedTimeout;
+
+        return this;
+    }
+
+    /**
      * Should return fully configured load balancing SPI implementation. If not provided,
      * {@link RoundRobinLoadBalancingSpi} will be used.
      *
@@ -1997,6 +2406,72 @@ public class IgniteConfiguration {
      */
     public IndexingSpi getIndexingSpi() {
         return indexingSpi;
+    }
+
+    /**
+     * Sets fully configured instances of {@link EncryptionSpi}.
+     *
+     * @param encryptionSpi Fully configured instance of {@link EncryptionSpi}.
+     * @see IgniteConfiguration#getEncryptionSpi()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setEncryptionSpi(EncryptionSpi encryptionSpi) {
+        this.encryptionSpi = encryptionSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured encryption SPI implementations.
+     *
+     * @return Encryption SPI implementation.
+     */
+    public EncryptionSpi getEncryptionSpi() {
+        return encryptionSpi;
+    }
+
+    /**
+     * Sets fully configured instances of {@link MetricExporterSpi}.
+     *
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getMetricExporterSpi()
+     */
+    public IgniteConfiguration setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
+        this.metricExporterSpi = metricExporterSpi;
+
+        return this;
+    }
+
+    /**
+     * Sets fully configured instances of {@link SystemViewExporterSpi}.
+     *
+     * @param sysViewExporterSpi Fully configured instances of {@link SystemViewExporterSpi}.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getSystemViewExporterSpi()
+     */
+    public IgniteConfiguration setSystemViewExporterSpi(SystemViewExporterSpi... sysViewExporterSpi) {
+        this.sysViewExporterSpi = sysViewExporterSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured metric SPI implementations.
+     *
+     * @return Metric exporter SPI implementations.
+     */
+    public MetricExporterSpi[] getMetricExporterSpi() {
+        return metricExporterSpi;
+    }
+
+    /**
+     * Gets fully configured system view SPI implementations.
+     *
+     * @return System view exporter SPI implementations.
+     */
+    public SystemViewExporterSpi[] getSystemViewExporterSpi() {
+        return sysViewExporterSpi;
     }
 
     /**
@@ -2157,6 +2632,29 @@ public class IgniteConfiguration {
      *
      * @return Memory configuration.
      */
+    public DataStorageConfiguration getDataStorageConfiguration() {
+        return dsCfg;
+    }
+
+    /**
+     * Sets durable memory configuration.
+     *
+     * @param dsCfg Data storage configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
+        this.dsCfg = dsCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets page memory configuration.
+     *
+     * @return Memory configuration.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
+     */
+    @Deprecated
     public MemoryConfiguration getMemoryConfiguration() {
         return memCfg;
     }
@@ -2166,7 +2664,9 @@ public class IgniteConfiguration {
      *
      * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
      */
+    @Deprecated
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
         this.memCfg = memCfg;
 
@@ -2177,14 +2677,20 @@ public class IgniteConfiguration {
      * Gets persistence configuration used by Apache Ignite Persistent Store.
      *
      * @return Persistence configuration.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public PersistentStoreConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
     /**
-     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
+     *
+     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
      */
+    @Deprecated
     public boolean isPersistentStoreEnabled() {
         return pstCfg != null;
     }
@@ -2194,7 +2700,10 @@ public class IgniteConfiguration {
      *
      * @param pstCfg Persistence configuration.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 
@@ -2208,11 +2717,13 @@ public class IgniteConfiguration {
      * <p>
      * Default value is {@link #DFLT_ACTIVE_ON_START}.
      * <p>
-     * This flag is ignored when {@link PersistentStoreConfiguration} is present:
-     * cluster is always inactive on start when Ignite Persistence is enabled.
+     * This flag is ignored when Ignite Persistence is enabled see {@link DataStorageConfiguration}.
+     * Cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @return Active on start flag value.
+     * @deprecated Use {@link #getClusterStateOnStart()} instead.
      */
+    @Deprecated
     public boolean isActiveOnStart() {
         return activeOnStart;
     }
@@ -2221,15 +2732,94 @@ public class IgniteConfiguration {
      * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
      * nodes in the cluster.
      * <p>
-     * This flag is ignored when {@link PersistentStoreConfiguration} is present:
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
      * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @param activeOnStart Active on start flag value.
      * @return {@code this} instance.
      * @see #isActiveOnStart()
+     * @deprecated Use {@link #setClusterStateOnStart(ClusterState)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setActiveOnStart(boolean activeOnStart) {
+        U.warn(log, "Property activeOnStart deprecated. Use clusterStateOnStart instead.");
+
         this.activeOnStart = activeOnStart;
+
+        activeOnStartPropSetFlag = true;
+
+        return this;
+    }
+
+    /**
+     * Get the flag indicating that cluster is enabled to activate automatically.
+     *
+     * If it is set to {@code true} and BaselineTopology is set as well than cluster activates automatically
+     * when all nodes from the BaselineTopology join the cluster.
+     *
+     * <p>
+     * Default value is {@link #DFLT_AUTO_ACTIVATION}.
+     * <p>
+     *
+     * @return Auto activation enabled flag value.
+     * @deprecated Use {@link IgniteConfiguration#getClusterStateOnStart()} instead.
+     */
+    @Deprecated
+    public boolean isAutoActivationEnabled() {
+        return autoActivation;
+    }
+
+    /**
+     * Sets flag indicating whether the cluster is enabled to activate automatically.
+     * This value should be the same on all nodes in the cluster.
+     *
+     * @param autoActivation Auto activation enabled flag value.
+     * @return {@code this} instance.
+     * @see #isAutoActivationEnabled()
+     * @deprecated Use {@link IgniteConfiguration#setClusterStateOnStart(ClusterState)} instead.
+     */
+    @Deprecated
+    public IgniteConfiguration setAutoActivationEnabled(boolean autoActivation) {
+        U.warn(log, "Property autoActivation deprecated. Use clusterStateOnStart instead.");
+
+        this.autoActivation = autoActivation;
+
+        autoActivationPropSetFlag = true;
+
+        return this;
+    }
+
+    /**
+     * Gets state of cluster on start.
+     * <br/>
+     * For <b>in-memory cluster</b> this state will be applied to the first started node. If
+     * cluster state on start is {@link ClusterState#INACTIVE}, further hode joins will be handled by cluster faster and
+     * manual cluster activation should be performed in order to start working the cluster and caches.
+     * <br/>
+     * For <b>persistent cluster</b> If state is different from {@link ClusterState#INACTIVE} and BaselineTopology is
+     * set (cluster was activated before, for example before cluster restart) as well then cluster moves to given
+     * cluster state when all nodes from the BaselineTopology join the cluster, i.e. manual activation isn't required
+     * in that case.
+     * <p>
+     * Default value is {@link #DFLT_STATE_ON_START}.
+     * <p>
+     *
+     * @return State of cluster on start or {@code null}, if property wasn't set. {@code Null} means that default
+     * value will be used.
+     */
+    public @Nullable ClusterState getClusterStateOnStart() {
+        return clusterStateOnStart;
+    }
+
+    /**
+     * Sets state of cluster on start.
+     *
+     * @param state New cluster state on start.
+     * @return {@code this} for chaining.
+     * @see #getClusterStateOnStart() 
+     */
+    public IgniteConfiguration setClusterStateOnStart(ClusterState state) {
+        this.clusterStateOnStart = state;
 
         return this;
     }
@@ -2612,6 +3202,7 @@ public class IgniteConfiguration {
      * @return Plugin configurations.
      * @see PluginProvider
      */
+    @Deprecated
     public PluginConfiguration[] getPluginConfigurations() {
         return pluginCfgs;
     }
@@ -2622,7 +3213,10 @@ public class IgniteConfiguration {
      * @param pluginCfgs Plugin configurations.
      * @return {@code this} for chaining.
      * @see PluginProvider
+     * @deprecated Since {@link PluginProvider}s can be set explicitly via {@link #setPluginProviders(PluginProvider[])}
+     * it's preferable to store {@link PluginConfiguration} as a part of {@link PluginProvider}.
      */
+    @Deprecated
     public IgniteConfiguration setPluginConfigurations(PluginConfiguration... pluginCfgs) {
         this.pluginCfgs = pluginCfgs;
 
@@ -2842,12 +3436,159 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets failure handler.
+     *
+     * @return Failure handler.
+     */
+    public FailureHandler getFailureHandler() {
+        return failureHnd;
+    }
+
+    /**
+     * Sets failure handler.
+     *
+     * @param failureHnd Failure handler.
+     * @return {@code This} for chaining.
+     */
+    public IgniteConfiguration setFailureHandler(FailureHandler failureHnd) {
+        this.failureHnd = failureHnd;
+
+        return this;
+    }
+
+    /**
      * Gets client connector configuration.
      *
      * @return Client connector configuration.
      */
     @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
+    }
+
+    /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
+     * Returns number of MVCC vacuum threads.
+     *
+     * @return Number of MVCC vacuum threads.
+     */
+    @IgniteExperimental
+    public int getMvccVacuumThreadCount() {
+        return mvccVacuumThreadCnt;
+    }
+
+    /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
+     * Sets number of MVCC vacuum threads.
+     *
+     * @param mvccVacuumThreadCnt Number of MVCC vacuum threads.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public IgniteConfiguration setMvccVacuumThreadCount(int mvccVacuumThreadCnt) {
+        this.mvccVacuumThreadCnt = mvccVacuumThreadCnt;
+
+        return this;
+    }
+
+    /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
+     * Returns time interval between MVCC vacuum runs in milliseconds.
+     *
+     * @return Time interval between MVCC vacuum runs in milliseconds.
+     */
+    @IgniteExperimental
+    public long getMvccVacuumFrequency() {
+        return mvccVacuumFreq;
+    }
+
+    /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
+     * Sets time interval between MVCC vacuum runs in milliseconds.
+     *
+     * @param mvccVacuumFreq Time interval between MVCC vacuum runs in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public IgniteConfiguration setMvccVacuumFrequency(long mvccVacuumFreq) {
+        this.mvccVacuumFreq = mvccVacuumFreq;
+
+        return this;
+    }
+
+    /**
+     * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     * Default value is false; authentication is disabled.
+     *
+     * @return {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     */
+    public boolean isAuthenticationEnabled() {
+        return authEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether the user authentication is enabled for cluster.
+     *
+     * @param authEnabled User authentication enabled flag. {@code true} enab
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
+        this.authEnabled = authEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets SQL schemas to be created on node startup.
+     * <p>
+     * See {@link #setSqlSchemas(String...)} for more information.
+     *
+     * @return SQL schemas to be created on node startup.
+     */
+    public String[] getSqlSchemas() {
+        return sqlSchemas;
+    }
+
+    /**
+     * Sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated
+     * to other cluster nodes. Created schemas cannot be dropped.
+     * <p>
+     * By default schema names are case-insensitive, i.e. {@code my_schema} and {@code My_Schema} represents the same
+     * object. Use quotes to enforce case sensitivity (e.g. {@code "My_Schema"}).
+     * <p>
+     * Property is ignored if {@code ignite-indexing} module is not in classpath.
+     *
+     * @param sqlSchemas SQL schemas to be created on node startup.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
+        this.sqlSchemas = sqlSchemas;
+
+        return this;
+    }
+
+    /**
+     * Gets plugin providers.
+     *
+     * @return Plugin providers.
+     */
+    public PluginProvider[] getPluginProviders() {
+        return pluginProvs;
+    }
+
+    /**
+     * Sets plugin providers.
+     *
+     * @param pluginProvs Plugin providers.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setPluginProviders(PluginProvider... pluginProvs) {
+        this.pluginProvs = pluginProvs;
+
+        return this;
     }
 
     /** {@inheritDoc} */

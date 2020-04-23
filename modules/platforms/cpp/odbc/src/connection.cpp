@@ -16,18 +16,28 @@
  */
 
 #include <cstring>
+#include <cstddef>
 
 #include <sstream>
+#include <algorithm>
 
 #include <ignite/common/fixed_size_array.h>
 
+#include <ignite/network/network.h>
+
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/environment.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
+#include "ignite/odbc/ssl_mode.h"
+#include "ignite/odbc/dsn_config.h"
 #include "ignite/odbc/config/configuration.h"
-#include "ignite/odbc/odbc_error.h"
+#include "ignite/odbc/config/connection_string_parser.h"
+
+// Uncomment for per-byte debug.
+//#define PER_BYTE_DEBUG
 
 namespace
 {
@@ -39,18 +49,23 @@ namespace
 #pragma pack(pop)
 }
 
+
 namespace ignite
 {
     namespace odbc
     {
-        Connection::Connection() :
+        Connection::Connection(Environment* env) :
+            env(env),
             socket(),
-            connected(false),
+            timeout(0),
+            loginTimeout(DEFAULT_CONNECT_TIMEOUT),
+            autoCommit(true),
             parser(),
             config(),
-            info(config)
+            info(config),
+            streamingContext()
         {
-            // No-op.
+            streamingContext.SetConnection(*this);
         }
 
         Connection::~Connection()
@@ -96,15 +111,15 @@ namespace ignite
         {
             config::Configuration config;
 
-            try
-            {
-                config.FillFromConnectString(connectStr);
-            }
-            catch (IgniteError& e)
-            {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, e.GetText());
+            config::ConnectionStringParser parser(config);
 
-                return SqlResult::AI_ERROR;
+            parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
+
+            if (config.IsDsnSet())
+            {
+                std::string dsn = config.GetDsn();
+
+                ReadDsnConfiguration(dsn.c_str(), config);
             }
 
             return InternalEstablish(config);
@@ -115,18 +130,58 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
 
-        SqlResult::Type Connection::InternalEstablish(const config::Configuration cfg)
+        SqlResult::Type Connection::InitSocket()
         {
+            ssl::SslMode::Type sslMode = config.GetSslMode();
+
+            if (sslMode == ssl::SslMode::DISABLE)
+            {
+                socket.reset(network::ssl::MakeTcpSocketClient());
+
+                return SqlResult::AI_SUCCESS;
+            }
+
+            try
+            {
+                network::ssl::EnsureSslLoaded();
+            }
+            catch (const IgniteError &err)
+            {
+                LOG_MSG("Can not load OpenSSL library: " << err.GetText());
+
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                                "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            socket.reset(network::ssl::MakeSecureSocketClient(
+                config.GetSslCertFile(), config.GetSslKeyFile(), config.GetSslCaFile()));
+
+            return SqlResult::AI_SUCCESS;
+        }
+
+        SqlResult::Type Connection::InternalEstablish(const config::Configuration& cfg)
+        {
+            using ssl::SslMode;
+
             config = cfg;
 
-            if (connected)
+            if (socket.get() != 0)
             {
                 AddStatusRecord(SqlState::S08002_ALREADY_CONNECTED, "Already connected.");
 
                 return SqlResult::AI_ERROR;
             }
 
-            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort());
+            if (!config.IsHostSet() && config.IsAddressesSet() && config.GetAddresses().empty())
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "No valid address to connect.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            bool connected = TryRestoreConnection();
 
             if (!connected)
             {
@@ -135,14 +190,9 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            SqlResult::Type res = MakeRequestHandshake();
+            bool errors = GetDiagnosticRecords().GetStatusRecordsNumber() > 0;
 
-            if (res == SqlResult::AI_ERROR)
-                Close();
-            else
-                parser.SetProtocolVersion(config.GetProtocolVersion());
-
-            return res;
+            return errors ? SqlResult::AI_SUCCESS_WITH_INFO : SqlResult::AI_SUCCESS;
         }
 
         void Connection::Release()
@@ -150,9 +200,14 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalRelease());
         }
 
+        void Connection::Deregister()
+        {
+            env->DeregisterConnection(this);
+        }
+
         SqlResult::Type Connection::InternalRelease()
         {
-            if (!connected)
+            if (socket.get() == 0)
             {
                 AddStatusRecord(SqlState::S08003_NOT_CONNECTED, "Connection is not open.");
 
@@ -166,9 +221,12 @@ namespace ignite
 
         void Connection::Close()
         {
-            socket.Close();
+            if (socket.get() != 0)
+            {
+                socket->Close();
 
-            connected = false;
+                socket.reset();
+            }
         }
 
         Statement* Connection::CreateStatement()
@@ -194,9 +252,9 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        void Connection::Send(const int8_t* data, size_t len)
+        bool Connection::Send(const int8_t* data, size_t len, int32_t timeout)
         {
-            if (!connected)
+            if (socket.get() == 0)
                 throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
@@ -209,76 +267,91 @@ namespace ignite
 
             memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
 
-            size_t sent = SendAll(msg.GetData(), msg.GetSize());
+            OperationResult::T res = SendAll(msg.GetData(), msg.GetSize(), timeout);
 
-            if (sent != len + sizeof(OdbcProtocolHeader))
+            if (res == OperationResult::TIMEOUT)
+                return false;
+
+            if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
+#ifdef PER_BYTE_DEBUG
             LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
+#endif //PER_BYTE_DEBUG
+
+            return true;
         }
 
-        size_t Connection::SendAll(const int8_t* data, size_t len)
+        Connection::OperationResult::T Connection::SendAll(const int8_t* data, size_t len, int32_t timeout)
         {
             int sent = 0;
 
             while (sent != static_cast<int64_t>(len))
             {
-                int res = socket.Send(data + sent, len - sent);
+                int res = socket->Send(data + sent, len - sent, timeout);
 
                 LOG_MSG("Sent: " << res);
 
-                if (res <= 0)
+                if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
-                    return sent;
+                    return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
                 }
 
                 sent += res;
             }
 
-            return sent;
+            assert(static_cast<size_t>(sent) == len);
+
+            return OperationResult::SUCCESS;
         }
 
-        void Connection::Receive(std::vector<int8_t>& msg)
+        bool Connection::Receive(std::vector<int8_t>& msg, int32_t timeout)
         {
-            if (!connected)
+            if (socket.get() == 0)
                 throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             msg.clear();
 
             OdbcProtocolHeader hdr;
 
-            size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+            OperationResult::T res = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr), timeout);
 
-            if (received != sizeof(hdr))
+            if (res == OperationResult::TIMEOUT)
+                return false;
+
+            if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message header");
 
             if (hdr.len < 0)
             {
                 Close();
 
-                throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Protocol error: Message length is negative");
+                throw OdbcError(SqlState::SHY000_GENERAL_ERROR, "Protocol error: Message length is negative");
             }
 
             if (hdr.len == 0)
-                return;
+                return false;
 
             msg.resize(hdr.len);
 
-            received = ReceiveAll(&msg[0], hdr.len);
+            res = ReceiveAll(&msg[0], hdr.len, timeout);
 
-            if (received != hdr.len)
-            {
-                msg.resize(received);
+            if (res == OperationResult::TIMEOUT)
+                return false;
 
+            if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
-            }
 
+#ifdef PER_BYTE_DEBUG
             LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
+#endif //PER_BYTE_DEBUG
+
+            return true;
         }
 
-        size_t Connection::ReceiveAll(void* dst, size_t len)
+        Connection::OperationResult::T Connection::ReceiveAll(void* dst, size_t len, int32_t timeout)
         {
             size_t remain = len;
             int8_t* buffer = reinterpret_cast<int8_t*>(dst);
@@ -287,20 +360,20 @@ namespace ignite
             {
                 size_t received = len - remain;
 
-                int res = socket.Receive(buffer + received, remain);
+                int res = socket->Receive(buffer + received, remain, timeout);
                 LOG_MSG("Receive res: " << res << " remain: " << remain);
 
-                if (res <= 0)
+                if (res < 0 || res == network::SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
-                    return received;
+                    return res < 0 ? OperationResult::FAIL : OperationResult::TIMEOUT;
                 }
 
                 remain -= static_cast<size_t>(res);
             }
 
-            return len;
+            return OperationResult::SUCCESS;
         }
 
         const std::string& Connection::GetSchema() const
@@ -311,6 +384,11 @@ namespace ignite
         const config::Configuration& Connection::GetConfiguration() const
         {
             return config;
+        }
+
+        bool Connection::IsAutoCommit() const
+        {
+            return autoCommit;
         }
 
         diagnostic::DiagnosticRecord Connection::CreateStatusRecord(SqlState::Type sqlState,
@@ -326,12 +404,79 @@ namespace ignite
 
         SqlResult::Type Connection::InternalTransactionCommit()
         {
+            std::string schema = config.GetSchema();
+
+            app::ParameterSet empty;
+
+            QueryExecuteRequest req(schema, "COMMIT", empty, timeout, autoCommit);
+            QueryExecuteResponse rsp;
+
+            try
+            {
+                bool sent = SyncMessage(req, rsp, timeout);
+
+                if (!sent)
+                {
+                    AddStatusRecord(SqlState::S08S01_LINK_FAILURE, "Failed to send commit request.");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+
+                return SqlResult::AI_ERROR;
+            }
+
             return SqlResult::AI_SUCCESS;
         }
 
         void Connection::TransactionRollback()
         {
             IGNITE_ODBC_API_CALL(InternalTransactionRollback());
+        }
+
+        SqlResult::Type Connection::InternalTransactionRollback()
+        {
+            std::string schema = config.GetSchema();
+
+            app::ParameterSet empty;
+
+            QueryExecuteRequest req(schema, "ROLLBACK", empty, timeout, autoCommit);
+            QueryExecuteResponse rsp;
+
+            try
+            {
+                bool sent = SyncMessage(req, rsp, timeout);
+
+                if (!sent)
+                {
+                    AddStatusRecord(SqlState::S08S01_LINK_FAILURE, "Failed to send rollback request.");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+
+                return SqlResult::AI_ERROR;
+            }
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Connection::GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
@@ -343,7 +488,7 @@ namespace ignite
         {
             if (!buf)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Data buffer is NULL.");
+                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER, "Data buffer is null.");
 
                 return SqlResult::AI_ERROR;
             }
@@ -354,7 +499,43 @@ namespace ignite
                 {
                     SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
 
-                    *val = connected ? SQL_CD_FALSE : SQL_CD_TRUE;
+                    *val = socket.get() != 0 ? SQL_CD_FALSE : SQL_CD_TRUE;
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
+                case SQL_ATTR_CONNECTION_TIMEOUT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = static_cast<SQLUINTEGER>(timeout);
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
+                case SQL_ATTR_LOGIN_TIMEOUT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = static_cast<SQLUINTEGER>(loginTimeout);
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = autoCommit ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
 
                     if (valueLen)
                         *valueLen = SQL_IS_INTEGER;
@@ -390,6 +571,43 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                case SQL_ATTR_CONNECTION_TIMEOUT:
+                {
+                    timeout = RetrieveTimeout(value);
+
+                    if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+
+                    break;
+                }
+
+                case SQL_ATTR_LOGIN_TIMEOUT:
+                {
+                    loginTimeout = RetrieveTimeout(value);
+
+                    if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+
+                    break;
+                }
+
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER mode = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+
+                    if (mode != SQL_AUTOCOMMIT_ON && mode != SQL_AUTOCOMMIT_OFF)
+                    {
+                        AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Specified attribute is not supported.");
+
+                        return SqlResult::AI_ERROR;
+                    }
+
+                    autoCommit = mode == SQL_AUTOCOMMIT_ON;
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -402,38 +620,9 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        SqlResult::Type Connection::InternalTransactionRollback()
-        {
-            AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                "Rollback operation is not supported.");
-
-            return SqlResult::AI_ERROR;
-        }
-
         SqlResult::Type Connection::MakeRequestHandshake()
         {
-            bool distributedJoins = false;
-            bool enforceJoinOrder = false;
-            bool replicatedOnly = false;
-            bool collocated = false;
-            bool lazy = false;
-            ProtocolVersion protocolVersion;
-
-            try
-            {
-                protocolVersion = config.GetProtocolVersion();
-                distributedJoins = config.IsDistributedJoins();
-                enforceJoinOrder = config.IsEnforceJoinOrder();
-                replicatedOnly = config.IsReplicatedOnly();
-                collocated = config.IsCollocated();
-                lazy = config.IsLazy();
-            }
-            catch (const IgniteError& err)
-            {
-                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
-
-                return SqlResult::AI_ERROR;
-            }
+            ProtocolVersion protocolVersion = config.GetProtocolVersion();
 
             if (!protocolVersion.IsSupported())
             {
@@ -443,12 +632,30 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy);
+            if (protocolVersion < ProtocolVersion::VERSION_2_5_0 && !config.GetUser().empty())
+            {
+                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+                    "Authentication is not allowed for protocol version below 2.5.0");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            HandshakeRequest req(config);
             HandshakeResponse rsp;
 
             try
             {
-                SyncMessage(req, rsp);
+                // Workaround for some Linux systems that report connection on non-blocking
+                // sockets as successful but fail to establish real connection.
+                bool sent = InternalSyncMessage(req, rsp, loginTimeout);
+
+                if (!sent)
+                {
+                    AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
+                        "Failed to get handshake response (Did you forget to enable SSL?).");
+
+                    return SqlResult::AI_ERROR;
+                }
             }
             catch (const OdbcError& err)
             {
@@ -465,7 +672,7 @@ namespace ignite
 
             if (!rsp.IsAccepted())
             {
-                LOG_MSG("Hanshake message has been rejected.");
+                LOG_MSG("Handshake message has been rejected.");
 
                 std::stringstream constructor;
 
@@ -474,9 +681,10 @@ namespace ignite
                 if (!rsp.GetError().empty())
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
-                constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                            << "driver protocol version introduced in version: "
-                            << config.GetProtocolVersion().ToString() << ".";
+                constructor << "Current version of the protocol, used by the server node is " 
+                            << rsp.GetCurrentVer().ToString() << ", "
+                            << "driver protocol version introduced in version "
+                            << protocolVersion.ToString() << ".";
 
                 AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 
@@ -484,6 +692,115 @@ namespace ignite
             }
 
             return SqlResult::AI_SUCCESS;
+        }
+
+        void Connection::EnsureConnected()
+        {
+            if (socket.get() != 0)
+                return;
+
+            bool success = TryRestoreConnection();
+
+            if (!success)
+                throw OdbcError(SqlState::S08001_CANNOT_CONNECT,
+                    "Failed to establish connection with any provided hosts");
+        }
+
+        bool Connection::TryRestoreConnection()
+        {
+            std::vector<EndPoint> addrs;
+
+            CollectAddresses(config, addrs);
+
+            if (socket.get() == 0)
+            {
+                SqlResult::Type res = InitSocket();
+
+                if (res != SqlResult::AI_SUCCESS)
+                    return false;
+            }
+
+            bool connected = false;
+
+            while (!addrs.empty() && !connected)
+            {
+                const EndPoint& addr = addrs.back();
+
+                for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
+                {
+                    try
+                    {
+                        connected = socket->Connect(addr.host.c_str(), port, loginTimeout);
+                    }
+                    catch (const IgniteError& err)
+                    {
+                        LOG_MSG("Error while trying connect to " << addr.host << ":" << addr.port <<", " << err.GetText());
+                    }
+
+                    if (connected)
+                    {
+                        SqlResult::Type res = MakeRequestHandshake();
+
+                        connected = res != SqlResult::AI_ERROR;
+
+                        if (connected)
+                            break;
+                    }
+                }
+
+                addrs.pop_back();
+            }
+
+            if (!connected)
+                Close();
+            else
+                parser.SetProtocolVersion(config.GetProtocolVersion());
+
+            return connected;
+        }
+
+        void Connection::CollectAddresses(const config::Configuration& cfg, std::vector<EndPoint>& endPoints)
+        {
+            endPoints.clear();
+
+            if (!cfg.IsAddressesSet())
+            {
+                LOG_MSG("'Address' is not set. Using legacy connection method.");
+
+                endPoints.push_back(EndPoint(cfg.GetHost(), cfg.GetTcpPort()));
+
+                return;
+            }
+
+            endPoints = cfg.GetAddresses();
+
+            std::random_shuffle(endPoints.begin(), endPoints.end());
+        }
+
+        int32_t Connection::RetrieveTimeout(void* value)
+        {
+            SQLUINTEGER uTimeout = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+
+            if (uTimeout != 0 && socket.get() != 0 && socket->IsBlocking())
+            {
+                AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, "Can not set timeout, because can not "
+                    "enable non-blocking mode on TCP connection. Setting to 0.");
+
+                return 0;
+            }
+
+            if (uTimeout > INT32_MAX)
+            {
+                std::stringstream ss;
+
+                ss << "Value is too big: " << uTimeout << ", changing to " << timeout << ".";
+
+                AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, ss.str());
+
+                return INT32_MAX;
+            }
+
+            return static_cast<int32_t>(uTimeout);
         }
     }
 }

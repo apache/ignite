@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -47,7 +48,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     protected static final int INIT_CAP = 1024;
 
     /** Kernal context. */
-    protected GridKernalContext ctx;
+    protected final GridKernalContext ctx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -96,7 +97,17 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
                 Object[] params = readParameterRow(reader, paramNum);
 
-                res = new OdbcQueryExecuteRequest(schema, sql, params);
+                int timeout = 0;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) >= 0)
+                    timeout = reader.readInt();
+
+                boolean autoCommit = true;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0)
+                    autoCommit = reader.readBoolean();
+
+                res = new OdbcQueryExecuteRequest(schema, sql, params, timeout, autoCommit);
 
                 break;
             }
@@ -113,7 +124,41 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 for (int i = 0; i < rowNum; ++i)
                     params[i] = readParameterRow(reader, paramRowLen);
 
-                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params);
+                int timeout = 0;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) >= 0)
+                    timeout = reader.readInt();
+
+                boolean autoCommit = true;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_7_0) >= 0)
+                    autoCommit = reader.readBoolean();
+
+                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout, autoCommit);
+
+                break;
+            }
+
+            case OdbcRequest.STREAMING_BATCH:
+            {
+                String schema = reader.readString();
+
+                int num = reader.readInt();
+
+                ArrayList<OdbcQuery> queries = new ArrayList<>(num);
+
+                for (int i = 0; i < num; ++i)
+                {
+                    OdbcQuery qry = new OdbcQuery();
+                    qry.readBinary(reader);
+
+                    queries.add(qry);
+                }
+
+                boolean last = reader.readBoolean();
+                long order = reader.readLong();
+
+                res = new OdbcStreamingBatchRequest(schema, queries, last, order);
 
                 break;
             }
@@ -161,6 +206,15 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 String sqlQuery = reader.readString();
 
                 res = new OdbcQueryGetParamsMetaRequest(schema, sqlQuery);
+
+                break;
+            }
+
+            case OdbcRequest.MORE_RESULTS: {
+                long queryId = reader.readLong();
+                int pageSize = reader.readInt();
+
+                res = new OdbcQueryMoreResultsRequest(queryId, pageSize);
 
                 break;
             }
@@ -233,13 +287,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
 
-            writer.writeLong(res.affectedRows());
+            writeAffectedRows(writer, res.affectedRows());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
 
             writer.writeBoolean(res.errorMessage() == null);
-            writer.writeLong(res.rowsAffected());
+            writeAffectedRows(writer, res.affectedRows());
 
             if (res.errorMessage() != null) {
                 writer.writeLong(res.errorSetIdx());
@@ -249,8 +303,42 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                     writer.writeInt(res.errorCode());
             }
         }
+        else if (res0 instanceof OdbcStreamingBatchResult) {
+            OdbcStreamingBatchResult res = (OdbcStreamingBatchResult) res0;
+
+            writer.writeString(res.error());
+            writer.writeInt(res.status());
+            writer.writeLong(res.order());
+        }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
+
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.queryId());
+
+            writer.writeLong(res.queryId());
+
+            Collection<?> items0 = res.items();
+
+            assert items0 != null;
+
+            writer.writeBoolean(res.last());
+
+            writer.writeInt(items0.size());
+
+            for (Object row0 : items0) {
+                if (row0 != null) {
+                    Collection<?> row = (Collection<?>)row0;
+
+                    writer.writeInt(row.size());
+
+                    for (Object obj : row)
+                        SqlListenerUtils.writeObject(writer, obj, true);
+                }
+            }
+        }
+        else if (res0 instanceof OdbcQueryMoreResultsResult) {
+            OdbcQueryMoreResultsResult res = (OdbcQueryMoreResultsResult) res0;
 
             if (log.isDebugEnabled())
                 log.debug("Resulting query ID: " + res.queryId());
@@ -319,5 +407,39 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
             assert false : "Should not reach here.";
 
         return writer.array();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int decodeCommandType(byte[] msg) {
+        assert msg != null;
+
+        return msg[0];
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public long decodeRequestId(byte[] msg) {
+        return 0;
+    }
+
+    /**
+     * @param writer Writer to use.
+     * @param affectedRows Affected rows.
+     */
+    private void writeAffectedRows(BinaryWriterExImpl writer, long[] affectedRows) {
+        if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
+            long summ = 0;
+
+            for (Long value : affectedRows)
+                summ += value == null ? 0 : value;
+
+            writer.writeLong(summ);
+        }
+        else {
+            writer.writeInt(affectedRows.length);
+
+            for (long value : affectedRows)
+                writer.writeLong(value);
+        }
     }
 }

@@ -81,7 +81,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         nodeOrderDrId = nodeOrder | (dataCenterId << DR_ID_SHIFT);
     }
 
-
     /**
      * @param topVer Topology version plus number of seconds from the start time of the first grid node.
      * @param nodeOrderDrId Node order and DR ID.
@@ -220,7 +219,6 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("IfMayBeConditional")
     @Override public int compareTo(GridCacheVersion other) {
         int res = Integer.compare(topologyVersion(), other.topologyVersion());
 

@@ -32,6 +32,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary> Property visitors. </summary>
         private static readonly Dictionary<MemberInfo, string> Properties = new Dictionary<MemberInfo, string>
         {
+            // ReSharper disable AssignNullToNotNullAttribute
             {typeof(string).GetProperty("Length"), "length"},
             {typeof(DateTime).GetProperty("Year"), "year"},
             {typeof(DateTime).GetProperty("Month"), "month"},
@@ -41,6 +42,7 @@ namespace Apache.Ignite.Linq.Impl
             {typeof(DateTime).GetProperty("Hour"), "hour"},
             {typeof(DateTime).GetProperty("Minute"), "minute"},
             {typeof(DateTime).GetProperty("Second"), "second"}
+            // ReSharper restore AssignNullToNotNullAttribute
         };
 
         /// <summary> Method visit delegate. </summary>
@@ -54,7 +56,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             GetStringMethod("ToLower", new Type[0], GetFunc("lower")),
             GetStringMethod("ToUpper", new Type[0], GetFunc("upper")),
-            GetStringMethod("Contains", del: (e, v) => VisitSqlLike(e, v, "'%' || ? || '%'")),
+            GetStringMethod("Contains", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "'%' || ? || '%'")),
             GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "? || '%'")),
             GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "'%' || ?")),
             GetStringMethod("IndexOf", new[] {typeof (string)}, GetFunc("instr", -1)),
@@ -66,9 +68,17 @@ namespace Apache.Ignite.Linq.Impl
             GetParameterizedTrimMethod("TrimStart", "ltrim"),
             GetParameterizedTrimMethod("TrimEnd", "rtrim"),
             GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
+            GetStringMethod("PadLeft", "lpad", typeof (int)),
+            GetStringMethod("PadLeft", "lpad", typeof (int), typeof (char)),
+            GetStringMethod("PadRight", "rpad", typeof (int)),
+            GetStringMethod("PadRight", "rpad", typeof (int), typeof (char)),
 
-            GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
-                GetFunc("regexp_replace")),
+            GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string)),
+            GetRegexMethod("Replace", "regexp_replace", typeof (string), typeof (string), typeof (string),
+                typeof(RegexOptions)),
+            GetRegexMethod("IsMatch", "regexp_like", typeof (string), typeof (string)),
+            GetRegexMethod("IsMatch", "regexp_like", typeof (string), typeof (string), typeof(RegexOptions)),
+
             GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)},
                 (e, v) => VisitFunc(e, v, "formatdatetime", ", 'en', 'UTC'")),
 
@@ -113,6 +123,13 @@ namespace Apache.Ignite.Linq.Impl
             GetMathMethod("Truncate", typeof (decimal)),
         }.ToDictionary(x => x.Key, x => x.Value);
 
+        /// <summary> RegexOptions transformations. </summary>
+        private static readonly Dictionary<RegexOptions, string> RegexOptionFlags = new Dictionary<RegexOptions, string>
+        {
+            { RegexOptions.IgnoreCase, "i" },
+            { RegexOptions.Multiline, "m" }
+        };
+
         /// <summary>
         /// Visits the property call expression.
         /// </summary>
@@ -149,6 +166,37 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Visits the constant call expression.
+        /// </summary>
+        public static bool VisitConstantCall(ConstantExpression expression, CacheQueryExpressionVisitor visitor)
+        {
+            if (expression.Type != typeof(RegexOptions))
+            {
+                return false;
+            }
+
+            var regexOptions = expression.Value as RegexOptions? ?? RegexOptions.None;
+            var result = string.Empty;
+            foreach (var option in RegexOptionFlags)
+            {
+                if (regexOptions.HasFlag(option.Key))
+                {
+                    result += option.Value;
+                    regexOptions &= ~option.Key;
+                }
+            }
+
+            if (regexOptions != RegexOptions.None)
+            {
+                throw new NotSupportedException(string.Format("RegexOptions.{0} is not supported", regexOptions));
+            }
+
+            visitor.AppendParameter(result);
+
+            return true;
+        }
+
+        /// <summary>
         /// Gets the function.
         /// </summary>
         private static VisitMethodDelegate GetFunc(string func, params int[] adjust)
@@ -159,7 +207,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the instance function.
         /// </summary>
-        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, 
+        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor,
             string func, string suffix, params int[] adjust)
         {
             visitor.ResultBuilder.Append(func).Append("(");
@@ -298,12 +346,21 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Gets the Regex method.
+        /// </summary>
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetRegexMethod(string name, string sqlName,
+            params Type[] argTypes)
+        {
+            return GetMethod(typeof(Regex), name, argTypes, GetFunc(sqlName));
+        }
+
+        /// <summary>
         /// Gets string parameterized Trim(TrimStart, TrimEnd) method.
         /// </summary>
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetParameterizedTrimMethod(string name,
             string sqlName)
         {
-            return GetMethod(typeof(string), name, new[] {typeof(char[])}, 
+            return GetMethod(typeof(string), name, new[] {typeof(char[])},
                 (e, v) => VisitParameterizedTrimFunc(e, v, sqlName));
         }
 

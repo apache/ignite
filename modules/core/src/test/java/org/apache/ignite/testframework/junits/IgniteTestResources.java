@@ -39,7 +39,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -76,51 +75,65 @@ public class IgniteTestResources {
     private IgniteConfiguration cfg;
 
     /** */
+    private GridTestKernalContext ctx;
+
+    /** */
     private GridResourceProcessor rsrcProc;
 
     /**
-     * @throws IgniteCheckedException If failed.
+     * @return Default MBean server or {@code null} if {@code IGNITE_MBEANS_DISABLED} is configured.
      */
-    public IgniteTestResources() throws IgniteCheckedException {
+    @Nullable private static MBeanServer prepareMBeanServer() {
+        return U.IGNITE_MBEANS_DISABLED ? null : ManagementFactory.getPlatformMBeanServer();
+    }
+
+    /** */
+    public IgniteTestResources() {
         if (SensitiveInfoTestLoggerProxy.TEST_SENSITIVE)
             log = new SensitiveInfoTestLoggerProxy(rootLog.getLogger(getClass()), null, null, null);
         else
             log = rootLog.getLogger(getClass());
 
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+        this.jmx = prepareMBeanServer();
+
+        this.ctx = new GridTestKernalContext(log);
+
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
      * @param cfg Ignite configuration
      */
-    public IgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+    public IgniteTestResources(IgniteConfiguration cfg) {
         this.cfg = cfg;
         this.log = rootLog.getLogger(getClass());
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log, this.cfg));
+        this.jmx = prepareMBeanServer();
+        this.ctx = new GridTestKernalContext(log, this.cfg);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
      * @param jmx JMX server.
      */
-    public IgniteTestResources(MBeanServer jmx) throws IgniteCheckedException {
+    public IgniteTestResources(MBeanServer jmx) {
         assert jmx != null;
 
         this.jmx = jmx;
         this.log = rootLog.getLogger(getClass());
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+        this.ctx = new GridTestKernalContext(log);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
      * @param log Logger.
      */
-    public IgniteTestResources(IgniteLogger log) throws IgniteCheckedException {
+    public IgniteTestResources(IgniteLogger log) {
         assert log != null;
 
         this.log = log.getLogger(getClass());
-        this.jmx = ManagementFactory.getPlatformMBeanServer();
-        this.rsrcProc = new GridResourceProcessor(new GridTestKernalContext(this.log));
+        this.jmx = prepareMBeanServer();
+        this.ctx = new GridTestKernalContext(log);
+        this.rsrcProc = new GridResourceProcessor(ctx);
     }
 
     /**
@@ -151,7 +164,7 @@ public class IgniteTestResources {
      */
     public void startThreads(boolean prestart) {
         execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), null, 40, 40, Long.MAX_VALUE,
-            new LinkedBlockingQueue<Runnable>());
+                new LinkedBlockingQueue<>());
 
         // Improve concurrency for testing.
         if (prestart)
@@ -234,10 +247,8 @@ public class IgniteTestResources {
      * @return Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public static synchronized Marshaller getMarshaller() throws IgniteCheckedException {
-        String marshallerName =
-            System.getProperty(MARSH_CLASS_NAME, GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME));
+        String marshallerName = System.getProperty(MARSH_CLASS_NAME);
 
         Marshaller marsh;
 

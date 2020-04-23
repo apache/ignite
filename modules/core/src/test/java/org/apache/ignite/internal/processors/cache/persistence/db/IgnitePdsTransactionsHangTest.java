@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -32,23 +33,19 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jsr166.LongAdder8;
+import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -56,14 +53,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Checks that transactions don't hang during checkpoint creation.
  */
 public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Page cache size. */
-    private static final int PAGE_CACHE_SIZE = 512;
+    private static final long PAGE_CACHE_SIZE = 512L * 1024 * 1024;
 
     /** Page size. */
-    private static final Integer PAGE_SIZE = 16;
+    private static final int PAGE_SIZE = 16 * 1024;
 
     /** Cache name. */
     private static final String CACHE_NAME = "IgnitePdsTransactionsHangTest";
@@ -90,21 +84,17 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoSpi);
 
         BinaryConfiguration binaryCfg = new BinaryConfiguration();
         binaryCfg.setCompactFooter(false);
@@ -123,26 +113,21 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
         cfg.setTransactionConfiguration(txCfg);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalHistorySize(1)
-                .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
-        );
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE);
+        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE);
+        memPlcCfg.setPersistenceEnabled(true);
 
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
-        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setWalHistorySize(1);
+        memCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
+        memCfg.setPageSize(PAGE_SIZE);
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        memCfg.setPageSize(PAGE_SIZE * 1024);
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -171,6 +156,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      * */
+    @Test
     public void testTransactionsDontHang() throws Exception {
         try {
             final Ignite g = startGrids(2);
@@ -183,7 +169,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
             final CyclicBarrier cyclicBarrier = new CyclicBarrier(THREADS_CNT);
 
             final AtomicBoolean interrupt = new AtomicBoolean(false);
-            final LongAdder8 operationCnt = new LongAdder8();
+            final LongAdder operationCnt = new LongAdder();
 
             final IgniteCache<Long, TestEntity> cache = g.cache(CACHE_NAME);
 
@@ -200,17 +186,24 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
                                 TestEntity entity = TestEntity.newTestEntity(locRandom);
 
-                                try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                    cache.put(randomKey, entity);
+                                while (true) {
+                                    try (Transaction tx = g.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                        cache.put(randomKey, entity);
 
-                                    tx.commit();
+                                        tx.commit();
+
+                                        break;
+                                    }
+                                    catch (Exception e) {
+                                        MvccFeatureChecker.assertMvccWriteConflict(e);
+                                    }
                                 }
 
                                 operationCnt.increment();
                             }
                         }
                         catch (Throwable e) {
-                            System.out.println(e.toString());
+                            log.error("Unexpected exception:", e);
 
                             throw new RuntimeException(e);
                         }
@@ -235,14 +228,14 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                     max = Math.max(max, sum);
                     min = Math.min(min, sum);
 
-                    System.out.println("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
+                    log.info("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
                 }
             }
 
             interrupt.set(true);
 
             threadPool.shutdown();
-            System.out.println("Test complete");
+            log.info("Test complete");
 
             threadPool.awaitTermination(getTestTimeout(), TimeUnit.MILLISECONDS);
 

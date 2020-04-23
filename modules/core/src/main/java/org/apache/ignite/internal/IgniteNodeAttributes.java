@@ -82,9 +82,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_MONGO = ATTR_PREFIX + ".mongo";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
 
     /** Internal attribute name constant. */
@@ -120,11 +117,17 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
 
+    /** Allows to override {@link #ATTR_MACS} by adding this attribute in the user attributes. */
+    public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
+
     /** Internal attribute name constant. */
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
     /** Internal attribute name constant. */
     public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DATA_REGIONS_OFFHEAP_SIZE = ATTR_PREFIX + ".data.regions.offheap.size";
 
     /** Internal attribute name constant. */
     public static final String ATTR_JVM_PID = ATTR_PREFIX + ".jvm.pid";
@@ -143,9 +146,6 @@ public final class IgniteNodeAttributes {
 
     /** Security credentials attribute name. Attribute is not available via public API. */
     public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
-
-    /** Security subject for authenticated node. */
-    public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
 
     /** V2 security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
@@ -171,9 +171,6 @@ public final class IgniteNodeAttributes {
     /** Late affinity assignment mode. */
     public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
 
-    /** Ignite services compatibility mode (can be {@code null}). */
-    public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
-
     /** Late affinity assignment mode. */
     public static final String ATTR_ACTIVE_ON_START = ATTR_PREFIX + ".active.on.start";
 
@@ -184,7 +181,30 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_DATA_STREAMER_POOL_SIZE = ATTR_PREFIX + ".data.streamer.pool.size";
 
     /** Memory configuration. */
+    @Deprecated
     public static final String ATTR_MEMORY_CONFIG = ATTR_PREFIX + ".memory";
+
+    /** Data storage configuration. */
+    public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
+
+    /** User authentication enabled flag. */
+    public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
+
+    /** Rebalance thread pool size. */
+    public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
+
+    /** Internal attribute indicates that incoming cache requests should be validated on primary node as well. */
+    public static final String ATTR_VALIDATE_CACHE_REQUESTS = ATTR_CACHE + ".validate.cache.requests";
+
+    /** Supported features. */
+    public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
+
+    /** Ignite services processor mode. */
+    public static final String ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED = ATTR_PREFIX +
+        ".event.driven.service.processor.enabled";
 
     /**
      * Enforces singleton.

@@ -17,22 +17,19 @@
 
 package org.apache.ignite.internal;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
@@ -48,25 +45,25 @@ import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
+import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
 /**
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl implements MarshallerContext {
-    /** */
-    private static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
-
-    /** */
-    private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
-
     /** */
     private final Map<Integer, MappedName> sysTypesMap = new HashMap<>();
 
@@ -88,6 +85,12 @@ public class MarshallerContextImpl implements MarshallerContext {
     /** */
     private boolean clientNode;
 
+    /** Class name filter. */
+    private final IgnitePredicate<String> clsFilter;
+
+    /** JDK marshaller. */
+    private final JdkMarshaller jdkMarsh;
+
     /**
      * Marshaller mapping file store directory. {@code null} used for standard folder, in this case folder is calculated
      * from work directory. Non null value may be used to setup custom directory from outside
@@ -99,47 +102,37 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param plugins Plugins.
      */
-    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins) {
+    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
+        this.clsFilter = clsFilter;
+        this.jdkMarsh = new JdkMarshaller(clsFilter);
+
         initializeCaches();
 
         try {
             ClassLoader ldr = U.gridClassLoader();
 
-            Enumeration<URL> urls = ldr.getResources(CLS_NAMES_FILE);
+            MarshallerUtils.processSystemClasses(ldr, plugins, clsName -> {
+                int typeId = clsName.hashCode();
 
-            boolean foundClsNames = false;
+                MappedName oldClsName;
 
-            while (urls.hasMoreElements()) {
-                processResource(urls.nextElement());
+                if ((oldClsName = sysTypesMap.put(typeId, new MappedName(clsName, true))) != null) {
+                    if (!oldClsName.className().equals(clsName))
+                        throw new IgniteException(
+                            "Duplicate type ID [id="
+                                + typeId
+                                + ", oldClsName="
+                                + oldClsName
+                                + ", clsName="
+                                + clsName + ']');
+                }
 
-                foundClsNames = true;
-            }
-
-            if (!foundClsNames)
-                throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                    "[file=" + CLS_NAMES_FILE + ", ldr=" + ldr + ']');
-
-            URL jdkClsNames = ldr.getResource(JDK_CLS_NAMES_FILE);
-
-            if (jdkClsNames == null)
-                throw new IgniteException("Failed to load class names properties file packaged with ignite binaries " +
-                    "[file=" + JDK_CLS_NAMES_FILE + ", ldr=" + ldr + ']');
-
-            processResource(jdkClsNames);
+                sysTypesSet.add(clsName);
+            });
 
             checkHasClassName(GridDhtPartitionFullMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(GridDhtPartitionMap.class.getName(), ldr, CLS_NAMES_FILE);
             checkHasClassName(HashMap.class.getName(), ldr, JDK_CLS_NAMES_FILE);
-
-            if (plugins != null && !plugins.isEmpty()) {
-                for (PluginProvider plugin : plugins) {
-                    Enumeration<URL> pluginUrls = ldr.getResources("META-INF/" + plugin.name().toLowerCase()
-                        + ".classnames.properties");
-
-                    while (pluginUrls.hasMoreElements())
-                        processResource(pluginUrls.nextElement());
-                }
-            }
         }
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
@@ -148,7 +141,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private void initializeCaches() {
-        allCaches.add(new CombinedMap(new ConcurrentHashMap8<Integer, MappedName>(), sysTypesMap));
+        allCaches.add(new CombinedMap(new ConcurrentHashMap<Integer, MappedName>(), sysTypesMap));
     }
 
     /** */
@@ -177,12 +170,26 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param platformId Platform id.
      * @param marshallerMappings All marshaller mappings for given platformId.
+     * @throws IgniteCheckedException In case of failure to process incoming marshaller mappings.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings) {
+    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings)
+        throws IgniteCheckedException
+    {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet())
-            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
+        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
+            int typeId = e.getKey();
+            String clsName = e.getValue().className();
+
+            MappedName mappedName = platformCache.get(typeId);
+
+            if (mappedName != null && !F.isEmpty(clsName) && clsName.equals(mappedName.className()))
+                continue;
+
+            platformCache.put(typeId, new MappedName(clsName, true));
+
+            fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+        }
     }
 
     /**
@@ -199,45 +206,12 @@ public class MarshallerContextImpl implements MarshallerContext {
                 "[clsName=" + clsName + ", fileName=" + fileName + ", ldr=" + ldr + ']');
     }
 
-    /**
-     * @param url Resource URL.
-     * @throws IOException In case of error.
-     */
-    private void processResource(URL url) throws IOException {
-        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(url.openStream()))) {
-            String line;
-
-            while ((line = rdr.readLine()) != null) {
-                if (line.isEmpty() || line.startsWith("#"))
-                    continue;
-
-                String clsName = line.trim();
-
-                int typeId = clsName.hashCode();
-
-                MappedName oldClsName;
-
-                if ((oldClsName = sysTypesMap.put(typeId, new MappedName(clsName, true))) != null) {
-                    if (!oldClsName.className().equals(clsName))
-                        throw new IgniteException(
-                                "Duplicate type ID [id="
-                                        + typeId
-                                        + ", oldClsName="
-                                        + oldClsName
-                                        + ", clsName="
-                                        + clsName + ']');
-                }
-
-                sysTypesSet.add(clsName);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean registerClassName(
-            byte platformId,
-            int typeId,
-            String clsName
+        byte platformId,
+        int typeId,
+        String clsName,
+        boolean failIfUnregistered
     ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
@@ -253,7 +227,13 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (transport.stopping())
                     return false;
 
-                IgniteInternalFuture<MappingExchangeResult> fut = transport.awaitMappingAcceptance(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+                MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+                GridFutureAdapter<MappingExchangeResult> fut = transport.awaitMappingAcceptance(item, cache);
+
+                if (failIfUnregistered && !fut.isDone())
+                    throw new UnregisteredBinaryTypeException(typeId, fut);
+
                 MappingExchangeResult res = fut.get();
 
                 return convertXchRes(res);
@@ -263,7 +243,13 @@ public class MarshallerContextImpl implements MarshallerContext {
             if (transport.stopping())
                 return false;
 
-            IgniteInternalFuture<MappingExchangeResult> fut = transport.proposeMapping(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+            MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+            GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
+
+            if (failIfUnregistered && !fut.isDone())
+                throw new UnregisteredBinaryTypeException(typeId, fut);
+
             MappingExchangeResult res = fut.get();
 
             return convertXchRes(res);
@@ -271,10 +257,18 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean registerClassName(byte platformId, int typeId, String clsName)
+        throws IgniteCheckedException {
+        return registerClassName(platformId, typeId, clsName, false);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName)
         throws IgniteCheckedException
     {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
+
+        fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
 
         cache.put(typeId, new MappedName(clsName, true));
 
@@ -327,7 +321,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-        return U.forName(clsName, ldr);
+        return U.forName(clsName, ldr, clsFilter);
     }
 
     /** {@inheritDoc} */
@@ -380,6 +374,16 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return clsName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePredicate<String> classNameFilter() {
+        return clsFilter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdkMarshaller jdkMarshaller() {
+        return jdkMarsh;
     }
 
     /**
@@ -449,12 +453,12 @@ public class MarshallerContextImpl implements MarshallerContext {
                 map = allCaches.get(platformId);
 
                 if (map == null) {
-                    map = new ConcurrentHashMap8<>();
+                    map = new ConcurrentHashMap<>();
                     allCaches.set(platformId, map);
                 }
             }
             else {
-                map = new ConcurrentHashMap8<>();
+                map = new ConcurrentHashMap<>();
 
                 putAtIndex(map, allCaches, platformId, size);
             }
@@ -506,7 +510,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         closProc = ctx.closure();
         clientNode = ctx.clientNode();
 
-        if (ctx.config().isPersistentStoreEnabled())
+        if (CU.isPersistenceEnabled(ctx.config()))
             fileStore.restoreMappings(this);
     }
 
@@ -547,10 +551,10 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /**
-     * @return custom marshaller mapping files directory. Used for standalone WAL iteration
+     * @return {@code True} if marshaller context is initialized.
      */
-    @Nullable public File getMarshallerMappingFileStoreDir() {
-        return marshallerMappingFileStoreDir;
+    public boolean initialized() {
+        return fileStore != null;
     }
 
     /**
@@ -584,7 +588,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         /** {@inheritDoc} */
         @Override public Set<Entry<Integer, MappedName>> entrySet() {
-            return null;
+            return Collections.emptySet();
         }
 
         /** {@inheritDoc} */

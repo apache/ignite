@@ -17,44 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-
-import javax.cache.Cache;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryRetryException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
+
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.CONC_DESTROY_MSG;
 
 /**
  * Tests for dynamic index creation.
  */
-@SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+@SuppressWarnings({"unchecked"})
 public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Attribute to filter node out of cache data nodes. */
     protected static final String ATTR_FILTERED = "FILTERED";
 
@@ -80,13 +81,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
 
     /** Argument for simple SQL (2). */
     protected static final int SQL_ARG_2 = 80;
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
 
     /**
      * Create server configuration.
@@ -127,30 +121,18 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         return commonConfiguration(idx).setClientMode(true);
     }
 
-    /**
-     * Create common node configuration.
-     *
-     * @param idx Index.
-     * @return Configuration.
-     * @throws Exception If failed.
-     */
-    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+        cfg.setFailureHandler(new StopNodeFailureHandler());
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-            .setDefaultMemoryPolicyName("default")
-            .setMemoryPolicies(
-                new MemoryPolicyConfiguration()
-                    .setName("default")
-                    .setMaxSize(128 * 1024 * 1024L)
-                    .setInitialSize(128 * 1024 * 1024L)
-        );
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(128L * 1024 * 1024));
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return optimize(cfg);
     }
@@ -184,7 +166,23 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setBackups(1);
 
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+
         return ccfg;
+    }
+
+    /**
+     * @return Local cache configuration with a pre-configured index.
+     */
+    CacheConfiguration<KeyClass, ValueClass> localCacheConfiguration() {
+        CacheConfiguration<KeyClass, ValueClass> res = cacheConfiguration();
+
+        res.getQueryEntities().iterator().next().setIndexes(Collections.singletonList(
+            new QueryIndex(FIELD_NAME_2_ESCAPED, true, IDX_NAME_LOCAL)));
+
+        res.setCacheMode(CacheMode.LOCAL);
+
+        return res;
     }
 
     /**
@@ -386,6 +384,21 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
+     * Wait appropriate exception.
+     *
+     * @param e Exception to be processed.
+     * @throws Exception If failed.
+     */
+    protected void awaitConcDestroyException(Exception e) throws Exception {
+        for (Throwable th = e; th != null; th = th.getCause()) {
+            if (th.getMessage().contains(CONC_DESTROY_MSG))
+                return;
+        }
+
+        throw e;
+    }
+
+    /**
      * Assert SQL simple data state.
      *
      * @param node Node.
@@ -393,28 +406,35 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @param expSize Expected size.
      */
     protected static void assertSqlSimpleData(Ignite node, String sql, int expSize) {
-        SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
+        try {
+            SqlQuery qry = new SqlQuery(typeName(ValueClass.class), sql).setArgs(SQL_ARG_1);
 
-        List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
+            List<Cache.Entry<BinaryObject, BinaryObject>> res = node.cache(CACHE_NAME).withKeepBinary().query(qry).getAll();
 
-        Set<Long> ids = new HashSet<>();
+            Set<Long> ids = new HashSet<>();
 
-        for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
-            long id = entry.getKey().field(FIELD_KEY);
+            for (Cache.Entry<BinaryObject, BinaryObject> entry : res) {
+                long id = entry.getKey().field(FIELD_KEY);
 
-            long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
-            long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
+                long field1 = entry.getValue().field(FIELD_NAME_1_ESCAPED);
+                long field2 = entry.getValue().field(FIELD_NAME_2_ESCAPED);
 
-            assertTrue(field1 >= SQL_ARG_1);
+                assertTrue(field1 >= SQL_ARG_1);
 
-            assertEquals(id, field1);
-            assertEquals(id, field2);
+                assertEquals(id, field1);
+                assertEquals(id, field2);
 
-            assertTrue(ids.add(id));
+                assertTrue(ids.add(id));
+            }
+
+            assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
+                ", ids=" + ids + ']', expSize, res.size());
         }
-
-        assertEquals("Size mismatch [node=" + node.name() + ", exp=" + expSize + ", actual=" + res.size() +
-            ", ids=" + ids + ']', expSize, res.size());
+        catch (Exception e) {
+            // Swallow QueryRetryException.
+            if (X.cause(e, QueryRetryException.class) == null)
+                throw e;
+        }
     }
 
     /**

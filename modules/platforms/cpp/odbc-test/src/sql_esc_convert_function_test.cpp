@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 #include "ignite/common/decimal.h"
 #include "ignite/common/utils.h"
@@ -69,17 +65,17 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionGetInfo)
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt64)
 {
-    CheckSingleResult<int64_t>("SELECT {fn CONVERT(72623859790382856, SQL_BIGINT)}", 72623859790382856);
+    CheckSingleResult<SQLBIGINT>("SELECT {fn CONVERT(72623859790382856, SQL_BIGINT)}", 72623859790382856);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt32)
 {
-    CheckSingleResult<int32_t>("SELECT {fn CONVERT(1234567890, SQL_INTEGER)}", 1234567890);
+    CheckSingleResult<SQLINTEGER>("SELECT {fn CONVERT(1234567890, SQL_INTEGER)}", 1234567890);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt16)
 {
-    CheckSingleResult<int16_t>("SELECT {fn CONVERT(12345, SQL_SMALLINT)}", 12345);
+    CheckSingleResult<SQLSMALLINT>("SELECT {fn CONVERT(12345, SQL_SMALLINT)}", 12345);
 }
 
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionInt8)
@@ -151,8 +147,8 @@ BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTime)
 BOOST_AUTO_TEST_CASE(TestEscConvertFunctionTimestamp)
 {
     using ignite::impl::binary::BinaryUtils;
-    Timestamp ts = common::MakeTimestampGmt(1983, 3, 14, 13, 20, 15, 999999999);
-    CheckSingleResult<Timestamp>("SELECT {fn CONVERT('1983-03-14 13:20:15.999999999', SQL_TIMESTAMP)}", ts);
+    Timestamp ts = common::MakeTimestampGmt(1983, 3, 14, 13, 20, 15, 999999000);
+    CheckSingleResult<Timestamp>("SELECT {fn CONVERT('1983-03-14 13:20:15.999999', SQL_TIMESTAMP)}", ts);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

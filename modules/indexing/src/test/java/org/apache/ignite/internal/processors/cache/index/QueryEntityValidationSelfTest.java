@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Tests for query entity validation.
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
+public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -43,16 +43,12 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test null value type.
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValueTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -76,6 +72,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -118,6 +115,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexNameDuplicate() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -158,5 +156,48 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, IgniteCheckedException.class, "Duplicate index name");
+    }
+
+    /**
+     * Test class for sql queryable test key.
+     */
+    private static class TestKey {
+        /** Non-unique id. */
+        @QuerySqlField
+        int notUniqueId;
+    }
+
+    /**
+     * Test class for sql queryable test value.
+     */
+    private static class TestValue {
+        /** Field with nested queryable field. */
+        @QuerySqlField
+        TestValueField field;
+    }
+
+    /**
+     * Test class for nested sql queryable field.
+     */
+    private static class TestValueField {
+        /** Not unique id. */
+        @QuerySqlField
+        int notUniqueId;
+    }
+
+    /**
+     * Test duplicated nested annotations.
+     */
+    @Test
+    public void testNestedDuplicatedAnnotations() {
+        final CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<TestKey, TestValue>().setName(CACHE_NAME);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call()  {
+                ccfg.setIndexedTypes(TestKey.class, TestValue.class);
+
+                return null;
+            }
+        }, CacheException.class, "Property with name 'notUniqueId' already exists");
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -74,10 +75,9 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    @SuppressWarnings("unchecked")
+    @Override @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg0 = super.cacheConfiguration(igniteInstanceName);
-
 
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
@@ -92,7 +92,6 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -114,6 +113,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSession() throws Exception {
         testCache(DEFAULT_CACHE_NAME);
 
@@ -209,7 +209,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         /** {@inheritDoc} */
         @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) throws CacheWriterException {
             log.info("writeAll: " + entries);
-            
+
             assertTrue("Unexpected entries: " + entries, entries.size() == 10 || entries.size() == 1);
 
             checkSession("writeAll");

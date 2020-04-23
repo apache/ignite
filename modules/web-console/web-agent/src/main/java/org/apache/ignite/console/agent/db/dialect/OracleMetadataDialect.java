@@ -39,7 +39,6 @@ import org.apache.ignite.console.agent.db.DbTable;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BLOB;
-import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.CHAR;
 import static java.sql.Types.CLOB;
 import static java.sql.Types.DATE;
@@ -208,21 +207,18 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     }
                     else {
                         if (precision < 1)
-                            return INTEGER;
+                            return NUMERIC;
 
-                        if (precision < 2)
-                            return BOOLEAN;
-
-                        if (precision < 4)
+                        if (precision < 3)
                             return TINYINT;
 
-                        if (precision < 6)
+                        if (precision < 5)
                             return SMALLINT;
 
-                        if (precision < 11)
+                        if (precision < 10)
                             return INTEGER;
 
-                        if (precision < 20)
+                        if (precision < 19)
                             return BIGINT;
 
                         return NUMERIC;

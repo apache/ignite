@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -32,8 +33,8 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /** Update count. */
     private long updCnt;
 
-    /** Query ID. */
-    private long qryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /**
      * Default constructor is used for serialization.
@@ -45,12 +46,12 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /**
      * @param isQuery Query flag.
      * @param updCnt Update count.
-     * @param qryId  Query ID.
+     * @param cursorId  Cursor ID.
      */
-    public JdbcResultInfo(boolean isQuery, long updCnt, long qryId) {
+    public JdbcResultInfo(boolean isQuery, long updCnt, long cursorId) {
         this.isQuery = isQuery;
         this.updCnt = updCnt;
-        this.qryId = qryId;
+        this.cursorId = cursorId;
     }
 
     /**
@@ -61,10 +62,10 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return qryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -75,17 +76,19 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer) {
+    @Override public void writeBinary(BinaryWriterExImpl writer,
+        ClientListenerProtocolVersion ver) {
         writer.writeBoolean(isQuery);
         writer.writeLong(updCnt);
-        writer.writeLong(qryId);
+        writer.writeLong(cursorId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader) {
+    @Override public void readBinary(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) {
         isQuery = reader.readBoolean();
         updCnt = reader.readLong();
-        qryId = reader.readLong();
+        cursorId = reader.readLong();
     }
 
     /** {@inheritDoc} */

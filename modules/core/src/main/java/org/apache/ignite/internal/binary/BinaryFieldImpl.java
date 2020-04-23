@@ -21,10 +21,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,6 +34,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryField;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.nonNull;
 
 /**
  * Implementation of binary field descriptor.
@@ -56,6 +59,8 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     /**
      * Constructor.
      *
+     * @param ctx Binary context.
+     * @param typeId Type ID.
      * @param schemas Schemas.
      * @param fieldName Field name.
      * @param fieldId Field ID.
@@ -99,7 +104,6 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T value(BinaryObject obj) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
@@ -209,6 +213,14 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     break;
                 }
 
+                case GridBinaryMarshaller.TIME: {
+                    long time = buf.getLong();
+
+                    val = new Time(time);
+
+                    break;
+                }
+
                 case GridBinaryMarshaller.UUID: {
                     long most = buf.getLong();
                     long least = buf.getLong();
@@ -271,12 +283,30 @@ public class BinaryFieldImpl implements BinaryFieldEx {
      */
     public int fieldOrder(BinaryObjectExImpl obj) {
         if (typeId != obj.typeId()) {
+            BinaryType expType = ctx.metadata(typeId);
+            BinaryType actualType = obj.type();
+            String actualTypeName = null;
+            Exception actualTypeNameEx = null;
+
+            try {
+                actualTypeName = actualType.typeName();
+            }
+            catch (BinaryObjectException e) {
+                actualTypeNameEx = new BinaryObjectException("Failed to get actual binary type name.", e);
+            }
+
             throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
-                " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=" + typeId +
-                ", actual=" + obj.typeId() + ']');
+                " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=[typeId=" + typeId +
+                ", typeName=" + (nonNull(expType) ? expType.typeName() : null) + "], actual=[typeId=" +
+                actualType.typeId() + ", typeName=" + actualTypeName + "], fieldId=" + fieldId + ", fieldName=" +
+                fieldName + ", fieldType=" + (nonNull(expType) ? expType.fieldTypeName(fieldName) : null) + ']',
+                actualTypeNameEx);
         }
 
         int schemaId = obj.schemaId();
+
+        if (schemaId == 0)
+            return BinarySchema.ORDER_NOT_FOUND;
 
         BinarySchema schema = schemas.schema(schemaId);
 

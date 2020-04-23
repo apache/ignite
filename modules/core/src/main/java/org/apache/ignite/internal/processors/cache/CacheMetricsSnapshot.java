@@ -23,11 +23,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Metrics snapshot.
+ * @deprecated Replaced by CacheMetricsSnapshotV2 with versioning support.
  */
+@Deprecated
 public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -37,6 +40,57 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** Number of puts. */
     private long puts = 0;
+
+    /** Number of invokes caused updates. */
+    private long entryProcessorPuts = 0;
+
+    /** Number of invokes caused no updates. */
+    private long entryProcessorReadOnlyInvocations = 0;
+
+    /**
+     * The mean time to execute cache invokes
+     */
+    private float entryProcessorAverageInvocationTime = 0;
+
+    /**
+     * The total number of cache invocations.
+     */
+    private long entryProcessorInvocations = 0;
+
+    /**
+     * The total number of cache invocations, caused removal.
+     */
+    private long entryProcessorRemovals = 0;
+
+    /**
+     * The total number of invocations on keys, which don't exist in cache.
+     */
+    private long entryProcessorMisses = 0;
+
+    /**
+     * The total number of invocations on keys, which exist in cache.
+     */
+    private long entryProcessorHits = 0;
+
+    /**
+     * The percentage of invocations on keys, which don't exist in cache.
+     */
+    private float entryProcessorMissPercentage = 0;
+
+    /**
+     * The percentage of invocations on keys, which exist in cache.
+     */
+    private float entryProcessorHitPercentage = 0;
+
+    /**
+     * So far, the maximum time to execute cache invokes.
+     */
+    private float entryProcessorMaxInvocationTime = 0;
+
+    /**
+     * So far, the minimum time to execute cache invokes.
+     */
+    private float entryProcessorMinInvocationTime = 0;
 
     /** Number of hits. */
     private long hits = 0;
@@ -109,6 +163,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** Number of non-{@code null} values in the cache. */
     private int size;
+
+    /** Cache size. */
+    private long cacheSize;
 
     /** Number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
@@ -194,6 +251,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Rebalancing partitions count. */
     private int rebalancingPartitionsCnt;
 
+    /** Number of already rebalanced keys. */
+    private long rebalancedKeys;
+
+    /** Number estimated to rebalance keys. */
+    private long estimatedRebalancingKeys;
+
     /** Keys to rebalance left. */
     private long keysToRebalanceLeft;
 
@@ -208,6 +271,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** Estimate rebalance finish time. */
     private long rebalanceFinishTime;
+
+    /** The number of clearing partitions need to await before rebalance. */
+    private long rebalanceClearingPartitionsLeft;
 
     /** */
     private String keyType;
@@ -230,6 +296,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** */
     private boolean isWriteThrough;
 
+    /** */
+    private boolean isValidForReading;
+
+    /** */
+    private boolean isValidForWriting;
+
     /**
      * Default constructor.
      */
@@ -242,7 +314,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
      *
      * @param m Cache metrics.
      */
-    public CacheMetricsSnapshot(CacheMetrics m) {
+    public CacheMetricsSnapshot(CacheMetricsImpl m) {
         reads = m.getCacheGets();
         puts = m.getCachePuts();
         hits = m.getCacheHits();
@@ -251,6 +323,18 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         txRollbacks = m.getCacheTxRollbacks();
         evicts = m.getCacheEvictions();
         removes = m.getCacheRemovals();
+
+        entryProcessorPuts = m.getEntryProcessorPuts();
+        entryProcessorReadOnlyInvocations = m.getEntryProcessorReadOnlyInvocations();
+        entryProcessorInvocations = m.getEntryProcessorInvocations();
+        entryProcessorRemovals = m.getEntryProcessorRemovals();
+        entryProcessorMisses = m.getEntryProcessorMisses();
+        entryProcessorHits = m.getEntryProcessorHits();
+        entryProcessorMissPercentage = m.getEntryProcessorMissPercentage();
+        entryProcessorHitPercentage = m.getEntryProcessorHitPercentage();
+        entryProcessorAverageInvocationTime = m.getEntryProcessorAverageInvocationTime();
+        entryProcessorMaxInvocationTime = m.getEntryProcessorMaxInvocationTime();
+        entryProcessorMinInvocationTime = m.getEntryProcessorMinInvocationTime();
 
         putAvgTimeNanos = m.getAveragePutTime();
         getAvgTimeNanos = m.getAverageGetTime();
@@ -266,15 +350,21 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapEvicts = m.getOffHeapEvictions();
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
-        offHeapEntriesCnt = m.getOffHeapEntriesCount();
-        heapEntriesCnt = m.getHeapEntriesCount();
-        offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
-        offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
+
+        CacheMetricsImpl.EntriesStatMetrics entriesStat = m.getEntriesStat();
+
+        offHeapEntriesCnt = entriesStat.offHeapEntriesCount();
+        heapEntriesCnt = entriesStat.heapEntriesCount();
+        offHeapPrimaryEntriesCnt = entriesStat.offHeapPrimaryEntriesCount();
+        offHeapBackupEntriesCnt = entriesStat.offHeapBackupEntriesCount();
+
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
-        size = m.getSize();
-        keySize = m.getKeySize();
-        isEmpty = m.isEmpty();
+        cacheSize = entriesStat.cacheSize();
+        keySize = entriesStat.keySize();
+        size = entriesStat.size();
+        isEmpty = entriesStat.isEmpty();
+
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();
         txXidMapSize = m.getTxXidMapSize();
@@ -307,14 +397,20 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = m.isManagementEnabled();
         isReadThrough = m.isReadThrough();
         isWriteThrough = m.isWriteThrough();
+        isValidForReading = m.isValidForReading();
+        isValidForWriting = m.isValidForWriting();
 
-        totalPartitionsCnt = m.getTotalPartitionsCount();
-        rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
+        totalPartitionsCnt = entriesStat.totalPartitionsCount();
+        rebalancingPartitionsCnt = entriesStat.rebalancingPartitionsCount();
+
+        rebalancedKeys = m.getRebalancedKeys();
+        estimatedRebalancingKeys = m.getEstimatedRebalancingKeys();
         keysToRebalanceLeft = m.getKeysToRebalanceLeft();
         rebalancingBytesRate = m.getRebalancingBytesRate();
         rebalancingKeysRate = m.getRebalancingKeysRate();
         rebalanceStartTime = m.rebalancingStartTime();
         rebalanceFinishTime = m.estimateRebalancingFinishTime();
+        rebalanceClearingPartitionsLeft = m.getRebalanceClearingPartitionsLeft();
     }
 
     /**
@@ -333,6 +429,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
         size = loc.getSize();
+        cacheSize = loc.getCacheSize();
         keySize = loc.getKeySize();
 
         keyType = loc.getKeyType();
@@ -342,6 +439,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isManagementEnabled = loc.isManagementEnabled();
         isReadThrough = loc.isReadThrough();
         isWriteThrough = loc.isWriteThrough();
+        isValidForReading = loc.isValidForReading();
+        isValidForWriting = loc.isValidForWriting();
 
         for (CacheMetrics e : metrics) {
             reads += e.getCacheGets();
@@ -352,6 +451,18 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             txRollbacks += e.getCacheTxRollbacks();
             evicts += e.getCacheEvictions();
             removes += e.getCacheRemovals();
+
+            entryProcessorPuts = e.getEntryProcessorPuts();
+            entryProcessorReadOnlyInvocations = e.getEntryProcessorReadOnlyInvocations();
+            entryProcessorInvocations = e.getEntryProcessorInvocations();
+            entryProcessorRemovals = e.getEntryProcessorRemovals();
+            entryProcessorMisses = e.getEntryProcessorMisses();
+            entryProcessorHits = e.getEntryProcessorHits();
+            entryProcessorMissPercentage = e.getEntryProcessorMissPercentage();
+            entryProcessorHitPercentage = e.getEntryProcessorHitPercentage();
+            entryProcessorAverageInvocationTime = e.getEntryProcessorAverageInvocationTime();
+            entryProcessorMaxInvocationTime = e.getEntryProcessorMaxInvocationTime();
+            entryProcessorMinInvocationTime = e.getEntryProcessorMinInvocationTime();
 
             putAvgTimeNanos += e.getAveragePutTime();
             getAvgTimeNanos += e.getAverageGetTime();
@@ -434,6 +545,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             else
                 writeBehindErrorRetryCnt = -1;
 
+            rebalancedKeys += e.getRebalancedKeys();
+            estimatedRebalancingKeys += e.getEstimatedRebalancingKeys();
             totalPartitionsCnt += e.getTotalPartitionsCount();
             rebalancingPartitionsCnt += e.getRebalancingPartitionsCount();
             keysToRebalanceLeft += e.getKeysToRebalanceLeft();
@@ -486,6 +599,61 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
         return puts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorPuts() {
+        return entryProcessorPuts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorReadOnlyInvocations() {
+        return entryProcessorReadOnlyInvocations;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorInvocations() {
+        return entryProcessorInvocations;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorHits() {
+        return entryProcessorHits;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorHitPercentage() {
+        return entryProcessorHitPercentage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMissPercentage() {
+        return entryProcessorMissPercentage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorMisses() {
+        return entryProcessorMisses;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEntryProcessorRemovals() {
+        return entryProcessorRemovals;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorAverageInvocationTime() {
+        return entryProcessorAverageInvocationTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMinInvocationTime() {
+        return entryProcessorMinInvocationTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getEntryProcessorMaxInvocationTime() {
+        return entryProcessorMaxInvocationTime;
     }
 
     /** {@inheritDoc} */
@@ -583,6 +751,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
         return (float) offHeapMisses / offHeapGets * 100.0f;
     }
+
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return offHeapEntriesCnt;
@@ -611,6 +780,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public int getSize() {
         return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheSize() {
+        return cacheSize;
     }
 
     /** {@inheritDoc} */
@@ -703,6 +877,14 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return totalPartitionsCnt;
     }
 
+    @Override public long getRebalancedKeys() {
+        return rebalancedKeys;
+    }
+
+    @Override public long getEstimatedRebalancingKeys() {
+        return estimatedRebalancingKeys;
+    }
+
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
         return rebalancingPartitionsCnt;
@@ -731,6 +913,21 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
         return rebalanceStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return rebalanceFinishTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return rebalanceStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return rebalanceClearingPartitionsLeft;
     }
 
     /** {@inheritDoc} */
@@ -814,6 +1011,16 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return isValidForReading;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return isValidForWriting;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshot.class, this);
     }
@@ -871,6 +1078,26 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(keysToRebalanceLeft);
         out.writeLong(rebalancingBytesRate);
         out.writeLong(rebalancingKeysRate);
+
+        if (!(out instanceof OptimizedObjectOutputStream)) {
+            out.writeLong(rebalancedKeys);
+            out.writeLong(estimatedRebalancingKeys);
+            out.writeLong(rebalanceStartTime);
+            out.writeLong(rebalanceFinishTime);
+            out.writeLong(rebalanceClearingPartitionsLeft);
+
+            out.writeLong(entryProcessorPuts);
+            out.writeFloat(entryProcessorAverageInvocationTime);
+            out.writeLong(entryProcessorInvocations);
+            out.writeFloat(entryProcessorMaxInvocationTime);
+            out.writeFloat(entryProcessorMinInvocationTime);
+            out.writeLong(entryProcessorReadOnlyInvocations);
+            out.writeFloat(entryProcessorHitPercentage);
+            out.writeLong(entryProcessorHits);
+            out.writeLong(entryProcessorMisses);
+            out.writeFloat(entryProcessorMissPercentage);
+            out.writeLong(entryProcessorRemovals);
+        }
     }
 
     /** {@inheritDoc} */
@@ -926,5 +1153,28 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         keysToRebalanceLeft = in.readLong();
         rebalancingBytesRate = in.readLong();
         rebalancingKeysRate = in.readLong();
+
+        if (in.available() >= 40) {
+            rebalancedKeys = in.readLong();
+            estimatedRebalancingKeys = in.readLong();
+            rebalanceStartTime = in.readLong();
+            rebalanceFinishTime = in.readLong();
+            rebalanceClearingPartitionsLeft = in.readLong();
+        }
+
+        // 11 long and 5 float values give 108 bytes in total.
+        if (in.available() >= 68) {
+            entryProcessorPuts = in.readLong();
+            entryProcessorAverageInvocationTime = in.readFloat();
+            entryProcessorInvocations = in.readLong();
+            entryProcessorMaxInvocationTime = in.readFloat();
+            entryProcessorMinInvocationTime = in.readFloat();
+            entryProcessorReadOnlyInvocations = in.readLong();
+            entryProcessorHitPercentage = in.readFloat();
+            entryProcessorHits = in.readLong();
+            entryProcessorMisses = in.readLong();
+            entryProcessorMissPercentage = in.readFloat();
+            entryProcessorRemovals = in.readLong();
+        }
     }
 }

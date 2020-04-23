@@ -69,6 +69,13 @@ public interface HadoopJobInfo {
     String user();
 
     /**
+     * Gets credentials.
+     *
+     * @return Credentials.
+     */
+    byte[] credentials();
+
+    /**
      * Creates new job instance for the given ID.
      * {@link HadoopJobInfo} is reusable for multiple jobs while {@link HadoopJobEx} is for one job execution.
      * This method will be called once for the same ID on one node, though it can be called on the same host

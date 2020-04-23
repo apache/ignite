@@ -25,13 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 public class GridCacheReplicatedNearOnlyMultiJvmFullApiSelfTest extends
     GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    protected boolean isMultiJvm() {
+    @Override protected boolean isMultiJvm() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testNearDhtKeySize() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-648");
     }
 }

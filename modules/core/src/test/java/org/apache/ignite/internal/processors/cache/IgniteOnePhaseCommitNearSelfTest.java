@@ -40,7 +40,9 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import org.junit.Test;
 
+import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
 import static org.apache.ignite.transactions.TransactionConcurrency.*;
 import static org.apache.ignite.transactions.TransactionIsolation.*;
 
@@ -88,7 +90,11 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOnePhaseCommitFromNearNode() throws Exception {
+        if (forcedMvcc())
+            return;
+
         backups = 1;
 
         startGrids(GRID_CNT);
@@ -180,7 +186,7 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
             assertMessageCount(GridNearTxPrepareRequest.class, 1);
             assertMessageCount(GridDhtTxPrepareRequest.class, 1);
             assertMessageCount(GridNearTxFinishRequest.class, 1);
-            assertMessageCount(GridDhtTxFinishRequest.class, 0);
+            assertMessageCount(GridDhtTxFinishRequest.class, 1);
 
             msgCntMap.clear();
         }

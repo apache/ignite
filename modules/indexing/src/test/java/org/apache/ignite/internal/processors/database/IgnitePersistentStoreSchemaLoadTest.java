@@ -27,30 +27,26 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
+@WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
 public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String TMPL_NAME = "test_cache*";
 
@@ -67,17 +63,17 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         cfg.setCacheConfiguration(cacheCfg(TMPL_NAME));
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
+        DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
-        pCfg.setCheckpointingFrequency(1000);
+        pCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(100L * 1024 * 1024));
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        pCfg.setCheckpointFrequency(1000);
 
-        cfg.setActiveOnStart(true);
+        cfg.setDataStorageConfiguration(pCfg);
 
         return cfg;
     }
@@ -117,34 +113,32 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
-
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
-
-        System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
+        cleanPersistenceDir();
     }
 
     /** */
+    @Test
     public void testDynamicSchemaChangesPersistence() throws Exception {
         checkSchemaStateAfterNodeRestart(false);
     }
 
     /** */
+    @Test
     public void testDynamicSchemaChangesPersistenceWithAliveCluster() throws Exception {
         checkSchemaStateAfterNodeRestart(true);
     }
 
     /** */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testDynamicSchemaChangesPersistenceWithStaticCache() throws Exception {
         IgniteEx node = startGrid(getConfigurationWithStaticCache(getTestIgniteInstanceName(0)));
 
@@ -190,8 +184,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         CountDownLatch cnt = checkpointLatch(node);
 
-        node.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false);
 
         assertEquals(0, indexCnt(node, SQL_CACHE_NAME));
 
@@ -208,6 +202,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         node.active(true);
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
+
+        node.context().query().querySqlFields(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
     }
 
     /** */
@@ -245,13 +241,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
      * @param node Node whose checkpoint to wait for.
      * @return Latch released when checkpoint happens.
      */
@@ -261,8 +250,16 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
         GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)node.context().cache().context().database();
 
         db.addCheckpointListener(new DbCheckpointListener() {
-            @Override public void onCheckpointBegin(Context ctx) {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
                 cnt.countDown();
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                /* No-op. */
             }
         });
 
@@ -275,13 +272,17 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
      * @param schema Schema name.
      */
     private void makeDynamicSchemaChanges(IgniteEx node, String schema) {
-        node.context().query().querySqlFieldsNoCache(
+        node.context().query().querySqlFields(
             new SqlFieldsQuery("create index \"my_idx\" on \"Person\" (\"id\", \"name\")").setSchema(schema), false)
                 .getAll();
 
-        node.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("alter table \"Person\" add column \"age\" int").setSchema(schema), false)
-                .getAll();
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("alter table \"Person\" add column (\"age\" int, \"city\" char)")
+            .setSchema(schema), false).getAll();
+
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("alter table \"Person\" drop column \"city\"").setSchema(schema), false)
+            .getAll();
     }
 
     /**

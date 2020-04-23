@@ -18,9 +18,16 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.cluster.ClusterState.active;
 
 /**
  *
@@ -30,15 +37,29 @@ public class StateChangeRequest {
     private final ChangeGlobalStateMessage msg;
 
     /** */
+    private final BaselineTopologyHistoryItem prevBltHistItem;
+
+    /** */
+    private ClusterState prevState;
+
+    /** */
     private final AffinityTopologyVersion topVer;
 
     /**
      * @param msg Message.
+     * @param bltHistItem Baseline history item.
+     * @param prevState Previous cluster state.
      * @param topVer State change topology versoin.
      */
-    public StateChangeRequest(ChangeGlobalStateMessage msg,
-        AffinityTopologyVersion topVer) {
+    public StateChangeRequest(
+        ChangeGlobalStateMessage msg,
+        BaselineTopologyHistoryItem bltHistItem,
+        ClusterState prevState,
+        AffinityTopologyVersion topVer
+    ) {
         this.msg = msg;
+        prevBltHistItem = bltHistItem;
+        this.prevState = prevState;
         this.topVer = topVer;
     }
 
@@ -50,6 +71,13 @@ public class StateChangeRequest {
     }
 
     /**
+     * @return State change message ID.
+     */
+    public IgniteUuid id() {
+        return msg.id();
+    }
+
+    /**
      * @return State change request ID.
      */
     public UUID requestId() {
@@ -58,9 +86,46 @@ public class StateChangeRequest {
 
     /**
      * @return New state.
+     * @deprecated Use {@link #state()} instead.
      */
+    @Deprecated
     public boolean activate() {
         return msg.activate();
+    }
+
+    /**
+     * @return New cluster state.
+     */
+    public ClusterState state() {
+        return msg.state();
+    }
+
+    /**
+     * @return Previous cluster state.
+     */
+    public ClusterState prevState() {
+        return prevState;
+    }
+
+    /**
+     * @return {@code True} if active state was changed.
+     */
+    public boolean activeChanged() {
+        return active(prevState) && !active(msg.state()) || !active(prevState) && active(msg.state());
+    }
+
+    /**
+     * @return Previous baseline topology.
+     */
+    @Nullable public BaselineTopologyHistoryItem prevBaselineTopologyHistoryItem() {
+        return prevBltHistItem;
+    }
+
+    /**
+     * @return Baseline topology.
+     */
+    @Nullable public BaselineTopology baselineTopology() {
+        return msg.baselineTopology();
     }
 
     /**

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.service.inner.MyService;
 import org.apache.ignite.internal.processors.service.inner.MyServiceFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for package-private service implementation.
@@ -30,15 +30,14 @@ public class GridServicePackagePrivateSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPackagePrivateService() throws Exception {
         try {
             Ignite server = startGrid("server");
 
             server.services().deployClusterSingleton("my-service", MyServiceFactory.create());
 
-            Ignition.setClientMode(true);
-
-            Ignite client = startGrid("client");
+            Ignite client = startClientGrid("client");
 
             MyService svc = client.services().serviceProxy("my-service", MyService.class, true);
 

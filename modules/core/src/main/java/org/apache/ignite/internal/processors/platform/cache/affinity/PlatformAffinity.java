@@ -27,6 +27,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -37,7 +40,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Native cache wrapper implementation.
  */
-@SuppressWarnings({"unchecked", "UnusedDeclaration", "TryFinallyCanBeTryWithResources"})
 public class PlatformAffinity extends PlatformAbstractTarget {
     /** */
     public static final int OP_AFFINITY_KEY = 1;
@@ -85,6 +87,9 @@ public class PlatformAffinity extends PlatformAbstractTarget {
     public static final int OP_PARTITIONS = 15;
 
     /** */
+    public static final int OP_IS_ASSIGNMENT_VALID = 16;
+
+    /** */
     private static final C1<ClusterNode, UUID> TO_NODE_ID = new C1<ClusterNode, UUID>() {
         @Nullable @Override public UUID apply(ClusterNode node) {
             return node != null ? node.id() : null;
@@ -96,6 +101,9 @@ public class PlatformAffinity extends PlatformAbstractTarget {
 
     /** Discovery manager */
     private final GridDiscoveryManager discovery;
+
+    /** Affinity manager. */
+    private final GridCacheAffinityManager affMgr;
 
     /**
      * Constructor.
@@ -112,6 +120,9 @@ public class PlatformAffinity extends PlatformAbstractTarget {
 
         if (aff == null)
             throw new IgniteCheckedException("Cache with the given name doesn't exist: " + name);
+
+        this.affMgr = this.platformCtx.kernalContext().cache().context().cacheContext(GridCacheUtils.cacheId(name))
+                .affinity();
 
         discovery = igniteCtx.discovery();
     }
@@ -161,13 +172,31 @@ public class PlatformAffinity extends PlatformAbstractTarget {
                 return aff.isPrimaryOrBackup(node, key) ? TRUE : FALSE;
             }
 
+            case OP_IS_ASSIGNMENT_VALID: {
+                AffinityTopologyVersion ver = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
+                int part = reader.readInt();
+                AffinityTopologyVersion endVer = affMgr.affinityTopologyVersion();
+
+                if (!affMgr.primaryChanged(part, ver, endVer)) {
+                    return TRUE;
+                }
+
+                if (!affMgr.partitionLocalNode(part, endVer)) {
+                    return FALSE;
+                }
+
+                // Special case: late affinity assignment when primary changes to local node due to a node join.
+                // Specified partition is local, and near cache entries are valid for primary keys.
+                return ver.topologyVersion() == endVer.topologyVersion() ? TRUE : FALSE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {

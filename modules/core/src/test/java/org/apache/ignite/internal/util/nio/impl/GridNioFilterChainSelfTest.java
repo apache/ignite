@@ -17,23 +17,20 @@
 
 package org.apache.ignite.internal.util.nio.impl;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterChain;
-import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
-import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests filter chain event processing.
@@ -66,6 +63,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChainEvents() throws Exception {
         final AtomicReference<String> connectedEvt = new AtomicReference<>();
         final AtomicReference<String> disconnectedEvt = new AtomicReference<>();
@@ -247,7 +245,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        public String toString() {
+        @Override public String toString() {
             return "AppendingFilter [param=" + param + ']';
         }
 
@@ -263,141 +261,6 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
             att = (att == null ? "" : att) + param;
 
             ses.addMeta(metaKey, att);
-        }
-    }
-
-    /**
-     */
-    public class MockNioSession extends GridMetadataAwareAdapter implements GridNioSession {
-        /** Local address */
-        private InetSocketAddress locAddr = new InetSocketAddress(0);
-
-        /** Remote address. */
-        private InetSocketAddress rmtAddr = new InetSocketAddress(0);
-
-        /**
-         * Creates empty mock session.
-         */
-        public MockNioSession() {
-            // No-op.
-        }
-
-        /**
-         * Creates new mock session with given addresses.
-         *
-         * @param locAddr Local address.
-         * @param rmtAddr Remote address.
-         */
-        public MockNioSession(InetSocketAddress locAddr, InetSocketAddress rmtAddr) {
-            this();
-
-            this.locAddr = locAddr;
-            this.rmtAddr = rmtAddr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public InetSocketAddress localAddress() {
-            return locAddr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public InetSocketAddress remoteAddress() {
-            return rmtAddr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long bytesSent() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long bytesReceived() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long createTime() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long closeTime() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long lastReceiveTime() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long lastSendTime() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long lastSendScheduleTime() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> close() {
-            return new GridNioFinishedFuture<>(true);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridNioFuture<?> send(Object msg) {
-            return new GridNioFinishedFuture<>(true);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridNioFuture<Object> resumeReads() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridNioFuture<Object> pauseReads() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean accepted() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readsPaused() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void outRecoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void inRecoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void systemMessage(Object msg) {
-            // No-op.
         }
     }
 }

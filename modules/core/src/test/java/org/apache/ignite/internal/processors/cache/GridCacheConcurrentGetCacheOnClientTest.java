@@ -23,9 +23,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -33,23 +32,10 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  *
  */
 public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractTest{
-    /** Ip finder. */
-    private final static TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /**
-     * @param gridName Grid name.
-     */
-   @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        return cfg;
-    }
-
     /**
      *
      */
+    @Test
     public void test() throws Exception {
         IgniteConfiguration node1cfg = getConfiguration("node1");
         IgniteConfiguration node2cfg = getConfiguration("node2");
@@ -57,14 +43,8 @@ public class GridCacheConcurrentGetCacheOnClientTest extends GridCommonAbstractT
         Ignite node1 = startGrid("node1", node1cfg);
         Ignite node2 = startGrid("node2", node2cfg);
 
-        IgniteConfiguration clientCfg1 = getConfiguration("client");
-        clientCfg1.setClientMode(true);
-
-        IgniteConfiguration clientCfg2 = getConfiguration("client");
-        clientCfg2.setClientMode(true);
-
-        final IgniteEx client1 = (IgniteEx)startGrid("client1", clientCfg1);
-        final IgniteEx client2 = (IgniteEx)startGrid("client2", clientCfg2);
+        final IgniteEx client1 = startClientGrid("client1", getConfiguration("client"));
+        final IgniteEx client2 = startClientGrid("client2", getConfiguration("client"));
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 

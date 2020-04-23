@@ -14,7 +14,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.container.wcf-content
-    ignite-footer
-    web-console-footer-links(ng-if='$parent.user')
-    ignite-powered-by-apache
+
+.web-console-footer__sidebar-stuff
+    a(
+        href="/api/v1/downloads/agent"
+        target="_self"
+        ng-if='$ctrl.userIsAuthorized'
+        title='Download Agent'
+    )
+        svg(ignite-icon='downloadAgent')
+
+.web-console-footer__regular-stuff
+    p Apache Ignite Web Console ({{$ctrl.Version.webConsole}})
+    p © {{::$ctrl.year}} The Apache Software Foundation.
+    p.web-console-footer__legal Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.
+
+    a(href="/api/v1/downloads/agent" target="_self" ng-if='$ctrl.userIsAuthorized') Download Agent

@@ -26,6 +26,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test ensuring that event listeners are picked by started node.
@@ -67,6 +68,7 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListener() throws Exception {
         startGrids(2);
 

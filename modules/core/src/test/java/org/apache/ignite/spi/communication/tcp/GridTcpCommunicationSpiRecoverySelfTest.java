@@ -31,15 +31,20 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -53,14 +58,13 @@ import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
 
 /**
  *
  */
-@SuppressWarnings("unchecked")
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
-public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
+public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<Message>> extends GridSpiAbstractTest<T> {
     /** */
     private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
@@ -86,17 +90,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     private static GridTimeoutProcessor timeoutProcessor;
 
     /**
-     *
-     */
-    static {
-        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<Message>() {
-            @Override public Message apply() {
-                return new GridTestMessage();
-            }
-        });
-    }
-
-    /**
      * Disable SPI auto-start.
      */
     public GridTcpCommunicationSpiRecoverySelfTest() {
@@ -104,7 +97,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /** */
-    @SuppressWarnings({"deprecation"})
     private class TestListener implements CommunicationListener<Message> {
         /** */
         private boolean block;
@@ -113,7 +105,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         private CountDownLatch blockLatch;
 
         /** */
-        private ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
+        private GridConcurrentHashSet<Long> msgIds = new GridConcurrentHashSet<>();
 
         /** */
         private AtomicInteger rcvCnt = new AtomicInteger();
@@ -197,6 +189,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockListener() throws Exception {
         // Test listener throws exception and stops selector thread, so must restart SPI.
         for (int i = 0; i < ITERS; i++) {
@@ -216,7 +209,6 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("BusyWait")
     private void checkBlockListener() throws Exception {
         TcpCommunicationSpi spi0 = spis.get(0);
         TcpCommunicationSpi spi1 = spis.get(1);
@@ -286,6 +278,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockRead1() throws Exception {
         createSpis();
 
@@ -367,6 +360,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     }, 60_000);
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
+
+                    assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -402,6 +397,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockRead2() throws Exception {
         createSpis();
 
@@ -499,6 +495,9 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs0, lsnr0.rcvCnt.get());
                     assertEquals(expMsgs1, lsnr1.rcvCnt.get());
+
+                    if (spi1.isUsePairedConnections())
+                        assertTrue(waitForSessionsCount(spi1, 2));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -534,6 +533,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockRead3() throws Exception {
         createSpis();
 
@@ -609,6 +609,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     }, 60_000);
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
+
+                    assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -642,14 +644,29 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     }
 
     /**
+     * @param spi Spi.
+     *
+     * @return {@code true} if sessions count was achieved, {@code false} otherwise.
+     */
+    private boolean waitForSessionsCount(TcpCommunicationSpi spi, int cnt) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Collection<? extends GridNioSession> sessions =
+                    GridTestUtils.getFieldValue(spi, "nioSrvr", "sessions");
+
+                return sessions.size() == cnt;
+            }
+        }, awaitForSocketWriteTimeout());
+    }
+
+    /**
      * @param spi SPI.
      * @param in {@code True} if need find inbound session.
      * @return Session.
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private GridNioSession communicationSession(TcpCommunicationSpi spi, boolean in) throws Exception {
-        final GridNioServer srv = U.field(spi, "nioSrvr");
+        final GridNioServer<?> srv = U.field(spi, "nioSrvr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -725,6 +742,16 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             node.order(i);
 
             GridSpiTestContext ctx = initSpiContext();
+
+            MessageFactoryProvider testMsgFactory = new MessageFactoryProvider() {
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+                }
+            };
+
+            ctx.messageFactory(new IgniteMessageFactoryImpl(
+                    new MessageFactory[] {new GridIoMessageFactory(), testMsgFactory})
+            );
 
             ctx.setLocalNode(node);
 

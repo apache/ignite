@@ -1,0 +1,87 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'concurrency'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Concurrency control
+    panel-description
+        | Cache concurrent asynchronous operations settings.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Max async operations:',
+                    model: `${model}.maxConcurrentAsyncOperations`,
+                    name: '"maxConcurrentAsyncOperations"',
+                    placeholder: '500',
+                    min: '0',
+                    tip: 'Maximum number of allowed concurrent asynchronous operations<br/>\
+                         If <b>0</b> then number of concurrent asynchronous operations is unlimited'
+                })
+            .pc-form-grid-col-30
+                +form-field__number({
+                    label: 'Default lock timeout:',
+                    model: `${model}.defaultLockTimeout`,
+                    name: '"defaultLockTimeout"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Default lock acquisition timeout in milliseconds<br/>\
+                         If <b>0</b> then lock acquisition will never timeout'
+                })
+
+            //- Removed in ignite 2.0
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])' ng-hide=`${model}.atomicityMode === 'TRANSACTIONAL'`)
+                +form-field__dropdown({
+                    label: 'Entry versioning:',
+                    model: `${model}.atomicWriteOrderMode`,
+                    name: '"atomicWriteOrderMode"',
+                    placeholder: 'Choose versioning',
+                    options: '[\
+                                            {value: "CLOCK", label: "CLOCK"},\
+                                            {value: "PRIMARY", label: "PRIMARY"}\
+                                        ]',
+                    tip: 'Write ordering mode determines which node assigns the write version, sender or the primary node\
+                                        <ul>\
+                                            <li>CLOCK - in this mode write versions are assigned on a sender node which generally leads to better performance</li>\
+                                            <li>PRIMARY - in this mode version is assigned only on primary node. This means that sender will only send write request to primary node, which in turn will assign write version and forward it to backups</li>\
+                                        </ul>'
+                })
+
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Write synchronization mode:',
+                    model: `${model}.writeSynchronizationMode`,
+                    name: '"writeSynchronizationMode"',
+                    placeholder: 'PRIMARY_SYNC',
+                    options: '[\
+                                            {value: "FULL_SYNC", label: "FULL_SYNC"},\
+                                            {value: "FULL_ASYNC", label: "FULL_ASYNC"},\
+                                            {value: "PRIMARY_SYNC", label: "PRIMARY_SYNC"}\
+                                        ]',
+                    tip: 'Write synchronization mode\
+                                        <ul>\
+                                            <li>FULL_SYNC - Ignite will wait for write or commit replies from all nodes</li>\
+                                            <li>FULL_ASYNC - Ignite will not wait for write or commit responses from participating nodes</li>\
+                                            <li>PRIMARY_SYNC - Makes sense for PARTITIONED mode. Ignite will wait for write or commit to complete on primary node</li>\
+                                        </ul>'
+                })
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheConcurrency')

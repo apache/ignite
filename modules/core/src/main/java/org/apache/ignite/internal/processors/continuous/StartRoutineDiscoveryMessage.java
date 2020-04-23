@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Discovery message used for Continuous Query registration.
  */
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
@@ -36,7 +41,8 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     private final StartRequestData startReqData;
 
     /** */
-    private final Map<UUID, IgniteCheckedException> errs = new HashMap<>();
+    // Initilized here as well to preserve compatibility with previous versions
+    private Map<UUID, IgniteCheckedException> errs = new HashMap<>();
 
     /** */
     private Map<Integer, T2<Long, Long>> updateCntrs;
@@ -46,6 +52,9 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** Keep binary flag. */
     private boolean keepBinary;
+
+    /** */
+    private transient ClassNotFoundException deserEx;
 
     /**
      * @param routineId Routine id.
@@ -70,6 +79,9 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @param e Exception.
      */
     public void addError(UUID nodeId, IgniteCheckedException e) {
+        if (errs == null)
+            errs = new HashMap<>();
+
         errs.put(nodeId, e);
     }
 
@@ -108,7 +120,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
      * @return Errs.
      */
     public Map<UUID, IgniteCheckedException> errs() {
-        return errs;
+        return errs != null ? errs : Collections.emptyMap();
     }
 
     /**
@@ -125,7 +137,28 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
 
     /** {@inheritDoc} */
     @Override public DiscoveryCustomMessage ackMessage() {
-        return new StartRoutineAckDiscoveryMessage(routineId, errs, updateCntrs, updateCntrsPerNode);
+        return new StartRoutineAckDiscoveryMessage(routineId, errs(), updateCntrs, updateCntrsPerNode);
+    }
+
+    /** */
+    private void readObject(ObjectInputStream in) throws IOException {
+        // Override default serialization in order to tolerate missing classes exceptions (e.g. remote filter class).
+        // We need this means because CQ registration process assumes that an "ack message" will be sent.
+        try {
+            in.defaultReadObject();
+        }
+        catch (ClassNotFoundException e) {
+            deserEx = e;
+
+            throw new IncompleteDeserializationException(this);
+        }
+    }
+
+    /**
+     * @return Exception occurred during deserialization.
+     */
+    @Nullable public ClassNotFoundException deserializationException() {
+        return deserEx;
     }
 
     /** {@inheritDoc} */

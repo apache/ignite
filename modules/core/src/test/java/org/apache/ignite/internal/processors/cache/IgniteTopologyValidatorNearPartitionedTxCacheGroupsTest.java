@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Topology validator test.
@@ -27,5 +28,12 @@ public class IgniteTopologyValidatorNearPartitionedTxCacheGroupsTest extends
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
+        super.beforeTestsStarted();
     }
 }

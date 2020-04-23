@@ -19,18 +19,15 @@ package org.apache.ignite.ml.math.util;
 
 import java.util.List;
 import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.matrix.MatrixView;
-import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixView;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.SparseMatrix;
+import org.apache.ignite.ml.math.primitives.matrix.impl.ViewMatrix;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Utility class for various matrix operations.
@@ -44,7 +41,7 @@ public class MatrixUtil {
      */
     public static Matrix like(Matrix matrix) {
         if (isCopyLikeSupport(matrix))
-            return new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+            return new DenseMatrix(matrix.rowSize(), matrix.columnSize());
         else
             return matrix.like(matrix.rowSize(), matrix.columnSize());
     }
@@ -65,14 +62,25 @@ public class MatrixUtil {
     }
 
     /**
+     * Creates the identity matrix with the given size.
+     * @param n N.
+     */
+    public static Matrix identity(int n) {
+        DenseMatrix res = new DenseMatrix(n, n);
+        for (int i = 0; i < n; i++)
+            res.set(i, i, 1.0);
+        return res;
+    }
+
+    /**
      * Create the like matrix with specified size with read-only matrices support.
      *
      * @param matrix Matrix for like.
      * @return Like matrix.
      */
     public static Matrix like(Matrix matrix, int rows, int cols) {
-        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
-            return new DenseLocalOnHeapMatrix(rows, cols);
+        if (isCopyLikeSupport(matrix))
+            return new DenseMatrix(rows, cols);
         else
             return matrix.like(rows, cols);
     }
@@ -85,19 +93,10 @@ public class MatrixUtil {
      * @return Like vector.
      */
     public static Vector likeVector(Matrix matrix, int crd) {
-        if (isCopyLikeSupport(matrix) || isDistributed(matrix))
-            return new DenseLocalOnHeapVector(crd);
+        if (isCopyLikeSupport(matrix))
+            return new DenseVector(crd);
         else
             return matrix.likeVector(crd);
-    }
-
-    /**
-     * Check if a given matrix is distributed.
-     *
-     * @param matrix Matrix for like.
-     */
-    private static boolean isDistributed(Matrix matrix) {
-        return matrix instanceof SparseDistributedMatrix || matrix instanceof SparseBlockDistributedMatrix;
     }
 
     /**
@@ -118,7 +117,7 @@ public class MatrixUtil {
      */
     public static Matrix copy(Matrix matrix) {
         if (isCopyLikeSupport(matrix)) {
-            DenseLocalOnHeapMatrix cp = new DenseLocalOnHeapMatrix(matrix.rowSize(), matrix.columnSize());
+            DenseMatrix cp = new DenseMatrix(matrix.rowSize(), matrix.columnSize());
 
             cp.assign(matrix);
 
@@ -129,8 +128,8 @@ public class MatrixUtil {
     }
 
     /** */
-    public static DenseLocalOnHeapMatrix asDense(SparseLocalOnHeapMatrix m, int acsMode) {
-        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(m.rowSize(), m.columnSize(), acsMode);
+    public static DenseMatrix asDense(SparseMatrix m, int acsMode) {
+        DenseMatrix res = new DenseMatrix(m.rowSize(), m.columnSize(), acsMode);
 
         for (int row : m.indexesMap().keySet())
             for (int col : m.indexesMap().get(row))
@@ -141,18 +140,17 @@ public class MatrixUtil {
 
     /** */
     private static boolean isCopyLikeSupport(Matrix matrix) {
-        return matrix instanceof RandomMatrix || matrix instanceof MatrixView || matrix instanceof CacheMatrix ||
-            matrix instanceof PivotedMatrixView;
+        return matrix instanceof ViewMatrix;
     }
 
     /** */
-    public static DenseLocalOnHeapMatrix fromList(List<Vector> vecs, boolean entriesAreRows) {
+    public static DenseMatrix fromList(List<Vector> vecs, boolean entriesAreRows) {
         GridArgumentCheck.notEmpty(vecs, "vecs");
 
         int dim = vecs.get(0).size();
         int vecsSize = vecs.size();
 
-        DenseLocalOnHeapMatrix res = new DenseLocalOnHeapMatrix(entriesAreRows ? vecsSize : dim,
+        DenseMatrix res = new DenseMatrix(entriesAreRows ? vecsSize : dim,
             entriesAreRows ? dim : vecsSize);
 
         for (int i = 0; i < vecsSize; i++) {
@@ -168,8 +166,8 @@ public class MatrixUtil {
     }
 
     /** TODO: IGNITE-5723, rewrite in a more optimal way. */
-    public static DenseLocalOnHeapVector localCopyOf(Vector vec) {
-        DenseLocalOnHeapVector res = new DenseLocalOnHeapVector(vec.size());
+    public static DenseVector localCopyOf(Vector vec) {
+        DenseVector res = new DenseVector(vec.size());
 
         for (int i = 0; i < vec.size(); i++)
             res.setX(i, vec.getX(i));
@@ -187,7 +185,7 @@ public class MatrixUtil {
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                res[i][j] = fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i];
+                res[i][j] = fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i];
 
         return res;
     }
@@ -206,7 +204,67 @@ public class MatrixUtil {
 
         for (int i = 0; i < rowsCnt; i++)
             for (int j = 0; j < colsCnt; j++)
-                mtx.setX(i, j, fArr[!isRowMode? i * colsCnt + j : j * rowsCnt + i]);
+                mtx.setX(i, j, fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i]);
+    }
+
+    /**
+     * Zip two vectors with given tri-function taking as third argument position in vector (i.e. apply binary function
+     * to both vector elementwise and construct vector from results). Example zipWith({200, 400, 600}, {100, 300, 500},
+     * plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}. Length of result is length of
+     * shortest of vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @param f Function to zip with.
+     * @return Result of zipping.
+     */
+    public static Vector zipWith(Vector v1, Vector v2, IgniteTriFunction<Double, Double, Integer, Double> f) {
+        int size = Math.min(v1.size(), v2.size());
+
+        Vector res = v1.like(size);
+
+        for (int row = 0; row < size; row++)
+            res.setX(row, f.apply(v1.getX(row), v2.getX(row), row));
+
+        return res;
+    }
+
+    /**
+     * Zips two matrices by column-by-column with specified function. Result is matrix same flavour as first matrix.
+     *
+     * @param mtx1 First matrix.
+     * @param mtx2 Second matrix.
+     * @param fun Function to zip with.
+     * @return Vector consisting from values resulted from zipping column-by-column.
+     */
+    public static Vector zipFoldByColumns(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int cols = Math.min(mtx1.columnSize(), mtx2.columnSize());
+
+        Vector vec = mtx1.likeVector(cols);
+
+        for (int i = 0; i < cols; i++)
+            vec.setX(i, fun.apply(mtx1.getCol(i), mtx2.getCol(i)));
+
+        return vec;
+    }
+
+    /**
+     * Zips two matrices by row-by-row with specified function. Result is matrix same flavour as first matrix.
+     *
+     * @param mtx1 First matrix.
+     * @param mtx2 Second matrix.
+     * @param fun Function to zip with.
+     * @return Vector consisting from values resulted from zipping row-by-row.
+     */
+    public static Vector zipFoldByRows(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int rows = Math.min(mtx1.rowSize(), mtx2.rowSize());
+
+        Vector vec = mtx1.likeVector(rows);
+
+        for (int i = 0; i < rows; i++)
+            vec.setX(i, fun.apply(mtx1.viewRow(i), mtx2.viewRow(i)));
+
+        return vec;
     }
 
     /** */
@@ -227,8 +285,34 @@ public class MatrixUtil {
 
         for (int i = 0; i < iLim; i++)
             for (int j = 0; j < jLim; j++)
-                res[isRowMode? j * iLim + i : i * jLim + j] = arr[i][j];
+                res[isRowMode ? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
+    }
+
+    /**
+     * Performs in-place matrix subtraction.
+     *
+     * @param mtx1 Operand to be changed and subtracted from.
+     * @param mtx2 Operand to subtract.
+     * @return Updated first operand.
+     */
+    public static Matrix elementWiseMinus(Matrix mtx1, Matrix mtx2) {
+        mtx1.map(mtx2, (a, b) -> a - b);
+
+        return mtx1;
+    }
+
+    /**
+     * Performs in-place matrix multiplication.
+     *
+     * @param mtx1 Operand to be changed and first multiplication operand.
+     * @param mtx2 Second multiplication operand.
+     * @return Updated first operand.
+     */
+    public static Matrix elementWiseTimes(Matrix mtx1, Matrix mtx2) {
+        mtx1.map(mtx2, (a, b) -> a * b);
+
+        return mtx1;
     }
 }

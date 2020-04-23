@@ -22,10 +22,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,13 +42,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
@@ -63,28 +61,14 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
-    /** */
-    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(discoSpi);
 
         c.setCommunicationSpi(getCommunication());
 
@@ -108,7 +92,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testThroughput() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -123,7 +107,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder8 msgCntr = new LongAdder8();
+        final LongAdder msgCntr = new LongAdder();
 
         final String topic = "test-topic";
 
@@ -204,7 +188,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testLatency() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -215,11 +199,11 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();
 
-        final LongAdder8 msgCntr = new LongAdder8();
+        final LongAdder msgCntr = new LongAdder();
 
         final Integer topic = 1;
 
-        final Map<IgniteUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
+        final Map<IgniteUuid, CountDownLatch> map = new ConcurrentHashMap<>();
 
         rcv.addMessageListener(
             topic,
@@ -300,7 +284,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("deprecation")
+    @Test
     public void testVariableLoad() throws Exception {
         final IgniteKernal sndKernal = (IgniteKernal)grid(0);
         final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
@@ -315,11 +299,11 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder8 msgCntr = new LongAdder8();
+        final LongAdder msgCntr = new LongAdder();
 
         final String topic = "test-topic";
 
-        final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+        final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap<>();
 
         rcv.addMessageListener(
             topic,

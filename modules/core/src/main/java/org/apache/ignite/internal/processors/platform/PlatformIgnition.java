@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Entry point for platform nodes.
  */
-@SuppressWarnings("UnusedDeclaration")
 public class PlatformIgnition {
     /** Map with active instances. */
     private static final HashMap<String, PlatformProcessor> instances = new HashMap<>();
@@ -63,7 +62,7 @@ public class PlatformIgnition {
             PlatformBootstrap bootstrap = bootstrap(factoryId);
 
             // This should be done before Spring XML initialization so that redirected stream is picked up.
-            bootstrap.init();
+            bootstrap.init(dataPtr);
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
@@ -72,7 +71,7 @@ public class PlatformIgnition {
             else
                 igniteInstanceName = cfg.get1().getIgniteInstanceName();
 
-            PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr, dataPtr);
+            PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr);
 
             PlatformProcessor old = instances.put(igniteInstanceName, proc);
 

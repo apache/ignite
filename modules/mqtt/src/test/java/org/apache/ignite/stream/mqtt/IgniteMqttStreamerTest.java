@@ -36,7 +36,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -53,8 +55,8 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -102,12 +104,16 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         super(true);
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
+    }
+
     /**
      * @throws Exception If failed.
      */
-    @Before
     @SuppressWarnings("unchecked")
-    public void beforeTest() throws Exception {
+    @Override public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
         // find an available local port
@@ -153,8 +159,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @After
-    public void afterTest() throws Exception {
+    @Override public void afterTest() throws Exception {
         try {
             streamer.stop();
         }
@@ -173,6 +178,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConnectDisconnect() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -194,9 +200,9 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2255")
+    @Test
     public void testConnectionStatusWithBrokerDisconnection() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2255");
-
         // Configure streamer.
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setTopic(SINGLE_TOPIC_NAME);
@@ -225,6 +231,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTopic_NoQoS_OneEntryPerMessage() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -247,6 +254,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleTopics_NoQoS_OneEntryPerMessage() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -273,6 +281,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTopic_NoQoS_MultipleEntriesOneMessage() throws Exception {
         // configure streamer
         streamer.setMultipleTupleExtractor(multipleTupleExtractor());
@@ -295,6 +304,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleTopics_NoQoS_MultipleEntriesOneMessage() throws Exception {
         // configure streamer
         streamer.setMultipleTupleExtractor(multipleTupleExtractor());
@@ -321,6 +331,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTopic_NoQoS_ConnectOptions_Durable() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -362,6 +373,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTopic_NoQoS_Reconnect() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -408,6 +420,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleTopic_NoQoS_RetryOnce() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -447,6 +460,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleTopics_MultipleQoS_OneEntryPerMessage() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
@@ -474,6 +488,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleTopics_MultipleQoS_Mismatch() throws Exception {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());

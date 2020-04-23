@@ -35,19 +35,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -71,9 +72,6 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /** Preload delay. */
     private long delay = -1;
 
-    /** IP finder. */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -90,13 +88,9 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
-        c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -109,6 +103,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManualPreload() throws Exception {
         delay = -1;
 
@@ -188,6 +183,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelayedPreload() throws Exception {
         delay = PRELOAD_DELAY;
 
@@ -259,6 +255,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAutomaticPreload() throws Exception {
         delay = 0;
         preloadMode = CacheRebalanceMode.SYNC;
@@ -292,6 +289,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAutomaticPreloadWithEmptyCache() throws Exception {
         preloadMode = SYNC;
 
@@ -342,6 +340,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testManualPreloadSyncMode() throws Exception {
         preloadMode = CacheRebalanceMode.SYNC;
         delay = -1;
@@ -357,6 +356,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPreloadManyNodes() throws Exception {
         delay = 0;
         preloadMode = ASYNC;
@@ -389,7 +389,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @return Topology.
      */
     private GridDhtPartitionTopology topology(Ignite g) {
-        return ((GridNearCacheAdapter<Integer, String>)((IgniteKernal)g).<Integer, String>internalCache(DEFAULT_CACHE_NAME)).dht().topology();
+        GridCacheAdapter<Integer, String> internalCache = ((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME);
+
+        return internalCache.isNear() ? ((GridNearCacheAdapter<Integer, String>)internalCache).dht().topology() :
+            internalCache.context().dht().topology();
     }
 
     /**

@@ -1,14 +1,8 @@
-# Apache Ignite.NET In-Memory Computing Platform
+# Apache Ignite.NET SDK
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a><img src="https://ptupitsyn.github.io/images/net-framework.png" hspace="20" />
 
-[![Join the chat at https://gitter.im/apacheignite/ignite](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/apacheignite/ignite?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-<a href="https://www.nuget.org/packages?q=Apache.Ignite"><img src="https://img.shields.io/nuget/v/Apache.Ignite.svg" /></a>
-
-<a href="https://www.myget.org/gallery/apache-ignite-net-nightly"><img src="https://img.shields.io/myget/apache-ignite-net-nightly/vpre/Apache.Ignite.svg" /></a>
-
-<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgnitePlatformNet&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:Ignite20Tests_IgnitePlatformNet)/statusIcon" /></a>
+<a href="https://www.nuget.org/packages?q=GridGain.Ignite"><img src="https://img.shields.io/nuget/v/GridGain.Ignite.svg" /></a>
 
 ## Getting Started
 
@@ -20,9 +14,9 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is the <b>in-memory</b> computing platform
-that is <b>durable</b>, <b>strongly consistent</b>, and <b>highly available</b>
-with powerful <b>SQL</b>, <b>key-value</b> and <b>processing</b> APIs.
+[Apache Ignite][apache-ignite-homepage] is a memory-centric multi-model distributed
+ <strong>database</strong>, <strong>caching</strong>, and <strong>processing</strong> platform for
+ transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
 
 <p align="center">
     <a href="https://apacheignite-net.readme.io/docs/">
@@ -77,10 +71,12 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 ## Ignite and Ignite.NET
 
 * Ignite.NET is built on top of Ignite.
-* .NET starts the JVM in the same process and communicates with it via JNI & C++.
+* .NET starts the JVM in the same process and communicates with it via JNI.
 * .NET, C++ and Java nodes can join the same cluster, use the same caches, and interoperate using common binary protocol.
 * Java compute jobs can execute on any node (Java, .NET, C++).
 * .NET compute jobs can only execute on .NET nodes.
+
+Ignite.NET also has Thin Client mode (see `Ignition.StartClient()`), which does not start JVM and does not require Java on machine.
 
 ## Ignite Components
 

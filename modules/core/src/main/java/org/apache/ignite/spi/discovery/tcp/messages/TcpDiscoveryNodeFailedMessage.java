@@ -45,16 +45,16 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
      *
      * @param creatorNodeId ID of the node that detects nodes failure.
      * @param failedNodeId ID of the failed nodes.
-     * @param order Order of the failed node.
+     * @param internalOrder Order of the failed node.
      */
-    public TcpDiscoveryNodeFailedMessage(UUID creatorNodeId, UUID failedNodeId, long order) {
+    public TcpDiscoveryNodeFailedMessage(UUID creatorNodeId, UUID failedNodeId, long internalOrder) {
         super(creatorNodeId);
 
         assert failedNodeId != null;
-        assert order > 0;
+        assert internalOrder > 0;
 
         this.failedNodeId = failedNodeId;
-        this.order = order;
+        order = internalOrder;
     }
 
     /**
@@ -83,7 +83,7 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
     /**
      * @return Internal order of the failed node.
      */
-    public long order() {
+    public long internalOrder() {
         return order;
     }
 

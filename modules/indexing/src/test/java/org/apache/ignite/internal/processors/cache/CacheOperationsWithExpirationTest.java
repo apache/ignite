@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -50,12 +51,10 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
 
     /**
      * @param atomicityMode Atomicity mode.
-     * @param offheapMem Offheap memory size.
      * @param idx Indexing enabled flag.
      * @return Cache configuration.
      */
     private CacheConfiguration<String, TestIndexedType> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        long offheapMem,
         boolean idx) {
         CacheConfiguration<String, TestIndexedType> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -77,25 +76,20 @@ public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomicIndexEnabled() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, 0, true));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, true));
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAtomic() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, 0, false));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, false));
     }
 
     /**

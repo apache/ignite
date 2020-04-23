@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoadBalancerResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Default gridify task which simply executes a method on remote node.
@@ -85,7 +86,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyArgument arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyArgument arg) {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
         assert ignite != null : "Grid instance could not be injected";

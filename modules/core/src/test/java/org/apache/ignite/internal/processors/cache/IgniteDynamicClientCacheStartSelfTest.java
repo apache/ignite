@@ -37,14 +37,15 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheAtomicityMode.values;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -54,21 +55,11 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
  */
 public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTest {
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private CacheConfiguration ccfg;
-
-    /** */
-    private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setClientMode(client);
 
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);
@@ -88,6 +79,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfiguredCacheOnClientNode() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -97,9 +89,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         checkCache(ignite0, cacheName, true, false);
 
-        client = true;
-
-        Ignite ignite1 = startGrid(1);
+        Ignite ignite1 = startClientGrid(1);
 
         checkCache(ignite1, cacheName, false, false);
 
@@ -107,13 +97,13 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         checkCache(ignite2, cacheName, false, true);
 
         ccfg = null;
 
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         checkNoCache(ignite3, cacheName);
 
@@ -121,7 +111,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         checkCache(ignite3, cacheName, false, false);
 
-        Ignite ignite4 = startGrid(4);
+        Ignite ignite4 = startClientGrid(4);
 
         checkNoCache(ignite4, cacheName);
 
@@ -133,6 +123,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNearCacheStartError() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -142,9 +133,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         checkCache(ignite0, cacheName, true, false);
 
-        client = true;
-
-        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite1 = startClientGrid(1);
 
         checkCache(ignite1, cacheName, false, false);
 
@@ -172,6 +161,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedCacheClient() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -183,21 +173,19 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         checkCache(ignite0, cacheName, true, false);
 
-        client = true;
-
-        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite1 = startClientGrid(1);
 
         checkCache(ignite1, cacheName, false, false);
 
         ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         checkCache(ignite2, cacheName, false, true);
 
         ccfg = null;
 
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         checkNoCache(ignite3, cacheName);
     }
@@ -205,6 +193,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplicatedWithNearCacheClient() throws Exception {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -218,21 +207,19 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         checkCache(ignite0, cacheName, true, false);
 
-        client = true;
-
-        final Ignite ignite1 = startGrid(1);
+        final Ignite ignite1 = startClientGrid(1);
 
         checkCache(ignite1, cacheName, false, true);
 
         ccfg.setNearConfiguration(null);
 
-        Ignite ignite2 = startGrid(2);
+        Ignite ignite2 = startClientGrid(2);
 
         checkCache(ignite2, cacheName, false, false);
 
         ccfg = null;
 
-        Ignite ignite3 = startGrid(3);
+        Ignite ignite3 = startClientGrid(3);
 
         checkNoCache(ignite3, cacheName);
     }
@@ -240,14 +227,11 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCloseClientCache1() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        client = true;
-
-        Ignite clientNode = startGrid(1);
-
-        client = false;
+        Ignite clientNode = startClientGrid(1);
 
         ignite0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
@@ -265,6 +249,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCloseClientCache2_1() throws Exception {
         createCloseClientCache2(false);
     }
@@ -272,6 +257,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateCloseClientCache2_2() throws Exception {
         createCloseClientCache2(true);
     }
@@ -279,6 +265,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleClientCaches() throws Exception {
         startMultipleClientCaches(null);
     }
@@ -286,6 +273,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartMultipleClientCachesForGroup() throws Exception {
         startMultipleClientCaches("testGrp");
     }
@@ -298,10 +286,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
         final int SRVS = 1;
 
         Ignite srv = startGrids(SRVS);
-
-        client = true;
-
-        Ignite client = startGrid(SRVS);
+        Ignite client = startClientGrid(SRVS);
 
         for (CacheAtomicityMode atomicityMode : values()) {
             for (boolean batch : new boolean[]{false, true})
@@ -377,6 +362,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testStartNewAndClientCaches() throws Exception {
         final int SRVS = 4;
 
@@ -386,16 +372,15 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         ccfg = null;
 
-        client = true;
-
-        Ignite client = startGrid(SRVS);
+        Ignite client = startClientGrid(SRVS);
 
         List<CacheConfiguration> cfgs = new ArrayList<>();
 
         cfgs.addAll(cacheConfigurations(null, ATOMIC));
         cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL));
+        cfgs.addAll(cacheConfigurations(null, TRANSACTIONAL_SNAPSHOT));
 
-        assertEquals(6, cfgs.size());
+        assertEquals(9, cfgs.size());
 
         Collection<IgniteCache> caches = client.getOrCreateCaches(cfgs);
 
@@ -551,6 +536,7 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartClientCachesOnCoordinatorWithGroup() throws Exception {
         startGrids(3);
 

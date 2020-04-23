@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.IgniteException;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,12 +52,14 @@ public class ClientResourceRegistry {
      * @param <T> Object type.
      * @return Object.
      */
-    @SuppressWarnings("unchecked")
     public <T> T get(long hnd) {
         Object obj = res.get(hnd);
 
         if (obj == null)
-            throw new IgniteException("Failed to find resource with id: " + hnd);
+            throw new IgniteClientException(
+                ClientStatus.RESOURCE_DOES_NOT_EXIST,
+                "Failed to find resource with id: " + hnd
+            );
 
         return (T) obj;
     }
@@ -73,7 +73,10 @@ public class ClientResourceRegistry {
         Object obj = res.remove(hnd);
 
         if (obj == null)
-            throw new IgniteException("Failed to find resource with id: " + hnd);
+            throw new IgniteClientException(
+                ClientStatus.RESOURCE_DOES_NOT_EXIST,
+                "Failed to find resource with id: " + hnd
+            );
 
         closeIfNeeded(obj);
     }

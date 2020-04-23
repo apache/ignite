@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -51,15 +52,9 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
     /** Nodes count. */
     private static final int NODES_CNT = 2;
 
-    /** Client. */
-    private static boolean client;
-
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -78,21 +73,13 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
         startGrid(0);
 
-        client = true;
-
-        startGrid(1);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+        startClientGrid(1);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlockCacheObjectContext() throws Exception {
         IgniteCache<Integer, Integer> cache0 = null;
         IgniteCache<Integer, Integer> cache1 = null;
@@ -204,8 +191,6 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
         }
     }
 
-
-
     /**
      * @param ignite Ignite.
      * @param name Name.
@@ -220,6 +205,4 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
         return ignite.getOrCreateCache(ccfg);
     }
-
-
 }

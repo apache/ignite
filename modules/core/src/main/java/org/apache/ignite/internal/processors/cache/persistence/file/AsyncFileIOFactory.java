@@ -22,10 +22,6 @@ import java.io.IOException;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.file.OpenOption;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
-
 /**
  * File I/O factory which uses {@link AsynchronousFileChannel} based implementation of FileIO.
  */
@@ -33,20 +29,29 @@ public class AsyncFileIOFactory implements FileIOFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
-
-    /** */
-    private ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = new ThreadLocal<AsyncFileIO.ChannelOpFuture>() {
-        @Override protected AsyncFileIO.ChannelOpFuture initialValue() {
-            return new AsyncFileIO.ChannelOpFuture();
-        }
-    };
+    /** Thread local channel future holder. */
+    private transient volatile ThreadLocal<AsyncFileIO.ChannelOpFuture> holder = initHolder();
 
     /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+        if (holder == null) {
+            synchronized (this) {
+                if (holder == null)
+                    holder = initHolder();
+            }
+        }
+
         return new AsyncFileIO(file, holder, modes);
+    }
+
+    /**
+     * Initializes thread local channel future holder.
+     */
+    private ThreadLocal<AsyncFileIO.ChannelOpFuture> initHolder() {
+        return new ThreadLocal<AsyncFileIO.ChannelOpFuture>() {
+            @Override protected AsyncFileIO.ChannelOpFuture initialValue() {
+                return new AsyncFileIO.ChannelOpFuture();
+            }
+        };
     }
 }

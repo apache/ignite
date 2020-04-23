@@ -40,7 +40,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Lock to prevent activities from running kernal related call while it's stopping. */
     @GridToStringExclude
     private final ReadWriteLock rwLock =
         new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
@@ -71,7 +71,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void readLock() throws IllegalStateException {
         if (stackTrace == null)
             stackTrace = stackTrace();

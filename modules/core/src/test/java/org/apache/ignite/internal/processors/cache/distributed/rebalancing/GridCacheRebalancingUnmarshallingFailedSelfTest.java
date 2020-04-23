@@ -22,30 +22,32 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
 
 /**
  *
  */
 public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** partitioned cache name. */
     protected static String CACHE = "cache";
 
     /** Allows to change behavior of readExternal method. */
     protected static AtomicInteger readCnt = new AtomicInteger();
+
+    /** */
+    private volatile Marshaller marshaller;
 
     /** Test key 1. */
     private static class TestKey implements Externalizable {
@@ -109,8 +111,10 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cfg.setBackups(0);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         iCfg.setCacheConfiguration(cfg);
+        iCfg.setMarshaller(marshaller);
 
         return iCfg;
     }
@@ -118,12 +122,39 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     /**
      * @throws Exception e.
      */
-    public void test() throws Exception {
-        String marshClsName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
+    @Test
+    public void testBinary() throws Exception {
+        marshaller = new BinaryMarshaller();
 
-        // This test passes with binary marshaller because we do not unmarshall keys.
-        if (marshClsName != null && marshClsName.contains(BinaryMarshaller.class.getSimpleName()))
-            return;
+        runTest();
+    }
+
+
+    /**
+     * @throws Exception e.
+     */
+    @Test
+    public void testOptimized() throws Exception {
+        marshaller = new OptimizedMarshaller();
+
+        runTest();
+    }
+
+    /**
+     * @throws Exception e.
+     */
+    @Test
+    public void testJdk() throws Exception {
+        marshaller = new JdkMarshaller();
+
+        runTest();
+    }
+
+    /**
+     * @throws Exception e.
+     */
+    private void runTest() throws Exception {
+        assert marshaller != null;
 
         readCnt.set(Integer.MAX_VALUE);
 

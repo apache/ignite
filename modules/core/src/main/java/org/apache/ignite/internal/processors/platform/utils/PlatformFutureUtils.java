@@ -78,6 +78,7 @@ public class PlatformFutureUtils {
 
         return listenable;
     }
+
     /**
      * Listen future.
      *
@@ -181,7 +182,6 @@ public class PlatformFutureUtils {
      * @param typ Expected return type.
      * @param writer Optional writer.
      */
-    @SuppressWarnings("unchecked")
     public static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
         int typ, @Nullable final Writer writer, final PlatformTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();

@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test for consistent hash management class.
@@ -44,6 +45,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testCollisions() throws Exception {
         Map<Integer, Set<UUID>> map = new HashMap<>();
 
@@ -95,14 +97,15 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of any exception.
      */
+    @Test
     public void testTreeSetRestrictions() throws Exception {
         // Constructs hash without explicit node's comparator.
         GridClientConsistentHash<Object> hash = new GridClientConsistentHash<>();
 
         try {
             // Add several objects with the same hash without neither natural ordering nor comparator.
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
             fail("Expects failed due to internal TreeSet requires comparator or natural ordering.");
         }
@@ -119,8 +122,8 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
         }, null);
 
         // Add several objects with the same hash into consistent hash with explicit comparator.
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
         info("Expected pass due to internal TreeSet has explicit comparator.");
     }
@@ -129,6 +132,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
      * Validate generated hashes.<p>
      * Note! This test should be ported into all supported platforms.
      */
+    @Test
     public void testHashGeneraton() {
         // Validate strings.
         checkHash("", -1484017934);
@@ -167,7 +171,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /**
      * Test mapping to nodes.
      */
-    @SuppressWarnings("UnaryPlus")
+    @Test
     public void testMappingToNodes() {
         String n1 = "node #1";
         String n2 = "node #2";

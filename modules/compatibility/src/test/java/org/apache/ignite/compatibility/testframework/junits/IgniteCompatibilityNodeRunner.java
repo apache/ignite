@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -29,11 +30,13 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.jetbrains.annotations.NotNull;
@@ -57,50 +60,119 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
      * args[2] - required - id of the starting node;
      * args[3] - required - sync-id of a node for synchronization of startup. Must be equals
      * to arg[2] in case of starting the first node in the Ignite cluster;
-     * args[4] - optional - path to closure for actions after node startup.
+     * args[4] - required - expected Ignite's version to check at startup;
+     * args[5] - optional - path to closure for actions after node startup.
      * </pre>
      *
      * @param args Command-line arguments.
      * @throws Exception In case of an error.
      */
     public static void main(String[] args) throws Exception {
-        X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
+        try {
+            X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
-        X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
+            X.println("Starting Ignite Node... Args=" + Arrays.toString(args));
 
-        if (args.length < 3) {
-            throw new IllegalArgumentException("At least four arguments expected:" +
-                " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [optional/path/to/closure/file]");
+            if (args.length < 5) {
+                throw new IllegalArgumentException("At least five arguments expected:" +
+                    " [path/to/closure/file] [ignite-instance-name] [node-id] [sync-node-id] [node-ver]" +
+                    " [optional/path/to/closure/file]");
+            }
+
+            final Thread watchdog = delayedDumpClasspath();
+
+            IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
+
+            IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
+
+            cfgClo.apply(cfg);
+
+            final UUID nodeId = UUID.fromString(args[2]);
+            final UUID syncNodeId = UUID.fromString(args[3]);
+            final IgniteProductVersion expNodeVer = IgniteProductVersion.fromString(args[4]);
+
+            // Ignite instance name and id must be set according to arguments
+            // it's used for nodes managing: start, stop etc.
+            cfg.setIgniteInstanceName(args[1]);
+            cfg.setNodeId(nodeId);
+
+            final Ignite ignite = Ignition.start(cfg);
+
+            assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
+
+            assert ignite.cluster().localNode().version().compareToIgnoreTimestamp(expNodeVer) == 0 : "Node is of unexpected " +
+                "version: [act=" + ignite.cluster().localNode().version() + ", exp=" + expNodeVer + ']';
+
+            // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
+            GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
+
+            if (args.length == 6) {
+                IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[5]);
+
+                clo.apply(ignite);
+            }
+
+            X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE + nodeId);
+
+            watchdog.interrupt();
         }
+        catch (Throwable e) {
+            e.printStackTrace();
 
-        IgniteConfiguration cfg = CompatibilityTestsFacade.getConfiguration();
+            X.println("Dumping classpath, error occurred: " + e);
 
-        IgniteInClosure<IgniteConfiguration> cfgClo = readClosureFromFileAndDelete(args[0]);
+            dumpClasspath();
 
-        cfgClo.apply(cfg);
-
-        final UUID nodeId = UUID.fromString(args[2]);
-        final UUID syncNodeId = UUID.fromString(args[3]);
-
-        // Ignite instance name and id must be set according to arguments
-        // it's used for nodes managing: start, stop etc.
-        cfg.setIgniteInstanceName(args[1]);
-        cfg.setNodeId(nodeId);
-
-        final Ignite ignite = Ignition.start(cfg);
-
-        assert ignite.cluster().node(syncNodeId) != null : "Node has not joined [id=" + nodeId + "]";
-
-        // It needs to set private static field 'ignite' of the IgniteNodeRunner class via reflection
-        GridTestUtils.setFieldValue(new IgniteNodeRunner(), "ignite", ignite);
-
-        if (args.length == 5) {
-            IgniteInClosure<Ignite> clo = readClosureFromFileAndDelete(args[4]);
-
-            clo.apply(ignite);
+            throw e;
         }
+    }
 
-        X.println(IgniteCompatibilityAbstractTest.SYNCHRONIZATION_LOG_MESSAGE_PREPARED + nodeId);
+    /**
+     * Starts background watchdog thread which will dump main thread stacktrace and classpath dump if main thread
+     * will not respond with node startup finished.
+     *
+     * @return Thread to be interrupted.
+     */
+    private static Thread delayedDumpClasspath() {
+        final Thread mainThread = Thread.currentThread();
+        final Runnable target = new Runnable() {
+            @Override public void run() {
+                try {
+                    final int timeout = IgniteCompatibilityAbstractTest.NODE_JOIN_TIMEOUT - 1_000;
+                    if (timeout > 0)
+                        Thread.sleep(timeout);
+                }
+                catch (InterruptedException ignored) {
+                    //interrupt is correct behaviour
+                    return;
+                }
+
+                X.println("Ignite startup/Init closure/post configuration closure is probably hanging at");
+
+                for (StackTraceElement ste : mainThread.getStackTrace())
+                    X.println("\t" + ste.toString());
+
+                X.println("\nDumping classpath");
+                dumpClasspath();
+            }
+        };
+
+        final Thread thread = new Thread(target);
+
+        thread.setDaemon(true);
+        thread.start();
+
+        return thread;
+    }
+
+    /**
+     * Dumps classpath to output stream.
+     */
+    private static void dumpClasspath() {
+        ClassLoader clsLdr = IgniteCompatibilityNodeRunner.class.getClassLoader();
+
+        for (URL url : CompatibilityTestsUtils.classLoaderUrls(clsLdr))
+            X.println("Classpath url: [" + url.getPath() + ']');
     }
 
     /**

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains classes provide access to resources.
  */
+
 package org.apache.ignite.mesos.resource;

@@ -25,6 +25,9 @@
     <ClCompile Include="..\..\src\connection_info_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\connection_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\parser_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -133,6 +136,60 @@
     <ClCompile Include="..\..\src\sql_get_info_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\types_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\odbc_test_suite.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\queries_ssl_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\transaction_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\config\connection_string_parser.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\config\config_tools.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record_storage.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\common_types.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\authentication_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\nested_tx_mode.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql_parsing_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_lexer.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_parser.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_set_streaming_command.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\sql\sql_utils.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\streaming_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\ssl_mode.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -150,6 +207,9 @@
     <ClInclude Include="..\..\include\complex_type.h">
       <Filter>Code\CacheTypes</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\odbc_test_suite.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\queries-test-32.xml">
@@ -158,16 +218,25 @@
     <None Include="..\..\config\queries-test.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-noodbc-32.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\queries-test-noodbc.xml">
-      <Filter>Configs</Filter>
-    </None>
     <None Include="..\..\config\queries-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-default.xml">
+    <None Include="..\..\config\queries-ssl.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-ssl-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-auth.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-auth-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-transaction.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-transaction-32.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

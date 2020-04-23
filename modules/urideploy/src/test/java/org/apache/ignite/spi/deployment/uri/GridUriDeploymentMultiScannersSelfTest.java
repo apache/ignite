@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 /**
  * Test URI deployment with multiple scanners.
@@ -32,6 +33,7 @@ public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployment() throws Exception {
         checkTask("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
     }

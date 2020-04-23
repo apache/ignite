@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheKeyConfiguration;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -48,42 +32,48 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 
 /** Tests for query partitions derivation. */
-public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
+    /** */
+    private static final String NODE_CLIENT = "client";
 
     /** */
-    private static String NODE_CLIENT = "client";
+    private static final String CACHE_PERSON = "Person";
 
     /** */
-    private static String CACHE_PERSON = "Person";
+    private static final String CACHE_CALL = "Call";
 
     /** */
-    private static String CACHE_CALL = "Call";
-
-    /** */
-    private static int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 4;
 
     /** Broadcast query to ensure events came from all nodes. */
-    private static String FINAL_QRY = "select count(1) from {0} where name=?";
+    private static final String FINAL_QRY = "select count(1) from {0} where name=?";
 
     /** Param to distinguish the final query event. */
-    private static String FINAL_QRY_PARAM = "Abracadabra";
+    private static final String FINAL_QRY_PARAM = "Abracadabra";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         c.setMarshaller(new BinaryMarshaller());
 
@@ -98,11 +88,8 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
         ccfgs.add(buildCacheConfiguration(CACHE_CALL));
 
         c.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
-
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
-
         c.setCacheKeyConfiguration(new CacheKeyConfiguration(CallKey.class));
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -113,18 +100,11 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
 
         startGrids(NODE_COUNT);
 
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
 
         awaitPartitionMapExchange();
 
         fillCaches();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** */
@@ -183,6 +163,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQuerySelectAffinityKeyEqualsConstant() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -196,6 +177,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQuerySelectAffinityKeyEqualsParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -210,6 +192,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQuerySelectKeyEqualsParameterReused() throws Exception {
         IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
@@ -226,6 +209,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQuerySelectKeyEqualsParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -243,6 +227,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** Check group, having, ordering allowed to be unicast requests. */
+    @Test
     public void testUnicastQueryGroups() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -264,6 +249,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQuerySelectKeyEqualAndFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -281,6 +267,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQuerySelect2KeyEqualsAndFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -303,6 +290,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQueryKeyTypeConversionParameter() throws Exception {
         IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
@@ -320,6 +308,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQueryKeyTypeConversionConstant() throws Exception {
         IgniteCache<Integer, Person> cache = grid(NODE_CLIENT).cache(CACHE_PERSON);
 
@@ -336,6 +325,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQueryAffinityKeyTypeConversionParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -351,6 +341,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUnicastQueryAffinityKeyTypeConversionConstant() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -365,6 +356,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testBroadcastQuerySelectKeyEqualsOrFieldParameter() throws Exception {
         IgniteCache<CallKey, Call> cache = grid(NODE_CLIENT).cache(CACHE_CALL);
 
@@ -378,6 +370,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testUuidKeyAsByteArrayParameter() throws Exception {
         String cacheName = "uuidCache";
 
@@ -418,6 +411,7 @@ public class IgniteSqlRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testDateKeyAsTimestampParameter() throws Exception {
         String cacheName = "dateCache";
 

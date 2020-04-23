@@ -50,6 +50,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
@@ -98,6 +99,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSortSimple() throws Exception {
         // Generate test data.
         Job job = Job.getInstance();
@@ -117,7 +119,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
         X.printerrln("Data generation started.");
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-            createJobInfo(job.getConfiguration())).get(180000);
+            createJobInfo(job.getConfiguration(), null)).get(180000);
 
         X.printerrln("Data generation complete.");
 
@@ -148,7 +150,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
         X.printerrln("Job started.");
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
-            createJobInfo(job.getConfiguration())).get(180000);
+            createJobInfo(job.getConfiguration(), null)).get(180000);
 
         X.printerrln("Job complete.");
 

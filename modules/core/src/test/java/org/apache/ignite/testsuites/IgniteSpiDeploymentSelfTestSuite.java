@@ -17,25 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiSelfTest;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiStartStopSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suit for deployment SPIs.
  */
-public class IgniteSpiDeploymentSelfTestSuite extends TestSuite {
-    /**
-     * @return Deployment SPI tests suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Deployment SPI Test Suite");
-
-        // LocalDeploymentSpi tests
-        suite.addTest(new TestSuite(GridLocalDeploymentSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridLocalDeploymentSpiStartStopSelfTest.class));
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridLocalDeploymentSpiSelfTest.class,
+    GridLocalDeploymentSpiStartStopSelfTest.class
+})
+public class IgniteSpiDeploymentSelfTestSuite {
 }

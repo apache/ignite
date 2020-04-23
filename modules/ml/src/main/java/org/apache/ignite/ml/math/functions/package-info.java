@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains serializable functions for distributed code algebra.
  */
+
 package org.apache.ignite.ml.math.functions;

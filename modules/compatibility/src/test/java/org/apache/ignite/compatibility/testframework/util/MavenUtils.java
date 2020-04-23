@@ -22,12 +22,16 @@ import com.google.common.io.CharStreams;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,36 +43,31 @@ public class MavenUtils {
     /** Path to Maven local repository. For caching. */
     private static String locRepPath = null;
 
-    /**
-     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId=ignite-core.
-     *
-     * At first, artifact is looked for in the Maven local repository, if it isn't exists there, it will be downloaded
-     * and stored via Maven.
-     *
-     * @param ver Version of ignite-core artifact.
-     * @return Path to the artifact.
-     * @throws Exception In case of an error.
-     * @see #getPathToArtifact(String)
-     */
-    public static String getPathToIgniteCoreArtifact(@NotNull String ver) throws Exception {
-        return getPathToIgniteCoreArtifact(ver, null);
-    }
+    /** */
+    private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
+
+    /** Set this flag to true if running PDS compatibility tests locally. */
+    private static boolean useGgRepo;
 
     /**
-     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId=ignite-core.
-     *
+     * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactId}.
+     * <br>
      * At first, artifact is looked for in the Maven local repository, if it isn't exists there, it will be downloaded
      * and stored via Maven.
+     * <br>
      *
-     * @param ver Version of ignite-core artifact.
+     * @param groupId group name, e.g. 'org.apache.ignite'.
+     * @param ver Version of ignite or 3rd party library artifact.
      * @param classifier Artifact classifier.
      * @return Path to the artifact.
      * @throws Exception In case of an error.
      * @see #getPathToArtifact(String)
      */
-    public static String getPathToIgniteCoreArtifact(@NotNull String ver,
+    public static String getPathToIgniteArtifact(@NotNull String groupId,
+        @NotNull String artifactId, @NotNull String ver,
         @Nullable String classifier) throws Exception {
-        String artifact = "org.apache.ignite:ignite-core:" + ver;
+        String artifact = groupId +
+            ":" + artifactId + ":" + ver;
 
         if (classifier != null)
             artifact += ":jar:" + classifier;
@@ -135,13 +134,13 @@ public class MavenUtils {
      * @throws Exception In case of an error.
      */
     private static String defineMavenLocalRepositoryPath() throws Exception {
-        String output = exec("mvn help:effective-settings");
+        String output = exec(buildMvnCommand() + " help:effective-settings");
 
         int endTagPos = output.indexOf("</localRepository>");
 
         assert endTagPos >= 0 : "Couldn't define path to Maven local repository";
 
-        return output.substring(output.lastIndexOf(">", endTagPos) + 1, endTagPos);
+        return output.substring(output.lastIndexOf('>', endTagPos) + 1, endTagPos);
     }
 
     /**
@@ -153,7 +152,22 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        exec("mvn dependency:get -Dartifact=" + artifact);
+        // Default platform independ path for maven settings file.
+        Path localProxyMavenSettings = Paths.get(System.getProperty("user.home"), ".m2", "local-proxy.xml");
+
+        String localProxyMavenSettingsFromEnv = System.getenv("LOCAL_PROXY_MAVEN_SETTINGS");
+
+        SB mavenCommandArgs = new SB(" org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact);
+
+        if (!F.isEmpty(localProxyMavenSettingsFromEnv))
+            localProxyMavenSettings = Paths.get(localProxyMavenSettingsFromEnv);
+
+        if (Files.exists(localProxyMavenSettings))
+            mavenCommandArgs.a(" -s " + localProxyMavenSettings.toString());
+        else
+            mavenCommandArgs.a(useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : "");
+
+        exec(buildMvnCommand() + mavenCommandArgs.toString());
 
         X.println("Download is finished");
     }
@@ -204,5 +218,20 @@ public class MavenUtils {
 
             throw e;
         }
+    }
+
+    /**
+     * @return Maven executable command.
+     */
+    private static String buildMvnCommand() {
+        String m2Home = System.getenv("M2_HOME");
+
+        if (m2Home == null)
+            m2Home = System.getProperty("M2_HOME");
+
+        if (m2Home == null)
+            return "mvn";
+
+        return m2Home + "/bin/mvn";
     }
 }

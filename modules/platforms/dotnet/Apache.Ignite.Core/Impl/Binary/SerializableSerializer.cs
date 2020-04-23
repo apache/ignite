@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             foreach (var dotNetField in dotNetFields)
             {
-                writer.WriteInt(BinaryUtils.GetStringHashCode(dotNetField));
+                writer.WriteInt(BinaryUtils.GetStringHashCodeLowerCase(dotNetField));
             }
         }
 
@@ -251,15 +251,40 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static IEnumerable<string> GetBinaryTypeFields(BinaryReader reader, IBinaryTypeDescriptor desc)
         {
-            var binaryType = reader.Marshaller.GetBinaryType(desc.TypeId);
-
-            if (binaryType == BinaryType.Empty)
+            var schema = reader.Schema;
+            if (schema == null || schema.Length == 0)
             {
-                // Object without fields.
                 return Enumerable.Empty<string>();
             }
 
-            return binaryType.Fields;
+            // Try using cached metadata: if all fields from current schema are present there, we are good.
+            // Any extra fields that may have been added to the binary type are not present in the current object.
+            var binaryTypeHolder = reader.Marshaller.GetCachedBinaryTypeHolder(desc.TypeId);
+            if (binaryTypeHolder != null && HasAllFields(binaryTypeHolder, schema))
+            {
+                return binaryTypeHolder.BinaryType.Fields ?? Enumerable.Empty<string>();
+            }
+
+            // Cached metadata is not present or out of date: request latest (expensive operation).
+            return reader.Marshaller.GetBinaryType(desc.TypeId).Fields ?? Enumerable.Empty<string>();
+        }
+
+        /// <summary>
+        /// Checks whether all field ids from provided schema are present in the given binary type.
+        /// </summary>
+        private static bool HasAllFields(BinaryTypeHolder binaryTypeHolder, int[] schema)
+        {
+            var fieldIds = binaryTypeHolder.GetFieldIds();
+            
+            foreach (var fieldId in schema)
+            {
+                if (!fieldIds.Contains(fieldId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -304,9 +329,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 return new TypeResolver().ResolveType(serInfo.FullTypeName, serInfo.AssemblyName);
             }
-            
-            if (serInfo.ObjectType != serializable.GetType())
+
+            if (serInfo.ObjectType != serializable.GetType() &&
+                typeof(ISerializable).IsAssignableFrom(serInfo.ObjectType))
             {
+                // serInfo.ObjectType should be ISerializable. There is a known case for generic collections:
+                // serializable is EnumEqualityComparer : ISerializable 
+                // and serInfo.ObjectType is ObjectEqualityComparer (does not implement ISerializable interface).
+                // Please read a possible explanation here:
+                // http://dotnetstudio.blogspot.ru/2012/06/net-35-to-net-40-enum.html
+
                 return serInfo.ObjectType;
             }
 
@@ -396,7 +428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteByteArray(entry.Name, (byte[]) entry.Value);
                 }
-                if (type == typeof(sbyte))
+                else if (type == typeof(sbyte))
                 {
                     writer.WriteByte(entry.Name, (byte) (sbyte) entry.Value);
                 }
@@ -610,49 +642,49 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (fieldType == typeof(byte))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (sbyte) (byte) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(short))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (ushort) (short) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(int))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (uint) (int) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(long))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? (ulong) (long) fieldVal : fieldVal;
                 }
 
                 if (fieldType == typeof(byte[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<byte, sbyte>((byte[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(short[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName))
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName))
                         ? ConvertArray<short, ushort>((short[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(int[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<int, uint>((int[]) fieldVal) : fieldVal;
                 }
 
                 if (fieldType == typeof(long[]))
                 {
-                    return dotNetFields.Contains(BinaryUtils.GetStringHashCode(fieldName)) 
+                    return dotNetFields.Contains(BinaryUtils.GetStringHashCodeLowerCase(fieldName)) 
                         ? ConvertArray<long, ulong>((long[]) fieldVal) : fieldVal;
                 }
             }

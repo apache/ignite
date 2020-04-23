@@ -37,7 +37,9 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test for checkpoint cleanup.
@@ -64,6 +66,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testCheckpointCleanup() throws Exception {
         try {
             checkpointSpi = new TestCheckpointSpi("task-checkpoints", cntr);
@@ -143,7 +146,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class CheckpointCountingTestTask extends ComputeTaskAdapter<ClusterNode, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable ClusterNode arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable ClusterNode arg) {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg.id()))
                     return Collections.singletonMap(new ComputeJobAdapter() {

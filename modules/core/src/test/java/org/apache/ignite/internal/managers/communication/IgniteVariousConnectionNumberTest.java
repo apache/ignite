@@ -28,11 +28,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -42,22 +40,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 6;
 
     /** */
     private static Random rnd = new Random();
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         int connections = rnd.nextInt(10) + 1;
 
@@ -66,8 +56,6 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connections);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(rnd.nextBoolean());
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -83,22 +71,13 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
         log.info("Random seed: " + seed);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVariousConnectionNumber() throws Exception {
         startGridsMultiThreaded(3);
-
-        client = true;
-
-        startGridsMultiThreaded(3, 3);
+        startClientGridsMultiThreaded(3, 3);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -118,11 +97,14 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
 
             Ignite node = ignite(idx);
 
-            client = node.configuration().isClientMode();
+            boolean client = node.configuration().isClientMode();
 
             stopGrid(idx);
 
-            startGrid(idx);
+            if (client)
+                startClientGrid(idx);
+            else
+                startGrid(idx);
         }
     }
 

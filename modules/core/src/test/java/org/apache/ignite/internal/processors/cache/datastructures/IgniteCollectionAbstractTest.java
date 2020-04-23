@@ -30,9 +30,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapte
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -42,20 +39,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
@@ -115,11 +103,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param queue Ignite queue.
      * @return Cache configuration.
@@ -149,5 +132,16 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
             return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
         else
             return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
+    }
+
+    /**
+     * @param set Ignite set.
+     * @return {@code True} If a separated cache is used to store items.
+     */
+    protected boolean separated(IgniteSet set) {
+        if (set instanceof GridCacheSetProxy)
+            set = ((GridCacheSetProxy)set).delegate();
+
+        return GridTestUtils.getFieldValue(set, "separated");
     }
 }

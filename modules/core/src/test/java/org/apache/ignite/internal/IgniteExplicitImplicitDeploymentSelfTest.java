@@ -46,6 +46,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  *
@@ -73,6 +75,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployLocally() throws Exception {
         execImplicitDeployLocally(true, true, true);
     }
@@ -80,6 +83,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testImplicitDeployP2P() throws Exception {
         execImplicitDeployP2P(true, true, true);
     }
@@ -87,6 +91,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployLocally() throws Exception {
         execExplicitDeployLocally(true, true, true);
     }
@@ -94,6 +99,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testExplicitDeployP2P() throws Exception {
         execExplicitDeployP2P(true, true, true);
     }
@@ -101,7 +107,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     /**
      * @param ignite Grid.
      */
-    @SuppressWarnings({"CatchGenericClass"})
     private void stopGrid(Ignite ignite) {
         try {
             if (ignite != null)
@@ -118,7 +123,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
         Ignite ignite = null;
 
@@ -184,7 +188,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
    private void execImplicitDeployLocally(boolean byCls, boolean byTask, boolean byName) throws Exception {
        Ignite ignite = null;
 
@@ -263,7 +266,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
     private void execExplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
        Ignite ignite1 = null;
        Ignite ignite2 = null;
@@ -300,7 +302,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                assert res == 2 : "Invalid response: " + res;
            }
 
-
            if (byTask) {
                ignite1.compute().localDeployTask(taskCls, ldr1);
 
@@ -335,7 +336,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
      * @param byName If {@code true} than executes task by class name.
      * @throws Exception If test failed.
      */
-   @SuppressWarnings("unchecked")
    private void execImplicitDeployP2P(boolean byCls, boolean byTask, boolean byName) throws Exception {
       Ignite ignite1 = null;
       Ignite ignite2 = null;
@@ -419,7 +419,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;

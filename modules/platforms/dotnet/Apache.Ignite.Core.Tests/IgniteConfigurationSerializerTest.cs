@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,6 +17,7 @@
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -37,6 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -45,7 +47,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
@@ -55,6 +57,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Transactions;
     using Apache.Ignite.NLog;
     using NUnit.Framework;
+    using CheckpointWriteOrder = Apache.Ignite.Core.PersistentStore.CheckpointWriteOrder;
+    using DataPageEvictionMode = Apache.Ignite.Core.Cache.Configuration.DataPageEvictionMode;
+    using WalMode = Apache.Ignite.Core.PersistentStore.WalMode;
 
     /// <summary>
     /// Tests <see cref="IgniteConfiguration"/> serialization.
@@ -93,7 +98,19 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
+            Assert.IsTrue(cfg.AuthenticationEnabled);
+
+            Assert.AreEqual(10000, cfg.MvccVacuumFrequency);
+            Assert.AreEqual(4, cfg.MvccVacuumThreadCount);
+            Assert.AreEqual(123, cfg.SqlQueryHistorySize);
+
+            Assert.IsNotNull(cfg.SqlSchemas);
+            Assert.AreEqual(2, cfg.SqlSchemas.Count);
+            Assert.IsTrue(cfg.SqlSchemas.Contains("SCHEMA_1"));
+            Assert.IsTrue(cfg.SqlSchemas.Contains("schema_2"));
+
             Assert.AreEqual("someId012", cfg.ConsistentId);
+            Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -107,6 +124,18 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsFalse(cacheCfg.WriteBehindCoalescing);
             Assert.AreEqual(PartitionLossPolicy.ReadWriteAll, cacheCfg.PartitionLossPolicy);
             Assert.AreEqual("fooGroup", cacheCfg.GroupName);
+            
+            Assert.AreEqual("bar", cacheCfg.KeyConfiguration.Single().AffinityKeyFieldName);
+            Assert.AreEqual("foo", cacheCfg.KeyConfiguration.Single().TypeName);
+
+            Assert.IsTrue(cacheCfg.OnheapCacheEnabled);
+            Assert.AreEqual(8, cacheCfg.StoreConcurrentLoadAllThreshold);
+            Assert.AreEqual(9, cacheCfg.RebalanceOrder);
+            Assert.AreEqual(10, cacheCfg.RebalanceBatchesPrefetchCount);
+            Assert.AreEqual(11, cacheCfg.MaxQueryIteratorsCount);
+            Assert.AreEqual(12, cacheCfg.QueryDetailMetricsSize);
+            Assert.AreEqual(13, cacheCfg.QueryParallelism);
+            Assert.AreEqual("mySchema", cacheCfg.SqlSchema);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
@@ -116,6 +145,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.IsTrue(queryEntity.Fields.Single().NotNull);
+            Assert.AreEqual(3.456d, (double)queryEntity.Fields.Single().DefaultValue);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
 
@@ -145,6 +175,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(af);
             Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
+            
+            var platformCacheConfiguration = cacheCfg.PlatformCacheConfiguration;
+            Assert.AreEqual("int", platformCacheConfiguration.KeyTypeName);
+            Assert.AreEqual("string", platformCacheConfiguration.ValueTypeName);
+            Assert.IsTrue(platformCacheConfiguration.KeepBinary);
 
             Assert.AreEqual(new Dictionary<string, object>
             {
@@ -213,7 +248,6 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
 
-#pragma warning disable 618  // Obsolete
             var sql = cfg.SqlConnectorConfiguration;
             Assert.IsNotNull(sql);
             Assert.AreEqual("bar", sql.Host);
@@ -224,7 +258,6 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(sql.TcpNoDelay);
             Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, sql.ThreadPoolSize);
-#pragma warning restore 618
 
             var client = cfg.ClientConnectorConfiguration;
             Assert.IsNotNull(client);
@@ -236,6 +269,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(client.TcpNoDelay);
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
+            Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
+            Assert.AreEqual(20, client.ThinClientConfiguration.MaxActiveTxPerConnection);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -269,6 +304,73 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("Apache.Ignite.Core.Tests.EventsTestLocalListeners+Listener`1" +
                             "[Apache.Ignite.Core.Events.CacheRebalancingEvent]",
                 rebalListener.Listener.GetType().ToString());
+
+            var ds = cfg.DataStorageConfiguration;
+            Assert.IsFalse(ds.AlwaysWriteFullPages);
+            Assert.AreEqual(TimeSpan.FromSeconds(1), ds.CheckpointFrequency);
+            Assert.AreEqual(3, ds.CheckpointThreads);
+            Assert.AreEqual(4, ds.ConcurrencyLevel);
+            Assert.AreEqual(TimeSpan.FromSeconds(5), ds.LockWaitTime);
+            Assert.IsTrue(ds.MetricsEnabled);
+            Assert.AreEqual(6, ds.PageSize);
+            Assert.AreEqual("cde", ds.StoragePath);
+            Assert.AreEqual(TimeSpan.FromSeconds(7), ds.MetricsRateTimeInterval);
+            Assert.AreEqual(8, ds.MetricsSubIntervalCount);
+            Assert.AreEqual(9, ds.SystemRegionInitialSize);
+            Assert.AreEqual(10, ds.SystemRegionMaxSize);
+            Assert.AreEqual(11, ds.WalThreadLocalBufferSize);
+            Assert.AreEqual("abc", ds.WalArchivePath);
+            Assert.AreEqual(TimeSpan.FromSeconds(12), ds.WalFlushFrequency);
+            Assert.AreEqual(13, ds.WalFsyncDelayNanos);
+            Assert.AreEqual(14, ds.WalHistorySize);
+            Assert.AreEqual(Core.Configuration.WalMode.Background, ds.WalMode);
+            Assert.AreEqual(15, ds.WalRecordIteratorBufferSize);
+            Assert.AreEqual(16, ds.WalSegments);
+            Assert.AreEqual(17, ds.WalSegmentSize);
+            Assert.AreEqual("wal-store", ds.WalPath);
+            Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
+            Assert.IsTrue(ds.WriteThrottlingEnabled);
+            Assert.AreEqual(DiskPageCompression.Zstd, ds.WalPageCompression);
+
+            var dr = ds.DataRegionConfigurations.Single();
+            Assert.AreEqual(1, dr.EmptyPagesPoolSize);
+            Assert.AreEqual(2, dr.EvictionThreshold);
+            Assert.AreEqual(3, dr.InitialSize);
+            Assert.AreEqual(4, dr.MaxSize);
+            Assert.AreEqual("reg2", dr.Name);
+            Assert.AreEqual(Core.Configuration.DataPageEvictionMode.RandomLru, dr.PageEvictionMode);
+            Assert.AreEqual(TimeSpan.FromSeconds(1), dr.MetricsRateTimeInterval);
+            Assert.AreEqual(5, dr.MetricsSubIntervalCount);
+            Assert.AreEqual("swap", dr.SwapPath);
+            Assert.IsTrue(dr.MetricsEnabled);
+            Assert.AreEqual(7, dr.CheckpointPageBufferSize);
+
+            dr = ds.DefaultDataRegionConfiguration;
+            Assert.AreEqual(2, dr.EmptyPagesPoolSize);
+            Assert.AreEqual(3, dr.EvictionThreshold);
+            Assert.AreEqual(4, dr.InitialSize);
+            Assert.AreEqual(5, dr.MaxSize);
+            Assert.AreEqual("reg1", dr.Name);
+            Assert.AreEqual(Core.Configuration.DataPageEvictionMode.Disabled, dr.PageEvictionMode);
+            Assert.AreEqual(TimeSpan.FromSeconds(3), dr.MetricsRateTimeInterval);
+            Assert.AreEqual(6, dr.MetricsSubIntervalCount);
+            Assert.AreEqual("swap2", dr.SwapPath);
+            Assert.IsFalse(dr.MetricsEnabled);
+
+            Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
+            
+            Assert.IsInstanceOf<StopNodeOrHaltFailureHandler>(cfg.FailureHandler);
+
+            var failureHandler = (StopNodeOrHaltFailureHandler)cfg.FailureHandler;
+            
+            Assert.IsTrue(failureHandler.TryStop);  
+            Assert.AreEqual(TimeSpan.Parse("0:1:0"), failureHandler.Timeout);
+
+            var ec = cfg.ExecutorConfiguration;
+            Assert.NotNull(ec);
+            Assert.AreEqual(2, ec.Count);
+            Assert.AreEqual(new[] {"exec1", "exec2"}, ec.Select(e => e.Name));
+            Assert.AreEqual(new[] {1, 2}, ec.Select(e => e.Size));
         }
 
         /// <summary>
@@ -291,14 +393,22 @@ namespace Apache.Ignite.Core.Tests
         /// Tests that all properties are present in the schema.
         /// </summary>
         [Test]
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void TestAllPropertiesArePresentInSchema()
         {
-            var schema = XDocument.Load("IgniteConfigurationSection.xsd")
-                    .Root.Elements()
-                    .Single(x => x.Attribute("name").Value == "igniteConfiguration");
+            CheckAllPropertiesArePresentInSchema("IgniteConfigurationSection.xsd", "igniteConfiguration", 
+                typeof(IgniteConfiguration));
+        }
 
-            var type = typeof(IgniteConfiguration);
+        /// <summary>
+        /// Checks that all properties are present in schema.
+        /// </summary>
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        public static void CheckAllPropertiesArePresentInSchema(string xsd, string sectionName, Type type)
+        {
+            var schema = XDocument.Load(xsd)
+                .Root.Elements()
+                .Single(x => x.Attribute("name").Value == sectionName);
+
 
             CheckPropertyIsPresentInSchema(type, schema);
         }
@@ -450,15 +560,15 @@ namespace Apache.Ignite.Core.Tests
         {
             // Empty section.
             var cfg = IgniteConfiguration.FromXml("<x />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Empty section with XML header.
             cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Simple test.
             cfg = IgniteConfiguration.FromXml(@"<igCfg igniteInstanceName=""myGrid"" clientMode=""true"" />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
 
             // Invalid xml.
             var ex = Assert.Throws<ConfigurationErrorsException>(() =>
@@ -473,7 +583,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 cfg = IgniteConfiguration.FromXml(xmlReader);
             }
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
         }
 
         /// <summary>
@@ -491,29 +601,28 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void CheckSchemaValidation()
         {
-            var sb = new StringBuilder();
-
-            using (var xmlWriter = XmlWriter.Create(sb))
-            {
-                IgniteConfigurationXmlSerializer.Serialize(GetTestConfig(), xmlWriter, "igniteConfiguration");
-            }
-
-            CheckSchemaValidation(sb.ToString());
+            CheckSchemaValidation(GetTestConfig().ToXml());
         }
 
         /// <summary>
         /// Checks the schema validation.
         /// </summary>
-        /// <param name="xml">The XML.</param>
         private static void CheckSchemaValidation(string xml)
         {
+            var xmlns = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+            var schemaFile = "IgniteConfigurationSection.xsd";
+
+            CheckSchemaValidation(xml, xmlns, schemaFile);
+        }
+
+        /// <summary>
+        /// Checks the schema validation.
+        /// </summary>
+        public static void CheckSchemaValidation(string xml, string xmlns, string schemaFile)
+        {
             var document = new XmlDocument();
-
-            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
-                XmlReader.Create("IgniteConfigurationSection.xsd"));
-
+            document.Schemas.Add(xmlns, XmlReader.Create(schemaFile));
             document.Load(new StringReader(xml));
-
             document.Validate(null);
         }
 
@@ -525,7 +634,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var resCfg = SerializeDeserialize(cfg);
 
-            TestUtils.AssertReflectionEqual(cfg, resCfg);
+            AssertExtensions.ReflectionEqual(cfg, resCfg);
         }
 
         /// <summary>
@@ -574,7 +683,7 @@ namespace Apache.Ignite.Core.Tests
                             Serializer = new BinaryReflectiveSerializer()
                         }
                     },
-                    Types = new[] {typeof (string).FullName},
+                    Types = new[] {typeof(string).FullName},
                     IdMapper = new IdMapper(),
                     KeepDeserialized = true,
                     NameMapper = new NameMapper(),
@@ -601,10 +710,11 @@ namespace Apache.Ignite.Core.Tests
                             {
                                 Fields = new[]
                                 {
-                                    new QueryField("field", typeof (int))
+                                    new QueryField("field", typeof(int))
                                     {
                                         IsKeyField = true,
-                                        NotNull = true
+                                        NotNull = true,
+                                        DefaultValue = "foo"
                                     }
                                 },
                                 Indexes = new[]
@@ -619,8 +729,8 @@ namespace Apache.Ignite.Core.Tests
                                 {
                                     new QueryAlias("field.field", "fld")
                                 },
-                                KeyType = typeof (string),
-                                ValueType = typeof (long),
+                                KeyType = typeof(string),
+                                ValueType = typeof(long),
                                 TableName = "table-1",
                                 KeyFieldName = "k",
                                 ValueFieldName = "v"
@@ -645,12 +755,22 @@ namespace Apache.Ignite.Core.Tests
                             NearStartSize = 5,
                             EvictionPolicy = new FifoEvictionPolicy
                             {
-                                BatchSize = 19, MaxMemorySize = 1024, MaxSize = 555
+                                BatchSize = 19,
+                                MaxMemorySize = 1024,
+                                MaxSize = 555
                             }
+                        },
+                        PlatformCacheConfiguration = new PlatformCacheConfiguration
+                        {
+                            KeyTypeName = typeof(int).FullName,
+                            ValueTypeName = typeof(string).FullName,
+                            KeepBinary = true
                         },
                         EvictionPolicy = new LruEvictionPolicy
                         {
-                            BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
+                            BatchSize = 18,
+                            MaxMemorySize = 1023,
+                            MaxSize = 554
                         },
                         AffinityFunction = new RendezvousAffinityFunction
                         {
@@ -666,7 +786,23 @@ namespace Apache.Ignite.Core.Tests
                         MemoryPolicyName = "somePolicy",
                         PartitionLossPolicy = PartitionLossPolicy.ReadOnlyAll,
                         GroupName = "abc",
-                        SqlIndexMaxInlineSize = 24
+                        SqlIndexMaxInlineSize = 24,
+                        KeyConfiguration = new[]
+                        {
+                            new CacheKeyConfiguration
+                            {
+                                AffinityKeyFieldName = "abc",
+                                TypeName = "def"
+                            }, 
+                        },
+                        OnheapCacheEnabled = true,
+                        StoreConcurrentLoadAllThreshold = 7,
+                        RebalanceOrder = 3,
+                        RebalanceBatchesPrefetchCount = 4,
+                        MaxQueryIteratorsCount = 512,
+                        QueryDetailMetricsSize = 100,
+                        QueryParallelism = 16,
+                        SqlSchema = "foo"
                     }
                 },
                 ClientMode = true,
@@ -715,7 +851,7 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = @"c:\work",
                 IsDaemon = true,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(),
-                    x => x%2 == 0 ? (object) x : new FooClass {Bar = x.ToString()}),
+                    x => x % 2 == 0 ? (object) x : new FooClass {Bar = x.ToString()}),
                 AtomicConfiguration = new AtomicConfiguration
                 {
                     CacheMode = CacheMode.Replicated,
@@ -755,7 +891,7 @@ namespace Apache.Ignite.Core.Tests
                 FailureDetectionTimeout = TimeSpan.FromMinutes(2),
                 ClientFailureDetectionTimeout = TimeSpan.FromMinutes(3),
                 LongQueryWarningTimeout = TimeSpan.FromDays(4),
-                PluginConfigurations = new[] {new TestIgnitePluginConfiguration() },
+                PluginConfigurations = new[] {new TestIgnitePluginConfiguration()},
                 EventStorageSpi = new MemoryEventStorageSpi
                 {
                     ExpirationTimeout = TimeSpan.FromMilliseconds(12345),
@@ -803,7 +939,14 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
-                    ThreadPoolSize = 7
+                    ThinClientEnabled = false,
+                    OdbcEnabled = false,
+                    JdbcEnabled = false,
+                    ThreadPoolSize = 7,
+                    IdleTimeout = TimeSpan.FromMinutes(5),
+                    ThinClientConfiguration = new ThinClientConfiguration {
+                        MaxActiveTxPerConnection = 8
+                    }
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
@@ -837,6 +980,83 @@ namespace Apache.Ignite.Core.Tests
                     {
                         EventTypes = new[] {1, 2},
                         Listener = new MyEventListener()
+                    }
+                },
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    AlwaysWriteFullPages = true,
+                    CheckpointFrequency = TimeSpan.FromSeconds(25),
+                    CheckpointThreads = 2,
+                    LockWaitTime = TimeSpan.FromSeconds(5),
+                    StoragePath = Path.GetTempPath(),
+                    WalThreadLocalBufferSize = 64 * 1024,
+                    WalArchivePath = Path.GetTempPath(),
+                    WalFlushFrequency = TimeSpan.FromSeconds(3),
+                    WalFsyncDelayNanos = 3,
+                    WalHistorySize = 10,
+                    WalMode = Core.Configuration.WalMode.None,
+                    WalRecordIteratorBufferSize = 32 * 1024 * 1024,
+                    WalSegments = 6,
+                    WalSegmentSize = 5 * 1024 * 1024,
+                    WalPath = Path.GetTempPath(),
+                    MetricsEnabled = true,
+                    MetricsSubIntervalCount = 7,
+                    MetricsRateTimeInterval = TimeSpan.FromSeconds(9),
+                    CheckpointWriteOrder = Core.Configuration.CheckpointWriteOrder.Sequential,
+                    WriteThrottlingEnabled = true,
+                    SystemRegionInitialSize = 64 * 1024 * 1024,
+                    SystemRegionMaxSize = 128 * 1024 * 1024,
+                    ConcurrencyLevel = 1,
+                    PageSize = 5 * 1024,
+                    WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
+                    WalPageCompression = DiskPageCompression.Lz4,
+                    WalPageCompressionLevel = 10,
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = "reg1",
+                        EmptyPagesPoolSize = 50,
+                        EvictionThreshold = 0.8,
+                        InitialSize = 100 * 1024 * 1024,
+                        MaxSize = 150 * 1024 * 1024,
+                        MetricsEnabled = true,
+                        PageEvictionMode = Core.Configuration.DataPageEvictionMode.RandomLru,
+                        PersistenceEnabled = false,
+                        MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
+                        MetricsSubIntervalCount = 6,
+                        SwapPath = Path.GetTempPath(),
+                        CheckpointPageBufferSize = 7
+                    },
+                    DataRegionConfigurations = new[]
+                    {
+                        new DataRegionConfiguration
+                        {
+                            Name = "reg2",
+                            EmptyPagesPoolSize = 51,
+                            EvictionThreshold = 0.7,
+                            InitialSize = 101 * 1024 * 1024,
+                            MaxSize = 151 * 1024 * 1024,
+                            MetricsEnabled = false,
+                            PageEvictionMode = Core.Configuration.DataPageEvictionMode.RandomLru,
+                            PersistenceEnabled = false,
+                            MetricsRateTimeInterval = TimeSpan.FromMinutes(3),
+                            MetricsSubIntervalCount = 7,
+                            SwapPath = Path.GetTempPath()
+                        }
+                    }
+                },
+                SslContextFactory = new SslContextFactory(),
+                FailureHandler = new StopNodeOrHaltFailureHandler
+                {
+                    TryStop = false,
+                    Timeout = TimeSpan.FromSeconds(10)
+                },
+                SqlQueryHistorySize = 345,
+                ExecutorConfiguration = new[]
+                {
+                    new ExecutorConfiguration
+                    {
+                        Name = "exec-1",
+                        Size = 11
                     }
                 }
             };

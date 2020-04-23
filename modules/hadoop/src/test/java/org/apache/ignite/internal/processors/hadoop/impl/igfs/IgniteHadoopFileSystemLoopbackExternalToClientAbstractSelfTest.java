@@ -29,7 +29,6 @@ import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEnd
  */
 public abstract class IgniteHadoopFileSystemLoopbackExternalToClientAbstractSelfTest extends
     IgniteHadoopFileSystemAbstractSelfTest {
-
     /**
      * Constructor.
      *

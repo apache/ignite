@@ -20,22 +20,23 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
-import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
-import org.apache.ignite.mxbean.MXBeanParametersNames;
+import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
+import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Management bean for {@link TcpDiscoverySpi}.
  */
-public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
+@MXBeanDescription("MBean provide access to TCP-based discovery SPI.")
+public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, DiscoverySpiMBean {
     /**
      * Gets current SPI state.
      *
      * @return Current SPI state.
      */
     @MXBeanDescription("SPI state.")
-    public String getSpiState();
+    @Override public String getSpiState();
 
     /**
      * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
@@ -52,6 +53,14 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Reconnect count.")
     public int getReconnectCount();
+
+    /**
+     * Gets connection check interval in ms.
+     *
+     * @return Connection check interval.
+     */
+    @MXBeanDescription("Connection check interval.")
+    public long getConnectionCheckInterval();
 
     /**
      * Gets network timeout.
@@ -115,7 +124,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Nodes joined count.
      */
     @MXBeanDescription("Nodes joined count.")
-    public long getNodesJoined();
+    @Override public long getNodesJoined();
 
     /**
      * Gets left nodes count.
@@ -123,7 +132,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Left nodes count.
      */
     @MXBeanDescription("Nodes left count.")
-    public long getNodesLeft();
+    @Override public long getNodesLeft();
 
     /**
      * Gets failed nodes count.
@@ -131,7 +140,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Failed nodes count.
      */
     @MXBeanDescription("Nodes failed count.")
-    public long getNodesFailed();
+    @Override public long getNodesFailed();
 
     /**
      * Gets pending messages registered count.
@@ -194,7 +203,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @MXBeanDescription("Received messages by type.")
+    @MXBeanDescription("Processed messages by type.")
     public Map<String, Integer> getProcessedMessages();
 
     /**
@@ -211,7 +220,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Gets current coordinator.
      */
     @MXBeanDescription("Coordinator node ID.")
-    @Nullable public UUID getCoordinator();
+    @Override @Nullable public UUID getCoordinator();
 
     /**
      * Gets message acknowledgement timeout.
@@ -268,15 +277,22 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @param maxHops Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).
      */
     @MXBeanDescription("Check ring latency.")
-    @MXBeanParametersNames(
-        {
-            "maxHops"
-        }
-    )
-    @MXBeanParametersDescriptions(
-        {
-            "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended)."
-        }
-    )
-    public void checkRingLatency(int maxHops);
+    public void checkRingLatency(
+        @MXBeanParameter(name = "maxHops",
+            description = "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).") int maxHops
+    );
+
+    /**
+     * Current topology version.
+     *
+     * @return current topVer.
+     */
+    @MXBeanDescription("Get current topology version.")
+    public long getCurrentTopologyVersion();
+
+    /**
+     * Dumps ring structure to log.
+     */
+    @MXBeanDescription("Dumps ring structure to log.")
+    public void dumpRingStructure();
 }

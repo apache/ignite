@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 
 /**
  * Persistent store of pages.
@@ -71,10 +71,11 @@ public interface PageStore {
      * @param pageId Page ID.
      * @param pageBuf Page buffer to write.
      * @param tag Partition file version, 1-based incrementing counter. For outdated pages {@code tag} has lower value,
-     * and write does nothing
+     * and write does nothing.
+     * @param calculateCrc if {@code False} crc calculation will be forcibly skipped.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void write(long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the store file.
@@ -100,4 +101,61 @@ public interface PageStore {
      * @return Page store version.
      */
     public int version();
+
+    /**
+     * @param cleanFile {@code True} to delete file.
+     * @throws StorageException If failed.
+     */
+    public void stop(boolean cleanFile) throws StorageException;
+
+    /**
+     * Starts recover process.
+     */
+    public void beginRecover();
+
+    /**
+     * Ends recover process.
+     *
+     * @throws StorageException If failed.
+     */
+    public void finishRecover() throws StorageException;
+
+    /**
+     * Truncates and deletes partition file.
+     *
+     * @param tag New partition tag.
+     * @throws StorageException If failed.
+     */
+    public void truncate(int tag) throws StorageException;
+
+    /**
+     * @return Page size in bytes.
+     */
+    public int getPageSize();
+
+    /**
+     * @return Storage block size or negative value if unknown or not supported.
+     */
+    public int getBlockSize();
+
+    /**
+     * @return Size of the storage in bytes. May differ from {@link #pages()} * {@link #getPageSize()}
+     *         due to delayed writes or due to other implementation specific details.
+     */
+    public long size();
+
+    /**
+     * @return Size of the storage adjusted for sparsity in bytes or negative
+     *         value if not supported. Should be less than or equal to {@link #size()}.
+     * @see #punchHole
+     */
+    public long getSparseSize();
+
+    /**
+     * Should free all the extra storage space after the given number of useful bytes in the given page.
+     *
+     * @param pageId Page id.
+     * @param usefulBytes Number of meaningful bytes from the beginning of the page.
+     */
+    void punchHole(long pageId, int usefulBytes);
 }

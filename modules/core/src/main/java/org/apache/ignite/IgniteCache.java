@@ -37,6 +37,7 @@ import javax.cache.integration.CacheWriter;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
@@ -50,7 +51,6 @@ import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -61,10 +61,13 @@ import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
@@ -137,6 +140,58 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
+     * <b>This is an experimental API.</b>
+     * <p>
+     * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
+     * <p>
+     * Read Repair means that each backup node will be checked to have the same entry as primary node has,
+     * and in case consistency violation found:
+     * <ul>
+     *  <li>for transactional caches:
+     *  <p>values across the topology will be replaced by latest versioned value:
+     *  <ul>
+     *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
+     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
+     *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
+     *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
+     *  </ul>
+     *  <p>consistency violation event will be recorded in case it's configured as recordable</li>
+     *  <li>for atomic caches: consistency violation exception will be thrown.
+     *  Be aware that consistency violation event will not be recorded in this case.</li>
+     * </ul>
+     * <p>
+     * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
+     * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
+     * cached value, for example already read the value or performed a write, you'll gain the cached value.
+     * <p>
+     * Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
+     * consistency under cache loading may lead to consistency violation exception. By default, the implementation tries
+     * to check the given key three times. The number of attempts can be changed using
+     * {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
+     * <p>
+     * Consistency check is incompatible with the following cache configurations:
+     * <ul>
+     *     <li>Caches without backups.</li>
+     *     <li>Local caches.</li>
+     *     <li>Near caches.</li>
+     *     <li>Caches that use "read-through" mode.</li>
+     * </ul>
+     * <p>
+     * Full list of repairable methods:
+     * <ul>
+     * <li>{@link IgniteCache#containsKey} && {@link IgniteCache#containsKeyAsync}</li>
+     * <li>{@link IgniteCache#containsKeys} && {@link IgniteCache#containsKeysAsync}</li>
+     * <li>{@link IgniteCache#getEntry} && {@link IgniteCache#getEntryAsync}</li>
+     * <li>{@link IgniteCache#getEntries} && {@link IgniteCache#getEntriesAsync}</li>
+     * <li>{@link IgniteCache#get} && {@link IgniteCache#getAsync}</li>
+     * <li>{@link IgniteCache#getAll} && {@link IgniteCache#getAllAsync}</li>
+     * </ul>
+     * @return Cache with explicit consistency check on each read and repair if necessary.
+     */
+    @IgniteExperimental
+    public IgniteCache<K, V> withReadRepair();
+
+    /**
      * Returns cache that will operate with binary objects.
      * <p>
      * Cache returned by this method will not be forced to deserialize binary objects,
@@ -174,6 +229,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return New cache instance for binary objects.
      */
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
+
+    /**
+     * By default atomic operations are allowed in transaction.
+     * To restrict transactions from operations with atomic caches you can set system property
+     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code false}.
+     * <p>
+     * If you want to use atomic operations inside transactions in case they are restricted by system property,
+     * you should allow it before transaction start.
+     *
+     * @return Cache with atomic operations allowed in transactions.
+     */
+    public <K1, V1> IgniteCache<K1, V1> withAllowAtomicOpsInTx();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -353,7 +420,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param qry Query.
      * @return Cursor.
      * @see ScanQuery
-     * @see SqlQuery
      * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
@@ -428,9 +494,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default optional peek mode.
+     * Peeks at a value in the local storage using an optional peek mode.
      * <p>
-     * This method will not load value from any persistent store or from a remote node.
+     * This method will not load a value from the configured {@link CacheStore} or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions.
      *
@@ -556,12 +622,38 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public long localSizeLong(int partition, CachePeekMode... peekModes);
 
     /**
+     * Asynchronously invokes each {@link EntryProcessor} from map's values against the correspondent
+     * {@link javax.cache.Cache.Entry} specified by map's key set.
+     * <p>
+     * If an {@link javax.cache.Cache.Entry} does not exist for the specified key, an attempt is made
+     * to load it (if a loader is configured) or a surrogate {@link javax.cache.Cache.Entry},
+     * consisting of the key and a value of null is provided.
+     * <p>
+     * The order that the entries for the keys are processed is undefined.
+     * Implementations may choose to process the entries in any order, including
+     * concurrently.  Furthermore there is no guarantee implementations will
+     * use the same {@link EntryProcessor} instance to process each entry, as
+     * the case may be in a non-local cache topology.
+     * <p>
+     * The result of executing the {@link EntryProcessor} is returned in the future as a
+     * {@link Map} of {@link EntryProcessorResult}s, one result per key. Should the
+     * {@link EntryProcessor} or Caching implementation throw an exception, the
+     * exception is wrapped and re-thrown when a call to
+     * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     * <p>
+     * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
+     * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * Keys are locked in the order in which they appear in map. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
-     * if any, defined by the {@link EntryProcessor} implementation.  No mappings
-     * will be returned for {@link EntryProcessor}s that return a
-     * <code>null</code> value for a key.
+     *      if any, defined by the {@link EntryProcessor} implementation.  No mappings
+     *      will be returned for {@link EntryProcessor}s that return a
+     *      <code>null</code> value for a key.
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -569,7 +661,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         Object... args) throws TransactionException;
 
     /**
-     * Asynchronously version of the {@link #invokeAll(Set, EntryProcessor, Object...)} method.
+     * Asynchronous version of the {@link #invokeAll(Map, Object...)} method.
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
@@ -814,6 +906,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Keys are locked in the order in which they appear in map. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -835,6 +932,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * In Default Consistency mode, individual puts occur atomically but not
      * the entire putAll.  Listeners may observe individual updates.
+     * <p>
+     * Keys are locked in the order in which they appear in map. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeMap}. Using unordered map,
+     * such as {@link java.util.HashMap}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param map Map containing keys and values to put into the cache.
      * @return a Future representing pending completion of the operation.
@@ -844,6 +945,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     * to disable retries with {@link #withNoRetries()} and manually restore primary-backup
+     * consistency in case of update failure.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -852,6 +959,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Asynchronously associates the specified key with the given value if it is
      * not already associated with a value.
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     * to disable retries with {@link #withNoRetries()} and manually restore primary-backup
+     * consistency in case of update failure.
      *
      * @param key Key.
      * @param val Value.
@@ -891,6 +1003,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     * to disable retries with {@link #withNoRetries()} and manually restore primary-backup
+     * consistency in case of update failure.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -899,6 +1017,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Asynchronously removes the mapping for a key only if currently mapped to the
      * given value.
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     * to disable retries with {@link #withNoRetries()} and manually restore primary-backup
+     * consistency in case of update failure.
      *
      * @param key Key.
      * @param oldVal Old value.
@@ -926,6 +1049,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     * to disable retries with {@link #withNoRetries()} and manually restore primary-backup
+     * consistency in case of update failure.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -933,6 +1062,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * Asynchronous version of the {@link #replace(Object, Object, Object)}.
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     * to disable retries with {@link #withNoRetries()} and manually restore primary-backup
+     * consistency in case of update failure.
      *
      * @param key Key.
      * @param oldVal Old value.
@@ -982,6 +1116,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -998,6 +1137,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *   <li>if the cache is a write-through cache, the {@link CacheWriter}</li>
      * </ul>
      * If the key set is empty, the {@link CacheWriter} is not called.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys Keys set.
      * @return a Future representing pending completion of the operation.
@@ -1142,16 +1285,24 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
+     * system behavior in crash scenarios for atomic caches.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
-    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments) throws TransactionException;
+    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
+        throws TransactionException;
 
     /**
      * Asynchronously invokes an {@link EntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
      * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
      * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
+     * <p>
+     * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
+     * system behavior in crash scenarios for atomic caches.
      *
      * @param key The key to the entry.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
@@ -1160,7 +1311,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionException If operation within transaction is failed.
      */
     public <T> IgniteFuture<T> invokeAsync(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
-		    throws TransactionException;
+        throws TransactionException;
 
     /**
      * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
@@ -1171,6 +1322,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
+     * system behavior in crash scenarios for atomic caches.
      *
      * @param key The key to the entry.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1191,7 +1345,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     @IgniteAsyncSupported
     public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments)
-		    throws TransactionException;
+        throws TransactionException;
 
     /**
      * Asynchronously invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
@@ -1221,10 +1375,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see CacheEntryProcessor
      */
     public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments)
-		    throws TransactionException;
+        throws TransactionException;
 
     /**
      * {@inheritDoc}
+     * <p>
+     * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
+     * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -1250,7 +1412,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link EntryProcessor} or Caching implementation throw an exception, the
      * exception is wrapped and re-thrown when a call to
      * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
-
+     * <p>
+     * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
+     * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
@@ -1284,6 +1452,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1328,6 +1500,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * Keys are locked in the order in which they appear in key set. It is caller's responsibility to
+     * make sure keys always follow same order, such as by using {@link java.util.TreeSet}. Using unordered map,
+     * such as {@link java.util.HashSet}, while calling this method in parallel <b>will lead to deadlock</b>.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1380,10 +1556,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * See {@link CacheConfiguration#getRebalanceDelay()} for more information on how to configure
      * rebalance re-partition delay.
      * <p>
-     * @return Future that will be completed when rebalancing is finished. Future.get() returns true
+     * @return Future that will be completed when rebalancing is finished. Future.get() returns {@code true}
      *      when rebalance was successfully finished.
      */
-    public IgniteFuture<?> rebalance();
+    public IgniteFuture<Boolean> rebalance();
 
     /**
      * Returns future that will be completed when all indexes for this cache are ready to use.
@@ -1431,7 +1607,66 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
-     * @return Lost paritions.
+     * @return Lost partitions.
      */
     public Collection<Integer> lostPartitions();
+
+    /**
+     * Sets statistics enabled flag cluster wide for this cache.
+     *
+     * @param enabled Statistics enabled flag.
+     */
+    public void enableStatistics(boolean enabled);
+
+    /**
+     * Clear cluster statistics for this cache.
+     */
+    public void clearStatistics();
+
+    /**
+     * Efficiently preloads cache primary partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     */
+    public void preloadPartition(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return A future representing pending completion of the partition preloading.
+     */
+    public IgniteFuture<Void> preloadPartitionAsync(int partition);
+
+    /**
+     * Efficiently preloads cache partition into page memory if it exists on the local node.
+     * <p>
+     * This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+     * <p>
+     * Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+     * replacement.
+     * <p>
+     * This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+     * exception.
+     *
+     * @param partition Partition.
+     * @return {@code True} if partition was preloaded, {@code false} if it doesn't belong to local node.
+     */
+    public boolean localPreloadPartition(int partition);
 }

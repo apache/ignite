@@ -26,7 +26,10 @@
 // ReSharper disable UnusedMemberInSuper.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
+    using System;
     using System.Linq;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -210,6 +213,66 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             var compiled2 = CompiledQuery.Compile(qry2);
 
             Assert.AreEqual(17, compiled2(18, 16, "ers", 13, 17).Single().Key);
+        }
+
+        [Test]
+        public void TestCompiledQueryStringEquals()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var qry0 = CompiledQuery.Compile((string empName) => persons.Where(x => x.Value.Name == empName));
+            Assert.AreEqual(1, qry0(" Person_1  ").Count());
+            Assert.AreEqual(0, qry0(null).Count());
+        }
+
+        [Test]
+        public void TestCompiledQueryStringNotEquals()
+        {
+            var persons = GetPersonCache().AsCacheQueryable();
+            var qry0 = CompiledQuery.Compile((string empName) => persons.Where(x => x.Value.Name != empName));
+            Assert.AreEqual(PersonCount - 1, qry0(" Person_1  ").Count());
+            Assert.AreEqual(PersonCount, qry0(null).Count());
+        }
+
+        [Test]
+        public void TestCompiledQueryStringEqualsNull()
+        {
+            var roles = GetRoleCache().AsCacheQueryable();
+
+            var nullNameRoles = CompiledQuery.Compile((string roleName) => roles.Where(x => x.Value.Name == roleName));
+            Assert.AreEqual(1, nullNameRoles(null).Count());
+        }
+
+        [Test]
+        public void TestCompiledQueryStringNotEqualsNull()
+        {
+            var roles = GetRoleCache().AsCacheQueryable();
+
+            var nonNullNameRoles = CompiledQuery.Compile((string roleName) => roles.Where(x => x.Value.Name != roleName));
+            Assert.AreEqual(RoleCount - 1, nonNullNameRoles(null).Count());
+        }
+
+        [Test]
+        public void TestCompiledQueryStringEqualsFreeForm()
+        {
+            var persons = GetPersonCache().AsCacheQueryable().Where(emp => emp.Value.Name == "unused");
+            var compiledQuery = CompiledQuery.Compile(persons);
+
+            Func<string, IQueryCursor<ICacheEntry<int, Person>>> parametrizedCompiledQuery =
+                empName => compiledQuery(empName);
+
+            Assert.AreEqual(1, parametrizedCompiledQuery(" Person_0  ").Count());
+        }
+
+        [Test]
+        public void TestCompiledQueryStringNotEqualsFreeForm()
+        {
+            var persons = GetPersonCache().AsCacheQueryable().Where(emp => emp.Value.Name != "unused");
+            var compiledQuery = CompiledQuery.Compile(persons);
+
+            Func<string, IQueryCursor<ICacheEntry<int, Person>>> parametrizedCompiledQuery =
+                empName => compiledQuery(empName);
+
+            Assert.AreEqual(PersonCount - 1, parametrizedCompiledQuery(" Person_0  ").Count());
         }
     }
 }

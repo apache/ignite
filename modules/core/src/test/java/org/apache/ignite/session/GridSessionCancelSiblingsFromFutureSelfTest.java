@@ -45,11 +45,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test of session siblings cancellation from future.
  */
-@SuppressWarnings({"CatchGenericClass"})
 @GridCommonTest(group = "Task Session")
 public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstractTest {
     /** */
@@ -95,6 +95,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testCancelSiblings() throws Exception {
         refreshInitialData();
 
@@ -105,6 +106,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         refreshInitialData();
 

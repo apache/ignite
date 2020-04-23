@@ -18,9 +18,12 @@
 namespace Apache.Ignite.Benchmarks.Interop
 {
     using System.Collections.Generic;
+    using System.Net;
     using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Base class for all platform benchmarks.
@@ -66,7 +69,8 @@ namespace Apache.Ignite.Benchmarks.Interop
                     "-DIGNITE_QUIET=false",
                     "-DIGNITE_NO_SHUTDOWN_HOOK=true"
                 },
-                JvmClasspath = Classpath ?? Core.Impl.Common.Classpath.CreateClasspath(forceTestClasspath: true),
+                JvmClasspath = Classpath ??
+                               Core.Impl.Common.Classpath.CreateClasspath(null, IgniteHome.Resolve(), true),
                 JvmDllPath = DllPath,
                 SpringConfigUrl = ConfigPath
             };
@@ -117,5 +121,24 @@ namespace Apache.Ignite.Benchmarks.Interop
         /// Payload.
         /// </summary>
         public int Payload { get; set; }
+
+        /// <summary>
+        /// Gets the client.
+        /// </summary>
+        protected IIgniteClient GetClient()
+        {
+            return Ignition.StartClient(GetClientConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        private IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration
+            {
+                Endpoints = new[] {IPAddress.Loopback.ToString()}
+            };
+        }
     }
 }

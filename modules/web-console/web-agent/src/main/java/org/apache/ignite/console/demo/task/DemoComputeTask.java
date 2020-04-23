@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -30,6 +29,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,7 +43,7 @@ public class DemoComputeTask implements ComputeTask<Void, Integer>{
     private static final Random rnd = new Random();
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Void arg) throws IgniteException {
         HashMap<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 

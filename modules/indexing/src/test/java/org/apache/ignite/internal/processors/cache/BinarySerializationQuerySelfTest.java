@@ -56,6 +56,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.junit.Test;
 
 /**
  * Test for query with BinaryMarshaller and different serialization modes.
@@ -159,6 +160,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPlain() throws Exception {
         check(EntityPlain.class);
     }
@@ -168,6 +170,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSerializable() throws Exception {
         check(EntitySerializable.class);
     }
@@ -177,6 +180,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExternalizable() throws Exception {
         check(EntityExternalizable.class);
     }
@@ -186,6 +190,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testBinarylizable() throws Exception {
         check(EntityBinarylizable.class);
     }
@@ -195,6 +200,7 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteReadObject() throws Exception {
         check(EntityWriteReadObject.class);
     }
@@ -400,12 +406,12 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void writeObject(ObjectOutputStream s) throws IOException{
             s.writeInt(val);
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
             val = s.readInt();
         }

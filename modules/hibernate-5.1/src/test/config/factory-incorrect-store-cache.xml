@@ -23,6 +23,10 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="failureHandler">
+            <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

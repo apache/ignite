@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.UUID;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -81,7 +82,10 @@ public enum GridTopic {
     /** */
     TOPIC_CONTINUOUS,
 
-    /** */
+    /**
+     * @deprecated Should be removed in Apache Ignite 3.0.
+     */
+    @Deprecated
     TOPIC_MONGO,
 
     /** */
@@ -115,7 +119,34 @@ public enum GridTopic {
     TOPIC_SCHEMA,
 
     /** */
-    TOPIC_INTERNAL_DIAGNOSTIC;
+    TOPIC_INTERNAL_DIAGNOSTIC,
+
+    /** */
+    TOPIC_WAL,
+
+    /** */
+    TOPIC_METRICS,
+
+    /** */
+    TOPIC_AUTH,
+
+    /** */
+    TOPIC_EXCHANGE,
+
+    /** */
+    TOPIC_CACHE_COORDINATOR,
+
+    /** */
+    TOPIC_GEN_ENC_KEY,
+
+    /** */
+    TOPIC_SERVICES,
+
+    /** */
+    TOPIC_DEADLOCK_DETECTION,
+
+    /** Message topic for the distributed process. See {@link DistributedProcess}. */
+    TOPIC_DISTRIBUTED_PROCESS;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

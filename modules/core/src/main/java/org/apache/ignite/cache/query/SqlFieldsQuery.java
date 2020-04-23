@@ -28,8 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
- * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
- * the whole key and value objects back.
+ * on SQL {@code 'select'} clause.
  * <h1 class="header">Collocated Flag</h1>
  * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
@@ -49,6 +48,16 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default value of the update internal batch size. */
+    private static final int DFLT_UPDATE_BATCH_SIZE = 1;
+
+    /** Default value of Query timeout. Default is -1 means no timeout is set. */
+    private static final int DFLT_QUERY_TIMEOUT = -1;
+
+    /** Do not remove. For tests only. */
+    @SuppressWarnings("NonConstantFieldWithUpperCaseName")
+    private static boolean DFLT_LAZY;
+
     /** SQL Query. */
     private String sql;
 
@@ -60,7 +69,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean collocated;
 
     /** Query timeout in millis. */
-    private int timeout;
+    private int timeout = DFLT_QUERY_TIMEOUT;
 
     /** */
     private boolean enforceJoinOrder;
@@ -71,14 +80,20 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
-    /** */
-    private boolean lazy;
+    /** Lazy mode is default since Ignite v.2.8. */
+    private boolean lazy = DFLT_LAZY;
 
     /** Partitions for query */
     private int[] parts;
 
     /** Schema. */
     private String schema;
+
+    /**
+     * Update internal batch size. Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     */
+    private int updateBatchSize = DFLT_UPDATE_BATCH_SIZE;
 
     /**
      * Copy constructs SQL fields query.
@@ -96,6 +111,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         lazy = qry.lazy;
         parts = qry.parts;
         schema = qry.schema;
+        updateBatchSize = qry.updateBatchSize;
     }
 
     /**
@@ -273,7 +289,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      *
      * @param replicatedOnly The query contains only replicated tables.
      * @return {@code this} For chaining.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public SqlFieldsQuery setReplicatedOnly(boolean replicatedOnly) {
         this.replicatedOnly = replicatedOnly;
 
@@ -284,7 +302,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * Check is the query contains only replicated tables.
      *
      * @return {@code true} If the query contains only replicated tables.
+     * @deprecated No longer used as of Apache Ignite 2.8.
      */
+    @Deprecated
     public boolean isReplicatedOnly() {
         return replicatedOnly;
     }
@@ -367,6 +387,38 @@ public class SqlFieldsQuery extends Query<List<?>> {
         this.schema = schema;
 
         return this;
+    }
+
+    /**
+     * Gets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @return Update internal batch size
+     */
+    public int getUpdateBatchSize() {
+        return updateBatchSize;
+    }
+
+    /**
+     * Sets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @param updateBatchSize Update internal batch size.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        this.updateBatchSize = updateBatchSize;
+
+        return this;
+    }
+
+    /**
+     * @return Copy of this query.
+     */
+    public SqlFieldsQuery copy() {
+        return new SqlFieldsQuery(this);
     }
 
     /** {@inheritDoc} */

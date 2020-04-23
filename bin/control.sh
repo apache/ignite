@@ -1,4 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -23,7 +32,7 @@
 #
 # Import common functions.
 #
-if [ "${IGNITE_HOME}" = "" ];
+if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
     else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
@@ -45,7 +54,7 @@ checkJava
 #
 setIgniteHome
 
-if [ "${DEFAULT_CONFIG}" == "" ]; then
+if [ "${DEFAULT_CONFIG:-}" == "" ]; then
     DEFAULT_CONFIG=config/default-config.xml
 fi
 
@@ -53,7 +62,8 @@ fi
 # Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
-CP="${IGNITE_LIBS}"
+. "${SCRIPTS_HOME}"/include/build-classpath.sh # Will be removed in the binary release.
+CP="${IGNITE_LIBS}:${IGNITE_HOME}/libs/optional/ignite-zookeeper/*"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
@@ -67,14 +77,14 @@ RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 #
 # This is executed when -nojmx is not specified
 #
-if [ "${NOJMX}" == "0" ] ; then
+if [ "${NOJMXI:-}" == "0" ] ; then
     findAvailableJmxPort
 fi
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
 
-if [ "${DOCK_OPTS}" == "" ]; then
+if [ "${DOCK_OPTS:-}" == "" ]; then
     DOCK_OPTS="-Xdock:name=Ignite Node"
 fi
 
@@ -83,7 +93,7 @@ fi
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
-if [ -z "$JVM_OPTS" ] ; then
+if [ -z "${JVM_OPTS:-}" ] ; then
     if [[ `"$JAVA" -version 2>&1 | egrep "1\.[7]\."` ]]; then
         JVM_OPTS="-Xms256m -Xmx1g"
     else
@@ -92,10 +102,14 @@ if [ -z "$JVM_OPTS" ] ; then
 fi
 
 #
+# Uncomment to enable experimental commands [--wal]
+#
+# JVM_OPTS="${JVM_OPTS} -DIGNITE_ENABLE_EXPERIMENTAL_COMMAND=true"
+
+#
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
-# JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m"
-# JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60"
+# JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
 
 #
 # Uncomment if you get StackOverflowError.
@@ -117,14 +131,14 @@ ENABLE_ASSERTIONS="1"
 #
 # Set '-ea' options if assertions are enabled.
 #
-if [ "${ENABLE_ASSERTIONS}" = "1" ]; then
+if [ "${ENABLE_ASSERTIONS:-}" = "1" ]; then
     JVM_OPTS="${JVM_OPTS} -ea"
 fi
 
 #
 # Set main class to start service (grid node by default).
 #
-if [ "${MAIN_CLASS}" = "" ]; then
+if [ "${MAIN_CLASS:-}" = "" ]; then
     MAIN_CLASS=org.apache.ignite.internal.commandline.CommandHandler
 fi
 
@@ -134,34 +148,65 @@ fi
 #
 # JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8787 ${JVM_OPTS}"
 
+#
+# Final JVM_OPTS for Java 9+ compatibility
+#
+if [ $version -eq 8 ] ; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+         ${JVM_OPTS}"
+
+elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        --add-modules=java.xml.bind \
+        ${JVM_OPTS}"
+
+elif [ $version -ge 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
+fi
+
 ERRORCODE="-1"
 
 while [ "${ERRORCODE}" -ne "130" ]
 do
-    if [ "${INTERACTIVE}" == "1" ] ; then
+    if [ "${INTERACTIVE:-}" == "1" ] ; then
         case $osname in
             Darwin*)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
+                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
             ;;
             *)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
+                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
             ;;
         esac
     else
         case $osname in
             Darwin*)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
+                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
             ;;
             *)
-                "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
+                "$JAVA" ${JVM_OPTS} ${QUIET:-} "${RESTART_SUCCESS_OPT}" ${JMX_MON:-} \
                  -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
-                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} $@
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS:-} -cp "${CP}" ${MAIN_CLASS} $@
             ;;
         esac
     fi

@@ -24,10 +24,10 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assume;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -35,8 +35,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.configuration.CacheConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
 /**
  * Test node restart.
@@ -93,18 +93,10 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /** Retries. */
     private int retries = DFLT_RETRIES;
 
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        // Discovery.
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-        c.setDiscoverySpi(disco);
         c.setDeploymentMode(CONTINUOUS);
 
         // Cache.
@@ -133,12 +125,10 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     protected abstract boolean nearEnabled();
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        if (nearEnabled())
+            MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+
         backups = DFLT_BACKUPS;
         partitions = DFLT_PARTITIONS;
         preloadMode = ASYNC;
@@ -183,6 +173,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSyncPreloadRestart() throws Exception {
         preloadMode = SYNC;
 
@@ -192,6 +183,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAsyncPreloadRestart() throws Exception {
         preloadMode = ASYNC;
 
@@ -201,7 +193,10 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDisabledPreloadRestart() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
+
         preloadMode = NONE;
 
         checkRestart();

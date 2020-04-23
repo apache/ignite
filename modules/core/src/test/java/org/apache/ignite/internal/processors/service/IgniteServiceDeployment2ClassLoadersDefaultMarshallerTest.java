@@ -27,12 +27,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
@@ -43,9 +41,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
     /** */
     private static final String NOOP_SERVICE_2_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService2";
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int GRID_CNT = 6;
@@ -68,9 +63,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     /** */
     private Set<String> grp2 = new HashSet<>();
 
-    /** */
-    private boolean client;
-
     /**
      * Initialize URLs.
      */
@@ -90,12 +82,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         cfg.setMarshaller(marshaller());
 
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
@@ -105,8 +91,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         if (grp2.contains(igniteInstanceName))
             cfg.setClassLoader(extClsLdr2);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -151,16 +135,15 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment1() throws Exception {
         startGrid(0).services().deploy(serviceConfig(true));
 
         startGrid(1).services().deploy(serviceConfig(false));
 
-        client = true;
+        startClientGrid(2).services().deploy(serviceConfig(true));
 
-        startGrid(2).services().deploy(serviceConfig(true));
-
-        startGrid(3).services().deploy(serviceConfig(false));
+        startClientGrid(3).services().deploy(serviceConfig(false));
 
         for (int i = 0; i < 4; i++)
             ignite(i).services().serviceDescriptors();
@@ -173,14 +156,13 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment2() throws Exception {
         for (int i = 0 ; i < 4; i++)
             startGrid(i);
 
-        client = true;
-
         for (int i = 4 ; i < 6; i++)
-            startGrid(i);
+            startClientGrid(i);
 
         ignite(4).services().deploy(serviceConfig(true));
 
@@ -190,6 +172,7 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServiceDeployment3() throws Exception {
         startGrid(0).services().deploy(serviceConfig(true));
 

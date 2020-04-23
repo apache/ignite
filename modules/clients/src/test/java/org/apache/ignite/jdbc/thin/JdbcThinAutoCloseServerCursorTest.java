@@ -29,12 +29,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -44,15 +41,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * when last result set page is transmitted.
  */
 public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?" +
-        JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR + "=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?autoCloseServerCursor=true";
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -69,12 +62,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
 
         cfg.setCacheConfiguration(cache);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -83,11 +70,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(3);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -102,7 +84,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    @Test
     public void testQuery() throws Exception {
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
@@ -196,6 +178,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInsert() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema('"' + CACHE_NAME + '"');
@@ -225,6 +208,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate() throws Exception {
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
@@ -250,6 +234,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDelete() throws Exception {
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
@@ -295,7 +280,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     /**
      * Person.
      */
-    @SuppressWarnings("UnusedDeclaration")
     static class Person implements Serializable {
         /** ID. */
         @QuerySqlField

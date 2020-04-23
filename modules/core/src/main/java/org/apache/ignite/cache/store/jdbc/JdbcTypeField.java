@@ -88,7 +88,6 @@ public class JdbcTypeField implements Serializable {
         return this;
     }
 
-
     /**
      * @return Column name in database.
      */

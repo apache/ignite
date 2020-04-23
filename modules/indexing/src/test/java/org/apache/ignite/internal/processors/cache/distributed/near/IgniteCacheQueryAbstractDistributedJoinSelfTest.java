@@ -26,13 +26,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -42,7 +39,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test for distributed queries with node restarts.
  */
-public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractIndexingCommonTest {
     /** */
     protected static final String QRY_0 = "select co._key, count(*) cnt\n" +
         "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
@@ -67,6 +64,11 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
         "where pr.companyId = co._key\n" +
         "order by co._key, pr._key ";
 
+    protected static final String QRY_LONG = "select pe.id, co.id, pr._key\n" +
+        "from \"pe\".Person pe, \"pr\".Product pr, \"co\".Company co, \"pu\".Purchase pu\n" +
+        "where pe._key = pu.personId and pu.productId = pr._key and pr.companyId = co._key \n" +
+        "order by pe.id desc";
+
     /** */
     protected static final int GRID_CNT = 2;
 
@@ -82,21 +84,9 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
     /** */
     private static final int PRODUCT_CNT = 100;
 
-    /** */
-    private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        if ("client".equals(igniteInstanceName))
-            c.setClientMode(true);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(disco);
 
         int i = 0;
 
@@ -190,11 +180,6 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
 
             pu.put(i, new Purchase(persId, prodId));
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**

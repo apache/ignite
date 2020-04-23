@@ -145,6 +145,21 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpGetServices = 34;
 
+        /** */
+        private const int OpDataRegionMetrics = 35;
+
+        /** */
+        private const int OpDataRegionMetricsByName = 36;
+
+        /** */
+        private const int OpDataStorageMetrics = 37;
+
+        /** */
+        private const int OpEnableStatistics = 38;
+
+        /** */
+        private const int OpClearStatistics = 39;
+
         /** Initial Ignite instance. */
         private readonly IIgniteInternal _ignite;
         
@@ -442,6 +457,28 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return _services.Value;
         }
 
+        /** <inheritDoc /> */
+        public void EnableStatistics(IEnumerable<string> cacheNames, bool enabled)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpEnableStatistics,
+                w =>
+                {
+                    w.WriteBoolean(enabled);
+
+                    WriteStrings(w, cacheNames);
+                });
+        }
+
+        /** <inheritdoc /> */
+        public void ClearStatistics(IEnumerable<string> cacheNames)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpClearStatistics, w => WriteStrings(w, cacheNames));
+        }
+
         /// <summary>
         /// Creates the services.
         /// </summary>
@@ -562,21 +599,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            DoOutOp(OpResetLostPartitions, w =>
-            {
-                var pos = w.Stream.Position;
-
-                var count = 0;
-                w.WriteInt(count);  // Reserve space.
-
-                foreach (var cacheName in cacheNames)
-                {
-                    w.WriteString(cacheName);
-                    count++;
-                }
-
-                w.Stream.WriteInt(pos, count);
-            });
+            DoOutOp(OpResetLostPartitions, w => WriteStrings(w, cacheNames));
         }
 
         /// <summary>
@@ -597,6 +620,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets the memory metrics.
         /// </summary>
+#pragma warning disable 618
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
             return DoInOp(OpMemoryMetrics, stream =>
@@ -624,6 +648,47 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return DoOutInOp(OpMemoryMetricsByName, w => w.WriteString(memoryPolicyName),
                 stream => stream.ReadBool() ? new MemoryMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
         }
+#pragma warning restore 618
+
+        /// <summary>
+        /// Gets the data region metrics.
+        /// </summary>
+        public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
+        {
+            return DoInOp(OpDataRegionMetrics, stream =>
+            {
+                IBinaryRawReader reader = Marshaller.StartUnmarshal(stream, false);
+
+                var cnt = reader.ReadInt();
+
+                var res = new List<IDataRegionMetrics>(cnt);
+
+                for (int i = 0; i < cnt; i++)
+                {
+                    res.Add(new DataRegionMetrics(reader));
+                }
+
+                return res;
+            });
+        }
+
+        /// <summary>
+        /// Gets the data region metrics.
+        /// </summary>
+        public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
+        {
+            return DoOutInOp(OpDataRegionMetricsByName, w => w.WriteString(memoryPolicyName),
+                stream => stream.ReadBool() ? new DataRegionMetrics(Marshaller.StartUnmarshal(stream, false)) : null);
+        }
+
+        /// <summary>
+        /// Gets the data storage metrics.
+        /// </summary>
+        public IDataStorageMetrics GetDataStorageMetrics()
+        {
+            return DoInOp(OpDataStorageMetrics, stream =>
+                new DataStorageMetrics(Marshaller.StartUnmarshal(stream, false)));
+        }
 
         /// <summary>
         /// Changes Ignite grid state to active or inactive.
@@ -647,11 +712,13 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// <summary>
         /// Gets the persistent store metrics.
         /// </summary>
+#pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             return DoInOp(OpGetPersistentStoreMetrics, stream =>
                 new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
+#pragma warning restore 618
 
         /// <summary>
         /// Creates new Cluster Group from given native projection.
@@ -699,6 +766,27 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(_nodes != null, "At least one topology update should have occurred.");
 
             return _nodes;
+        }
+
+        /// <summary>
+        /// Writes strings
+        /// </summary>
+        /// <param name="writer">Writer</param>
+        /// <param name="strings">Strings</param>
+        private static void WriteStrings(BinaryWriter writer, IEnumerable<string> strings)
+        {
+            var pos = writer.Stream.Position;
+
+            var count = 0;
+            writer.WriteInt(count);  // Reserve space.
+
+            foreach (var cacheName in strings)
+            {
+                writer.WriteString(cacheName);
+                count++;
+            }
+
+            writer.Stream.WriteInt(pos, count);
         }
     }
 }

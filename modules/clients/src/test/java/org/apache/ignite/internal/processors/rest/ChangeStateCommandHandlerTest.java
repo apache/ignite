@@ -26,20 +26,18 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.cluster.ClusterState.active;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 
 /**
  *
  */
 public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     public static final String HOST = "127.0.0.1";
 
@@ -61,12 +59,6 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -76,12 +68,6 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
         startGrid(0);
         startGrid(1);
     }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -100,26 +86,27 @@ public class ChangeStateCommandHandlerTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testActivateDeActivate() throws GridClientException {
         GridClientClusterState state = client.state();
 
-        boolean active = state.active();
+        boolean active = active(state.state());
 
         assertTrue(active);
 
-        state.active(false);
+        state.state(INACTIVE, true);
 
         IgniteEx ig1 = grid(0);
         IgniteEx ig2 = grid(1);
 
         assertFalse(ig1.active());
         assertFalse(ig2.active());
-        assertFalse(state.active());
+        assertEquals(INACTIVE, state.state());
 
-        state.active(true);
+        state.state(ACTIVE, false);
 
         assertTrue(ig1.active());
         assertTrue(ig2.active());
-        assertTrue(state.active());
+        assertEquals(ACTIVE, state.state());
     }
 }

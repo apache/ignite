@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -138,9 +139,20 @@ public interface GridQueryTypeDescriptor {
     public String affinityKey();
 
     /**
+     * @return Whether custom affinity key mapper exists.
+     */
+    public boolean customAffinityKeyMapper();
+
+    /**
      * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
      */
     public int typeId();
+
+    /**
+     * @param val Value cache object.
+     * @return {@code true} If the type of the given value cache object matches this descriptor.
+     */
+    public boolean matchType(CacheObject val);
 
     /**
      * Gets key field name.
@@ -177,4 +189,13 @@ public interface GridQueryTypeDescriptor {
      * @throws IgniteCheckedException, If failure happens.
      */
     public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException;
+
+    /**
+     * Sets defaults value for given key and value.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void setDefaults(Object key, Object val) throws IgniteCheckedException;
 }

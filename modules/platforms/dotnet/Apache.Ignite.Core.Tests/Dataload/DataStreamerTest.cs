@@ -116,6 +116,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.PerNodeBufferSize = 2;
                 Assert.AreEqual(2, ldr.PerNodeBufferSize);
 
+                Assert.AreEqual(DataStreamerDefaults.DefaultPerThreadBufferSize, ldr.PerThreadBufferSize);
+                ldr.PerThreadBufferSize = 1;
+                Assert.AreEqual(1, ldr.PerThreadBufferSize);
+                ldr.PerThreadBufferSize = 2;
+                Assert.AreEqual(2, ldr.PerThreadBufferSize);
+
                 Assert.AreEqual(0, ldr.PerNodeParallelOperations);
                 var ops = DataStreamerDefaults.DefaultParallelOperationsMultiplier *
                           IgniteConfiguration.DefaultThreadPoolSize;
@@ -135,7 +141,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Test data add/remove.
         /// </summary>
-        [Test]        
+        [Test]
         public void TestAddRemove()
         {
             IDataStreamer<int, int> ldr;
@@ -148,7 +154,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 // Additions.
                 var task = ldr.AddData(1, 1);
-                ldr.Flush();                
+                ldr.Flush();
                 Assert.AreEqual(1, _cache.Get(1));
                 Assert.IsTrue(task.IsCompleted);
                 Assert.IsFalse(ldr.Task.IsCompleted);
@@ -171,7 +177,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsTrue(task.IsCompleted);
 
                 // Mixed.
-                ldr.AddData(5, 5);                
+                ldr.AddData(5, 5);
                 ldr.RemoveData(2);
                 ldr.AddData(new KeyValuePair<int, int>(7, 7));
                 ldr.AddData(6, 6);
@@ -228,7 +234,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             Assert.IsNotNull(cache[2].Inner.Inner);
             Assert.IsNotNull(cache[3].Inner);
             Assert.IsNotNull(cache[3].Inner.Inner);
-            
+
             Assert.IsNotNull(cache[4].Inner);
             Assert.IsNull(cache[4].Inner.Inner);
         }
@@ -271,6 +277,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsFalse(task.IsCompleted);
 
                 ldr.PerNodeBufferSize = 2;
+                ldr.PerThreadBufferSize = 1;
 
                 ldr.AddData(part2[0], part2[0]);
                 ldr.AddData(part1[1], part1[1]);
@@ -303,7 +310,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         private static int[] GetPrimaryPartitionKeys(IIgnite ignite, int count)
         {
             var affinity = ignite.GetAffinity(CacheName);
-            
+
             var localNode = ignite.GetCluster().GetLocalNode();
 
             var part = affinity.GetPrimaryPartitions(localNode).First();
@@ -354,6 +361,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Tests that streamer gets collected when there are no references to it.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-8731")]
         public void TestFinalizer()
         {
             var streamer = _grid.GetDataStreamer<int, int>(CacheName);
@@ -382,7 +390,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 var fut = ldr.AddData(1, 1);
                 Thread.Sleep(100);
                 Assert.IsFalse(fut.IsCompleted);
-                ldr.AutoFlushFrequency = 1000;                
+                ldr.AutoFlushFrequency = 1000;
                 fut.Wait();
 
                 // Test forced flush after frequency change.
@@ -414,7 +422,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         }
 
         /// <summary>
-        /// Test multithreaded behavior. 
+        /// Test multithreaded behavior.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
@@ -493,6 +501,27 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             TestStreamReceiver(new StreamTransformer<int, int, int, int>(new EntryProcessorSerializable()));
             TestStreamReceiver(new StreamTransformer<int, int, int, int>(new EntryProcessorBinarizable()));
+        }
+
+        [Test]
+        public void TestStreamTransformerIsInvokedForDuplicateKeys()
+        {
+            var cache = _grid.GetOrCreateCache<string, long>("c");
+
+            using (var streamer = _grid.GetDataStreamer<string, long>(cache.Name))
+            {
+                streamer.AllowOverwrite = true;
+                streamer.Receiver = new StreamTransformer<string, long, object, object>(new CountingEntryProcessor());
+
+                var words = Enumerable.Repeat("a", 3).Concat(Enumerable.Repeat("b", 2));
+                foreach (var word in words)
+                {
+                    streamer.AddData(word, 1L);
+                }
+            }
+
+            Assert.AreEqual(3, cache.Get("a"));
+            Assert.AreEqual(2, cache.Get("b"));
         }
 
         /// <summary>
@@ -610,7 +639,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             public int Process(IMutableCacheEntry<int, int> entry, int arg)
             {
                 entry.Value = entry.Key + 1;
-                
+
                 return 0;
             }
         }
@@ -624,7 +653,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             public int Process(IMutableCacheEntry<int, int> entry, int arg)
             {
                 entry.Value = entry.Key + 1;
-                
+
                 return 0;
             }
 
@@ -657,5 +686,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
             public Container Inner;
         }
 
+        private class CountingEntryProcessor : ICacheEntryProcessor<string, long, object, object>
+        {
+            public object Process(IMutableCacheEntry<string, long> e, object arg)
+            {
+                e.Value++;
+
+                return null;
+            }
+        }
     }
 }

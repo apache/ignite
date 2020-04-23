@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+import includes from 'lodash/includes';
+import isNil from 'lodash/isNil';
+import find from 'lodash/find';
+
 // Java built-in class names.
 import JAVA_CLASSES from '../data/java-classes.json';
 
@@ -36,44 +41,15 @@ const VALID_PACKAGE = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*
 // Regular expression to check UUID string representation.
 const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/im;
 
+// Extended list of Java built-in class names.
+const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
+
 /**
  * Utility service for various check on java types.
  */
 export default class JavaTypes {
-    static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'IgniteIGFSDefaults'];
-
-    constructor(clusterDflts, cacheDflts, igfsDflts) {
-        this.enumClasses = _.uniq(this._enumClassesAcc(_.merge(clusterDflts, cacheDflts, igfsDflts), []));
-        this.shortEnumClasses = _.map(this.enumClasses, (cls) => this.shortClassName(cls));
-    }
-
-    /**
-     * Collects recursive enum classes.
-     *
-     * @param root Root object.
-     * @param classes Collected classes.
-     * @return {Array.<String>}
-     * @private
-     */
-    _enumClassesAcc(root, classes) {
-        return _.reduce(root, (acc, val, key) => {
-            if (key === 'clsName')
-                acc.push(val);
-            else if (_.isObject(val))
-                this._enumClassesAcc(val, acc);
-
-            return acc;
-        }, classes);
-    }
-
-    /**
-     * Check if class name is non enum class in Ignite configuration.
-     *
-     * @param clsName
-     * @return {boolean}
-     */
-    nonEnum(clsName) {
-        return !_.includes(this.shortEnumClasses, clsName) && !_.includes(this.enumClasses, clsName);
+    constructor() {
+        JAVA_CLASS_STRINGS.push({short: 'byte[]', full: 'byte[]', stringValue: '[B'});
     }
 
     /**
@@ -81,7 +57,7 @@ export default class JavaTypes {
      * @returns {boolean} 'true' if provided class name is a not Java built in class.
      */
     nonBuiltInClass(clsName) {
-        return _.isNil(_.find(JAVA_CLASSES, (clazz) => clsName === clazz.short || clsName === clazz.full));
+        return isNil(find(JAVA_CLASSES, (clazz) => clsName === clazz.short || clsName === clazz.full));
     }
 
     /**
@@ -89,9 +65,19 @@ export default class JavaTypes {
      * @returns {String} Full class name for java build-in types or source class otherwise.
      */
     fullClassName(clsName) {
-        const type = _.find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
+        const type = find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
 
         return type ? type.full : clsName;
+    }
+
+    /**
+     * @param clsName Class name to check.
+     * @returns {String} Full class name string presentation for java build-in types or source class otherwise.
+     */
+    stringClassName(clsName) {
+        const type = _.find(JAVA_CLASS_STRINGS, (clazz) => clsName === clazz.short);
+
+        return type ? type.stringValue || type.full : clsName;
     }
 
     /**
@@ -151,7 +137,7 @@ export default class JavaTypes {
      * @returns {boolean} 'true' if given value is one of Java reserved keywords.
      */
     isKeyword(value) {
-        return !!(value && _.includes(JAVA_KEYWORDS, value.toLowerCase()));
+        return !!(value && includes(JAVA_KEYWORDS, value.toLowerCase()));
     }
 
     /**
@@ -159,7 +145,7 @@ export default class JavaTypes {
      * @returns {boolean} 'true' if given class name is java primitive.
      */
     isPrimitive(clsName) {
-        return _.includes(JAVA_PRIMITIVES, clsName);
+        return includes(JAVA_PRIMITIVES, clsName);
     }
 
     /**

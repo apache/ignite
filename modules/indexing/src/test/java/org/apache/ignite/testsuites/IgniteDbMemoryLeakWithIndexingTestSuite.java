@@ -17,24 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakIndexedTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQueryTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Page memory leaks tests using indexing.
  */
-public class IgniteDbMemoryLeakWithIndexingTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Db Memory Leaks With Indexing Test Suite");
-
-        suite.addTestSuite(IgniteDbMemoryLeakSqlQueryTest.class);
-        suite.addTestSuite(IgniteDbMemoryLeakIndexedTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteDbMemoryLeakSqlQueryTest.class,
+    IgniteDbMemoryLeakIndexedTest.class
+})
+public class IgniteDbMemoryLeakWithIndexingTestSuite {
 }

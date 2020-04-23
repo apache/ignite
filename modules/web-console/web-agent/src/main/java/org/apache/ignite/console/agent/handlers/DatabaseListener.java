@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.db.DbMetadataReader;
 import org.apache.ignite.console.agent.db.DbSchema;
@@ -48,6 +50,12 @@ import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 public class DatabaseListener {
     /** */
     private static final Logger log = Logger.getLogger(DatabaseListener.class.getName());
+
+    /** */
+    private static final String IMPLEMENTATION_VERSION = "Implementation-Version";
+
+    /** */
+    private static final String BUNDLE_VERSION = "Bundle-Version";
 
     /** */
     private final File driversFolder;
@@ -125,7 +133,7 @@ public class DatabaseListener {
 
     /** */
     private final AbstractListener availableDriversLsnr = new AbstractListener() {
-        @Override public Object execute(Map<String, Object> args) throws Exception {
+        @Override public Object execute(Map<String, Object> args) {
             if (driversFolder == null) {
                 log.info("JDBC drivers folder not specified, returning empty list");
 
@@ -156,17 +164,26 @@ public class DatabaseListener {
                     URL url = new URL("jar", null,
                         "file:" + (win ? "/" : "") + file.getPath() + "!/META-INF/services/java.sql.Driver");
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), UTF_8))) {
+                    try (
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), UTF_8));
+                        JarFile jar = new JarFile(file.getPath())
+                    ) {
+                        Manifest m = jar.getManifest();
+                        Object ver = m.getMainAttributes().getValue(IMPLEMENTATION_VERSION);
+
+                        if (ver == null)
+                            ver = m.getMainAttributes().getValue(BUNDLE_VERSION);
+
                         String jdbcDriverCls = reader.readLine();
 
-                        res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
+                        res.add(new JdbcDriver(file.getName(), jdbcDriverCls, ver != null ? ver.toString() : null));
 
                         if (log.isDebugEnabled())
                             log.debug("Found: [driver=" + file + ", class=" + jdbcDriverCls + "]");
                     }
                 }
                 catch (IOException e) {
-                    res.add(new JdbcDriver(file.getName(), null));
+                    res.add(new JdbcDriver(file.getName(), null, null));
 
                     log.info("Found: [driver=" + file + "]");
                     log.info("Failed to detect driver class: " + e.getMessage());
@@ -317,16 +334,21 @@ public class DatabaseListener {
     private static class JdbcDriver {
         /** */
         public final String jdbcDriverJar;
+
         /** */
         public final String jdbcDriverCls;
+
+        /** */
+        public final String jdbcDriverImplVersion;
 
         /**
          * @param jdbcDriverJar File name of driver jar file.
          * @param jdbcDriverCls Optional JDBC driver class.
          */
-        public JdbcDriver(String jdbcDriverJar, String jdbcDriverCls) {
+        public JdbcDriver(String jdbcDriverJar, String jdbcDriverCls, String jdbcDriverImplVersion) {
             this.jdbcDriverJar = jdbcDriverJar;
             this.jdbcDriverCls = jdbcDriverCls;
+            this.jdbcDriverImplVersion = jdbcDriverImplVersion;
         }
     }
 }

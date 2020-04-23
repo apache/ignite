@@ -18,18 +18,37 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/utility.h"
 
+#include "ignite/odbc/streaming/streaming_batch.h"
+
+namespace
+{
+    using namespace ignite;
+    using namespace odbc;
+
+    void ReadAffectedRows(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& protocolVersion,
+        std::vector<int64_t>& affectedRows)
+    {
+        affectedRows.clear();
+
+        if (protocolVersion < ProtocolVersion::VERSION_2_3_2)
+            affectedRows.push_back(reader.ReadInt64());
+        else
+        {
+            int32_t len = reader.ReadInt32();
+
+            affectedRows.reserve(static_cast<size_t>(len));
+            for (int32_t i = 0; i < len; ++i)
+                affectedRows.push_back(reader.ReadInt64());
+        }
+    }
+}
+
 namespace ignite
 {
     namespace odbc
     {
-        HandshakeRequest::HandshakeRequest(const ProtocolVersion& version, bool distributedJoins,
-            bool enforceJoinOrder, bool replicatedOnly, bool collocated, bool lazy):
-            version(version),
-            distributedJoins(distributedJoins),
-            enforceJoinOrder(enforceJoinOrder),
-            replicatedOnly(replicatedOnly),
-            collocated(collocated),
-            lazy(lazy)
+        HandshakeRequest::HandshakeRequest(const config::Configuration& config) :
+            config(config)
         {
             // No-op.
         }
@@ -39,28 +58,45 @@ namespace ignite
             // No-op.
         }
 
-        void HandshakeRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void HandshakeRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::HANDSHAKE);
 
+            ProtocolVersion version = config.GetProtocolVersion();
             writer.WriteInt16(version.GetMajor());
             writer.WriteInt16(version.GetMinor());
             writer.WriteInt16(version.GetMaintenance());
 
             writer.WriteInt8(ClientType::ODBC);
 
-            writer.WriteBool(distributedJoins);
-            writer.WriteBool(enforceJoinOrder);
-            writer.WriteBool(replicatedOnly);
-            writer.WriteBool(collocated);
-            writer.WriteBool(lazy);
+            writer.WriteBool(config.IsDistributedJoins());
+            writer.WriteBool(config.IsEnforceJoinOrder());
+            writer.WriteBool(config.IsReplicatedOnly());
+            writer.WriteBool(config.IsCollocated());
+
+            if (version >= ProtocolVersion::VERSION_2_1_5)
+                writer.WriteBool(config.IsLazy());
+
+            if (version >= ProtocolVersion::VERSION_2_3_0)
+                writer.WriteBool(config.IsSkipReducerOnUpdate());
+
+            if (version >= ProtocolVersion::VERSION_2_5_0)
+            {
+                utility::WriteString(writer, config.GetUser());
+                utility::WriteString(writer, config.GetPassword());
+            }
+
+            if (version >= ProtocolVersion::VERSION_2_7_0)
+                writer.WriteInt8(config.GetNestedTxMode());
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,
-            const app::ParameterSet& params):
+            const app::ParameterSet& params, int32_t timeout, bool autoCommit):
             schema(schema),
             sql(sql),
-            params(params)
+            params(params),
+            timeout(timeout),
+            autoCommit(autoCommit)
         {
             // No-op.
         }
@@ -70,7 +106,7 @@ namespace ignite
             // No-op.
         }
 
-        void QueryExecuteRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryExecuteRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
         {
             writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY);
 
@@ -82,26 +118,34 @@ namespace ignite
             writer.WriteObject<std::string>(sql);
 
             params.Write(writer);
+
+            if (ver >= ProtocolVersion::VERSION_2_3_2)
+                writer.WriteInt32(timeout);
+
+            if (ver >= ProtocolVersion::VERSION_2_5_0)
+                writer.WriteBool(autoCommit);
         }
 
-        QueryExecuteBatchtRequest::QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
-            const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last):
+        QueryExecuteBatchRequest::QueryExecuteBatchRequest(const std::string& schema, const std::string& sql,
+            const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout, bool autoCommit) :
             schema(schema),
             sql(sql),
             params(params),
             begin(begin),
             end(end),
-            last(last)
+            last(last),
+            timeout(timeout),
+            autoCommit(autoCommit)
         {
             // No-op.
         }
 
-        QueryExecuteBatchtRequest::~QueryExecuteBatchtRequest()
+        QueryExecuteBatchRequest::~QueryExecuteBatchRequest()
         {
             // No-op.
         }
 
-        void QueryExecuteBatchtRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryExecuteBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
         {
             writer.WriteInt8(RequestType::EXECUTE_SQL_QUERY_BATCH);
 
@@ -113,6 +157,12 @@ namespace ignite
             writer.WriteObject<std::string>(sql);
 
             params.Write(writer, begin, end, last);
+
+            if (ver >= ProtocolVersion::VERSION_2_3_2)
+                writer.WriteInt32(timeout);
+
+            if (ver >= ProtocolVersion::VERSION_2_5_0)
+                writer.WriteBool(autoCommit);
         }
 
         QueryCloseRequest::QueryCloseRequest(int64_t queryId): queryId(queryId)
@@ -125,7 +175,7 @@ namespace ignite
             // No-op.
         }
 
-        void QueryCloseRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryCloseRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::CLOSE_SQL_QUERY);
             writer.WriteInt64(queryId);
@@ -143,9 +193,10 @@ namespace ignite
             // No-op.
         }
 
-        void QueryFetchRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryFetchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::FETCH_SQL_QUERY);
+
             writer.WriteInt64(queryId);
             writer.WriteInt32(pageSize);
         }
@@ -164,7 +215,7 @@ namespace ignite
             // No-op.
         }
 
-        void QueryGetColumnsMetaRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryGetColumnsMetaRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::GET_COLUMNS_METADATA);
 
@@ -188,7 +239,7 @@ namespace ignite
             // No-op.
         }
 
-        void QueryGetTablesMetaRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryGetTablesMetaRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::GET_TABLES_METADATA);
 
@@ -198,12 +249,52 @@ namespace ignite
             writer.WriteObject<std::string>(tableTypes);
         }
 
-        void QueryGetParamsMetaRequest::Write(impl::binary::BinaryWriterImpl& writer) const
+        void QueryGetParamsMetaRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
         {
             writer.WriteInt8(RequestType::GET_PARAMS_METADATA);
 
             writer.WriteObject<std::string>(schema);
             writer.WriteObject<std::string>(sqlQuery);
+        }
+
+        void QueryMoreResultsRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+        {
+            writer.WriteInt8(RequestType::QUERY_MORE_RESULTS);
+
+            writer.WriteInt64(queryId);
+            writer.WriteInt32(pageSize);
+        }
+
+        StreamingBatchRequest::StreamingBatchRequest(const std::string& schema,
+            const streaming::StreamingBatch& batch, bool last, int64_t order) :
+            schema(schema),
+            batch(batch),
+            last(last),
+            order(order)
+        {
+            // No-op.
+        }
+
+        StreamingBatchRequest::~StreamingBatchRequest()
+        {
+            // No-op.
+        }
+
+        void StreamingBatchRequest::Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+        {
+            writer.WriteInt8(RequestType::STREAMING_BATCH);
+
+            writer.WriteString(schema);
+
+            impl::interop::InteropOutputStream* stream = writer.GetStream();
+
+            writer.WriteInt32(batch.GetSize());
+
+            if (batch.GetSize() != 0)
+                stream->WriteInt8Array(batch.GetData(), batch.GetDataLength());
+
+            writer.WriteBool(last);
+            writer.WriteInt64(order);
         }
 
         Response::Response() :
@@ -228,7 +319,7 @@ namespace ignite
             if (status == ResponseStatus::SUCCESS)
                 ReadOnSuccess(reader, ver);
             else
-                utility::ReadString(reader, error);;
+                utility::ReadString(reader, error);
         }
 
         void Response::ReadOnSuccess(impl::binary::BinaryReaderImpl&, const ProtocolVersion&)
@@ -293,18 +384,17 @@ namespace ignite
             // No-op.
         }
 
-        void QueryExecuteResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        void QueryExecuteResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
         {
             queryId = reader.ReadInt64();
 
-            meta::ReadColumnMetaVector(reader, meta);
+            meta::ReadColumnMetaVector(reader, meta, ver);
 
-            affectedRows = reader.ReadInt64();
+            ReadAffectedRows(reader, ver, affectedRows);
         }
 
-        QueryExecuteBatchResponse::QueryExecuteBatchResponse():
+        QueryExecuteBatchResponse::QueryExecuteBatchResponse() :
             affectedRows(0),
-            errorSetIdx(-1),
             errorMessage(),
             errorCode(1)
         {
@@ -319,11 +409,13 @@ namespace ignite
         void QueryExecuteBatchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
         {
             bool success = reader.ReadBool();
-            affectedRows = reader.ReadInt64();
+
+            ReadAffectedRows(reader, ver, affectedRows);
 
             if (!success)
             {
-                errorSetIdx = reader.ReadInt64();
+                // Ignoring error set idx. To be deleted in next major version.
+                reader.ReadInt64();
                 errorMessage = reader.ReadObject<std::string>();
 
                 if (ver >= ProtocolVersion::VERSION_2_1_5)
@@ -331,7 +423,29 @@ namespace ignite
             }
         }
 
-        QueryFetchResponse::QueryFetchResponse(ResultPage& resultPage): queryId(0), resultPage(resultPage)
+        StreamingBatchResponse::StreamingBatchResponse() :
+            errorMessage(),
+            errorCode(ResponseStatus::SUCCESS),
+            order(0)
+        {
+            // No-op.
+        }
+
+        StreamingBatchResponse::~StreamingBatchResponse()
+        {
+            // No-op.
+        }
+
+        void StreamingBatchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        {
+            errorMessage = reader.ReadObject<std::string>();
+            errorCode = reader.ReadInt32();
+            order = reader.ReadInt64();
+        }
+
+        QueryFetchResponse::QueryFetchResponse(ResultPage& resultPage) :
+            queryId(0),
+            resultPage(resultPage)
         {
             // No-op.
         }
@@ -341,7 +455,8 @@ namespace ignite
             // No-op.
         }
 
-        void QueryFetchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        void QueryFetchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader,
+            const ProtocolVersion& ver)
         {
             queryId = reader.ReadInt64();
 
@@ -358,9 +473,10 @@ namespace ignite
             // No-op.
         }
 
-        void QueryGetColumnsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        void QueryGetColumnsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader,
+            const ProtocolVersion& ver)
         {
-            meta::ReadColumnMetaVector(reader, meta);
+            meta::ReadColumnMetaVector(reader, meta, ver);
         }
 
         QueryGetTablesMetaResponse::QueryGetTablesMetaResponse()
@@ -391,6 +507,25 @@ namespace ignite
         void QueryGetParamsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
         {
             utility::ReadByteArray(reader, typeIds);
+        }
+
+        QueryMoreResultsResponse::QueryMoreResultsResponse(ResultPage & resultPage) :
+            queryId(0),
+            resultPage(resultPage)
+        {
+            // No-op.
+        }
+
+        QueryMoreResultsResponse::~QueryMoreResultsResponse()
+        {
+            // No-op.
+        }
+
+        void QueryMoreResultsResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+        {
+            queryId = reader.ReadInt64();
+
+            resultPage.Read(reader);
         }
     }
 }

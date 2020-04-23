@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.evict;
 import java.util.LinkedList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -34,12 +34,12 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /**
      * @param pageMem Page memory.
-     * @param plcCfg Memory policy configuration.
+     * @param plcCfg Data region configuration.
      * @param sharedCtx Shared context.
      */
     public FairFifoPageEvictionTracker(
         PageMemoryNoStoreImpl pageMem,
-        MemoryPolicyConfiguration plcCfg,
+        DataRegionConfiguration plcCfg,
         GridCacheSharedContext sharedCtx) {
         super(pageMem, plcCfg, sharedCtx);
     }

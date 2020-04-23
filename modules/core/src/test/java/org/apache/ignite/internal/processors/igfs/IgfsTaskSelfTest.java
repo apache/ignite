@@ -40,9 +40,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.TaskSessionResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -50,6 +47,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -67,9 +65,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** File path. */
     private static final IgfsPath FILE = new IgfsPath("/file");
-
-    /** Shared IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Block size: 64 Kb. */
     private static final int BLOCK_SIZE = 64 * 1024;
@@ -91,11 +86,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
             if (i + 1 == NODE_CNT)
                 igfs = g.fileSystem("igfs");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
     }
 
     /** {@inheritDoc} */
@@ -136,11 +126,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setIgniteInstanceName("node-" + idx);
@@ -154,6 +139,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testTask() throws Exception {
         String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
 
@@ -173,6 +159,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
+    @Test
     public void testTaskAsync() throws Exception {
         String arg = DICTIONARY[new Random(System.currentTimeMillis()).nextInt(DICTIONARY.length)];
 

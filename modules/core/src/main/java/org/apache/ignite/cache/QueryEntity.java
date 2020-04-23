@@ -26,9 +26,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -36,12 +38,17 @@ import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -86,6 +93,15 @@ public class QueryEntity implements Serializable {
     /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
     private Set<String> _notNullFields;
 
+    /** Fields default values. */
+    private Map<String, Object> defaultFieldValues = new HashMap<>();
+
+    /** Precision(Maximum length) for fields. */
+    private Map<String, Integer> fieldsPrecision = new HashMap<>();
+
+    /** Scale for fields. */
+    private Map<String, Integer> fieldsScale = new HashMap<>();
+
     /**
      * Creates an empty query entity.
      */
@@ -114,6 +130,13 @@ public class QueryEntity implements Serializable {
         tableName = other.tableName;
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
+
+        defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
+            : new HashMap<String, Object>();
+
+        fieldsPrecision = other.fieldsPrecision != null ? new HashMap<>(other.fieldsPrecision) : new HashMap<>();
+
+        fieldsScale = other.fieldsScale != null ? new HashMap<>(other.fieldsScale) : new HashMap<>();
     }
 
     /**
@@ -134,7 +157,189 @@ public class QueryEntity implements Serializable {
      * @param valCls Value type.
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
-        this(convert(processKeyAndValueClasses(keyCls,valCls)));
+        this(convert(processKeyAndValueClasses(keyCls, valCls)));
+    }
+
+    /**
+     * Make query entity patch. This patch can only add properties to entity and can't remove them.
+     * Other words, the patch will contain only add operations(e.g. add column, create index) and not remove ones.
+     *
+     * @param target Query entity to which this entity should be expanded.
+     * @return Patch which contains operations for expanding this entity.
+     */
+    @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
+        if (target == null)
+            return QueryEntityPatch.empty();
+
+        StringBuilder conflicts = new StringBuilder();
+
+        checkEquals(conflicts, "keyType", keyType, target.keyType);
+        checkEquals(conflicts, "valType", valType, target.valType);
+        checkEquals(conflicts, "keyFieldName", keyFieldName, target.keyFieldName);
+        checkEquals(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
+        checkEquals(conflicts, "tableName", tableName, target.tableName);
+
+        List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
+
+        Collection<QueryIndex> indexesToAdd = checkIndexes(target, conflicts);
+
+        if (conflicts.length() != 0)
+            return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
+
+        Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+
+        if (!queryFieldsToAdd.isEmpty())
+            patchOperations.add(new SchemaAlterTableAddColumnOperation(
+                UUID.randomUUID(),
+                null,
+                null,
+                tableName,
+                queryFieldsToAdd,
+                true,
+                true
+            ));
+
+        if (!indexesToAdd.isEmpty()) {
+            for (QueryIndex index : indexesToAdd) {
+                patchOperations.add(new SchemaIndexCreateOperation(
+                    UUID.randomUUID(),
+                    null,
+                    null,
+                    tableName,
+                    index,
+                    true,
+                    0
+                ));
+            }
+        }
+
+        return QueryEntityPatch.patch(patchOperations);
+    }
+
+    /**
+     * Comparing local fields and target fields.
+     *
+     * @param target Query entity for check.
+     * @param conflicts Storage of conflicts.
+     * @return Indexes which exist in target and not exist in local.
+     */
+    @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
+        HashSet<QueryIndex> indexesToAdd = new HashSet<>();
+
+        Map<String, QueryIndex> currentIndexes = new HashMap<>();
+
+        for (QueryIndex index : getIndexes()) {
+            if (currentIndexes.put(index.getName(), index) != null)
+                throw new IllegalStateException("Duplicate key");
+        }
+
+        for (QueryIndex queryIndex : target.getIndexes()) {
+            if(currentIndexes.containsKey(queryIndex.getName())) {
+                checkEquals(
+                    conflicts,
+                    "index " + queryIndex.getName(),
+                    currentIndexes.get(queryIndex.getName()),
+                    queryIndex
+                );
+            }
+            else
+                indexesToAdd.add(queryIndex);
+        }
+        return indexesToAdd;
+    }
+
+    /**
+     * Comparing local entity fields and target entity fields.
+     *
+     * @param target Query entity for check.
+     * @param conflicts Storage of conflicts.
+     * @return Fields which exist in target and not exist in local.
+     */
+    private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
+        List<QueryField> queryFieldsToAdd = new ArrayList<>();
+
+        for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
+            String targetFieldName = targetField.getKey();
+            String targetFieldType = targetField.getValue();
+
+            if (getFields().containsKey(targetFieldName)) {
+                checkEquals(
+                    conflicts,
+                    "fieldType of " + targetFieldName,
+                    getFields().get(targetFieldName),
+                    targetFieldType
+                );
+
+                checkEquals(
+                    conflicts,
+                    "nullable of " + targetFieldName,
+                    contains(getNotNullFields(), targetFieldName),
+                    contains(target.getNotNullFields(), targetFieldName)
+                );
+
+                checkEquals(
+                    conflicts,
+                    "default value of " + targetFieldName,
+                    getFromMap(getDefaultFieldValues(), targetFieldName),
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
+                );
+
+                checkEquals(conflicts,
+                    "precision of " + targetFieldName,
+                    getFromMap(getFieldsPrecision(), targetFieldName),
+                    getFromMap(target.getFieldsPrecision(), targetFieldName));
+
+                checkEquals(
+                    conflicts,
+                    "scale of " + targetFieldName,
+                    getFromMap(getFieldsScale(), targetFieldName),
+                    getFromMap(target.getFieldsScale(), targetFieldName));
+            }
+            else {
+                Integer precision = getFromMap(target.getFieldsPrecision(), targetFieldName);
+                Integer scale = getFromMap(target.getFieldsScale(), targetFieldName);
+
+                queryFieldsToAdd.add(new QueryField(
+                    targetFieldName,
+                    targetFieldType,
+                    !contains(target.getNotNullFields(),targetFieldName),
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName),
+                    precision == null ? -1 : precision,
+                    scale == null ? -1 : scale
+                ));
+            }
+        }
+
+        return queryFieldsToAdd;
+    }
+
+    /**
+     * @param collection Collection for checking.
+     * @param elementToCheck Element for checking to containing in collection.
+     * @return {@code true} if collection contain elementToCheck.
+     */
+    private static boolean contains(Collection<String> collection, String elementToCheck) {
+        return collection != null && collection.contains(elementToCheck);
+    }
+
+    /**
+     * @return Value from sourceMap or null if map is null.
+     */
+    private static <V> V getFromMap(Map<String, V> sourceMap, String key) {
+        return sourceMap == null ? null : sourceMap.get(key);
+    }
+
+    /**
+     * Comparing two objects and add formatted text to conflicts if needed.
+     *
+     * @param conflicts Storage of conflicts resulting error message.
+     * @param name Name of comparing object.
+     * @param local Local object.
+     * @param received Received object.
+     */
+    private <V> void checkEquals(StringBuilder conflicts, String name, V local, V received) {
+        if (!Objects.equals(local, received))
+            conflicts.append(String.format("%s is different: local=%s, received=%s\n", name, local, received));
     }
 
     /**
@@ -304,7 +509,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Collection of index entities.
      */
-    public Collection<QueryIndex> getIndexes() {
+    @NotNull public Collection<QueryIndex> getIndexes() {
         return idxs == null ? Collections.<QueryIndex>emptyList() : idxs;
     }
 
@@ -353,10 +558,14 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets table name for this query entity.
+     *
      * @param tableName table name
+     * @return {@code this} for chaining.
      */
-    public void setTableName(String tableName) {
+    public QueryEntity setTableName(String tableName) {
         this.tableName = tableName;
+
+        return this;
     }
 
     /**
@@ -381,7 +590,67 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * @return Precision map for a fields.
+     */
+    public Map<String, Integer> getFieldsPrecision() {
+        return fieldsPrecision;
+    }
+
+    /**
+     * Sets fieldsPrecision map for a fields.
+     *
+     * @param fieldsPrecision Precision map for a fields.
+     * @return {@code This} for chaining.
+     */
+    public QueryEntity setFieldsPrecision(Map<String, Integer> fieldsPrecision) {
+        this.fieldsPrecision = fieldsPrecision;
+
+        return this;
+    }
+
+    /**
+     * @return Scale map for a fields.
+     */
+    public Map<String, Integer> getFieldsScale() {
+        return fieldsScale;
+    }
+
+    /**
+     * Sets fieldsScale map for a fields.
+     *
+     * @param fieldsScale Scale map for a fields.
+     * @return {@code This} for chaining.
+     */
+    public QueryEntity setFieldsScale(Map<String, Integer> fieldsScale) {
+        this.fieldsScale = fieldsScale;
+
+        return this;
+    }
+
+    /**
+     * Gets fields default values.
+     *
+     * @return Field's name to default value map.
+     */
+    public Map<String, Object> getDefaultFieldValues() {
+        return defaultFieldValues;
+    }
+
+    /**
+     * Sets fields default values.
+     *
+     * @param defaultFieldValues Field's name to default value map.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setDefaultFieldValues(Map<String, Object> defaultFieldValues) {
+        this.defaultFieldValues = defaultFieldValues;
+
+        return this;
+    }
+
+    /**
      * Utility method for building query entities programmatically.
+     *
      * @param fullName Full name of the field.
      * @param type Type of the field.
      * @param alias Field alias.
@@ -469,6 +738,15 @@ public class QueryEntity implements Serializable {
         if (!F.isEmpty(idxs))
             entity.setIndexes(idxs);
 
+        if (!F.isEmpty(desc.notNullFields()))
+            entity.setNotNullFields(desc.notNullFields());
+
+        if (!F.isEmpty(desc.fieldsPrecision()))
+            entity.setFieldsPrecision(desc.fieldsPrecision());
+
+        if (!F.isEmpty(desc.fieldsScale()))
+            entity.setFieldsScale(desc.fieldsScale());
+
         return entity;
     }
 
@@ -478,13 +756,10 @@ public class QueryEntity implements Serializable {
      * @return Type descriptor.
      */
     private static QueryEntityTypeDescriptor processKeyAndValueClasses(
-        Class<?> keyCls,
-        Class<?> valCls
+        @NotNull Class<?> keyCls,
+        @NotNull Class<?> valCls
     ) {
-        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor();
-
-        d.keyClass(keyCls);
-        d.valueClass(valCls);
+        QueryEntityTypeDescriptor d = new QueryEntityTypeDescriptor(keyCls, valCls);
 
         processAnnotationsInClass(true, d.keyClass(), d, null);
         processAnnotationsInClass(false, d.valueClass(), d, null);
@@ -591,6 +866,15 @@ public class QueryEntity implements Serializable {
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
 
+            if (sqlAnn.notNull())
+                desc.addNotNullField(prop.fullName());
+
+            if (sqlAnn.precision() != -1)
+                desc.addPrecision(prop.fullName(), sqlAnn.precision());
+
+            if (sqlAnn.scale() != -1)
+                desc.addScale(prop.fullName(), sqlAnn.scale());
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -612,7 +896,6 @@ public class QueryEntity implements Serializable {
             desc.addFieldToTextIndex(prop.fullName());
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -632,13 +915,16 @@ public class QueryEntity implements Serializable {
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
-            F.eq(_notNullFields, entity._notNullFields);
+            F.eq(_notNullFields, entity._notNullFields) &&
+            F.eq(defaultFieldValues, entity.defaultFieldValues) &&
+            F.eq(fieldsPrecision, entity.fieldsPrecision) &&
+            F.eq(fieldsScale, entity.fieldsScale);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields);
+            tableName, _notNullFields, defaultFieldValues, fieldsPrecision, fieldsScale);
     }
 
     /** {@inheritDoc} */

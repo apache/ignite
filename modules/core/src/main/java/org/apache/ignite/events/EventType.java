@@ -18,10 +18,13 @@
 package org.apache.ignite.events;
 
 import java.util.List;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
 /**
  * Contains event type constants. The decision to use class and not enumeration
@@ -241,6 +244,16 @@ public interface EventType {
      * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_TASK_REDUCED = 25;
+
+    /**
+     * Built-in event type: Visor or Web Console management task started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TaskEvent
+     */
+    public static final int EVT_MANAGEMENT_TASK_STARTED = 26;
 
     /**
      * Built-in event type: non-task class deployed.
@@ -573,6 +586,26 @@ public interface EventType {
     public static final int EVT_CACHE_REBALANCE_PART_DATA_LOST = 86;
 
     /**
+     * Built-in event type: cache partition was fully sent to remote node.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
+     */
+    public static final int EVT_CACHE_REBALANCE_PART_SUPPLIED = 87;
+
+    /**
+     * Built-in event type: cache partition was not sent to remote node.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheRebalancingEvent
+     */
+    public static final int EVT_CACHE_REBALANCE_PART_MISSED = 88;
+
+    /**
      * Built-in event type: query executed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -779,6 +812,141 @@ public interface EventType {
     public static final int EVT_WAL_SEGMENT_ARCHIVED = 128;
 
     /**
+     * Built-in event type: Transaction has been started.
+     * <p>
+     * Fired for each started transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_STARTED = 129;
+
+    /**
+     * Built-in event type: Transaction has been committed.
+     * <p>
+     * Fired for each committed transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_COMMITTED = 130;
+
+    /**
+     * Built-in event type: Transaction has been rolled back.
+     * <p>
+     * Fired for each rolled back transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_ROLLED_BACK = 131;
+
+    /**
+     * Built-in event type: Transaction has been suspended.
+     * <p>
+     * Fired for each suspended transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_SUSPENDED = 132;
+
+    /**
+     * Built-in event type: Transaction has been resumed.
+     * <p>
+     * Fired for each resumed transaction except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int EVT_TX_RESUMED = 133;
+
+    /**
+     * Built-in event type: WAL archive segment compaction is completed.
+     * <p>
+     * Fired for each WAL archive segment upon its compaction completion.
+     * <p>
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see WalSegmentArchivedEvent
+     */
+    public static final int EVT_WAL_SEGMENT_COMPACTED = 134;
+
+    /**
+     * Built-in event type: Cache consistency violation detected.
+     * <p>
+     * Fired for each consistency violation incident.
+     * <p>
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see CacheConsistencyViolationEvent
+     * @see IgniteCache#withReadRepair
+     */
+    public static final int EVT_CONSISTENCY_VIOLATION = 135;
+
+    /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster activated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_ACTIVATED = 140;
+
+    /**
+     * Built-in event type: Cluster activation state changed.
+     * <p>
+     * Fired when cluster deactivated.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_DEACTIVATED = 141;
+
+    /**
+     * Built-in event type: Cluster state changed.
+     * <p>
+     * Fired when cluster state changed.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int EVT_CLUSTER_STATE_CHANGED = 144;
+
+    /**
+     * Built-in event type: Cluster state change initiated.
+     * <p>
+     * Fired when cluster deactivation process started.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see ClusterStateChangeStartedEvent
+     */
+    public static final int EVT_CLUSTER_STATE_CHANGE_STARTED = 145;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
@@ -929,7 +1097,9 @@ public interface EventType {
         EVT_CACHE_REBALANCE_PART_UNLOADED,
         EVT_CACHE_REBALANCE_OBJECT_LOADED,
         EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-        EVT_CACHE_REBALANCE_PART_DATA_LOST
+        EVT_CACHE_REBALANCE_PART_DATA_LOST,
+        EVT_CACHE_REBALANCE_PART_SUPPLIED,
+        EVT_CACHE_REBALANCE_PART_MISSED
     };
 
     /**
@@ -946,7 +1116,8 @@ public interface EventType {
     /**
      * All cache query events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cache query events.
+     * subscribe to all cache query events and requires to set {@link MemoryEventStorageSpi}
+     * or other implementation different from {@link NoopEventStorageSpi}.
      */
     public static final int[] EVTS_CACHE_QUERY = {
         EVT_CACHE_QUERY_EXECUTED,
@@ -973,6 +1144,33 @@ public interface EventType {
         EVT_IGFS_DIR_CREATED,
         EVT_IGFS_DIR_RENAMED,
         EVT_IGFS_DIR_DELETED,
+    };
+
+    /**
+     * All Transaction events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all transaction events.
+     *
+     * @see TransactionStateChangedEvent
+     */
+    public static final int[] EVTS_TX = {
+        EVT_TX_STARTED,
+        EVT_TX_COMMITTED,
+        EVT_TX_ROLLED_BACK,
+        EVT_TX_SUSPENDED,
+        EVT_TX_RESUMED
+    };
+
+    /**
+     * All cluster activation events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all cloud events.
+     *
+     * @see ClusterActivationEvent
+     */
+    public static final int[] EVTS_CLUSTER_ACTIVATION = {
+        EVT_CLUSTER_ACTIVATED,
+        EVT_CLUSTER_DEACTIVATED
     };
 
     /**

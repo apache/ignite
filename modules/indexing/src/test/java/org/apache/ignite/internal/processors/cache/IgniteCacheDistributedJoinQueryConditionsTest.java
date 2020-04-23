@@ -30,12 +30,9 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -45,32 +42,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final String PERSON_CACHE = "person";
 
     /** */
     private static final String ORG_CACHE = "org";
 
     /** */
-    private boolean client;
-
-    /** */
     private int total;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi spi = ((TcpDiscoverySpi) cfg.getDiscoverySpi());
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -78,21 +56,13 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
+        startClientGrid(2);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery1() throws Exception {
         joinQuery1(true);
     }
@@ -180,6 +150,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery2() throws Exception {
         Ignite client = grid(2);
 
@@ -290,6 +261,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery4() throws Exception {
         Ignite client = grid(2);
 
@@ -341,6 +313,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery5() throws Exception {
         Ignite client = grid(2);
 
@@ -382,6 +355,7 @@ public class IgniteCacheDistributedJoinQueryConditionsTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJoinQuery6() throws Exception {
         Ignite client = grid(2);
 

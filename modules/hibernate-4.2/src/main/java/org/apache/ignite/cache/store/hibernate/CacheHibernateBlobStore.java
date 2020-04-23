@@ -92,6 +92,9 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /** Default <tt>hibernate.hbm2ddl.auto</tt> property value (value is <tt>true</tt>). */
     public static final String DFLT_HBM2DDL_AUTO = "update";
 
+    /** Default <tt>hibernate.connection.pool_size</tt> property value (value is <tt>64</tt>). */
+    public static final String DFLT_CONN_POOL_SIZE = "64";
+
     /** Session attribute name. */
     private static final String ATTR_SES = "HIBERNATE_STORE_SESSION";
 
@@ -426,6 +429,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
                         hibernateProps.setProperty("hibernate.connection.url", DFLT_CONN_URL);
                         hibernateProps.setProperty("hibernate.show_sql", DFLT_SHOW_SQL);
                         hibernateProps.setProperty("hibernate.hbm2ddl.auto", DFLT_HBM2DDL_AUTO);
+                        hibernateProps.setProperty("hibernate.connection.pool_size", DFLT_CONN_POOL_SIZE);
                     }
 
                     Configuration cfg = new Configuration();

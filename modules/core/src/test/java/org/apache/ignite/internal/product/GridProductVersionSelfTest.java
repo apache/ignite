@@ -19,6 +19,7 @@ package org.apache.ignite.internal.product;
 
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
@@ -32,6 +33,7 @@ public class GridProductVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFromString() throws Exception {
         IgniteProductVersion ver = IgniteProductVersion.fromString("1.2.3");
 

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Before;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -28,6 +30,12 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  *
  */
 public class IgniteCacheTxStoreValueTest extends IgniteCacheStoreValueAbstractTest {
+    /** */
+    @Before
+    public void beforeIgniteCacheTxStoreValueTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.INTERCEPTOR);
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;

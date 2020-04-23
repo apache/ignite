@@ -28,18 +28,16 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.junit.Test;
 
 /**
  *
@@ -80,25 +78,13 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
         cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(500L * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(PAGE_SIZE);
 
-        dbCfg.setPageSize(PAGE_SIZE);
-
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setInitialSize(500 * 1024 * 1024);
-        memPlcCfg.setMaxSize(500 * 1024 * 1024);
-
-        dbCfg.setMemoryPolicies(memPlcCfg);
-        dbCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(dbCfg);
-
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setMarshaller(null);
 
@@ -113,7 +99,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
 
         super.beforeTest();
     }
@@ -122,12 +108,13 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoverySeveralRestarts() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -183,6 +170,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryWithDynamicCache() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);
@@ -236,6 +224,7 @@ public class IgniteWalRecoverySeveralRestartsTest extends GridCommonAbstractTest
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWalRecoveryWithDynamicCacheLargeObjects() throws Exception {
         try {
             IgniteEx ignite = startGrid(1);

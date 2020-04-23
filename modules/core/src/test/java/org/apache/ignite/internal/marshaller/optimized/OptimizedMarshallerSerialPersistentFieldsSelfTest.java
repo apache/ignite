@@ -21,10 +21,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamField;
 import java.io.Serializable;
-
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
+import org.junit.Test;
 
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.
@@ -38,6 +37,7 @@ public class OptimizedMarshallerSerialPersistentFieldsSelfTest  extends GridMars
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimizedMarshaller() throws Exception {
         unmarshal(marshal(new TestClass()));
 
