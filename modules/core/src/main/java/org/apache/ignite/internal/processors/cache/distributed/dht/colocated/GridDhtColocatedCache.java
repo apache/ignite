@@ -296,7 +296,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         fut.init();
 
-        if(mvccTracker != null){
+        if (mvccTracker != null) {
             final MvccQueryTracker mvccTracker0 = mvccTracker;
 
             fut.listen(new CI1<IgniteInternalFuture<Object>>() {
@@ -419,13 +419,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             mvccSnapshot
         );
 
-        if(mvccTracker != null){
+        if (mvccTracker != null) {
             final MvccQueryTracker mvccTracker0 = mvccTracker;
 
             fut.listen(new CI1<IgniteInternalFuture<Map<K, V>>>() {
                 /** {@inheritDoc} */
                 @Override public void apply(IgniteInternalFuture<Map<K, V>> future) {
-                    if(future.isDone())
+                    if (future.isDone())
                         mvccTracker0.onDone();
                 }
             });

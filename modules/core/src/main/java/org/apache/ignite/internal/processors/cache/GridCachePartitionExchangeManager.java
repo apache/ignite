@@ -2590,7 +2590,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     log.info("Merge exchange future on finish [curFut=" + curFut.initialVersion() +
                         ", mergedFut=" + fut.initialVersion() +
                         ", evt=" + IgniteUtils.gridEventName(fut.firstEvent().type()) +
-                        ", evtNode=" + fut.firstEvent().eventNode().id()+
+                        ", evtNode=" + fut.firstEvent().eventNode().id() +
                         ", evtNodeClient=" + fut.firstEvent().eventNode().isClient() + ']');
                 }
 
