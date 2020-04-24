@@ -387,23 +387,25 @@ namespace Apache.Ignite.Core.Impl.Client
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
         {
             var oldTopologyVersion = GetTopologyVersion();
+            
             _affinityTopologyVersion = affinityTopologyVersion;
 
-            // TODO: By default, without partition awareness, we only connect one socket, and fail over as needed.
-            // Only with PartitionAwareness we maintain many connections.
-            // Should we keep this behavior?
-            if (_config.EnablePartitionAwareness)
-            {
-                // TODO: Why re-init the map on every topology change?
-                InitSocketMap();
-            }
-
-            // Re-discover nodes when major topology version has changed.
             var newTopologyVersion = affinityTopologyVersion.Version;
             
-            if (_config.EnableDiscovery && oldTopologyVersion < newTopologyVersion)
+            if (oldTopologyVersion < newTopologyVersion)
             {
-                DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
+                // Major topology version has changed: some nodes have joined or left.
+                // If discovery is enabled, retrieve new topology - but don't connect.
+                if (_config.EnableDiscovery)
+                {
+                    DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
+                }
+
+                // Connect to all nodes when partition awareness is enabled.
+                if (_config.EnablePartitionAwareness)
+                {
+                    InitSocketMap();
+                }
             }
         }
 
