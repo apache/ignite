@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    Connect(endPoint);
+                    _socket = Connect(endPoint);
 
                     break;
                 }
@@ -389,14 +389,15 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Connects to the given endpoint.
         /// </summary>
-        private void Connect(SocketEndpoint endPoint)
+        private ClientSocket Connect(SocketEndpoint endPoint)
         {
-            _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host,
+            // TODO: Update socket map
+            var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host,
                 _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
 
-            endPoint.Socket = _socket;
-            
-            // TODO: Update node socket map.
+            endPoint.Socket = socket;
+
+            return socket;
         }
 
         /// <summary>
