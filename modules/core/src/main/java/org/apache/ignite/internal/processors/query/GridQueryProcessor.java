@@ -2950,6 +2950,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets type descriptor for provided cache name and type name if type is still valid.
+     *
+     * @param cacheName Cache name.
+     * @param typeName Type name.
+     * @return Query type descriptor or {@code null} if descriptor was not found.
+     */
+    public @Nullable GridQueryTypeDescriptor typeDescriptor(@Nullable String cacheName, String typeName) {
+        return typesByName.get(new QueryTypeNameKey(cacheName, typeName));
+    }
+
+    /**
      * @param qryType Query type.
      * @param qry Query description.
      * @param cctx Cache context.

@@ -129,7 +129,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             @Override public Boolean apply(String tok) {
                 return F.isEmpty(secretKey) || authenticate(tok);
             }
-        }, log);
+        }, ctx);
 
         String jettyPath = config().getJettyPath();
 

@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Plugin.Cache;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -49,7 +48,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration : IBinaryRawWriteAwareEx<BinaryWriter>
+    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 4;
@@ -257,12 +256,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
+                    other.Write(BinaryUtils.Marshaller.StartMarshal(stream));
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
+                    Read(BinaryUtils.Marshaller.StartUnmarshal(stream));
                 }
 
                 CopyLocalProperties(other);
@@ -274,9 +273,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <param name="srvVer">Server version.</param>
-        internal CacheConfiguration(BinaryReader reader, ClientProtocolVersion srvVer)
+        internal CacheConfiguration(BinaryReader reader)
         {
-            Read(reader, srvVer);
+            Read(reader);
         }
 
         /// <summary>
@@ -284,7 +283,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <param name="srvVer">Server version.</param>
-        private void Read(BinaryReader reader, ClientProtocolVersion srvVer)
+        private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.
             Debug.Assert(reader.Marshaller == BinaryUtils.Marshaller);
@@ -335,7 +334,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             SqlSchema = reader.ReadString();
             EncryptionEnabled = reader.ReadBoolean();
 
-            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -377,18 +376,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        void IBinaryRawWriteAwareEx<BinaryWriter>.Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
         {
-            Write(writer, srvVer);
+            Write(writer);
         }
 
         /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(BinaryWriter writer)
         {
             // Make sure system marshaller is used.
             Debug.Assert(writer.Marshaller == BinaryUtils.Marshaller);
@@ -439,7 +436,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(SqlSchema);
             writer.WriteBoolean(EncryptionEnabled);
 
-            writer.WriteCollectionRaw(QueryEntities, srvVer);
+            writer.WriteCollectionRaw(QueryEntities);
 
             if (NearConfiguration != null)
             {
