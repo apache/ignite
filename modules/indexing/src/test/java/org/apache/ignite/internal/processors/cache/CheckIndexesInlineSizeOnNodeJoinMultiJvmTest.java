@@ -229,7 +229,7 @@ public class CheckIndexesInlineSizeOnNodeJoinMultiJvmTest extends GridCommonAbst
 
         Map<String, Object[]> stmts = new LinkedHashMap<>();
 
-        stmts.put("CREATE TABLE TEST_TABLE (i INT, l LONG, s0 VARCHAR, s1 VARCHAR, PRIMARY KEY (i, s0))", EMPTY);
+        stmts.put("CREATE TABLE TEST_TABLE (i INT, l LONG, s0 VARCHAR, s1 VARCHAR, PRIMARY KEY (i, s0)) WITH \"backups=1\"", EMPTY);
 
         for (int i = 0; i < 10; i++)
             stmts.put("INSERT INTO TEST_TABLE (i, l, s0, s1) VALUES (?, ?, ?, ?)", Stream.of(i, i * i, STR + i, STR + i * i).toArray());
