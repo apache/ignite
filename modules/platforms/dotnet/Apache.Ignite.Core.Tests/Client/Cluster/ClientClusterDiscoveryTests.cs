@@ -79,7 +79,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                EnableDiscovery = true
+                EnableDiscovery = true,
+                EnablePartitionAwareness = true
             };
         }
     }

@@ -54,12 +54,15 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Endpoints with corresponding hosts.
-         * This is just a list of known endpoints that comes both from config and from discovery. */
-        private volatile List<SocketEndpoint> _endPoints;
+        /** Endpoints with corresponding hosts - from config. */
+        private readonly List<SocketEndpoint> _endPoints;
 
-        /** Map from node ID to connected socket. Used when partition awareness is enabled. */
-        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
+        /** Map from node ID to connected socket. */
+        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>();
+
+        /** Discovered nodes map. Represents current topology. */
+        private volatile Dictionary<Guid, ClientDiscoveryNode> _discoveryNodes 
+            = new Dictionary<Guid, ClientDiscoveryNode>();
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -617,68 +620,23 @@ namespace Apache.Ignite.Core.Impl.Client
             // TODO: Store current cluster (discovered endpoints) in a separate map.
             // No partition awareness: just use this map as part of round-robin
             // With partition awareness: "fill the blanks" - connect to any nodes that are not yet connected.
-            // Maintain socket map at all times to understand where we are connected. 
-            
-            
-            // TODO: perform async request!
+            // Maintain socket map at all times to understand where we are connected.
+
+            // TODO: perform async request?
             var res = GetServerEndpoints(startTopVer, endTopVer);
-            var endPoints = _endPoints.ToList();
+            var discoveryNodes = new Dictionary<Guid, ClientDiscoveryNode>(_discoveryNodes);
             
             foreach (var addedNode in res.JoinedNodes)
             {
-                // TODO: More efficient check - use socketMap.
-                if (endPoints.Any(e => e.Socket != null && e.Socket.ServerNodeId == addedNode.Id))
-                {
-                    // Already connected to that node.
-                    continue;
-                }
-
-                foreach (var endpoint in addedNode.Endpoints)
-                {
-                    try
-                    {
-                        IPAddress ip;
-                        if (IPAddress.TryParse(endpoint.Address, out ip))
-                        {
-                            var ipEndPoint = new IPEndPoint(ip, endpoint.Port);
-                            var socket = new ClientSocket(_config, ipEndPoint, endpoint.Host,
-                                _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
-
-                            if (socket.ServerNodeId != addedNode.Id)
-                            {
-                                _logger.Debug(
-                                    "Autodiscovery connection succeeded, but node id does not match: {0}, {1}, {2}. " +
-                                    "Expected node id: {3}. Actual node id: {4}. Connection dropped.",
-                                    endpoint.Address, endpoint.Host, endpoint.Port, addedNode.Id, socket.ServerNodeId);
-                                
-                                socket.Dispose();
-                                
-                                continue;
-                            }
-
-                            var socketEndPoint = new SocketEndpoint(ipEndPoint, endpoint.Host)
-                            {
-                                Socket = socket
-                            };
-
-                            endPoints.Add(socketEndPoint);
-                        }
-                    }
-                    catch (SocketException socketException)
-                    {
-                        // Ignore: failure to connect is expected.
-                        _logger.Debug(socketException, "Autodiscovery connection failed: {0}, {1}, {2}", 
-                            endpoint.Address, endpoint.Host, endpoint.Port);
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.Debug(e, "Autodiscovery connection failed: {0}, {1}, {2}", 
-                            endpoint.Address, endpoint.Host, endpoint.Port);
-                    }
-                }
-
-                _endPoints = endPoints;
+                discoveryNodes[addedNode.Id] = addedNode;
             }
+
+            foreach (var removedNode in res.RemovedNodes)
+            {
+                discoveryNodes.Remove(removedNode);
+            }
+
+            _discoveryNodes = discoveryNodes;
         }
 
         /// <summary>
