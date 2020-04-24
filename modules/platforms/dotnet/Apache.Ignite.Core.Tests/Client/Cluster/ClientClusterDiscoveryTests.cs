@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -81,11 +82,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                     
                     Assert.AreEqual(4, client.GetConnections().Count());
                 }
-                    
-                // Perform any operation to cause topology update.
-                client.GetCacheNames();
-                
-                Assert.AreEqual(3, client.GetConnections().Count());
+
+                // ReSharper disable AccessToDisposedClosure
+                TestUtils.WaitForTrueCondition(() =>
+                {
+                    // Perform any operation to cause topology update.
+                    client.GetCacheNames();
+
+                    return 3 == client.GetConnections().Count();
+                });
+                // ReSharper restore AccessToDisposedClosure
             }
         }
 
