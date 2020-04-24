@@ -64,7 +64,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     private static final AtomicInteger SANDBOXED_NODES_COUNTER = new AtomicInteger();
 
     /**
-     * @return True if there are sandboxed nodes.
+     * @return True if there are nodes with the sandbox enabled.
      */
     public static boolean hasSandboxedNodes() {
         return SANDBOXED_NODES_COUNTER.get() > 0;
