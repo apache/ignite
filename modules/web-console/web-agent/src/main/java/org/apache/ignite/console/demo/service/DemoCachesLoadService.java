@@ -138,7 +138,7 @@ public class DemoCachesLoadService implements Service {
                     IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
                     if (cacheEmployee != null)
-                        try(Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             for (int i = 0, n = 1; i < cnt; i++, n++) {
                                 Integer id = rnd.nextInt(EMPL_CNT);
 
