@@ -623,6 +623,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // Maintain socket map at all times to understand where we are connected.
 
             // TODO: perform async request?
+            // TODO: Avoid creating intermediate lists, update dictionary directly.
             var res = GetServerEndpoints(startTopVer, endTopVer);
             var discoveryNodes = new Dictionary<Guid, ClientDiscoveryNode>(_discoveryNodes);
             
