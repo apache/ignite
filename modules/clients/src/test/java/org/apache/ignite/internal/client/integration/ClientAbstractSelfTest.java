@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.client.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,8 +37,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -386,7 +386,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
                 info("Expects '" + e.getKey() + "' fails with grid client exception.");
             }
-            catch (GridServerUnreachableException |GridClientClosedException ignore) {
+            catch (GridServerUnreachableException | GridClientClosedException ignore) {
                 // No op: compute projection is empty.
             }
         }

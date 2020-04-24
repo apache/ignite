@@ -45,7 +45,7 @@ public class ClientCacheBenchmark {
     private static final int KEY_COUNT = 1000;
 
     /** Size of arrays used as stored values. */
-    private static final int VALUE_LENGTH = 1024*4;
+    private static final int VALUE_LENGTH = 1024 * 4;
 
     /** Cached values for store. */
     private static final byte[][] values = new byte[KEY_COUNT][];
@@ -103,7 +103,7 @@ public class ClientCacheBenchmark {
 
         long startTime = System.currentTimeMillis();
 
-        for(int i = 0; i < threadCnt; i++) {
+        for (int i = 0; i < threadCnt; i++) {
             TestThread th = new TestThread();
             workers.add(th);
             th.start();
@@ -139,9 +139,9 @@ public class ClientCacheBenchmark {
 
         double timeSpent = ((double)(System.currentTimeMillis() - startTime)) / 1000;
 
-        itersPerSec = total/timeSpent;
+        itersPerSec = total / timeSpent;
 
-        System.out.printf("%8s, %12.0f, %12.0f, %12s\n", thCnt, itersPerSec, total/timeSpent/thCnt, total);
+        System.out.printf("%8s, %12.0f, %12.0f, %12s\n", thCnt, itersPerSec, total / timeSpent / thCnt, total);
     }
 
     /**

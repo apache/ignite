@@ -737,7 +737,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             if (itemId + 1 < directCnt) // It is not the last direct item.
                 dropLast = moveLastItem(pageAddr, itemId, directCnt, indirectCnt);
 
-            if (indirectId == 0) {// For the last direct item with no indirect item.
+            if (indirectId == 0) { // For the last direct item with no indirect item.
                 if (dropLast)
                     moveItems(pageAddr, directCnt, indirectCnt, -1, pageSize);
                 else
@@ -1161,7 +1161,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             if (cnt != 0) {
                 int off = page.limit() - cnt;
 
-                assert off > PageIO.COMMON_HEADER_END: off;
+                assert off > PageIO.COMMON_HEADER_END : off;
                 assert cnt > 0 : cnt;
 
                 moveBytes(pageAddr, off, cnt, freeSpace, pageSize);
@@ -1288,7 +1288,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
      * @param pageSize Page size.
      */
     private void moveBytes(long addr, int off, int cnt, int step, int pageSize) {
-        assert cnt >= 0: cnt;
+        assert cnt >= 0 : cnt;
         assert step != 0 : step;
         assert off + step >= 0;
         assert off + step + cnt <= pageSize : "[off=" + off + ", step=" + step + ", cnt=" + cnt +
