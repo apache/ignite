@@ -788,7 +788,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         boolean storeSessionEnded) throws IgniteCheckedException {
         assert store != null;
 
-        sessionInit0(tx, commit? StoreOperation.COMMIT: StoreOperation.ROLLBACK, false);
+        sessionInit0(tx, commit ? StoreOperation.COMMIT : StoreOperation.ROLLBACK, false);
 
         try {
             if (sesLsnrs != null && sesHolder.get().contains(store)) {

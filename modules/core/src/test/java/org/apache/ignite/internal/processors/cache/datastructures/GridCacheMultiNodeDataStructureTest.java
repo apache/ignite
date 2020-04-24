@@ -72,6 +72,6 @@ public class GridCacheMultiNodeDataStructureTest {
         atomicLong.incrementAndGet();
         atomicLong.incrementAndGet();
 
-        X.println(cacheName+": Seq: " + seq.get() + " atomicLong " + atomicLong.get());
+        X.println(cacheName+ ": Seq: " + seq.get() + " atomicLong " + atomicLong.get());
     }
 }

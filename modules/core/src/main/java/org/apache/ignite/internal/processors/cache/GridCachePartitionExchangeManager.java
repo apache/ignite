@@ -2364,9 +2364,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (IgniteSystemProperties.getBoolean(IGNITE_IO_DUMP_ON_TIMEOUT, false)) {
                     U.warn(diagnosticLog, "Found long running cache operations, dump IO statistics.");
 
-                // Dump IO manager statistics.
-                if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
-                    cctx.gridIO().dumpStats();}
+                    // Dump IO manager statistics.
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT, false))
+                        cctx.gridIO().dumpStats();
+                }
             }
             else {
                 nextLongRunningOpsDumpTime = 0;

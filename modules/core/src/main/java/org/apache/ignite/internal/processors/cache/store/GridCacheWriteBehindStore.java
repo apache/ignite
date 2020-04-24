@@ -965,7 +965,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteLogger log) {
             super(igniteInstanceName, name, log);
 
-            flusherCacheCriticalSize = cacheCriticalSize/flushThreadCnt;
+            flusherCacheCriticalSize = cacheCriticalSize / flushThreadCnt;
 
             assert flusherCacheCriticalSize > batchSize;
 
@@ -1218,7 +1218,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             IgniteBiTuple<K, StatefulValue<K, V>> tuple;
             boolean applied;
 
-            while(!queue.isEmpty()) {
+            while (!queue.isEmpty()) {
                 pending = U.newLinkedHashMap(batchSize);
                 prevOperation = null;
                 boolean needNewBatch = false;
@@ -1342,7 +1342,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     Map<K, StatefulValue<K,V>>[] flusherMaps() {
         Map<K, StatefulValue<K,V>>[] result = new Map[flushThreadCnt];
 
-        for (int i=0; i < flushThreadCnt; i++)
+        for (int i = 0; i < flushThreadCnt; i++)
             result[i] = flushThreads[i].flusherWriteMap;
 
         return result;
