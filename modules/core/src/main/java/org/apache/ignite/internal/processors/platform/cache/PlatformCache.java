@@ -1350,7 +1350,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
 
             return new PlatformQueryCursor(platformCtx, cursor,
-                qry.getPageSize() > 0 ? qry.getPageSize(): Query.DFLT_PAGE_SIZE);
+                qry.getPageSize() > 0 ? qry.getPageSize() : Query.DFLT_PAGE_SIZE);
         }
         catch (Exception err) {
             throw PlatformUtils.unwrapQueryException(err);
