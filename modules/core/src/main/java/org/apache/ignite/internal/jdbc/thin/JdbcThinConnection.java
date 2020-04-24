@@ -1520,10 +1520,10 @@ public class JdbcThinConnection implements Connection {
 
         long lsb = 0;
 
-        for (int i=0; i<8; i++)
+        for (int i = 0; i < 8; i++)
             msb = (msb << 8) | (randomBytes[i] & 0xff);
 
-        for (int i=8; i<16; i++)
+        for (int i = 8; i < 16; i++)
             lsb = (lsb << 8) | (randomBytes[i] & 0xff);
 
         UUID randomUUID =  new UUID(msb, lsb);
