@@ -56,6 +56,7 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Cli
         while (ipIt.hasNext() && hostIt.hasNext()) {
             String ip = ipIt.next();
 
+            // TODO: We should return addresses that match IgniteConfiguration.localHost?
             if (InetAddress.getByName(ip).isLoopbackAddress())
                 continue;
 
