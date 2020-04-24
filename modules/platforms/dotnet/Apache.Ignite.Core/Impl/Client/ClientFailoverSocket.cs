@@ -611,8 +611,6 @@ namespace Apache.Ignite.Core.Impl.Client
             
             foreach (var addedNode in res.JoinedNodes)
             {
-                Console.WriteLine(addedNode.Id);
-
                 // TODO: More efficient check - use socketMap.
                 if (endPoints.Any(e => e.Socket != null && e.Socket.ServerNodeId == addedNode.Id))
                 {
