@@ -44,6 +44,9 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /** Flag to indicate error. */
     private boolean failed;
 
+    /** Exception caused query failed or {@code null} if it succeded. */
+    private Exception failReason;
+
     /**
      * @param iterExec Query executor.
      * @param cancel Cancellation closure.
@@ -80,6 +83,15 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
         unregisterQuery();
 
         super.close();
+    }
+
+    /**
+     * Cancels query.
+     */
+    public void cancel() {
+        failReason = new QueryCancelledException();
+
+        close();
     }
 
     /**
