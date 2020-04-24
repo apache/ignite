@@ -66,7 +66,7 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
 
         Collection<UUID> removedNodeIds = new ArrayList<>();
 
-        Collection<IgniteBiTuple<UUID, Collection<String>>> addedNodes = new ArrayList<>();
+        Collection<IgniteBiTuple<UUID, Collection<NodeEndpoint>>> addedNodes = new ArrayList<>();
 
         for (UUID startNode : startNodes) {
             if (!endNodes.contains(startNode)) {
@@ -78,8 +78,8 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
             if (!startNodes.contains(endNode)) {
                 ClusterGroup grp = cluster.forNodeId(endNode);
 
-                Collection<String> endpoints = ctx.kernalContext().grid().compute(grp)
-                        .call(new ClientClusterGroupGetNodeEndpointsJob());
+                Collection<NodeEndpoint> endpoints = ctx.kernalContext().grid().compute(grp)
+                        .call(new ClientClusterGroupGetNodeEndpointsJob()).getEndpoints();
 
                 addedNodes.add(new IgniteBiTuple<>(endNode, endpoints));
             }

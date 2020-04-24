@@ -37,6 +37,7 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Cli
     private static final long serialVersionUID = 0L;
 
     /** */
+    @SuppressWarnings("unused")
     @IgniteInstanceResource
     private Ignite ignite;
 

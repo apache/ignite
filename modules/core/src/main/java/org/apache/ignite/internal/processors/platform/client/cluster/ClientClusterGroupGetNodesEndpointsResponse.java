@@ -31,7 +31,7 @@ import java.util.UUID;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse {
     /** */
-    private final Collection<IgniteBiTuple<UUID, Collection<String>>> addedNodes;
+    private final Collection<IgniteBiTuple<UUID, Collection<NodeEndpoint>>> addedNodes;
 
     /** */
     private final Collection<UUID> removedNodeIds;
@@ -49,7 +49,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      */
     public ClientClusterGroupGetNodesEndpointsResponse(long reqId,
                                                        long topVer,
-                                                       Collection<IgniteBiTuple<UUID, Collection<String>>> addedNodes,
+                                                       Collection<IgniteBiTuple<UUID, Collection<NodeEndpoint>>> addedNodes,
                                                        Collection<UUID> removedNodeIds) {
         super(reqId);
 
@@ -69,17 +69,18 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
 
         writer.writeInt(addedNodes.size());
 
-        for (IgniteBiTuple<UUID, Collection<String>> node : addedNodes) {
+        for (IgniteBiTuple<UUID, Collection<NodeEndpoint>> node : addedNodes) {
             UUID id = node.get1();
             writer.writeLong(id.getMostSignificantBits());
             writer.writeLong(id.getLeastSignificantBits());
 
-            Collection<String> endpoints = node.get2();
+            Collection<NodeEndpoint> endpoints = node.get2();
             writer.writeInt(endpoints.size());
 
-            for (String e : endpoints) {
-                // TODO: Send host name for SSL?
-                writer.writeString(e);
+            for (NodeEndpoint e : endpoints) {
+                writer.writeString(e.getAddress());
+                writer.writeString(e.getHost());
+                writer.writeInt(e.getPort());
             }
         }
 
