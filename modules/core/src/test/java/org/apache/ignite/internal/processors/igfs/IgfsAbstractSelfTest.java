@@ -625,7 +625,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testUpdate() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -648,7 +648,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testUpdateParentRoot() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -756,7 +756,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testRootPropertiesPersistAfterFormat() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         if (mode != PRIMARY && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
@@ -965,7 +965,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         }
 
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -976,7 +976,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         assert igfs.info(new IgfsPath("/k/l")).isFile();
 
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -987,7 +987,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         assert igfs.info(new IgfsPath("/k/l")).isFile();
 
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -999,7 +999,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         igfs.mkdirs(new IgfsPath("/x/y"), null);
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -1242,7 +1242,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if (dual)
             return;
 
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
