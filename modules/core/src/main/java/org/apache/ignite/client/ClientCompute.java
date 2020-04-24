@@ -68,6 +68,7 @@ public interface ClientCompute {
     /**
      * Sets no-failover flag for tasks executed by returned {@code ClientCompute} instance.
      * If flag is set, job will be never failed over even if remote node crashes or rejects execution.
+     * See {@link ComputeTask} documentation for more information about jobs failover.
      *
      * @return {@code ClientCompute} instance with no-failover flag.
      */
@@ -75,6 +76,7 @@ public interface ClientCompute {
 
     /**
      * Disables result caching for tasks executed by returned {@code ClientCompute} instance.
+     * See {@link ComputeTask} documentation for more information tasks result caching.
      *
      * @return {@code ClientCompute} instance with "no result cache" flag.
      */
