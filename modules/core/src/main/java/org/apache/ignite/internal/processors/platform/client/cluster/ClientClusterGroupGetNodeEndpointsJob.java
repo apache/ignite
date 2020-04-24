@@ -50,10 +50,10 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Col
         Collection<String> addrs = locAddrsAndHosts.get1();
         Collection<String> res = new ArrayList<>(addrs.size());
 
-        for (String addr : addrs) {
-            // TODO: Wrap ipv6 addrs with []
+        // Port is always included, so there is no problem with IPv6.
+        // TODO: do not use string concat, pass port as a number.
+        for (String addr : addrs)
             res.add(addr + ":" + port);
-        }
 
         return res;
     }
