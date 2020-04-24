@@ -478,7 +478,7 @@ public class FullPageIdTable implements LoadedPagesMap {
      * @return {@code True} if checks succeeded.
      */
     private boolean assertKey(int grpId, long pageId) {
-        assert grpId != EMPTY_CACHE_GRP_ID && PageIdUtils.isEffectivePageId(pageId):
+        assert grpId != EMPTY_CACHE_GRP_ID && PageIdUtils.isEffectivePageId(pageId) :
             "grpId=" + grpId + ", pageId=" + U.hexLong(pageId);
 
         return true;
