@@ -204,7 +204,7 @@ public class IgniteOperationsInsideSandboxTest extends AbstractSandboxTest {
     }
 
     /** */
-    private IgniteCompute compute(){
+    private IgniteCompute compute() {
         Ignite clnt = grid(CLNT_ALLOWED_WRITE_PROP);
 
         return clnt.compute(clnt.cluster().forRemotes());

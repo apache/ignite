@@ -301,7 +301,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             fut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> future) {
-                    if(future.isDone())
+                    if (future.isDone())
                         mvccTracker0.onDone();
                 }
             });
