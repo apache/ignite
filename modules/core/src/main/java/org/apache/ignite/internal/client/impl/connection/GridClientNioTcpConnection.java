@@ -264,9 +264,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             ses.addMeta(SES_META_CONN, this);
 
-            GridClientAuthenticationRequest authReq = buildAuthRequest();
+            if (cred != null || userAttrs != null) {
+                GridClientFuture<?> authFut = makeAuthRequest();
 
-            ses.send(authReq);
+                authFut.get(connTimeoutRest, MILLISECONDS);
+            }
 
             if (log.isLoggable(Level.INFO))
                 log.info("Client TCP connection established: " + serverAddress());
@@ -642,6 +644,29 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             closedLatch.countDown();
     }
 
+    /** */
+    private <R> GridClientFutureAdapter<R> makeAuthRequest() throws GridClientConnectionResetException {
+        TcpClientFuture<R> fut = new TcpClientFuture<>();
+
+        fut.retryState(TcpClientFuture.STATE_REQUEST_RETRY);
+
+        GridClientAuthenticationRequest req = buildAuthRequest();
+
+        pendingReqs.putIfAbsent(req.requestId(), fut);
+
+        GridNioFuture<?> sndFut = ses.send(req);
+
+        try {
+            sndFut.get();
+        }
+        catch (Exception e) {
+            throw new GridClientConnectionResetException("Failed to send message over connection " +
+                "(will try to reconnect): " + serverAddress(), e);
+        }
+
+        return fut;
+    }
+
     /**
      * Builds authentication request message with credentials taken from credentials object.
      *
@@ -649,6 +674,10 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     private GridClientAuthenticationRequest buildAuthRequest() {
         GridClientAuthenticationRequest req = new GridClientAuthenticationRequest();
+
+        long reqId = reqIdCntr.getAndIncrement();
+
+        req.requestId(reqId);
 
         req.clientId(clientId);
 
