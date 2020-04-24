@@ -113,7 +113,7 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     /**
      * @return Cache group id.
      */
-    public int cacheGroupId(){
+    public int cacheGroupId() {
         return grpId;
     }
 

@@ -28,7 +28,7 @@ public class IpcSharedMemoryFakeClient {
      * @param args Args.
      * @throws Exception If failed.
      */
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         IpcEndpointFactory.connectEndpoint("shmem:10500", new JavaLogger());
         IpcEndpointFactory.connectEndpoint("shmem:10500", new JavaLogger());
         IpcEndpointFactory.connectEndpoint("shmem:10500", new JavaLogger());

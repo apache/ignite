@@ -4838,7 +4838,7 @@ public abstract class IgniteUtils {
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
-        if(IGNITE_MBEANS_DISABLED)
+        if (IGNITE_MBEANS_DISABLED)
             throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
 
         assert mbeanSrv != null;
@@ -5452,7 +5452,7 @@ public abstract class IgniteUtils {
      * @param obj Object.
      */
     public static int hashCode(Object obj) {
-        if(obj == null)
+        if (obj == null)
             return 0;
 
         if (obj.getClass().isArray()) {
@@ -7830,7 +7830,7 @@ public abstract class IgniteUtils {
 
                         if (ucp instanceof URLClassLoader)
                             return ((URLClassLoader)ucp).getURLs();
-                        else if (clsURLClassPath!= null && clsURLClassPath.isInstance(ucp))
+                        else if (clsURLClassPath != null && clsURLClassPath.isInstance(ucp))
                             return (URL[])mthdURLClassPathGetUrls.invoke(ucp);
                         else
                             throw new RuntimeException("Unknown classloader: " + clsLdr.getClass());
@@ -8297,12 +8297,13 @@ public abstract class IgniteUtils {
      * @param fieldName Field name.
      * @return Boolean flag.
      */
-    public static boolean hasField(Object obj, String fieldName){
+    public static boolean hasField(Object obj, String fieldName) {
         try {
             field(obj, fieldName);
 
             return true;
-        }catch (IgniteException e){
+        }
+        catch (IgniteException e){
             return false;
         }
     }
@@ -8904,10 +8905,10 @@ public abstract class IgniteUtils {
      * @param ldr Class loader.
      * @param clsName Class name of clearing class.
      */
-    public static void clearClassFromClassCache(ClassLoader ldr, String clsName){
+    public static void clearClassFromClassCache(ClassLoader ldr, String clsName) {
         ConcurrentMap<String, Class> map = classCache.get(ldr);
 
-        if (map!=null)
+        if (map != null)
             map.remove(clsName);
     }
 
@@ -10730,7 +10731,7 @@ public abstract class IgniteUtils {
     public static int fileCount(Path dir) throws IOException {
         int cnt = 0;
 
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)){
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
             for (Path d : ds) {
                 if (Files.isDirectory(d))
                     cnt += fileCount(d);
@@ -10857,7 +10858,7 @@ public abstract class IgniteUtils {
 
         long y = 1;
 
-        while (y < x){
+        while (y < x) {
             if (y * 2 > Integer.MAX_VALUE)
                 return (int)y;
 
@@ -11331,7 +11332,7 @@ public abstract class IgniteUtils {
         /**
          * @param task Add task.
          */
-        public void addTask(T task){
+        public void addTask(T task) {
             tasks.add(task);
         }
 
