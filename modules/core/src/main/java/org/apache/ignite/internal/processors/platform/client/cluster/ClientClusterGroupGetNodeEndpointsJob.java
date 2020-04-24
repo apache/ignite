@@ -45,6 +45,7 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Cli
     @Override public ClientClusterGroupGetNodeEndpointsJobResult call() throws Exception {
         int port = ((IgniteEx)ignite).context().sqlListener().port();
 
+        // Use IgniteConfiguration.localHost to determine actual addresses that we listen on.
         InetAddress locAddr = IgniteUtils.resolveLocalHost(ignite.configuration().getLocalHost());
 
         IgniteBiTuple<Collection<String>, Collection<String>> locAddrsAndHosts =
