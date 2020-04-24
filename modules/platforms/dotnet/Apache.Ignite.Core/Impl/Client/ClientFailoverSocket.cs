@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -64,8 +65,11 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile Dictionary<Guid, ClientDiscoveryNode> _discoveryNodes 
             = new Dictionary<Guid, ClientDiscoveryNode>();
 
-        /** Locker. */
-        private readonly object _syncRoot = new object();
+        /** Main socket lock. */
+        private readonly object _socketLock = new object();
+
+        /** Topology change lock. */
+        private readonly object _topologyUpdateLock = new object();
 
         /** Disposed flag. */
         private bool _disposed;
@@ -221,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private ClientSocket GetSocket()
         {
-            lock (_syncRoot)
+            lock (_socketLock)
             {
                 ThrowIfDisposed();
 
@@ -286,7 +290,7 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            lock (_syncRoot)
+            lock (_socketLock)
             {
                 _disposed = true;
 
@@ -330,10 +334,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, 
-                        _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
-
-                    endPoint.Socket = _socket;
+                    Connect(endPoint);
 
                     break;
                 }
@@ -386,6 +387,19 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Connects to the given endpoint.
+        /// </summary>
+        private void Connect(SocketEndpoint endPoint)
+        {
+            _socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host,
+                _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+            endPoint.Socket = _socket;
+            
+            // TODO: Update node socket map.
+        }
+
+        /// <summary>
         /// Updates current Affinity Topology Version.
         /// </summary>
         private void OnAffinityTopologyVersionChange(AffinityTopologyVersion affinityTopologyVersion)
@@ -398,17 +412,20 @@ namespace Apache.Ignite.Core.Impl.Client
             
             if (oldTopologyVersion < newTopologyVersion)
             {
-                // Major topology version has changed: some nodes have joined or left.
-                // If discovery is enabled, retrieve new topology - but don't connect.
-                if (_config.EnableDiscovery)
+                lock (_topologyUpdateLock)
                 {
-                    DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
-                }
+                    // Major topology version has changed: some nodes have joined or left.
+                    // If discovery is enabled, retrieve new topology - but don't connect.
+                    if (_config.EnableDiscovery)
+                    {
+                        DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
+                    }
 
-                // Connect to all nodes when partition awareness is enabled.
-                if (_config.EnablePartitionAwareness)
-                {
-                    InitSocketMap();
+                    // Connect to all nodes when partition awareness is enabled.
+                    if (_config.EnablePartitionAwareness)
+                    {
+                        InitSocketMap();
+                    }
                 }
             }
         }
@@ -586,10 +603,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     try
                     {
-                        var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host, 
-                            _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
-
-                        endPoint.Socket = socket;
+                        Connect(endPoint);
                     }
                     catch (SocketException)
                     {
@@ -634,10 +648,10 @@ namespace Apache.Ignite.Core.Impl.Client
 
             foreach (var removedNode in res.RemovedNodes)
             {
+                // TODO: Disconnect here?
                 discoveryNodes.Remove(removedNode);
             }
 
-            // TODO: Make this method thread-safe. Another thread can be updating _discoveryNodes.
             _discoveryNodes = discoveryNodes;
         }
 
