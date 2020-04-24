@@ -1751,8 +1751,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
                 else
                     //For not started caches we shouldn't add any data to index.
-                    visitor = clo -> {
-                    };
+                    visitor = clo -> {};
 
                 idx.dynamicIndexCreate(op0.schemaName(), op0.tableName(), idxDesc, op0.ifNotExists(), visitor);
             }

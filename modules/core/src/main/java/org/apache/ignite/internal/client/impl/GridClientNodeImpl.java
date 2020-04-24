@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientNodeMetrics;
@@ -36,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_FEATURES;
 
 /**
  * Client node implementation.

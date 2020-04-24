@@ -66,7 +66,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
@@ -4371,8 +4370,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if remote nodes support {@link HandshakeWaitMessage}.
      */
     private boolean isHandshakeWaitSupported() {
-        GridKernalContext ctx = (ignite instanceof IgniteEx) ? ((IgniteEx)ignite).context() : null;
-
         DiscoverySpi discoSpi = ignite().configuration().getDiscoverySpi();
 
         if (discoSpi instanceof IgniteDiscoverySpi)
