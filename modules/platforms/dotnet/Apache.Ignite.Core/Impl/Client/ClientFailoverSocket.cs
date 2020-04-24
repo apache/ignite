@@ -659,8 +659,23 @@ namespace Apache.Ignite.Core.Impl.Client
                         }                    
                     }
                 }
+
+                // Dispose and remove any connections not in current topology.
+                var toRemove = new List<Guid>();
                 
-                // TODO: Dispose or removed sockets - iterate map where node not in discovery.
+                foreach (var pair in map)
+                {
+                    if (!_discoveryNodes.ContainsKey(pair.Key))
+                    {
+                        pair.Value.Dispose();
+                        toRemove.Add(pair.Key);
+                    }
+                }
+
+                foreach (var nodeId in toRemove)
+                {
+                    map.Remove(nodeId);
+                }
             }
             else
             {
