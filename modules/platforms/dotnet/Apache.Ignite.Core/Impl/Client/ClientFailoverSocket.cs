@@ -389,8 +389,12 @@ namespace Apache.Ignite.Core.Impl.Client
             var oldTopologyVersion = GetTopologyVersion();
             _affinityTopologyVersion = affinityTopologyVersion;
 
+            // TODO: By default, without partition awareness, we only connect one socket, and fail over as needed.
+            // Only with PartitionAwareness we maintain many connections.
+            // Should we keep this behavior?
             if (_config.EnablePartitionAwareness)
             {
+                // TODO: Why re-init the map on every topology change?
                 InitSocketMap();
             }
 
@@ -569,6 +573,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var map = new Dictionary<Guid, ClientSocket>();
 
+            // TODO: Make sure we don't connect to the same node twice.
             foreach (var endPoint in _endPoints)
             {
                 if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
