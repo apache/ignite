@@ -130,7 +130,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
      * @param node Joining node.
      * @return Validation result or {@code null} in case of success.
      */
-    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node){
+    private IgniteNodeValidationResult validateSecProcClass(ClusterNode node) {
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
 
         if (rmtCls != null) {
