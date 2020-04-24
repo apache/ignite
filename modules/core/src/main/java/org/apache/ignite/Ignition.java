@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -307,7 +308,7 @@ public class Ignition {
      */
     public static Ignite start() throws IgniteException {
         try {
-            return IgnitionEx.start();
+            return sandboxIgniteProxy(IgnitionEx.start());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -325,7 +326,7 @@ public class Ignition {
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return IgnitionEx.start(cfg);
+            return sandboxIgniteProxy(IgnitionEx.start(cfg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -350,7 +351,7 @@ public class Ignition {
      */
     public static Ignite start(String springCfgPath) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgPath);
+            return sandboxIgniteProxy(IgnitionEx.start(springCfgPath));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -375,7 +376,7 @@ public class Ignition {
      */
     public static Ignite start(URL springCfgUrl) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgUrl);
+            return sandboxIgniteProxy(IgnitionEx.start(springCfgUrl));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -400,7 +401,7 @@ public class Ignition {
      */
     public static Ignite start(InputStream springCfgStream) throws IgniteException {
         try {
-            return IgnitionEx.start(springCfgStream);
+            return sandboxIgniteProxy(IgnitionEx.start(springCfgStream));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -584,6 +585,9 @@ public class Ignition {
      * @return True if current thread runs inside the Ignite Sandbox.
      */
     private static boolean insideSandbox() {
+        if(!IgniteSecurityProcessor.hasSandboxedNodes())
+            return false;
+
         final AccessControlContext ctx = AccessController.getContext();
 
         return AccessController.doPrivileged((PrivilegedAction<Boolean>)

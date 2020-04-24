@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.lang.reflect.Proxy;
+import java.security.AllPermission;
+import java.security.Permissions;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -26,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -43,7 +46,12 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
         startGrid(SRV, ALLOW_ALL, false);
-        startGrid(CLNT, ALLOW_ALL, true);
+
+        Permissions perms = new Permissions();
+
+        perms.add(new AllPermission());
+
+        startGrid(CLNT, ALLOW_ALL, perms, true);
     }
 
     /**
@@ -121,6 +129,25 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
         };
 
         checkCollection(s);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testStart(){
+        Supplier<Ignite> s = new Supplier<Ignite>() {
+            @Override public Ignite get() {
+                try {
+                    return Ignition.start(getConfiguration("node_" + G.allGrids().size()));
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            }
+        };
+
+        check(s);
     }
 
     /**

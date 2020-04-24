@@ -63,6 +63,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /** Number of started nodes with the sandbox enabled. */
     private static final AtomicInteger SANDBOXED_NODES_COUNTER = new AtomicInteger();
 
+    /**
+     * @return True if there are sandboxed nodes.
+     */
+    public static boolean hasSandboxedNodes() {
+        return SANDBOXED_NODES_COUNTER.get() > 0;
+    }
+
     /** Current security context. */
     private final ThreadLocal<SecurityContext> curSecCtx = ThreadLocal.withInitial(this::localSecurityContext);
 
