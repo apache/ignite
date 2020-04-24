@@ -8303,7 +8303,7 @@ public abstract class IgniteUtils {
 
             return true;
         }
-        catch (IgniteException e){
+        catch (IgniteException e) {
             return false;
         }
     }

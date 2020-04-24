@@ -360,7 +360,7 @@ class ProgressWatchdog {
             "cpWriteSpeed=" + cpWriteSpeed + " " +
             "cpSyncSpeed=" + cpSyncSpeed + " " +
             "walSpeed= " + walSpeed + " " +
-            "walWorkSeg.="+ walWorkSegments + " " +
+            "walWorkSeg.=" + walWorkSegments + " " +
             "markDirtySpeed=" + markDirtySpeed + " " +
             "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
             "dirtyP=" + dirtyPages + ", " +

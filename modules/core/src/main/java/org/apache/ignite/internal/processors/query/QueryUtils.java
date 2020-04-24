@@ -789,7 +789,7 @@ public class QueryUtils {
 
             d.addIndex(idxDesc);
         }
-        else if (idxTyp == QueryIndexType.FULLTEXT){
+        else if (idxTyp == QueryIndexType.FULLTEXT) {
             for (String field : idx.getFields().keySet()) {
                 String alias = d.aliases().get(field);
 
@@ -1505,17 +1505,17 @@ public class QueryUtils {
 
             code = ((IgniteSQLException)e).statusCode();
         }
-        else if (e instanceof TransactionDuplicateKeyException){
+        else if (e instanceof TransactionDuplicateKeyException) {
             code = IgniteQueryErrorCode.DUPLICATE_KEY;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
-        else if (e instanceof TransactionSerializationException){
+        else if (e instanceof TransactionSerializationException) {
             code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
-        else if (e instanceof TransactionAlreadyCompletedException){
+        else if (e instanceof TransactionAlreadyCompletedException) {
             code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);

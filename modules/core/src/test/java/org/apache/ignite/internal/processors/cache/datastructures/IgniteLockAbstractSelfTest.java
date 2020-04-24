@@ -1634,7 +1634,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                                     localCount++;
 
-                                    if (localCount > 1000){
+                                    if (localCount > 1000) {
                                         assertTrue(localCount < (1 + tolerance) * opsCounter / threadCount);
 
                                         assertTrue(localCount > (1 - tolerance) * opsCounter / threadCount);
