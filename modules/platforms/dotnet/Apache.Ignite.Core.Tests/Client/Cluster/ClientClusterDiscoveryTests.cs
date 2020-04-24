@@ -50,10 +50,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         }
 
         /// <summary>
-        /// Tests that client discovers new servers automatically when they join the cluster.
+        /// Tests that client discovers new servers automatically when they join the cluster, and removes
+        /// disconnected servers.
         /// </summary>
         [Test]
-        public void TestClientDiscoversNewServers()
+        public void TestClientDiscoversJoinedServersAndRemovesDisconnected()
         {
             using (var client = GetClient())
             {
@@ -70,6 +71,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                     Assert.AreEqual(4, client.GetConnections().Count());
                 }
                     
+                // Perform any operation to cause topology update.
+                client.GetCacheNames();
+                
                 Assert.AreEqual(3, client.GetConnections().Count());
             }
         }
