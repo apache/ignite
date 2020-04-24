@@ -625,7 +625,7 @@ namespace Apache.Ignite.Core.Impl.Client
                     try
                     {
                         var endpoint = Endpoint.ParseEndpoint(endPointString);
-                        
+
                         IPAddress ip;
                         if (IPAddress.TryParse(endpoint.Host, out ip))
                         {
@@ -637,14 +637,18 @@ namespace Apache.Ignite.Core.Impl.Client
                             {
                                 Socket = socket
                             };
-                            
+
                             endPoints.Add(socketEndPoint);
                         }
                     }
-                    catch (Exception)
+                    catch (SocketException)
                     {
                         // Ignore: failure to connect is expected.
                         // TODO: Log as Debug or Info?
+                    }
+                    catch (Exception)
+                    {
+                        // TODO: This is a parsing error or something else?
                     }
                 }
 
