@@ -783,7 +783,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
+                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
 
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
@@ -804,7 +804,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" :holder.acceptedVersion()) + ']');
+                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
             }
         }
         else {
@@ -850,7 +850,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         + ", missingSchemaId=" + schemaId
                         + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
                         + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
-                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout +']');
+                        + ", binMetaUpdateTimeout=" + waitSchemaTimeout + ']');
 
                 long t0 = System.nanoTime();
 

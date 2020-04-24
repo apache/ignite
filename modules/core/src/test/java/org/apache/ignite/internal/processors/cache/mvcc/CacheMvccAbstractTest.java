@@ -853,7 +853,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      */
     protected static void mergeSql(TestCache<Integer, MvccTestAccount> cache, Integer key, Integer val, Integer updateCnt) {
         SqlFieldsQuery qry = new SqlFieldsQuery("merge into MvccTestAccount(_key, val, updateCnt) values " +
-            " (" + key+ ", " + val + ", " + updateCnt + ")");
+            " (" + key + ", " + val + ", " + updateCnt + ")");
 
         cache.cache.query(qry).getAll();
     }
@@ -868,7 +868,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      */
     private static void insertSql(TestCache<Integer, MvccTestAccount> cache, int key, Integer val, Integer updateCnt) {
         SqlFieldsQuery qry = new SqlFieldsQuery("insert into MvccTestAccount(_key, val, updateCnt) values " +
-            " (" + key+ ", " + val + ", " + updateCnt + ")");
+            " (" + key + ", " + val + ", " + updateCnt + ")");
 
         cache.cache.query(qry).getAll();
     }

@@ -1245,7 +1245,7 @@ public class CacheGroupContext {
      * @param persist If {@code true} then flag state will be persisted into metastorage.
      */
     public void localWalEnabled(boolean enabled, boolean persist) {
-        if (localWalEnabled != enabled){
+        if (localWalEnabled != enabled) {
             log.info("Local WAL state for group=" + cacheOrGroupName() +
                 " changed from " + localWalEnabled + " to " + enabled);
 

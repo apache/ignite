@@ -1016,7 +1016,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 @Override public Object call() throws Exception {
                     Random rnd = new GridRandom();
 
-                    for(;;) {
+                    for (;;) {
                         int idx = 0;
                         boolean found = false;
 
@@ -1912,7 +1912,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> rmvFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
-                while(!stop.get()) {
+                while (!stop.get()) {
                     Long rmvVal = rowsToRemove.poll(200, TimeUnit.MILLISECONDS);
                     if (rmvVal != null)
                         assertEquals(rmvVal, tree.remove(rmvVal));
@@ -2035,7 +2035,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> rmvFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
-                while(!stop.get()) {
+                while (!stop.get()) {
                     Long rmvVal = rowsToRemove.poll(200, TimeUnit.MILLISECONDS);
                     if (rmvVal != null)
                         assertEquals(rmvVal, tree.remove(rmvVal));
@@ -2051,7 +2051,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> findFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int iter = 0;
-                while(!stop.get()) {
+                while (!stop.get()) {
                     Long findVal = curPutKey.get()
                         + SLIDING_WINDOW_SIZE / 2
                         - rnd.nextInt(SLIDING_WINDOW_SIZE * 2);
@@ -2698,7 +2698,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static int size(GridCursor<?> c) throws IgniteCheckedException {
         int cnt = 0;
 
-        while(c.next())
+        while (c.next())
             cnt++;
 
         return cnt;

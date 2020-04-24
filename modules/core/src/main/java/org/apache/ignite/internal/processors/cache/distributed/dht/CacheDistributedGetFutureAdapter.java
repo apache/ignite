@@ -182,7 +182,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V>
     /**
      * @param aclass Class.
      */
-    protected void initLogger(Class<?> aclass){
+    protected void initLogger(Class<?> aclass) {
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, aclass);
     }
