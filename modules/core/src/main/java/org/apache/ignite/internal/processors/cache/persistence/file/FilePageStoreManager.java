@@ -41,9 +41,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -140,6 +142,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
+
+    /** Listeners of configuration changes e.g. overwrite or remove actions. */
+    private final List<BiConsumer<String, File>> lsnrs = new CopyOnWriteArrayList<>();
+
+    /** Lock which guards configuration changes. */
+    private final ReentrantReadWriteLock chgLock = new ReentrantReadWriteLock();
 
     /** Marshaller. */
     private final Marshaller marshaller;
@@ -434,19 +442,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        File cacheWorkDir = cacheWorkDir(cacheData.config());
-        File file;
+        CacheConfiguration<?, ?> ccfg = cacheData.config();
+        File cacheWorkDir = cacheWorkDir(ccfg);
 
         checkAndInitCacheWorkDir(cacheWorkDir);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        if (cacheData.config().getGroupName() != null)
-            file = new File(cacheWorkDir, cacheData.config().getName() + CACHE_DATA_FILENAME);
-        else
-            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
-
+        File file = cacheConfigurationFile(ccfg);
         Path filePath = file.toPath();
+
+        chgLock.readLock().lock();
 
         try {
             if (overwrite || !Files.exists(filePath) || Files.size(filePath) == 0) {
@@ -462,14 +468,38 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     marshaller.marshal(cacheData, stream);
                 }
 
+                if (Files.exists(filePath) && Files.size(filePath) > 0) {
+                    for (BiConsumer<String, File> lsnr : lsnrs)
+                        lsnr.accept(ccfg.getName(), file);
+                }
+
                 Files.move(tmp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         }
         catch (IOException ex) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
 
-            throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
+            throw new IgniteCheckedException("Failed to persist cache configuration: " + ccfg.getName(), ex);
         }
+        finally {
+            chgLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param lsnr Instance of listener to add.
+     */
+    public void addConfigurationChangeListener(BiConsumer<String, File> lsnr) {
+        assert chgLock.isWriteLockedByCurrentThread();
+
+        lsnrs.add(lsnr);
+    }
+
+    /**
+     * @param lsnr Instance of listener to remove.
+     */
+    public void removeConfigurationChangeListener(BiConsumer<String, File> lsnr) {
+        lsnrs.remove(lsnr);
     }
 
     /** {@inheritDoc} */
@@ -920,18 +950,33 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param ccfg Cache configuration to find an appropriate stored configuration file.
-     * @return File of stored cache configuration or {@code null} if doesn't exists.
+     * @param ccfgs List of cache configurations to process.
+     * @param ccfgCons Consumer which accepts found configurations files.
      */
-    public List<File> configurationFiles(CacheConfiguration ccfg) {
-        File cacheDir = new File(storeWorkDir, cacheDirName(ccfg));
+    public void readConfigurationFiles(List<CacheConfiguration<?, ?>> ccfgs,
+        BiConsumer<CacheConfiguration<?, ?>, File> ccfgCons) {
+        chgLock.writeLock().lock();
 
-        if (!cacheDir.exists())
-            return null;
+        try {
+            for (CacheConfiguration<?, ?> ccfg : ccfgs) {
+                File cacheDir = cacheWorkDir(ccfg);
 
-        File[] ccfgFile = cacheDir.listFiles((dir, name) -> name.endsWith(CACHE_DATA_FILENAME));
+                if (!cacheDir.exists())
+                    continue;
 
-        return Arrays.asList(ccfgFile);
+                File[] ccfgFiles = cacheDir.listFiles((dir, name) ->
+                    name.endsWith(CACHE_DATA_FILENAME));
+
+                if (ccfgFiles == null)
+                    continue;
+
+                for (File ccfgFile : ccfgFiles)
+                    ccfgCons.accept(ccfg, ccfgFile);
+            }
+        }
+        finally {
+            chgLock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1047,7 +1092,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param ccfg Cache configuration.
      * @return Store dir for given cache.
      */
-    public File cacheWorkDir(CacheConfiguration ccfg) {
+    public File cacheWorkDir(CacheConfiguration<?, ?> ccfg) {
         return cacheWorkDir(storeWorkDir, cacheDirName(ccfg));
     }
 
@@ -1082,7 +1127,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param ccfg Cache configuration.
      * @return The full cache directory name.
      */
-    public static String cacheDirName(CacheConfiguration ccfg) {
+    public static String cacheDirName(CacheConfiguration<?, ?> ccfg) {
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
         return cacheDirName(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
@@ -1146,19 +1191,34 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
-        CacheConfiguration cacheCfg = cacheData.config();
-        File cacheWorkDir = cacheWorkDir(cacheCfg);
-        File file;
+        chgLock.readLock().lock();
 
-        if (cacheData.config().getGroupName() != null)
-            file = new File(cacheWorkDir, cacheCfg.getName() + CACHE_DATA_FILENAME);
-        else
-            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
+        try {
+            CacheConfiguration<?, ?> ccfg = cacheData.config();
+            File file = cacheConfigurationFile(ccfg);
 
-        if (file.exists()) {
-            if (!file.delete())
-                throw new IgniteCheckedException("Failed to delete cache configuration: " + cacheCfg.getName());
+            if (file.exists()) {
+                for (BiConsumer<String, File> lsnr : lsnrs)
+                    lsnr.accept(ccfg.getName(), file);
+
+                if (!file.delete())
+                    throw new IgniteCheckedException("Failed to delete cache configuration: " + ccfg.getName());
+            }
         }
+        finally {
+            chgLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
+     */
+    private File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+        File cacheWorkDir = cacheWorkDir(ccfg);
+
+        return ccfg.getGroupName() == null ? new File(cacheWorkDir, CACHE_DATA_FILENAME) :
+            new File(cacheWorkDir, ccfg.getName() + CACHE_DATA_FILENAME);
     }
 
     /**

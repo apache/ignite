@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.Executor;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -31,14 +37,16 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
+import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
  * Cluster-wide snapshot test with indexes.
  */
 public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTest {
-    /** */
-    private CacheConfiguration<Integer, Account> indexedCcfg =
+    /** Configuration with statically configured indexes. */
+    private final CacheConfiguration<Integer, Account> indexedCcfg =
         txCacheConfig(new CacheConfiguration<Integer, Account>("indexed"))
             .setQueryEntities(Collections.singletonList(
                 new QueryEntity(Integer.class.getName(), Account.class.getName())
@@ -76,6 +84,7 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
         List<List<?>> results = executeSql(snp, explainSQLStatement(tblName) + "id > 10");
 
+        // Primary key exists.
         String explainPlan = (String)results.get(0).get(0);
         assertTrue(explainPlan.toUpperCase().contains("\"_KEY_PK"));
         assertFalse(explainPlan.toUpperCase().contains("_SCAN_"));
@@ -100,6 +109,62 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
 
             assertFalse(clo.call().hasIssues());
         }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotConsistentConfig() throws Exception {
+        String tblName = "PersonCache";
+        int grids = 3;
+
+        IgniteEx ignite = startGridsWithoutCache(grids);
+
+        executeSql(ignite, "CREATE TABLE " + tblName + " (id int, name varchar, age int, city varchar, " +
+            "primary key (id, name)) WITH \"cache_name=" + tblName + "\"");
+        executeSql(ignite, "CREATE INDEX SNP_IDX_0 ON " + tblName + "(age)");
+
+        for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+            executeSql(ignite, "INSERT INTO " + tblName + " (id, name, age, city) VALUES(?, 'name', 3, 'city')", i);
+
+        // Blocking configuration local snapshot sender.
+        List<BlockingExecutor> execs = new ArrayList<>();
+
+        for (Ignite grid : G.allGrids()) {
+            IgniteSnapshotManager mgr = snp((IgniteEx)grid);
+            Function<String, SnapshotSender> old = mgr.localSnapshotSenderFactory();
+
+            BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
+            execs.add(block);
+
+            mgr.localSnapshotSenderFactory((snpName) ->
+                new DelegateSnapshotSender(log, block, old.apply(snpName)));
+        }
+
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        List<String> idxNames = Arrays.asList("SNP_IDX_1", "SNP_IDX_2");
+
+        executeSql(ignite, "CREATE INDEX " + idxNames.get(0) + " ON " + tblName + "(city)");
+        executeSql(ignite, "CREATE INDEX " + idxNames.get(1) + " ON " + tblName + "(age, city)");
+
+        for (BlockingExecutor exec : execs)
+            exec.unblock();
+
+        fut.get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
+
+        List<String> currIdxNames = executeSql(snp, "SELECT * FROM SYS.INDEXES").stream().
+            map(l -> (String)l.get(0))
+            .collect(Collectors.toList());
+
+        assertTrue("Concurrently created indexes must not exist in the snapshot: " + currIdxNames,
+            Collections.disjoint(idxNames, currIdxNames));
+
+        List<List<?>> results = executeSql(snp, explainSQLStatement(tblName) + "age=2");
+        assertUsingSecondaryIndex(results);
     }
 
     /**
@@ -155,5 +220,41 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         assertFalse(explainPlan, explainPlan.toUpperCase().contains("_SCAN_"));
     }
 
-    // todo cache configuration can be changed during SchemaAbstractDiscoveryMessage
+    /** */
+    private static class BlockingExecutor implements Executor {
+        /** Delegate executor. */
+        private final Executor delegate;
+
+        /** Waiting tasks. */
+        private final Queue<Runnable> tasks = new ArrayDeque<>();
+
+        /** {@code true} if tasks must be blocked. */
+        private volatile boolean block = true;
+
+        /**
+         * @param delegate Delegate executor.
+         */
+        public BlockingExecutor(Executor delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(@NotNull Runnable cmd) {
+            if (block)
+                tasks.offer(cmd);
+            else
+                delegate.execute(cmd);
+        }
+
+        /** Unblock and schedule tasks for execution. */
+        public void unblock() {
+            block = false;
+
+            Runnable r;
+
+            while ((r = tasks.poll()) != null) {
+                delegate.execute(r);
+            }
+        }
+    }
 }

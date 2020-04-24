@@ -267,6 +267,23 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param grids Number of ignite instances.
+     * @return Coordinator ignite instance.
+     * @throws Exception If fails.
+     */
+    protected IgniteEx startGridsWithoutCache(int grids) throws Exception {
+        for (int i = 0; i < grids; i++)
+            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
+
+        IgniteEx ignite = grid(0);
+
+        ignite.cluster().baselineAutoAdjustEnabled(false);
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        return ignite;
+    }
+
+    /**
      * @param cnt Number of grids to start.
      * @param snpName Snapshot to start grids from.
      * @return Coordinator ignite instance.

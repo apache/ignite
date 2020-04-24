@@ -390,13 +390,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Integer> ccfg = txCacheConfig(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME))
             .setNodeFilter(node -> node.consistentId().toString().endsWith("1"));
 
-        for (int i = 0; i < grids; i++)
-            startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
-
-        IgniteEx ig0 = grid(0);
-
-        ig0.cluster().baselineAutoAdjustEnabled(false);
-        ig0.cluster().state(ACTIVE);
+        IgniteEx ig0 = startGridsWithoutCache(grids);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             ig0.getOrCreateCache(ccfg).put(i, i);

@@ -1285,9 +1285,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @return The executor service used to run snapshot tasks.
+     * @return The executor used to run snapshot tasks.
      */
-    ExecutorService snapshotExecutorService() {
+    Executor snapshotExecutorService() {
         assert snpRunner != null;
 
         return snpRunner;
@@ -1328,6 +1328,32 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return U.resolveWorkDirectory(cfg.getWorkDirectory(), cfg.getSnapshotPath(), false);
         }
         catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param factory Factory to produce FileIO access.
+     * @param from Copy from file.
+     * @param to Copy data to file.
+     * @param length Number of bytes to copy from beginning.
+     */
+    static void copy(FileIOFactory factory, File from, File to, long length) {
+        try (FileIO src = factory.create(from, READ);
+             FileChannel dest = new FileOutputStream(to).getChannel()) {
+            if (src.size() < length) {
+                throw new IgniteException("The source file to copy has to enough length " +
+                    "[expected=" + length + ", actual=" + src.size() + ']');
+            }
+
+            src.position(0);
+
+            long written = 0;
+
+            while (written < length)
+                written += src.transferTo(written, length - written, dest);
+        }
+        catch (IOException e) {
             throw new IgniteException(e);
         }
     }
@@ -1669,9 +1695,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 File cacheDir = U.resolveWorkDirectory(dbDir.getAbsolutePath(), cacheDirName, false);
 
-                copy(ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
+                copy(ioFactory, ccfg, new File(cacheDir, ccfg.getName()), ccfg.length());
             }
-            catch (IgniteCheckedException | IOException e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
         }
@@ -1705,7 +1731,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                copy(part, snpPart, len);
+                copy(ioFactory, part, snpPart, len);
 
                 if (log.isInfoEnabled()) {
                     log.info("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
@@ -1780,29 +1806,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 deleteSnapshot(snpLocDir, pdsSettings.folderName());
 
                 U.warn(log, "Local snapshot sender closed due to an error occurred", th);
-            }
-        }
-
-        /**
-         * @param from Copy from file.
-         * @param to Copy data to file.
-         * @param length Number of bytes to copy from beginning.
-         * @throws IOException If fails.
-         */
-        private void copy(File from, File to, long length) throws IOException {
-            try (FileIO src = ioFactory.create(from, READ);
-                 FileChannel dest = new FileOutputStream(to).getChannel()) {
-                if (src.size() < length) {
-                    throw new IgniteException("The source file to copy has to enough length " +
-                        "[expected=" + length + ", actual=" + src.size() + ']');
-                }
-
-                src.position(0);
-
-                long written = 0;
-
-                while (written < length)
-                    written += src.transferTo(written, length - written, dest);
             }
         }
     }

@@ -34,12 +34,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -66,7 +70,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -76,6 +79,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
 
@@ -85,6 +89,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpointListener {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
+
+    /** File page store manager for accessing cache group associated files. */
+    private final FilePageStoreManager pageStore;
 
     /** Ignite logger. */
     private final IgniteLogger log;
@@ -117,6 +124,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      * processing supplier.
      */
     private final Map<GroupPartitionId, PageStoreSerialWriter> partDeltaWriters = new HashMap<>();
+
+    /**
+     * List of cache configuration senders. Each sender associated with particular cache
+     * configuration file to monitor it change (e.g. via SQL add/drop column or SQL index
+     * create/drop operations).
+     */
+    private final List<CacheConfigurationSender> ccfgSndrs = new CopyOnWriteArrayList<>();
 
     /** Snapshot data sender. */
     @GridToStringExclude
@@ -157,9 +171,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
      * @param e Finished snapshot task future with particular exception.
      */
     public SnapshotFutureTask(IgniteCheckedException e) {
-        A.notNull(e, "Exception for a finished snapshot task must be not null");
+        assert e != null : "Exception for a finished snapshot task must be not null";
 
         cctx = null;
+        pageStore = null;
         log = null;
         snpName = null;
         srcNodeId = null;
@@ -190,12 +205,14 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
         Map<Integer, Set<Integer>> parts,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        A.notNull(snpName, "Snapshot name cannot be empty or null");
-        A.notNull(snpSndr, "Snapshot sender which handles execution tasks must be not null");
-        A.notNull(snpSndr.executor(), "Executor service must be not null");
+        assert snpName != null : "Snapshot name cannot be empty or null.";
+        assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
+        assert snpSndr.executor() != null : "Executor service must be not null.";
+        assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
 
         this.parts = parts;
         this.cctx = cctx;
+        this.pageStore = (FilePageStoreManager)cctx.pageStore();
         this.log = cctx.logger(SnapshotFutureTask.class);
         this.snpName = snpName;
         this.srcNodeId = srcNodeId;
@@ -252,6 +269,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
+
+        for (CacheConfigurationSender ccfgSndr : ccfgSndrs)
+            U.closeQuiet(ccfgSndr);
 
         snpSndr.close(err);
 
@@ -422,6 +442,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 processed.put(grpId, owning);
             }
 
+            List<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>();
+
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
                 int grpId = e.getKey();
 
@@ -435,7 +457,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 for (int partId : e.getValue()) {
                     GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
-                    PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(grpId, partId);
+                    PageStore store = pageStore.getStore(grpId, partId);
 
                     partDeltaWriters.put(pair,
                         new PageStoreSerialWriter(store,
@@ -443,7 +465,12 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                     partFileLengths.put(pair, store.size());
                 }
+
+                ccfgs.add(gctx.config());
             }
+
+            pageStore.readConfigurationFiles(ccfgs,
+                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(), cacheDirName(ccfg), ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -490,7 +517,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
             wrapExceptionIfStarted(() -> snpSndr.sendMarshallerMeta(mappingsCopy)),
             snpSndr.executor()));
 
-        FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+        // Send configuration files of all cache groups.
+        for (CacheConfigurationSender ccfgSndr : ccfgSndrs)
+            futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(ccfgSndr::sendCacheConfig), snpSndr.executor()));
 
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grpId = e.getKey();
@@ -503,20 +532,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
 
                 break;
             }
-
-            // Process the cache group configuration files.
-            futs.add(CompletableFuture.runAsync(
-                wrapExceptionIfStarted(() -> {
-                    List<File> ccfgs = storeMgr.configurationFiles(gctx.config());
-
-                    if (ccfgs == null)
-                        return;
-
-                    for (File ccfg0 : ccfgs)
-                        snpSndr.sendCacheConfig(ccfg0, cacheDirName(gctx.config()));
-                }),
-                snpSndr.executor())
-            );
 
             // Process partitions for a particular cache group.
             for (int partId : e.getValue()) {
@@ -532,7 +547,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
                 CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                     wrapExceptionIfStarted(() -> {
                         snpSndr.sendPart(
-                            getPartitionFile(storeMgr.workDir(), cacheDirName, partId),
+                            getPartitionFile(pageStore.workDir(), cacheDirName, partId),
                             cacheDirName,
                             pair,
                             partLen);
@@ -648,6 +663,119 @@ class SnapshotFutureTask extends GridFutureAdapter<Boolean> implements DbCheckpo
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotFutureTask.class, this);
+    }
+
+    /** */
+    private class CacheConfigurationSender implements BiConsumer<String, File>, Closeable {
+        /** Cache name associated with configuration file. */
+        private final String cacheName;
+
+        /** Cache directory associated with configuration file. */
+        private final String cacheDirName;
+
+        /** Lock for cache configuration processing. */
+        private final Lock lock = new ReentrantLock();
+
+        /** Configuration file to send. */
+        private volatile File ccfgFile;
+
+        /** {@code true} if configuration file already sent. */
+        private volatile boolean sent;
+
+        /**
+         * {@code true} if an old configuration file written to the temp directory and
+         * waiting to be sent.
+         */
+        private volatile boolean fromTemp;
+
+        /**
+         * @param ccfgFile Cache configuration to send.
+         * @param cacheDirName Cache directory.
+         */
+        public CacheConfigurationSender(String cacheName, String cacheDirName, File ccfgFile) {
+            this.cacheName = cacheName;
+            this.cacheDirName = cacheDirName;
+            this.ccfgFile = ccfgFile;
+
+            pageStore.addConfigurationChangeListener(this);
+        }
+
+        /**
+         * Send the original cache configuration file or the temp one instead saved due to
+         * concurrent configuration change operation happened (e.g. SQL add/drop column).
+         */
+        public void sendCacheConfig() {
+            lock.lock();
+
+            try {
+                snpSndr.sendCacheConfig(ccfgFile, cacheDirName);
+
+                close0();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(String cacheName, File ccfgFile) {
+            assert ccfgFile.exists() :
+                "Cache configuration file must exist [cacheName=" + cacheName +
+                    ", ccfgFile=" + ccfgFile.getAbsolutePath() + ']';
+
+            if (stopping())
+                return;
+
+            if (!cacheName.equals(this.cacheName) || sent || fromTemp)
+                return;
+
+            lock.lock();
+
+            try {
+                if (sent || fromTemp)
+                    return;
+
+                File cacheWorkDir = cacheWorkDir(tmpSnpWorkDir, cacheDirName);
+
+                if (!U.mkdirs(cacheWorkDir))
+                    throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);
+
+                File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
+                newCcfgFile.createNewFile();
+
+                copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());
+
+                this.ccfgFile = newCcfgFile;
+                fromTemp = true;
+            }
+            catch (IOException e) {
+                acceptException(e);
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        /** Close writer and remove listener. */
+        private void close0() {
+            sent = true;
+            pageStore.removeConfigurationChangeListener(this);
+
+            if (fromTemp)
+                U.delete(ccfgFile);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            lock.lock();
+
+            try {
+                close0();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
     }
 
     /** */
