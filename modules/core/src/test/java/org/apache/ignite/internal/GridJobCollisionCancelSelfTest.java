@@ -105,7 +105,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                 assert cancelCnt <= SPLIT_COUNT : "Invalid cancel count: " + cancelCnt;
 
                 // One per start and one per stop and some that come with metrics update.
-                assert colResolutionCnt > SPLIT_COUNT + 1:
+                assert colResolutionCnt > SPLIT_COUNT + 1 :
                     "Invalid collision resolution count: " + colResolutionCnt;
             }
         }

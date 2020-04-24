@@ -174,7 +174,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     @Override protected void initCacheAndDbData() throws SQLException {
         final AtomicInteger idGen = new AtomicInteger();
 
-        final Iterable<Integer> rootOrderIds = new ArrayList<Integer>(){{
+        final Iterable<Integer> rootOrderIds = new ArrayList<Integer>() {{
             for (int i = 0; i < ROOT_ORDER_CNT; i++)
                 add(idGen.incrementAndGet());
         }};
