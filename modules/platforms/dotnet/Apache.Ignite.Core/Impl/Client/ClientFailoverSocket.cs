@@ -631,6 +631,18 @@ namespace Apache.Ignite.Core.Impl.Client
                             var socket = new ClientSocket(_config, ipEndPoint, endpoint.Host,
                                 _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
 
+                            if (socket.ServerNodeId != addedNode.Id)
+                            {
+                                _logger.Debug(
+                                    "Autodiscovery connection succeeded, but node id does not match: {0}, {1}, {2}. " +
+                                    "Expected node id: {3}. Actual node id: {4}. Connection dropped.",
+                                    endpoint.Address, endpoint.Host, endpoint.Port, addedNode.Id, socket.ServerNodeId);
+                                
+                                socket.Dispose();
+                                
+                                continue;
+                            }
+
                             var socketEndPoint = new SocketEndpoint(ipEndPoint, endpoint.Host)
                             {
                                 Socket = socket
@@ -639,14 +651,16 @@ namespace Apache.Ignite.Core.Impl.Client
                             endPoints.Add(socketEndPoint);
                         }
                     }
-                    catch (SocketException)
+                    catch (SocketException socketException)
                     {
                         // Ignore: failure to connect is expected.
-                        // TODO: Log as Debug or Info?
+                        _logger.Debug(socketException, "Autodiscovery connection failed: {0}, {1}, {2}", 
+                            endpoint.Address, endpoint.Host, endpoint.Port);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        // TODO: This is a parsing error or something else?
+                        _logger.Debug(e, "Autodiscovery connection failed: {0}, {1}, {2}", 
+                            endpoint.Address, endpoint.Host, endpoint.Port);
                     }
                 }
 
