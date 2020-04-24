@@ -724,6 +724,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             // TODO: perform async request?
             // TODO: Avoid creating intermediate lists, update dictionary directly.
+            // TODO: Use topology version from result, store in a field for consequent requests.
             var res = GetServerEndpoints(startTopVer, endTopVer);
             var discoveryNodes = _discoveryNodes == null
                 ? new Dictionary<Guid, ClientDiscoveryNode>()
