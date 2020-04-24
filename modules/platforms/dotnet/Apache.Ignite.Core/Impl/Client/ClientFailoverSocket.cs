@@ -54,8 +54,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Endpoints with corresponding hosts. */
+        /** Endpoints with corresponding hosts.
+         * This is just a list of known endpoints that comes both from config and from discovery. */
         private volatile List<SocketEndpoint> _endPoints;
+
+        /** Map from node ID to connected socket. Used when partition awareness is enabled. */
+        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -65,9 +69,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Current affinity topology version. Store as object to make volatile. */
         private volatile object _affinityTopologyVersion;
-
-        /** Map from node ID to connected socket. */
-        private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap;
 
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _distributionMap;
@@ -612,6 +613,12 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 return;
             }
+            
+            // TODO: Store current cluster (discovered endpoints) in a separate map.
+            // No partition awareness: just use this map as part of round-robin
+            // With partition awareness: "fill the blanks" - connect to any nodes that are not yet connected.
+            // Maintain socket map at all times to understand where we are connected. 
+            
             
             // TODO: perform async request!
             var res = GetServerEndpoints(startTopVer, endTopVer);
