@@ -620,14 +620,12 @@ namespace Apache.Ignite.Core.Impl.Client
                     continue;
                 }
 
-                foreach (var endPointString in addedNode.Endpoints)
+                foreach (var endpoint in addedNode.Endpoints)
                 {
                     try
                     {
-                        var endpoint = Endpoint.ParseEndpoint(endPointString);
-
                         IPAddress ip;
-                        if (IPAddress.TryParse(endpoint.Host, out ip))
+                        if (IPAddress.TryParse(endpoint.Address, out ip))
                         {
                             var ipEndPoint = new IPEndPoint(ip, endpoint.Port);
                             var socket = new ClientSocket(_config, ipEndPoint, endpoint.Host,
@@ -680,11 +678,15 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         var id = BinaryUtils.ReadGuid(s);
                         var cnt = s.ReadInt();
-                        var endpoints = new List<string>(cnt);
+                        var endpoints = new List<ClientDiscoveryEndpoint>(cnt);
                         
                         for (var j = 0; j < cnt; j++)
                         {
-                            endpoints.Add(ctx.Reader.ReadString());
+                            var addr = ctx.Reader.ReadString();
+                            var host = ctx.Reader.ReadString();
+                            var port = s.ReadInt();
+
+                            endpoints.Add(new ClientDiscoveryEndpoint(addr, host, port));
                         }
                         
                         addedNodes.Add(new ClientDiscoveryNode(id, endpoints));

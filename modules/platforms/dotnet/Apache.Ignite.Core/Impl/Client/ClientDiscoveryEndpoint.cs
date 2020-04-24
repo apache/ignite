@@ -17,47 +17,52 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-
     /// <summary>
-    /// Represents a discovered node.
+    /// Server endpoint retrieved with client discovery. 
     /// </summary>
-    internal class ClientDiscoveryNode
+    internal class ClientDiscoveryEndpoint
     {
         /** */
-        private readonly Guid _id;
+        private readonly string _address;
         
         /** */
-        private readonly IList<ClientDiscoveryEndpoint> _endpoints;
+        private readonly string _host;
+
+        /** */
+        private readonly int _port;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="ClientDiscoveryNode"/>.
+        /// Initializes a new instance of <see cref="ClientDiscoveryEndpoint"/>.
         /// </summary>
-        public ClientDiscoveryNode(Guid id, IList<ClientDiscoveryEndpoint> endpoints)
+        public ClientDiscoveryEndpoint(string address, string host, int port)
         {
-            Debug.Assert(endpoints != null);
-            Debug.Assert(endpoints.Count > 0);
-            
-            _id = id;
-            _endpoints = endpoints;
+            _address = address;
+            _host = host;
+            _port = port;
         }
 
         /// <summary>
-        /// Gets the id.
+        /// Gets the address.
         /// </summary>
-        public Guid Id
+        public string Address
         {
-            get { return _id; }
+            get { return _address; }
         }
 
         /// <summary>
-        /// Gets the endpoints.
+        /// Gets the host.
         /// </summary>
-        public IList<ClientDiscoveryEndpoint> Endpoints
+        public string Host
         {
-            get { return _endpoints; }
+            get { return _host; }
+        }
+
+        /// <summary>
+        /// Gets the port.
+        /// </summary>
+        public int Port
+        {
+            get { return _port; }
         }
     }
 }
