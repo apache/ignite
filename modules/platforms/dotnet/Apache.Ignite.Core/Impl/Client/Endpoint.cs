@@ -32,9 +32,6 @@ namespace Apache.Ignite.Core.Impl.Client
         private const char HostSeparator = ':';
 
         /** */
-        private static readonly string[] HostSeparators = {HostSeparator.ToString()};
-
-        /** */
         private static readonly string[] PortsSeparators = {".."};
 
         /// <summary>
