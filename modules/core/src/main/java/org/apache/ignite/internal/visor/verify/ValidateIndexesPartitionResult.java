@@ -35,6 +35,9 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Max issues per result. */
+    private static final int MAX_ISSUES = 10;
+
     /** Update counter. */
     private long updateCntr;
 
@@ -50,7 +53,7 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
 
     /** Issues. */
     @GridToStringExclude
-    private List<IndexValidationIssue> issues = new ArrayList<>(10);
+    private List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
 
     /** Sql index name. */
     @GridToStringExclude
@@ -126,7 +129,7 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
      * @return True if there are already enough issues.
      */
     public boolean reportIssue(IndexValidationIssue t) {
-        if (issues.size() >= 10)
+        if (issues.size() == MAX_ISSUES)
             return true;
 
         issues.add(t);
