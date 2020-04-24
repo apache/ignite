@@ -29,11 +29,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     {
         /** Flag indicating whether IgniteConfiguration.Localhost should be set. */
         private readonly bool _noLocalhost;
-        
+
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
-        public ClientClusterDiscoveryTests(bool noLocalhost = false) : base(3)
+        public ClientClusterDiscoveryTests() : this(false)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
+        /// </summary>
+        public ClientClusterDiscoveryTests(bool noLocalhost) : base(3)
         {
             _noLocalhost = noLocalhost;
         }
