@@ -636,6 +636,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 discoveryNodes.Remove(removedNode);
             }
 
+            // TODO: Make this method thread-safe. Another thread can be updating _discoveryNodes.
             _discoveryNodes = discoveryNodes;
         }
 
