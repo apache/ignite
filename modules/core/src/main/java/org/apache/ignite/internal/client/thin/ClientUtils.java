@@ -497,7 +497,7 @@ final class ClientUtils {
                             ));
                     }
                 ).toArray(new QueryEntity[0]))
-                .setExpiryPolicy(!protocolCtx.isFeatureSupported(EXPIRY_POLICY)?
+                .setExpiryPolicy(!protocolCtx.isFeatureSupported(EXPIRY_POLICY) ?
                         null : reader.readBoolean() ?
                         new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong()) : null
                 );
