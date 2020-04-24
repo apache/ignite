@@ -27,12 +27,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     /// </summary>
     public class ClientClusterDiscoveryTests : ClientTestBase
     {
+        /** Flag indicating whether IgniteConfiguration.Localhost should be set. */
+        private readonly bool _noLocalhost;
+        
         /// <summary>
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
-        public ClientClusterDiscoveryTests() : base(3)
+        public ClientClusterDiscoveryTests(bool noLocalhost = false) : base(3)
         {
-            // No-op.
+            _noLocalhost = noLocalhost;
         }
 
         /// <summary>
@@ -78,6 +81,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             }
         }
 
+        /// <summary>
+        /// Tests that SSL + Discovery combination works.
+        /// </summary>
+        [Test]
+        public void TestClientDiscoversAllServersWithSsl()
+        {
+            Assert.Fail("TODO");
+        }
+
         /** <inheritdoc /> */
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
@@ -85,6 +97,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 EnableDiscovery = true,
                 EnablePartitionAwareness = true
+            };
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                Localhost = _noLocalhost ? null : "127.0.0.1"
             };
         }
     }
