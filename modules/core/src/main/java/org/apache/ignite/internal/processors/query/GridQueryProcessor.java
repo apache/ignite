@@ -58,7 +58,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -120,7 +119,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -364,7 +362,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         // We should send inline index sizes information only to server nodes, but we can't distinguish easily daemon
         // node from server node.
-        if (!dataBag.isJoiningNodeClient() && nodeSupportedCheckIndexInlineSize(dataBag.joiningNodeId())) {
+        if (!dataBag.isJoiningNodeClient()) {
             HashMap<String, Serializable> nodeSpecificMap = new HashMap<>();
 
             Serializable oldVal = nodeSpecificMap.put(INLINE_SIZES_DISCO_BAG_KEY, collectSecondaryIndexesInlineSize());
@@ -440,18 +438,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public Map<String, Integer> secondaryIndexesInlineSize() {
         return idx != null ? idx.secondaryIndexesInlineSize() : Collections.emptyMap();
-    }
-
-    /**
-     * Checks that node with {@code nodeId} is supported {@link IgniteFeatures#CHECK_INDEX_INLINE_SIZES}.
-     *
-     * @param nodeId Node id.
-     * @return {@code true} if node with {@code nodeId} supports feature, {@code false} otherwise.
-     */
-    private boolean nodeSupportedCheckIndexInlineSize(UUID nodeId) {
-        IgnitePredicate<ClusterNode> nodeFilter = n -> nodeId.equals(n.id());
-
-        return IgniteFeatures.allNodesSupport(ctx, CHECK_INDEX_INLINE_SIZES, nodeFilter);
     }
 
     /**

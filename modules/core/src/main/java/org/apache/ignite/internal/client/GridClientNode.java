@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteFeatures;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -144,12 +143,4 @@ public interface GridClientNode {
      * @see IgniteConfiguration#isDaemon()
      */
     public boolean isDaemon();
-
-    /**
-     * Checks that feature supported by node.
-     *
-     * @param feature Feature to check.
-     * @return {@code True} if feature is declared to be supported by node.
-     */
-    public boolean supports(IgniteFeatures feature);
 }

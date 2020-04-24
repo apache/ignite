@@ -133,10 +133,6 @@ public class ClientTcpUnreachableMultiNodeSelfTest extends ClientTcpMultiNodeSel
                 @Override public boolean isDaemon() {
                     return node.isDaemon();
                 }
-
-                @Override public boolean supports(IgniteFeatures feature) {
-                    return node.supports(feature);
-                }
             };
         }
 

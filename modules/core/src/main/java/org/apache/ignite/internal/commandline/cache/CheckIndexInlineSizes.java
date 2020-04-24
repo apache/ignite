@@ -38,7 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.IgniteFeatures.CHECK_INDEX_INLINE_SIZES;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 
@@ -46,10 +45,6 @@ import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCa
  * Command for check secondary indexes inline size on the different nodes.
  */
 public class CheckIndexInlineSizes implements Command<Void> {
-    /** Warn message format. */
-    public static final String NOT_ALL_NODES_SUPPORT_FEATURE_WARN_MSG_FMT =
-        "Indexes inline size have been checked on limited nodes. Skipped nodes: %s";
-
     /** Success message. */
     public static final String INDEXES_INLINE_SIZE_ARE_THE_SAME =
         "All secondary indexes have the same effective inline size on all cluster nodes.";
@@ -64,23 +59,14 @@ public class CheckIndexInlineSizes implements Command<Void> {
                 .filter(SRV_NODES)
                 .collect(toSet());
 
-            Set<GridClientNode> supportedServerNodes = serverNodes.stream()
-                .filter(n -> n.supports(CHECK_INDEX_INLINE_SIZES))
-                .collect(toSet());
-
             Collection<UUID> serverNodeIds = F.transform(serverNodes, GridClientNode::nodeId);
-            Collection<UUID> supportedServerNodeIds = F.transform(supportedServerNodes, GridClientNode::nodeId);
 
-            CheckIndexInlineSizesResult res = client.compute().projection(supportedServerNodes).execute(
+            CheckIndexInlineSizesResult res = client.compute().projection(serverNodes).execute(
                 CheckIndexInlineSizesTask.class.getName(),
-                new VisorTaskArgument<>(supportedServerNodeIds, false)
+                new VisorTaskArgument<>(serverNodeIds, false)
             );
 
-            Set<UUID> unsupportedNodes = serverNodeIds.stream()
-                .filter(n -> !supportedServerNodeIds.contains(n))
-                .collect(toSet());
-
-            analyzeResults(log, unsupportedNodes, res);
+            analyzeResults(log, res);
         }
 
         return null;
@@ -90,17 +76,12 @@ public class CheckIndexInlineSizes implements Command<Void> {
      * Compares inline sizes from nodes and print to log information about "problem" indexes.
      *
      * @param log Logger
-     * @param unsupportedNodes Skipped nodes.
      * @param res Indexes inline size.
      */
     private void analyzeResults(
         Logger log,
-        Set<UUID> unsupportedNodes,
         CheckIndexInlineSizesResult res
     ) {
-        if (!F.isEmpty(unsupportedNodes))
-            log.info(String.format(NOT_ALL_NODES_SUPPORT_FEATURE_WARN_MSG_FMT, unsupportedNodes));
-
         Map<String, Map<Integer, Set<UUID>>> indexToSizeNode = new HashMap<>();
 
         for (Map.Entry<UUID, Map<String, Integer>> nodeRes : res.inlineSizes().entrySet()) {

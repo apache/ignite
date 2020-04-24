@@ -247,11 +247,6 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean supports(IgniteFeatures feature) {
-        return IgniteFeatures.nodeSupports(attribute(ATTR_IGNITE_FEATURES), feature);
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         return nodeId.hashCode();
     }
