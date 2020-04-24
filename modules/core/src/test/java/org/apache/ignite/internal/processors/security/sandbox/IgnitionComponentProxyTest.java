@@ -35,16 +35,15 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * return a component proxy.
  */
 public class IgnitionComponentProxyTest extends AbstractSandboxTest {
+    /** Server node name. */
+    private static final String SRV = "sandbox.IgnitionComponentProxyTest";
     /** Client node name. */
     private static final String CLNT = "clnt";
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid(SRV, ALLOW_ALL, false);
-
+        startGrid(SRV, ALLOW_ALL, false);
         startGrid(CLNT, ALLOW_ALL, true);
-
-        srv.cluster().active(true);
     }
 
     /**
@@ -144,7 +143,7 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
         Ignite srv = grid(SRV);
 
         Ignite clnt = grid(CLNT);
-
+        //Checks that inside the sandbox we should get a proxied instance of Ignite.
         clnt.compute(clnt.cluster().forNodeId(srv.cluster().localNode().id()))
             .broadcast(() -> {
                 Collection<Ignite> nodes = s.get();
@@ -154,5 +153,12 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
                     assertFalse(node instanceof IgniteEx);
                 }
             });
+        //If we run outside of the sandbox, we should get an instance of IgniteEx.
+        Collection<Ignite> nodes = s.get();
+
+        for (Ignite node : nodes) {
+            assertFalse(Proxy.isProxyClass(node.getClass()));
+            assertTrue(node instanceof IgniteEx);
+        }
     }
 }

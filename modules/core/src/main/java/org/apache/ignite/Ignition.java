@@ -19,6 +19,9 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,10 +30,10 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
@@ -501,8 +504,8 @@ public class Ignition {
 
         Ignite ignite = res.get(0);
 
-        if (ignite instanceof IgniteEx && ((IgniteEx)ignite).context().security().sandbox().enabled())
-            return res.stream().map(Ignition::sandboxIgniteProxy).collect(Collectors.toList());
+        if (ignite instanceof IgniteEx && insideSandbox())
+            return res.stream().map((i) -> sandboxIgniteProxy(i, false)).collect(Collectors.toList());
 
         return res;
     }
@@ -560,14 +563,32 @@ public class Ignition {
      * @return Ignite component proxy if the Ignite Sandbox is enabled.
      */
     private static Ignite sandboxIgniteProxy(Ignite ignite) {
-        if (ignite instanceof IgniteEx) {
-            GridKernalContext ctx = ((IgniteEx)ignite).context();
+        return sandboxIgniteProxy(ignite, true);
+    }
 
-            if (ctx.security().sandbox().enabled())
-                return SandboxIgniteComponentProxy.proxy(Ignite.class, ignite);
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy if the Ignite Sandbox is enabled.
+     */
+    private static Ignite sandboxIgniteProxy(Ignite ignite, boolean doInsideSandboxCheck) {
+        if (ignite instanceof IgniteEx && (!doInsideSandboxCheck || insideSandbox())) {
+            return AccessController.doPrivileged((PrivilegedAction<Ignite>)
+                () -> SandboxIgniteComponentProxy.proxy(Ignite.class, ignite)
+            );
         }
 
         return ignite;
+    }
+
+    /**
+     * @return True if current thread runs inside the Ignite Sandbox.
+     */
+    private static boolean insideSandbox() {
+        final AccessControlContext ctx = AccessController.getContext();
+
+        return AccessController.doPrivileged((PrivilegedAction<Boolean>)
+            () -> ctx.getDomainCombiner() instanceof IgniteDomainCombiner
+        );
     }
 
     /**
