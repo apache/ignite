@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * Compute job to retrieve remote node endpoints.
+ * Compute job to retrieve remote node client endpoints.
  */
 public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<ClientClusterGroupGetNodeEndpointsJobResult> {
     /** */
@@ -45,8 +45,10 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Cli
     @Override public ClientClusterGroupGetNodeEndpointsJobResult call() throws Exception {
         int port = ((IgniteEx)ignite).context().sqlListener().port();
 
+        InetAddress locAddr = IgniteUtils.resolveLocalHost(ignite.configuration().getLocalHost());
+
         IgniteBiTuple<Collection<String>, Collection<String>> locAddrsAndHosts =
-                IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"), true);
+                IgniteUtils.resolveLocalAddresses(locAddr, true);
 
         Collection<NodeEndpoint> endpoints = new ArrayList<>(locAddrsAndHosts.get1().size());
 
@@ -55,10 +57,6 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Cli
 
         while (ipIt.hasNext() && hostIt.hasNext()) {
             String ip = ipIt.next();
-
-            // TODO: We should return addresses that match IgniteConfiguration.localHost?
-            if (InetAddress.getByName(ip).isLoopbackAddress())
-                continue;
 
             String hostName = hostIt.next();
 
