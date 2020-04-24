@@ -27,11 +27,12 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Compute job to retrieve remote node endpoints.
  */
-public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Collection<String>> {
+public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<ClientClusterGroupGetNodeEndpointsJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,21 +41,28 @@ public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<Col
     private Ignite ignite;
 
     /** <inheritdoc /> */
-    @Override public Collection<String> call() throws Exception {
+    @Override public ClientClusterGroupGetNodeEndpointsJobResult call() throws Exception {
         int port = ((IgniteEx)ignite).context().sqlListener().port();
 
-        // TODO: Exclude loopbacks
         IgniteBiTuple<Collection<String>, Collection<String>> locAddrsAndHosts =
                 IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"), true);
 
-        Collection<String> addrs = locAddrsAndHosts.get1();
-        Collection<String> res = new ArrayList<>(addrs.size());
+        Collection<NodeEndpoint> endpoints = new ArrayList<>(locAddrsAndHosts.get1().size());
 
-        // Port is always included, so there is no problem with IPv6.
-        // TODO: do not use string concat, pass port as a number.
-        for (String addr : addrs)
-            res.add(addr + ":" + port);
+        Iterator<String> ipIt = locAddrsAndHosts.get1().iterator();
+        Iterator<String> hostIt = locAddrsAndHosts.get2().iterator();
 
-        return res;
+        while (ipIt.hasNext() && hostIt.hasNext()) {
+            String ip = ipIt.next();
+
+            if (InetAddress.getByName(ip).isLoopbackAddress())
+                continue;
+
+            String hostName = hostIt.next();
+
+            endpoints.add(new NodeEndpoint(ip, hostName, port));
+        }
+
+        return new ClientClusterGroupGetNodeEndpointsJobResult(endpoints);
     }
 }

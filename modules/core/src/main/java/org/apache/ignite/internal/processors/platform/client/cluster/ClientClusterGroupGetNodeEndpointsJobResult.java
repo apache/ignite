@@ -18,9 +18,33 @@
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import java.io.Serializable;
+import java.util.Collection;
 
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ClientClusterGroupGetNodeEndpointsJobResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private final Collection<NodeEndpoint> endpoints;
+
+    /**
+     * Constructor.
+     *
+     * @param endpoints Endpoints.
+     */
+    public ClientClusterGroupGetNodeEndpointsJobResult(Collection<NodeEndpoint> endpoints) {
+        assert endpoints != null;
+
+        this.endpoints = endpoints;
+    }
+
+    /**
+     * Gets the endpoints.
+     *
+     * @return Endpoints.
+     */
+    public Collection<NodeEndpoint> getEndpoints() {
+        return endpoints;
+    }
 }
