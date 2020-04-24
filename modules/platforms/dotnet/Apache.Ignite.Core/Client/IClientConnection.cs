@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Client
 {
+    using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Net;
 
@@ -40,6 +41,9 @@ namespace Apache.Ignite.Core.Client
             Justification = "Consistency with EndPoint class name.")]
         EndPoint LocalEndPoint { get; }
         
-        // TODO: Should we include node ID here?
+        /// <summary>
+        /// Gets the server node id.
+        /// </summary>
+        Guid NodeId { get; }
     }
 }

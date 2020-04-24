@@ -41,12 +41,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestClientWithOneEndpointDiscoversAllServers()
         {
-            var cfg = new IgniteClientConfiguration(GetClientConfiguration())
-            {
-                EnableDiscovery = true
-            };
-
-            using (var client = Ignition.StartClient(cfg))
+            using (var client = GetClient())
             {
                 Assert.IsTrue(client.GetConfiguration().EnableDiscovery);
                 
@@ -60,7 +55,32 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         [Test]
         public void TestClientDiscoversNewServers()
         {
-            Assert.Fail("TODO");
+            using (var client = GetClient())
+            {
+                Assert.AreEqual(3, client.GetConnections().Count());
+
+                var cfg = GetIgniteConfiguration();
+                cfg.AutoGenerateIgniteInstanceName = true;
+
+                using (Ignition.Start(cfg))
+                {
+                    // Perform any operation to cause topology update.
+                    client.GetCacheNames();
+                    
+                    Assert.AreEqual(4, client.GetConnections().Count());
+                }
+                    
+                Assert.AreEqual(3, client.GetConnections().Count());
+            }
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration(base.GetClientConfiguration())
+            {
+                EnableDiscovery = true
+            };
         }
     }
 }

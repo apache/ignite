@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client
 {
+    using System;
     using System.Net;
     using Apache.Ignite.Core.Client;
 
@@ -31,13 +32,17 @@ namespace Apache.Ignite.Core.Impl.Client
         /** */
         private readonly EndPoint _remoteEndPoint;
 
+        /** */
+        private readonly Guid _nodeId;
+
         /// <summary>
         /// Initializes a new instance of <see cref="ClientConnection"/>.
         /// </summary>
-        public ClientConnection(EndPoint localEndPoint, EndPoint remoteEndPoint)
+        public ClientConnection(EndPoint localEndPoint, EndPoint remoteEndPoint, Guid nodeId)
         {
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
+            _nodeId = nodeId;
         }
 
         /** <inheritdoc /> */
@@ -50,6 +55,12 @@ namespace Apache.Ignite.Core.Impl.Client
         public EndPoint LocalEndPoint
         {
             get { return _localEndPoint; }
+        }
+
+        /** <inheritdoc /> */
+        public Guid NodeId
+        {
+            get { return _nodeId; }
         }
     }
 }

@@ -206,7 +206,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 
                 if (socket != null && !socket.IsDisposed)
                 {
-                    yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint);
+                    yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint, 
+                        socket.ServerNodeId.GetValueOrDefault());
                 }
             }
         }
