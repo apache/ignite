@@ -810,6 +810,50 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotWithOfflineBlt() throws Exception {
+        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        stopGrid(2);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
+            .get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
+
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+        assertPartitionsSame(idleVerify(snp, dfltCacheCfg.getName()));
+    }
+
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotWithSharedCacheGroup() throws Exception {
+        CacheConfiguration<Integer, Integer> ccfg1 = txCacheConfig(new CacheConfiguration<>("tx1"));
+        CacheConfiguration<Integer, Integer> ccfg2 = txCacheConfig(new CacheConfiguration<>("tx2"));
+
+        ccfg1.setGroupName("group");
+        ccfg2.setGroupName("group");
+
+        IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, Integer::new, ccfg1, ccfg2);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
+
+        assertSnapshotCacheKeys(snp.cache(ccfg1.getName()));
+        assertSnapshotCacheKeys(snp.cache(ccfg2.getName()));
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.
