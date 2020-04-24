@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -62,8 +61,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile Dictionary<Guid, ClientSocket> _nodeSocketMap = new Dictionary<Guid, ClientSocket>();
 
         /** Discovered nodes map. Represents current topology. */
-        private volatile Dictionary<Guid, ClientDiscoveryNode> _discoveryNodes 
-            = new Dictionary<Guid, ClientDiscoveryNode>();
+        private volatile Dictionary<Guid, ClientDiscoveryNode> _discoveryNodes;
 
         /** Main socket lock. */
         private readonly object _socketLock = new object();
@@ -334,6 +332,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
+                    // TODO: Update socket map
                     _socket = Connect(endPoint);
 
                     break;
@@ -391,7 +390,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private ClientSocket Connect(SocketEndpoint endPoint)
         {
-            // TODO: Update socket map
             var socket = new ClientSocket(_config, endPoint.EndPoint, endPoint.Host,
                 _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
 
@@ -595,30 +593,84 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private void InitSocketMap()
         {
-            var map = new Dictionary<Guid, ClientSocket>();
+            var map = new Dictionary<Guid, ClientSocket>(_nodeSocketMap);
 
-            // TODO: Make sure we don't connect to the same node twice.
-            foreach (var endPoint in _endPoints)
+            if (_discoveryNodes != null)
             {
-                if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
+                // Discovery enabled: make sure we have connection to all nodes in the cluster.
+                foreach (var node in _discoveryNodes.Values)
                 {
-                    try
-                    {
-                        Connect(endPoint);
-                    }
-                    catch (SocketException)
+                    ClientSocket socket;
+                    if (map.TryGetValue(node.Id, out socket) && !socket.IsDisposed)
                     {
                         continue;
                     }
-                }
 
-                var nodeId = endPoint.Socket.ServerNodeId;
-                if (nodeId != null)
-                {
-                    map[nodeId.Value] = endPoint.Socket;
+                    foreach (var discoEndpoint in node.Endpoints)
+                    {
+                        try
+                        {
+                            var ipEndpoint = new IPEndPoint(IPAddress.Parse(discoEndpoint.Address), discoEndpoint.Port);
+                        
+                            socket = new ClientSocket(_config, ipEndpoint, discoEndpoint.Host,
+                                _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+                            
+                            if (socket.ServerNodeId != node.Id)
+                            {
+                                _logger.Debug(
+                                    "Autodiscovery connection succeeded, but node id does not match: {0}, {1}, {2}. " +
+                                    "Expected node id: {3}. Actual node id: {4}. Connection dropped.",
+                                    discoEndpoint.Address, discoEndpoint.Host, discoEndpoint.Port, 
+                                    node.Id, socket.ServerNodeId);
+                                
+                                socket.Dispose();
+                                
+                                continue;
+                            }
+
+                            map[node.Id] = socket;
+                        }
+                        catch (SocketException socketEx)
+                        {
+                            // Ignore: failure to connect is expected.
+                            _logger.Debug(socketEx, "Autodiscovery connection failed: {0}, {1}, {2}", 
+                                discoEndpoint.Address, discoEndpoint.Host, discoEndpoint.Port);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Debug(ex, "Autodiscovery connection failed: {0}, {1}, {2}", 
+                                discoEndpoint.Address, discoEndpoint.Host, discoEndpoint.Port);
+                        }                    
+                    }
                 }
             }
+            else
+            {
+                // Discovery disabled: fall back to endpoints from config.
+                // TODO: Make sure we don't connect to the same node twice.
+                // TODO: Dispose of removed sockets.
+                foreach (var endPoint in _endPoints)
+                {
+                    if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
+                    {
+                        try
+                        {
+                            Connect(endPoint);
+                        }
+                        catch (SocketException)
+                        {
+                            continue;
+                        }
+                    }
 
+                    var nodeId = endPoint.Socket.ServerNodeId;
+                    if (nodeId != null)
+                    {
+                        map[nodeId.Value] = endPoint.Socket;
+                    }
+                }
+            }
+            
             _nodeSocketMap = map;
         }
         
@@ -640,7 +692,9 @@ namespace Apache.Ignite.Core.Impl.Client
             // TODO: perform async request?
             // TODO: Avoid creating intermediate lists, update dictionary directly.
             var res = GetServerEndpoints(startTopVer, endTopVer);
-            var discoveryNodes = new Dictionary<Guid, ClientDiscoveryNode>(_discoveryNodes);
+            var discoveryNodes = _discoveryNodes == null
+                ? new Dictionary<Guid, ClientDiscoveryNode>()
+                : new Dictionary<Guid, ClientDiscoveryNode>(_discoveryNodes);
             
             foreach (var addedNode in res.JoinedNodes)
             {
