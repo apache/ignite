@@ -206,14 +206,30 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         public IEnumerable<IClientConnection> GetConnections()
         {
-            foreach (var socketEndpoint in _endPoints)
+            var map = _nodeSocketMap;
+            
+            if (map != null)
             {
-                var socket = socketEndpoint.Socket;
-                
-                if (socket != null && !socket.IsDisposed)
+                foreach (var socket in map.Values)
                 {
-                    yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint, 
-                        socket.ServerNodeId.GetValueOrDefault());
+                    if (!socket.IsDisposed)
+                    {
+                        yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint, 
+                            socket.ServerNodeId.GetValueOrDefault());
+                    }
+                }
+            }
+            else
+            {
+                foreach (var socketEndpoint in _endPoints)
+                {
+                    var socket = socketEndpoint.Socket;
+                
+                    if (socket != null && !socket.IsDisposed)
+                    {
+                        yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint, 
+                            socket.ServerNodeId.GetValueOrDefault());
+                    }
                 }
             }
         }
@@ -643,6 +659,8 @@ namespace Apache.Ignite.Core.Impl.Client
                         }                    
                     }
                 }
+                
+                // TODO: Dispose or removed sockets - iterate map where node not in discovery.
             }
             else
             {
