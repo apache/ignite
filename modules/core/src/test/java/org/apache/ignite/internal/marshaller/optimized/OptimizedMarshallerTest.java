@@ -217,11 +217,11 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
 
         newObj.setFlagValue(false);
 
-        assert(! newObj.flag);
+        assert !newObj.flag;
 
         SomeSimpleSerializable outObj = marsh.unmarshal(marsh.marshal(newObj), null);
 
-        assert (! outObj.flag);
+        assert !outObj.flag;
     }
 
     /**
