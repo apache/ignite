@@ -3168,7 +3168,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 syncMeta = (TransmissionMeta)in.readObject();
             }
             catch (ClassNotFoundException e) {
-                throw new IgniteException (e);
+                throw new IgniteException(e);
             }
 
             return syncMeta;
