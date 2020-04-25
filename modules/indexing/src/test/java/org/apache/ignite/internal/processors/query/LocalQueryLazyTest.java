@@ -199,7 +199,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return sql(grid(), sql, args);
     }
 
@@ -209,7 +209,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLocal(true)
             .setLazy(true)
@@ -223,7 +223,7 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sqlDistrubuted(IgniteEx ign, String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sqlDistrubuted(IgniteEx ign, String sql, Object... args) {
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLazy(true)
             .setSchema("TEST")

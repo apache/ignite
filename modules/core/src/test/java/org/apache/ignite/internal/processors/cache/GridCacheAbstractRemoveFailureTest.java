@@ -317,7 +317,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         IgniteInternalFuture killFut = createAndRunConcurrentAction(stop, cmp);
 
         try {
-            long stopTime = duration + U.currentTimeMillis() ;
+            long stopTime = duration + U.currentTimeMillis();
 
             long nextAssert = U.currentTimeMillis() + ASSERT_FREQ;
 

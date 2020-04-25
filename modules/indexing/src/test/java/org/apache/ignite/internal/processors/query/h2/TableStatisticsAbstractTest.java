@@ -76,7 +76,7 @@ public abstract class TableStatisticsAbstractTest extends GridCommonAbstractTest
      *
      * Actual scan row count is obtained from the EXPLAIN ANALYZE command result.
      */
-    private void ensureOptimalPlanChosen(Ignite grid, String sql, String ... tbls) {
+    private void ensureOptimalPlanChosen(Ignite grid, String sql, String... tbls) {
         int cntNoStats = runLocalExplainAnalyze(grid, true, sql);
 
         int cntStats = runLocalExplainAnalyze(grid, false, sql);
@@ -144,7 +144,7 @@ public abstract class TableStatisticsAbstractTest extends GridCommonAbstractTest
      * @param tbls Actual table names.
      * @return Sql with place holders replaced by the actual names.
      */
-    private static String replaceTablePlaceholders(String sql, String ... tbls) {
+    private static String replaceTablePlaceholders(String sql, String... tbls) {
         assert !sql.contains("t0");
 
         int i = 0;

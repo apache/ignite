@@ -1594,7 +1594,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (slowTxWarnTimeout > 0 && tx.local() &&
                 U.currentTimeMillis() - tx.startTime() > slowTxWarnTimeout)
                 U.warn(log, "Slow transaction detected [tx=" + tx +
-                    ", slowTxWarnTimeout=" + slowTxWarnTimeout + ']') ;
+                    ", slowTxWarnTimeout=" + slowTxWarnTimeout + ']');
 
             if (log.isDebugEnabled())
                 log.debug("Committed from TM [locNodeId=" + cctx.localNodeId() + ", tx=" + tx + ']');

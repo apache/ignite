@@ -247,7 +247,7 @@ public class IgfsDataManager extends IgfsManager {
 
         long size = plc != null ? plc.config().getMaxSize() : 0;
 
-        return (size <= 0) ? 0 : size ;
+        return (size <= 0) ? 0 : size;
     }
 
     /**

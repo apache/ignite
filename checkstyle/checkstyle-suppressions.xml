@@ -24,4 +24,6 @@
     <suppress checks="EmptyLineSeparator" files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
 
     <suppress checks="EmptyLineSeparator" files="XGBoostModelLexer\.java|XGBoostModelParser\.java"/>
+
+    <suppress checks="NoWhitespaceBefore" files="ConcurrentLinkedHashMap\.java"/>
 </suppressions>

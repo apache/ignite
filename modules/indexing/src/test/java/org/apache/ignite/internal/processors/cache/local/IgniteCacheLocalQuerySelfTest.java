@@ -54,7 +54,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
     public void testQueryLocal() throws Exception {
         // Let's do it twice to see how prepared statement caching behaves - without recompilation
         // check for cached prepared statements this would fail.
-        for (int i = 0; i < 2; i ++) {
+        for (int i = 0; i < 2; i++) {
             IgniteCache<Integer, String> cache = jcache(Integer.class, String.class);
 
             cache.put(1, "value1");

@@ -58,5 +58,18 @@
 
         <!-- @Override annotations on the same line with a method declaration check. -->
         <module name="org.apache.ignite.tools.checkstyle.OverrideAnnotationOnTheSameLineCheck"/>
+
+        <!--
+            Checks that there is no whitespace before a token.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#NoWhitespaceBefore
+        -->
+        <module name="NoWhitespaceBefore">
+            <property name="tokens" value="COMMA, SEMI, POST_INC, POST_DEC, ELLIPSIS, METHOD_REF, GENERIC_END"/>
+        </module>
+
+        <module name="NoWhitespaceBefore">
+            <property name="allowLineBreaks" value="true"/>
+            <property name="tokens" value="DOT"/>
+        </module>
     </module>
 </module>

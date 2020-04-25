@@ -175,7 +175,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     else if (CassandraHelper.isHostsAvailabilityError(e))
                         handleHostsAvailabilityError(ses == null ? -1 : ses.generation, e, attempt, errorMsg);
                     else if (CassandraHelper.isPreparedStatementClusterError(e))
-                        handlePreparedStatementClusterError(preparedSt == null ? -1 : preparedSt.generation , e);
+                        handlePreparedStatementClusterError(preparedSt == null ? -1 : preparedSt.generation, e);
                     else
                         // For an error which we don't know how to handle, we will not try next attempts and terminate.
                         throw new IgniteException(errorMsg, e);
@@ -822,7 +822,7 @@ public class CassandraSessionImpl implements CassandraSession {
             }
             catch (Throwable e) {
                 if (CassandraHelper.isHostsAvailabilityError(e))
-                    handleHostsAvailabilityError(ses == null ? 0 : ses.generation , e, attempt, errorMsg);
+                    handleHostsAvailabilityError(ses == null ? 0 : ses.generation, e, attempt, errorMsg);
                 else if (CassandraHelper.isTableAbsenceError(e))
                     createTable(table, settings);
                 else

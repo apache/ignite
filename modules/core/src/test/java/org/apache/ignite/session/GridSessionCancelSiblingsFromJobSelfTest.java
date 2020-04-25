@@ -173,7 +173,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
         startSignal = new CountDownLatch[EXEC_COUNT];
         stopSignal = new CountDownLatch[EXEC_COUNT];
 
-        for(int i=0 ; i < EXEC_COUNT; i++){
+        for(int i=0; i < EXEC_COUNT; i++){
             interruptCnt[i] = new AtomicInteger(0);
 
             startSignal[i] = new CountDownLatch(SPLIT_COUNT);

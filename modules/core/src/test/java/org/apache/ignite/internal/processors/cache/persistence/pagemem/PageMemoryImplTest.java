@@ -407,8 +407,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 assertTrue("Should oom before check replaced page.", oom);
 
                 assertTrue("Missing page: " + fullPageId, memory.hasLoadedPage(fullPageId));
-            }
-            , null);
+            }, null);
     }
 
     /**

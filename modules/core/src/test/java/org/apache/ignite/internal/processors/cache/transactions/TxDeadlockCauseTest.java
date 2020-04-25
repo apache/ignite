@@ -157,7 +157,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);
         final List<Integer> keys = new ArrayList<>(keysCnt);
 
-        for (int i = 0; i < keysCnt; i ++) {
+        for (int i = 0; i < keysCnt; i++) {
             keys.add(i);
             cache.put(i, new Account(i, i * 100));
         }
