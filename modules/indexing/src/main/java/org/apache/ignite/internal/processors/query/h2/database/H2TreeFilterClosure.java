@@ -60,7 +60,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<H2Row, H2Row>,
      */
     public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccSnapshot mvccSnapshot, GridCacheContext cctx,
         IgniteLogger log) {
-        assert (filter != null || mvccSnapshot != null) && cctx != null ;
+        assert (filter != null || mvccSnapshot != null) && cctx != null;
 
         this.filter = filter;
         this.mvccSnapshot = mvccSnapshot;

@@ -266,7 +266,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
 
             for (ClusterNode node : subgrid) {
                 if (!node.id().equals(ignite.configuration().getNodeId()))
-                    map.put(new GridP2PRemoteTestJob(null) , node);
+                    map.put(new GridP2PRemoteTestJob(null), node);
             }
 
             return map;

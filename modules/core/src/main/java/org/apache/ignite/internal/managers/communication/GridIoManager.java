@@ -1183,7 +1183,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process channel creation event due to exception " +
-                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']' , e);
+                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']', e);
         }
         finally {
             busyLock0.unlock();

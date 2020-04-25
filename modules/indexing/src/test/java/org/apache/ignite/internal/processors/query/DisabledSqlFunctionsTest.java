@@ -244,7 +244,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
 
     /**
      */
-    private void checkSqlWithDisabledFunction(final String sql, final Object ... args) {
+    private void checkSqlWithDisabledFunction(final String sql, final Object... args) {
         try {
             sql(sql, args).getAll();
 
@@ -267,7 +267,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         IgniteEx ign = client ? grid("cli") :grid("srv");
 
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)

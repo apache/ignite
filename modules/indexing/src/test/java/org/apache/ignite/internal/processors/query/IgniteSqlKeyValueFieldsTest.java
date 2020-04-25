@@ -514,13 +514,13 @@ public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private void checkInsert(IgniteCache<?, ?> cache, String qry, Object ... args) throws Exception {
+    private void checkInsert(IgniteCache<?, ?> cache, String qry, Object... args) throws Exception {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(qry).setArgs(args));
         assertEquals(1, ((Number) cursor.getAll().get(0).get(0)).intValue());
     }
 
     /** */
-    private void checkSelect(IgniteCache<?, ?> cache, String selectQry, Object ... expected) {
+    private void checkSelect(IgniteCache<?, ?> cache, String selectQry, Object... expected) {
         QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(selectQry));
 
         List<List<?>> results = cursor.getAll();

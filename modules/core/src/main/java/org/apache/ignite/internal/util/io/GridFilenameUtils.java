@@ -405,7 +405,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 int j;
-                for (j = i - 4 ; j >= prefix; j--) {
+                for (j = i - 4; j >= prefix; j--) {
                     if (array[j] == separator) {
                         // remove b/../ from a/b/../c
                         System.arraycopy(array, i + 1, array, j + 1, size - i);

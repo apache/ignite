@@ -307,7 +307,7 @@ class HadoopV2JobResourceManager {
             }
         }
         catch (Exception e) {
-            log.error("Failed to remove job staging directory [path=" + stagingDir + ", jobId=" + jobId + ']' , e);
+            log.error("Failed to remove job staging directory [path=" + stagingDir + ", jobId=" + jobId + ']', e);
         }
     }
 
