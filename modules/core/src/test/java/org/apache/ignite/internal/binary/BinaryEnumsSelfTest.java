@@ -475,7 +475,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void testEnumWrongBinaryConfig() throws Exception {
         this.register = true;
 
-        GridTestUtils.assertThrows(log, new Callable<Object>(){
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 startGrid(WRONG_CONF_NODE_NAME);
 
@@ -493,7 +493,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     public void testEnumValidation() throws Exception {
         startUp(false);
 
-        GridTestUtils.assertThrows(log, new Callable<Object>(){
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
 
             @Override public Object call() throws Exception {
 
@@ -520,7 +520,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
         node1.binary().registerEnum(enumName,
                 F.asMap(EnumType.ONE.name(), EnumType.ONE.ordinal()));
 
-        GridTestUtils.assertThrows(log, new Callable<Object>(){
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
 
             @Override public Object call() throws Exception {
 
@@ -531,7 +531,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             }
         }, BinaryObjectException.class, "Conflicting enum values. Name ");
 
-        GridTestUtils.assertThrows(log, new Callable<Object>(){
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
 
                 node2.binary().registerEnum(enumName,
