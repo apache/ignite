@@ -268,7 +268,6 @@ public enum GridRestCommand {
         this(key, r -> null, perm);
     }
 
-
     /**
      * @param key Key.
      * @param nameExtractor Name extractor.
