@@ -22,6 +22,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
 /**
  * Relational expression that imposes a particular distribution on its input
@@ -38,6 +39,11 @@ public class IgniteExchange extends Exchange implements IgniteRel {
      */
     public IgniteExchange(RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RelDistribution distribution) {
         super(cluster, traitSet, input, distribution);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return (IgniteDistribution)distribution;
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,7 @@ import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMetadata;
+import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.NodesMappingMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
@@ -39,49 +39,48 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
- * Implementation class for {@link RelMetadataQueryEx#getFragmentInfo(RelNode)} method call.
+ * Implementation class for {@link RelMetadataQueryEx#nodesMapping(RelNode)} method call.
  */
-public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
+public class IgniteMdNodesMapping implements MetadataHandler<NodesMappingMetadata> {
     /**
-     * Metadata provider, responsible for fragment meta information request. It uses this implementation class under the hood.
+     * Metadata provider, responsible for nodes mapping request. It uses this implementation class under the hood.
      */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(
-            IgniteMethod.FRAGMENT_INFO.method(), new IgniteMdFragmentInfo());
+            IgniteMethod.NODES_MAPPING.method(), new IgniteMdNodesMapping());
 
     /** {@inheritDoc} */
-    @Override public MetadataDef<FragmentMetadata> getDef() {
-        return FragmentMetadata.DEF;
+    @Override public MetadataDef<NodesMappingMetadata> getDef() {
+        return NodesMappingMetadata.DEF;
     }
 
     /**
-     * Requests meta information about a fragment with the given relation node at the head of the fragment, mainly it is data
-     * location and a list of nodes, capable to execute the fragment on.
+     * Requests meta information about nodes capable to execute a query over particular partitions.
      *
      * @param rel Relational node.
      * @param mq Metadata query instance. Used to request appropriate metadata from node children.
-     * @return Fragment meta information.
+     * @return Nodes mapping, representing a list of nodes capable to execute a query over particular partitions.
      */
-    public FragmentInfo fragmentInfo(RelNode rel, RelMetadataQuery mq) {
+    public NodesMapping nodesMapping(RelNode rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo fragmentInfo(RelSubset rel, RelMetadataQuery mq) {
+    public NodesMapping nodesMapping(RelSubset rel, RelMetadataQuery mq) {
         throw new AssertionError();
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo fragmentInfo(SingleRel rel, RelMetadataQuery mq) {
-        return _fragmentInfo(rel.getInput(), mq);
+    public NodesMapping nodesMapping(SingleRel rel, RelMetadataQuery mq) {
+        return _nodesMapping(rel.getInput(), mq);
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      *
      * {@link LocationMappingException} may be thrown on two children nodes locations merge. This means
      * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
@@ -89,20 +88,20 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
      * information will be recalculated for all fragments.
      */
-    public FragmentInfo fragmentInfo(BiRel rel, RelMetadataQuery mq) {
-        FragmentInfo left = _fragmentInfo(rel.getLeft(), mq);
-        FragmentInfo right = _fragmentInfo(rel.getRight(), mq);
+    public NodesMapping nodesMapping(BiRel rel, RelMetadataQuery mq) {
+        NodesMapping left = _nodesMapping(rel.getLeft(), mq);
+        NodesMapping right = _nodesMapping(rel.getRight(), mq);
 
         try {
-            return left.merge(right);
+            return merge(left, right);
         }
         catch (LocationMappingException e) {
             String msg = "Failed to calculate physical distribution";
 
             // a replicated cache is cheaper to redistribute
-            if (!left.mapping().hasPartitionedCaches())
+            if (!left.hasPartitionedCaches())
                 throw new OptimisticPlanningException(msg, rel.getLeft(), e);
-            else if (!right.mapping().hasPartitionedCaches())
+            else if (!right.hasPartitionedCaches())
                 throw new OptimisticPlanningException(msg, rel.getRight(), e);
             else {
                 // both sub-trees have partitioned sources, less cost is better
@@ -117,7 +116,7 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      *
      * {@link LocationMappingException} may be thrown on two children nodes locations merge. This means
      * that the fragment (which part the parent node is) cannot be executed on any node and additional exchange
@@ -125,14 +124,14 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * exchange. After the exchange is put into the fragment and the fragment is split into two ones, fragment meta
      * information will be recalculated for all fragments.
      */
-    public FragmentInfo fragmentInfo(SetOp rel, RelMetadataQuery mq) {
-        FragmentInfo res = new FragmentInfo();
+    public NodesMapping nodesMapping(SetOp rel, RelMetadataQuery mq) {
+        NodesMapping res = null;
 
         for (RelNode input : rel.getInputs()) {
-            FragmentInfo inputInfo = _fragmentInfo(input, mq);
+            NodesMapping inputMapping = _nodesMapping(input, mq);
 
             try {
-                res = res.merge(inputInfo);
+                res = merge(res, inputMapping);
             }
             catch (LocationMappingException e) {
                 throw new OptimisticPlanningException("Failed to calculate physical distribution", input, e);
@@ -143,33 +142,35 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      *
      * Prunes involved partitions (hence nodes, involved in query execution) if possible.
      */
-    public FragmentInfo fragmentInfo(IgniteFilter rel, RelMetadataQuery mq) {
-        return _fragmentInfo(rel.getInput(), mq).prune(rel);
+    public NodesMapping nodesMapping(IgniteFilter rel, RelMetadataQuery mq) {
+        NodesMapping mapping = _nodesMapping(rel.getInput(), mq);
+
+        return mapping == null ? null : mapping.prune(rel);
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo fragmentInfo(IgniteReceiver rel, RelMetadataQuery mq) {
-        return new FragmentInfo(rel.source());
+    public NodesMapping nodesMapping(IgniteReceiver rel, RelMetadataQuery mq) {
+        return null;
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo fragmentInfo(IgniteTableScan rel, RelMetadataQuery mq) {
-        return new FragmentInfo(rel.getTable().unwrap(DistributedTable.class).mapping(Commons.context(rel)));
+    public NodesMapping nodesMapping(IgniteTableScan rel, RelMetadataQuery mq) {
+        return rel.getTable().unwrap(DistributedTable.class).mapping(Commons.context(rel));
     }
 
     /**
-     * See {@link IgniteMdFragmentInfo#fragmentInfo(RelNode, RelMetadataQuery)}
+     * See {@link IgniteMdNodesMapping#nodesMapping(RelNode, RelMetadataQuery)}
      */
-    public FragmentInfo fragmentInfo(IgniteValues rel, RelMetadataQuery mq) {
-        return new FragmentInfo();
+    public NodesMapping nodesMapping(IgniteValues rel, RelMetadataQuery mq) {
+        return null;
     }
 
     /**
@@ -178,9 +179,20 @@ public class IgniteMdFragmentInfo implements MetadataHandler<FragmentMetadata> {
      * @param mq Metadata query instance.
      * @return Fragment meta information.
      */
-    public static FragmentInfo _fragmentInfo(RelNode rel, RelMetadataQuery mq) {
+    public static NodesMapping _nodesMapping(RelNode rel, RelMetadataQuery mq) {
         assert mq instanceof RelMetadataQueryEx;
 
-        return ((RelMetadataQueryEx) mq).getFragmentInfo(rel);
+        return ((RelMetadataQueryEx) mq).nodesMapping(rel);
+    }
+
+    /** */
+    private static NodesMapping merge(NodesMapping mapping1, NodesMapping mapping2) throws LocationMappingException {
+        if (mapping1 == null)
+            return mapping2;
+
+        if (mapping2 == null)
+            return mapping1;
+
+        return mapping1.mergeWith(mapping2);
     }
 }

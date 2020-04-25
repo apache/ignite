@@ -22,44 +22,47 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
+import org.apache.calcite.rel.type.RelDataType;
 
 /**
  * Relational expression that receives elements from remote {@link IgniteSender}
  */
 public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     /** */
-    private final Fragment source;
+    private final long exchangeId;
+
+    /** */
+    private final long sourceFragmentId;
 
     /**
      * Creates a Receiver
-     *
-     * @param cluster  Cluster that this relational expression belongs to
-     * @param traits   Traits of this relational expression
-     * @param source   Source fragment.
      */
-    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, Fragment source) {
+    public IgniteReceiver(RelOptCluster cluster, RelTraitSet traits, RelDataType rowType, long exchangeId,
+        long sourceFragmentId) {
         super(cluster, traits);
 
-        this.source = source;
+        this.exchangeId = exchangeId;
+        this.sourceFragmentId = sourceFragmentId;
+        this.rowType = rowType;
+    }
 
-        rowType = source.root().getRowType();
+    /** */
+    public long exchangeId() {
+        return exchangeId;
+    }
+
+    /** */
+    public long sourceFragmentId() {
+        return sourceFragmentId;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteReceiver(getCluster(), traitSet, source);
+        return new IgniteReceiver(getCluster(), traitSet, rowType, exchangeId, sourceFragmentId);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /**
-     * @return Source fragment.
-     */
-    public Fragment source() {
-        return source;
     }
 }

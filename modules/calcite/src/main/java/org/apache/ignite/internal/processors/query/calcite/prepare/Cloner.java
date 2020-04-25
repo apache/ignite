@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.prepare.Prepare;
@@ -51,14 +51,11 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     private final Prepare.CatalogReader catalogReader;
 
     /** */
-    private List<Fragment> fragments;
+    private FragmentProto curr;
 
-    /**
-     * @param ctx Planner context.
-     */
-    Cloner(PlanningContext ctx) {
-        cluster = ctx.createCluster();
-        catalogReader = ctx.catalogReader();
+    Cloner(RelOptCluster cluster, Prepare.CatalogReader catalogReader) {
+        this.cluster = cluster;
+        this.catalogReader = catalogReader;
     }
 
     /**
@@ -70,15 +67,14 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     List<Fragment> go(List<Fragment> src) {
         assert !F.isEmpty(src);
 
-        fragments = new ArrayList<>(src.size());
+        List<Fragment> fragments = new ArrayList<>(src.size());
 
-        Fragment first = F.first(src);
-
-        fragments.add(new Fragment(first.fragmentId(), visit(first.root())));
-
-        assert fragments.size() == src.size();
-
-        Collections.reverse(fragments);
+        for (Fragment fragment : src) {
+            curr = new FragmentProto(fragment.fragmentId(), fragment.root());
+            curr.root = visit(curr.root);
+            fragments.add(curr.build());
+            curr = null;
+        }
 
         return fragments;
     }
@@ -87,7 +83,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     @Override public IgniteRel visit(IgniteSender rel) {
         IgniteRel input = visit((IgniteRel) rel.getInput());
 
-        return new IgniteSender(cluster, rel.getTraitSet(), input);
+        return new IgniteSender(cluster, rel.getTraitSet(), input, rel.exchangeId(), rel.targetFragmentId());
     }
 
     /** {@inheritDoc} */
@@ -101,7 +97,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     @Override public IgniteRel visit(IgniteTrimExchange rel) {
         RelNode input = visit((IgniteRel) rel.getInput());
 
-        return new IgniteTrimExchange(cluster, rel.getTraitSet(), input);
+        return new IgniteTrimExchange(cluster, rel.getTraitSet(), input, rel.distribution());
     }
 
     /** {@inheritDoc} */
@@ -146,10 +142,12 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
-        Fragment fragment = rel.source();
-        fragments.add(fragment = new Fragment(fragment.fragmentId(), visit(fragment.root())));
+        IgniteReceiver receiver = new IgniteReceiver(cluster, rel.getTraitSet(), rel.getRowType(),
+            rel.exchangeId(), rel.sourceFragmentId());
 
-        return new IgniteReceiver(cluster, rel.getTraitSet(), fragment);
+        curr.remotes.add(receiver);
+
+        return receiver;
     }
 
     /** {@inheritDoc} */
@@ -186,5 +184,27 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteRel rel) {
         return rel.accept(this);
+    }
+
+    /** */
+    private static class FragmentProto {
+        /** */
+        private final long id;
+
+        /** */
+        private IgniteRel root;
+
+        /** */
+        private final ImmutableList.Builder<IgniteReceiver> remotes = ImmutableList.builder();
+
+        /** */
+        private FragmentProto(long id, IgniteRel root) {
+            this.id = id;
+            this.root = root;
+        }
+
+        Fragment build() {
+            return new Fragment(id, root, remotes.build());
+        }
     }
 }

@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -42,274 +42,114 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
-import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
 public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
     /** */
-    private RelMetadataQuery mq;
-
-    /** */
-    private List<Fragment> fragments;
+    private final Deque<FragmentProto> stack = new LinkedList<>();
 
     /** */
     private RelNode cutPoint;
 
     /** */
-    public List<Fragment> go(Fragment fragment, RelNode cutPoint, RelMetadataQuery mq) {
+    private FragmentProto curr;
+
+    public FragmentSplitter(RelNode cutPoint) {
         this.cutPoint = cutPoint;
-        this.mq = mq;
-
-        fragments = new ArrayList<>();
-
-        try {
-            fragments.add(new Fragment(visit(fragment.root())));
-
-            Collections.reverse(fragments);
-
-            return fragments;
-        }
-        finally {
-            this.cutPoint = null;
-            this.mq = null;
-
-            fragments = null;
-        }
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteSender rel) {
-        assert cutPoint != null;
-        assert rel != cutPoint;
+    /** */
+    public List<Fragment> go(Fragment fragment) {
+        ArrayList<Fragment> res = new ArrayList<>();
 
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
+        stack.push(new FragmentProto(Fragment.ID_GEN.getAndIncrement(), fragment.root()));
 
-        assert input != newInput;
+        while (!stack.isEmpty()) {
+            curr = stack.pop();
+            curr.root = visit(curr.root);
+            res.add(curr.build());
+            curr = null;
+        }
 
-        checkTraitsEqual(input, newInput);
-
-        RelTraitSet traits = rel.getTraitSet();
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteFilter rel) {
-        if (cutPoint == rel)
-            return split(rel);
-
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
-
-        if (input == newInput)
-            return rel;
-
-        checkTraits(input, newInput);
-
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(newInput.distribution());
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
+        return processNode(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTrimExchange rel) {
-        if (cutPoint == rel)
-            return split(rel);
-
-        if (cutPoint == null)
-            return (IgniteRel) rel.getInput();
-
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
-
-        if (input == newInput)
-            return rel;
-
-        checkTraitsEqual(input, newInput);
-
-        RelTraitSet traits = rel.getTraitSet();
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
+        return processNode(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteProject rel) {
-        if (cutPoint == rel)
-            return split(rel);
-
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
-
-        if (input == newInput)
-            return rel;
-
-        checkTraits(input, newInput);
-
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(IgniteDistributions.project(mq, newInput, rel.getProjects()));
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
+        return processNode(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteJoin rel) {
-        if (cutPoint == null)
-            return rel; // No need to check deeper
+        return processNode(rel);
+    }
 
-        if (cutPoint == rel)
-            return split(rel);
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTableModify rel) {
+        return processNode(rel);
+    }
 
-        IgniteRel left = (IgniteRel) rel.getLeft();
-        IgniteRel newLeft = visit(left);
-        IgniteRel right = (IgniteRel) rel.getRight();
-        IgniteRel newRight = visit(right);
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteAggregate rel) {
+        return processNode(rel);
+    }
 
-        if (left == newLeft && right == newRight)
-            return rel;
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteMapAggregate rel) {
+        return processNode(rel);
+    }
 
-        checkTraitsEqual(left, newLeft);
-        checkTraitsEqual(right, newRight);
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteReduceAggregate rel) {
+        assert cutPoint != rel;
 
-        RelTraitSet traits = rel.getTraitSet();
+        return processNode(rel);
+    }
 
-        return (IgniteRel) rel.copy(traits, F.asList(newLeft, newRight));
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteUnionAll rel) {
+        return processNode(rel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteSender rel) {
+        assert cutPoint != rel;
+
+        return processNode(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableScan rel) {
-        if (rel == cutPoint)
-            return split(rel);
+        return processNode(rel);
+    }
 
-        assert cutPoint == null;
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteValues rel) {
+        assert cutPoint != rel;
 
         return rel;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteReceiver rel) {
-        assert cutPoint == null;
+        assert cutPoint != rel;
+
+        curr.remotes.add(rel);
 
         return rel;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteExchange rel) {
-        throw new AssertionError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteAggregate rel) {
-        if (rel == cutPoint)
-            return split(rel);
-
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
-
-        if (input == newInput)
-            return rel;
-
-        checkTraits(input, newInput);
-
-        IgniteDistribution distr = IgniteDistributions.aggregate(mq,
-            newInput, rel.getGroupSet(), rel.getGroupSets(), rel.getAggCallList());
-
-        assert distr != null;
-
-        RelTraitSet traits = rel.getTraitSet().replace(distr);
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteMapAggregate rel) {
-        assert rel != cutPoint;
-
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
-
-        if (input == newInput)
-            return rel;
-
-        checkTraitsEqual(input, newInput);
-
-        RelTraitSet traits = rel.getTraitSet();
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteReduceAggregate rel) {
-        assert cutPoint == null;
-
-        return rel;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableModify rel) {
-        if (cutPoint == null)
-            return rel; // No need to check deeper
-
-        if (rel == cutPoint)
-            return split(rel);
-
-        IgniteRel input = (IgniteRel) rel.getInput();
-        IgniteRel newInput = visit(input);
-
-        if (input == newInput)
-            return rel;
-
-        checkTraitsEqual(input, newInput);
-
-        RelTraitSet traits = rel.getTraitSet();
-
-        return (IgniteRel) rel.copy(traits, F.asList(newInput));
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteValues rel) {
-        assert cutPoint == null;
-
-        return rel;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteUnionAll rel) {
-        if (cutPoint == null)
-            return rel; // No need to check deeper
-
-        if (rel == cutPoint)
-            return split(rel);
-
-        boolean inputChanged = false;
-
-        List<IgniteRel> inputs = Commons.cast(rel.getInputs());
-        List<IgniteRel> newInputs = new ArrayList<>(inputs.size());
-
-        for (RelNode input : inputs) {
-            IgniteRel newInput = visit(input);
-
-            if (input != newInput) {
-                inputChanged = true;
-
-                checkTraitsEqual((IgniteRel) input, newInput);
-            }
-
-            newInputs.add(newInput);
-        }
-
-        if (!inputChanged)
-            return rel;
-
-        return (IgniteRel) rel.copy(rel.getTraitSet(), Commons.cast(newInputs));
     }
 
     /** {@inheritDoc} */
@@ -317,61 +157,79 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
         return rel.accept(this);
     }
 
-    /** */
-    private IgniteRel visit(RelNode rel) {
-        return visit((IgniteRel) rel);
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteExchange rel) {
+        throw new AssertionError();
     }
 
-    /** */
-    private void checkTraits(IgniteRel orig, IgniteRel newRel) {
-        if (!U.assertionsEnabled() || orig == newRel)
-            return;
+    /**
+     * Visits all children of a parent.
+     */
+    private IgniteRel processNode(IgniteRel rel) {
+        if (rel == cutPoint) {
+            cutPoint = null;
 
-        RelTraitSet origTraits = orig.getTraitSet();
-        RelTraitSet newTraits = newRel.getTraitSet();
+            return split(rel);
+        }
 
-        ImmutableList<RelTrait> difference = origTraits.difference(newTraits);
+        List<IgniteRel> inputs = Commons.cast(rel.getInputs());
 
-        // Only distribution trait may be changed after split
-        if (difference.isEmpty() || difference.size() == 1 && F.first(difference) instanceof DistributionTrait)
-            return;
+        for (int i = 0; i < inputs.size(); i++)
+            visitChild(rel, i, inputs.get(i));
 
-        assert false : difference;
+        return rel;
     }
 
-    /** */
-    private void checkTraitsEqual(IgniteRel orig, IgniteRel newRel) {
-        if (!U.assertionsEnabled() || orig == newRel)
-            return;
+    /**
+     * Visits a particular child of a parent and replaces the child if it was changed.
+     */
+    private void visitChild(IgniteRel parent, int i, IgniteRel child) {
+        IgniteRel newChild = visit(child);
 
-        RelTraitSet origTraits = orig.getTraitSet();
-        RelTraitSet newTraits = newRel.getTraitSet();
-
-        ImmutableList<RelTrait> difference = origTraits.difference(newTraits);
-
-        if (difference.isEmpty())
-            return;
-
-        assert false : difference;
+        if (newChild != child)
+            parent.replaceInput(i, newChild);
     }
 
     /** */
     private IgniteRel split(IgniteRel rel) {
-        cutPoint = null;
-
-        IgniteRel newRel = visit(rel);
-
-        checkTraits(rel, newRel);
-
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet traits = rel.getTraitSet();
+        RelDataType rowType = rel.getRowType();
 
-        IgniteSender sender = new IgniteSender(cluster, traits, newRel);
+        RelNode input = rel instanceof IgniteTrimExchange ? rel.getInput(0) : rel;
 
-        Fragment fragment = new Fragment(sender);
+        long targetFragmentId = curr.id;
+        long sourceFragmentId = Fragment.ID_GEN.getAndIncrement();
+        long exchangeId = sourceFragmentId;
 
-        fragments.add(fragment);
+        IgniteReceiver receiver = new IgniteReceiver(cluster, traits, rowType, exchangeId, sourceFragmentId);
+        IgniteSender sender = new IgniteSender(cluster, traits, input, exchangeId, targetFragmentId);
 
-        return new IgniteReceiver(cluster, traits, fragment);
+        curr.remotes.add(receiver);
+        stack.push(new FragmentProto(sourceFragmentId, sender));
+
+        return receiver;
+    }
+
+    /** */
+    private static class FragmentProto {
+        /** */
+        private final long id;
+
+        /** */
+        private IgniteRel root;
+
+        /** */
+        private final ImmutableList.Builder<IgniteReceiver> remotes = ImmutableList.builder();
+
+        /** */
+        private FragmentProto(long id, IgniteRel root) {
+            this.id = id;
+            this.root = root;
+        }
+
+        Fragment build() {
+            return new Fragment(id, root, remotes.build());
+        }
     }
 }

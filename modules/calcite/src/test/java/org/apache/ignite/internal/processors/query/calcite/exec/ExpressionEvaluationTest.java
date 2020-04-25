@@ -68,6 +68,6 @@ public class ExpressionEvaluationTest extends GridCommonAbstractTest {
     }
 
     public ExecutionContext context(Object... params) {
-        return new ExecutionContext(THROWING_EXECUTOR, PLANNING_CONTEXT, UUID.randomUUID(), 0, null, Commons.parametersMap(params));
+        return new ExecutionContext(THROWING_EXECUTOR, PLANNING_CONTEXT, UUID.randomUUID(), null, Commons.parametersMap(params));
     }
 }

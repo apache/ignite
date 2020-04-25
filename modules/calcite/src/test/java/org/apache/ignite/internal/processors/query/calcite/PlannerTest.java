@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.calcite.message.MessageServic
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -1263,7 +1264,16 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.mailboxRegistry(mailboxRegistry);
             exchangeService.init();
 
-            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
+            ectx = new ExecutionContext(taskExecutor,
+                ctx,
+                queryId,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    0,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
+                Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
                 new TestFailureProcessor(kernal)).go(fragment.root());
@@ -1319,8 +1329,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                     .logger(log)
                     .build(),
                 queryId,
-                fragment.fragmentId(),
-                null,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    0,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,
@@ -1486,7 +1500,16 @@ public class PlannerTest extends GridCommonAbstractTest {
             exchangeService.mailboxRegistry(mailboxRegistry);
             exchangeService.init();
 
-            ectx = new ExecutionContext(taskExecutor, ctx, queryId, fragment.fragmentId(), null, Commons.parametersMap(ctx.parameters()));
+            ectx = new ExecutionContext(taskExecutor,
+                ctx,
+                queryId,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    0,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
+                Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeService,
                 new TestFailureProcessor(kernal)).go(fragment.root());
@@ -1542,8 +1565,12 @@ public class PlannerTest extends GridCommonAbstractTest {
                     .logger(log)
                     .build(),
                 queryId,
-                fragment.fragmentId(),
-                null,
+                new FragmentDescription(
+                    fragment.fragmentId(),
+                    null,
+                    -1,
+                    plan.targetMapping(fragment),
+                    plan.remoteSources(fragment)),
                 Commons.parametersMap(ctx.parameters()));
 
             exec = new LogicalRelImplementor(ectx, c -> r -> 0, mailboxRegistry, exchangeService,

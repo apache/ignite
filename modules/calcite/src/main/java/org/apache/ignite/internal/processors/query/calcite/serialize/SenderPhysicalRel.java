@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 
@@ -31,9 +30,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 public class SenderPhysicalRel implements PhysicalRel {
     /** */
     private long targetFragmentId;
-
-    /** */
-    private NodesMapping mapping;
 
     /** */
     private DistributionFunction function;
@@ -48,9 +44,8 @@ public class SenderPhysicalRel implements PhysicalRel {
     }
 
     /** */
-    public SenderPhysicalRel(long targetFragmentId, NodesMapping mapping, DistributionFunction function, ImmutableIntList distributionKeys, PhysicalRel input) {
+    public SenderPhysicalRel(long targetFragmentId, DistributionFunction function, ImmutableIntList distributionKeys, PhysicalRel input) {
         this.targetFragmentId = targetFragmentId;
-        this.mapping = mapping;
         this.function = function;
         this.distributionKeys = distributionKeys;
         this.input = input;
@@ -58,10 +53,6 @@ public class SenderPhysicalRel implements PhysicalRel {
 
     public long targetFragmentId() {
         return targetFragmentId;
-    }
-
-    public NodesMapping mapping() {
-        return mapping;
     }
 
     public DistributionFunction distributionFunction() {
@@ -82,7 +73,6 @@ public class SenderPhysicalRel implements PhysicalRel {
 
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(targetFragmentId);
-        out.writeObject(mapping);
         out.writeObject(function);
         out.writeObject(distributionKeys.toIntArray());
         out.writeObject(input);
@@ -90,7 +80,6 @@ public class SenderPhysicalRel implements PhysicalRel {
 
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         targetFragmentId = in.readLong();
-        mapping = (NodesMapping) in.readObject();
         function = (DistributionFunction) in.readObject();
         distributionKeys = ImmutableIntList.of((int[]) in.readObject());
         input = (PhysicalRel) in.readObject();

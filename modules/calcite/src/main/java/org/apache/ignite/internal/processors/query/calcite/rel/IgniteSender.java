@@ -22,8 +22,6 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelTargetAware;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -31,55 +29,52 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
  * Relational expression that iterates over its input
  * and sends elements to remote {@link IgniteReceiver}
  */
-public class IgniteSender extends SingleRel implements IgniteRel, RelTargetAware {
+public class IgniteSender extends SingleRel implements IgniteRel {
     /** */
-    private RelTarget target;
+    private final long exchangeId;
+
+    /** */
+    private long targetFragmentId;
 
     /**
      * Creates a Sender.
-     *
      * @param cluster  Cluster that this relational expression belongs to
      * @param traits   Traits of this relational expression
      * @param input    input relational expression
+     * @param exchangeId Exchange ID.
+     * @param targetFragmentId Target fragment ID.
      */
-    public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input) {
-        this(cluster, traits, input, null);
-    }
-
-    /**
-     * Creates a Sender.
-     *
-     * @param cluster  Cluster that this relational expression belongs to
-     * @param traits   Traits of this relational expression
-     * @param input    input relational expression
-     * @param target   Remote targets information
-     */
-    private IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, RelTarget target) {
+    public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, long exchangeId,
+        long targetFragmentId) {
         super(cluster, traits, input);
 
-        this.target = target;
+        this.exchangeId = exchangeId;
+        this.targetFragmentId = targetFragmentId;
+    }
+
+    /** */
+    public long exchangeId() {
+        return exchangeId;
+    }
+
+    /** */
+    public long targetFragmentId() {
+        return targetFragmentId;
+    }
+
+    /** */
+    public void targetFragmentId(long targetFragmentId) {
+        this.targetFragmentId = targetFragmentId;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteSender(getCluster(), traitSet, sole(inputs), target);
+        return new IgniteSender(getCluster(), traitSet, sole(inputs), exchangeId, targetFragmentId);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void target(RelTarget target) {
-        this.target = target;
-    }
-
-    /**
-     * @return Remote targets information.
-     */
-    public RelTarget target() {
-        return target;
     }
 
     /**

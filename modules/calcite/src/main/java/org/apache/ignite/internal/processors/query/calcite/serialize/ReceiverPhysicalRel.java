@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
@@ -39,10 +37,10 @@ public class ReceiverPhysicalRel implements PhysicalRel {
     private DataType rowType;
 
     /** */
-    private long sourceFragmentId;
+    private long exchangeId;
 
     /** */
-    private List<UUID> sources;
+    private long sourceFragmentId;
 
     /** */
     private List<RelCollation> collations;
@@ -52,10 +50,10 @@ public class ReceiverPhysicalRel implements PhysicalRel {
     }
 
     /** */
-    public ReceiverPhysicalRel(DataType rowType, long sourceFragmentId, List<UUID> sources, List<RelCollation> collations) {
+    public ReceiverPhysicalRel(DataType rowType, long exchangeId, long sourceFragmentId, List<RelCollation> collations) {
         this.rowType = rowType;
+        this.exchangeId = exchangeId;
         this.sourceFragmentId = sourceFragmentId;
-        this.sources = sources;
         this.collations = collations;
     }
 
@@ -65,13 +63,13 @@ public class ReceiverPhysicalRel implements PhysicalRel {
     }
 
     /** */
-    public long sourceFragmentId() {
-        return sourceFragmentId;
+    public long exchangeId() {
+        return exchangeId;
     }
 
     /** */
-    public Collection<UUID> sources() {
-        return sources;
+    public long sourceFragmentId() {
+        return sourceFragmentId;
     }
 
     /** */
@@ -87,12 +85,8 @@ public class ReceiverPhysicalRel implements PhysicalRel {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(rowType);
+        out.writeLong(exchangeId);
         out.writeLong(sourceFragmentId);
-
-        out.writeInt(sources.size());
-
-        for (UUID source : sources)
-            out.writeObject(source);
 
         if (collations == null)
             out.writeInt(-1);
@@ -116,16 +110,8 @@ public class ReceiverPhysicalRel implements PhysicalRel {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         rowType = (DataType) in.readObject();
+        exchangeId = in.readInt();
         sourceFragmentId = in.readLong();
-
-        final int sourcesSize = in.readInt();
-
-        List<UUID> sources = new ArrayList<>(sourcesSize);
-
-        for (int i = 0; i < sourcesSize; i++)
-            sources.add((UUID) in.readObject());
-
-        this.sources = sources;
 
         int collationsSize = in.readInt();
 

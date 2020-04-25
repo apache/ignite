@@ -28,6 +28,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -43,8 +44,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.PartitionService;
-import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -110,12 +109,11 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteSender rel) {
-        RelTarget target = rel.target();
         IgniteDistribution distribution = rel.distribution();
-        Destination destination = distribution.function().destination(partitionService, target.mapping(), distribution.getKeys());
+        Destination destination = distribution.function().destination(partitionService, ctx.targetMapping(), distribution.getKeys());
 
         // Outbox fragment ID is used as exchange ID as well.
-        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, ctx.fragmentId(), target.fragmentId(), destination);
+        Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.targetFragmentId(), destination);
         outbox.register(visit(rel.getInput()));
 
         mailboxRegistry.register(outbox);
@@ -134,13 +132,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteTrimExchange rel) {
-        RelTarget target = rel.target();
-
-        assert target != null && target.mapping() != null && !F.isEmpty(target.mapping().assignments());
-
-        Predicate<Object[]> predicate = partitionFilter(rel.distribution(), target.mapping().assignments().size());
-
-        FilterNode node = new FilterNode(ctx, predicate);
+        FilterNode node = new FilterNode(ctx, partitionFilter(rel.distribution()));
         node.register(visit(rel.getInput()));
 
         return node;
@@ -201,16 +193,14 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteReceiver rel) {
-        Fragment source = rel.source();
-
-        // Corresponding outbox fragment ID is used as exchange ID as well.
-        Inbox<Object[]> inbox = (Inbox<Object[]>) mailboxRegistry.register(new Inbox<>(ctx, exchangeService, mailboxRegistry, source.fragmentId(), source.fragmentId()));
+        Inbox<?> inbox = mailboxRegistry.register(
+            new Inbox<>(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.sourceFragmentId()));
 
         // here may be an already created (to consume rows from remote nodes) inbox
         // without proper context, we need to init it with a right one.
-        inbox.init(ctx, source.mapping().nodes(), expressionFactory.comparator(ctx, rel.collations(), rel.getRowType()));
+        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(ctx, rel.collations(), rel.getRowType()));
 
-        return inbox;
+        return (Node<Object[]>)inbox;
     }
 
     /** {@inheritDoc} */
@@ -271,21 +261,15 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
     }
 
     /** */
-    private Predicate<Object[]> partitionFilter(IgniteDistribution distr, int partitions) {
+    private Predicate<Object[]> partitionFilter(IgniteDistribution distr) {
         assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
-        assert !F.isEmpty(ctx.partitions());
 
-        boolean[] filter = new boolean[partitions];
-
-        for (int part : ctx.partitions())
-            filter[part] = true;
-
+        ImmutableBitSet filter = ImmutableBitSet.of(ctx.partitions());
         DistributionFunction function = distr.function();
         ImmutableIntList keys = distr.getKeys();
+        ToIntFunction<Object> partFunction = function.partitionFunction(partitionService, ctx.partitionsCount(), keys);
 
-        ToIntFunction<Object> partFunction = function.partitionFunction(partitionService, partitions, keys);
-
-        return o -> filter[partFunction.applyAsInt(o)];
+        return o -> filter.get(partFunction.applyAsInt(o));
     }
 
     /** */

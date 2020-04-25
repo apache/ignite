@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
+import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
 
 /**
  *
@@ -29,7 +31,9 @@ public enum MessageType {
     QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
     QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCancelMessage::new),
-    GENERIC_ROW_MESSAGE(306, GenericRowMessage::new);
+    GENERIC_ROW_MESSAGE(306, GenericRowMessage::new),
+    NODES_MAPPING(350, NodesMapping::new),
+    FRAGMENT_DESCRIPTION(351, FragmentDescription::new);
 
     /** */
     private final int directType;
@@ -83,6 +87,10 @@ public enum MessageType {
                 return QUERY_INBOX_CANCEL_MESSAGE.newMessage();
             case 306:
                 return GENERIC_ROW_MESSAGE.newMessage();
+            case 350:
+                return NODES_MAPPING.newMessage();
+            case 351:
+                return FRAGMENT_DESCRIPTION.newMessage();
             default:
                 return null;
         }

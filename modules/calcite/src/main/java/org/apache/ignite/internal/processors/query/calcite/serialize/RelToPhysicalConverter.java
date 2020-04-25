@@ -29,8 +29,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.Expression;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToExpTranslator;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggCallExp;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.type.DataType;
-import org.apache.ignite.internal.processors.query.calcite.metadata.NodesMapping;
-import org.apache.ignite.internal.processors.query.calcite.prepare.RelTarget;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFun
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Converts RelNode tree to physical rel tree.
@@ -77,12 +74,10 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
 
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteSender rel) {
-        long fragmentId = rel.target().fragmentId();
-        NodesMapping mapping = rel.target().mapping();
         DistributionFunction fun = rel.distribution().function();
         ImmutableIntList keys = rel.distribution().getKeys();
 
-        return new SenderPhysicalRel(fragmentId, mapping, fun, keys, visit((IgniteRel) rel.getInput()));
+        return new SenderPhysicalRel(rel.targetFragmentId(), fun, keys, visit((IgniteRel) rel.getInput()));
     }
 
     /** {@inheritDoc} */
@@ -94,14 +89,10 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteTrimExchange rel) {
         IgniteDistribution distr = rel.distribution();
-        RelTarget target = rel.target();
 
         assert distr.getType() == RelDistribution.Type.HASH_DISTRIBUTED;
-        assert target != null && target.mapping() != null && !F.isEmpty(target.mapping().assignments());
 
-        int partitions = target.mapping().assignments().size();
-
-        return new TrimExchangePhysicalRel(distr.function(), distr.getKeys(), partitions, visit((IgniteRel) rel.getInput()));
+        return new TrimExchangePhysicalRel(distr.function(), distr.getKeys(), visit((IgniteRel) rel.getInput()));
     }
 
     /** {@inheritDoc} */
@@ -162,7 +153,7 @@ public class RelToPhysicalConverter implements IgniteRelVisitor<PhysicalRel> {
     /** {@inheritDoc} */
     @Override public PhysicalRel visit(IgniteReceiver rel) {
         return new ReceiverPhysicalRel(DataType.fromType(rel.getRowType()),
-            rel.source().fragmentId(), rel.source().mapping().nodes(), rel.collations());
+            rel.exchangeId(), rel.sourceFragmentId(), rel.collations());
     }
 
     /** {@inheritDoc} */

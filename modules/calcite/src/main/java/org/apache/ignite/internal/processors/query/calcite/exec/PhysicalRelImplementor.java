@@ -25,6 +25,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
@@ -115,7 +116,7 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(TrimExchangePhysicalRel rel) {
-        Predicate<Object[]> predicate = partitionFilter(rel.function(), rel.distributionKeys(), rel.partitions());
+        Predicate<Object[]> predicate = partitionFilter(rel.function(), rel.distributionKeys());
 
         FilterNode node = new FilterNode(ctx, predicate);
         node.register(visit(rel.input()));
@@ -142,7 +143,7 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(SenderPhysicalRel rel) {
         Destination destination = rel.distributionFunction()
-            .destination(partitionService, rel.mapping(), rel.distributionKeys());
+            .destination(partitionService, ctx.targetMapping(), rel.distributionKeys());
 
         Outbox<Object[]> outbox = new Outbox<>(ctx, exchangeService, mailboxRegistry,
             ctx.fragmentId(), rel.targetFragmentId(), destination);
@@ -155,9 +156,12 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(ReceiverPhysicalRel rel) {
-        Inbox<?> inbox = mailboxRegistry.register(new Inbox<>(ctx, exchangeService, mailboxRegistry, rel.sourceFragmentId(), rel.sourceFragmentId()));
+        Inbox<?> inbox = mailboxRegistry.register(
+            new Inbox<>(ctx, exchangeService, mailboxRegistry, rel.exchangeId(), rel.sourceFragmentId()));
 
-        inbox.init(ctx, rel.sources(), expressionFactory.comparator(ctx, rel.collations(), rel.rowType()));
+        // here may be an already created (to consume rows from remote nodes) inbox
+        // without proper context, we need to init it with a right one.
+        inbox.init(ctx, ctx.remoteSources(rel.exchangeId()), expressionFactory.comparator(ctx, rel.collations(), rel.rowType()));
 
         return (Node<Object[]>) inbox;
     }
@@ -230,18 +234,13 @@ public class PhysicalRelImplementor implements PhysicalRelVisitor<Node<Object[]>
     }
 
     /** */
-    private Predicate<Object[]> partitionFilter(DistributionFunction function, ImmutableIntList keys, int partitions) {
+    private Predicate<Object[]> partitionFilter(DistributionFunction function, ImmutableIntList keys) {
         assert function.type() == RelDistribution.Type.HASH_DISTRIBUTED;
-        assert !F.isEmpty(ctx.partitions());
 
-        boolean[] filter = new boolean[partitions];
+        ImmutableBitSet filter = ImmutableBitSet.of(ctx.partitions());
+        ToIntFunction<Object> partFunction = function.partitionFunction(partitionService, ctx.partitionsCount(), keys);
 
-        for (int part : ctx.partitions())
-            filter[part] = true;
-
-        ToIntFunction<Object> partFunction = function.partitionFunction(partitionService, partitions, keys);
-
-        return o -> filter[partFunction.applyAsInt(o)];
+        return o -> filter.get(partFunction.applyAsInt(o));
     }
 
     /** */

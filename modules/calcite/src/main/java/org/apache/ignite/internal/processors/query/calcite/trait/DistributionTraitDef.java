@@ -60,7 +60,7 @@ public class DistributionTraitDef extends RelTraitDef<IgniteDistribution> {
         // special case
         if (fromDist.getType() == RelDistribution.Type.BROADCAST_DISTRIBUTED
             && toDist.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
-            newRel = planner.register(new IgniteTrimExchange(rel.getCluster(), newTraits, rel), rel);
+            newRel = planner.register(new IgniteTrimExchange(rel.getCluster(), newTraits, rel, toDist), rel);
         }
         else {
             RelNode input = RuleUtils.convert(rel, IgniteDistributions.any()); // erasing source distribution a bit reduces search space
