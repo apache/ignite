@@ -247,7 +247,7 @@ public enum GridRestCommand {
     /** Permissions. */
     private final SecurityPermission[] perms;
 
-    /** Index of task name wrapped by VisorGatewayTask */
+    /** Index of task name wrapped by VisorGatewayTask. */
     private static final int WRAPPED_TASK_IDX = 1;
 
     /** Name extractor. */
