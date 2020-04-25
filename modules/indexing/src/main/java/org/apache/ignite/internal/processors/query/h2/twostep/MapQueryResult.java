@@ -30,12 +30,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
-import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -103,7 +103,7 @@ class MapQueryResult {
     private final Session ses;
 
     /** Detached connection. Used for lazy execution to prevent connection sharing. */
-    private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+    private H2PooledConnection conn;
 
     /** */
     private final ReentrantLock lock = new ReentrantLock();
@@ -118,7 +118,7 @@ class MapQueryResult {
      * @param log Logger.
      */
     MapQueryResult(IgniteH2Indexing h2, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, H2ConnectionWrapper conn, IgniteLogger log) {
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, H2PooledConnection conn, IgniteLogger log) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
@@ -126,6 +126,7 @@ class MapQueryResult {
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
         this.log = log;
+        this.conn = conn;
 
         ses = H2Utils.session(conn.connection());
     }
@@ -182,6 +183,8 @@ class MapQueryResult {
         assert res != null;
 
         boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
+        QueryContext.threadLocal(H2Utils.context(ses));
 
         page++;
 
@@ -244,9 +247,6 @@ class MapQueryResult {
                 rows.add(res.res.currentRow());
             }
 
-            if (detachedConn == null && res.res.hasNext())
-                detachedConn = h2.connections().detachThreadConnection();
-
             return !res.res.hasNext();
         }
         finally {
@@ -281,10 +281,9 @@ class MapQueryResult {
         if (res != null)
             res.close();
 
-        if (detachedConn != null)
-            detachedConn.recycle();
+        H2Utils.resetSession(conn);
 
-        detachedConn = null;
+        conn.close();
     }
 
     /** */
@@ -295,7 +294,7 @@ class MapQueryResult {
 
     /** */
     public void lockTables() {
-        if (ses.isLazyQueryExecution() && !closed)
+        if (!closed && ses.isLazyQueryExecution())
             GridH2Table.readLockTables(ses);
     }
 
@@ -307,7 +306,7 @@ class MapQueryResult {
 
     /** */
     public void unlockTables() {
-        if (ses.isLazyQueryExecution())
+        if (!closed && ses.isLazyQueryExecution())
             GridH2Table.unlockTables(ses);
     }
 

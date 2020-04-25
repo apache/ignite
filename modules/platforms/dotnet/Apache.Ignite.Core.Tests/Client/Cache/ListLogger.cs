@@ -43,7 +43,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public ListLogger(ILogger wrappedLogger = null)
         {
             _wrappedLogger = wrappedLogger;
+            EnabledLevels = new[] {LogLevel.Debug, LogLevel.Warn, LogLevel.Error};
         }
+        
+        /// <summary>
+        /// Gets or sets enabled levels.
+        /// </summary>
+        public LogLevel[] EnabledLevels { get; set; }
 
         /// <summary>
         /// Gets the entries.
@@ -75,6 +81,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             string nativeErrorInfo, Exception ex)
         {
             Assert.NotNull(message);
+
+            if (!IsEnabled(level))
+            {
+                return;
+            }
             
             if (_wrappedLogger != null)
             {
@@ -95,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /** <inheritdoc /> */
         public bool IsEnabled(LogLevel level)
         {
-            return level == LogLevel.Debug;
+            return EnabledLevels.Contains(level);
         }
 
         /// <summary>
@@ -146,6 +157,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             public string Category
             {
                 get { return _category; }
+            }
+
+            /** <inheritdoc /> */
+            public override string ToString()
+            {
+                return string.Format("{0} [Level={1}, Message={2}]", GetType().Name, Level, Message);
             }
         }
     }

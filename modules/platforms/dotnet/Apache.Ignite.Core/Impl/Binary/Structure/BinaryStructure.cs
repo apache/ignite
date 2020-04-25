@@ -58,6 +58,10 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         private BinaryStructure(BinaryStructureEntry[][] paths,
             BinaryStructureJumpTable[] jumps, IDictionary<string, byte> fieldTypes)
         {
+            Debug.Assert(paths != null);
+            Debug.Assert(jumps != null);
+            Debug.Assert(fieldTypes != null);
+            
             _paths = paths;
             _jumps = jumps;
             _fieldTypes = fieldTypes;
@@ -73,8 +77,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// <returns>Field ID or zero in case there are no matching path.</returns>
         public int GetFieldId(string fieldName, byte fieldType, ref int pathIdx, int actionIdx)
         {
+            Debug.Assert(fieldName != null);
             Debug.Assert(pathIdx <= _paths.Length);
-
+            
             // Get path.
             BinaryStructureEntry[] path = _paths[pathIdx];
 
@@ -93,6 +98,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
                     Debug.Assert(entry.Id < _jumps.Length);
 
                     BinaryStructureJumpTable jmpTbl = _jumps[entry.Id];
+
+                    if (jmpTbl == null)
+                        return 0;
 
                     int pathIdx0 = jmpTbl.GetPathIndex(fieldName);
 
@@ -137,96 +145,79 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
             BinaryStructure res = MergeFieldTypes(updates);
             BinaryStructureUpdate firstUpdate = updates[0];
 
-            if (firstUpdate.Index == 0)
+            // Get entry where updates should start.
+            BinaryStructureEntry[] path = _paths[pathIdx];
+
+            var startEntry = firstUpdate.Index < path.Length
+                ? path[firstUpdate.Index]
+                : default(BinaryStructureEntry);
+
+            if (startEntry.IsEmpty)
             {
-                // Special case: the very first structure update. Simply attach all updates.
-                Debug.Assert(_paths.Length == 1);
-                Debug.Assert(_paths[0].Length == 0);
-                Debug.Assert(pathIdx == 0);
+                // We are on the empty/non-existent entry. Continue the path without branching.
+                var newPaths = CopyPaths(firstUpdate.Index + updates.Count, 0);
 
-                var newPaths = CopyPaths(updates.Count, 0);
-
-                ApplyUpdatesToPath(newPaths[0], updates);
+                ApplyUpdatesToPath(newPaths[pathIdx], updates);
 
                 res = new BinaryStructure(newPaths, _jumps, res._fieldTypes);
             }
+            else if (startEntry.IsJumpTable)
+            {
+                // We are on the jump table. Add a new path and record it in the jump table.
+
+                // 1. Prepare new structures.
+                var newPaths = CopyPaths(firstUpdate.Index + updates.Count, 1);
+                var newJumps = CopyJumps(0);
+
+                // New path will be the last one.
+                int newPathIdx = newPaths.Length - 1;
+
+                // Apply updates to the new path.
+                ApplyUpdatesToPath(newPaths[newPathIdx], updates);
+
+                // Add the jump to the table.
+                newJumps[startEntry.Id] =
+                    newJumps[startEntry.Id].CopyAndAdd(firstUpdate.FieldName, newPathIdx);
+
+                res = new BinaryStructure(newPaths, newJumps, res._fieldTypes);
+            }
             else
             {
-                // Get entry where updates should start.
-                BinaryStructureEntry[] path = _paths[pathIdx];
+                // We are on existing entry. Need to create a new jump table here and two new paths.
 
-                BinaryStructureEntry startEntry = default(BinaryStructureEntry);
+                // 1. Prepare new structures.
+                var newPaths = CopyPaths(firstUpdate.Index + updates.Count, 2);
+                var newJumps = CopyJumps(1);
 
-                if (firstUpdate.Index < path.Length)
-                    startEntry = path[firstUpdate.Index];
+                // Old path will be moved here.
+                int oldPathIdx = newPaths.Length - 2;
 
-                if (startEntry.IsEmpty)
+                // New path will reside here.
+                int newPathIdx = newPaths.Length - 1;
+
+                // Create new jump table.
+                int newJumpIdx = newJumps.Length - 1;
+
+                newJumps[newJumpIdx] = new BinaryStructureJumpTable(startEntry.Name, oldPathIdx,
+                    firstUpdate.FieldName, newPathIdx);
+
+                // Re-create old path in two steps: move old path to the new place, then clean the old path.
+                for (int i = firstUpdate.Index; i < path.Length; i++)
                 {
-                    // We are on the empty/non-existent entry. Continue the path without branching.
-                    var newPaths = CopyPaths(firstUpdate.Index + updates.Count, 0);
+                    newPaths[oldPathIdx][i] = newPaths[pathIdx][i];
 
-                    ApplyUpdatesToPath(newPaths[pathIdx], updates);
-
-                    res = new BinaryStructure(newPaths, _jumps, res._fieldTypes);
+                    if (i == firstUpdate.Index)
+                        // Inject jump table ...
+                        newPaths[pathIdx][i] = new BinaryStructureEntry(newJumpIdx);
+                    else
+                        // ... or just reset.
+                        newPaths[pathIdx][i] = new BinaryStructureEntry();
                 }
-                else if (startEntry.IsJumpTable)
-                {
-                    // We are on the jump table. Add a new path and record it in the jump table.
 
-                    // 1. Prepare new structures.
-                    var newPaths = CopyPaths(firstUpdate.Index + updates.Count, 1);
-                    var newJumps = CopyJumps(0);
+                // Apply updates to the new path.
+                ApplyUpdatesToPath(newPaths[newPaths.Length - 1], updates);
 
-                    // New path will be the last one.
-                    int newPathIdx = newPaths.Length - 1;
-
-                    // Apply updates to the new path.
-                    ApplyUpdatesToPath(newPaths[newPathIdx], updates);
-
-                    // Add the jump to the table.
-                    newJumps[startEntry.Id] =
-                        newJumps[startEntry.Id].CopyAndAdd(firstUpdate.FieldName, newPathIdx);
-
-                    res = new BinaryStructure(newPaths, newJumps, res._fieldTypes);
-                }
-                else
-                {
-                    // We are on existing entry. Need to create a new jump table here and two new paths.
-
-                    // 1. Prepaare new structures.
-                    var newPaths = CopyPaths(firstUpdate.Index + updates.Count, 2);
-                    var newJumps = CopyJumps(1);
-
-                    // Old path will be moved here.
-                    int oldPathIdx = newPaths.Length - 2;
-
-                    // New path will reside here.
-                    int newPathIdx = newPaths.Length - 1;
-
-                    // Create new jump table.
-                    int newJumpIdx = newJumps.Length - 1;
-
-                    newJumps[newJumpIdx] = new BinaryStructureJumpTable(startEntry.Name, oldPathIdx,
-                        firstUpdate.FieldName, newPathIdx);
-
-                    // Re-create old path in two steps: move old path to the new place, then clean the old path.
-                    for (int i = firstUpdate.Index; i < path.Length; i++)
-                    {
-                        newPaths[oldPathIdx][i] = newPaths[pathIdx][i];
-
-                        if (i == firstUpdate.Index)
-                            // Inject jump table ...
-                            newPaths[pathIdx][i] = new BinaryStructureEntry(newJumpIdx);
-                        else
-                            // ... or just reset.
-                            newPaths[pathIdx][i] = new BinaryStructureEntry();
-                    }
-
-                    // Apply updates to the new path.
-                    ApplyUpdatesToPath(newPaths[newPaths.Length - 1], updates);
-
-                    res = new BinaryStructure(newPaths, newJumps, res._fieldTypes);
-                }
+                res = new BinaryStructure(newPaths, newJumps, res._fieldTypes);
             }
 
             return res;

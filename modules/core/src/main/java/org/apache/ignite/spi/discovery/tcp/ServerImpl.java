@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLSocket;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +58,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1914,6 +1914,29 @@ class ServerImpl extends TcpDiscoveryImpl {
         threads.removeAll(Collections.<IgniteSpiThread>singleton(null));
 
         return threads;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateMetrics(UUID nodeId,
+        ClusterMetrics metrics,
+        Map<Integer, CacheMetrics> cacheMetrics,
+        long tsNanos)
+    {
+        assert nodeId != null;
+        assert metrics != null;
+
+        TcpDiscoveryNode node = ring.node(nodeId);
+
+        if (node != null) {
+            node.setMetrics(metrics);
+            node.setCacheMetrics(cacheMetrics);
+
+            node.lastUpdateTimeNanos(tsNanos);
+
+            notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
+        }
+        else if (log.isDebugEnabled())
+            log.debug("Received metrics from unknown node: " + nodeId);
     }
 
     /**
@@ -5143,7 +5166,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (log.isInfoEnabled())
                 log.info("Latency check processing: " + msg.id());
 
-            if (sendMessageToRemotes(msg))
+            if (ring.hasRemoteServerNodes())
                 sendMessageAcrossRing(msg);
             else {
                 if (log.isInfoEnabled())
@@ -5739,23 +5762,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             long tsNanos = System.nanoTime();
 
-            if (spiStateCopy() == CONNECTED) {
-                if (msg.hasMetrics()) {
-                    for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
-                        UUID nodeId = e.getKey();
-
-                        TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
-
-                        Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
-                            msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
-
-                        updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tsNanos);
-
-                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                            updateMetrics(t.get1(), t.get2(), cacheMetrics, tsNanos);
-                    }
-                }
-            }
+            if (spiStateCopy() == CONNECTED && msg.hasMetrics())
+                processMsgCacheMetrics(msg, tsNanos);
 
             if (sendMessageToRemotes(msg)) {
                 if (laps == 0 && spiStateCopy() == CONNECTED) {
@@ -5822,34 +5830,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
             }
-        }
-
-        /**
-         * @param nodeId Node ID.
-         * @param metrics Metrics.
-         * @param cacheMetrics Cache metrics.
-         * @param tsNanos Timestamp as returned by {@link System#nanoTime()}.
-         */
-        private void updateMetrics(UUID nodeId,
-            ClusterMetrics metrics,
-            Map<Integer, CacheMetrics> cacheMetrics,
-            long tsNanos)
-        {
-            assert nodeId != null;
-            assert metrics != null;
-
-            TcpDiscoveryNode node = ring.node(nodeId);
-
-            if (node != null) {
-                node.setMetrics(metrics);
-                node.setCacheMetrics(cacheMetrics);
-
-                node.lastUpdateTimeNanos(tsNanos);
-
-                notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
-            }
-            else if (log.isDebugEnabled())
-                log.debug("Received metrics from unknown node: " + nodeId);
         }
 
         /**
@@ -6470,8 +6450,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 try {
                     // Set socket options.
-                    sock.setKeepAlive(true);
-                    sock.setTcpNoDelay(true);
+                    spi.configureSocketOptions(sock);
 
                     int timeout = sock.getSoTimeout();
 

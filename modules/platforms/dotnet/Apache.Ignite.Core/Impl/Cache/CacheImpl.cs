@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
+    using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -32,12 +34,15 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Expiry;
+    using Apache.Ignite.Core.Impl.Cache.Platform;
     using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Transactions;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Native cache wrapper.
@@ -66,6 +71,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Pre-allocated delegate. */
         private readonly Func<IBinaryStream, Exception> _readException;
 
+        /** Platform cache. */
+        private readonly IPlatformCache _platformCache;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -84,17 +92,44 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagNoRetries = flagNoRetries;
             _flagPartitionRecover = flagPartitionRecover;
 
-            _txManager = GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional
+            var configuration = GetConfiguration();
+            _txManager = configuration.AtomicityMode == CacheAtomicityMode.Transactional
                 ? new CacheTransactionManager(_ignite.GetIgnite().GetTransactions())
                 : null;
 
             _readException = stream => ReadException(Marshaller.StartUnmarshal(stream));
+
+            if (configuration.PlatformCacheConfiguration != null)
+            {
+                _platformCache = _ignite.PlatformCacheManager.GetOrCreatePlatformCache(configuration);
+            }
         }
 
         /** <inheritDoc /> */
         public IIgnite Ignite
         {
             get { return _ignite.GetIgnite(); }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether this instance has platform cache.
+        /// </summary>
+        private bool HasPlatformCache
+        {
+            get { return _platformCache != null && !_platformCache.IsStopped; }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether platform caching can be used.
+        /// </summary>
+        private bool CanUsePlatformCache
+        {
+            get
+            {
+                // Platform caching within transaction is not supported for now.
+                // Commit/rollback logic requires additional implementation.
+                return HasPlatformCache && (_txManager == null || !_txManager.IsInTx());
+            }
         }
 
         /// <summary>
@@ -157,7 +192,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public CacheConfiguration GetConfiguration()
         {
             return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(
-                BinaryUtils.Marshaller.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion));
+                BinaryUtils.Marshaller.StartUnmarshal(stream)));
         }
 
         /** <inheritDoc /> */
@@ -172,8 +207,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagSkipStore)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithSkipStore),
-                true, _flagKeepBinary, true, _flagPartitionRecover);
+            var target = DoOutOpObject((int) CacheOp.WithSkipStore);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: true,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /// <summary>
@@ -196,14 +237,27 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return result;
             }
 
-            return new CacheImpl<TK1, TV1>(DoOutOpObject((int) CacheOp.WithKeepBinary),
-                _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover);
+            var target = DoOutOpObject((int) CacheOp.WithKeepBinary);
+
+            return new CacheImpl<TK1, TV1>(
+                target,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: true,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
-            return this;
+            var target = DoOutOpObject((int)CacheOp.WithSkipStore);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: true,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -213,7 +267,12 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var cache0 = DoOutOpObject((int)CacheOp.WithExpiryPolicy, w => ExpiryPolicySerializer.WritePolicy(w, plc));
 
-            return new CacheImpl<TK, TV>(cache0, _flagSkipStore, _flagKeepBinary, _flagNoRetries, _flagPartitionRecover);
+            return new CacheImpl<TK, TV>(
+                cache0,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -305,6 +364,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            TV _;
+            if (CanUsePlatformCache && _platformCache.TryGetValue(key, out _))
+            {
+                return true;
+            }
+
             return DoOutOp(CacheOp.ContainsKey, key);
         }
 
@@ -312,6 +377,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         public Task<bool> ContainsKeyAsync(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            TV _;
+            if (CanUsePlatformCache && _platformCache.TryGetValue(key, out _))
+            {
+                return TaskRunner.FromResult(true);
+            }
 
             return DoOutOpAsync<TK, bool>(CacheOp.ContainsKeyAsync, key);
         }
@@ -321,6 +392,36 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            if (CanUsePlatformCache)
+            {
+                var allKeysAreInPlatformCache = true;
+                
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+
+                        TV _;
+                        if (!_platformCache.TryGetValue(key, out _))
+                        {
+                            allKeysAreInPlatformCache = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreInPlatformCache)
+                    {
+                        return true;
+                    }
+
+                    // ReSharper disable AccessToDisposedClosure (operation is synchronous, not an issue).
+                    ICollection<ICacheEntry<TK, TV>> res = null;
+                    return DoOutOp(CacheOp.ContainsKeys,
+                        writer => WriteKeysOrGetFromPlatformCache(writer, enumerator, ref res, discardResults: true));
+                }
+            }
+
             return DoOutOp(CacheOp.ContainsKeys, writer => writer.WriteEnumerable(keys));
         }
 
@@ -328,6 +429,36 @@ namespace Apache.Ignite.Core.Impl.Cache
         public Task<bool> ContainsKeysAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            if (CanUsePlatformCache)
+            {
+                var allKeysAreInPlatformCache = true;
+                
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+
+                        TV _;
+                        if (!_platformCache.TryGetValue(key, out _))
+                        {
+                            allKeysAreInPlatformCache = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreInPlatformCache)
+                    {
+                        return TaskRunner.FromResult(true);
+                    }
+
+                    // ReSharper disable AccessToDisposedClosure (write is synchronous, not an issue).
+                    ICollection<ICacheEntry<TK, TV>> res = null;
+                    return DoOutOpAsync<bool>(CacheOp.ContainsKeysAsync,
+                        writer => WriteKeysOrGetFromPlatformCache(writer, enumerator, ref res, discardResults: true));
+                }
+            }
 
             return DoOutOpAsync<bool>(CacheOp.ContainsKeysAsync, writer => writer.WriteEnumerable(keys));
         }
@@ -339,10 +470,10 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             TV res;
 
-            if (TryLocalPeek(key, out res))
+            if (TryLocalPeek(key, out res, modes))
                 return res;
 
-            throw GetKeyNotFoundException();
+            throw GetKeyNotFoundException(key);
         }
 
         /** <inheritDoc /> */
@@ -350,11 +481,29 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            var res = DoOutInOpX((int)CacheOp.Peek,
+            bool hasPlatformCache;
+            var peekModes = IgniteUtils.EncodePeekModes(modes, out hasPlatformCache);
+
+            if (hasPlatformCache)
+            {
+                if (_platformCache != null && _platformCache.TryGetValue(key, out value))
+                {
+                    return true;
+                }
+
+                if (peekModes == 0)
+                {
+                    // Only Platform is specified.
+                    value = default(TV);
+                    return false;
+                }
+            }
+
+            var res = DoOutInOpX((int) CacheOp.Peek,
                 w =>
                 {
                     w.WriteObjectDetached(key);
-                    w.WriteInt(IgniteUtils.EncodePeekModes(modes));
+                    w.WriteInt(peekModes);
                 },
                 (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
                 _readException);
@@ -382,12 +531,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            TV val;
+            if (CanUsePlatformCache && _platformCache.TryGetValue(key, out val))
+            {
+                return val;
+            }
+
             return DoOutInOpX((int) CacheOp.Get,
                 w => w.Write(key),
                 (stream, res) =>
                 {
                     if (res != True)
-                        throw GetKeyNotFoundException();
+                        throw GetKeyNotFoundException(key);
 
                     return Unmarshal<TV>(stream);
                 }, _readException);
@@ -398,12 +553,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            TV val;
+            if (CanUsePlatformCache && _platformCache.TryGetValue(key, out val))
+            {
+                return TaskRunner.FromResult(val);
+            }
+
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader =>
             {
                 if (reader != null)
                     return reader.ReadObject<TV>();
 
-                throw GetKeyNotFoundException();
+                throw GetKeyNotFoundException(key);
             });
         }
 
@@ -411,6 +572,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         public bool TryGet(TK key, out TV value)
         {
             IgniteArgumentCheck.NotNull(key, "key");
+
+            if (CanUsePlatformCache && _platformCache.TryGetValue(key, out value))
+            {
+                return true;
+            }
 
             var res = DoOutInOpNullable(CacheOp.Get, key);
 
@@ -432,9 +598,60 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
+            if (CanUsePlatformCache)
+            {
+                // Get what we can from platform cache, and the rest from Java.
+                // Enumerator usage is necessary to satisfy performance requirements:
+                // * No overhead when all keys are resolved from platform cache.
+                // * Do not enumerate keys twice.
+                // * Do not allocate a collection for keys.
+                
+                // Resulting collection is null by default:
+                // When no keys are found in platform cache, there is no extra allocations,
+                // because result size will be known.
+                ICollection<ICacheEntry<TK, TV>> res = null;
+                var allKeysAreInPlatformCache = true;
+
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+                        
+                        TV val;
+                        if (_platformCache.TryGetValue(key, out val))
+                        {
+                            res = res ?? new List<ICacheEntry<TK, TV>>();
+                            res.Add(new CacheEntry<TK, TV>(key, val));
+                        }
+                        else
+                        {
+                            allKeysAreInPlatformCache = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreInPlatformCache)
+                    {
+                        return res;
+                    }
+                    
+                    // ReSharper disable AccessToDisposedClosure (operation is synchronous, not an issue).
+                    return DoOutInOpX((int) CacheOp.GetAll,
+                        w => WriteKeysOrGetFromPlatformCache(w, enumerator, ref res),
+                        (s, r) => r == True 
+                            ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary), res) 
+                            : res,
+                        _readException);
+                    // ReSharper restore AccessToDisposedClosure
+                }
+            }
+
             return DoOutInOpX((int) CacheOp.GetAll,
                 writer => writer.WriteEnumerable(keys),
-                (s, r) => r == True ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary)) : null,
+                (s, r) => r == True 
+                    ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary)) 
+                    : null,
                 _readException);
         }
 
@@ -443,7 +660,48 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutOpAsync(CacheOp.GetAllAsync, w => w.WriteEnumerable(keys), r => ReadGetAllDictionary(r));
+            if (CanUsePlatformCache)
+            {
+                // Get what we can from platform cache, and the rest from Java.
+                // Duplicates the logic from GetAll above, but extracting common parts increases complexity too much.
+                ICollection<ICacheEntry<TK, TV>> res = null;
+                var allKeysAreInPlatformCache = true;
+
+                using (var enumerator = keys.GetEnumerator())
+                {
+                    while (enumerator.MoveNext())
+                    {
+                        var key = enumerator.Current;
+
+                        TV val;
+                        if (_platformCache.TryGetValue(key, out val))
+                        {
+                            res = res ?? new List<ICacheEntry<TK, TV>>();
+                            res.Add(new CacheEntry<TK, TV>(key, val));
+                        }
+                        else
+                        {
+                            allKeysAreInPlatformCache = false;
+                            break;
+                        }
+                    }
+
+                    if (allKeysAreInPlatformCache)
+                    {
+                        return TaskRunner.FromResult(res);
+                    }
+
+                    // ReSharper disable AccessToDisposedClosure (write operation is synchronous, not an issue).
+                    return DoOutOpAsync(CacheOp.GetAllAsync,
+                        w => WriteKeysOrGetFromPlatformCache(w, enumerator, ref res),
+                        r => ReadGetAllDictionary(r, res));
+                    // ReSharper restore AccessToDisposedClosure
+                }
+            }
+
+            return DoOutOpAsync(CacheOp.GetAllAsync, 
+                w => w.WriteEnumerable(keys),
+                r => ReadGetAllDictionary(r));
         }
 
         /** <inheritdoc /> */
@@ -454,7 +712,27 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             StartTxIfNeeded();
 
-            DoOutOp(CacheOp.Put, key, val);
+            var platformCache = CanUsePlatformCache;
+            
+            try
+            {
+                if (platformCache)
+                {
+                    // Platform cache optimization on primary nodes:
+                    // Update from Java comes in this same thread, so we don't need to pass key/val from Java.
+                    // However, we still rely on a callback to maintain the order of updates.
+                    _platformCache.SetThreadLocalPair(key, val);
+                }
+
+                DoOutOp(CacheOp.PutWithPlatformCache, key, val);
+            }
+            finally
+            {
+                if (platformCache)
+                {
+                    _platformCache.ResetThreadLocalPair();
+                }
+            }
         }
 
         /** <inheritDoc /> */
@@ -867,11 +1145,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private int Size0(bool loc, params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            int platformCacheSize;
+            bool onlyPlatform;
+            var modes0 = EncodePeekModes(null, modes, out onlyPlatform, out platformCacheSize);
+            
+            if (onlyPlatform)
+            {
+                return platformCacheSize;
+            }
 
             var op = loc ? CacheOp.SizeLoc : CacheOp.Size;
 
-            return (int) DoOutInOp((int) op, modes0); 
+            return (int) DoOutInOp((int) op, modes0) + platformCacheSize; 
         }
         
         /// <summary>
@@ -883,7 +1168,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private long Size0(bool loc, int? part, params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            int platformCacheSize;
+            bool onlyPlatform;
+            var modes0 = EncodePeekModes(part, modes, out onlyPlatform, out platformCacheSize);
+            
+            if (onlyPlatform)
+            {
+                return platformCacheSize;
+            }
 
             var op = loc ? CacheOp.SizeLongLoc : CacheOp.SizeLong; 
            
@@ -900,9 +1192,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 {
                     writer.WriteBoolean(false);   
                 }                     
-            });  
+            }) + platformCacheSize;  
         }
-        
+
         /// <summary>
         /// Internal async integer size routine.
         /// </summary>
@@ -910,9 +1202,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private Task<int> SizeAsync0(params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
-
-            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0));
+            int platformCacheSize;
+            bool onlyPlatform;
+            var modes0 = EncodePeekModes(null, modes, out onlyPlatform, out platformCacheSize);
+            
+            if (onlyPlatform)
+            {
+                return TaskRunner.FromResult(platformCacheSize);
+            }
+            
+            return DoOutOpAsync<int>(CacheOp.SizeAsync, w => w.WriteInt(modes0))
+                .ContWith(t => t.Result + platformCacheSize, TaskContinuationOptions.ExecuteSynchronously);
         }
         
         /// <summary>
@@ -923,7 +1223,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Size.</returns>
         private Task<long> SizeAsync0(int? part, params CachePeekMode[] modes)
         {
-            var modes0 = IgniteUtils.EncodePeekModes(modes);
+            int platformCacheSize;
+            bool onlyPlatform;
+            var modes0 = EncodePeekModes(part, modes, out onlyPlatform, out platformCacheSize);
+            
+            if (onlyPlatform)
+            {
+                return TaskRunner.FromResult((long) platformCacheSize);
+            }
 
             return DoOutOpAsync<long>(CacheOp.SizeLongAsync, writer =>
             {
@@ -938,7 +1245,34 @@ namespace Apache.Ignite.Core.Impl.Cache
                 {
                     writer.WriteBoolean(false);   
                 }             
-            });
+            }).ContWith(t => t.Result + platformCacheSize, TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        /// <summary>
+        /// Encodes peek modes, includes native platform check.
+        /// </summary>
+        private int EncodePeekModes(int? part, CachePeekMode[] modes, out bool onlyPlatform, out int size)
+        {
+            size = 0;
+            onlyPlatform = false;
+            
+            bool hasPlatformCache;
+            var modes0 = IgniteUtils.EncodePeekModes(modes, out hasPlatformCache);
+
+            if (hasPlatformCache)
+            {
+                if (_platformCache != null)
+                {
+                    size += _platformCache.GetSize(part);
+                }
+
+                if (modes0 == 0)
+                {
+                    onlyPlatform = true;
+                }
+            }
+
+            return modes0;
         }
 
         /** <inheritdoc /> */
@@ -1197,8 +1531,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagNoRetries)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithNoRetries),
-                _flagSkipStore, _flagKeepBinary, true, _flagPartitionRecover);
+            var target = DoOutOpObject((int) CacheOp.WithNoRetries);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: true,
+                flagPartitionRecover: _flagPartitionRecover);
         }
 
         /** <inheritDoc /> */
@@ -1207,8 +1547,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (_flagPartitionRecover)
                 return this;
 
-            return new CacheImpl<TK, TV>(DoOutOpObject((int) CacheOp.WithPartitionRecover),
-                _flagSkipStore, _flagKeepBinary, _flagNoRetries, true);
+            var target = DoOutOpObject((int) CacheOp.WithPartitionRecover);
+
+            return new CacheImpl<TK, TV>(
+                target,
+                flagSkipStore: _flagSkipStore,
+                flagKeepBinary: _flagKeepBinary,
+                flagNoRetries: _flagNoRetries,
+                flagPartitionRecover: true);
         }
 
         /** <inheritDoc /> */
@@ -1302,6 +1648,19 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
 
+            if (HasPlatformCache)
+            {
+                // NOTE: Users can pass a ScanQuery that has different generic arguments.
+                // We do not support this scenario for platform cache scan optimization.
+                var scan = qry as ScanQuery<TK, TV>;
+
+                // Local scan with Partition can be satisfied directly from platform cache on server nodes.
+                if (scan != null && scan.Local && scan.Partition != null)
+                {
+                    return ScanPlatformCache(scan);
+                }
+            }
+
             var cursor = DoOutOpObject((int) qry.OpId, writer => qry.Write(writer, IsKeepBinary));
 
             return new QueryCursor<TK, TV>(cursor, _flagKeepBinary);
@@ -1343,7 +1702,27 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritdoc /> */
         public IEnumerable<ICacheEntry<TK, TV>> GetLocalEntries(CachePeekMode[] peekModes)
         {
-            return new CacheEnumerable<TK, TV>(this, IgniteUtils.EncodePeekModes(peekModes));
+            bool hasPlatformCacheMode;
+            var encodedPeekModes = IgniteUtils.EncodePeekModes(peekModes, out hasPlatformCacheMode);
+            var onlyPlatformCacheMode = hasPlatformCacheMode && encodedPeekModes == 0;
+
+            if (HasPlatformCache && hasPlatformCacheMode)
+            {
+                if (onlyPlatformCacheMode)
+                {
+                    // Only platform cache.
+                    return _platformCache.GetEntries<TK, TV>();
+                }
+
+                return _platformCache.GetEntries<TK, TV>().Concat(new CacheEnumerable<TK, TV>(this, encodedPeekModes));
+            }
+
+            if (!HasPlatformCache && onlyPlatformCacheMode)
+            {
+                return Enumerable.Empty<ICacheEntry<TK, TV>>();
+            }
+
+            return new CacheEnumerable<TK, TV>(this, encodedPeekModes);
         }
 
         /** <inheritdoc /> */
@@ -1438,8 +1817,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Read dictionary returned by GET_ALL operation.
         /// </summary>
         /// <param name="reader">Reader.</param>
+        /// <param name="res">Resulting collection.</param>
         /// <returns>Dictionary.</returns>
-        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader)
+        private static ICollection<ICacheEntry<TK, TV>> ReadGetAllDictionary(BinaryReader reader, 
+            ICollection<ICacheEntry<TK, TV>> res = null)
         {
             if (reader == null)
                 return null;
@@ -1450,7 +1831,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 int size = stream.ReadInt();
 
-                var res = new List<ICacheEntry<TK, TV>>(size);
+                res = res ?? new List<ICacheEntry<TK, TV>>(size);
 
                 for (int i = 0; i < size; i++)
                 {
@@ -1480,9 +1861,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Throws the key not found exception.
         /// </summary>
-        private static KeyNotFoundException GetKeyNotFoundException()
+        private static KeyNotFoundException GetKeyNotFoundException(TK key)
         {
-            return new KeyNotFoundException("The given key was not present in the cache.");
+            return new KeyNotFoundException("The given key was not present in the cache: " + key);
         }
 
         /// <summary>
@@ -1638,6 +2019,97 @@ namespace Apache.Ignite.Core.Impl.Cache
                 return 0;
 
             return _ignite.HandleRegistry.Allocate(obj);
+        }
+
+        /// <summary>
+        /// Enumerates provided keys, looking for platform cache values.
+        /// Keys that are not in platform cache are written to the writer.
+        /// </summary>
+        private void WriteKeysOrGetFromPlatformCache(BinaryWriter writer, IEnumerator<TK> enumerator,
+            ref ICollection<ICacheEntry<TK, TV>> res, bool discardResults = false)
+        {
+            var count = 1;
+            var pos = writer.Stream.Position;
+            writer.WriteInt(count); // Reserve count.
+
+            writer.WriteObjectDetached(enumerator.Current);
+
+            while (enumerator.MoveNext())
+            {
+                TV val;
+                if (_platformCache.TryGetValue(enumerator.Current, out val))
+                {
+                    if (!discardResults)
+                    {
+                        res = res ?? new List<ICacheEntry<TK, TV>>();
+                        res.Add(new CacheEntry<TK, TV>(enumerator.Current, val));
+                    }
+                }
+                else
+                {
+                    writer.WriteObjectDetached(enumerator.Current);
+                    count++;
+                }
+            }
+
+            var endPos = writer.Stream.Position;
+            writer.Stream.Seek(pos, SeekOrigin.Begin);
+            writer.WriteInt(count);
+            writer.Stream.Seek(endPos, SeekOrigin.Begin);
+        }
+
+        /// <summary>
+        /// Reserves specified partition.
+        /// </summary>
+        private void ReservePartition(int part)
+        {
+            var reserved = Target.InLongOutLong((int) CacheOp.ReservePartition, part) == True;
+
+            if (!reserved)
+            {
+                // Java exception for Scan Query in this case is 'No queryable nodes for partition N',
+                // which is a bit confusing.
+                throw new InvalidOperationException(
+                    string.Format("Failed to reserve partition {0}, it does not belong to the local node.", part));
+            }
+        }
+
+        /// <summary>
+        /// Releases specified partition.
+        /// </summary>
+        private void ReleasePartition(int part)
+        {
+            var released = Target.InLongOutLong((int) CacheOp.ReleasePartition, part) == True;
+
+            if (!released)
+            {
+                throw new InvalidOperationException("Failed to release partition: " + part);
+            }
+        }
+
+        /// <summary>
+        /// Performs Scan query over platform cache.
+        /// </summary>
+        private IQueryCursor<ICacheEntry<TK, TV>> ScanPlatformCache(ScanQuery<TK, TV> qry)
+        {
+            var filter = qry.Filter;
+
+            if (filter != null)
+            {
+                ResourceProcessor.Inject(filter, Marshaller.Ignite);
+            }
+
+            var part = qry.Partition;
+            Action dispose = null;
+
+            if (part != null)
+            {
+                ReservePartition((int) part);
+                
+                dispose = () => ReleasePartition((int) part);
+            }
+
+            return new PlatformCacheQueryCursor<TK, TV>(_platformCache, filter, part, dispose);
         }
     }
 }

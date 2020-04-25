@@ -320,7 +320,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         try {
             checkClosed();
 
-            final int seg = threadLocalSegment();
+            final int seg = segment(H2Utils.context(filter.getSession()));
 
             final MVRTreeMap<Long> segment = segments[seg];
 
@@ -350,7 +350,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
         IndexingQueryFilter qryFilter = null;
 
-        QueryContext qctx = queryContextRegistry().getThreadLocal();
+        QueryContext qctx = H2Utils.context(filter.getSession());
 
         if (qctx != null)
             qryFilter = qctx.filter();
@@ -387,7 +387,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (!first)
                 throw DbException.throwInternalError("Spatial Index can only be fetch by ascending order");
 
-            final int seg = threadLocalSegment();
+            final int seg = segment(H2Utils.context(ses));
 
             final MVRTreeMap<Long> segment = segments[seg];
 
@@ -429,7 +429,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
             if (intersection == null)
                 return find(filter.getSession(), null, null);
 
-            final int seg = threadLocalSegment();
+            final int seg = segment(H2Utils.context(filter.getSession()));
 
             final MVRTreeMap<Long> segment = segments[seg];
 

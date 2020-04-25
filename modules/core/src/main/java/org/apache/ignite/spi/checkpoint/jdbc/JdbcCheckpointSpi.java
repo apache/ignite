@@ -962,8 +962,7 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     }
 
     /** {@inheritDoc} */
-    @Override
-    public JdbcCheckpointSpi setName(String name) {
+    @Override public JdbcCheckpointSpi setName(String name) {
         super.setName(name);
 
         return this;

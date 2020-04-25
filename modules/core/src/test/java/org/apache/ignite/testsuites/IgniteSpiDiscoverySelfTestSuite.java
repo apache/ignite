@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteClientReconnectEventHandlingTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
+import org.apache.ignite.spi.discovery.tcp.DiscoveryClientSocketTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectTest;
@@ -42,6 +43,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMetricsWarnLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnReconnectTest;
@@ -118,6 +120,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoveryRestartTest.class,
     TcpDiscoveryMultiThreadedTest.class,
+    TcpDiscoveryMetricsWarnLogTest.class,
     //TcpDiscoveryConcurrentStartTest.class,
 
     TcpDiscoverySegmentationPolicyTest.class,
@@ -162,7 +165,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoveryReconnectUnstableTopologyTest.class,
 
-    IgniteMetricsOverflowTest.class
+    IgniteMetricsOverflowTest.class,
+
+    DiscoveryClientSocketTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */
