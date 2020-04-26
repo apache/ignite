@@ -593,7 +593,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         testAllNodes(node -> {
             CacheConfiguration cfg = node.cache(cacheName).getConfiguration(CacheConfiguration.class);
 
-            assertEquals("Node: " + node + "; Query parallelism is wrong.", expParallelism  , cfg.getQueryParallelism());
+            assertEquals("Node: " + node + "; Query parallelism is wrong.", expParallelism, cfg.getQueryParallelism());
         });
     }
 
@@ -1564,8 +1564,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals(expCols, resCols);
 
-            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a")
-                    , resData);
+            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a"), resData);
 
             Object key = createKeyForWrapTest(testUuid ? guid : 1, wrapKey);
 

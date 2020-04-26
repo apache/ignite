@@ -1977,8 +1977,7 @@ public class JdbcThinConnection implements Connection {
                 }
             }
             catch (Exception e) {
-                LOG.log(Level.WARNING, "Connection handler processing failure. Reconnection processes was stopped."
-                    , e);
+                LOG.log(Level.WARNING, "Connection handler processing failure. Reconnection processes was stopped.", e);
 
                 connectionsHndScheduledFut.cancel(false);
             }

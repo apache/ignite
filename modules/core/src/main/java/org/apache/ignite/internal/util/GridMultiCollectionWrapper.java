@@ -34,7 +34,7 @@ public class GridMultiCollectionWrapper<E> implements Collection<E> {
     /**
      * @param collections Collections.
      */
-    public GridMultiCollectionWrapper(Collection<E> ... collections) {
+    public GridMultiCollectionWrapper(Collection<E>... collections) {
         this.collections = collections;
     }
 

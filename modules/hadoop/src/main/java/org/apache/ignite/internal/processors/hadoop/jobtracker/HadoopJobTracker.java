@@ -500,12 +500,12 @@ public class HadoopJobTracker extends HadoopComponent {
             if (meta == null) {
                 fut.onDone();
 
-                activeFinishFuts.remove(jobId , fut);
+                activeFinishFuts.remove(jobId, fut);
             }
             else if (meta.phase() == PHASE_COMPLETE) {
                 fut.onDone(jobId, meta.failCause());
 
-                activeFinishFuts.remove(jobId , fut);
+                activeFinishFuts.remove(jobId, fut);
             }
 
             return fut;

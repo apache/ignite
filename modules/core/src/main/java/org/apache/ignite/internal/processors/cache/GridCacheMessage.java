@@ -539,7 +539,7 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++)
+        for (int i = 0; i < size; i++)
             prepareMarshalCacheObject(col.get(i), ctx);
     }
 
@@ -594,7 +594,7 @@ public abstract class GridCacheMessage implements Message {
 
         int size = col.size();
 
-        for (int i = 0 ; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             CacheObject obj = col.get(i);
 
             if (obj != null)

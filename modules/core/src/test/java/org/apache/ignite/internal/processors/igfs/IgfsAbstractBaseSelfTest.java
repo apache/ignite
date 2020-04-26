@@ -1007,9 +1007,9 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
             totalCnt++;
         }
 
-        dumpCache("MetaCache" , getMetaCache(igfs));
+        dumpCache("MetaCache", getMetaCache(igfs));
 
-        dumpCache("DataCache" , getDataCache(igfs));
+        dumpCache("DataCache", getDataCache(igfs));
 
         fail("Caches are not empty.");
     }

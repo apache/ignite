@@ -149,7 +149,7 @@ class GridUriDeploymentUriParser {
     private String encodePath(String path) {
         StringBuilder buf = new StringBuilder(path.length());
 
-        for (int i = 0; i < path.length() ; i++) {
+        for (int i = 0; i < path.length(); i++) {
             char c = path.charAt(i);
 
             switch (c) {

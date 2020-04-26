@@ -96,7 +96,7 @@ public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
 
                 return null;
             }
-        }, IgniteCheckedException .class, "Query parallelism mismatch");
+        }, IgniteCheckedException.class, "Query parallelism mismatch");
     }
 
     /**
@@ -123,7 +123,7 @@ public class IgniteSqlQueryParallelismTest extends AbstractIndexingCommonTest {
 
                 return null;
             }
-        }, IgniteCheckedException .class, "Query parallelism mismatch");
+        }, IgniteCheckedException.class, "Query parallelism mismatch");
 
     }
 
