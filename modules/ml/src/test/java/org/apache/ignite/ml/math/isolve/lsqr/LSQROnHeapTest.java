@@ -146,7 +146,7 @@ public class LSQROnHeapTest extends TrainerTest {
 
             assertEquals(8, res.getIterations());
 
-            assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
+            assertArrayEquals(new double[]{72.26948107, 15.95144674, 24.07403921, 6.73038781}, res.getX(), 1e-6);
         }
     }
 }

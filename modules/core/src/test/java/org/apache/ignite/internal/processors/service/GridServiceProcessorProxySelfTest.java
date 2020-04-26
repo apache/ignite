@@ -227,7 +227,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services(ignite.cluster().forLocal()).deployClusterSingleton(name, new MapServiceImpl<String, Integer>());
 
         for (int i = 1; i < nodeCount(); i++) {
-            MapService<Integer, String> svc =  grid(i).services()
+            MapService<Integer, String> svc = grid(i).services()
                 .serviceProxy(name, MapService.class, false, 1_000L);
 
             // Make sure service is a proxy.
@@ -292,7 +292,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         // Get remote proxy.
-        MapService<Integer, String> svc =  ignite.services(ignite.cluster().forRemotes()).
+        MapService<Integer, String> svc = ignite.services(ignite.cluster().forRemotes()).
             serviceProxy(name, MapService.class, false);
 
         // Make sure service is a local instance.
@@ -328,7 +328,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
         ignite.services().deployNodeSingleton(name, new MapServiceImpl<String, Integer>());
 
         // Get remote proxy.
-        MapService<Integer, String> svc =  ignite.services(ignite.cluster().forRemotes()).
+        MapService<Integer, String> svc = ignite.services(ignite.cluster().forRemotes()).
             serviceProxy(name, MapService.class, true);
 
         // Make sure service is a local instance.

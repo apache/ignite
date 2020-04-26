@@ -733,7 +733,7 @@ public class BinaryUtils {
         if (arr == null)
             return false;
 
-        Class<?> cls =  arr.getClass();
+        Class<?> cls = arr.getClass();
 
         return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
             cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
@@ -2384,7 +2384,7 @@ public class BinaryUtils {
             }
             else {
                 arr[position++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
-                arr[position++] = (byte)(0x80 | (c  & 0x3F));
+                arr[position++] = (byte)(0x80 | (c & 0x3F));
             }
         }
 

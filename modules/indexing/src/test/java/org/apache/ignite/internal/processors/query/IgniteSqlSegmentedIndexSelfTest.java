@@ -120,7 +120,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         IgniteCache<Object, Object> cache = ignite(0).cache(ORG_CACHE_NAME);
 
         // Unequal entries distribution among partitions.
-        int expSize = nodesCount() * QRY_PARALLELISM_LVL *  3 / 2;
+        int expSize = nodesCount() * QRY_PARALLELISM_LVL * 3 / 2;
 
         for (int i = 0; i < expSize; i++)
             cache.put(i, new Organization("org-" + i));
@@ -145,7 +145,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         IgniteCache<Object, Object> cache = ignite(0).cache(ORG_CACHE_NAME);
 
         // Unequal entries distribution among partitions.
-        long expSize = nodesCount() * QRY_PARALLELISM_LVL *  3 / 2;
+        long expSize = nodesCount() * QRY_PARALLELISM_LVL * 3 / 2;
 
         for (int i = 0; i < expSize; i++)
             cache.put(i, new Organization("org-" + i));

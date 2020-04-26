@@ -60,7 +60,7 @@ public class TrackingPageIOTest {
 
         assertFalse(io.wasChanged(buf, 1, 0, -1, PAGE_SIZE));
         assertFalse(io.wasChanged(buf, 3, 0, -1, PAGE_SIZE));
-        assertFalse(io.wasChanged(buf, 2, 1,  0, PAGE_SIZE));
+        assertFalse(io.wasChanged(buf, 2, 1, 0, PAGE_SIZE));
     }
 
     /**
@@ -119,7 +119,7 @@ public class TrackingPageIOTest {
 
         try {
             for (long i = basePageId; i < basePageId + track; i++) {
-                boolean changed =  (i == basePageId || rand.nextDouble() < 0.5) && i < maxId;
+                boolean changed = (i == basePageId || rand.nextDouble() < 0.5) && i < maxId;
 
                 map.put(i, changed);
 
@@ -130,7 +130,7 @@ public class TrackingPageIOTest {
                 }
 
                 assertEquals(basePageId, PageIO.getPageId(buf));
-                assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId,  PAGE_SIZE));
+                assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId, PAGE_SIZE));
             }
 
             assertEquals(cntOfChanged, io.countOfChangedPage(buf, backupId, PAGE_SIZE));

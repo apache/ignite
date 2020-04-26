@@ -631,7 +631,7 @@ public class TxLog implements DbCheckpointListener {
             assert treeOp == null;
 
             throw new IllegalStateException("Unexpected new transaction state. [currState=" +
-                currState +  ", newState=" + newState +  ", cntr=" + minor + ']');
+                currState + ", newState=" + newState + ", cntr=" + minor + ']');
         }
 
         /**

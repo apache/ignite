@@ -249,11 +249,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             .registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
-        LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
+        LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
         LongMetric receivedKeys = mreg.findMetric("RebalancingReceivedKeys");
-        LongMetric receivedBytes =  mreg.findMetric("RebalancingReceivedBytes");
+        LongMetric receivedBytes = mreg.findMetric("RebalancingReceivedBytes");
 
         assertEquals("During the start of the rebalancing, the number of partitions in the metric should be " +
                 "equal to the number of partitions in the cache group.", DFLT_PARTITION_COUNT, partitionsLeft.value());
@@ -330,7 +330,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         MetricRegistry mreg = ignite1.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
 
         LongMetric startTime = mreg.findMetric("RebalancingStartTime");
-        LongMetric lastCancelledTime =  mreg.findMetric("RebalancingLastCancelledTime");
+        LongMetric lastCancelledTime = mreg.findMetric("RebalancingLastCancelledTime");
         LongMetric endTime = mreg.findMetric("RebalancingEndTime");
         LongMetric partitionsLeft = mreg.findMetric("RebalancingPartitionsLeft");
 

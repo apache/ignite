@@ -49,7 +49,7 @@ public class IgniteDynamicCacheAndNodeStop extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            final  CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+            final CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ignite.createCache(ccfg);
 

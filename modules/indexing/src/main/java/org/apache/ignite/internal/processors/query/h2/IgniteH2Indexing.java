@@ -365,7 +365,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow,  prevRowAvailable);
+        tbl.table().update(row, prevRow, prevRowAvailable);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -803,7 +803,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQuery(final H2PooledConnection conn, final PreparedStatement stmt,
-        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException  {
+        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
         if (cancel != null)
             cancel.add(() -> cancelStatement(stmt));
 
@@ -921,7 +921,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     + e.getMessage());
             }
 
-            throw  e;
+            throw e;
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);

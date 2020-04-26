@@ -670,7 +670,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (log.isDebugEnabled()) {
                     log.debug("Created new full topology map on oldest node [" +
-                        "grp=" +  grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
+                        "grp=" + grp.cacheOrGroupName() + ", exchId=" + exchFut.exchangeId() +
                         ", fullMap=" + node2part + ']');
                 }
             }

@@ -290,7 +290,7 @@ public final class DmlAstUtils {
 
         GridH2RowDescriptor desc = ((GridH2Table) column.column().getTable()).rowDescriptor();
 
-        return  (key ? desc.isKeyColumn(column.column().getColumnId()) :
+        return (key ? desc.isKeyColumn(column.column().getColumnId()) :
                        desc.isValueColumn(column.column().getColumnId())) &&
                 (right instanceof GridSqlConst || right instanceof GridSqlParameter);
     }

@@ -1061,7 +1061,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  + ']');
+                msg.operation().id() + ", msg=" + msg + ']');
 
             return;
         }
@@ -1080,7 +1080,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  + ']');
+                msg.operation().id() + ", msg=" + msg + ']');
     }
 
     /**
@@ -1774,7 +1774,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!res && !ifNotExists)
-            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, entity.getTableName());
     }
 
     /**

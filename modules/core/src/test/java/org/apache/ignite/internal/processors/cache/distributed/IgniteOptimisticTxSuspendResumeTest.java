@@ -203,7 +203,7 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
         startGrid(newNodeIdx);
 
         try {
-            for (Map.Entry<IgniteCache<Integer, Integer>, Map<Transaction, Integer>>  entry : cacheTxMap.entrySet()) {
+            for (Map.Entry<IgniteCache<Integer, Integer>, Map<Transaction, Integer>> entry : cacheTxMap.entrySet()) {
                 IgniteCache<Integer, Integer> cache = entry.getKey();
 
                 for (Map.Entry<Transaction, Integer> suspendedTx : entry.getValue().entrySet()) {

@@ -396,7 +396,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             fail("Unexpected exception: " + e);
         }
 
-        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
+        fail(SchemaOperationException.class.getSimpleName() + " is not thrown.");
     }
 
     /**
@@ -1186,7 +1186,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             fail("Unexpected exception: " + e);
         }
 
-        fail(SchemaOperationException.class.getSimpleName() +  " is not thrown.");
+        fail(SchemaOperationException.class.getSimpleName() + " is not thrown.");
     }
 
     /**
@@ -1461,7 +1461,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             fail("Unexpected exception: " + e);
         }
 
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+        fail(IgniteSQLException.class.getSimpleName() + " is not thrown.");
     }
 
     /** */

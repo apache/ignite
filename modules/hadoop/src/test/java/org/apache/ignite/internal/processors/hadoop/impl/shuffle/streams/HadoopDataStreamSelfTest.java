@@ -123,7 +123,7 @@ public class HadoopDataStreamSelfTest extends GridCommonAbstractTest {
 
         byteArrayOs.close();
 
-        try (DataInputStream in =  new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
+        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(byteArrayOs.toByteArray()))) {
             return readLineStrings(in);
         }
     }

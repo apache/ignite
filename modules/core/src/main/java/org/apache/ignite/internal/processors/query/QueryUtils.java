@@ -579,7 +579,7 @@ public class QueryUtils {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
-        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> precision = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         boolean hasKeyFields = (keyFields != null);
@@ -661,7 +661,7 @@ public class QueryUtils {
         String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
-        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> precision = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
