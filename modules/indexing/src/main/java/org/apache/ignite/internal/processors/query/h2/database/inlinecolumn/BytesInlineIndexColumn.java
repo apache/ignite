@@ -87,7 +87,7 @@ public class BytesInlineIndexColumn extends AbstractInlineIndexColumn {
 
         int res = Integer.signum(len1 - len2);
 
-        if(isValueFull(pageAddr, off))
+        if (isValueFull(pageAddr, off))
             return res;
 
         if (res >= 0)

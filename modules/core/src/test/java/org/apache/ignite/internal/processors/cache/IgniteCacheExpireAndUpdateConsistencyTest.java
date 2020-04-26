@@ -276,7 +276,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
         for (final TestKey key : updates.keySet()) {
             final List<T2<TestValue, TestValue>> keyUpdates = updates.get(key);
 
-            assert(!F.isEmpty(keyUpdates));
+            assert (!F.isEmpty(keyUpdates));
 
             GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {

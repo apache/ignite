@@ -449,7 +449,7 @@ public class GridMapQueryExecutor {
                             dataPageScanEnabled
                         );
 
-                        if(msg != null)
+                        if (msg != null)
                             sendNextPage(node, msg);
                     }
                     else {
@@ -766,7 +766,7 @@ public class GridMapQueryExecutor {
                         req.pageSize(),
                         dataPageScanEnabled);
 
-                    if(msg != null)
+                    if (msg != null)
                         sendNextPage(node, msg);
                 }
                 finally {

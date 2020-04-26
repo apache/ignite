@@ -250,7 +250,7 @@ public class IgniteSqlQueryMinMaxTest extends AbstractIndexingCommonTest {
 
             result = cursor.getAll();
             assertEquals(1, result.size());
-            assertEquals((count - 1)/groupSize, result.get(0).get(0));//groupVal
+            assertEquals((count - 1) / groupSize, result.get(0).get(0));//groupVal
             assertEquals(count - groupSize, result.get(0).get(1));//min(idxVal)
             assertEquals(count - 1, result.get(0).get(2));//max(idxVal)
             assertEquals(count - groupSize, result.get(0).get(3));//min(nonIdxVal)

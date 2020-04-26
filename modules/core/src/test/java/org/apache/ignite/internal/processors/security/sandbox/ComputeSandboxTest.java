@@ -64,7 +64,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
 
     /** */
     @Test
-    public void testCompute(){
+    public void testCompute() {
         computeOperations(grid(CLNT_ALLOWED_WRITE_PROP)).forEach(this::runOperation);
         computeOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
             .forEach(op -> runForbiddenOperation(op, AccessControlException.class));
@@ -72,7 +72,7 @@ public class ComputeSandboxTest extends AbstractSandboxTest {
 
     /** */
     @Test
-    public void testExecutorService(){
+    public void testExecutorService() {
         executorServiceOperations(grid(CLNT_ALLOWED_WRITE_PROP)).forEach(this::runOperation);
         executorServiceOperations(grid(CLNT_FORBIDDEN_WRITE_PROP))
             .forEach(op -> runForbiddenOperation(op, IgniteException.class));

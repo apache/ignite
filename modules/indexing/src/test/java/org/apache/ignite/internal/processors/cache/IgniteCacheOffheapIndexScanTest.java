@@ -80,7 +80,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                while(!end.get())
+                while (!end.get())
                     cache.query(new SqlFieldsQuery("select _val from Person")).getAll();
 
                 return null;

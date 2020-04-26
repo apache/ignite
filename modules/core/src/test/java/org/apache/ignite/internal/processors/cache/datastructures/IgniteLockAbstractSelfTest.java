@@ -739,15 +739,15 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         boolean done = false;
 
-        while(!done) {
+        while (!done) {
             done = true;
 
-            for (IgniteInternalFuture<?> fut : futs){
-                if(!fut.isDone())
+            for (IgniteInternalFuture<?> fut : futs) {
+                if (!fut.isDone())
                     done = false;
             }
 
-            try{
+            try {
                 lock.lock();
 
                 lock.getOrCreateCondition("c1").signal();
@@ -893,12 +893,12 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                                 @Override public Void call() throws Exception {
-                                    try{
+                                    try {
                                         thread.set(Thread.currentThread());
 
                                         l.lockInterruptibly();
                                     }
-                                    catch(IgniteInterruptedException ignored){
+                                    catch (IgniteInterruptedException ignored) {
                                         exceptionThrown.set(true);
                                     }
                                     finally {
@@ -910,7 +910,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
                             });
 
                             // Wait until l.lock() has been called.
-                            while(!l.hasQueuedThreads()){
+                            while (!l.hasQueuedThreads()){
                                 // No-op.
                             }
 
@@ -920,7 +920,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             thread.get().interrupt();
 
-                            while(!done.get()){
+                            while (!done.get()){
                                 // No-op.
                             }
 
@@ -1621,29 +1621,29 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                             latch.await();
 
-                            while(true){
+                            while (true) {
                                 l.lock();
 
                                 try {
                                     long opsCounter = (long) ignite.getOrCreateCache(OPS_COUNTER).get(OPS_COUNTER);
 
-                                    if(opsCounter == opsCount)
+                                    if (opsCounter == opsCount)
                                         break;
 
                                     ignite.getOrCreateCache(OPS_COUNTER).put(OPS_COUNTER, ++opsCounter);
 
                                     localCount++;
 
-                                    if(localCount > 1000){
+                                    if (localCount > 1000) {
                                         assertTrue(localCount < (1 + tolerance) * opsCounter / threadCount);
 
                                         assertTrue(localCount > (1 - tolerance) * opsCounter / threadCount);
                                     }
 
-                                    if(localCount % 100 == 0) {
-                                        info("Node [id=" +ignite.cluster().localNode().id() + "] acquired " +
+                                    if (localCount % 100 == 0) {
+                                        info("Node [id=" + ignite.cluster().localNode().id() + "] acquired " +
                                             localCount + " times. " + "Total ops count: " +
-                                            opsCounter + "/" + opsCount +"]");
+                                            opsCounter + "/" + opsCount + "]");
                                     }
                                 }
                                 finally {
@@ -1667,8 +1667,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         long totalSum = 0;
 
-        for(int i=0; i<gridCount(); i++){
-
+        for (int i = 0; i < gridCount(); i++) {
             totalSum += counts.get(i);
 
             info("Node " + grid(i).localNode().id() + " acquired the lock " + counts.get(i) + " times. ");

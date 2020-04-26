@@ -145,7 +145,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
      * @param cache Ignite cache.
      * @throws Exception If failed.
      */
-    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception{
+    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception {
         final byte[] val = new byte[VAL_SIZE];
 
         for (int i = 0; i < MAX_VALS_AMOUNT * 4; i++)

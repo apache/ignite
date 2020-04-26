@@ -338,7 +338,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
                 throw new IllegalStateException("Unknown algorithm: " + algo);
         }
 
-        return (dataSize/BLOCK_SZ + cntBlocks)*BLOCK_SZ;
+        return (dataSize / BLOCK_SZ + cntBlocks) * BLOCK_SZ;
     }
 
     /**
@@ -486,7 +486,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
             Key key = ks.getKey(masterKeyName, keyStorePwd);
 
-            assertParameter(key != null, "No such master key found [masterKeyName="+ masterKeyName + ']');
+            assertParameter(key != null, "No such master key found [masterKeyName=" + masterKeyName + ']');
 
             masterKey = new KeystoreEncryptionKey(key, null);
 

@@ -153,7 +153,7 @@ public abstract class AbstractInlineIndexColumn implements InlineIndexColumn {
     }
 
     /** {@inheritDoc} */
-    @Override public int inlineSizeOf(Value val){
+    @Override public int inlineSizeOf(Value val) {
         if (val.getType() == Value.NULL)
             return 1;
 
