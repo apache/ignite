@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessag
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessageWriteTimeoutTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsStateValidatorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsUpdateCountersAndSizeTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
@@ -213,6 +214,7 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(GridCacheLifecycleAwareSelfTest.class);
         ignoredTests.add(IgniteCacheMessageWriteTimeoutTest.class);
         ignoredTests.add(GridCachePartitionsStateValidatorSelfTest.class);
+        ignoredTests.add(GridCachePartitionsUpdateCountersAndSizeTest.class);
         ignoredTests.add(IgniteVariousConnectionNumberTest.class);
         ignoredTests.add(IgniteIncompleteCacheObjectSelfTest.class);
 
