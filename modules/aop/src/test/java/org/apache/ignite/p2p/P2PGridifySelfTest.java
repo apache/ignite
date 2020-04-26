@@ -140,7 +140,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
         );
 
         // Test property file load.
-        byte [] bytes = new byte[20];
+        byte[] bytes = new byte[20];
 
         try (InputStream in = tstClsLdr.getResourceAsStream(path)) {
             if (in == null) {

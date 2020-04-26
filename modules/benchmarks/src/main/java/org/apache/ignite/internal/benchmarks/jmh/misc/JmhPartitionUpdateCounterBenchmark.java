@@ -55,7 +55,7 @@ public class JmhPartitionUpdateCounterBenchmark {
     private static final int COUNTER_MAX_DELTA = 50;
 
     /** Testing gaps buffer. */
-    private final long [][] gapsBuf = new long[GAPS_BUFFER_SIZE][];
+    private final long[][] gapsBuf = new long[GAPS_BUFFER_SIZE][];
 
     /** Random numbers generator. */
     private Random rnd;

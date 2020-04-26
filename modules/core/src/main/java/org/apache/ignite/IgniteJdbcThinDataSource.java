@@ -126,7 +126,7 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
         if (addrs == null)
             return null;
 
-        String [] addrsStr = new String[addrs.length];
+        String[] addrsStr = new String[addrs.length];
 
         for (int i = 0; i < addrs.length; ++i)
             addrsStr[i] = addrs[i].toString();
