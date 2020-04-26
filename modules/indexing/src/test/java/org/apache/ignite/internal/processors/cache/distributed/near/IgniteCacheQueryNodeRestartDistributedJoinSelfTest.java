@@ -201,7 +201,7 @@ public class IgniteCacheQueryNodeRestartDistributedJoinSelfTest extends IgniteCa
                             info("Executed queries: " + c);
                     }
                 }
-                catch (Throwable e){
+                catch (Throwable e) {
                     e.printStackTrace();
 
                     error("Got exception: " + e.getMessage());

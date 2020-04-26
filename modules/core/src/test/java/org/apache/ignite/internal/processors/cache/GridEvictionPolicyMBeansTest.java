@@ -101,7 +101,7 @@ public class GridEvictionPolicyMBeansTest extends GridCommonAbstractTest {
 
     /** Check that eviction bean is available */
     @Test
-    public void testEvictionPolicyBeans() throws Exception{
+    public void testEvictionPolicyBeans() throws Exception {
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxSize", 100);
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "BatchSize", 10);
         checkBean("cache1", "org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy", "MaxMemorySize", 20L);

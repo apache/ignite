@@ -386,7 +386,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
                 info("Expects '" + e.getKey() + "' fails with grid client exception.");
             }
-            catch (GridServerUnreachableException |GridClientClosedException ignore) {
+            catch (GridServerUnreachableException | GridClientClosedException ignore) {
                 // No op: compute projection is empty.
             }
         }

@@ -280,8 +280,8 @@ public class GridSqlQuerySplitter {
         // Do the actual query split. We will update the original query AST, need to be careful.
         splitter.splitQuery(qry);
 
-        assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
-        assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
+        assert !F.isEmpty(splitter.mapSqlQrys) : "map"; // We must have at least one map query.
+        assert splitter.rdcSqlQry != null : "rdc"; // We must have a reduce query.
 
         // If we have distributed joins, then we have to optimize all MAP side queries
         // to have a correct join order with respect to batched joins and check if we need
@@ -701,7 +701,7 @@ public class GridSqlQuerySplitter {
         for (int i = begin; i <= end; i++) {
             GridSqlAlias uniqueTblAlias = model.childModel(i).uniqueAlias();
 
-            assert uniqueTblAlias != null: select.getSQL();
+            assert uniqueTblAlias != null : select.getSQL();
 
             tblAliases.add(uniqueTblAlias);
         }
@@ -1392,7 +1392,7 @@ public class GridSqlQuerySplitter {
         GridSqlAst tbl = GridSqlAlias.unwrap(child);
 
         assert tbl instanceof GridSqlTable || tbl instanceof GridSqlSubquery ||
-            tbl instanceof GridSqlFunction: tbl.getClass();
+            tbl instanceof GridSqlFunction : tbl.getClass();
 
         String uniqueAlias = nextUniqueTableAlias(tbl != child ? ((GridSqlAlias)child).alias() : null);
 
@@ -1493,7 +1493,7 @@ public class GridSqlQuerySplitter {
             GridSqlAlias uniqueAlias = uniqueFromAliases.get(tbl);
 
             // Unique aliases must be generated for all the table filters already.
-            assert uniqueAlias != null: childIdx + "\n" + parent.getSQL();
+            assert uniqueAlias != null : childIdx + "\n" + parent.getSQL();
 
             col.tableAlias(uniqueAlias.alias());
             col.expressionInFrom(uniqueAlias);

@@ -1712,7 +1712,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
-        if(cacheCtx.mvccEnabled())
+        if (cacheCtx.mvccEnabled())
             return mvccRemoveAllAsync0(cacheCtx, keys, retval, filter);
 
         try {

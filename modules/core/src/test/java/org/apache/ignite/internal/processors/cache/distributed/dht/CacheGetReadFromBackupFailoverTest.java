@@ -218,7 +218,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
 
         stop.set(true);
 
-        while (true){
+        while (true) {
             try {
                 fut.get(10_000);
 

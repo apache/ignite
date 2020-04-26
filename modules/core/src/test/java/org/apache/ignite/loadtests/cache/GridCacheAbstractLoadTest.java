@@ -180,7 +180,7 @@ abstract class GridCacheAbstractLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
-                    while(!done.get()) {
+                    while (!done.get()) {
                         if (tx) {
                             try (Transaction tx = ignite.transactions().txStart()) {
                                 readClos.apply(cache);

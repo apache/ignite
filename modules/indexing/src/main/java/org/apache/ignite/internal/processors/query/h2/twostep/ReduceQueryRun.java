@@ -113,7 +113,7 @@ public class ReduceQueryRun {
      *
      * @param state state
      */
-    private void setState0(State state){
+    private void setState0(State state) {
         if (!this.state.compareAndSet(null, state))
             return;
 
@@ -139,7 +139,7 @@ public class ReduceQueryRun {
     }
 
     /** */
-    boolean hasErrorOrRetry(){
+    boolean hasErrorOrRetry() {
         return state.get() != null;
     }
 
@@ -155,7 +155,7 @@ public class ReduceQueryRun {
     /**
      * @return Retry topology version.
      */
-    AffinityTopologyVersion retryTopologyVersion(){
+    AffinityTopologyVersion retryTopologyVersion() {
         State st = state.get();
 
         return st != null ? st.retryTopVer : null;
@@ -173,7 +173,7 @@ public class ReduceQueryRun {
     /**
      * @return Retry cause.
      */
-    String retryCause(){
+    String retryCause() {
         State st = state.get();
 
         return st != null ? st.retryCause : null;
@@ -242,7 +242,7 @@ public class ReduceQueryRun {
         private final String retryCause;
 
         /** */
-        private State(UUID nodeId, CacheException ex, AffinityTopologyVersion retryTopVer, String retryCause){
+        private State(UUID nodeId, CacheException ex, AffinityTopologyVersion retryTopVer, String retryCause) {
             this.nodeId = nodeId;
             this.ex = ex;
             this.retryTopVer = retryTopVer;

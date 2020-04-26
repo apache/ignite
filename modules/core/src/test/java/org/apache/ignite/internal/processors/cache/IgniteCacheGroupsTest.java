@@ -871,7 +871,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Affinity<Integer> aff = affinity(cache1);
 
-        for(int i = 0; i < keys; i++) {
+        for (int i = 0; i < keys; i++) {
             if (aff.partition(i) == p)
                 keysSet.add(i);
         }
@@ -891,7 +891,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         aff = affinity(cache2);
 
-        for(int i = 0; i < keys; i++) {
+        for (int i = 0; i < keys; i++) {
             if (aff.partition(i) == p)
                 keysSet.add(i);
         }
@@ -927,7 +927,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         srv0.createCache(cacheConfiguration(GROUP1, CACHE1, cacheMode, atomicityMode, 2, false));
         srv0.createCache(cacheConfiguration(GROUP1, CACHE2, cacheMode, atomicityMode, 2, false));
 
-        if(!loc)
+        if (!loc)
             awaitPartitionMapExchange();
 
         if (atomicityMode == TRANSACTIONAL) {
@@ -1247,7 +1247,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         Set<Integer> locKeys = new TreeSet<>();
 
         for (int key = 0; key < data.length; key++) {
-            if(aff.isPrimaryOrBackup(node, key))
+            if (aff.isPrimaryOrBackup(node, key))
                 locKeys.add(key);
         }
 
@@ -2294,7 +2294,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                         if (j % loaders == i)
                             futs.add(ldr.addData(j, data[j]));
 
-                        if(j % (100 * loaders) == 0)
+                        if (j % (100 * loaders) == 0)
                             ldr.flush();
                     }
 
@@ -4044,7 +4044,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 }
                             }
                         }
-                        catch (Exception e){
+                        catch (Exception e) {
                             log.error("Unexpected error: " + e, e);
 
                             err.set(e);
@@ -4080,7 +4080,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                 }
                             }
                         }
-                        catch (Exception e){
+                        catch (Exception e) {
                             log.error("Unexpected error: " + e, e);
 
                             err.set(e);

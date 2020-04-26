@@ -291,7 +291,7 @@ class HadoopV2JobResourceManager {
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to prepare local working directory for the task " +
-                 "[jobId=" + jobId + ", path=" + path+ ']', e);
+                 "[jobId=" + jobId + ", path=" + path + ']', e);
         }
     }
 

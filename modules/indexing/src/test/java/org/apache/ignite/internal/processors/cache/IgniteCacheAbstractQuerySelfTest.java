@@ -261,7 +261,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for(String cacheName : ignite().cacheNames())
+        for (String cacheName : ignite().cacheNames())
             ignite().cache(cacheName).destroy();
     }
 
@@ -1092,7 +1092,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testScanQuery() throws Exception {
         IgniteCache<Integer, String> c1 = jcache(Integer.class, String.class);
 
-        Map<Integer, String> map = new HashMap<Integer, String>(){{
+        Map<Integer, String> map = new HashMap<Integer, String>() {{
             for (int i = 0; i < 5000; i++)
                 put(i, "str" + i);
         }};
@@ -1833,7 +1833,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testLocalSqlFieldsQueryFromClient() throws Exception {
-        try(Ignite g = startClientGrid("client")) {
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<UUID, Person> c = jcache(g, UUID.class, Person.class);
 
             Person p = new Person("Jon", 1500);

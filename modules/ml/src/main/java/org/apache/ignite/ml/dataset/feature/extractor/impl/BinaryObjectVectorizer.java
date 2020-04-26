@@ -136,7 +136,7 @@ public final class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoord
          * Converts mapping to HashMap.
          */
         private HashMap<Object, Double> toMap() {
-            if(!value.containsKey(DEFAULT_VALUE))
+            if (!value.containsKey(DEFAULT_VALUE))
                 value.put(DEFAULT_VALUE, null);
 
             return value;

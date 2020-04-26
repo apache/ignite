@@ -227,12 +227,12 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(grpId, grid().cachex(cacheName1).context().groupId());
 
-        try(IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(cacheName0)) {
+        try (IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(cacheName0)) {
             for (int i = 0; i < ENTRIES / 2; ++i)
                 streamer.addData(i, new Value(i));
         }
 
-        try(IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(cacheName1)) {
+        try (IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(cacheName1)) {
             for (int i = ENTRIES / 2; i < ENTRIES; ++i)
                 streamer.addData(i, new Value(i));
         }
@@ -389,7 +389,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
      * @param name Cache name.
      */
     private void fillCache(String name) {
-        try(IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(name)) {
+        try (IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(name)) {
             for (int i = 0; i < ENTRIES; ++i)
                 streamer.addData(i, new Value(i));
         }

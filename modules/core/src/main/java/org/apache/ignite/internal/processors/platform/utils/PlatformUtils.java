@@ -623,7 +623,7 @@ public class PlatformUtils {
      * @param evtType Type of event.
      */
     private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
-        switch (evtType){
+        switch (evtType) {
             case CREATED: writer.writeByte((byte) 0); break;
             case UPDATED: writer.writeByte((byte) 1); break;
             case REMOVED: writer.writeByte((byte) 2); break;

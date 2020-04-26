@@ -1445,7 +1445,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         try {
             r.run();
         }
-        catch (IgniteException ie){
+        catch (IgniteException ie) {
             assertTrue("Unexpected exception: " + ie, ie.getCause() instanceof CacheException);
 
             checkCacheException(msg, expCode, (CacheException)ie.getCause());

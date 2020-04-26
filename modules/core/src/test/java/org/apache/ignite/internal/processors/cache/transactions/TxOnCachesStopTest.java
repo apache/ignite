@@ -450,7 +450,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         final AtomicInteger cacheIdxToBeDestroyed,
         final List<Ignite> clients,
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation){
+        TransactionIsolation isolation) {
         final GridCompoundFuture fut = new GridCompoundFuture();
 
         for (Ignite c : clients) {

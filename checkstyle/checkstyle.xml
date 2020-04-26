@@ -40,6 +40,16 @@
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
 
+        <!-- Whitespaces: See: https://checkstyle.sourceforge.io/config_whitespace.html -->
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+            <property name="allowEmptyLoops" value="true"/>
+            <property name="allowEmptyLambdas" value="true"/>
+            <property name="allowEmptyCatches" value="true"/>
+        </module>
+
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->
         <module name="ModifierOrder"/>
 

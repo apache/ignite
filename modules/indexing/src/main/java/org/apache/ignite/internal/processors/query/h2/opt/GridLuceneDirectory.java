@@ -198,7 +198,7 @@ public class GridLuceneDirectory extends BaseDirectory implements Accountable {
             }
             catch (IOException e) {
                 if (errs == null)
-                    errs = new IgniteException("Failed to close index directory."+
+                    errs = new IgniteException("Failed to close index directory." +
                     " Some index readers weren't closed properly, that may leads memory leak.");
 
                 errs.addSuppressed(e);

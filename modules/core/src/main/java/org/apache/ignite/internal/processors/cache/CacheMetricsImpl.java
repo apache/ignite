@@ -925,7 +925,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      * @param duration Duration.
      */
-    private void recalculateInvokeMinTimeNanos(long duration){
+    private void recalculateInvokeMinTimeNanos(long duration) {
         long minTime = entryProcessorMinInvocationTime.value();
 
         while (minTime > duration || minTime == 0) {
@@ -941,7 +941,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      *
      * @param duration Duration.
      */
-    private void recalculateInvokeMaxTimeNanos(long duration){
+    private void recalculateInvokeMaxTimeNanos(long duration) {
         long maxTime = entryProcessorMaxInvocationTime.value();
 
         while (maxTime < duration) {
@@ -965,7 +965,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /**
      * Cache remove callback.
      */
-    public void onRemove(){
+    public void onRemove() {
         rmCnt.increment();
 
         if (delegate != null)
@@ -1306,7 +1306,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /**
      *
      */
-    public void startRebalance(long delay){
+    public void startRebalance(long delay) {
         rebalanceStartTime.value(delay + U.currentTimeMillis());
     }
 
