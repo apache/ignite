@@ -42,7 +42,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
         "(?, ?, ?, ?, ?), (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)";
 
     /** Arguments for prepared statement. */
-    private final Object [][] args = new Object[][] {
+    private final Object[][] args = new Object[][] {
         {"p1", 1, "John", "White", 25},
         {"p3", 3, "Mike", "Green", 40},
         {"p2", 2, "Joe", "Black", 35}
