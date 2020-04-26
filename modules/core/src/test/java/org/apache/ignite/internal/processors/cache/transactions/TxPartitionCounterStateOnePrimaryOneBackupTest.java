@@ -52,7 +52,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int[] BACKUP_COMMIT_ORDER = new int[] {1, 2, 0};
 
     /** */
-    private static final int [] SIZES = new int[] {5, 7, 3};
+    private static final int[] SIZES = new int[] {5, 7, 3};
 
     /** */
     private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
