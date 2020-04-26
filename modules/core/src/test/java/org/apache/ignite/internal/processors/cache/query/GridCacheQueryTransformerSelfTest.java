@@ -174,7 +174,7 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
         Affinity<Integer> affinity = affinity(cache);
 
         try {
-            int [] keys = new int[50];
+            int[] keys = new int[50];
 
             for (int i = 0, j = 0; i < keys.length; j++) {
                 if (affinity.partition(j) == 0)
