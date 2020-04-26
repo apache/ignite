@@ -76,9 +76,7 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
         return requestId;
     }
 
-    /**
-     *
-     */
+    /** */
     public Throwable getError() {
         return err;
     }
