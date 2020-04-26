@@ -133,8 +133,8 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         Reader isr = new InputStreamReader(getClass().getResourceAsStream("bigQuery.sql"));
 
-        try(BufferedReader reader = new BufferedReader(isr)) {
-            for(String line; (line = reader.readLine()) != null; )
+        try (BufferedReader reader = new BufferedReader(isr)) {
+            for (String line; (line = reader.readLine()) != null; )
                 if (!line.startsWith("--")) // Skip commented lines.
                     res += line + '\n';
         }
@@ -174,19 +174,19 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     @Override protected void initCacheAndDbData() throws SQLException {
         final AtomicInteger idGen = new AtomicInteger();
 
-        final Iterable<Integer> rootOrderIds = new ArrayList<Integer>(){{
+        final Iterable<Integer> rootOrderIds = new ArrayList<Integer>() {{
             for (int i = 0; i < ROOT_ORDER_CNT; i++)
                 add(idGen.incrementAndGet());
         }};
 
         final Date curDate = new Date(new java.util.Date().getTime());
 
-        final List<Date> dates = new ArrayList<Date>(){{
+        final List<Date> dates = new ArrayList<Date>() {{
             for (int i = 0; i < DATES_CNT; i++)
                 add(new Date(curDate.getTime() - i * 24 * 60 * 60 * 1000)); // Minus i days.
         }};
 
-        final Iterable<CustOrder> orders = new ArrayList<CustOrder>(){{
+        final Iterable<CustOrder> orders = new ArrayList<CustOrder>() {{
             for (int rootOrderId : rootOrderIds) {
                 // Generate 1 - 5 orders for 1 root order.
                 for (int i = 0; i < rootOrderId % 5; i++) {
@@ -204,7 +204,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             }
         }};
 
-        final Collection<OrderParams> params = new ArrayList<OrderParams>(){{
+        final Collection<OrderParams> params = new ArrayList<OrderParams>() {{
             for (CustOrder o : orders) {
                 OrderParams op = new OrderParams(idGen.incrementAndGet(), o.orderId, o.date,
                     o.orderId % 2 == 0 ? "Algo 1" : "Algo 2");
@@ -217,7 +217,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             }
         }};
 
-        final Collection<ReplaceOrder> replaces = new ArrayList<ReplaceOrder>(){{
+        final Collection<ReplaceOrder> replaces = new ArrayList<ReplaceOrder>() {{
             for (CustOrder o : orders) {
                 if (o.orderId % 7 == 0) {
                     ReplaceOrder replace = new ReplaceOrder(idGen.incrementAndGet(), o.orderId, o.rootOrderId, o.alias,
@@ -232,7 +232,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             }
         }};
 
-        final Collection<Cancel> cancels = new ArrayList<Cancel>(){{
+        final Collection<Cancel> cancels = new ArrayList<Cancel>() {{
             for (CustOrder o : orders) {
                 if (o.orderId % 9 == 0) {
                     Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId,
@@ -247,7 +247,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             }
         }};
 
-        final Collection<Exec> execs = new ArrayList<Exec>(){{
+        final Collection<Exec> execs = new ArrayList<Exec>() {{
             for (int rootOrderId : rootOrderIds) {
                 int execShares = 10000 + rootOrderId;
                 int price = 1000 + rootOrderId;
@@ -375,7 +375,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @param o CustOrder.
      */
     private void insertInDb(CustOrder o) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"custord\".CustOrder (_key, _val, orderId, rootOrderId, date, alias, archSeq, origOrderId) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
@@ -399,7 +399,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @param o ReplaceOrder.
      */
     private void insertInDb(ReplaceOrder o) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"replord\".ReplaceOrder (_key, _val, id, orderId, rootOrderId, date, alias, archSeq, refOrderId) " +
                 "values(?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
@@ -424,7 +424,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @param o OrderParams.
      */
     private void insertInDb(OrderParams o) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"ordparam\".OrderParams (_key, _val, id, date, orderId, parentAlgo) values(?, ?, ?, ?, ?, ?)")) {
             int i = 0;
 
@@ -445,7 +445,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @param o Cancel.
      */
     private void insertInDb(Cancel o) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"cancel\".Cancel (_key, _val, id, date, refOrderId) values(?, ?, ?, ?, ?)")) {
             int i = 0;
 
@@ -465,7 +465,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
      * @param o Execution.
      */
     private void insertInDb(Exec o) throws SQLException {
-        try(PreparedStatement st = conn.prepareStatement(
+        try (PreparedStatement st = conn.prepareStatement(
             "insert into \"exec\".Exec (_key, _val, date, rootOrderId, execShares, price, lastMkt) " +
                 "values(?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;

@@ -469,7 +469,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     /**
      *
      */
-    private static class Message implements Serializable{
+    private static class Message implements Serializable {
         /** Thread name. */
         private final String threadName;
 

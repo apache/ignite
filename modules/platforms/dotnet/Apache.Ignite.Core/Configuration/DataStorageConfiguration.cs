@@ -264,7 +264,6 @@ namespace Apache.Ignite.Core.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
         internal void Write(IBinaryRawWriter writer)
         {
             Debug.Assert(writer != null);

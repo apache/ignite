@@ -258,7 +258,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         assertEquals(2, cursors.size());
 
-        for(FieldsQueryCursor<List<?>> cur : cursors)
+        for (FieldsQueryCursor<List<?>> cur : cursors)
             U.closeQuiet(cur);
 
         qry.setLocal(true);
@@ -278,7 +278,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @return Int.
      */
-    private static int i(List<?> l, int idx){
+    private static int i(List<?> l, int idx) {
         return ((Number)l.get(idx)).intValue();
     }
 

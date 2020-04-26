@@ -1272,7 +1272,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                     provider.start(ctx.plugins().pluginContextForProvider(provider));
 
-                    startTimer.finishGlobalStage("Start '"+ provider.name() + "' plugin");
+                    startTimer.finishGlobalStage("Start '" + provider.name() + "' plugin");
                 }
 
                 // Start platform plugins.
@@ -4469,7 +4469,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
 
-        if(cls.equals(GridSecurityProcessor.class))
+        if (cls.equals(GridSecurityProcessor.class))
             return null;
 
         if (cls.equals(IgniteRestProcessor.class))

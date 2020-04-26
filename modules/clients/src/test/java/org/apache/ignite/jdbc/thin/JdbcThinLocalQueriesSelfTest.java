@@ -93,7 +93,7 @@ public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
                 // Test paged fetch. Different client threads may be used.
                 stmt.setFetchSize(1);
 
-                try(ResultSet rs = stmt.executeQuery("SELECT * FROM TEST")) {
+                try (ResultSet rs = stmt.executeQuery("SELECT * FROM TEST")) {
                     int cnt = 0;
 
                     while (rs.next())

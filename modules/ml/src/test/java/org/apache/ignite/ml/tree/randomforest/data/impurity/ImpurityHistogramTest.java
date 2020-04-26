@@ -46,7 +46,7 @@ public class ImpurityHistogramTest {
     protected Random rnd = new Random();
 
     static {
-        for(int i = 0; i < COUNT_OF_CLASSES; i++)
+        for (int i = 0; i < COUNT_OF_CLASSES; i++)
             lblMapping.put((double)i, i);
     }
 

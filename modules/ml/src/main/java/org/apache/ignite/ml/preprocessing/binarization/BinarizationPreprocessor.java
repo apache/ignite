@@ -64,7 +64,7 @@ public final class BinarizationPreprocessor<K, V> implements Preprocessor<K, V>,
         LabeledVector res = basePreprocessor.apply(k, v);
 
         for (int i = 0; i < res.size(); i++) {
-            if(res.get(i) > threshold) res.set(i, 1.0);
+            if (res.get(i) > threshold) res.set(i, 1.0);
             else res.set(i, 0.0);
         }
 

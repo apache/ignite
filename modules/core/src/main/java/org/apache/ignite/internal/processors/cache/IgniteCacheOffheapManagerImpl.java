@@ -2021,7 +2021,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // Make sure value bytes initialized.
                 key.valueBytes(coCtx);
 
-                if(val != null)
+                if (val != null)
                     val.valueBytes(coCtx);
 
                  MvccUpdateDataRow updateRow = new MvccUpdateDataRow(
@@ -2183,7 +2183,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 procRes = entryProc.process(invokeEntry, invokeArgs);
 
-                if(invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
+                if (invokeEntry.modified() && invokeEntry.op() != CacheInvokeEntry.Operation.REMOVE) {
                     Object val = invokeEntry.getValue(true);
 
                     CacheObject val0 = cctx.toCacheObject(val);

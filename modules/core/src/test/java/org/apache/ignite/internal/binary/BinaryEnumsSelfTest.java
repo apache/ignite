@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -248,7 +247,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
     private void checkInstanceFromBytes(BinaryContext binCtx, int ord, int typeId, String clsName)
         throws IgniteCheckedException {
 
-        BinaryEnumObjectImpl srcBinEnum =new BinaryEnumObjectImpl(binCtx, typeId, clsName, ord);
+        BinaryEnumObjectImpl srcBinEnum = new BinaryEnumObjectImpl(binCtx, typeId, clsName, ord);
 
         Marshaller marsh = node1.configuration().getMarshaller();
 

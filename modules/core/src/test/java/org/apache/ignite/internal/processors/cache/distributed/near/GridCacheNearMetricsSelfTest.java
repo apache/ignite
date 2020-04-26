@@ -232,7 +232,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 assertEquals(0, jcache.localMetrics().getCacheHits());
                 assertEquals(1, jcache.localMetrics().getCacheMisses());
             }
-            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)){
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
                 assertEquals(1, jcache.localMetrics().getCacheGets());
                 assertEquals(1, jcache.localMetrics().getCacheHits());
                 assertEquals(0, jcache.localMetrics().getCacheMisses());
@@ -285,7 +285,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 assertEquals(0, jcache.localMetrics().getCacheHits());
                 assertEquals(1, jcache.localMetrics().getCacheMisses());
             }
-            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)){
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
                 assertEquals(0, jcache.localMetrics().getCacheGets());
                 assertEquals(0, jcache.localMetrics().getCacheHits());
                 assertEquals(0, jcache.localMetrics().getCacheMisses());
@@ -448,7 +448,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 assertEquals(0, jcache.localMetrics().getCacheHits());
                 assertEquals(2, jcache.localMetrics().getCacheMisses());
             }
-            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)){
+            else if (affinity(jcache).isBackup(g.cluster().localNode(), key)) {
                 assertEquals(0, jcache.localMetrics().getCacheGets());
                 assertEquals(0, jcache.localMetrics().getCacheHits());
                 assertEquals(0, jcache.localMetrics().getCacheMisses());

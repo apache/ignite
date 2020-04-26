@@ -695,7 +695,7 @@ public class CacheMvccSelectForUpdateQueryBasicTest  extends CacheMvccAbstractTe
 //                                .getAll();
 //                        }
 //                        else {
-                            node.cache("dummy").query(new SqlFieldsQuery("SELECT * FROM person WHERE id="+ key +
+                            node.cache("dummy").query(new SqlFieldsQuery("SELECT * FROM person WHERE id=" + key +
                                 " FOR UPDATE")
                                 .setTimeout(1, TimeUnit.SECONDS))
                                 .getAll();
