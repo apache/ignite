@@ -24,7 +24,7 @@ public class ClientFlag {
     /**
      * No-op constructor to prevent instantiation.
      */
-    private ClientFlag () {
+    private ClientFlag() {
         // No-op.
     }
 

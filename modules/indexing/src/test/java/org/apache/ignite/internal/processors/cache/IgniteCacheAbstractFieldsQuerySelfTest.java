@@ -583,7 +583,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
      * @param fldsQry Query.
      * @throws Exception if failed.
      */
-    private void doTestExecute (IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws Exception {
+    private void doTestExecute(IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws Exception {
         QueryCursor<List<?>> qry = cache.query(fldsQry);
 
         List<List<?>> res = new ArrayList<>(qry.getAll());

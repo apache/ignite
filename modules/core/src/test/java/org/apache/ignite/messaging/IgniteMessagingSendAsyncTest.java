@@ -64,7 +64,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     public void testSendDefaultMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        send(ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread> () {
+        send(ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread>() {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
@@ -81,7 +81,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     public void testSendAsyncMode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        send(ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread> () {
+        send(ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread>() {
             @Override public void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
@@ -99,7 +99,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
-        sendWith2Nodes(ignite2, ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread> () {
+        sendWith2Nodes(ignite2, ignite1.message(), msgStr, new IgniteBiInClosure<String, Thread>() {
             @Override public  void apply(String msg, Thread thread) {
                 Assert.assertEquals(Thread.currentThread(), thread);
                 Assert.assertEquals(msgStr, msg);
@@ -117,7 +117,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
-        sendWith2Nodes(ignite2, ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread> () {
+        sendWith2Nodes(ignite2, ignite1.message(), msgStr,  new IgniteBiInClosure<String, Thread>() {
             @Override public  void apply(String msg, Thread thread) {
                 Assert.assertTrue(!Thread.currentThread().equals(thread));
                 Assert.assertEquals(msgStr, msg);
@@ -136,7 +136,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         final List<String> msgs = orderedMessages();
 
-        sendOrdered(ignite1.message(), msgs, new IgniteBiInClosure< List<String>,  List<Thread>> () {
+        sendOrdered(ignite1.message(), msgs, new IgniteBiInClosure< List<String>,  List<Thread>>() {
             @Override public void apply(List<String> received, List<Thread> threads) {
                 assertFalse(threads.contains(Thread.currentThread()));
                 assertTrue(msgs.equals(received));

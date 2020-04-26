@@ -67,7 +67,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         log.info(obj.toStringManual());
         log.info(obj.toStringAutomatic());
 
-        assertEquals (obj.toStringManual(), obj.toStringAutomatic());
+        assertEquals(obj.toStringManual(), obj.toStringAutomatic());
     }
 
     /**
