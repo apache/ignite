@@ -24,7 +24,7 @@ public final class ClientStatus {
     /**
      * No-op constructor to prevent instantiation.
      */
-    private ClientStatus (){
+    private ClientStatus() {
         // No-op.
     }
 
