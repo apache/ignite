@@ -84,5 +84,18 @@
             <property name="tokens" value="AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR,
                 INDEX_OP, METHOD_REF"/>
         </module>
+
+        <!--
+            Checks that there is no whitespace before a token.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#NoWhitespaceBefore
+        -->
+        <module name="NoWhitespaceBefore">
+            <property name="tokens" value="COMMA, SEMI, POST_INC, POST_DEC, ELLIPSIS, METHOD_REF, GENERIC_END"/>
+        </module>
+
+        <module name="NoWhitespaceBefore">
+            <property name="allowLineBreaks" value="true"/>
+            <property name="tokens" value="DOT"/>
+        </module>
     </module>
 </module>

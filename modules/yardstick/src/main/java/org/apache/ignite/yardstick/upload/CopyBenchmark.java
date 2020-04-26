@@ -63,7 +63,7 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
      * Generate csv file for copy operation being performed during warmup.
      */
     private String generateWarmupCsv() {
-        String prefix = "warmup-" + warmupRowsCnt + "-rows-" ;
+        String prefix = "warmup-" + warmupRowsCnt + "-rows-";
 
         return generate(prefix, warmupRowsCnt);
     }

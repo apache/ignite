@@ -369,7 +369,7 @@ public class CacheContinuousQueryConcurrentPartitionUpdateTest extends GridCommo
 
             final AtomicBoolean stop = new AtomicBoolean();
 
-            List<T2<AtomicInteger, QueryCursor> > qrys = new ArrayList<>();
+            List<T2<AtomicInteger, QueryCursor>> qrys = new ArrayList<>();
 
             try {
                 IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {

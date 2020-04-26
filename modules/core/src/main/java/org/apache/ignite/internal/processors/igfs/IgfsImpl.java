@@ -729,7 +729,7 @@ public final class IgfsImpl implements IgfsEx {
         if (meta.isClient()) {
             meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), IgfsUserContext.currentUser(), path, props));
 
-            return ;
+            return;
         }
 
         safeOp(new Callable<Void>() {

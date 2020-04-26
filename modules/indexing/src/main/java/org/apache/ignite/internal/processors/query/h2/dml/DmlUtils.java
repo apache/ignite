@@ -489,7 +489,7 @@ public class DmlUtils {
         for (int i = 0; i < cntPerRow.length; i++ ) {
             int cnt = cntPerRow[i];
 
-            res.add(new UpdateResult(cnt , X.EMPTY_OBJECT_ARRAY));
+            res.add(new UpdateResult(cnt, X.EMPTY_OBJECT_ARRAY));
         }
 
         return res;

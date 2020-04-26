@@ -476,7 +476,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i < NODES_COUNT; ++i)
-                grid(i).context().authentication().addUser("test" + i , "passwd" + i);
+                grid(i).context().authentication().addUser("test" + i, "passwd" + i);
 
             grid(CLI_NODE).context().authentication().updateUser("ignite", "new_passwd");
 
