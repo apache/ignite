@@ -194,8 +194,8 @@ public class GridIoManagerBenchmark {
                     try {
                         X.println("Saving results to output file: " + outputFilename);
 
-                        appendLineToFile(outputFilename, "%s,%d", GridLoadTestUtils.DATE_TIME_FORMAT.format(new Date
-                            ()), qpsAvg.get());
+                        appendLineToFile(outputFilename, "%s,%d", GridLoadTestUtils.DATE_TIME_FORMAT.format(
+                            new Date()), qpsAvg.get());
                     }
                     catch (IOException e) {
                         X.println("Failed to record results to a file: " + e.getMessage());
