@@ -112,7 +112,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
             qry.setLocal(true);
 
-            try(QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = c.query(qry)) {
+            try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = c.query(qry)) {
                 assertNotNull(qryCursor);
 
                 List<Cache.Entry<Integer, Integer>> res = qryCursor.getAll();
@@ -138,7 +138,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
             qry.setLocal(true);
 
-            try(FieldsQueryCursor<List<?>> qryCursor = c.query(qry)) {
+            try (FieldsQueryCursor<List<?>> qryCursor = c.query(qry)) {
                 assertNotNull(qryCursor);
 
                 List<List<?>> res = qryCursor.getAll();

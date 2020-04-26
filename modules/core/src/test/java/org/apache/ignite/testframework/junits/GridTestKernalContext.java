@@ -148,7 +148,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      *
      * @param execSvc Executor service
      */
-    public void setExecutorService(ExecutorService execSvc){
+    public void setExecutorService(ExecutorService execSvc) {
         this.execSvc = execSvc;
     }
 

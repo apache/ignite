@@ -308,7 +308,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                                 expVals.remove(key);
                         }
                         catch (Exception e) {
-                            log.error("Cache update failed [putMap=" + putMap+ ", rmvSet=" + rmvSet + ']', e);
+                            log.error("Cache update failed [putMap=" + putMap + ", rmvSet=" + rmvSet + ']', e);
 
                             errCtr.incrementAndGet();
                         }

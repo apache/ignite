@@ -499,7 +499,7 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
 
         assertEquals(expected.length, row.size());
 
-        for(int col = 0; col < expected.length; ++col)
+        for (int col = 0; col < expected.length; ++col)
             assertEquals(expected[col], row.get(col));
     }
 

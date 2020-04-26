@@ -61,7 +61,7 @@ public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
      * @param num How many times pattern should be added.
      * @param expected Expected string.
      */
-    private void testSB(int capacity, String pattern, int num, String expected){
+    private void testSB(int capacity, String pattern, int num, String expected) {
         CircularStringBuilder csb = new CircularStringBuilder(capacity);
 
         for (int i = 0; i < num; i++)

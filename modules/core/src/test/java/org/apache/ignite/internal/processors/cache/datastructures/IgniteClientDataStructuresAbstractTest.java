@@ -207,7 +207,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
                     e.getMessage().startsWith(expectedMessage)
                 );
             }
-            catch (IgniteException e){
+            catch (IgniteException e) {
                 String expectedMessage = "Failed to find atomic long:";
 
                 assertTrue(

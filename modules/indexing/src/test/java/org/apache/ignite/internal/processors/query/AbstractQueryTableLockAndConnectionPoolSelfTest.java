@@ -301,7 +301,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                while(!end.get()) {
+                while (!end.get()) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQueryEx(
                             "SELECT pers.id, pers.name " +
@@ -317,7 +317,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                         cursor.getAll();
                     }
                     catch (Exception e) {
-                        if(X.cause(e, QueryRetryException.class) == null) {
+                        if (X.cause(e, QueryRetryException.class) == null) {
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);
@@ -358,7 +358,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         // Do many concurrent queries.
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
-                while(!end.get()) {
+                while (!end.get()) {
                     try {
                         FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
                             "SELECT pers.id, pers.name FROM \"pers\".PERSON")
@@ -371,7 +371,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
                         if (e.getMessage().contains("Failed to parse query. Column \"PERS.ID\" not found")) {
                             // Swallow exception when column is dropped.
                         }
-                        else if(X.cause(e, QueryRetryException.class) == null) {
+                        else if (X.cause(e, QueryRetryException.class) == null) {
                             log.error("Unexpected exception", e);
 
                             fail("Unexpected exception. " + e);

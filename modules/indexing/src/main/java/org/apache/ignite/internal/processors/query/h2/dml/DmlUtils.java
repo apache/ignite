@@ -137,7 +137,7 @@ public class DmlUtils {
         }
         catch (Exception e) {
             throw new IgniteSQLException("Value conversion failed [column=" + columnName + ", from=" + currCls.getName() + ", to=" +
-                expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
+                expCls.getName() + ']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
     }
 

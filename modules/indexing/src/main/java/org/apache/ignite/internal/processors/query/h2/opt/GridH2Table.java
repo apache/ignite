@@ -707,7 +707,7 @@ public class GridH2Table extends TableBase {
      *
      * @param rmIndex Flag indicate remove index on destroy or not.
      */
-    public void setRemoveIndexOnDestroy(boolean rmIndex){
+    public void setRemoveIndexOnDestroy(boolean rmIndex) {
         this.rmIndex = rmIndex;
     }
 
@@ -871,7 +871,7 @@ public class GridH2Table extends TableBase {
     public void markRebuildFromHashInProgress(boolean value) {
         assert !value || (idxs.size() >= 2 && index(1).getIndexType().isHash()) : "Table has no hash index.";
 
-        if (rebuildFromHashInProgressFiledUpdater.compareAndSet(this, value? FALSE: TRUE, value ? TRUE: FALSE)) {
+        if (rebuildFromHashInProgressFiledUpdater.compareAndSet(this, value ? FALSE : TRUE, value ? TRUE : FALSE)) {
             lock.writeLock().lock();
 
             try {

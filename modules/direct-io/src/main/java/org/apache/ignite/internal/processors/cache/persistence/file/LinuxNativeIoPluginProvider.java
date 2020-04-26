@@ -215,7 +215,7 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
      */
     private void adviceFileDontNeed(FileIO fileIO, long size)   {
         try {
-            if(fileIO instanceof RandomAccessFileIO) {
+            if (fileIO instanceof RandomAccessFileIO) {
                 RandomAccessFileIO chIo = (RandomAccessFileIO)fileIO;
 
                 FileChannel ch = U.field(chIo, "ch");

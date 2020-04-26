@@ -72,7 +72,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
         CacheConfiguration<Integer, SampleValue> cc = cache.getConfiguration(CacheConfiguration.class);
 
         String dataRegName = cc.getDataRegionName() == null ?
-            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName():
+            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName() :
             cc.getDataRegionName();
 
         BenchmarkUtils.println("Data region name = " + dataRegName);
@@ -162,7 +162,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
                     }
                 }
             }
-            catch (Exception e){
+            catch (Exception e) {
                 BenchmarkUtils.error("Failed to load data.", e);
             }
 

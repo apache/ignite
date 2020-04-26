@@ -49,9 +49,9 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
         assertEquals(2, ent.getIndexes().size());
 
         for (QueryIndex idx : ent.getIndexes()) {
-            if(idx.getFields().containsKey("val0"))
+            if (idx.getFields().containsKey("val0"))
                 assertEquals(10, idx.getInlineSize());
-            else if(idx.getFields().containsKey("val1"))
+            else if (idx.getFields().containsKey("val1"))
                 assertEquals(20, idx.getInlineSize());
         }
     }
@@ -129,7 +129,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      *
      */
-    @QueryGroupIndex(name="idx", inlineSize = 10)
+    @QueryGroupIndex(name = "idx", inlineSize = 10)
     static class TestValueGroupIndex {
         /** */
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = "idx", order = 0))
@@ -143,7 +143,7 @@ public class GridCacheQuerySqlFieldInlineSizeSelfTest extends GridCommonAbstract
     /**
      *
      */
-    @QueryGroupIndex(name="idx")
+    @QueryGroupIndex(name = "idx")
     static class TestValueGroupIndexInvalidAnnotation {
         /** */
         @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = "idx", order = 0))

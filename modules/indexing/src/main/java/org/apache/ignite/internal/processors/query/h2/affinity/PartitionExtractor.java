@@ -777,7 +777,7 @@ public class PartitionExtractor {
         GridH2Table tbl = (GridH2Table)leftCol.column().getTable();
 
         // Check that columns might be used for partition pruning.
-        if(!tbl.isColumnForPartitionPruning(leftCol.column()))
+        if (!tbl.isColumnForPartitionPruning(leftCol.column()))
             return null;
 
         // Check that both left and right AST use same column.

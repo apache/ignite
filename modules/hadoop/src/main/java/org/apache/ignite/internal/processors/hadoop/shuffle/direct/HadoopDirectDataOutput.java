@@ -139,7 +139,7 @@ public class HadoopDirectDataOutput extends OutputStream implements DataOutput {
 
     /** {@inheritDoc} */
     @Override public void writeBytes(@NotNull String str) throws IOException {
-        for(int i = 0; i < str.length(); ++i)
+        for (int i = 0; i < str.length(); ++i)
             write((byte)str.charAt(i));
     }
 

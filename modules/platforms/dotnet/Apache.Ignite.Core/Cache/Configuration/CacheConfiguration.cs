@@ -272,7 +272,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
         internal CacheConfiguration(BinaryReader reader)
         {
             Read(reader);
@@ -282,7 +281,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Reads data into this instance from the specified reader.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <param name="srvVer">Server version.</param>
         private void Read(BinaryReader reader)
         {
             // Make sure system marshaller is used.

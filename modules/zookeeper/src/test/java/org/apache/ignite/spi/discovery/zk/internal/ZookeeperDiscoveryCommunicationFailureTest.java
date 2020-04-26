@@ -1095,7 +1095,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
             while (idxs.size() < killNodes) {
                 int idx = rnd.nextInt(nodes.size());
 
-                if(!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
+                if (!nodes.get(idx).isClient() && !idxs.contains(idx) && --srvCnt < 1)
                     continue;
 
                 idxs.add(idx);
