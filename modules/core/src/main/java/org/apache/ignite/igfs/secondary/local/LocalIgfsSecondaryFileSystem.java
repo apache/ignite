@@ -127,7 +127,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
         try {
             if (destFile.isDirectory())
                 Files.move(srcFile.toPath(), destFile.toPath().resolve(srcFile.getName()));
-            else if(!srcFile.renameTo(destFile))
+            else if (!srcFile.renameTo(destFile))
                 throw new IgfsException("Failed to perform rename (underlying file system returned false) " +
                     "[src=" + src + ", dest=" + dest + ']');
         }
@@ -478,7 +478,7 @@ public class LocalIgfsSecondaryFileSystem implements IgfsSecondaryFileSystem, Li
                 lastBlockIdx = blockIdx;
             }
 
-            if(lastBlock == null)
+            if (lastBlock == null)
                 lastBlock = new IgfsBlockLocationImpl(offset, lenStep, lastNodes);
             else
                 lastBlock.increaseLength(lenStep);

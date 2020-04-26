@@ -1457,7 +1457,7 @@ public abstract class PagesList extends DataStructure {
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 
         if (needWalDeltaRecord) {
-            assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId):
+            assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId) :
                 "Partition consistency failure: " +
                 "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + PageIdUtils.partId(newPageId) + ") " +
                 "reusedPageId=" + Long.toHexString(reusedPageId) + " (partId: " + PageIdUtils.partId(reusedPageId) + ")";
@@ -1621,7 +1621,7 @@ public abstract class PagesList extends DataStructure {
         if (prevId != 0L) { // Cut tail if we have a previous page.
             Boolean ok = write(prevId, cutTail, null, bucket, FALSE, statHolder);
 
-            assert ok == TRUE: ok;
+            assert ok == TRUE : ok;
         }
         else {
             // If we don't have a previous, then we are tail page of free list, just drop the stripe.

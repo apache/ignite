@@ -841,8 +841,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         try {
             if (cctx.topology().stopping()) {
                 onDone(
-                    cctx.shared().cache().isCacheRestarting(cctx.name())?
-                        new IgniteCacheRestartingException(cctx.name()):
+                    cctx.shared().cache().isCacheRestarting(cctx.name()) ?
+                        new IgniteCacheRestartingException(cctx.name()) :
                         new CacheStoppedException(cctx.name()));
 
                 return;

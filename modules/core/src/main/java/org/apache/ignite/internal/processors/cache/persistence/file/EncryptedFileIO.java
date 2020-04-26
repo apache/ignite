@@ -298,7 +298,7 @@ public class EncryptedFileIO implements FileIO {
         storedCrc |= ((int)encrypted.get() & 0xff) << 8;
         storedCrc |= encrypted.get() & 0xff;
 
-        if(crc != storedCrc) {
+        if (crc != storedCrc) {
             throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
                 ", calculatedCrd=" + crc + "]");
         }

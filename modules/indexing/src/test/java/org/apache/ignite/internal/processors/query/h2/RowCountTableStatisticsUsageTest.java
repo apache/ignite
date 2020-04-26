@@ -79,7 +79,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
             runSql("INSERT INTO med(a, b, c) VALUES(" + i + "," + i + "," + i % 10 + ")");
 
         for (int i = 0; i < SMALL_SIZE; i++)
-            runSql("INSERT INTO small(a, b, c) VALUES(" + i + "," + i + ","+ i % 10 + ")");
+            runSql("INSERT INTO small(a, b, c) VALUES(" + i + "," + i + "," + i % 10 + ")");
     }
 
     /**

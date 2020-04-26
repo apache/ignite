@@ -39,11 +39,11 @@ public class CheckpointStartLoggingTest extends GridCommonAbstractTest {
     private static final String CHECKPOINT_STARTED_LOG_FORMAT = "Checkpoint started .*" +
         "checkpointBeforeLockTime=" + VALID_MS_PATTERN + ", " +
         "checkpointLockWait=" + VALID_MS_PATTERN + ", " +
-        "checkpointListenersExecuteTime="+ VALID_MS_PATTERN +", " +
-        "checkpointLockHoldTime="+ VALID_MS_PATTERN + ", " +
-        "walCpRecordFsyncDuration="+ VALID_MS_PATTERN +", " +
-        "writeCheckpointEntryDuration="+ VALID_MS_PATTERN +", " +
-        "splitAndSortCpPagesDuration="+ VALID_MS_PATTERN +", " +
+        "checkpointListenersExecuteTime=" + VALID_MS_PATTERN + ", " +
+        "checkpointLockHoldTime=" + VALID_MS_PATTERN + ", " +
+        "walCpRecordFsyncDuration=" + VALID_MS_PATTERN + ", " +
+        "writeCheckpointEntryDuration=" + VALID_MS_PATTERN + ", " +
+        "splitAndSortCpPagesDuration=" + VALID_MS_PATTERN + ", " +
         ".* pages=[1-9][0-9]*, " +
         "reason=.*";
 

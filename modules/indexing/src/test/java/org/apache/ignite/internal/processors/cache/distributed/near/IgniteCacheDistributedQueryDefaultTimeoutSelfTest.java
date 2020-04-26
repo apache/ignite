@@ -124,7 +124,7 @@ public class IgniteCacheDistributedQueryDefaultTimeoutSelfTest extends GridCommo
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
 
-                if (i/(float)keyCnt >= p/10f) {
+                if (i / (float)keyCnt >= p / 10f) {
                     log().info("Loaded " + i + " of " + keyCnt);
 
                     p++;

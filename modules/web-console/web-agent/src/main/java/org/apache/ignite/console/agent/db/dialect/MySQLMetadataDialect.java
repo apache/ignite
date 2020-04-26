@@ -47,7 +47,7 @@ public class MySQLMetadataDialect extends JdbcMetadataDialect {
 
         Set<String> sys = systemSchemas();
 
-        while(rs.next()) {
+        while (rs.next()) {
             String schema = rs.getString(1);
 
             // Skip system schemas.

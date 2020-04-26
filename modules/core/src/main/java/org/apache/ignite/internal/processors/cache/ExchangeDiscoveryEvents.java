@@ -126,7 +126,7 @@ public class ExchangeDiscoveryEvents {
 
             srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
 
-            if (evt.type()== EVT_NODE_JOINED)
+            if (evt.type() == EVT_NODE_JOINED)
                 joinedSrvNodes.add(evt.eventNode());
             else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
                 leftSrvNodes.add(evt.eventNode());

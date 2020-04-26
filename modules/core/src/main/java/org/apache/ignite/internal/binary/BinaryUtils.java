@@ -369,7 +369,7 @@ public class BinaryUtils {
      * @return Field type name or {@code null} if unknown.
      */
     public static String fieldTypeName(int typeId) {
-        if(typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
+        if (typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
             return null;
 
         return FIELD_TYPE_NAMES[typeId];
@@ -713,7 +713,7 @@ public class BinaryUtils {
         if (obj == null)
             return false;
 
-        Class<?> cls= obj.getClass();
+        Class<?> cls = obj.getClass();
 
         return cls == KeyCacheObjectImpl.class ||
             cls == BinaryObjectImpl.class ||

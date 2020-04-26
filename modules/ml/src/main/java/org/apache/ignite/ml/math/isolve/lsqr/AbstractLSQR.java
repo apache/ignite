@@ -79,7 +79,7 @@ public abstract class AbstractLSQR {
     public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar,
         double[] x0) {
         Integer n = getColumns();
-        if(n == null)
+        if (n == null)
             return null;
 
         if (iterLim < 0)

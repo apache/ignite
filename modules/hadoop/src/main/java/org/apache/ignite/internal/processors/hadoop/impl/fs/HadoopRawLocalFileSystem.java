@@ -157,17 +157,17 @@ public class HadoopRawLocalFileSystem extends FileSystem {
 
     /** {@inheritDoc} */
     @Override public boolean mkdirs(Path f, FsPermission permission) throws IOException {
-        if(f == null)
+        if (f == null)
             throw new IllegalArgumentException("mkdirs path arg is null");
 
         Path parent = f.getParent();
 
         File p2f = convert(f);
 
-        if(parent != null) {
+        if (parent != null) {
             File parent2f = convert(parent);
 
-            if(parent2f != null && parent2f.exists() && !parent2f.isDirectory())
+            if (parent2f != null && parent2f.exists() && !parent2f.isDirectory())
                 throw new FileAlreadyExistsException("Parent path is not a directory: " + parent);
 
         }

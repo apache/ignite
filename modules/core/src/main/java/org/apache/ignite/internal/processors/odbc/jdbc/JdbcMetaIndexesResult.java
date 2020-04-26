@@ -67,7 +67,7 @@ public class JdbcMetaIndexesResult extends JdbcResult {
         else {
             writer.writeInt(meta.size());
 
-            for(JdbcIndexMeta m : meta)
+            for (JdbcIndexMeta m : meta)
                 m.writeBinary(writer, ver);
         }
     }

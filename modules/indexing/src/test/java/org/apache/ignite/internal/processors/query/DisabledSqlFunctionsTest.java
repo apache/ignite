@@ -268,7 +268,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
      * @return Results cursor.
      */
     private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
-        IgniteEx ign = client ? grid("cli") :grid("srv");
+        IgniteEx ign = client ? grid("cli") : grid("srv");
 
         return ign.context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setLocal(local)

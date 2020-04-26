@@ -105,7 +105,7 @@ public class HadoopTestUtils {
 
         Map<Long, String> reduceNodes = new HashMap<>();
 
-        while((line = reader.readLine()) != null) {
+        while ((line = reader.readLine()) != null) {
             String[] splitLine = line.split(":");
 
             //Try parse timestamp

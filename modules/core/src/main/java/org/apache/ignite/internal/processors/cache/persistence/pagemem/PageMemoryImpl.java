@@ -802,7 +802,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (readPageFromStore) {
                     boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
 
-                    assert locked: "Page ID " + fullId + " expected to be locked";
+                    assert locked : "Page ID " + fullId + " expected to be locked";
 
                     lockedPageAbsPtr = absPtr;
                 }
@@ -833,7 +833,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             seg.acquirePage(absPtr);
 
-            if(!readPageFromStore)
+            if (!readPageFromStore)
                 statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
             return absPtr;
