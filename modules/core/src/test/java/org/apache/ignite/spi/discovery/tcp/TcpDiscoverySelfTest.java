@@ -1043,7 +1043,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     }
                 }
 
-                assertTrue("TcpDiscoveryMulticastIpFinder should register port." , found);
+                assertTrue("TcpDiscoveryMulticastIpFinder should register port.", found);
             }
         }
         finally {
@@ -1264,7 +1264,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             Collection<IgniteKernal> grids = new ArrayList<>();
 
-            for (int i = 0; i < 5 ; i++) {
+            for (int i = 0; i < 5; i++) {
                 IgniteKernal grid = (IgniteKernal)grid(i);
 
                 assertTrue(grid.context().discovery().gridStartTime() > 0);

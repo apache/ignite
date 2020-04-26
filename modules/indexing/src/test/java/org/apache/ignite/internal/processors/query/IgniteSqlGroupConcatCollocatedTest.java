@@ -109,7 +109,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
                 String s = "" + (char)('A' + i + (grp - 1) * grp / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
     }

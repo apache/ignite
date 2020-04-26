@@ -179,7 +179,7 @@ public abstract class ClusterStateNoRebalanceAbstractTest extends GridCommonAbst
 
     /** */
     void checkInactive(int cnt) {
-        for (int g = 0; g < cnt ; g++)
+        for (int g = 0; g < cnt; g++)
             assertEquals(grid(g).name(), INACTIVE, grid(g).cluster().state());
     }
 

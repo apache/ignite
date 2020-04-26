@@ -815,7 +815,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         int loops = reuseList == null ? 20_000 : 60_000;
 
-        for (int i = 0 ; i < loops; i++) {
+        for (int i = 0; i < loops; i++) {
             final Long x = (long)BPlusTree.randomInt(CNT);
             final int rnd = BPlusTree.randomInt(11);
 
@@ -1177,7 +1177,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         int loops = reuseList == null ? 100_000 : 300_000;
 
-        for (int i = 0 ; i < loops; i++) {
+        for (int i = 0; i < loops; i++) {
             Long x = (long)BPlusTree.randomInt(CNT);
 
             boolean put = BPlusTree.randomInt(2) == 0;

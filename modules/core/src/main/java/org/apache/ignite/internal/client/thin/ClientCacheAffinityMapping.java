@@ -106,7 +106,7 @@ public class ClientCacheAffinityMapping {
     /**
      * Merge specified mappings into one instance.
      */
-    public static ClientCacheAffinityMapping merge(ClientCacheAffinityMapping ... mappings) {
+    public static ClientCacheAffinityMapping merge(ClientCacheAffinityMapping... mappings) {
         assert !F.isEmpty(mappings);
 
         ClientCacheAffinityMapping res = new ClientCacheAffinityMapping(mappings[0].topVer);

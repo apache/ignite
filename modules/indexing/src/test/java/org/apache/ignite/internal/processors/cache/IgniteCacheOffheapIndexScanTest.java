@@ -73,7 +73,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryPlan() throws Exception {
-        for (int i = 0 ; i < 1000; i++)
+        for (int i = 0; i < 1000; i++)
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i % 100));
 
         final AtomicBoolean end = new AtomicBoolean();

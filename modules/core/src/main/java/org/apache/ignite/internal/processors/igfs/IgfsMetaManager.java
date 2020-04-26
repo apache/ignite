@@ -261,7 +261,7 @@ public class IgfsMetaManager extends IgfsManager {
         }
         catch (Exception e) {
             if (X.hasCause(e, ClusterTopologyException.class))
-                throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+                throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes.", e);
 
             IgfsException igfsEx = X.cause(e, IgfsException.class);
             if (igfsEx != null)
