@@ -123,7 +123,7 @@ abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTe
 
         HadoopTestTaskContext ctx = new HadoopTestTaskContext(taskInfo, gridJob);
 
-        for (int i = 0; i < words.length; i+=2) {
+        for (int i = 0; i < words.length; i += 2) {
             List<IntWritable> valList = new ArrayList<>();
 
             for (int j = 0; j < Integer.parseInt(words[i + 1]); j++)

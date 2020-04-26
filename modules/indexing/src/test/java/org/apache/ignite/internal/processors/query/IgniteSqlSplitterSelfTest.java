@@ -575,8 +575,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             for (int i = 0; i < cnt; i++) {
                 c.put(i, new Value(
-                    rnd.nextInt(5) == 0 ? null: rnd.nextInt(100),
-                    rnd.nextInt(8) == 0 ? null: rnd.nextInt(2000)));
+                    rnd.nextInt(5) == 0 ? null : rnd.nextInt(100),
+                    rnd.nextInt(8) == 0 ? null : rnd.nextInt(2000)));
             }
 
             List<List<?>> plan = c.query(new SqlFieldsQuery(

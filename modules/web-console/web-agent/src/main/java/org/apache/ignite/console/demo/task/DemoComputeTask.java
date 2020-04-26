@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Simple compute task.
  */
-public class DemoComputeTask implements ComputeTask<Void, Integer>{
+public class DemoComputeTask implements ComputeTask<Void, Integer> {
     /** */
     private static final long serialVersionUID = 0L;
 

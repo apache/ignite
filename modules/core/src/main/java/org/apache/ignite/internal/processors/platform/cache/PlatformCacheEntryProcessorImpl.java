@@ -94,7 +94,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
             try {
                 interopProc = PlatformUtils.platformProcessor(ignite);
             }
-            catch (IllegalStateException ex){
+            catch (IllegalStateException ex) {
                 throw new EntryProcessorException(ex);
             }
 

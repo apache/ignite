@@ -102,7 +102,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             // One remote p2p class loader
             assert res1 != null : "res1 != null";
             assert res1 instanceof Long : "res1 instanceof Long != true";
-            assert res1.equals(0L): "Expected 0, got " + res1;
+            assert res1.equals(0L) : "Expected 0, got " + res1;
 
             // The same remote p2p class loader.
             assert res2 != null : "res2 != null";
@@ -159,7 +159,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             // One remote p2p class loader
             assert res1 != null : "res1 != null";
             assert res1 instanceof Long : "res1 instanceof Long != true";
-            assert res1.equals(0L): "Invalid res2 value: " + res1;
+            assert res1.equals(0L) : "Invalid res2 value: " + res1;
 
             // Another remote p2p class loader.
             assert res2 != null : "res2 == null";

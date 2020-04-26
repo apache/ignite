@@ -604,7 +604,7 @@ public class GridCacheUtils {
             private final LongAdder res = new LongAdder();
 
             @Override public boolean collect(Long l) {
-                if(l != null)
+                if (l != null)
                     res.add(l);
 
                 return true;

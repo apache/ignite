@@ -2338,7 +2338,7 @@ public class GridSqlQueryParser {
 
                 Expression separator = GROUP_CONCAT_SEPARATOR.get((Aggregate)expression);
 
-                if (separator!= null)
+                if (separator != null)
                     res.setGroupConcatSeparator(parseExpression(separator, calcTypes));
 
                 return res;

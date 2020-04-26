@@ -532,7 +532,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      *
      * @param cmd Command to log.
      */
-    private GridTimeoutObject initTimer(String cmd){
+    private GridTimeoutObject initTimer(String cmd) {
         GridTimeoutObject to = new GridTimeoutObjectAdapter(EXECUTE_WAIT_TIME) {
             private final Thread thread = Thread.currentThread();
 

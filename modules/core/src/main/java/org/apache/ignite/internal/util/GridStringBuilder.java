@@ -490,7 +490,7 @@ public class GridStringBuilder implements Serializable {
      * @throws ClassNotFoundException Thrown if read class cannot be found.
      */
     private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException   {
-        impl= (StringBuilder) s.readObject();
+        impl = (StringBuilder) s.readObject();
     }
 
     /** {@inheritDoc} */

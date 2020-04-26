@@ -52,7 +52,7 @@ public class JmhPartitionUpdateCounterBenchmark {
     private static final int GAPS_BUFFER_SIZE = 50;
 
     /** Max delta for next counter value. */
-    private static final int COUNTER_MAX_DELTA= 50;
+    private static final int COUNTER_MAX_DELTA = 50;
 
     /** Testing gaps buffer. */
     private final long[][] gapsBuf = new long[GAPS_BUFFER_SIZE][];

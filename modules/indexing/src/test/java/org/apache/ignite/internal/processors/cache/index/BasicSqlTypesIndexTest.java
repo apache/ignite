@@ -384,7 +384,7 @@ public class BasicSqlTypesIndexTest extends AbstractIndexingCommonTest {
             }
             else {
                 idxName = PK_IDX_NAME;
-                idxFieldName= KEY_FIELD_NAME;
+                idxFieldName = KEY_FIELD_NAME;
             }
 
             Map<T, Integer> data = new TreeMap<>(comp);
