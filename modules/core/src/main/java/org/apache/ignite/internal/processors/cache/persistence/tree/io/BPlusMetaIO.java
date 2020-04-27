@@ -324,8 +324,7 @@ public class BPlusMetaIO extends PageIO {
         sb.a("BPlusMeta [\n\tlevelsCnt=").a(getLevelsCount(addr))
             .a(",\n\trootLvl=").a(getRootLevel(addr))
             .a(",\n\tinlineSize=").a(getInlineSize(addr))
-            .a("\n]")
-        ;
+            .a("\n]");
             //TODO print firstPageIds by level
     }
 

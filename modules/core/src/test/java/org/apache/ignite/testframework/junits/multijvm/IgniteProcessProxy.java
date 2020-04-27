@@ -198,7 +198,7 @@ public class IgniteProcessProxy implements IgniteEx {
         );
 
         if (locJvmGrid != null)
-            assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
+            assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS) : "Remote node has not joined [id=" + id + ']';
 
         IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getIgniteInstanceName(), this);
 

@@ -86,4 +86,5 @@ public class IgnitePartitionedQueueNoBackupsTest extends GridCachePartitionedQue
                     fail("For collocated queue all items should be stored on single node.");
             }
         }
-    }}
+    }
+}

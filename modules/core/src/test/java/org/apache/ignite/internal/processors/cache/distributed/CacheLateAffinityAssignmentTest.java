@@ -982,7 +982,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             final int NODES = 5;
 
-            for (int i = 0 ; i < NODES; i++)
+            for (int i = 0; i < NODES; i++)
                 startServer(i, i + 1);
 
             int majorVer = NODES;

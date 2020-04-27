@@ -167,7 +167,7 @@ final class GridUriDeploymentJarVerifier {
 
             JarEntry jarEntry;
 
-            while((jarEntry = jin.getNextJarEntry()) != null) {
+            while ((jarEntry = jin.getNextJarEntry()) != null) {
                 if (jarEntry.isDirectory())
                     continue;
 

@@ -92,7 +92,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 String s = "" + (char)('A' + i + (grp - 1) * grp / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
     }
@@ -140,7 +140,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 String s = "" + (char)('A' + i + (cnt - 1) * cnt / 2);
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
-                    "[str=" + str + ", val=" + s , str.contains(s));
+                    "[str=" + str + ", val=" + s, str.contains(s));
             }
         }
     }

@@ -132,7 +132,7 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
 
         finishPhase.await();
 
-        for (int i = 0; i < THREAD_COUNT; i ++) {
+        for (int i = 0; i < THREAD_COUNT; i++) {
             cfg.set(MRJobConfig.USER_NAME, "user" + i);
 
             Path workDir = new Path(new Path(uri), "user/user" + i);

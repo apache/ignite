@@ -181,7 +181,7 @@ public class TxOptimisticReadThroughTest extends GridCommonAbstractTest {
     }
 
     /** @return Default configuration of a transactional cache cache. */
-    private static CacheConfiguration<Object, Object> cacheConfiguration(){
+    private static CacheConfiguration<Object, Object> cacheConfiguration() {
         return new CacheConfiguration<>("tx")
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setCacheStoreFactory(new TestStoreFactory())

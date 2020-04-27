@@ -349,7 +349,7 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
 
                     log.info(stackTrace);
 
-                    assertTrue("DeadlockDetection hasn't executed at "+ (threadNum - 1) + " node.",
+                    assertTrue("DeadlockDetection hasn't executed at " + (threadNum - 1) + " node.",
                         stackTrace.contains(TxDeadlockDetection.class.getName()));
 
                     // At least one stack trace should contain TransactionDeadlockException.

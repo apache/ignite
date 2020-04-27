@@ -173,7 +173,7 @@ public class TrackingPageIO extends PageIO {
                     buf.putLong(sizeOff2 + SIZE_FIELD_SIZE + i, newVal);
                 }
 
-                for (; i < len; i ++) {
+                for (; i < len; i++) {
                     byte newVal = (byte) (buf.get(sizeOff + SIZE_FIELD_SIZE + i) | buf.get(sizeOff2 + SIZE_FIELD_SIZE + i));
 
                     newSize += Integer.bitCount(newVal & 0xFF);
@@ -232,7 +232,7 @@ public class TrackingPageIO extends PageIO {
      * @return Saved value in {@link TrackingPageIO#LAST_SNAPSHOT_TAG_OFFSET}.
      */
     private long getLastSnapshotTag0(ByteBuffer buf) {
-        return buf.getLong(LAST_SNAPSHOT_TAG_OFFSET) ;
+        return buf.getLong(LAST_SNAPSHOT_TAG_OFFSET);
     }
 
     /**
@@ -403,7 +403,7 @@ public class TrackingPageIO extends PageIO {
 
         int idxToStartTest = (PageIdUtils.pageIndex(start) - COUNT_OF_EXTRA_PAGE) % cntOfPage;
 
-        int zeroIdx = useLeftHalf(curSnapshotTag)? BITMAP_OFFSET : BITMAP_OFFSET + SIZE_FIELD_SIZE + (cntOfPage >> 3);
+        int zeroIdx = useLeftHalf(curSnapshotTag) ? BITMAP_OFFSET : BITMAP_OFFSET + SIZE_FIELD_SIZE + (cntOfPage >> 3);
 
         int startIdx = zeroIdx + (idxToStartTest >> 3);
 

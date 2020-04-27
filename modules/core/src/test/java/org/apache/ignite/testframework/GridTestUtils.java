@@ -1840,7 +1840,7 @@ public final class GridTestUtils {
      */
     public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
         try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
-            assertNotNull("Resource is missing: " + resourceName , is);
+            assertNotNull("Resource is missing: " + resourceName, is);
 
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 U.copy(is, baos);
@@ -2346,7 +2346,7 @@ public final class GridTestUtils {
         public static long sleep() {
             long end = System.currentTimeMillis() + sleepMs;
 
-            long remainTime =sleepMs;
+            long remainTime = sleepMs;
 
             do {
                 try {

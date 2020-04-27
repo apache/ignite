@@ -67,6 +67,9 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheScanQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
+import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodeIdsRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterGroupGetNodesDetailsRequest;
@@ -74,8 +77,6 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterIsActiveRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxEndRequest;
-import org.apache.ignite.internal.processors.platform.client.tx.ClientTxStartRequest;
 
 /**
  * Thin client message parser.
@@ -241,6 +242,13 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS = 5102;
+
+    /* Compute operations. */
+    /** */
+    private static final short OP_COMPUTE_TASK_EXECUTE = 6000;
+
+    /** */
+    public static final short OP_COMPUTE_TASK_FINISHED = 6001;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -439,6 +447,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_CLUSTER_GROUP_GET_NODE_ENDPOINTS:
                 return new ClientClusterGroupGetNodesEndpointsRequest(reader);
+
+            case OP_COMPUTE_TASK_EXECUTE:
+                return new ClientExecuteTaskRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,
@@ -453,7 +464,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryRawWriterEx writer = marsh.writer(outStream);
 
-        ((ClientResponse)resp).encode(ctx, writer);
+        assert resp instanceof ClientOutgoingMessage : "Unexpected response type: " + resp.getClass();
+
+        ((ClientOutgoingMessage)resp).encode(ctx, writer);
 
         return outStream.arrayCopy();
     }

@@ -75,14 +75,14 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
         IgniteCache<IgniteUuid, Integer> cache =
             client.createCache(cacheConfiguration(IgniteUuid.class, Integer.class));
 
-        try(IgniteDataStreamer<IgniteUuid, Integer> streamer = client.dataStreamer(CACHE_NAME)) {
+        try (IgniteDataStreamer<IgniteUuid, Integer> streamer = client.dataStreamer(CACHE_NAME)) {
             assertTrue("Expecting " + DataStreamerImpl.class.getName(), streamer instanceof DataStreamerImpl);
 
             ((DataStreamerImpl<IgniteUuid, Integer>)streamer).maxRemapCount(0);
 
             List<IgniteFuture> futs = new ArrayList<>();
 
-            for(int i=0; i<DATA_SIZE; i++) {
+            for (int i = 0; i < DATA_SIZE; i++) {
                 IgniteFuture<?> fut = streamer.addData(IgniteUuid.randomUuid(), i);
 
                 futs.add(fut);
