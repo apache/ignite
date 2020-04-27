@@ -245,6 +245,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (_socket == null || (_socket.IsDisposed && !_config.ReconnectDisabled))
                 {
+                    // TODO: Use different reconnect logic when socketMap is available.
                     Connect();
                 }
 
@@ -348,7 +349,6 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 try
                 {
-                    // TODO: Update socket map
                     _socket = Connect(endPoint);
 
                     break;
@@ -611,6 +611,12 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var map = new Dictionary<Guid, ClientSocket>(_nodeSocketMap);
 
+            var defaultSocket = _socket;
+            if (defaultSocket != null && defaultSocket.ServerNodeId != null)
+            {
+                map[defaultSocket.ServerNodeId.Value] = defaultSocket;
+            }
+
             if (_discoveryNodes != null)
             {
                 // Discovery enabled: make sure we have connection to all nodes in the cluster.
@@ -680,8 +686,6 @@ namespace Apache.Ignite.Core.Impl.Client
             else
             {
                 // Discovery disabled: fall back to endpoints from config.
-                // TODO: Make sure we don't connect to the same node twice.
-                // TODO: Dispose of removed sockets.
                 foreach (var endPoint in _endPoints)
                 {
                     if (endPoint.Socket == null || endPoint.Socket.IsDisposed)
