@@ -732,12 +732,20 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             return;
                         }
 
+                        rebFut.evictedPartitionsLeft(1);
+
+                        onClearFinished(f -> rebFut.evictedPartitionsLeft(-1));
+
                         ctx.evict().evictPartitionAsync(grp, this, CLEARING);
                     }
                 });
 
                 return;
             }
+
+            rebFut.evictedPartitionsLeft(1);
+
+            onClearFinished(f -> rebFut.evictedPartitionsLeft(-1));
         }
 
         // Try fast eviction.
