@@ -1663,7 +1663,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override protected void init(int partsCnt) {
-            dbDir = new File (snpLocDir, databaseRelativePath(pdsSettings.folderName()));
+            dbDir = new File(snpLocDir, databaseRelativePath(pdsSettings.folderName()));
 
             if (dbDir.exists()) {
                 throw new IgniteException("Snapshot with given name already exists " +

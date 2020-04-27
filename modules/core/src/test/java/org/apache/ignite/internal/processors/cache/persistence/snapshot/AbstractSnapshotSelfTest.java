@@ -353,7 +353,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .forEach(e -> keys.remove((Integer)e.getKey()));
 
         assertTrue("Snapshot must contains pre-created cache data " +
-            "[cache=" + cache.getName() + ", keysLeft=" + keys +']', keys.isEmpty());
+            "[cache=" + cache.getName() + ", keysLeft=" + keys + ']', keys.isEmpty());
     }
 
     /**

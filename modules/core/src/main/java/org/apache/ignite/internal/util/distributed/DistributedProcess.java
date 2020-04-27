@@ -97,7 +97,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
     ) {
-        this(ctx, type, exec, finish, (id ,req) -> new InitMessage<>(id, type, req));
+        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
     }
 
     /**

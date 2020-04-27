@@ -157,7 +157,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         // Start grid node with data before each test.
-        IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key , key),
+        IgniteEx ig = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
@@ -722,7 +722,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         String snpName,
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
-    ) throws IgniteCheckedException{
+    ) throws IgniteCheckedException {
         SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
 
         snpFutTask.start();

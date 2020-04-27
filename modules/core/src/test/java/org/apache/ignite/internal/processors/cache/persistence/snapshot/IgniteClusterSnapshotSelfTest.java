@@ -218,7 +218,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         snpIg0.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
             .forEach(e -> assertTrue("Snapshot must contains only negative values " +
-                "[cache=" + DEFAULT_CACHE_NAME + ", entry=" + e +']', (Integer)e.getValue() < 0));
+                "[cache=" + DEFAULT_CACHE_NAME + ", entry=" + e + ']', (Integer)e.getValue() < 0));
 
         snpIg0.cache(atomicCcfg.getName()).query(new ScanQuery<>(null))
             .forEach(e -> assertTrue("Snapshot must contains only negative values " +
