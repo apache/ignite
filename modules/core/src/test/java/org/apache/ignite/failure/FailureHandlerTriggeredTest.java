@@ -19,6 +19,9 @@ package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
@@ -30,6 +33,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 
 /**
  * Test of triggering of failure handler.
@@ -65,6 +70,38 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFailureHandlerTriggeredOnUncheckedErrorOnRebalancing() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        TestFailureHandler hnd = new TestFailureHandler(false, latch);
+
+        startGrid(getConfiguration(testNodeName(0))
+            .setIncludeEventTypes(EVT_CACHE_REBALANCE_OBJECT_LOADED)
+            .setFailureHandler(hnd))
+            .getOrCreateCache(new CacheConfiguration<>()
+                .setName(DEFAULT_CACHE_NAME)
+                .setRebalanceDelay(500)
+                .setCacheMode(CacheMode.REPLICATED))
+            .put(1,1);
+
+        startGrid(getConfiguration(testNodeName(1))
+            .setIncludeEventTypes(EVT_CACHE_REBALANCE_OBJECT_LOADED)
+            .setFailureHandler(hnd))
+            .events().localListen(
+                e -> { throw new Error(); },
+            EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
+
+        assertTrue(latch.await(3, TimeUnit.SECONDS));
+
+        assertNotNull(hnd.failureCtx);
+
+        assertEquals(hnd.failureCtx.type(), FailureType.SYSTEM_WORKER_TERMINATION);
     }
 
     /**

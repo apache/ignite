@@ -361,10 +361,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             try {
                 demander.handleSupplyMessage(nodeId, s);
             } catch (Throwable e) {
-                if (X.hasCause(e, OutOfMemoryError.class))
-                    throw e;
+                if (!X.hasCause(e, OutOfMemoryError.class))
+                    ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
 
-                ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+                throw e;
             }
             finally {
                 leaveBusy();
@@ -381,10 +381,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             try {
                 supplier.handleDemandMessage(idx, nodeId, d);
             } catch (Throwable e) {
-                if (X.hasCause(e, OutOfMemoryError.class))
-                    throw e;
+                if (!X.hasCause(e, OutOfMemoryError.class))
+                    ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
 
-                ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+                throw e;
             }
             finally {
                 leaveBusy();

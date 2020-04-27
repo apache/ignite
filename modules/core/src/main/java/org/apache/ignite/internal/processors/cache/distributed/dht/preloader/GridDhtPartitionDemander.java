@@ -914,10 +914,10 @@ public class GridDhtPartitionDemander {
                 try {
                     ownPartition(fut, p, nodeId, supplyMsg);
                 } catch (Throwable e) {
-                    if (X.hasCause(e, OutOfMemoryError.class))
-                        throw e;
+                    if (!X.hasCause(e, OutOfMemoryError.class))
+                        ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
 
-                    ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+                    throw e;
                 }
             });
         }
