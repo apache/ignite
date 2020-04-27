@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
     using NUnit.Framework;
@@ -118,6 +119,70 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.Deploy(cfg);
 
             CheckServiceStarted(Grid1, 3);
+        }
+
+        [Test]
+        public void TestCallJava()
+        {
+            StartClient();
+            try
+            {
+                var cfg = new ServiceConfiguration
+                {
+                    Name = SvcName,
+                    TotalCount = 1,
+                    Service = new TestIgniteServiceSerializable()
+                };
+
+                Services.Deploy(cfg);
+                
+                Thread.Sleep(4000);
+                
+                CallClient("testCall");
+
+                var svc = Grid1.GetServices().GetServiceProxy<ITestIgniteService>(SvcName);
+
+                svc.TestProperty = 5;
+                
+                Assert.IsTrue(svc.TestProperty == 5);
+            }
+            finally
+            {
+                StopClient();
+            }
+        }
+
+        private unsafe void StartClient()
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass("org/apache/ignite/platform/PlatformServiceTestUtils"))
+            {
+                var methodId = env.GetStaticMethodId(cls, "start", "()V");
+                
+                env.CallStaticVoidMethod(cls, methodId);
+            }
+        }
+        
+        private unsafe void CallClient(string name)
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass("org/apache/ignite/platform/PlatformServiceTestUtils"))
+            {
+                var methodId = env.GetStaticMethodId(cls, name, "()V");
+                
+                env.CallStaticVoidMethod(cls, methodId);
+            }
+        }
+        
+        private unsafe void StopClient()
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass("org/apache/ignite/platform/PlatformServiceTestUtils"))
+            {
+                var methodId = env.GetStaticMethodId(cls, "stop", "()V");
+                
+                env.CallStaticVoidMethod(cls, methodId);
+            }
         }
 
         /// <summary>
