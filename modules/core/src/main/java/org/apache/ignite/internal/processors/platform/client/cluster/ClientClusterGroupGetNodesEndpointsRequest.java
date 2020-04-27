@@ -78,6 +78,12 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
             if (!startNodes.contains(endNode)) {
                 ClusterGroup grp = cluster.forNodeId(endNode);
 
+                // TODO: Should we use node attributes for this?
+                // We have:
+                // * "org.apache.ignite.ips" - all known IPs (disregarding IgniteConfiguration.LocalHost)
+                // * "clientListenerPort"
+                // The above is not enough - we need host names as well,
+                // and we should respect IgniteConfiguration.LocalHost.
                 Collection<NodeEndpoint> endpoints = ctx.kernalContext().grid().compute(grp)
                         .call(new ClientClusterGroupGetNodeEndpointsJob()).getEndpoints();
 
