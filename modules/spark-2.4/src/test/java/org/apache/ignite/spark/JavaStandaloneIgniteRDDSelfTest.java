@@ -268,7 +268,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
             cache.savePairs(sc.parallelize(F.range(0, cnt), 2).mapToPair(INT_TO_ENTITY_ALL_FIELDS_F));
 
             EntityTestAllTypeFields e = new EntityTestAllTypeFields(cnt / 2);
-            for(Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {
+            for (Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {
                 String fieldName = f.getName();
 
                 Object val = GridTestUtils.getFieldValue(e, fieldName);

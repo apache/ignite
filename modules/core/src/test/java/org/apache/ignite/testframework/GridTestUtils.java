@@ -19,6 +19,7 @@ package org.apache.ignite.testframework;
 
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
+import javax.management.Attribute;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -1840,7 +1841,7 @@ public final class GridTestUtils {
      */
     public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
         try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
-            assertNotNull("Resource is missing: " + resourceName , is);
+            assertNotNull("Resource is missing: " + resourceName, is);
 
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 U.copy(is, baos);
@@ -2329,6 +2330,34 @@ public final class GridTestUtils {
             f.delete();
     }
 
+    /**
+     * @param grid Node.
+     * @param grp Group name.
+     * @param name Object name.
+     * @param attr Attribute name.
+     * @param val Attribute value.
+     * @throws Exception On error.
+     */
+    public static void setJmxAttribute(IgniteEx grid, String grp, String name, String attr, Object val) throws Exception {
+        grid.context().config().getMBeanServer().setAttribute(U.makeMBeanName(grid.name(), grp, name),
+            new Attribute(attr, val));
+    }
+
+    /**
+     * @param grid Node.
+     * @param grp Group name.
+     * @param name Object name.
+     * @param attr Attribute name.
+     * @return Attribute's value.
+     * @throws Exception On error.
+     */
+    public static Object getJmxAttribute(IgniteEx grid, String grp, String name, String attr) throws Exception {
+        return grid.context().config().getMBeanServer().getAttribute(U.makeMBeanName(grid.name(), grp, name), attr);
+    }
+
+    /**
+     *
+     */
     public static class SqlTestFunctions {
         /** Sleep milliseconds. */
         public static volatile long sleepMs;
@@ -2346,7 +2375,7 @@ public final class GridTestUtils {
         public static long sleep() {
             long end = System.currentTimeMillis() + sleepMs;
 
-            long remainTime =sleepMs;
+            long remainTime = sleepMs;
 
             do {
                 try {

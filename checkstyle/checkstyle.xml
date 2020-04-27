@@ -40,6 +40,16 @@
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
 
+        <!-- Whitespaces: See: https://checkstyle.sourceforge.io/config_whitespace.html -->
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyTypes" value="true"/>
+            <property name="allowEmptyLoops" value="true"/>
+            <property name="allowEmptyLambdas" value="true"/>
+            <property name="allowEmptyCatches" value="true"/>
+        </module>
+
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->
         <module name="ModifierOrder"/>
 
@@ -58,5 +68,40 @@
 
         <!-- @Override annotations on the same line with a method declaration check. -->
         <module name="org.apache.ignite.tools.checkstyle.OverrideAnnotationOnTheSameLineCheck"/>
+
+        <!--
+            Checks the padding between the identifier of a method definition, constructor definition, method call, or
+            constructor invocation; and the left parenthesis of the parameter list.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#MethodParamPad
+        -->
+        <module name="MethodParamPad"/>
+
+        <!--
+            Checks that there is no whitespace after a token.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#NoWhitespaceAfter
+        -->
+        <module name="NoWhitespaceAfter">
+            <property name="tokens" value="AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR,
+                INDEX_OP, METHOD_REF"/>
+        </module>
+
+        <!--
+            Checks that there is no whitespace before a token.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#NoWhitespaceBefore
+        -->
+        <module name="NoWhitespaceBefore">
+            <property name="tokens" value="COMMA, SEMI, POST_INC, POST_DEC, ELLIPSIS, METHOD_REF, GENERIC_END"/>
+        </module>
+
+        <module name="NoWhitespaceBefore">
+            <property name="allowLineBreaks" value="true"/>
+            <property name="tokens" value="DOT"/>
+        </module>
+
+        <!--
+            Checks that non-whitespace characters are separated by no more than one whitespace.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#SingleSpaceSeparator
+        -->
+        <module name="SingleSpaceSeparator"/>
     </module>
 </module>

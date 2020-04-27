@@ -53,7 +53,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
      * Gets Person class name.
      * @return class name.
      */
-    protected String getPersonClassName(){
+    protected String getPersonClassName() {
         return "org.apache.ignite.tests.p2p.cache.Person";
     }
 

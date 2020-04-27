@@ -288,7 +288,7 @@ class ZkIgnitePaths {
         if (str.length() == 1)
             str = '0' + str;
 
-        assert str.length() == 2  : str;
+        assert str.length() == 2 : str;
 
         return str;
     }

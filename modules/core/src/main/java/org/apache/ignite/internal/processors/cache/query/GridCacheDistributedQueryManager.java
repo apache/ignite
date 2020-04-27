@@ -612,7 +612,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert !cctx.isLocal() : cctx.name();
-        assert qry.type() == GridCacheQueryType.SCAN: qry;
+        assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
         long startTime = cctx.kernalContext().metric().isProfilingEnabled() ? System.currentTimeMillis() : 0;
@@ -674,7 +674,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
              * @return Cache entry
              */
             private Object convert(Object obj) {
-                if(qry.transform() != null)
+                if (qry.transform() != null)
                     return obj;
 
                 Map.Entry e = (Map.Entry)obj;

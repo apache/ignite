@@ -579,7 +579,7 @@ public class QueryUtils {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
-        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> precision = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         boolean hasKeyFields = (keyFields != null);
@@ -661,7 +661,7 @@ public class QueryUtils {
         String name, boolean isKey) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
-        Map<String, Integer> precision  = qryEntity.getFieldsPrecision();
+        Map<String, Integer> precision = qryEntity.getFieldsPrecision();
         Map<String, Integer> scale = qryEntity.getFieldsScale();
 
         String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
@@ -789,7 +789,7 @@ public class QueryUtils {
 
             d.addIndex(idxDesc);
         }
-        else if (idxTyp == QueryIndexType.FULLTEXT){
+        else if (idxTyp == QueryIndexType.FULLTEXT) {
             for (String field : idx.getFields().keySet()) {
                 String alias = d.aliases().get(field);
 
@@ -1505,17 +1505,17 @@ public class QueryUtils {
 
             code = ((IgniteSQLException)e).statusCode();
         }
-        else if (e instanceof TransactionDuplicateKeyException){
+        else if (e instanceof TransactionDuplicateKeyException) {
             code = IgniteQueryErrorCode.DUPLICATE_KEY;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
-        else if (e instanceof TransactionSerializationException){
+        else if (e instanceof TransactionSerializationException) {
             code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
-        else if (e instanceof TransactionAlreadyCompletedException){
+        else if (e instanceof TransactionAlreadyCompletedException) {
             code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);

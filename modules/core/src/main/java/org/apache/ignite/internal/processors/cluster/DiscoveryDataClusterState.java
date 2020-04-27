@@ -265,7 +265,7 @@ public class DiscoveryDataClusterState implements Serializable {
         if (prevBLT == null && curBLT != null)
             return true;
 
-        if (prevBLT!= null && curBLT != null)
+        if (prevBLT != null && curBLT != null)
             return !prevBLT.equals(curBLT);
 
         return false;
@@ -325,7 +325,7 @@ public class DiscoveryDataClusterState implements Serializable {
      * @return Cluster state that finished transition.
      */
     public DiscoveryDataClusterState finish(boolean success) {
-        if(success)
+        if (success)
             return createState(state, baselineTopology);
         else
             return prevState != null ? prevState : createState(INACTIVE, null);

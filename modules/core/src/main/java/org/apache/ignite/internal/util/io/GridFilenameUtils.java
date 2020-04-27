@@ -390,7 +390,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 System.arraycopy(array, i + 1, array, i - 1, size - i);
-                size -=2;
+                size -= 2;
                 i--;
             }
         }
@@ -405,7 +405,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 int j;
-                for (j = i - 4 ; j >= prefix; j--) {
+                for (j = i - 4; j >= prefix; j--) {
                     if (array[j] == separator) {
                         // remove b/../ from a/b/../c
                         System.arraycopy(array, i + 1, array, j + 1, size - i);
@@ -796,7 +796,7 @@ public class GridFilenameUtils {
         if (prefix < 0)
             return null;
         int index = indexOfLastSeparator(filename);
-        int endIndex = index+separatorAdd;
+        int endIndex = index + separatorAdd;
         if (prefix >= filename.length() || index < 0 || prefix >= endIndex)
             return "";
         return filename.substring(prefix, endIndex);
@@ -883,7 +883,7 @@ public class GridFilenameUtils {
         int index = indexOfLastSeparator(filename);
         if (index < 0)
             return filename.substring(0, prefix);
-        int end = index + (includeSeparator ?  1 : 0);
+        int end = index + (includeSeparator ? 1 : 0);
         if (end == 0)
             end++;
         return filename.substring(0, end);
