@@ -560,7 +560,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         }
 
         assertTrue(execute(ignite0, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
-        assertTrue(execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty());
+        assertTrue(waitForCondition(() ->
+            execute(ignite1, "SELECT * FROM SYS.CONTINUOUS_QUERIES").isEmpty(), getTestTimeout()));
     }
 
     /** */
