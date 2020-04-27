@@ -146,8 +146,10 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
                             new IgniteDomainCombiner(perms)));
 
                     return AccessController.doPrivileged((PrivilegedExceptionAction<Ignite>)
-                            () -> Ignition.start(getConfiguration("node_" + G.allGrids().size())),
-                        acc);
+                            () -> Ignition.start(
+                                getConfiguration("node_" + G.allGrids().size())
+                                    .setConnectorConfiguration(null)
+                            ), acc);
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);
