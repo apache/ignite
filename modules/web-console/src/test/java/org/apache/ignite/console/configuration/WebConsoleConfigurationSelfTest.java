@@ -1026,7 +1026,7 @@ public class WebConsoleConfigurationSelfTest {
 
         HashMap<Class<?>, WrongFields> diff = new HashMap<>();
 
-        for(Map.Entry<Class<?>, MetadataInfo> ent: metadata.entrySet()) {
+        for (Map.Entry<Class<?>, MetadataInfo> ent: metadata.entrySet()) {
             Class<?> cls = ent.getKey();
             MetadataInfo meta = ent.getValue();
 
@@ -1059,7 +1059,7 @@ public class WebConsoleConfigurationSelfTest {
             Set<String> missedFields = new HashSet<>();
             Set<String> deprecatedFields = new HashSet<>();
 
-            for(Map.Entry<String, FieldProcessingInfo> e: clsProps.entrySet()) {
+            for (Map.Entry<String, FieldProcessingInfo> e: clsProps.entrySet()) {
                 String prop = e.getKey();
                 FieldProcessingInfo info = e.getValue();
 
