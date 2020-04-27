@@ -2247,7 +2247,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksRename() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, 0, 0, 0, 0);
     }
 
     /**
@@ -2257,7 +2257,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDelete() throws Exception {
-         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
+         checkDeadlocksRepeat(5, 2, 2, 2, 0, DELETE_CNT, 0, 0, 0);
     }
 
     /**
@@ -2277,7 +2277,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksMkdirs() throws Exception {
-         checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
+         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2287,7 +2287,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDeleteRename() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, DELETE_CNT, 0, 0, 0);
     }
 
     /**
@@ -2297,7 +2297,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDeleteMkdirsRename() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2307,7 +2307,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDeleteMkdirs() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, 0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2327,7 +2327,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocks() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
     }
 
     /**

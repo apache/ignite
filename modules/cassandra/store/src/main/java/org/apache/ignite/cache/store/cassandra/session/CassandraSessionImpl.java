@@ -950,9 +950,9 @@ public class CassandraSessionImpl implements CassandraSession {
             throw msg == null ? new IgniteException(e) : new IgniteException(msg, e);
         }
 
-        if (attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 4  ||
-            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2  ||
-            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 + CQL_EXECUTION_ATTEMPTS_COUNT / 4  ||
+        if (attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 4 ||
+            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 ||
+            attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 + CQL_EXECUTION_ATTEMPTS_COUNT / 4 ||
             attempt == CQL_EXECUTION_ATTEMPTS_COUNT - 1) {
 
             refreshLock.lock();

@@ -4130,9 +4130,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger();
 
-            final int THREADS =  SF.applyLB(20, 5);
+            final int THREADS = SF.applyLB(20, 5);
 
-            final long testTime =  SF.applyLB(30_000, 5_000);
+            final long testTime = SF.applyLB(30_000, 5_000);
 
             final long stopTime = System.currentTimeMillis() + testTime;
 

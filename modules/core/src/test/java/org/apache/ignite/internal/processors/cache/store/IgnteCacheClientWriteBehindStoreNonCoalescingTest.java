@@ -109,7 +109,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
      * @param cache Cache to use.
      * @return IgniteFuture.
      */
-    private IgniteFuture<?>  updateKey(IgniteCache<Integer, Integer> cache) {
+    private IgniteFuture<?> updateKey(IgniteCache<Integer, Integer> cache) {
         IgniteCache asyncCache = cache.withAsync();
 
         // Using EntryProcessor.invokeAll to increment every value in place.

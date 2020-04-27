@@ -40,7 +40,7 @@ public class IgfsClientMetaUnlockCallable extends IgfsClientAbstractCallable<Voi
     private IgniteUuid fileId;
 
     /** Lock id. */
-    private  IgniteUuid lockId;
+    private IgniteUuid lockId;
 
     /** Modification time. */
     private long modificationTime;

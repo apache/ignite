@@ -157,7 +157,7 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             cache.put(k1, Boolean.TRUE);
             cache.put(k2, Boolean.TRUE);
 
-            TransactionProxyImpl p  = (TransactionProxyImpl)tx;
+            TransactionProxyImpl p = (TransactionProxyImpl)tx;
             p.tx().prepare(true);
 
             txs0 = txs(grid(0));

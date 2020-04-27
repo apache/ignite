@@ -97,5 +97,11 @@
             <property name="allowLineBreaks" value="true"/>
             <property name="tokens" value="DOT"/>
         </module>
+
+        <!--
+            Checks that non-whitespace characters are separated by no more than one whitespace.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#SingleSpaceSeparator
+        -->
+        <module name="SingleSpaceSeparator"/>
     </module>
 </module>

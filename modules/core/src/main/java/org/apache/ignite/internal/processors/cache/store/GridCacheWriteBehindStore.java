@@ -849,7 +849,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private boolean updateStore(
         StoreOperation operation,
-        Map<K, Entry<? extends K, ? extends  V>> vals,
+        Map<K, Entry<? extends K, ? extends V>> vals,
         boolean initSes,
         Flusher flusher
     ) {
@@ -901,7 +901,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 overflow = flusher.isOverflowed() || stopping.get();
 
             if (overflow) {
-                for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
+                for (Map.Entry<K, Entry<? extends K, ? extends V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
                     log.error("Failed to update store (value will be lost as current buffer size is greater " +

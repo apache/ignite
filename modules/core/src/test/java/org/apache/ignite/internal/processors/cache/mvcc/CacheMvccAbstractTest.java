@@ -471,7 +471,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                         cache.cache.put(id1, new MvccTestAccount(a1.val + 1, cntr1));
                                         cache.cache.put(id2, new MvccTestAccount(a2.val - 1, cntr2));
                                     }
-                                    else if (writeMode == WriteMode.DML)  {
+                                    else if (writeMode == WriteMode.DML) {
                                         updateSql(cache, id1, a1.val + 1, cntr1);
                                         updateSql(cache, id2, a2.val - 1, cntr2);
                                     }
@@ -500,7 +500,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                                         cache.cache.remove(id2);
                                                     }
                                                 }
-                                                else if (writeMode == WriteMode.DML)  {
+                                                else if (writeMode == WriteMode.DML) {
                                                     if (rmvd.equals(id1)) {
                                                         removeSql(cache, id1);
                                                         updateSql(cache, id2,a1.val + a2.val, 1);
@@ -690,7 +690,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                     Long sum;
 
                                     if (rnd.nextBoolean()) {
-                                        List<List<?>> res =  cache.cache.query(sumQry).getAll();
+                                        List<List<?>> res = cache.cache.query(sumQry).getAll();
 
                                         assertEquals(1, res.size());
 
@@ -1021,7 +1021,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                 Integer readVal = readVals.get(range);
 
                                 if (readVal != null)
-                                    assertTrue("readVal=" + readVal + ", val=" + val +  ", map=" + map,readVal <= val);
+                                    assertTrue("readVal=" + readVal + ", val=" + val + ", map=" + map,readVal <= val);
 
                                 readVals.put(range, val);
 
@@ -1586,16 +1586,16 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             GridTestUtils.waitForCondition(cond, TX_TIMEOUT);
 
-            assertTrue("activeTxs: " + activeTxs,  activeTxs.isEmpty());
+            assertTrue("activeTxs: " + activeTxs, activeTxs.isEmpty());
 
             boolean empty = true;
 
             for (Map map : cntrFuts.values())
                 if (!(empty = map.isEmpty())) break;
 
-            assertTrue("cntrFuts: " + cntrFuts,  empty);
-            assertTrue("ackFuts: " + ackFuts,  ackFuts.isEmpty());
-            assertTrue("activeTrackers: " + activeTrackers,  activeTrackers.isEmpty());
+            assertTrue("cntrFuts: " + cntrFuts, empty);
+            assertTrue("ackFuts: " + ackFuts, ackFuts.isEmpty());
+            assertTrue("activeTrackers: " + activeTrackers, activeTrackers.isEmpty());
 
             checkActiveQueriesCleanup(node);
         }
@@ -1838,7 +1838,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             case SQL:
                 String qry = "SELECT * FROM " + codec.tableName() + " WHERE _key=" + key;
 
-                SqlFieldsQuery sqlFieldsQry =  new SqlFieldsQuery(qry);
+                SqlFieldsQuery sqlFieldsQry = new SqlFieldsQuery(qry);
 
                 if (emulateLongQry)
                     sqlFieldsQry.setLazy(true).setPageSize(1);
@@ -1889,7 +1889,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 return;
 
             case DML:
-                String qry = "MERGE INTO " + codec.tableName() + " (" + codec.columnsNames() +  ") VALUES " +
+                String qry = "MERGE INTO " + codec.tableName() + " (" + codec.columnsNames() + ") VALUES " +
                     '(' + key + ", " + codec.encode(val) + ')';
 
                 List<List> rows = cache.query(new SqlFieldsQuery(qry)).getAll();
@@ -2052,7 +2052,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 return;
 
             case DML:
-                StringBuilder b = new StringBuilder("MERGE INTO " + codec.tableName() + " (" + codec.columnsNames() +  ") VALUES ");
+                StringBuilder b = new StringBuilder("MERGE INTO " + codec.tableName() + " (" + codec.columnsNames() + ") VALUES ");
 
                 boolean first = true;
 

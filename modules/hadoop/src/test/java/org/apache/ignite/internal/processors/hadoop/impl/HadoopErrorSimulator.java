@@ -83,7 +83,7 @@ public class HadoopErrorSimulator {
     /**
      * Invoked on the named stage.
      */
-    public void onMapSetup()  throws IOException, InterruptedException {
+    public void onMapSetup() throws IOException, InterruptedException {
         // no-op
     }
 
@@ -97,14 +97,14 @@ public class HadoopErrorSimulator {
     /**
      * Invoked on the named stage.
      */
-    public void onMapCleanup()  throws IOException, InterruptedException {
+    public void onMapCleanup() throws IOException, InterruptedException {
         // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
-    public void onMapClose()  throws IOException {
+    public void onMapClose() throws IOException {
         // no-op
     }
 
@@ -146,21 +146,21 @@ public class HadoopErrorSimulator {
     /**
      * Invoked on the named stage.
      */
-    public void onReduceSetup()  throws IOException, InterruptedException {
+    public void onReduceSetup() throws IOException, InterruptedException {
         // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
-    public void onReduce()  throws IOException {
+    public void onReduce() throws IOException {
         // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
-    public void onReduceCleanup()  throws IOException, InterruptedException {
+    public void onReduceCleanup() throws IOException, InterruptedException {
         // no-op
     }
 

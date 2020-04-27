@@ -94,7 +94,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid("srv", ALLOW_ALL,  false);
+        Ignite srv = startGrid("srv", ALLOW_ALL, false);
 
         startGrid(CLNT_NODE, ALLOW_ALL, true);
 

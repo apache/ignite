@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public enum     VisorTxProjection {
+public enum VisorTxProjection {
     /** Server nodes. */
     SERVER,
     /** Client nodes. */

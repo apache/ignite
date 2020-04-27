@@ -145,8 +145,8 @@ public class TxOptimisticDeadlockDetectionTest extends AbstractDeadlockDetection
     @Test
     public void testDeadlocksPartitionedNearTxOnPrimary() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  ORDINAL_START_KEY);
-            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true),  CUSTOM_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), ORDINAL_START_KEY);
+            doTestDeadlocksTxOnPrimary(createCache(PARTITIONED, syncMode, true), CUSTOM_START_KEY);
         }
     }
 

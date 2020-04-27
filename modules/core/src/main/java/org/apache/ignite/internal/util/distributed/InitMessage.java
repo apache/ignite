@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FullMessage
  * @see SingleNodeMessage
  */
-public class InitMessage<I extends Serializable>  implements DiscoveryCustomMessage {
+public class InitMessage<I extends Serializable> implements DiscoveryCustomMessage {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

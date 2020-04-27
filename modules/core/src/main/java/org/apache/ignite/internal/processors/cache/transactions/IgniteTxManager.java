@@ -2356,7 +2356,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param failedNodeIds Failed nodes IDs.
      */
     public void commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
-        assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
+        assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
 
