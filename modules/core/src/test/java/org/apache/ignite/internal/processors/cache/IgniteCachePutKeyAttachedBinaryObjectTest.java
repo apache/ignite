@@ -74,7 +74,6 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
         assertEquals(2, binCache.get(attachedKey));
     }
 
-
     /**
      *
      */
