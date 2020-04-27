@@ -525,7 +525,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 checkContinuousQueryView(originNode, remoteQrys, false);
             }
 
-            assertTrue(waitForCondition(() -> origQrys.size() == 0, getTestTimeout()));
+            assertEquals(0, origQrys.size());
             assertTrue(waitForCondition(() -> remoteQrys.size() == 0, getTestTimeout()));
         }
     }
