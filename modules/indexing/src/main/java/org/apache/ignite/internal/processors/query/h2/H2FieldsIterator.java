@@ -45,12 +45,17 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
      * @param conn Connection.
      * @throws IgniteCheckedException If failed.
      */
-    public H2FieldsIterator(ResultSet data, MvccQueryTracker mvccTracker,
+    public H2FieldsIterator(
+        ResultSet data,
+        MvccQueryTracker mvccTracker,
         H2PooledConnection conn,
         int pageSize,
-        IgniteLogger log, IgniteH2Indexing h2)
+        IgniteLogger log,
+        IgniteH2Indexing h2,
+        H2QueryInfo qryInfo
+    )
         throws IgniteCheckedException {
-        super(data, pageSize, log, h2);
+        super(data, pageSize, log, h2 ,qryInfo);
 
         assert conn != null;
 

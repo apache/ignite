@@ -519,7 +519,7 @@ public class GridReduceQueryExecutor {
                                 qryInfo
                             );
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, conn, r.pageSize(), log, h2);
+                            resIter = new H2FieldsIterator(res, mvccTracker, conn, r.pageSize(), log, h2, qryInfo);
 
                             conn = null;
 
