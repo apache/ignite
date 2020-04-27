@@ -205,7 +205,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         if (Files.notExists(path))
             return Optional.empty();
 
-        return  Files.walk(path)
+        return Files.walk(path)
             .filter(Files::isDirectory)
             .filter(file -> dir.equals(file.getFileName().toString()))
             .findAny();

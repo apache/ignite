@@ -71,7 +71,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
      */
     private static long getLastSnapshotEndTime(DynamicMBean mBean) {
         try {
-            return  (long)mBean.getAttribute("LastSnapshotEndTime");
+            return (long)mBean.getAttribute("LastSnapshotEndTime");
         }
         catch (MBeanException | ReflectionException | AttributeNotFoundException e) {
             throw new RuntimeException(e);

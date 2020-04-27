@@ -633,7 +633,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         stopGrid(2);
 
         TestRecordingCommunicationSpi.spi(grid(1))
-            .blockMessages((node, msg) ->  msg instanceof GridDhtPartitionDemandMessage);
+            .blockMessages((node, msg) -> msg instanceof GridDhtPartitionDemandMessage);
 
         ig0.cluster().setBaselineTopology(ig0.cluster().forServers().nodes());
 
