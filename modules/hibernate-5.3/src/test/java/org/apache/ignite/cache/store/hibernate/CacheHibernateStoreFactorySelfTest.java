@@ -81,7 +81,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     @Test
     public void testXmlConfiguration() throws Exception {
         try (Ignite ignite = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache.xml")) {
-            try(Ignite ignite1 = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache1.xml")) {
+            try (Ignite ignite1 = Ignition.start(MODULE_PATH + "/src/test/config/factory-cache1.xml")) {
                 checkStore(ignite.<Integer, String>cache(CACHE_NAME), DummySessionFactoryExt.class);
 
                 checkStore(ignite1.<Integer, String>cache(CACHE_NAME), DummySessionFactory.class);

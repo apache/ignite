@@ -383,7 +383,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             Collection<PlatformComputeBinarizable> res = new ArrayList<>(arg.size());
 
-            for(Object x : arg)
+            for (Object x : arg)
                 res.add(new PlatformComputeBinarizable(((PlatformComputeBinarizable)x).field + 1));
 
             return res;

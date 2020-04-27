@@ -356,11 +356,11 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
     public void testJoinQueriesWithMixedMapQueriesAndMixedPartitionsAndParams() throws Exception {
         runQuery("select o.id, sum(o._KEY) FROM Organization o LEFT JOIN (select distinct orgId from " +
                 "pers.Person where _KEY = ? or _KEY = ?) as p on p.orgId=o.id where o._KEY = 1 GROUP BY o.id",
-            1, false, true, 1, 1 , 1);
+            1, false, true, 1, 1, 1);
 
         runQuery("select o.id, sum(o._KEY) FROM Organization o LEFT JOIN (select distinct orgId from " +
                 "pers.Person where _KEY = ? or _KEY = ?) as p on p.orgId=o.id where o._KEY = 1 GROUP BY o.id",
-            1, true, false, 3, 1 , 2);
+            1, true, false, 3, 1, 2);
     }
 
     /**

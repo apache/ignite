@@ -177,7 +177,7 @@ public class RestExecutorSelfTest {
         String trustStorePwd,
         List<String> cipherSuites
     ) throws Exception {
-        try(
+        try (
             Ignite ignite = Ignition.getOrStart(nodeCfg);
             RestExecutor exec = new RestExecutor(false, keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites)
         ) {

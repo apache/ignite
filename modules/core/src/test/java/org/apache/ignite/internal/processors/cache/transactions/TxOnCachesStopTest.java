@@ -445,12 +445,12 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      * @param isolation Transaction isolation.
      * @return TxLoad future.
      */
-    private IgniteInternalFuture startTxLoad (
+    private IgniteInternalFuture startTxLoad(
         final AtomicBoolean stopTxLoad,
         final AtomicInteger cacheIdxToBeDestroyed,
         final List<Ignite> clients,
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation){
+        TransactionIsolation isolation) {
         final GridCompoundFuture fut = new GridCompoundFuture();
 
         for (Ignite c : clients) {

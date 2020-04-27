@@ -813,7 +813,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000000; i++)
             entries.put(i, i);
 
-        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
             if (write)
                 client.cache(CACHE_NAME).putAll(entries);
             else
@@ -1004,7 +1004,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             if (obj.getClass().isAssignableFrom(GridNearTxLocal.class)) {
                 log.error("Last saved exception: " + saved, saved);
 
-                fail("Not removed [mode=" + mode + ", timeout=" + timeout + ", tx=" + obj +']');
+                fail("Not removed [mode=" + mode + ", timeout=" + timeout + ", tx=" + obj + ']');
             }
         }
     }

@@ -1183,7 +1183,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process channel creation event due to exception " +
-                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']' , e);
+                "[rmtNodeId=" + rmtNodeId + ", initMsg=" + initMsg + ']', e);
         }
         finally {
             busyLock0.unlock();
@@ -1843,7 +1843,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         UUID newSecSubjId = secSubjId != null ? secSubjId : nodeId;
 
-        try(OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
+        try (OperationSecurityContext s = ctx.security().withContext(newSecSubjId)) {
             lsnr.onMessage(nodeId, msg, plc);
         }
         finally {
@@ -3173,7 +3173,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 syncMeta = (TransmissionMeta)in.readObject();
             }
             catch (ClassNotFoundException e) {
-                throw new IgniteException (e);
+                throw new IgniteException(e);
             }
 
             return syncMeta;
@@ -3291,7 +3291,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 U.log(log, "File has been sent to remote node [name=" + file.getName() +
                     ", uploadTime=" + (double)((U.currentTimeMillis() - startTime) / 1000) + " sec, retries=" + retries +
-                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId +']');
+                    ", transferred=" + snd.transferred() + ", rmtId=" + rmtId + ']');
 
             }
             catch (InterruptedException e) {
@@ -3592,7 +3592,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 if (msgBody != null) {
                     if (predLsnr != null) {
-                        try(OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
+                        try (OperationSecurityContext s = ctx.security().withContext(initNodeId)) {
                             if (!predLsnr.apply(nodeId, msgBody))
                                 removeMessageListener(TOPIC_COMM_USER, this);
                         }
@@ -4222,8 +4222,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Security subject id.
      */
-    private UUID secSubjId(GridIoMessage msg){
-        if(ctx.security().enabled()) {
+    private UUID secSubjId(GridIoMessage msg) {
+        if (ctx.security().enabled()) {
             assert msg instanceof GridIoSecurityAwareMessage;
 
             return ((GridIoSecurityAwareMessage) msg).secSubjId();

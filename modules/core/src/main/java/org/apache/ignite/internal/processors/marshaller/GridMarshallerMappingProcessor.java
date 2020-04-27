@@ -263,7 +263,7 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
                     if (origNodeId.equals(ctx.localNodeId())) {
                         GridFutureAdapter<MappingExchangeResult> fut = mappingExchangeSyncMap.get(msg.mappingItem());
 
-                        assert fut != null: msg;
+                        assert fut != null : msg;
 
                         fut.onDone(MappingExchangeResult.createFailureResult(
                                 duplicateMappingException(msg.mappingItem(), msg.conflictingClassName())));

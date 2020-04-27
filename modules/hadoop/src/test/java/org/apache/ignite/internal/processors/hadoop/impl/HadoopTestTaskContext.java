@@ -137,7 +137,7 @@ class HadoopTestTaskContext extends HadoopV2TaskContext {
 
         /** {@inheritDoc} */
         @Override public Iterator<?> values() {
-            return currEntry.getValue().iterator() ;
+            return currEntry.getValue().iterator();
         }
 
         /** {@inheritDoc} */

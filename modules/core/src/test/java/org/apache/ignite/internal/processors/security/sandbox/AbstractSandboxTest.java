@@ -63,7 +63,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     private static final String PROP_VALUE = "propertyValue";
 
     /** */
-    protected static void controlAction(){
+    protected static void controlAction() {
         System.setProperty(PROP_NAME, PROP_VALUE);
     }
 

@@ -602,7 +602,7 @@ public class MvccUtils {
         try {
             long pageAddr = pageMem.readLock(grpId, pageId, page);
 
-            try{
+            try {
                 DataPageIO dataIo = DataPageIO.VERSIONS.forPage(pageAddr);
 
                 return invoke(cctx, dataIo, pageAddr, itemId, pageSize, clo, snapshot);

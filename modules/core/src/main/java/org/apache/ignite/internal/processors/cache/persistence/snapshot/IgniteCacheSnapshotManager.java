@@ -95,7 +95,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
     /**
      *
      */
-    public boolean snapshotOperationInProgress(){
+    public boolean snapshotOperationInProgress() {
         return false;
     }
 

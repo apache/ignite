@@ -39,7 +39,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
      * @param rowSize Amount of instances. Should be > 0.
      * @param colSize Amount of attributes. Should be > 0.
      */
-    public LabeledVectorSet(int rowSize, int colSize){
+    public LabeledVectorSet(int rowSize, int colSize) {
         this(rowSize, colSize, null);
     }
 
@@ -50,7 +50,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
      * @param colSize Amount of attributes. Should be > 0
      * @param featureNames Column names.
      */
-    public LabeledVectorSet(int rowSize, int colSize, String[] featureNames){
+    public LabeledVectorSet(int rowSize, int colSize, String[] featureNames) {
         super(rowSize, colSize, featureNames);
 
         initializeDataWithLabeledVectors();
@@ -103,16 +103,16 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
         assert mtx != null;
         assert lbs != null;
 
-        if(mtx.length != lbs.length)
+        if (mtx.length != lbs.length)
             throw new CardinalityException(lbs.length, mtx.length);
 
-        if(mtx[0] == null)
+        if (mtx[0] == null)
             throw new NoDataException("Pass filled array, the first vector is empty");
 
         this.rowSize = lbs.length;
         this.colSize = mtx[0].length;
 
-        if(featureNames == null)
+        if (featureNames == null)
             generateFeatureNames();
         else {
             assert colSize == featureNames.length;
@@ -120,8 +120,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
         }
 
         data = (Row[])new LabeledVector[rowSize];
-        for (int i = 0; i < rowSize; i++){
-
+        for (int i = 0; i < rowSize; i++) {
             data[i] = (Row)new LabeledVector(emptyVector(colSize), lbs[i]);
             for (int j = 0; j < colSize; j++) {
                 try {
@@ -172,7 +171,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     public void setLabel(int idx, double lb) {
         LabeledVector<Double> labeledVector = data[idx];
 
-        if(labeledVector != null)
+        if (labeledVector != null)
             labeledVector.setLabel(lb);
         else
             throw new NoLabelVectorException(idx);
@@ -184,7 +183,7 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
     }
 
     /** Makes copy with new Label objects and old features and Metadata objects. */
-    public LabeledVectorSet copy(){
+    public LabeledVectorSet copy() {
         LabeledVectorSet res = new LabeledVectorSet(this.data, this.colSize);
         res.meta = this.meta;
         for (int i = 0; i < rowSize; i++)

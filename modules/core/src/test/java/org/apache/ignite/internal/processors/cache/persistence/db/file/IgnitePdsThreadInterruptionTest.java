@@ -114,7 +114,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, byte[]> st = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
-            for (int i = 0; i < maxKey; i++){
+            for (int i = 0; i < maxKey; i++) {
                 keysToCheck.add(i);
 
                 st.addData(i, PAYLOAD);

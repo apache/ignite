@@ -148,7 +148,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            for(String cacheName : grid(i).cacheNames()) {
+            for (String cacheName : grid(i).cacheNames()) {
                 IgniteCache<Object, Object> c = grid(i).cache(cacheName);
 
                 c.removeAll();
@@ -167,7 +167,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends AbstractIndexingCommo
         U.sleep(5000);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            for(String cacheName : grid(i).cacheNames()) {
+            for (String cacheName : grid(i).cacheNames()) {
                 IgniteCache<Object, Object> c = grid(i).cache(cacheName);
 
                 assertEquals(0, c.size(CachePeekMode.OFFHEAP));

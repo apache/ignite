@@ -290,7 +290,7 @@ public class HadoopV2Job extends HadoopJobEx {
                 HadoopJobId.class, UUID.class, DataInput.class);
 
             if (jobConfData == null)
-                synchronized(jobConf) {
+                synchronized (jobConf) {
                     if (jobConfData == null) {
                         ByteArrayOutputStream buf = new ByteArrayOutputStream();
 

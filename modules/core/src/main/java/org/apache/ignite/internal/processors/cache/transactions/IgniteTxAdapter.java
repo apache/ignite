@@ -696,7 +696,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public IgniteUuid xid() {
-        return xidVer.asGridUuid();
+        return xidVer.asIgniteUuid();
     }
 
     /** {@inheritDoc} */
@@ -1270,7 +1270,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** */
-    private void recordStateChangedEvent(TransactionState state){
+    private void recordStateChangedEvent(TransactionState state) {
         if (!near() || !local()) // Covers only GridNearTxLocal's state changes.
             return;
 
@@ -1304,7 +1304,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @param type Event type.
      */
-    protected void recordStateChangedEvent(int type){
+    protected void recordStateChangedEvent(int type) {
         assert near() && local();
 
         GridEventStorageManager evtMgr = cctx.gridEvents();
@@ -1969,7 +1969,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     protected Object readResolve() throws ObjectStreamException {
         return new TxShadow(
-            xidVer.asGridUuid(),
+            xidVer.asIgniteUuid(),
             nodeId,
             threadId,
             startTime,

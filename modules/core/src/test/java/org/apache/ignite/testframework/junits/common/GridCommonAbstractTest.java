@@ -1208,7 +1208,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         List<Integer> keys = new ArrayList<>(cnt);
 
-        while(c < cnt) {
+        while (c < cnt) {
             if (cctx.affinity().partition(k) == part) {
                 if (skip0 < skipCnt) {
                     k++;
@@ -1246,7 +1246,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             private void advance() {
-                while(cctx.affinity().partition(cur = next++) != part);
+                while (cctx.affinity().partition(cur = next++) != part);
             }
 
             @Override public boolean hasNext() {
@@ -1421,7 +1421,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         BitSet before = m1.get(ign.cluster().localNode());
         BitSet after = m2.get(ign.cluster().localNode());
 
-        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p+1)) {
+        for (int p = before.nextSetBit(0); p >= 0; p = before.nextSetBit(p + 1)) {
             if (!after.get(p)) {
                 partsToRet.add(p);
 
@@ -2199,7 +2199,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 break;
 
             default:
-                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                try (IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
                     ds.allowOverwrite(mode == 2);
 
                     ds.addData(map);

@@ -336,7 +336,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         try {
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    doTestCustomNames("new", null, null);return null;
+                    doTestCustomNames("new", null, null);
+                    return null;
                 }
             }, IgniteSQLException.class, "Table already exists: NameTest");
         }
@@ -592,7 +593,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         testAllNodes(node -> {
             CacheConfiguration cfg = node.cache(cacheName).getConfiguration(CacheConfiguration.class);
 
-            assertEquals("Node: " + node + "; Query parallelism is wrong.", expParallelism  , cfg.getQueryParallelism());
+            assertEquals("Node: " + node + "; Query parallelism is wrong.", expParallelism, cfg.getQueryParallelism());
         });
     }
 
@@ -1523,7 +1524,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             execute(sql);
 
-            if(testUuid)
+            if (testUuid)
                 execute("INSERT INTO T(\"id\", \"x\") values('" + guid.toString() + "', '" + guid.toString() + "')");
             else
                 execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
@@ -1563,8 +1564,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals(expCols, resCols);
 
-            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a")
-                    , resData);
+            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a"), resData);
 
             Object key = createKeyForWrapTest(testUuid ? guid : 1, wrapKey);
 

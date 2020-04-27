@@ -657,7 +657,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     boolean isInterrupted = Thread.interrupted();
 
                     try {
-                        while(true) {
+                        while (true) {
                             try {
                                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                                     AtomicDataStructureValue val = cache.get(key);

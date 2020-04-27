@@ -128,7 +128,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         String select0 = "select * from \"org\".Organization o";
 
         // Check for stable results.
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
 
             assertEquals(expSize, res.size());
@@ -153,7 +153,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         String select0 = "select count(*) from \"org\".Organization o";
 
         // Check for stable results.
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
 
             assertEquals(expSize, res.get(0).get(0));

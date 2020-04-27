@@ -276,7 +276,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @return Mode resolver.
      * @throws IOException On error.
      */
-    public IgfsModeResolver modeResolver() throws IOException{
+    public IgfsModeResolver modeResolver() throws IOException {
         return withReconnectHandling(new FileSystemClosure<IgfsModeResolver>() {
             @Override public IgfsModeResolver apply(HadoopIgfsEx hadoop,
                 IgfsHandshakeResponse hndResp) throws IgniteCheckedException, IOException {

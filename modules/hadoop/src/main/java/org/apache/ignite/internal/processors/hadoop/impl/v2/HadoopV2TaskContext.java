@@ -294,7 +294,7 @@ public class HadoopV2TaskContext extends HadoopTaskContext {
     @Override public void prepareTaskEnvironment() throws IgniteCheckedException {
         File locDir;
 
-        switch(taskInfo().type()) {
+        switch (taskInfo().type()) {
             case MAP:
             case REDUCE:
                 job().prepareTaskEnvironment(taskInfo());

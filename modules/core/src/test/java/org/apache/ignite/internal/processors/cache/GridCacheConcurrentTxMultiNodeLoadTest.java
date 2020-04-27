@@ -599,7 +599,7 @@ public class GridCacheConcurrentTxMultiNodeLoadTest extends GridCommonAbstractTe
                                 GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
                                 GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
-                                X.println("Near entry [igniteInstanceName="+ g.name() + ", key=" + k + ", entry=" +
+                                X.println("Near entry [igniteInstanceName=" + g.name() + ", key=" + k + ", entry=" +
                                     nearEntry);
                                 X.println("DHT entry [igniteInstanceName=" + g.name() + ", key=" + k + ", entry=" +
                                     dhtEntry);

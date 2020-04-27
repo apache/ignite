@@ -456,7 +456,7 @@ public class IgniteWalIteratorFactory {
          * @param log Logger.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder log(IgniteLogger log){
+        public IteratorParametersBuilder log(IgniteLogger log) {
             this.log = log;
 
             return this;
