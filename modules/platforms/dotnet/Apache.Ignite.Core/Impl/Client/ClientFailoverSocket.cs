@@ -200,37 +200,39 @@ namespace Apache.Ignite.Core.Impl.Client
                 return socket != null ? socket.LocalEndPoint : null;
             }
         }
-        
+
         /// <summary>
         /// Gets active connections.
         /// </summary>
         public IEnumerable<IClientConnection> GetConnections()
         {
             var map = _nodeSocketMap;
-            
-            if (map != null)
+
+            foreach (var socket in map.Values)
             {
-                foreach (var socket in map.Values)
+                if (!socket.IsDisposed)
                 {
-                    if (!socket.IsDisposed)
-                    {
-                        yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint, 
-                            socket.ServerNodeId.GetValueOrDefault());
-                    }
+                    yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint,
+                        socket.ServerNodeId.GetValueOrDefault());
                 }
             }
-            else
+
+            foreach (var socketEndpoint in _endPoints)
             {
-                foreach (var socketEndpoint in _endPoints)
+                var socket = socketEndpoint.Socket;
+
+                if (socket == null || socket.IsDisposed)
                 {
-                    var socket = socketEndpoint.Socket;
-                
-                    if (socket != null && !socket.IsDisposed)
-                    {
-                        yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint, 
-                            socket.ServerNodeId.GetValueOrDefault());
-                    }
+                    continue;
                 }
+
+                if (socket.ServerNodeId != null && map.ContainsKey(socket.ServerNodeId.Value))
+                {
+                    continue;
+                }
+                
+                yield return new ClientConnection(socket.LocalEndPoint, socket.RemoteEndPoint,
+                    socket.ServerNodeId.GetValueOrDefault());
             }
         }
 

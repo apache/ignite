@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
+    using System;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Client;
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 Assert.IsTrue(client.GetConfiguration().EnableDiscovery);
                 
-                Assert.AreEqual(3, client.GetConnections().Count());
+                AssertClientConnectionCount(client, 3);
             }
         }
 
@@ -70,28 +71,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             using (var client = GetClient())
             {
-                Assert.AreEqual(3, client.GetConnections().Count());
+                AssertClientConnectionCount(client, 3);
 
                 var cfg = GetIgniteConfiguration();
                 cfg.AutoGenerateIgniteInstanceName = true;
 
                 using (Ignition.Start(cfg))
                 {
-                    // Perform any operation to cause topology update.
-                    client.GetCacheNames();
-                    
-                    Assert.AreEqual(4, client.GetConnections().Count());
+                    AssertClientConnectionCount(client, 4);
                 }
 
-                // ReSharper disable AccessToDisposedClosure
-                TestUtils.WaitForTrueCondition(() =>
-                {
-                    // Perform any operation to cause topology update.
-                    client.GetCacheNames();
-
-                    return 3 == client.GetConnections().Count();
-                });
-                // ReSharper restore AccessToDisposedClosure
+                AssertClientConnectionCount(client, 3);
             }
         }
 
@@ -121,6 +111,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             {
                 Localhost = _noLocalhost ? null : "127.0.0.1"
             };
+        }
+        
+        /// <summary>
+        /// Asserts client connection count.
+        /// </summary>
+        private static void AssertClientConnectionCount(IIgniteClient client, int count)
+        {
+            TestUtils.WaitForTrueCondition(() =>
+            {
+                // Perform any operation to cause topology update.
+                client.GetCacheNames();
+
+                return count == client.GetConnections().Count();
+            });
         }
     }
 }
