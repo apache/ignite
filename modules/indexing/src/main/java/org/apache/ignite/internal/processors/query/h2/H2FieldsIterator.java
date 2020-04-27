@@ -55,7 +55,7 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
         H2QueryInfo qryInfo
     )
         throws IgniteCheckedException {
-        super(data, pageSize, log, h2 ,qryInfo);
+        super(data, pageSize, log, h2, qryInfo);
 
         assert conn != null;
 
