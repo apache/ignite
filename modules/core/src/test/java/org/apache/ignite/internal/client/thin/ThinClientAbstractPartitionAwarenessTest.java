@@ -323,7 +323,7 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             super.close();
 
             closed = true;

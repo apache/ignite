@@ -17,40 +17,16 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+
 /**
- * Client response flag.
+ * Thin client outgoing message (from server to client).
  */
-public class ClientFlag {
+public interface ClientOutgoingMessage {
     /**
-     * No-op constructor to prevent instantiation.
+     * Encodes the message data.
+     * @param ctx Connection context.
+     * @param writer Writer.
      */
-    private ClientFlag() {
-        // No-op.
-    }
-
-    /**
-     * @return Flags for response message.
-     * @param error Error flag.
-     * @param topologyChanged Affinity topology changed flag.
-     */
-    public static short makeFlags(boolean error, boolean topologyChanged) {
-        short flags = 0;
-
-        if (error)
-            flags |= ClientFlag.ERROR;
-
-        if (topologyChanged)
-            flags |= ClientFlag.AFFINITY_TOPOLOGY_CHANGED;
-
-        return flags;
-    }
-
-    /** Error flag. */
-    public static final short ERROR = 1;
-
-    /** Affinity topology change flag. */
-    public static final short AFFINITY_TOPOLOGY_CHANGED = 1 << 1;
-
-    /** Server to client notification flag. */
-    public static final short NOTIFICATION = 1 << 2;
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer);
 }
