@@ -28,7 +28,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class KillQueryFromClientTest extends KillQueryTest {
     /** {@inheritDoc} */
-    @Override protected IgniteEx getKillRequestNode()  {
+    @Override protected IgniteEx getKillRequestNode() {
         IgniteEx clientNode = grid(NODES_COUNT - 1);
 
         assertTrue(clientNode.context().clientNode());

@@ -3114,7 +3114,7 @@ public class IgfsMetaManager extends IgfsManager {
                             }
                             finally {
                                 if (secondaryOutHolder != null)
-                                    secondaryOut =  secondaryOutHolder.get();
+                                    secondaryOut = secondaryOutHolder.get();
                             }
 
                             if (res == null)

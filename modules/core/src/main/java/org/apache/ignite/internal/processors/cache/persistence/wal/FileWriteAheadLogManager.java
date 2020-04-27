@@ -2147,7 +2147,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private class FileCompressorWorker extends GridWorker {
         /** */
-        FileCompressorWorker(int idx,  IgniteLogger log) {
+        FileCompressorWorker(int idx, IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-compressor-%" + cctx.igniteInstanceName() + "%-" + idx, log);
         }
 

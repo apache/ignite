@@ -29,7 +29,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tests kernal stop while it is being accessed from asynchronous even listener.
  */
-public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractTest {
+public class GridKernalConcurrentAccessStopSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRIDS = 2;
 

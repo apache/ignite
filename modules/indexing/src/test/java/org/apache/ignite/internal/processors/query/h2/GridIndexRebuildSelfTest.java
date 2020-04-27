@@ -70,7 +70,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        IgniteConfiguration cfg =  super.commonConfiguration(idx);
+        IgniteConfiguration cfg = super.commonConfiguration(idx);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()
             .setMaxSize(300 * 1024L * 1024L)

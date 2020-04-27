@@ -1821,7 +1821,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = null;
 
-            DhtAtomicUpdateResult  updDhtRes = new DhtAtomicUpdateResult();
+            DhtAtomicUpdateResult updDhtRes = new DhtAtomicUpdateResult();
 
             try {
                 while (true) {

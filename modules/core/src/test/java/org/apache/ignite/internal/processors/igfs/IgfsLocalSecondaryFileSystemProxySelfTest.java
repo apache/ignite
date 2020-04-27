@@ -290,7 +290,7 @@ public class IgfsLocalSecondaryFileSystemProxySelfTest extends IgfsProxySelfTest
                     if (!block0.equals(block))
                         assert block.start() < block0.start() && block.start() + block.length() <= block0.start() ||
                             block.start() > block0.start() && block0.start() + block0.length() <= block.start()
-                            : "Blocks cross each other: block0=" +  block + ", block1= " + block0;
+                            : "Blocks cross each other: block0=" + block + ", block1= " + block0;
             }
 
             assert totalLen == len : "Summary length of blocks must be: " + len + " actual: " + totalLen;

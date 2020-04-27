@@ -115,7 +115,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration<KeyClass, ValueClass> cacheConfiguration() {
-        CacheConfiguration<KeyClass, ValueClass> ccfg =  super.cacheConfiguration();
+        CacheConfiguration<KeyClass, ValueClass> ccfg = super.cacheConfiguration();
 
         return ccfg.setCacheMode(cacheMode).setAtomicityMode(atomicityMode);
     }

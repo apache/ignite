@@ -104,7 +104,7 @@ public class TrackingPageIO extends PageIO {
 
         int updateTemplate = 1 << (idxToUpdate & 0b111);
 
-        byte newVal =  (byte) (byteToUpdate | updateTemplate);
+        byte newVal = (byte)(byteToUpdate | updateTemplate);
 
         if (byteToUpdate == newVal)
             return tag;
@@ -369,7 +369,7 @@ public class TrackingPageIO extends PageIO {
      * @return How many page we can track with 1 page.
      */
     public int countOfPageToTrack(int pageSize) {
-        return ((pageSize - SIZE_FIELD_OFFSET) / 2 - SIZE_FIELD_SIZE)  << 3;
+        return ((pageSize - SIZE_FIELD_OFFSET) / 2 - SIZE_FIELD_SIZE) << 3;
     }
 
     /**
