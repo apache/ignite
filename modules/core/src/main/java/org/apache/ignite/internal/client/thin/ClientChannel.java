@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
 /**
@@ -35,9 +36,16 @@ interface ClientChannel extends AutoCloseable {
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
      * @param payloadReader Payload reader from stream.
      * @return Received operation payload or {@code null} if response has no payload.
+     * @throws ClientException Thrown by {@code payloadWriter} or {@code payloadReader}.
+     * @throws ClientAuthorizationException When user has no permission to perform operation.
+     * @throws ClientServerError When failed to process request on server.
+     * @throws ClientConnectionException In case of IO errors.
      */
-    public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
-        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException;
+    public <T> T service(
+        ClientOperation op,
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
+    ) throws ClientException, ClientAuthorizationException, ClientServerError, ClientConnectionException;
 
     /**
      * @return Protocol context.
@@ -58,4 +66,14 @@ interface ClientChannel extends AutoCloseable {
      * Add topology change listener.
      */
     public void addTopologyChangeListener(Consumer<ClientChannel> lsnr);
+
+    /**
+     * Add notifications (from server to client) listener.
+     */
+    public void addNotificationListener(NotificationListener lsnr);
+
+    /**
+     * @return {@code True} channel is closed.
+     */
+    public boolean closed();
 }
