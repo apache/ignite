@@ -106,7 +106,7 @@
 
         <!--
             Checks that the whitespace around the Generic tokens are correct.
-            See: https://checkstyle.sourceforge.io/config_whitespace.html#SingleSpaceSeparator
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#GenericWhitespace
         -->
         <module name="GenericWhitespace"/>
     </module>
