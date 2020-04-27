@@ -437,7 +437,7 @@ public class GridMapQueryExecutor {
                             throw new QueryCancelledException();
                         }
 
-                        res.openResult(rs);
+                        res.openResult(rs, qryInfo);
 
                         final GridQueryNextPageResponse msg = prepareNextPage(
                             nodeRess,
