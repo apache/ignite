@@ -841,7 +841,7 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
     private Set<H2PooledConnection> usedConnections(int i) {
         ConnectionManager connMgr = ((IgniteH2Indexing)grid(i).context().query().getIndexing()).connections();
 
-        return  GridTestUtils.getFieldValue(connMgr, "usedConns");
+        return GridTestUtils.getFieldValue(connMgr, "usedConns");
     }
 
     /**

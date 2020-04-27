@@ -371,7 +371,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
-            throws IgniteCheckedException  {
+            throws IgniteCheckedException {
             // Check the triangle invariant.
             if (io.getForward(pageAddr) != p.fwdId)
                 return RETRY;
@@ -1031,7 +1031,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long firstPageId;
 
         long metaPage = acquirePage(metaPageId);
-        try  {
+        try {
             firstPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
         }
         finally {
@@ -1498,7 +1498,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         int rootLvl;
 
         long metaPage = acquirePage(metaPageId);
-        try  {
+        try {
             rootLvl = getRootLevel();
 
             if (rootLvl < 0)
@@ -2521,7 +2521,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         long metaPage = acquirePage(metaPageId);
 
-        try  {
+        try {
             long metaPageAddr = writeLock(metaPageId, metaPage); // No checks, we must be out of use.
 
             lockedPages.push(new GridTuple3<>(metaPageId, metaPage, metaPageAddr));
@@ -4114,7 +4114,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (isRemove())
                 return ((Remove)op).tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
 
-            return  ((Put)op).tryReplace(pageId, page, fwdId, lvl);
+            return ((Put)op).tryReplace(pageId, page, fwdId, lvl);
         }
 
         /**

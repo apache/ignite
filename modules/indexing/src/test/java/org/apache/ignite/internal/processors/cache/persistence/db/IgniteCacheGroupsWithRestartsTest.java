@@ -282,7 +282,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         crd.cluster().state(ACTIVE);
 
         String cacheName = "test-cache-3rd-party-write-behind-and-ignite-persistence";
-        CacheConfiguration  ccfg = new CacheConfiguration(cacheName)
+        CacheConfiguration ccfg = new CacheConfiguration(cacheName)
             .setWriteBehindEnabled(true)
             .setWriteThrough(true)
             .setReadThrough(true)

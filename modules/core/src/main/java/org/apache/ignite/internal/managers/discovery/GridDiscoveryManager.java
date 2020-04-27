@@ -1235,7 +1235,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             if (locDelayAssign != rmtLateAssign) {
                 throw new IgniteCheckedException("Remote node has cache affinity assignment mode different from local " +
-                    "[locId8=" +  U.id8(locNode.id()) +
+                    "[locId8=" + U.id8(locNode.id()) +
                     ", locDelayAssign=" + locDelayAssign +
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
@@ -1847,7 +1847,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @return Compacted consistent id map.
      */
-    public  Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
+    public Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(null), topVer).nodeIdMap();
     }
 

@@ -574,7 +574,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /**
      * Check TX cache.
      */
-    private void checkTx0()  {
+    private void checkTx0() {
 
         System.out.println("BEFORE: " + evts.size());
 

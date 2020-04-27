@@ -1673,7 +1673,7 @@ public class GridSqlQuerySplitter {
                         SplitterUtils.aggregate(false, SUM).addChild(SplitterUtils.column(cntMapAggAlias));
 
                     if (!SplitterUtils.isFractionalType(agg.resultType().type())) {
-                        sumUpRdc =  new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
+                        sumUpRdc = new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
                         sumDownRdc = new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumDownRdc);
                     }
 

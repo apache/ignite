@@ -259,7 +259,7 @@ public class HadoopV2Job extends HadoopJobEx {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
-        T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
+        T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(), info.taskNumber());
 
         GridFutureAdapter<HadoopTaskContext> fut = ctxs.get(locTaskId);
 

@@ -609,7 +609,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
                     if (x != null) {
                         if (p != null)
-                            assertTrue(x + " >= " + p,  x >= p);
+                            assertTrue(x + " >= " + p, x >= p);
 
                         p = x;
                     }

@@ -170,7 +170,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
         for (IgniteCache<Integer, String> cache : caches) {
             Iterable<Integer> keys = primaryKeys(cache, 100);
 
-            info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) +  ", keys=" + keys + "]");
+            info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) + ", keys=" + keys + "]");
 
             for (Integer key : keys)
                 map.put(key, "val" + key);

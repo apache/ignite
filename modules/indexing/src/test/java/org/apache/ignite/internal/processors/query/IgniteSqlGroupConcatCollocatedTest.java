@@ -200,7 +200,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends AbstractIndexingCommonTe
         for (List<Object> row : res)
             map.put((Integer)row.get(0), (String)row.get(1));
 
-        return  map;
+        return map;
     }
 
     /**
