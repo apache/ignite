@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
@@ -58,13 +59,13 @@ public class ExchangeDiscoveryEvents {
     private DiscoveryEvent lastSrvEvt;
 
     /** All events. */
-    private List<DiscoveryEvent> evts = Collections.synchronizedList(new ArrayList<>());
+    private Collection<DiscoveryEvent> evts = new ConcurrentLinkedQueue<>();
 
     /** Joined server nodes. */
-    private List<ClusterNode> joinedSrvNodes = Collections.synchronizedList(new ArrayList<>());
+    private Collection<ClusterNode> joinedSrvNodes = new ConcurrentLinkedQueue<>();
 
     /** Left server nodes. */
-    private List<ClusterNode> leftSrvNodes = Collections.synchronizedList(new ArrayList<>());
+    private Collection<ClusterNode> leftSrvNodes = new ConcurrentLinkedQueue<>();
 
     /**
      * @param fut Current exchange future.
@@ -86,9 +87,7 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if has join event for give node.
      */
     public boolean nodeJoined(UUID nodeId) {
-        for (int i = 0; i < evts.size(); i++) {
-            DiscoveryEvent evt = evts.get(i);
-
+        for (DiscoveryEvent evt : evts) {
             if (evt.type() == EVT_NODE_JOINED && nodeId.equals(evt.eventNode().id()))
                 return true;
         }
@@ -136,7 +135,7 @@ public class ExchangeDiscoveryEvents {
     /**
      * @return All events.
      */
-    public List<DiscoveryEvent> events() {
+    public Collection<DiscoveryEvent> events() {
         return evts;
     }
 
@@ -194,14 +193,14 @@ public class ExchangeDiscoveryEvents {
     /**
      *
      */
-    public List<ClusterNode> joinedServerNodes() {
+    public Collection<ClusterNode> joinedServerNodes() {
         return joinedSrvNodes;
     }
 
     /**
      *
      */
-    public List<ClusterNode> leftServerNodes() {
+    public Collection<ClusterNode> leftServerNodes() {
         return leftSrvNodes;
     }
 
