@@ -32,8 +32,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.Ignition.allGrids;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -42,6 +40,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests {@link GridMetricManager#REBALANCED} metric.
  */
 public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
+    /** Index of the node to be considered as a client. */
+    private static final int CLIENT_NODE_IDX = 1;
+
     /** Whether node starts with persistence enabled. */
     private boolean persistenceEnabled;
 
@@ -57,8 +58,11 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setBackups(1));
 
+        if (getTestIgniteInstanceName(CLIENT_NODE_IDX).equals(igniteInstanceName))
+            cfg.setClientMode(true);
+
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-        cfg.setClusterStateOnStart(INACTIVE);
+        cfg.setActiveOnStart(false);
 
         return cfg;
     }
@@ -105,13 +109,13 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         assertMetric(false);
 
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         assertMetric(true);
 
         ignite.cache(DEFAULT_CACHE_NAME).put("key", "val");
 
-        startClientGrid(1);
+        startGrid(CLIENT_NODE_IDX);
 
         assertMetric(true);
 
@@ -131,11 +135,11 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
 
         assertMetric(true);
 
-        ignite.cluster().state(INACTIVE);
+        ignite.cluster().active(false);
 
         assertMetric(false);
 
-        ignite.cluster().state(ACTIVE);
+        ignite.cluster().active(true);
 
         assertMetric(true);
 
@@ -180,7 +184,7 @@ public class ClusterRebalancedMetricTest extends GridCommonAbstractTest {
             return CU.cacheId(DEFAULT_CACHE_NAME) == demandMsg.groupId();
         });
 
-        startGrid(cfg);
+        startGrid(optimize(cfg));
 
         return spi;
     }
