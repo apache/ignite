@@ -96,7 +96,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private IgniteClient startClient(int ... gridIdxs) {
+    private IgniteClient startClient(int... gridIdxs) {
         String[] addrs = new String[gridIdxs.length];
 
         for (int i = 0; i < gridIdxs.length; i++)
@@ -530,7 +530,7 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
      *
      * @param gridIdxs Grid indexes.
      */
-    private Set<UUID> nodeIds(int ... gridIdxs) {
+    private Set<UUID> nodeIds(int... gridIdxs) {
         Set<UUID> res = new HashSet<>();
 
         for (int i : gridIdxs)

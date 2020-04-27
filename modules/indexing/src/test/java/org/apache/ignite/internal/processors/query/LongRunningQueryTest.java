@@ -200,7 +200,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         testLog.registerListener(lsnr);
 
-        try(FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
+        try (FieldsQueryCursor cur = sql("SELECT T0.id FROM test AS T0, test AS T1")) {
             Iterator it = cur.iterator();
 
             while (it.hasNext())
