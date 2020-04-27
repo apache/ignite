@@ -329,7 +329,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
      * @param locIterations The parameter value.
      * @return Model with the maximal number of local iterations before synchronization.
      */
-    public MLPTrainer<P>  withLocIterations(int locIterations) {
+    public MLPTrainer<P> withLocIterations(int locIterations) {
         this.locIterations = locIterations;
         return this;
     }
@@ -349,7 +349,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
      * @param seed The parameter value.
      * @return Model with the multilayer perceptron model initializer.
      */
-    public MLPTrainer<P>  withSeed(long seed) {
+    public MLPTrainer<P> withSeed(long seed) {
         this.seed = seed;
         return this;
     }

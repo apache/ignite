@@ -8179,11 +8179,11 @@ public abstract class IgniteUtils {
      * @return Segment index.
      */
     public static int concurrentMapSegment(int hash, int concurLvl) {
-        hash += (hash <<  15) ^ 0xffffcd7d;
+        hash += (hash << 15) ^ 0xffffcd7d;
         hash ^= (hash >>> 10);
-        hash += (hash <<   3);
-        hash ^= (hash >>>  6);
-        hash += (hash <<   2) + (hash << 14);
+        hash += (hash << 3);
+        hash ^= (hash >>> 6);
+        hash += (hash << 2) + (hash << 14);
 
         int shift = 0;
         int size = 1;
@@ -8944,11 +8944,11 @@ public abstract class IgniteUtils {
     public static int hash(int h) {
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }

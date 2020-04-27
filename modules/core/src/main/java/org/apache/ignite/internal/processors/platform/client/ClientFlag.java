@@ -50,4 +50,7 @@ public class ClientFlag {
 
     /** Affinity topology change flag. */
     public static final short AFFINITY_TOPOLOGY_CHANGED = 1 << 1;
+
+    /** Server to client notification flag. */
+    public static final short NOTIFICATION = 1 << 2;
 }

@@ -231,7 +231,7 @@ public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
      * @return Server instance.
      * @throws IgniteCheckedException If failed.
      */
-    private ClientTestRestServer runServer(int idx, boolean  failOnConnect) throws IgniteCheckedException {
+    private ClientTestRestServer runServer(int idx, boolean failOnConnect) throws IgniteCheckedException {
         ClientTestRestServer srv = new ClientTestRestServer(ClientTestRestServer.FIRST_SERVER_PORT + idx, failOnConnect, log());
 
         srv.start();

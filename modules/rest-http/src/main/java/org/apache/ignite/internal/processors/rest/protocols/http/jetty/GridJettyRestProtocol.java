@@ -223,7 +223,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 return true;
             }
 
-            return  false;
+            return false;
         }
         catch (Exception e) {
             boolean failedToBind = e instanceof SocketException;

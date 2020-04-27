@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 /**
  *
  */
-public class FullPageIdTableTest  {
+public class FullPageIdTableTest {
     /** Per test timeout */
     @Rule
     public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);

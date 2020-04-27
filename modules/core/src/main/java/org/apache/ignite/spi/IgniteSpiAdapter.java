@@ -844,7 +844,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> nodes() {
-            return  locNode == null  ? Collections.emptyList() : Collections.singletonList(locNode);
+            return locNode == null ? Collections.emptyList() : Collections.singletonList(locNode);
         }
 
         /** {@inheritDoc} */

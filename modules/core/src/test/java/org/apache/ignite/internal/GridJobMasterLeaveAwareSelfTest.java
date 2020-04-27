@@ -91,7 +91,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         awaitMasterLeaveCallback = true;
         latch = new CountDownLatch(1);
         jobLatch = new CountDownLatch(GRID_CNT - 1);
-        invokeLatch  = new CountDownLatch(GRID_CNT - 1);
+        invokeLatch = new CountDownLatch(GRID_CNT - 1);
     }
 
     /** {@inheritDoc} */
@@ -137,7 +137,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLocalJobOnMaster() throws Exception {
-        invokeLatch  = new CountDownLatch(1);
+        invokeLatch = new CountDownLatch(1);
         jobLatch = new CountDownLatch(1);
 
         Ignite g = startGrid(0);
@@ -477,7 +477,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     private void testMasterLeaveAwareCallback(int expJobs, IgniteClosure<ClusterGroup, IgniteFuture<?>> taskStarter)
         throws Exception {
         jobLatch = new CountDownLatch(expJobs);
-        invokeLatch  = new CountDownLatch(expJobs);
+        invokeLatch = new CountDownLatch(expJobs);
 
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
