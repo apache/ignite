@@ -306,6 +306,7 @@ namespace Apache.Ignite.Core.Impl.Client
         public void Dispose()
         {
             lock (_socketLock)
+            lock (_topologyUpdateLock)
             {
                 _disposed = true;
 
@@ -323,6 +324,11 @@ namespace Apache.Ignite.Core.Impl.Client
                     }
 
                     _nodeSocketMap = null;
+                }
+
+                foreach (var socketEndpoint in _endPoints)
+                {
+                    socketEndpoint.Socket.Dispose();
                 }
             }
         }
@@ -427,21 +433,29 @@ namespace Apache.Ignite.Core.Impl.Client
             
             if (oldTopologyVersion < newTopologyVersion)
             {
-                lock (_topologyUpdateLock)
+                ThreadPool.QueueUserWorkItem(_ =>
                 {
-                    // Major topology version has changed: some nodes have joined or left.
-                    // If discovery is enabled, retrieve new topology - but don't connect.
-                    if (_config.EnableDiscovery)
+                    lock (_topologyUpdateLock)
                     {
-                        DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
-                    }
+                        if (_disposed)
+                        {
+                            return;
+                        }
+                        
+                        // Major topology version has changed: some nodes have joined or left.
+                        // If discovery is enabled, retrieve new topology - but don't connect.
+                        if (_config.EnableDiscovery)
+                        {
+                            DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
+                        }
 
-                    // Connect to all nodes when partition awareness is enabled.
-                    if (_config.EnablePartitionAwareness)
-                    {
-                        InitSocketMap();
+                        // Connect to all nodes when partition awareness is enabled.
+                        if (_config.EnablePartitionAwareness)
+                        {
+                            InitSocketMap();
+                        }
                     }
-                }
+                });
             }
         }
 
@@ -700,6 +714,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         }
                     }
 
+                    // ReSharper disable once PossibleNullReferenceException (Connect ensures that).
                     var nodeId = endPoint.Socket.ServerNodeId;
                     if (nodeId != null)
                     {
