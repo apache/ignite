@@ -28,25 +28,15 @@ public interface CacheConfigurationSplitter {
      *
      * @param desc Description.
      */
-    default T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheGroupDescriptor desc) {
-        if (desc.isConfigurationEnriched())
-            return split(desc.config());
-
-        return new T2<>(desc.config(), desc.cacheConfigurationEnrichment());
-    }
+    public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheGroupDescriptor desc);
 
     /**
      * @param desc Description.
      */
-    default T2<CacheConfiguration, CacheConfigurationEnrichment> split(DynamicCacheDescriptor desc) {
-        if (desc.isConfigurationEnriched())
-            return split(desc.cacheConfiguration());
-
-        return new T2<>(desc.cacheConfiguration(), desc.cacheConfigurationEnrichment());
-    }
+    public T2<CacheConfiguration, CacheConfigurationEnrichment> split(DynamicCacheDescriptor desc);
 
     /**
      * @param ccfg Cache configuration.
      */
-    T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheConfiguration ccfg);
+    public T2<CacheConfiguration, CacheConfigurationEnrichment> split(CacheConfiguration ccfg);
 }
