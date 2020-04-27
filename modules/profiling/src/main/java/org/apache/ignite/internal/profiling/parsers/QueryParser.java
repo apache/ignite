@@ -251,7 +251,7 @@ public class QueryParser implements IgniteLogParser {
          * @param nodeId Node id.
          * @param str String to parse from.
          */
-        Query (String nodeId, String str) {
+        Query(String nodeId, String str) {
             this.nodeId = nodeId;
 
             int idx = str.indexOf('=');

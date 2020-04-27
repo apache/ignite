@@ -254,7 +254,7 @@ public class ComputeParser implements IgniteLogParser {
          * @param nodeId Node id.
          * @param str String to parse from.
          */
-        Task (String nodeId, String str) {
+        Task(String nodeId, String str) {
             this.nodeId = nodeId;
 
             int idx = str.indexOf('=');

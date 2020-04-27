@@ -86,7 +86,7 @@ public class ProfilingLogParser {
 
         copyReportSources(resDir);
 
-        System.out.println(U.nl() +"Logs parsed successfully [totalTime=" +
+        System.out.println(U.nl() + "Logs parsed successfully [totalTime=" +
             MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime) + " s]" + U.nl() + U.nl() +
             "Report created [dir=" + resDir + "]" + U.nl() +
             "Open '" + resDir + "/index.html' in browser to see the report.");
@@ -102,7 +102,7 @@ public class ProfilingLogParser {
         if (args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0])) {
             System.out.println(
                 "The script is used to create a performance report from profiling logs." + U.nl() + U.nl() +
-                    "Usage: profiling.sh path_to_profiling_logs"  + U.nl() + U.nl() +
+                    "Usage: profiling.sh path_to_profiling_logs" + U.nl() + U.nl() +
                     "The path should contain profiling logs collected from the cluster." + U.nl() +
                     "Profiling log file name mask: profiling-${sys:nodeId}.log" + U.nl() +
                     "The report will be created at logs path with new directory: " +

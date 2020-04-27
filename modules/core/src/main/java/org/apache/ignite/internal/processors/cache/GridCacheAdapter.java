@@ -1705,7 +1705,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
-        final long start = statsEnabled || ctx.kernalContext().metric().isProfilingEnabled()? System.nanoTime() : 0L;
+        final long start = statsEnabled || ctx.kernalContext().metric().isProfilingEnabled() ? System.nanoTime() : 0L;
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 

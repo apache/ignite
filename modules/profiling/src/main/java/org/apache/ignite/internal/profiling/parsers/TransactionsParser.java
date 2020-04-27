@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbse
  */
 public class TransactionsParser implements IgniteLogParser {
     /** Histogram buckets for duration get, put, remove, commit, rollback operations in milliseconds. */
-    public static final long[] HISTOGRAM_BUCKETS = new long[] {1, 10, 100, 250,  1000};
+    public static final long[] HISTOGRAM_BUCKETS = new long[] {1, 10, 100, 250, 1000};
 
     /** Aggregated results: nodeId->cacheId->opType->aggregatedResults. */
     private final Map<String, Map<String, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
