@@ -84,8 +84,8 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
 
         int exp = 0;
 
-        for(Cache.Entry e: intCache.localEntries(CachePeekMode.PRIMARY)){
-            if(e.getValue() instanceof Integer)
+        for (Cache.Entry e: intCache.localEntries(CachePeekMode.PRIMARY)) {
+            if (e.getValue() instanceof Integer)
                 exp++;
         }
 

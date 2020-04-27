@@ -309,11 +309,11 @@ public abstract class ReduceIndex extends BaseIndex {
         if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;
 
-        assert pageSize > 0: pageSize;
+        assert pageSize > 0 : pageSize;
 
         int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
 
-        assert lastPage >= 0: lastPage;
+        assert lastPage >= 0 : lastPage;
 
         if (lp.put(new ReduceSourceKey(nodeId, res.segmentId()), lastPage) != null)
             throw new IllegalStateException();
@@ -491,7 +491,7 @@ public abstract class ReduceIndex extends BaseIndex {
 
         int res = Collections.binarySearch(rows, searchRow, cmp);
 
-        assert res < 0: res; // Comparator must never return 0.
+        assert res < 0 : res; // Comparator must never return 0.
 
         return -res - 1;
     }
@@ -568,7 +568,7 @@ public abstract class ReduceIndex extends BaseIndex {
          * @return Lower bound.
          */
         private int findBounds() {
-            assert !rows.isEmpty(): "rows";
+            assert !rows.isEmpty() : "rows";
 
             int firstFound = cur;
 
@@ -576,7 +576,7 @@ public abstract class ReduceIndex extends BaseIndex {
             if (first != null) {
                 firstFound = binarySearchRow(rows, first, firstRowCmp, true);
 
-                assert firstFound >= cur && firstFound <= rows.size(): "firstFound";
+                assert firstFound >= cur && firstFound <= rows.size() : "firstFound";
 
                 if (firstFound == rows.size())
                     return firstFound; // The lower bound is greater than all the rows we have.
@@ -586,7 +586,7 @@ public abstract class ReduceIndex extends BaseIndex {
 
             // Find the upper bound.
             if (last != null) {
-                assert lastFound == Integer.MAX_VALUE: "lastFound";
+                assert lastFound == Integer.MAX_VALUE : "lastFound";
 
                 int lastFound0 = binarySearchRow(rows, last, lastRowCmp, true);
 

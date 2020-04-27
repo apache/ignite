@@ -261,7 +261,7 @@ public class IgfsMetaManager extends IgfsManager {
         }
         catch (Exception e) {
             if (X.hasCause(e, ClusterTopologyException.class))
-                throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+                throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes.", e);
 
             IgfsException igfsEx = X.cause(e, IgfsException.class);
             if (igfsEx != null)
@@ -497,7 +497,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return {@code True} in case such entry exists.
      * @throws IgniteCheckedException IF failed.
      */
-    public boolean exists(IgniteUuid fileId) throws IgniteCheckedException{
+    public boolean exists(IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fileId != null;
@@ -664,7 +664,7 @@ public class IgfsMetaManager extends IgfsManager {
         final boolean updateSpace, final long space, @Nullable final IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
 
-        if(client) {
+        if (client) {
             runClientTask(new IgfsClientMetaUnlockCallable(cfg.getName(), IgfsUserContext.currentUser(), fileId,
                 lockId, modificationTime, updateSpace, space, affRange));
 
@@ -3187,7 +3187,7 @@ public class IgfsMetaManager extends IgfsManager {
         Map<String, String> dirProps, Map<String, String> fileProps, int blockSize, @Nullable IgniteUuid affKey,
         boolean evictExclude, @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx,
         @Nullable T1<OutputStream> secondaryOutHolder)
-        throws IgniteCheckedException{
+        throws IgniteCheckedException {
         // Check if entry we are going to write to is directory.
         if (lockInfos.get(pathIds.lastExistingId()).isFile())
             throw new IgfsParentNotDirectoryException("Failed to open file for write " +

@@ -854,7 +854,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         /**
          * Clear store.
          */
-        public void clear(){
+        public void clear() {
             map.clear();
         }
     }

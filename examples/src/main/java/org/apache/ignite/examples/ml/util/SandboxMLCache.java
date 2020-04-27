@@ -119,7 +119,7 @@ public class SandboxMLCache {
         int cnt = 0;
         while (scanner.hasNextLine()) {
             String row = scanner.nextLine();
-            if(dataset.hasHeader() && cnt == 0) {
+            if (dataset.hasHeader() && cnt == 0) {
                 cnt++;
                 continue;
             }
@@ -130,8 +130,8 @@ public class SandboxMLCache {
             NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
 
             for (int i = 0; i < cells.length; i++)
-                try{
-                    if(cells[i].isEmpty()) data[i] = Double.NaN;
+                try {
+                    if (cells[i].isEmpty()) data[i] = Double.NaN;
                     else data[i] = Double.valueOf(cells[i]);
                 } catch (NumberFormatException e) {
                     try {

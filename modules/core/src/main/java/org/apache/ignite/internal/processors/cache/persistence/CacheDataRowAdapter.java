@@ -704,7 +704,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 else {
                     ver = CacheVersionIO.read(buf, false);
 
-                    assert !buf.hasRemaining(): buf.remaining();
+                    assert !buf.hasRemaining() : buf.remaining();
                     assert ver != null;
                 }
 

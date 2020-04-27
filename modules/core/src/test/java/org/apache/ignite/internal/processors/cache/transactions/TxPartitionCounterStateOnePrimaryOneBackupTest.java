@@ -52,7 +52,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int[] BACKUP_COMMIT_ORDER = new int[] {1, 2, 0};
 
     /** */
-    private static final int [] SIZES = new int[] {5, 7, 3};
+    private static final int[] SIZES = new int[] {5, 7, 3};
 
     /** */
     private static final int TOTAL = IntStream.of(SIZES).sum() + PRELOAD_KEYS_CNT;
@@ -336,7 +336,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                 prepFuts.put(nearXidVer, proceedFut);
 
                 // Order prepares.
-                if (prepFuts.size() == txCnt) {// Wait until all prep requests queued and force prepare order.
+                if (prepFuts.size() == txCnt) { // Wait until all prep requests queued and force prepare order.
                     prepFuts.remove(version(prepOrder.poll())).onDone();
                 }
             });

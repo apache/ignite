@@ -234,7 +234,7 @@ public class QueryEntity implements Serializable {
         }
 
         for (QueryIndex queryIndex : target.getIndexes()) {
-            if(currentIndexes.containsKey(queryIndex.getName())) {
+            if (currentIndexes.containsKey(queryIndex.getName())) {
                 checkEquals(
                     conflicts,
                     "index " + queryIndex.getName(),

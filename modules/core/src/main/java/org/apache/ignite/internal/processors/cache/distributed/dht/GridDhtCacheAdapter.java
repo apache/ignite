@@ -979,7 +979,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     res.error(e);
                 }
 
-                if (!F.isEmpty(fut.invalidPartitions())){
+                if (!F.isEmpty(fut.invalidPartitions())) {
                     AffinityTopologyVersion topVer = ctx.shared().exchange().lastTopologyFuture().initialVersion();
 
                     res.invalidPartitions(fut.invalidPartitions(), topVer);

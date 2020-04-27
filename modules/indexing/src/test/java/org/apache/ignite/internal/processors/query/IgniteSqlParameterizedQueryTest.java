@@ -98,7 +98,7 @@ public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest 
 
         QueryCursor<List<?>> cursor = cache.query(qry);
         List<List<?>> results = cursor.getAll();
-        assertEquals("Search by field '" + field +"' returns incorrect row count!",1, results.size());
+        assertEquals("Search by field '" + field + "' returns incorrect row count!",1, results.size());
         List<?> row0 = results.get(0);
         return row0.get(0);
     }

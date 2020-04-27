@@ -197,7 +197,7 @@ abstract class TcpDiscoveryImpl {
      * @param msg Error message.
      * @param e Exception.
      */
-    protected void onException(String msg, Exception e){
+    protected void onException(String msg, Exception e) {
         spi.getExceptionRegistry().onException(msg, e);
     }
 

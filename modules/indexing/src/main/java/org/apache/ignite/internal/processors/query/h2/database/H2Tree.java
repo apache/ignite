@@ -625,7 +625,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     @SuppressWarnings({"ConditionalBreakInInfiniteLoop", "IfMayBeConditional"})
     private void inlineSizeRecomendation(SearchRow row) {
         //Do the check only for put operations.
-        if(!(row instanceof H2CacheRow))
+        if (!(row instanceof H2CacheRow))
             return;
 
         Long invokeCnt = inlineSizeCalculationCntr.get();

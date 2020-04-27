@@ -757,7 +757,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
             assert newData != null;
 
             synchronized (mux) {
-                for(S3TimeData data : newData)
+                for (S3TimeData data : newData)
                     map.put(data.getKey(), data);
 
                 mux.notifyAll();

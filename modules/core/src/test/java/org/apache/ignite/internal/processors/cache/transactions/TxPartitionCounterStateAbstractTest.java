@@ -260,7 +260,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         txTop.put(partId, new T2<>(prim, backupz));
 
         List<Integer> keysPart2 = part2Sup == null ? null :
-            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), sizes.length, 0) ;
+            partitionKeys(crd.cache(DEFAULT_CACHE_NAME), part2Sup.get(), sizes.length, 0);
 
         log.info("TX: topology [part1=" + partId + ", primary=" + prim.name() +
             ", backups=" + F.transform(backupz, Ignite::name));
@@ -736,7 +736,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
      */
     protected class TwoPhaseCommitTxCallbackAdapter extends TxCallbackAdapter {
         /** */
-        private Map<T3<IgniteEx /** Node */, TxState /** State */, IgniteUuid /** Near xid */ >, GridFutureAdapter<?>>
+        private Map<T3<IgniteEx /** Node */, TxState /** State */, IgniteUuid /** Near xid */>, GridFutureAdapter<?>>
             futures = new ConcurrentHashMap<>();
 
         /** */
@@ -882,7 +882,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
          * @param primary Primary node.
          * @param tx Primary tx.
          */
-        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx tx, int idx){
+        protected void onCounterAssigned(IgniteEx primary, IgniteInternalTx tx, int idx) {
             log.info("TX: primary counter assigned: [name=" + primary.name() + ", txId=" + idx + ']');
         }
 
@@ -915,7 +915,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 });
 
                 // Order counter assigns.
-                if (countForNode(primary, TxState.ASSIGN) == txCnt) {// Wait until all prep requests queued and force prepare order.
+                if (countForNode(primary, TxState.ASSIGN) == txCnt) { // Wait until all prep requests queued and force prepare order.
                     futures.remove(new T3<>(primary, TxState.ASSIGN, version(assigns.get(primary).poll()))).onDone();
                 }
             });

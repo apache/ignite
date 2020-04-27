@@ -1958,7 +1958,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         BinaryEnumCache.clear();
         serializedObj.clear();
 
-        if (err!= null)
+        if (err != null)
             throw err;
     }
 

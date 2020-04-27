@@ -41,7 +41,7 @@ public class StateCommand implements Command<Void> {
      * @throws Exception If failed to print state.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)){
+        try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
 
             ClusterState clusterState = state.state();

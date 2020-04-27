@@ -3293,7 +3293,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {
-        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, true);
 
         if (desc == null)
             return;

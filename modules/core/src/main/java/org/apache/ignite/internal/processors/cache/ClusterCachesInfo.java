@@ -706,7 +706,7 @@ public class ClusterCachesInfo {
 
             if (restartingCaches.containsKey(cacheName) &&
                 ((req.restartId() == null && restartingCaches.get(cacheName) != NULL_OBJECT)
-                    || (req.restartId() != null &&!req.restartId().equals(restartingCaches.get(cacheName))))) {
+                    || (req.restartId() != null && !req.restartId().equals(restartingCaches.get(cacheName))))) {
 
                 if (req.failIfExists()) {
                     ctx.cache().completeCacheStartFuture(req, false,
