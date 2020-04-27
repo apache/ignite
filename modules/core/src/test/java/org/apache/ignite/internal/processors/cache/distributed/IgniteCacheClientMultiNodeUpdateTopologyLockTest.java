@@ -50,20 +50,12 @@ public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommon
     /** */
     private static final String TEST_CACHE = "testCache";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setConsistentId(gridName);
-
-        TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
-
-        cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
     }
@@ -75,11 +67,7 @@ public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommon
     public void testPessimisticTx() throws Exception {
         startGrids(3);
 
-        client = true;
-
-        Ignite clientNode = startGrid(3);
-
-        client = false;
+        Ignite clientNode = startClientGrid(3);
 
         IgniteCache<Integer, Integer> cache = clientNode.createCache(cacheConfiguration(0, FULL_SYNC));
 

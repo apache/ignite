@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
@@ -66,7 +67,7 @@ import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -277,7 +278,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return REST processor.
      */
-    public GridRestProcessor rest();
+    public IgniteRestProcessor rest();
 
     /**
      * Gets segmentation processor.
@@ -770,4 +771,16 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return {@code True} if node is in recovery mode (before join to topology).
      */
     public boolean recoveryMode();
+
+    /**
+     * @return Local continuous tasks processor.
+     */
+    public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor();
+
+    /**
+     * Return Thread pool for create/rebuild indexes.
+     *
+     * @return Thread pool for create/rebuild indexes.
+     */
+    public ExecutorService buildIndexExecutorService();
 }

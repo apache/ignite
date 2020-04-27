@@ -101,13 +101,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Owning transaction. */
     @GridToStringExclude
     @GridDirectTransient
-    private IgniteInternalTx tx;
+    public IgniteInternalTx tx;
 
     /** Cache key. */
-    @GridToStringInclude
+    @GridToStringExclude
     private KeyCacheObject key;
 
     /** Cache ID. */
+    @GridToStringExclude
     private int cacheId;
 
     /** Transient tx key. */
@@ -1018,7 +1019,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ver Entry version.
      */
     public void entryReadVersion(GridCacheVersion ver) {
-        assert this.serReadVer == null: "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
+        assert this.serReadVer == null : "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
         assert ver != null;
 
         this.serReadVer = ver;

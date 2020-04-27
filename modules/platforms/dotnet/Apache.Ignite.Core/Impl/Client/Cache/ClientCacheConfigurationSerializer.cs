@@ -19,10 +19,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Cache.Expiry;
 
     /// <summary>
     /// Writes and reads <see cref="CacheConfiguration"/> for thin client mode.
@@ -75,7 +77,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             MaxConcurrentAsyncOperations = 403,
             PartitionLossPolicy = 404,
             EagerTtl = 405, 
-            StatisticsEnabled = 406
+            StatisticsEnabled = 406,
+            ExpiryPolicy = 407
         }
 
         /** Property count. */
@@ -95,6 +98,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.CopyOnRead = from.CopyOnRead;
             to.DataRegionName = from.DataRegionName;
             to.EagerTtl = from.EagerTtl;
+            to.ExpiryPolicyFactory = from.ExpiryPolicyFactory;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
             to.LockTimeout = from.LockTimeout;
@@ -126,7 +130,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 // Unsupported complex properties.
                 ThrowUnsupportedIfNotDefault(from.AffinityFunction, "AffinityFunction");
                 ThrowUnsupportedIfNotDefault(from.EvictionPolicy, "EvictionPolicy");
-                ThrowUnsupportedIfNotDefault(from.ExpiryPolicyFactory, "ExpiryPolicyFactory");
                 ThrowUnsupportedIfNotDefault(from.PluginConfigurations, "PluginConfigurations");
                 ThrowUnsupportedIfNotDefault(from.CacheStoreFactory, "CacheStoreFactory");
                 ThrowUnsupportedIfNotDefault(from.NearConfiguration, "NearConfiguration");
@@ -165,6 +168,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.CopyOnRead = from.CopyOnRead;
             to.DataRegionName = from.DataRegionName;
             to.EagerTtl = from.EagerTtl;
+            to.ExpiryPolicyFactory = from.ExpiryPolicyFactory;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
             to.LockTimeout = from.LockTimeout;
@@ -232,7 +236,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             
             code(Op.EagerTtl);
             writer.WriteBoolean(cfg.EagerTtl);
-            
+
             code(Op.StatisticsEnabled);
             writer.WriteBoolean(cfg.EnableStatistics);
             
@@ -303,13 +307,94 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteCollectionRaw(cfg.KeyConfiguration);
             
             code(Op.QueryEntities);
-            writer.WriteCollectionRaw(cfg.QueryEntities, srvVer);
+            writer.WriteCollectionRaw(cfg.QueryEntities, (w, qe) => WriteQueryEntity(w, qe, srvVer));
+
+            code(Op.ExpiryPolicy);
+            ExpiryPolicySerializer.WritePolicyFactory(writer, cfg.ExpiryPolicyFactory);
 
             // Write length (so that part of the config can be skipped).
             var len = writer.Stream.Position - pos - 4;
             writer.Stream.WriteInt(pos, len);
         }
-        
+
+        /// <summary>
+        /// Write query entity of the config.
+        /// </summary>
+        private static void WriteQueryEntity(BinaryWriter writer, QueryEntity entity, ClientProtocolVersion srvVer)
+        {
+            writer.WriteString(entity.KeyTypeName);
+            writer.WriteString(entity.ValueTypeName);
+            writer.WriteString(entity.TableName);
+            writer.WriteString(entity.KeyFieldName);
+            writer.WriteString(entity.ValueFieldName);
+
+            var entityFields = entity.Fields;
+
+            if (entityFields != null)
+            {
+                writer.WriteInt(entityFields.Count);
+
+                foreach (var field in entityFields)
+                {
+                    WriteQueryField(writer, field, srvVer);
+                }
+            }
+            else
+                writer.WriteInt(0);
+
+            var entityAliases = entity.Aliases;
+
+            if (entityAliases != null)
+            {
+                writer.WriteInt(entityAliases.Count);
+
+                foreach (var queryAlias in entityAliases)
+                {
+                    writer.WriteString(queryAlias.FullName);
+                    writer.WriteString(queryAlias.Alias);
+                }
+            }
+            else
+                writer.WriteInt(0);
+
+            var entityIndexes = entity.Indexes;
+
+            if (entityIndexes != null)
+            {
+                writer.WriteInt(entityIndexes.Count);
+
+                foreach (var index in entityIndexes)
+                {
+                    if (index == null)
+                        throw new InvalidOperationException("Invalid cache configuration: QueryIndex can't be null.");
+
+                    index.Write(writer);
+                }
+            }
+            else
+                writer.WriteInt(0);
+        }
+
+        /// <summary>
+        /// Writes query field instance to the specified writer.
+        /// </summary>
+        private static void WriteQueryField(BinaryWriter writer, QueryField field, ClientProtocolVersion srvVer)
+        {
+            Debug.Assert(writer != null);
+
+            writer.WriteString(field.Name);
+            writer.WriteString(field.FieldTypeName);
+            writer.WriteBoolean(field.IsKeyField);
+            writer.WriteBoolean(field.NotNull);
+            writer.WriteObject(field.DefaultValue);
+
+            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            {
+                writer.WriteInt(field.Precision);
+                writer.WriteInt(field.Scale);
+            }
+        }
+
         /// <summary>
         /// Reads the config.
         /// </summary>
@@ -352,9 +437,67 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.SqlSchema = reader.ReadString();
             cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
             cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
-            cfg.QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r, srvVer));
+            cfg.QueryEntities = reader.ReadCollectionRaw(r => ReadQueryEntity(r, srvVer));
+            if (srvVer.CompareTo(ClientSocket.Ver160) >= 0)
+                cfg.ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
             Debug.Assert(len == reader.Stream.Position - pos);
+        }
+
+        /// <summary>
+        /// Reads query entity of the config.
+        /// </summary>
+        private static QueryEntity ReadQueryEntity(BinaryReader reader, ClientProtocolVersion srvVer)
+        {
+            Debug.Assert(reader != null);
+
+            var value = new QueryEntity
+            {
+                KeyTypeName = reader.ReadString(),
+                ValueTypeName = reader.ReadString(),
+                TableName = reader.ReadString(),
+                KeyFieldName = reader.ReadString(),
+                ValueFieldName = reader.ReadString()
+            };
+
+            var count = reader.ReadInt();
+            value.Fields = count == 0
+                ? null
+                : Enumerable.Range(0, count).Select(x => ReadQueryField(reader, srvVer)).ToList();
+
+            count = reader.ReadInt();
+            value.Aliases = count == 0 ? null : Enumerable.Range(0, count)
+                .Select(x=> new QueryAlias(reader.ReadString(), reader.ReadString())).ToList();
+
+            count = reader.ReadInt();
+            value.Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
+
+            return value;
+        }
+
+        /// <summary>
+        /// Read query field.
+        /// </summary>
+        private static QueryField ReadQueryField(BinaryReader reader, ClientProtocolVersion srvVer)
+        {
+            Debug.Assert(reader != null);
+
+            var value = new QueryField
+            {
+                Name = reader.ReadString(),
+                FieldTypeName = reader.ReadString(),
+                IsKeyField = reader.ReadBoolean(),
+                NotNull = reader.ReadBoolean(),
+                DefaultValue = reader.ReadObject<object>()
+            };
+
+            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            {
+                value.Precision = reader.ReadInt();
+                value.Scale = reader.ReadInt();
+            }
+
+            return value;
         }
 
         /// <summary>

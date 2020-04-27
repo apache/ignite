@@ -105,7 +105,7 @@ public class OneVsRestTrainerTest extends TrainerTest {
 
         MultiClassModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

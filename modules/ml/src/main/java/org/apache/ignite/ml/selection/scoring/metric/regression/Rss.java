@@ -46,8 +46,7 @@ public class Rss implements Metric<Double, EmptyContext<Double>, RegressionMetri
     /**
      * {@inheritDoc}
      */
-    @Override
-    public Rss initBy(RegressionMetricStatsAggregator aggr) {
+    @Override public Rss initBy(RegressionMetricStatsAggregator aggr) {
         value = aggr.getRss();
         return this;
     }

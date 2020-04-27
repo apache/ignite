@@ -17,13 +17,17 @@
 
 package org.apache.ignite.examples.ml.sql;
 
+import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.BinaryObjectVectorizer;
 import org.apache.ignite.ml.inference.IgniteModelStorageUtil;
@@ -45,22 +49,27 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
     /**
      * Training data.
      */
-    private static final String TRAIN_DATA_RES = "examples/src/main/resources/datasets/titanik_train.csv";
+    private static final String TRAIN_DATA_RES = "examples/src/main/resources/datasets/titanic_train.csv";
 
     /**
      * Test data.
      */
-    private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/titanik_test.csv";
+    private static final String TEST_DATA_RES = "examples/src/main/resources/datasets/titanic_test.csv";
 
     /**
      * Run example.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IgniteCheckedException {
         System.out.println(">>> Decision tree classification trainer example started.");
 
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite-ml.xml")) {
             System.out.println(">>> Ignite grid started.");
+
+            // Use internal API to enable SQL functions disabled by default (the function CSVREAD is used below)
+            // TODO: IGNITE-12903
+            ((IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing())
+                .distributedConfiguration().disabledFunctions(new HashSet<>());
 
             // Dummy cache is required to perform SQL queries.
             CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DUMMY_CACHE_NAME)
@@ -72,7 +81,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 cache = ignite.getOrCreateCache(cacheCfg);
 
                 System.out.println(">>> Creating table with training data...");
-                cache.query(new SqlFieldsQuery("create table titanik_train (\n" +
+                cache.query(new SqlFieldsQuery("create table titanic_train (\n" +
                     "    passengerid int primary key,\n" +
                     "    survived int,\n" +
                     "    pclass int,\n" +
@@ -88,11 +97,11 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                     ") with \"template=partitioned\";")).getAll();
 
                 System.out.println(">>> Filling training data...");
-                cache.query(new SqlFieldsQuery("insert into titanik_train select * from csvread('" +
+                cache.query(new SqlFieldsQuery("insert into titanic_train select * from csvread('" +
                     IgniteUtils.resolveIgnitePath(TRAIN_DATA_RES).getAbsolutePath() + "')")).getAll();
 
                 System.out.println(">>> Creating table with test data...");
-                cache.query(new SqlFieldsQuery("create table titanik_test (\n" +
+                cache.query(new SqlFieldsQuery("create table titanic_test (\n" +
                     "    passengerid int primary key,\n" +
                     "    pclass int,\n" +
                     "    name varchar(255),\n" +
@@ -107,7 +116,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                     ") with \"template=partitioned\";")).getAll();
 
                 System.out.println(">>> Filling training data...");
-                cache.query(new SqlFieldsQuery("insert into titanik_test select * from csvread('" +
+                cache.query(new SqlFieldsQuery("insert into titanic_test select * from csvread('" +
                     IgniteUtils.resolveIgnitePath(TEST_DATA_RES).getAbsolutePath() + "')")).getAll();
 
                 System.out.println(">>> Prepare trainer...");
@@ -115,7 +124,7 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
 
                 System.out.println(">>> Perform training...");
                 DecisionTreeNode mdl = trainer.fit(
-                    new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIK_TRAIN"),
+                    new SqlDatasetBuilder(ignite, "SQL_PUBLIC_TITANIC_TRAIN"),
                     new BinaryObjectVectorizer<>("pclass", "age", "sibsp", "parch", "fare")
                         .withFeature("sex", BinaryObjectVectorizer.Mapping.create().map("male", 1.0).defaultValue(0.0))
                         .labeled("survived")
@@ -125,14 +134,14 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
 
                 // Model storage is used to store raw serialized model.
                 System.out.println("Saving model into model storage...");
-                IgniteModelStorageUtil.saveModel(ignite, mdl, "titanik_model_tree");
+                IgniteModelStorageUtil.saveModel(ignite, mdl, "titanic_model_tree");
 
                 // Making inference using saved model.
                 System.out.println("Inference...");
                 try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
                     "survived as truth, " +
-                    "predict('titanik_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction " +
-                    "from titanik_train"))) {
+                    "predict('titanic_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction " +
+                    "from titanic_train"))) {
                     // Print inference result.
                     System.out.println("| Truth | Prediction |");
                     System.out.println("|--------------------|");
@@ -140,11 +149,11 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                         System.out.println("|     " + row.get(0) + " |        " + row.get(1) + " |");
                 }
 
-                IgniteModelStorageUtil.removeModel(ignite, "titanik_model_tree");
+                IgniteModelStorageUtil.removeModel(ignite, "titanic_model_tree");
             }
             finally {
-                cache.query(new SqlFieldsQuery("DROP TABLE titanik_train"));
-                cache.query(new SqlFieldsQuery("DROP TABLE titanik_test"));
+                cache.query(new SqlFieldsQuery("DROP TABLE titanic_train"));
+                cache.query(new SqlFieldsQuery("DROP TABLE titanic_test"));
                 cache.destroy();
             }
         }

@@ -22,7 +22,7 @@ import org.apache.ignite.ml.selection.scoring.evaluator.aggregator.BinaryClassif
 import org.apache.ignite.ml.selection.scoring.metric.MetricName;
 
 /**
- * Precision metric class for binary classificaion.
+ * Precision metric class for binary classification.
  */
 public class Precision<L extends Serializable> extends BinaryClassificationMetric<L> {
     /**

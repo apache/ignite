@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.math.primitives.vector;
 
-import org.apache.ignite.ml.math.exceptions.IndexException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;

@@ -22,8 +22,11 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Events;
@@ -40,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const string JavaBinaryCls = "PlatformComputeJavaBinarizable";
 
         /** */
-        private const string DefaultCacheName = "default";
+        public const string DefaultCacheName = "default";
 
         /** First node. */
         private IIgnite _grid1;
@@ -50,6 +53,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Third node. */
         private IIgnite _grid3;
+
+        /** Thin client. */
+        private IIgniteClient _igniteClient;
 
         /// <summary>
         /// Initialization routine.
@@ -67,6 +73,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             var events = _grid1.GetEvents();
             events.EnableLocal(EventType.CacheRebalanceStopped);
             events.WaitForLocal(EventType.CacheRebalanceStopped);
+
+            // Start thin client.
+            _igniteClient = Ignition.StartClient(GetThinClientConfiguration());
         }
 
         /// <summary>
@@ -78,6 +87,19 @@ namespace Apache.Ignite.Core.Tests.Compute
                 "Config\\Compute\\compute-grid1.xml",
                 "Config\\Compute\\compute-grid2.xml",
                 "Config\\Compute\\compute-grid3.xml");
+        }
+
+
+        /// <summary>
+        /// Gets the thin client configuration.
+        /// </summary>
+        private static IgniteClientConfiguration GetThinClientConfiguration()
+        {
+            return new IgniteClientConfiguration
+            {
+                Endpoints = new List<string> { IPAddress.Loopback.ToString() },
+                SocketTimeout = TimeSpan.FromSeconds(15)
+            };
         }
 
         /// <summary>
@@ -523,6 +545,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests thin client ForServers projection.
+        /// </summary>
+        [Test]
+        public void TestThinClientForServers()
+        {
+            var cluster = _igniteClient.GetCluster();
+
+            var servers = cluster.ForServers().GetNodes();
+            Assert.AreEqual(2, servers.Count);
+            Assert.IsTrue(servers.All(x => !x.IsClient));
+        }
+
+        /// <summary>
         /// Test for attribute projection.
         /// </summary>
         [Test]
@@ -534,6 +569,19 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, prj.GetNodes().Count);
             Assert.IsTrue(nodes.Contains(prj.GetNode()));
             Assert.AreEqual("value1", prj.GetNodes().First().GetAttribute<string>("my_attr"));
+        }
+
+        /// <summary>
+        /// Test thin client for attribute projection.
+        /// </summary>
+        [Test]
+        public void TestClientForAttribute()
+        {
+            IClientClusterGroup clientPrj = _igniteClient.GetCluster().ForAttribute("my_attr", "value1");
+            Assert.AreEqual(1,clientPrj.GetNodes().Count);
+
+            var nodeId = _grid1.GetCluster().ForAttribute("my_attr", "value1").GetNodes().Single().Id;
+            Assert.AreEqual(nodeId, clientPrj.GetNode().Id);
         }
         
         /// <summary>
@@ -565,17 +613,19 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(0, prjClient.GetNodes().Count);
         }
-        
+
         /// <summary>
         /// Test for cache predicate.
         /// </summary>
         [Test]
         public void TestForPredicate()
         {
-            IClusterGroup prj1 = _grid1.GetCluster().ForPredicate(new NotAttributePredicate("value1").Apply);
+            IClusterGroup prj1 = _grid1.GetCluster()
+                .ForPredicate(new NotAttributePredicate<IClusterNode>("value1").Apply);
             Assert.AreEqual(2, prj1.GetNodes().Count);
 
-            IClusterGroup prj2 = prj1.ForPredicate(new NotAttributePredicate("value2").Apply);
+            IClusterGroup prj2 = prj1
+                .ForPredicate(new NotAttributePredicate<IClusterNode>("value2").Apply);
             Assert.AreEqual(1, prj2.GetNodes().Count);
 
             string val;
@@ -586,9 +636,28 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Test thin client for cache predicate.
+        /// </summary>
+        [Test]
+        public void TestClientForPredicate()
+        {
+            var prj1 = _igniteClient.GetCluster()
+                .ForPredicate(new NotAttributePredicate<IClientClusterNode>("value1").Apply);
+            Assert.AreEqual(2, prj1.GetNodes().Count);
+
+            var prj2 = prj1
+                .ForPredicate(new NotAttributePredicate<IClientClusterNode>("value2").Apply);
+            Assert.AreEqual(1, prj2.GetNodes().Count);
+
+            var val = (string) prj2.GetNodes().First().Attributes.FirstOrDefault(attr => attr.Key == "my_attr").Value;
+
+            Assert.IsTrue(val == null || (!val.Equals("value1") && !val.Equals("value2")));
+        }
+
+        /// <summary>
         /// Attribute predicate.
         /// </summary>
-        private class NotAttributePredicate
+        private class NotAttributePredicate<T> where T: IBaselineNode
         {
             /** Required attribute value. */
             private readonly string _attrVal;
@@ -603,17 +672,15 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inhreitDoc /> */
-            public bool Apply(IClusterNode node)
+            public bool Apply(T node)
             {
-                string val;
+                object val;
 
-                node.TryGetAttribute("my_attr", out val);
+                node.Attributes.TryGetValue("my_attr", out val);
 
                 return val == null || !val.Equals(_attrVal);
             }
         }
-
-
 
         /// <summary>
         /// Tests the action broadcast.
@@ -698,10 +765,16 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 var affinityKey = aff.GetAffinityKey<int, int>(primaryKey);
 
-                _grid1.GetCompute().AffinityRun(cacheName, affinityKey, new ComputeAction());
+                var computeAction = new ComputeAction
+                {
+                    ReservedPartition = aff.GetPartition(primaryKey),
+                    CacheNames = new[] {cacheName}
+                };
+                
+                _grid1.GetCompute().AffinityRun(cacheName, affinityKey, computeAction);
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
 
-                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, new ComputeAction()).Wait();
+                _grid1.GetCompute().AffinityRunAsync(cacheName, affinityKey, computeAction).Wait();
                 Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
             }
         }
@@ -740,6 +813,138 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(node.Id, ComputeFunc.LastNodeId);
             }
+        }
+
+        /// <summary>
+        /// Tests affinity call with partition.
+        /// </summary>
+        [Test]
+        public void TestAffinityCallWithPartition([Values(true, false)] bool async)
+        {
+            var cacheName = DefaultCacheName;
+            var aff = _grid1.GetAffinity(cacheName);
+            var localNode = _grid1.GetCluster().GetLocalNode();
+            var part = aff.GetPrimaryPartitions(localNode).First();
+            var compute = _grid1.GetCompute();
+
+            Func<IEnumerable<string>, int> action = names => async
+                ? compute.AffinityCallAsync(names, part, new ComputeFunc()).Result
+                : compute.AffinityCall(names, part, new ComputeFunc());
+
+            // One cache.
+            var res = action(new[] {cacheName});
+
+            Assert.AreEqual(res, ComputeFunc.InvokeCount);
+            Assert.AreEqual(localNode.Id, ComputeFunc.LastNodeId);
+
+            // Two caches.
+            var cache = _grid1.CreateCache<int, int>(TestUtils.TestName);
+
+            res = action(new[] {cacheName, cache.Name});
+
+            Assert.AreEqual(res, ComputeFunc.InvokeCount);
+            Assert.AreEqual(localNode.Id, ComputeFunc.LastNodeId);
+
+            // Empty caches.
+            var ex = Assert.Throws<ArgumentException>(() => action(new string[0]));
+            StringAssert.StartsWith("cacheNames can not be empty", ex.Message);
+
+            // Invalid cache name.
+            Assert.Throws<AggregateException>(() => action(new[] {"bad"}));
+
+            // Invalid partition.
+            Assert.Throws<ArgumentException>(() => compute.AffinityCall(new[] {cacheName}, -1, new ComputeFunc()));
+        }
+
+        /// <summary>
+        /// Tests affinity run with partition.
+        /// </summary>
+        [Test]
+        public void TestAffinityRunWithPartition([Values(true, false)] bool local,
+            [Values(true, false)] bool multiCache, [Values(true, false)] bool async)
+        {
+            var cacheNames = new List<string> {DefaultCacheName};
+
+            if (multiCache)
+            {
+                var cache2 = _grid1.CreateCache<int, int>(TestUtils.TestName);
+                cacheNames.Add(cache2.Name);
+            }
+
+            var node = local
+                ? _grid1.GetCluster().GetLocalNode()
+                : _grid2.GetCluster().GetLocalNode();
+            
+            var aff = _grid1.GetAffinity(cacheNames[0]);
+            
+            // Wait for some partitions to be assigned to the node.
+            TestUtils.WaitForTrueCondition(() => aff.GetPrimaryPartitions(node).Any());
+            var part = aff.GetPrimaryPartitions(node).First();
+
+            var computeAction = new ComputeAction
+            {
+                ReservedPartition = part,
+                CacheNames = cacheNames
+            };
+
+            var action = async
+                ? (Action) (() => _grid1.GetCompute().AffinityRunAsync(cacheNames, part, computeAction).Wait())
+                : () => _grid1.GetCompute().AffinityRun(cacheNames, part, computeAction);
+            
+            // Good case.
+            action();
+            Assert.AreEqual(node.Id, ComputeAction.LastNodeId);
+            
+            // Exception in user code.
+            computeAction.ShouldThrow = true;
+            var aex = Assert.Throws<AggregateException>(() => action());
+
+            var ex = aex.GetBaseException();
+            StringAssert.StartsWith("Remote job threw user exception", ex.Message);
+            Assert.AreEqual("Error in ComputeAction", ex.GetInnermostException().Message);
+        }
+
+        /// <summary>
+        /// Tests affinity operations with cancellation.
+        /// </summary>
+        [Test]
+        public void TestAffinityOpAsyncWithCancellation([Values(true, false)] bool callOrRun,
+            [Values(true, false)] bool keyOrPart)
+        {
+            var compute = _grid1.GetCompute();
+            
+            Action<CancellationToken> action = token =>
+            {
+                if (callOrRun)
+                {
+                    if (keyOrPart)
+                    {
+                        compute.AffinityCallAsync(DefaultCacheName, 1, new ComputeFunc(), token).Wait();
+                    }
+                    else
+                    {
+                        compute.AffinityCallAsync(new[] {DefaultCacheName}, 1, new ComputeFunc(), token).Wait();
+                    }
+                }
+                else
+                {
+                    if (keyOrPart)
+                    {
+                        compute.AffinityRunAsync(DefaultCacheName, 1, new ComputeAction(), token).Wait();
+                    }
+                    else
+                    {
+                        compute.AffinityRunAsync(new[] {DefaultCacheName}, 1, new ComputeAction(), token).Wait();
+                    }
+                }
+            };
+
+            // Not cancelled.
+            Assert.DoesNotThrow(() => action(CancellationToken.None));
+            
+            // Cancelled.
+            var ex = Assert.Throws<AggregateException>(() => action(new CancellationToken(true)));
+            Assert.IsInstanceOf<TaskCanceledException>(ex.GetInnermostException());
         }
 
         /// <summary>
@@ -949,6 +1154,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     {
         [InstanceResource]
 #pragma warning disable 649
+        // ReSharper disable once UnassignedField.Local
         private IIgnite _grid;
 
         public static ConcurrentBag<Guid> Invokes = new ConcurrentBag<Guid>();
@@ -956,6 +1162,12 @@ namespace Apache.Ignite.Core.Tests.Compute
         public static Guid LastNodeId;
 
         public Guid Id { get; set; }
+        
+        public int? ReservedPartition { get; set; }
+        
+        public ICollection<string> CacheNames { get; set; }
+        
+        public bool ShouldThrow { get; set; }
 
         public ComputeAction()
         {
@@ -972,6 +1184,21 @@ namespace Apache.Ignite.Core.Tests.Compute
             Thread.Sleep(10);
             Invokes.Add(Id);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
+
+            if (ReservedPartition != null)
+            {
+                Assert.IsNotNull(CacheNames);
+
+                foreach (var cacheName in CacheNames)
+                {
+                    Assert.IsTrue(TestUtils.IsPartitionReserved(_grid, cacheName, ReservedPartition.Value));
+                }
+            }
+
+            if (ShouldThrow)
+            {
+                throw new Exception("Error in ComputeAction");
+            }
         }
 
         public static int InvokeCount(Guid id)
@@ -1017,6 +1244,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     class ComputeFunc : INestedComputeFunc, IUserInterface<int>
     {
         [InstanceResource]
+        // ReSharper disable once UnassignedField.Local
         private IIgnite _grid;
 
         public static int InvokeCount;

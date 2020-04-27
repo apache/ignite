@@ -62,9 +62,6 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
 
-    /** Session. */
-    private final GridNioSession ses;
-
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
 
@@ -92,15 +89,13 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * Constructor.
      * @param ctx Kernal Context.
-     * @param ses Session.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId, int maxCursors) {
+    public OdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId, int maxCursors) {
         super(ctx, connId);
 
-        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
@@ -118,9 +113,10 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-        assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
+        assert SUPPORTED_VERS.contains(ver) : "Unsupported ODBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
@@ -153,7 +149,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
             nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
-        AuthorizationContext actx = authenticate(user, passwd);
+        AuthorizationContext actx = authenticate(ses.certificates(), user, passwd);
 
         ClientListenerResponseSender sender = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {

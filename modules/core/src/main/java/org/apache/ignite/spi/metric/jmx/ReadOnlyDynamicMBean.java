@@ -45,6 +45,8 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
         try {
             if ("getAttribute".equals(actionName))
                 return getAttribute((String)params[0]);
+            else if ("invoke".equals(actionName))
+                return invoke((String)params[0], (Object[])params[1], (String[])params[2]);
         }
         catch (AttributeNotFoundException e) {
             throw new MBeanException(e);

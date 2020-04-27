@@ -83,8 +83,6 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
             clientFinder.setAddresses(addrs);
 
             cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(clientFinder));
-
-            cfg.setClientMode(true);
         }
 
         cfg.setLocalHost("127.0.0.1");
@@ -115,7 +113,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
         client = true;
 
         for (int n = 0; n < 2; n++) {
-            startGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
+            startClientGridsMultiThreaded(srvNodesCnt, clientNodesCnt);
 
             checkTopology(gridCount());
 

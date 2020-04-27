@@ -50,9 +50,6 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean run = true;
 
-    /** */
-    private boolean client;
-
     /** Unexpected lock error. */
     private volatile Throwable err;
 
@@ -81,8 +78,6 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         ccfg.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(ccfg);
-
-        c.setClientMode(client);
 
         return c;
     }
@@ -136,14 +131,10 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
             TimeUnit.SECONDS.sleep(3L);
 
-            client = testClient; // If test client start on node in client mode.
-
             // Start grid 2.
-            IgniteEx grid2 = startGrid(2);
+            IgniteEx grid2 = testClient ? startClientGrid(2) : startGrid(2);
 
             assertEquals((Object)testClient, grid2.configuration().isClientMode());
-
-            client = false;
 
             threads.add(runCacheOperations(grid2.cachex(CACHE_NAME), keys));
 
@@ -231,7 +222,7 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
                         U.sleep(100);
                     }
-                    catch (Throwable e){
+                    catch (Throwable e) {
                         U.error(log(), "Failed unlock.", e);
 
                         err = e;

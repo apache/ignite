@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,14 +28,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -43,7 +40,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * <p>
  * Expected result: no assertions are triggered.
  */
-@WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
 public class CachePartitionLostWhileClearingTest extends GridCommonAbstractTest {
     /** */
     private static final int PARTS_CNT = 64;
@@ -164,7 +160,7 @@ public class CachePartitionLostWhileClearingTest extends GridCommonAbstractTest 
     private void load(IgniteEx ignite, String cache, int partId, int cnt, int skip) {
         List<Integer> keys = partitionKeys(ignite.cache(cache), partId, cnt, skip);
 
-        try(IgniteDataStreamer<Object, Object> s = ignite.dataStreamer(cache)) {
+        try (IgniteDataStreamer<Object, Object> s = ignite.dataStreamer(cache)) {
             for (Integer key : keys)
                 s.addData(key, key);
         }

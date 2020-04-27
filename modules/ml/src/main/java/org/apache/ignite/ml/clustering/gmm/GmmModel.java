@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
 
 /**
  * Gaussian Mixture Model. This algorithm represents a soft clustering model where each cluster is gaussian distribution
- * with own mean value and covariation matrix. Such model can predict cluster using maximum likelihood priciple (see
+ * with own mean value and covariation matrix. Such model can predict cluster using maximum likelihood principle (see
  * {@link #predict(Vector)}). Also * this model can estimate probability of given vector (see {@link #prob(Vector)}) and
  * compute likelihood vector where each component of it is a probability of cluster of mixture (see {@link
  * #likelihood(Vector)}).

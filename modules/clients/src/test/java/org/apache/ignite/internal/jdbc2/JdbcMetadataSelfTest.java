@@ -324,21 +324,26 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "CACHE_GROUPS",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
-            "LOCAL_SQL_QUERY_HISTORY",
-            "LOCAL_SQL_RUNNING_QUERIES",
+            "SQL_QUERIES_HISTORY",
+            "SQL_QUERIES",
+            "SCAN_QUERIES",
             "NODES",
             "NODE_ATTRIBUTES",
             "NODE_METRICS",
             "SCHEMAS",
             "TABLES",
             "TASKS",
+            "JOBS",
             "SERVICES",
             "CLIENT_CONNECTIONS",
             "TRANSACTIONS",
             "VIEWS",
             "TABLE_COLUMNS",
             "VIEW_COLUMNS",
-            "QUERY_CONTINUOUS"
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "CACHE_GROUP_PAGE_LISTS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -626,7 +631,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualPks.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
                     '.' + rs.getString("PK_NAME") +
@@ -645,7 +650,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
             // No parameters statement.
-            try(Connection conn = DriverManager.getConnection(BASE_URL)) {
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 conn.setSchema("\"pers\"");
 
                 PreparedStatement noParams = conn.prepareStatement("select * from Person;");

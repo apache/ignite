@@ -30,7 +30,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.h2.sql.AbstractH2CompareQueryTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -51,9 +50,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     private static final String ACCOUNT_CACHE = "acc";
 
     /** */
-    private boolean client;
-
-    /** */
     private boolean h2DataInserted;
 
     /** {@inheritDoc} */
@@ -69,15 +65,6 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     /** {@inheritDoc} */
     @Override protected void checkAllDataEquals() throws Exception {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
     }
 
     /**
@@ -138,9 +125,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        client = true;
-
-        startGrid(SRVS);
+        startClientGrid(SRVS);
     }
 
     /** {@inheritDoc} */
@@ -279,7 +264,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
         if (h2DataInserted)
             return;
 
-        try(PreparedStatement st = conn.prepareStatement("insert into \"person\".PERSON " +
+        try (PreparedStatement st = conn.prepareStatement("insert into \"person\".PERSON " +
             "(_key, _val, name) values(?, ?, ?)")) {
             st.setObject(1, key);
             st.setObject(2, p);
@@ -301,7 +286,7 @@ public class IgniteCacheJoinPartitionedAndReplicatedCollocationTest extends Abst
         if (h2DataInserted)
             return;
 
-        try(PreparedStatement st = conn.prepareStatement("insert into \"acc\".ACCOUNT " +
+        try (PreparedStatement st = conn.prepareStatement("insert into \"acc\".ACCOUNT " +
             "(_key, _val, personId, name) values(?, ?, ?, ?)")) {
             st.setObject(1, key);
             st.setObject(2, a);

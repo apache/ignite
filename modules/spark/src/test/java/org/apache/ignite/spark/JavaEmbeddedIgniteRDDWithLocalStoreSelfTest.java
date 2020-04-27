@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
@@ -31,14 +30,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.sql.Column;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import scala.Tuple2;
@@ -153,17 +146,13 @@ public class JavaEmbeddedIgniteRDDWithLocalStoreSelfTest extends GridCommonAbstr
 
     /**
      * @param igniteInstanceName Ignite instance name.
-     * @param client Client.
      * @throws Exception If failed.
      * @return Confiuration.
      */
-    private static IgniteConfiguration getConfiguration(String igniteInstanceName, boolean client) throws Exception {
+    private static IgniteConfiguration igniteConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setCacheConfiguration(cacheConfiguration());
-
-        cfg.setClientMode(client);
-
         cfg.setIgniteInstanceName(igniteInstanceName);
 
         return cfg;
@@ -198,7 +187,7 @@ public class JavaEmbeddedIgniteRDDWithLocalStoreSelfTest extends GridCommonAbstr
         /** {@inheritDoc} */
         @Override public IgniteConfiguration apply() {
             try {
-                return getConfiguration("worker-" + igniteInstanceNames.get(), false);
+                return igniteConfiguration("worker-" + igniteInstanceNames.get());
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

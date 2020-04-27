@@ -77,59 +77,59 @@ public class GridMetricsJolBenchmark {
 
         int start = 0;
 
-        for(int i=0; i<BOOLEAN_CNT; i++)
+        for (int i = 0; i < BOOLEAN_CNT; i++)
             metrics[start + i] = new BooleanMetricImpl(BOOLEAN_METRIC + i, null);
 
         start += BOOLEAN_CNT;
 
-        for(int i=0; i<DOUBLE_CNT; i++)
+        for (int i = 0; i < DOUBLE_CNT; i++)
             metrics[start + i] = new DoubleMetricImpl(DOUBLE_METRIC + i, null);
 
         start += DOUBLE_CNT;
 
-        for(int i=0; i<INT_CNT; i++)
+        for (int i = 0; i < INT_CNT; i++)
             metrics[start + i] = new IntMetricImpl(INT_METRIC + i, null);
 
         start += INT_CNT;
 
-        for(int i=0; i<LONG_CNT; i++)
+        for (int i = 0; i < LONG_CNT; i++)
             metrics[start + i] = new AtomicLongMetric(LONG_METRIC + i, null);
 
         start += LONG_CNT;
 
-        for(int i=0; i<LONG_ADDER_CNT; i++)
+        for (int i = 0; i < LONG_ADDER_CNT; i++)
             metrics[start + i] = new LongAdderMetric(LONG_ADDER_METRIC + i, null);
 
         start += LONG_ADDER_CNT;
 
         long sz = GraphLayout.parseInstance(metrics).totalSize();
 
-        System.out.println("Total size of " + TOTAL + " metric array is " + (sz/1024) + "KiB, " + sz + " bytes.");
+        System.out.println("Total size of " + TOTAL + " metric array is " + (sz / 1024) + "KiB, " + sz + " bytes.");
     }
 
     /**
      * Calculates and prints the size of metric registry of {@code TOTAL} size;
      */
     private static void measureMetricRegistry() {
-        MetricRegistry mreg = new MetricRegistry("test", null);
+        MetricRegistry mreg = new MetricRegistry("test", name -> null, name -> null, null);
 
-        for(int i=0; i<BOOLEAN_CNT; i++)
+        for (int i = 0; i < BOOLEAN_CNT; i++)
             mreg.booleanMetric(BOOLEAN_METRIC + i, null);
 
-        for(int i=0; i<DOUBLE_CNT; i++)
+        for (int i = 0; i < DOUBLE_CNT; i++)
             mreg.doubleMetric(DOUBLE_METRIC + i, null);
 
-        for(int i=0; i<INT_CNT; i++)
+        for (int i = 0; i < INT_CNT; i++)
             mreg.doubleMetric(INT_METRIC + i, null);
 
-        for(int i=0; i<LONG_CNT; i++)
+        for (int i = 0; i < LONG_CNT; i++)
             mreg.longMetric(LONG_METRIC + i, null);
 
-        for(int i=0; i<LONG_ADDER_CNT; i++)
+        for (int i = 0; i < LONG_ADDER_CNT; i++)
             mreg.longMetric(LONG_ADDER_METRIC + i, null);
 
         long sz = GraphLayout.parseInstance(mreg).totalSize();
 
-        System.out.println("Total size of " + TOTAL + " metric registry is " + (sz/1024) + "KiB, " + sz + " bytes.");
+        System.out.println("Total size of " + TOTAL + " metric registry is " + (sz / 1024) + "KiB, " + sz + " bytes.");
     }
 }

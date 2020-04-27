@@ -374,8 +374,7 @@ public class IgnitionEx {
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.
         executor.schedule(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (state(name) == IgniteState.STARTED) {
                     U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
                             " milliseconds. Killing node...");
@@ -1207,8 +1206,6 @@ public class IgnitionEx {
      * Gets an instance of default no-name grid. Note that
      * caller of this method should not assume that it will return the same
      * instance every time.
-     * <p>
-     * This method is identical to {@code G.grid(null)} apply.
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
@@ -1457,7 +1454,7 @@ public class IgnitionEx {
          * @param springCtx Optional Spring application context.
          */
         GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridSpringResourceContext springCtx) {
-            assert(cfg != null);
+            assert (cfg != null);
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
@@ -1566,6 +1563,9 @@ public class IgnitionEx {
 
         /** Indexing pool. */
         private ThreadPoolExecutor idxExecSvc;
+
+        /** Thread pool for create/rebuild indexes. */
+        private ThreadPoolExecutor buildIdxExecSvc;
 
         /** Continuous query executor service. */
         private IgniteStripedThreadPoolExecutor callbackExecSvc;
@@ -1952,6 +1952,23 @@ public class IgnitionEx {
                     GridIoPolicy.IDX_POOL,
                     oomeHnd
                 );
+
+                int buildIdxThreadPoolSize = cfg.getBuildIndexThreadPoolSize();
+
+                validateThreadPoolSize(buildIdxThreadPoolSize, "build-idx");
+
+                buildIdxExecSvc = new IgniteThreadPoolExecutor(
+                    "build-idx-runner",
+                    cfg.getIgniteInstanceName(),
+                    buildIdxThreadPoolSize,
+                    buildIdxThreadPoolSize,
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<>(),
+                    GridIoPolicy.UNDEFINED,
+                    oomeHnd
+                );
+
+                buildIdxExecSvc.allowCoreThreadTimeOut(true);
             }
 
             validateThreadPoolSize(cfg.getQueryThreadPoolSize(), "query");
@@ -2007,7 +2024,7 @@ public class IgnitionEx {
 
                 customExecSvcs = new HashMap<>();
 
-                for(ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
+                for (ExecutorConfiguration execCfg : cfg.getExecutorConfiguration()) {
                     ThreadPoolExecutor exec = new IgniteThreadPoolExecutor(
                         execCfg.getName(),
                         cfg.getIgniteInstanceName(),
@@ -2049,6 +2066,7 @@ public class IgnitionEx {
                     restExecSvc,
                     affExecSvc,
                     idxExecSvc,
+                    buildIdxExecSvc,
                     callbackExecSvc,
                     qryExecSvc,
                     schemaExecSvc,
@@ -2207,7 +2225,7 @@ public class IgnitionEx {
 
             myCfg.setGridLogger(cfgLog);
 
-            if(F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
+            if (F.isEmpty(userProvidedWorkDir) && F.isEmpty(U.IGNITE_WORK_DIR))
                 log.warning("Ignite work directory is not provided, automatically resolved to: " + workDir);
 
             // Check Ignite home folder (after log is available).
@@ -2387,7 +2405,7 @@ public class IgnitionEx {
 
                     if (IgfsUtils.matchIgfsCacheName(ccfg.getName()))
                         throw new IgniteCheckedException(
-                            "Cache name cannot start with \""+ IgfsUtils.IGFS_CACHE_PREFIX
+                            "Cache name cannot start with \"" + IgfsUtils.IGFS_CACHE_PREFIX
                                 + "\" because it is reserved for IGFS internal purposes.");
 
                     if (DataStructuresProcessor.isDataStructureCache(ccfg.getName()))
@@ -2470,7 +2488,7 @@ public class IgnitionEx {
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
             if (F.isEmpty(cfg.getSystemViewExporterSpi())) {
-                if (IgniteUtils.inClassPath(SYSTEM_VIEW_SQL_SPI)) {
+                if (IgniteComponentType.INDEXING.inClassPath()) {
                     try {
                         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi(),
                             U.newInstance(SYSTEM_VIEW_SQL_SPI));
@@ -2758,6 +2776,10 @@ public class IgnitionEx {
 
             idxExecSvc = null;
 
+            U.shutdownNow(getClass(), buildIdxExecSvc, log);
+
+            buildIdxExecSvc = null;
+
             U.shutdownNow(getClass(), callbackExecSvc, log);
 
             callbackExecSvc = null;
@@ -2777,7 +2799,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If registration failed.
          */
         private void registerFactoryMbean(MBeanServer srv) throws IgniteCheckedException {
-            if(U.IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             assert srv != null;
@@ -2832,7 +2854,7 @@ public class IgnitionEx {
          * Unregister delegate Mbean instance for {@link Ignition}.
          */
         private void unregisterFactoryMBean() {
-            if(U.IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             synchronized (mbeans) {

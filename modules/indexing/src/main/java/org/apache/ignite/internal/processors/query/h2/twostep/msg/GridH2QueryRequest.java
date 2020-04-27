@@ -370,7 +370,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * @return {@code this}.
      */
     public GridH2QueryRequest flags(int flags) {
-        assert flags >= 0 && flags <= 255: flags;
+        assert flags >= 0 && flags <= 255 : flags;
 
         this.flags = (byte)flags;
 
@@ -449,6 +449,37 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     * Build query flags.
+     *
+     * @return  Query flags.
+     */
+    public static int queryFlags(boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean lazy,
+        boolean replicatedOnly,
+        boolean explain,
+        Boolean dataPageScanEnabled) {
+        int flags = enforceJoinOrder ? FLAG_ENFORCE_JOIN_ORDER : 0;
+
+        // Distributed joins flag is set if it is either reald
+        if (distributedJoins)
+            flags |= FLAG_DISTRIBUTED_JOINS;
+
+        if (explain)
+            flags |= FLAG_EXPLAIN;
+
+        if (replicatedOnly)
+            flags |= FLAG_REPLICATED;
+
+        if (lazy)
+            flags |= FLAG_LAZY;
+
+        flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+
+        return flags;
+    }
+
+    /**
      * Checks if data page scan enabled.
      *
      * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
@@ -493,9 +524,6 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
     @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
-        if (params != null)
-            return;
-
         assert paramsBytes != null;
 
         try {

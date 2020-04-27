@@ -296,12 +296,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         fut.init();
 
-        if(mvccTracker != null){
+        if (mvccTracker != null) {
             final MvccQueryTracker mvccTracker0 = mvccTracker;
 
             fut.listen(new CI1<IgniteInternalFuture<Object>>() {
                 @Override public void apply(IgniteInternalFuture<Object> future) {
-                    if(future.isDone())
+                    if (future.isDone())
                         mvccTracker0.onDone();
                 }
             });
@@ -330,6 +330,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (keyCheck)
             validateCacheKeys(keys);
+
+        warnIfUnordered(keys, BulkOperation.GET);
 
         GridNearTxLocal tx = checkCurrentTx();
 
@@ -403,7 +405,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         IgniteInternalFuture<Map<K, V>> fut = loadAsync(
             ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),
-            forcePrimary ,
+            forcePrimary,
             topVer,
             subjId,
             taskName,
@@ -417,13 +419,13 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             mvccSnapshot
         );
 
-        if(mvccTracker != null){
+        if (mvccTracker != null) {
             final MvccQueryTracker mvccTracker0 = mvccTracker;
 
             fut.listen(new CI1<IgniteInternalFuture<Map<K, V>>>() {
                 /** {@inheritDoc} */
                 @Override public void apply(IgniteInternalFuture<Map<K, V>> future) {
-                    if(future.isDone())
+                    if (future.isDone())
                         mvccTracker0.onDone();
                 }
             });

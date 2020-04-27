@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -68,6 +69,9 @@ public class CacheGroupMetricsImpl {
 
     /** */
     private final LongMetric sparseStorageSize;
+
+    /** Number of local partitions initialized on current node. */
+    private final AtomicLongMetric initLocalPartitionsNumber;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -104,6 +108,8 @@ public class CacheGroupMetricsImpl {
 
         idxBuildCntPartitionsLeft = mreg.longMetric("IndexBuildCountPartitionsLeft",
             "Number of partitions need processed for finished indexes create or rebuilding.");
+
+        initLocalPartitionsNumber = mreg.longMetric("InitializedLocalPartitionsNumber", "Number of local partitions initialized on current node.");
 
         DataRegion region = ctx.dataRegion();
 
@@ -176,9 +182,9 @@ public class CacheGroupMetricsImpl {
         return idxBuildCntPartitionsLeft.value();
     }
 
-    /** Set number of partitions need processed for finished indexes create or rebuilding. */
-    public void setIndexBuildCountPartitionsLeft(long idxBuildCntPartitionsLeft) {
-        this.idxBuildCntPartitionsLeft.value(idxBuildCntPartitionsLeft);
+    /** Add number of partitions need processed for finished indexes create or rebuilding. */
+    public void addIndexBuildCountPartitionsLeft(long idxBuildCntPartitionsLeft) {
+        this.idxBuildCntPartitionsLeft.add(idxBuildCntPartitionsLeft);
     }
 
     /**
@@ -186,6 +192,20 @@ public class CacheGroupMetricsImpl {
      */
     public void decrementIndexBuildCountPartitionsLeft() {
         idxBuildCntPartitionsLeft.decrement();
+    }
+
+    /**
+     * Increments number of local partitions initialized on current node.
+     */
+    public void incrementInitializedLocalPartitions() {
+        initLocalPartitionsNumber.increment();
+    }
+
+    /**
+     * Decrements number of local partitions initialized on current node.
+     */
+    public void decrementInitializedLocalPartitions() {
+        initLocalPartitionsNumber.decrement();
     }
 
     /** */
@@ -464,6 +484,14 @@ public class CacheGroupMetricsImpl {
 
     /** Removes all metric for cache group. */
     public void remove() {
+        if (ctx.shared().kernalContext().isStopping())
+            return;
+
+        if (ctx.config().getNearConfiguration() != null)
+            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true));
+
+        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false));
+
         ctx.shared().kernalContext().metric().remove(metricGroupName());
     }
 

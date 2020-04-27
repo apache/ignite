@@ -206,12 +206,7 @@ public final class Functions {
      * @return Function for given power.
      */
     public static IgniteDoubleFunction<Double> pow(final double b) {
-        return (a) -> {
-            if (b == 2)
-                return a * a;
-            else
-                return Math.pow(a, b);
-        };
+        return (a) -> b == 2 ? a * a : Math.pow(a, b);
     }
 
     /**

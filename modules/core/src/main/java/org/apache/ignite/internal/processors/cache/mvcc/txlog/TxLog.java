@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -177,7 +178,9 @@ public class TxLog implements DbCheckpointListener {
                     wal,
                     reuseListRoot,
                     isNew,
-                    txLogReuseListLockLsnr
+                    txLogReuseListLockLsnr,
+                    ctx,
+                    null
                 );
 
                 tree = new TxLogTree(
@@ -236,11 +239,11 @@ public class TxLog implements DbCheckpointListener {
     private void saveReuseListMetadata(Context ctx) throws IgniteCheckedException {
         Executor executor = ctx.executor();
         if (executor == null)
-            reuseList.saveMetadata();
+            reuseList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
         else {
             executor.execute(() -> {
                 try {
-                    reuseList.saveMetadata();
+                    reuseList.saveMetadata(IoStatisticsHolderNoOp.INSTANCE);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -628,7 +631,7 @@ public class TxLog implements DbCheckpointListener {
             assert treeOp == null;
 
             throw new IllegalStateException("Unexpected new transaction state. [currState=" +
-                currState +  ", newState=" + newState +  ", cntr=" + minor +']');
+                currState +  ", newState=" + newState +  ", cntr=" + minor + ']');
         }
 
         /**

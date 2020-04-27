@@ -43,7 +43,7 @@ public class CovarianceMatricesAggregator implements Serializable {
     private Matrix weightedSum;
 
     /** Count of rows. */
-    private int rowCount;
+    private int rowCnt;
 
     /**
      * Creates an instance of CovarianceMatricesAggregator.
@@ -58,17 +58,17 @@ public class CovarianceMatricesAggregator implements Serializable {
      * Creates an instance of CovarianceMatricesAggregator.
      *
      * @param mean Mean vector.
-     * @param weightedSum Weighted sums for covariace computation.
-     * @param rowCount Count of rows.
+     * @param weightedSum Weighted sums for covariance computation.
+     * @param rowCnt Count of rows.
      */
-    CovarianceMatricesAggregator(Vector mean, Matrix weightedSum, int rowCount) {
+    CovarianceMatricesAggregator(Vector mean, Matrix weightedSum, int rowCnt) {
         this.mean = mean;
         this.weightedSum = weightedSum;
-        this.rowCount = rowCount;
+        this.rowCnt = rowCnt;
     }
 
     /**
-     * Computes covatiation matrices for feature vector for each GMM component.
+     * Computes covariation matrices for feature vector for each GMM component.
      *
      * @param dataset Dataset.
      * @param clusterProbs Probabilities of each GMM component.
@@ -99,11 +99,10 @@ public class CovarianceMatricesAggregator implements Serializable {
     void add(Vector x, double pcxi) {
         Matrix deltaCol = x.minus(mean).toMatrix(false);
         Matrix weightedCovComponent = deltaCol.times(deltaCol.transpose()).times(pcxi);
-        if (weightedSum == null)
-            weightedSum = weightedCovComponent;
-        else
-            weightedSum = weightedSum.plus(weightedCovComponent);
-        rowCount += 1;
+
+        weightedSum = weightedSum == null ? weightedCovComponent : weightedSum.plus(weightedCovComponent);
+
+        rowCnt += 1;
     }
 
     /**
@@ -116,7 +115,7 @@ public class CovarianceMatricesAggregator implements Serializable {
         return new CovarianceMatricesAggregator(
             mean,
             this.weightedSum.plus(other.weightedSum),
-            this.rowCount + other.rowCount
+            this.rowCnt + other.rowCnt
         );
     }
 
@@ -128,14 +127,14 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @return Covariance aggregators.
      */
     static List<CovarianceMatricesAggregator> map(GmmPartitionData data, Vector[] means) {
-        int countOfComponents = means.length;
+        int cntOfComponents = means.length;
 
         List<CovarianceMatricesAggregator> aggregators = new ArrayList<>();
-        for (int i = 0; i < countOfComponents; i++)
+        for (int i = 0; i < cntOfComponents; i++)
             aggregators.add(new CovarianceMatricesAggregator(means[i]));
 
         for (int i = 0; i < data.size(); i++) {
-            for (int c = 0; c < countOfComponents; c++)
+            for (int c = 0; c < cntOfComponents; c++)
                 aggregators.get(c).add(data.getX(i), data.pcxi(c, i));
         }
 
@@ -147,7 +146,7 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @return Computed covariance matrix.
      */
     private Matrix covariance(double clusterProb) {
-        return weightedSum.divide(rowCount * clusterProb);
+        return weightedSum.divide(rowCnt * clusterProb);
     }
 
     /**
@@ -192,6 +191,6 @@ public class CovarianceMatricesAggregator implements Serializable {
      * @return Rows count.
      */
     public int rowCount() {
-        return rowCount;
+        return rowCnt;
     }
 }

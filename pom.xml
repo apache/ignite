@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>apache-ignite</artifactId>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>2.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>
@@ -56,6 +56,7 @@
         <module>modules/spring</module>
         <module>modules/spring-data</module>
         <module>modules/spring-data-2.0</module>
+        <module>modules/spring-data-2.2</module>
         <module>modules/web</module>
         <module>modules/aop</module>
         <module>modules/urideploy</module>
@@ -73,7 +74,6 @@
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/kafka</module>
-        <module>modules/flume</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
         <module>modules/twitter</module>
@@ -88,16 +88,13 @@
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>
-        <module>modules/flink</module>
         <module>modules/kubernetes</module>
-        <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
         <module>modules/ml/spark-model-parser</module>
         <module>modules/ml/xgboost-model-parser</module>
-        <module>modules/ml/tensorflow-model-parser</module>
-        <module>modules/tensorflow</module>
+        <module>modules/ml/h2o-model-parser</module>
         <module>modules/opencensus</module>
     </modules>
 
@@ -121,10 +118,10 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
-                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
+                <module>modules/spark-2.4</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
@@ -302,7 +299,79 @@
             <id>release</id>
             <build>
                 <plugins>
-                     <plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>exec-libtoolize</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>libtoolize</executable>
+                                    <arguments>
+                                        <argument>--copy</argument>
+                                    </arguments>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-aclocal</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>aclocal</executable>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-autoheader</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>autoheader</executable>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-automake</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>automake</executable>
+                                    <arguments>
+                                        <argument>--add-missing</argument>
+                                        <argument>--copy</argument>
+                                    </arguments>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+
+                            <execution>
+                                <id>exec-autoreconf</id>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <executable>autoreconf</executable>
+                                    <workingDirectory>${basedir}/target/release-package-${ignite.edition}/platforms/cpp</workingDirectory>
+                                </configuration>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                         <version>1.7</version>
@@ -323,6 +392,8 @@
                                 <phase>initialize</phase>
                                 <configuration>
                                     <target>
+                                        <delete dir="${basedir}/target/release-package-${ignite.edition}/platforms/cpp/autom4te.cache" quiet="true"/>
+
                                         <replaceregexp byline="true">
                                             <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
                                             <substitution expression="pushd &quot;%~dp0&quot;/.." />
@@ -558,11 +629,23 @@
             </activation>
 
             <modules>
-                <module>modules/ml/mleap-model-parser</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>spark-2.4</id>
+
+            <activation>
+                <property><name>!scala-2.10</name></property>
+            </activation>
+
+            <modules>
+                <module>modules/spark-2.4</module>
+                <module>modules/scalar</module>
             </modules>
         </profile>
 

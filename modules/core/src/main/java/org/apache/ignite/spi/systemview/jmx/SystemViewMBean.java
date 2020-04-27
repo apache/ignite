@@ -20,28 +20,39 @@ package org.apache.ignite.spi.systemview.jmx;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.management.MBeanException;
 import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
 import javax.management.ObjectName;
+import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.OpenDataException;
 import javax.management.openmbean.OpenMBeanAttributeInfo;
 import javax.management.openmbean.OpenMBeanAttributeInfoSupport;
 import javax.management.openmbean.OpenMBeanInfoSupport;
+import javax.management.openmbean.OpenMBeanOperationInfo;
+import javax.management.openmbean.OpenMBeanOperationInfoSupport;
+import javax.management.openmbean.OpenMBeanParameterInfo;
+import javax.management.openmbean.OpenMBeanParameterInfoSupport;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.SimpleType;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.ReadOnlyDynamicMBean;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeVisitor;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 
@@ -54,6 +65,9 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.Attrib
 public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** View attribute. */
     public static final String VIEWS = "views";
+
+    /** Filter operation name. */
+    public static final String FILTER_OPERATION = "filter";
 
     /** Row id attribute name. */
     public static final String ID = "systemViewRowId";
@@ -70,6 +84,9 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
     /** System view type. */
     private final TabularType sysViewType;
 
+    /** Filter field names. */
+    private final String[] filterFields;
+
     /**
      * @param sysView System view to export.
      */
@@ -78,8 +95,10 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
 
         int cnt = sysView.walker().count();
 
-        String[] fields = new String[cnt+1];
-        OpenType[] types = new OpenType[cnt+1];
+        String[] fields = new String[cnt + 1];
+        OpenType[] types = new OpenType[cnt + 1];
+
+        List<Integer> filterFieldIdxs = new ArrayList<>(cnt);
 
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
@@ -115,6 +134,9 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
                     types[idx] = SimpleType.DOUBLE;
                 else
                     types[idx] = SimpleType.STRING;
+
+                if (sysView.walker().filtrableAttributes().contains(name))
+                    filterFieldIdxs.add(idx);
             }
         });
 
@@ -122,25 +144,48 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         types[cnt] = SimpleType.INTEGER;
 
         try {
-            rowType = new CompositeType(sysView.rowClass().getName(),
+            rowType = new CompositeType(sysView.name(),
                 sysView.description(),
                 fields,
                 fields,
                 types);
 
+            OpenMBeanOperationInfo[] operations = null;
+
+            if (!filterFieldIdxs.isEmpty() && sysView instanceof FiltrableSystemView) {
+                OpenMBeanParameterInfo[] params = new OpenMBeanParameterInfo[filterFieldIdxs.size()];
+
+                filterFields = new String[filterFieldIdxs.size()];
+
+                for (int i = 0; i < filterFieldIdxs.size(); i++) {
+                    String fieldName = fields[filterFieldIdxs.get(i)];
+
+                    filterFields[i] = fieldName;
+
+                    params[i] = new OpenMBeanParameterInfoSupport(fieldName, fieldName, types[filterFieldIdxs.get(i)]);
+                }
+
+                OpenMBeanOperationInfo operation = new OpenMBeanOperationInfoSupport(FILTER_OPERATION,
+                    "Filter view content", params, rowType, MBeanOperationInfo.INFO);
+
+                operations = new OpenMBeanOperationInfo[] {operation};
+            }
+            else
+                filterFields = null;
+
             info = new OpenMBeanInfoSupport(
-                sysView.rowClass().getName(),
+                sysView.name(),
                 sysView.description(),
                 new OpenMBeanAttributeInfo[] {
                     new OpenMBeanAttributeInfoSupport(VIEWS, VIEWS, rowType, true, false, false)
                 },
                 null,
-                null,
+                operations,
                 null
             );
 
             sysViewType = new TabularType(
-                sysView.rowClass().getName(),
+                sysView.name(),
                 sysView.description(),
                 rowType,
                 new String[] {ID}
@@ -156,39 +201,68 @@ public class SystemViewMBean<R> extends ReadOnlyDynamicMBean {
         if ("MBeanInfo".equals(attribute))
             return getMBeanInfo();
 
-        if (attribute.equals(VIEWS)) {
-            TabularDataSupport rows = new TabularDataSupport(sysViewType);
-
-            AttributeToMapVisitor visitor = new AttributeToMapVisitor();
-
-            try {
-                int idx = 0;
-
-                for (R row : sysView) {
-                    Map<String, Object> data = new HashMap<>();
-
-                    visitor.data(data);
-
-                    sysView.walker().visitAll(row, visitor);
-
-                    data.put(ID, idx++);
-
-                    rows.put(new CompositeDataSupport(rowType, data));
-                }
-            }
-            catch (OpenDataException e) {
-                throw new IgniteException(e);
-            }
-
-            return rows;
-        }
+        if (attribute.equals(VIEWS))
+            return viewContent(null);
 
         throw new IllegalArgumentException("Unknown attribute " + attribute);
     }
 
     /** {@inheritDoc} */
+    @Override public Object invoke(String actName, Object[] params,
+        String[] signature) throws MBeanException, ReflectionException {
+        if (FILTER_OPERATION.equals(actName)) {
+            assert filterFields != null;
+            assert filterFields.length >= params.length;
+
+            Map<String, Object> filter = U.newHashMap(params.length);
+
+            for (int i = 0; i < params.length; i++) {
+                if (params[i] != null)
+                    filter.put(filterFields[i], params[i]);
+            }
+
+            return viewContent(filter);
+        }
+
+        return super.invoke(actName, params, signature);
+    }
+
+    /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
         return info;
+    }
+
+    /**
+     * Gets tabular data with system view content.
+     */
+    private TabularDataSupport viewContent(Map<String, Object> filter) {
+        TabularDataSupport rows = new TabularDataSupport(sysViewType);
+
+        AttributeToMapVisitor visitor = new AttributeToMapVisitor();
+
+        try {
+            int idx = 0;
+
+            Iterable<R> iter = filter != null && sysView instanceof FiltrableSystemView ?
+                () -> ((FiltrableSystemView<R>)sysView).iterator(filter) : sysView;
+
+            for (R row : iter) {
+                Map<String, Object> data = new HashMap<>();
+
+                visitor.data(data);
+
+                sysView.walker().visitAll(row, visitor);
+
+                data.put(ID, idx++);
+
+                rows.put(new CompositeDataSupport(rowType, data));
+            }
+        }
+        catch (OpenDataException e) {
+            throw new IgniteException(e);
+        }
+
+        return rows;
     }
 
     /** Fullfill {@code data} Map for specific row. */

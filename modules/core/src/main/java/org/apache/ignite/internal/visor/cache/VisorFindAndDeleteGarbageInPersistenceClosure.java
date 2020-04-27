@@ -174,7 +174,13 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             assert groupContext != null;
 
             for (Integer cacheId : e.getValue().keySet()) {
-                groupContext.offheap().stopCache(cacheId, true);
+                groupContext.shared().database().checkpointReadLock();
+                try {
+                    groupContext.offheap().stopCache(cacheId, true);
+                }
+                finally {
+                    groupContext.shared().database().checkpointReadUnlock();
+                }
 
                 ((GridCacheOffheapManager)
                     groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
@@ -281,7 +287,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 if (cacheCtx == null)
                     stoppedCachesForGrpId
                         .computeIfAbsent(grpCtx.groupId(), (x) -> new HashMap<>())
-                        .compute(cacheId, (x, y) -> y == null? 1 : y + 1);
+                        .compute(cacheId, (x, y) -> y == null ? 1 : y + 1);
             }
         }
         catch (IgniteCheckedException e) {

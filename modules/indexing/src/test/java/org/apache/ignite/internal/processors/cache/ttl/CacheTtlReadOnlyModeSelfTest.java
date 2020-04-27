@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertCachesReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.assertDataStreamerReadOnlyMode;
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
@@ -74,10 +76,9 @@ public class CacheTtlReadOnlyModeSelfTest extends GridCommonAbstractTest {
     public void testTtlExpirationWorksInReadOnlyMode() throws Exception {
         Ignite grid = startGrid();
 
-        assertTrue(grid.cluster().active());
-        assertFalse(grid.cluster().readOnly());
+        assertEquals(ACTIVE, grid.cluster().state());
 
-        assertCachesReadOnlyMode(grid.cluster().readOnly(), CACHE_NAMES);
+        assertCachesReadOnlyMode(grid.cluster().state() == ACTIVE_READ_ONLY, CACHE_NAMES);
 
         for (String cacheName : CACHE_NAMES) {
             assertEquals(cacheName, 0, grid.cache(cacheName).size());
@@ -88,11 +89,11 @@ public class CacheTtlReadOnlyModeSelfTest extends GridCommonAbstractTest {
             assertEquals(cacheName, 10, grid.cache(cacheName).size());
         }
 
-        grid.cluster().readOnly(true);
-        assertTrue(grid.cluster().readOnly());
+        grid.cluster().state(ACTIVE_READ_ONLY);
+        assertEquals(ACTIVE_READ_ONLY, grid.cluster().state());
 
-        assertCachesReadOnlyMode(grid.cluster().readOnly(), CACHE_NAMES);
-        assertDataStreamerReadOnlyMode(grid.cluster().readOnly(), CACHE_NAMES);
+        assertCachesReadOnlyMode(grid.cluster().state() == ACTIVE_READ_ONLY, CACHE_NAMES);
+        assertDataStreamerReadOnlyMode(grid.cluster().state() == ACTIVE_READ_ONLY, CACHE_NAMES);
 
         SECONDS.sleep(EXPIRATION_TIMEOUT + 1);
 

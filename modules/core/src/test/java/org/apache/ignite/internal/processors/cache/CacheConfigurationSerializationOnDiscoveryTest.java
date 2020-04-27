@@ -55,9 +55,6 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
         return params;
     }
 
-    /** Client mode. */
-    private boolean clientMode;
-
     /** Caches. */
     private CacheConfiguration[] caches;
 
@@ -70,8 +67,6 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         if (caches != null)
             cfg.setCacheConfiguration(caches);
@@ -249,11 +244,8 @@ public class CacheConfigurationSerializationOnDiscoveryTest extends GridCommonAb
         startGrid(2);
 
         caches = null;
-        clientMode = true;
 
-        IgniteEx clnt = startGrid(3);
-
-        clientMode = false;
+        IgniteEx clnt = startClientGrid(3);
 
         if (persistenceEnabled)
             clnt.cluster().active(true);

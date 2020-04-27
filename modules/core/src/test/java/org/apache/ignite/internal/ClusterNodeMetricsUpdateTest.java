@@ -37,16 +37,11 @@ import org.junit.Test;
  *
  */
 public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMetricsUpdateFrequency(500);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -60,9 +55,7 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
 
         Ignite srv0 = startGridsMultiThreaded(NODES / 2);
 
-        client = true;
-
-        startGridsMultiThreaded(NODES / 2, NODES / 2);
+        startClientGridsMultiThreaded(NODES / 2, NODES / 2);
 
         Map<UUID, Integer> expJobs = new HashMap<>();
 

@@ -75,8 +75,6 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) >= SRV_CNT);
-
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -95,7 +93,8 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         super.beforeTest();
 
-        startGridsMultiThreaded(TOTAL_CNT);
+        startGridsMultiThreaded(SRV_CNT);
+        startClientGridsMultiThreaded(SRV_CNT, CLNT_CNT);
     }
 
     /** {@inheritDoc} */
@@ -145,7 +144,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                     int nodeId;
 
-                    while(!reservedIdx.compareAndSet((nodeId = r.nextInt(TOTAL_CNT)), 0, 1))
+                    while (!reservedIdx.compareAndSet((nodeId = r.nextInt(TOTAL_CNT)), 0, 1))
                         doSleep(10);
 
                     U.awaitQuiet(b);
@@ -175,7 +174,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         final IgniteInternalFuture<?> restartFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                while(!stop.get()) {
+                while (!stop.get()) {
                     final int nodeId = r.nextInt(TOTAL_CNT);
 
                     if (!reservedIdx.compareAndSet(nodeId, 0, 1)) {
@@ -188,7 +187,10 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                     doSleep(500 + r.nextInt(1000));
 
-                    startGrid(nodeId);
+                    if (nodeId >= SRV_CNT)
+                        startClientGrid(nodeId);
+                    else
+                        startGrid(nodeId);
 
                     reservedIdx.set(nodeId, 0);
                 }

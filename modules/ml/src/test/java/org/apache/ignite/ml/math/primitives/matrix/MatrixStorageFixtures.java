@@ -66,13 +66,13 @@ class MatrixStorageFixtures {
         private final Integer[] rowStorage = new Integer[] {StorageConstants.ROW_STORAGE_MODE, StorageConstants.COLUMN_STORAGE_MODE, null};
 
         /** */
-        private int sizeIdx = 0;
+        private int sizeIdx;
 
         /** */
-        private int acsModeIdx = 0;
+        private int acsModeIdx;
 
         /** */
-        private int stoModeIdx = 0;
+        private int stoModeIdx;
 
         /** {@inheritDoc} */
         @NotNull

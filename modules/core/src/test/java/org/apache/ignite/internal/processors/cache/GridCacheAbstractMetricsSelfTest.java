@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -41,15 +41,20 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Cache metrics test.
@@ -73,8 +78,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** Entry processor, performing removal. */
     private final CacheEntryProcessor<Integer, Integer, Object> removingProcessor =
         new CacheEntryProcessor<Integer, Integer, Object>() {
-            @Override
-            public Object process(
+            @Override public Object process(
                     MutableEntry<Integer, Integer> entry,
                     Object... arguments
             ) throws EntryProcessorException {
@@ -88,8 +92,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** Entry processor, performing reading. */
     private final CacheEntryProcessor<Integer, Integer, Object> readingProcessor =
         new CacheEntryProcessor<Integer, Integer, Object>() {
-            @Override
-            public Object process(
+            @Override public Object process(
                     MutableEntry<Integer, Integer> entry,
                     Object... arguments
             ) throws EntryProcessorException {
@@ -103,8 +106,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /** Entry processor, performing updating. */
     private final CacheEntryProcessor<Integer, Integer, Object> updatingProcessor =
         new CacheEntryProcessor<Integer, Integer, Object>() {
-            @Override
-            public Object process(
+            @Override public Object process(
                     MutableEntry<Integer, Integer> entry,
                     Object... arguments
             ) throws EntryProcessorException {
@@ -204,10 +206,10 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Invoke update on cache.
         for (int i = 0; i < KEY_CNT; i++)
             jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
-                @Override
-                public Object process(MutableEntry<Object, Object> entry,
-                                      Object... arguments) throws EntryProcessorException {
-
+                @Override public Object process(
+                    MutableEntry<Object, Object> entry,
+                    Object... arguments
+                ) throws EntryProcessorException {
                     Object key = entry.getKey();
 
                     entry.setValue(key);
@@ -219,8 +221,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Read-only invoke on cache.
         for (int i = 0; i < KEY_CNT; i++)
             jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
-                @Override
-                public Object process(MutableEntry<Object, Object> entry,
+                @Override public Object process(MutableEntry<Object, Object> entry,
                                       Object... arguments) throws EntryProcessorException {
 
                     entry.getKey();
@@ -232,8 +233,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Remove invoke on cache.
         for (int i = 0; i < KEY_CNT; i++)
             jcache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
-                @Override
-                public Object process(MutableEntry<Object, Object> entry,
+                @Override public Object process(MutableEntry<Object, Object> entry,
                                       Object... arguments) throws EntryProcessorException {
 
                     entry.remove();
@@ -362,7 +362,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0, cache.localMetrics().getAverageRemoveTime(), 0.0);
 
-        Set<Integer> keys = new HashSet<>(4, 1);
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
         keys.add(3);
@@ -389,7 +389,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 cache.put(i, i);
 
-                if(keys.size() == 3)
+                if (keys.size() == 3)
                     break;
             }
         }
@@ -619,6 +619,29 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(values.size(), cache.localMetrics().getCachePuts());
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testPutAllAsyncAvgTime() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(0.0, cache.localMetrics().getAveragePutTime(), 0.0);
+        assertEquals(0, cache.localMetrics().getCachePuts());
+
+        Map<Integer, Integer> values = new HashMap<>();
+
+        values.put(1, 1);
+        values.put(2, 2);
+        values.put(3, 3);
+
+        IgniteFuture<Void> fut = cache.putAllAsync(values);
+
+        fut.get();
+
+        assertTrue(waitForCondition(() -> cache.localMetrics().getAveragePutTime() > 0, 30_000));
+
+        assertEquals(values.size(), cache.localMetrics().getCachePuts());
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -839,7 +862,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         awaitMetricsUpdate(1);
 
-        assertEquals(KEY_CNT/2, cache.metrics().getCacheSize());
+        assertEquals(KEY_CNT / 2, cache.metrics().getCacheSize());
 
         assertEquals(cache.localSizeLong(CachePeekMode.PRIMARY), cache.localMetrics().getCacheSize());
 
@@ -1041,7 +1064,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         // Avoid reloading from store.
         storeStgy.removeFromStore(key);
 
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+        assertTrue(waitForCondition(new GridAbsPredicateX() {
             @Override public boolean applyx() {
                 try {
                     if (c.get(key) != null)
@@ -1258,8 +1281,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         final Integer key = primaryKey(cache0);
 
         cache0.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
-            @Override
-            public Object process(MutableEntry<Integer, Integer> entry,
+            @Override public Object process(MutableEntry<Integer, Integer> entry,
                                   Object... arguments) throws EntryProcessorException {
 
                 entry.setValue(1);
@@ -1285,8 +1307,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(maxTime, minTime, 0.001f);
 
         cache0.invoke(key, new CacheEntryProcessor<Integer, Integer, Object>() {
-            @Override
-            public Object process(MutableEntry<Integer, Integer> entry,
+            @Override public Object process(MutableEntry<Integer, Integer> entry,
                                   Object... arguments) throws EntryProcessorException {
 
                 entry.setValue(1);
@@ -1371,7 +1392,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAllMultipleKeysAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Set<Integer> keys = new HashSet<>();
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
 
@@ -1391,7 +1412,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAllAsyncMultipleKeysAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        Set<Integer> keys = new HashSet<>();
+        Set<Integer> keys = new TreeSet<>();
         keys.add(1);
         keys.add(2);
 
@@ -1402,5 +1423,73 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         U.sleep(100);
 
         assertTrue(cache.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+    }
+
+    /** */
+    @Test
+    public void testGetTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("GetTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.get(1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testPutTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("PutTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testRemoveTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("RemoveTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.put(1, 1);
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        cache.remove(1);
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /**
+     * @param name Metric name to find.
+     * @return Metric.
+     */
+    protected  <M extends Metric> M metric(String name) {
+        IgniteEx grid = grid(0);
+
+        boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();
+
+        MetricRegistry mreg = grid.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, isNear));
+
+        M m = mreg.findMetric(name);
+
+        assertNotNull(m);
+
+        return m;
     }
 }

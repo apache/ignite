@@ -330,11 +330,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         Throwable e = ex.get();
 
-        if(e != null) {
-            if(e instanceof Error)
+        if (e != null) {
+            if (e instanceof Error)
                 throw (Error) e;
 
-            if(e instanceof RuntimeException)
+            if (e instanceof RuntimeException)
                 throw (RuntimeException) e;
 
             throw new RuntimeException(e);
@@ -372,7 +372,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                     for (int j = 0; i < (entries >> 1); i += threads) {
                         ldr.addData(i, i);
 
-                        if(j++ % 1000 == 0)
+                        if (j++ % 1000 == 0)
                             ldr.tryFlush();
                     }
 
@@ -383,7 +383,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                     for (int j = 0; i < entries; i += threads) {
                         ldr.addData(i, i);
 
-                        if(j++ % 1000 == 0)
+                        if (j++ % 1000 == 0)
                             ldr.tryFlush();
                     }
                 }
@@ -405,11 +405,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         Throwable e = ex.get();
 
-        if(e != null) {
-            if(e instanceof Error)
+        if (e != null) {
+            if (e instanceof Error)
                 throw (Error) e;
 
-            if(e instanceof RuntimeException)
+            if (e instanceof RuntimeException)
                 throw (RuntimeException) e;
 
             throw new RuntimeException(e);
@@ -417,7 +417,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for(int i = 0; i < entries; i++)
+        for (int i = 0; i < entries; i++)
             assertEquals(i, cache.get(i));
     }
 
@@ -476,7 +476,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         streamer.addData(1, 1);
 
         for (int topChanges = 0; topChanges < 30; topChanges++) {
-            IgniteEx node = startGrid(getConfiguration("flapping-client").setClientMode(true));
+            IgniteEx node = startClientGrid(getConfiguration("flapping-client"));
 
             streamer.addData(1, 1);
 

@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transfomToListOrdered;
+import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToListOrdered;
 import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoHeap;
 
 /**
@@ -41,7 +41,7 @@ public class BallTreeSpatialIndex<L> implements SpatialIndex<L> {
     /** Number of points in a leaf. */
     private static final int MAX_LEAF_SIZE = 42;
 
-    /** Margin used to indetify center of Balls during data points split. */
+    /** Margin used to identify center of Balls during data points split. */
     private static final double SPLIT_BALL_MARGIN = 0.2;
 
     /** Distance measure. */
@@ -67,7 +67,7 @@ public class BallTreeSpatialIndex<L> implements SpatialIndex<L> {
 
         root.findKClosest(pnt, heap, k);
 
-        return transfomToListOrdered(heap);
+        return transformToListOrdered(heap);
     }
 
     /**

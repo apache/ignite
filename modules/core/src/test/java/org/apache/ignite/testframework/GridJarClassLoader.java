@@ -53,7 +53,7 @@ public final class GridJarClassLoader extends SecureClassLoader {
      * @throws IOException If fies can't be read,
      */
     public static synchronized GridJarClassLoader getInstance(List<String> files, ClassLoader parent)
-        throws IOException{
+        throws IOException {
         if (instance == null)
             instance = new GridJarClassLoader(files, parent);
 

@@ -277,6 +277,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.partition() == -1 ? null : req.partition(),
                 req.className(),
                 req.clause(),
+                req.limit(),
                 req.includeMetaData(),
                 req.keepBinary(),
                 req.subjectId(),
@@ -545,6 +546,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().type(),
                 false,
                 qry.query().clause(),
+                qry.query().limit(),
                 clsName,
                 qry.query().scanFilter(),
                 qry.query().partition(),
@@ -589,7 +591,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert !cctx.isLocal() : cctx.name();
-        assert qry.type() == GridCacheQueryType.SCAN: qry;
+        assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
         GridCloseableIterator locIter0 = null;
@@ -648,7 +650,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
              * @return Cache entry
              */
             private Object convert(Object obj) {
-                if(qry.transform() != null)
+                if (qry.transform() != null)
                     return obj;
 
                 Map.Entry e = (Map.Entry)obj;
@@ -746,6 +748,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().type(),
                 true,
                 qry.query().clause(),
+                qry.query().limit(),
                 null,
                 null,
                 null,

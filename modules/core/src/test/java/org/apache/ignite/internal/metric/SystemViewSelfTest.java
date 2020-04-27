@@ -30,7 +30,10 @@ import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -38,6 +41,7 @@ import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -49,11 +53,20 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ProtocolVersion;
+import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.spi.systemview.view.CachePagesListView;
+import org.apache.ignite.spi.systemview.view.PagesListView;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
+import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -62,9 +75,13 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
+import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
+import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
+import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.TransactionView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -74,14 +91,22 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.STREAM_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.GridSystemViewManager.SYS_POOL_QUEUE_VIEW;
+import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHES_VIEW;
 import static org.apache.ignite.internal.processors.cache.ClusterCachesInfo.CACHE_GRPS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.CACHE_GRP_PAGE_LIST_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheGroupId;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.DATA_REGION_PAGE_LIST_VIEW;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.TXS_MON_LIST;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.internal.util.lang.GridFunc.alwaysTrue;
 import static org.apache.ignite.internal.util.lang.GridFunc.identity;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -93,6 +118,12 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /** Tests for {@link SystemView}. */
 public class SystemViewSelfTest extends GridCommonAbstractTest {
+    /** */
+    public static final String TEST_PREDICATE = "TestPredicate";
+
+    /** */
+    public static final String TEST_TRANSFORMER = "TestTransformer";
+
     /** Tests work of {@link SystemView} for caches. */
     @Test
     public void testCachesView() throws Exception {
@@ -443,7 +474,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(cliConn.localAddress().getHostName(), cliConn.remoteAddress().getHostName());
                 assertEquals(g0.configuration().getClientConnectorConfiguration().getPort(),
                     cliConn.localAddress().getPort());
-                assertEquals(cliConn.version(), ProtocolVersion.CURRENT_VER.toString());
+                assertEquals(cliConn.version(), ProtocolVersion.LATEST_VER.toString());
 
                 try (Connection conn =
                          new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
@@ -469,7 +500,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContinuousQuery() throws Exception {
-        try(IgniteEx originNode = startGrid(0); IgniteEx remoteNode = startGrid(1)) {
+        try (IgniteEx originNode = startGrid(0); IgniteEx remoteNode = startGrid(1)) {
             IgniteCache<Integer, Integer> cache = originNode.createCache("cache-1");
 
             SystemView<ContinuousQueryView> origQrys = originNode.context().systemView().view(CQ_SYS_VIEW);
@@ -478,7 +509,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertEquals(0, origQrys.size());
             assertEquals(0, remoteQrys.size());
 
-            try(QueryCursor qry = cache.query(new ContinuousQuery<>()
+            try (QueryCursor qry = cache.query(new ContinuousQuery<>()
                 .setInitialQuery(new ScanQuery<>())
                 .setPageSize(100)
                 .setTimeInterval(1000)
@@ -487,7 +518,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 })
                 .setRemoteFilterFactory(() -> evt -> true)
             )) {
-                for (int i=0; i<100; i++)
+                for (int i = 0; i < 100; i++)
                     cache.put(i, i);
 
                 checkContinuousQueryView(originNode, origQrys, true);
@@ -521,6 +552,51 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testNodes() throws Exception {
+        try (IgniteEx g1 = startGrid(0)) {
+            SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
+
+            assertEquals(1, views.size());
+
+            try (IgniteEx g2 = startGrid(1)) {
+                awaitPartitionMapExchange();
+
+                checkViewsState(views, g1.localNode(), g2.localNode());
+                checkViewsState(g2.context().systemView().view(NODES_SYS_VIEW), g2.localNode(), g1.localNode());
+
+            }
+
+            assertEquals(1, views.size());
+        }
+    }
+
+    /** */
+    private void checkViewsState(SystemView<ClusterNodeView> views, ClusterNode loc, ClusterNode rmt) {
+        assertEquals(2, views.size());
+
+        for (ClusterNodeView nodeView : views) {
+            if (nodeView.nodeId().equals(loc.id()))
+                checkNodeView(nodeView, loc, true);
+            else
+                checkNodeView(nodeView, rmt, false);
+        }
+    }
+
+    /** */
+    private void checkNodeView(ClusterNodeView view, ClusterNode node, boolean isLoc) {
+        assertEquals(node.id(), view.nodeId());
+        assertEquals(node.consistentId().toString(), view.consistentId());
+        assertEquals(toStringSafe(node.addresses()), view.addresses());
+        assertEquals(toStringSafe(node.hostNames()), view.hostnames());
+        assertEquals(node.order(), view.nodeOrder());
+        assertEquals(node.version().toString(), view.version());
+        assertEquals(isLoc, view.isLocal());
+        assertEquals(node.isDaemon(), view.isDaemon());
+        assertEquals(node.isClient(), view.isClient());
+    }
+
+    /** */
     private Iterator<ClientConnectionView> jdbcConnectionsIterator(SystemView<ClientConnectionView> conns) {
         return F.iterator(conns.iterator(), identity(), true, v -> "JDBC".equals(v.type()));
     }
@@ -528,7 +604,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTransactions() throws Exception {
-        try(IgniteEx g = startGrid(0)) {
+        try (IgniteEx g = startGrid(0)) {
             IgniteCache<Integer, Integer> cache1 = g.createCache(new CacheConfiguration<Integer, Integer>("c1")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
@@ -545,7 +621,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 AtomicInteger cntr = new AtomicInteger();
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
-                    try(Transaction tx = g.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (Transaction tx = g.transactions().withLabel("test").txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
                         cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
 
@@ -582,11 +658,11 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                 assertEquals(String.valueOf(cacheId(cache1.getName())), txv.cacheIds());
 
                 //Only pessimistic transactions are supported when MVCC is enabled.
-                if(Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
+                if (Objects.equals(System.getProperty(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS), "true"))
                     return;
 
                 GridTestUtils.runMultiThreadedAsync(() -> {
-                    try(Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                    try (Transaction tx = g.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
                         cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
                         cache1.put(cntr.incrementAndGet(), cntr.incrementAndGet());
                         cache2.put(cntr.incrementAndGet(), cntr.incrementAndGet());
@@ -640,11 +716,398 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testLocalScanQuery() throws Exception {
+        try (IgniteEx g0 = startGrid(0)) {
+            IgniteCache<Integer, Integer> cache1 = g0.createCache(
+                new CacheConfiguration<Integer, Integer>("cache1")
+                    .setGroupName("group1"));
+
+            int part = g0.affinity("cache1").primaryPartitions(g0.localNode())[0];
+
+            List<Integer> partKeys = partitionKeys(cache1, part, 11, 0);
+
+            for (Integer key : partKeys)
+                cache1.put(key, key);
+
+            SystemView<ScanQueryView> qrySysView0 = g0.context().systemView().view(SCAN_QRY_SYS_VIEW);
+
+            assertNotNull(qrySysView0);
+
+            assertEquals(0, qrySysView0.size());
+
+            QueryCursor<Integer> qryRes1 = cache1.query(
+                new ScanQuery<Integer, Integer>()
+                    .setFilter(new TestPredicate())
+                    .setLocal(true)
+                    .setPartition(part)
+                    .setPageSize(10),
+                new TestTransformer());
+
+            assertTrue(qryRes1.iterator().hasNext());
+
+            boolean res = waitForCondition(() -> qrySysView0.size() > 0, 5_000);
+
+            assertTrue(res);
+
+            ScanQueryView view = qrySysView0.iterator().next();
+
+            assertEquals(g0.localNode().id(), view.originNodeId());
+            assertEquals(0, view.queryId());
+            assertEquals("cache1", view.cacheName());
+            assertEquals(cacheId("cache1"), view.cacheId());
+            assertEquals(cacheGroupId("cache1", "group1"), view.cacheGroupId());
+            assertEquals("group1", view.cacheGroupName());
+            assertTrue(view.startTime() <= System.currentTimeMillis());
+            assertTrue(view.duration() >= 0);
+            assertFalse(view.canceled());
+            assertEquals(TEST_PREDICATE, view.filter());
+            assertTrue(view.local());
+            assertEquals(part, view.partition());
+            assertEquals(toStringSafe(g0.context().discovery().topologyVersionEx()), view.topology());
+            assertEquals(TEST_TRANSFORMER, view.transformer());
+            assertFalse(view.keepBinary());
+            assertNull(view.subjectId());
+            assertNull(view.taskName());
+
+            qryRes1.close();
+
+            res = waitForCondition(() -> qrySysView0.size() == 0, 5_000);
+
+            assertTrue(res);
+        }
+    }
+
+    /** */
+    @Test
+    public void testScanQuery() throws Exception {
+        try (IgniteEx g0 = startGrid(0);
+            IgniteEx g1 = startGrid(1);
+            IgniteEx client1 = startClientGrid("client-1");
+            IgniteEx client2 = startClientGrid("client-2")) {
+
+            IgniteCache<Integer, Integer> cache1 = client1.createCache(
+                new CacheConfiguration<Integer, Integer>("cache1")
+                    .setGroupName("group1"));
+
+            IgniteCache<Integer, Integer> cache2 = client2.createCache("cache2");
+
+            for (int i = 0; i < 100; i++) {
+                cache1.put(i, i);
+                cache2.put(i, i);
+            }
+
+            SystemView<ScanQueryView> qrySysView0 = g0.context().systemView().view(SCAN_QRY_SYS_VIEW);
+            SystemView<ScanQueryView> qrySysView1 = g1.context().systemView().view(SCAN_QRY_SYS_VIEW);
+
+            assertNotNull(qrySysView0);
+            assertNotNull(qrySysView1);
+
+            assertEquals(0, qrySysView0.size());
+            assertEquals(0, qrySysView1.size());
+
+            QueryCursor<Integer> qryRes1 = cache1.query(
+                new ScanQuery<Integer, Integer>()
+                    .setFilter(new TestPredicate())
+                    .setPageSize(10),
+                new TestTransformer());
+
+            QueryCursor<?> qryRes2 = cache2.withKeepBinary().query(new ScanQuery<>()
+                .setPageSize(20));
+
+            assertTrue(qryRes1.iterator().hasNext());
+            assertTrue(qryRes2.iterator().hasNext());
+
+            checkScanQueryView(client1, client2, qrySysView0);
+            checkScanQueryView(client1, client2, qrySysView1);
+
+            qryRes1.close();
+            qryRes2.close();
+
+            boolean res = waitForCondition(
+                () -> qrySysView0.size() + qrySysView1.size() == 0, 5_000);
+
+            assertTrue(res);
+        }
+    }
+
+    /** */
+    private void checkScanQueryView(IgniteEx client1, IgniteEx client2, SystemView<ScanQueryView> qrySysView)
+        throws Exception {
+        boolean res = waitForCondition(() -> qrySysView.size() > 1, 5_000);
+
+        assertTrue(res);
+
+        Consumer<ScanQueryView> cache1checker = view -> {
+            assertEquals(client1.localNode().id(), view.originNodeId());
+            assertTrue(view.queryId() != 0);
+            assertEquals("cache1", view.cacheName());
+            assertEquals(cacheId("cache1"), view.cacheId());
+            assertEquals(cacheGroupId("cache1", "group1"), view.cacheGroupId());
+            assertEquals("group1", view.cacheGroupName());
+            assertTrue(view.startTime() <= System.currentTimeMillis());
+            assertTrue(view.duration() >= 0);
+            assertFalse(view.canceled());
+            assertEquals(TEST_PREDICATE, view.filter());
+            assertFalse(view.local());
+            assertEquals(-1, view.partition());
+            assertEquals(toStringSafe(client1.context().discovery().topologyVersionEx()), view.topology());
+            assertEquals(TEST_TRANSFORMER, view.transformer());
+            assertFalse(view.keepBinary());
+            assertNull(view.subjectId());
+            assertNull(view.taskName());
+            assertEquals(10, view.pageSize());
+        };
+
+        Consumer<ScanQueryView> cache2checker = view -> {
+            assertEquals(client2.localNode().id(), view.originNodeId());
+            assertTrue(view.queryId() != 0);
+            assertEquals("cache2", view.cacheName());
+            assertEquals(cacheId("cache2"), view.cacheId());
+            assertEquals(cacheGroupId("cache2", null), view.cacheGroupId());
+            assertEquals("cache2", view.cacheGroupName());
+            assertTrue(view.startTime() <= System.currentTimeMillis());
+            assertTrue(view.duration() >= 0);
+            assertFalse(view.canceled());
+            assertNull(view.filter());
+            assertFalse(view.local());
+            assertEquals(-1, view.partition());
+            assertEquals(toStringSafe(client2.context().discovery().topologyVersionEx()), view.topology());
+            assertNull(view.transformer());
+            assertTrue(view.keepBinary());
+            assertNull(view.subjectId());
+            assertNull(view.taskName());
+            assertEquals(20, view.pageSize());
+        };
+
+        boolean found1 = false;
+        boolean found2 = false;
+
+        for (ScanQueryView view : qrySysView) {
+            if ("cache2".equals(view.cacheName())) {
+                cache2checker.accept(view);
+                found1 = true;
+            }
+            else {
+                cache1checker.accept(view);
+                found2 = true;
+            }
+        }
+
+        assertTrue(found1 && found2);
+    }
+
+    /** */
+    @Test
+    public void testStripedExecutors() throws Exception {
+        try (IgniteEx g = startGrid(0)) {
+            checkStripeExecutorView(g.context().getStripedExecutorService(),
+                g.context().systemView().view(SYS_POOL_QUEUE_VIEW),
+                "sys");
+
+            checkStripeExecutorView(g.context().getDataStreamerExecutorService(),
+                g.context().systemView().view(STREAM_POOL_QUEUE_VIEW),
+                "data-streamer");
+        }
+    }
+
+    /**
+     * Checks striped executor system view.
+     *
+     * @param execSvc Striped executor.
+     * @param view System view.
+     * @param poolName Executor name.
+     */
+    private void checkStripeExecutorView(StripedExecutor execSvc, SystemView<StripedExecutorTaskView> view,
+        String poolName) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        execSvc.execute(0, new TestRunnable(latch, 0));
+        execSvc.execute(0, new TestRunnable(latch, 1));
+        execSvc.execute(1, new TestRunnable(latch, 2));
+        execSvc.execute(1, new TestRunnable(latch, 3));
+
+        try {
+            boolean res = waitForCondition(() -> view.size() == 2, 5_000);
+
+            assertTrue(res);
+
+            Iterator<StripedExecutorTaskView> iter = view.iterator();
+
+            assertTrue(iter.hasNext());
+
+            StripedExecutorTaskView row0 = iter.next();
+
+            assertEquals(0, row0.stripeIndex());
+            assertEquals(TestRunnable.class.getSimpleName() + '1', row0.description());
+            assertEquals(poolName + "-stripe-0", row0.threadName());
+            assertEquals(TestRunnable.class.getName(), row0.taskName());
+
+            assertTrue(iter.hasNext());
+
+            StripedExecutorTaskView row1 = iter.next();
+
+            assertEquals(1, row1.stripeIndex());
+            assertEquals(TestRunnable.class.getSimpleName() + '3', row1.description());
+            assertEquals(poolName + "-stripe-1", row1.threadName());
+            assertEquals(TestRunnable.class.getName(), row1.taskName());
+        }
+        finally {
+            latch.countDown();
+        }
+    }
+
+    /** */
+    public static class TestPredicate implements IgniteBiPredicate<Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(Integer integer, Integer integer2) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return TEST_PREDICATE;
+        }
+    }
+
+    /** */
+    public static class TestTransformer implements IgniteClosure<Cache.Entry<Integer, Integer>, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer apply(Cache.Entry<Integer, Integer> entry) {
+            return entry.getKey();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return TEST_TRANSFORMER;
+        }
+    }
+
+    /** */
+    @Test
+    public void testPagesList() throws Exception {
+        cleanPersistenceDir();
+
+        try (IgniteEx ignite = startGrid(getConfiguration()
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration().setDataRegionConfigurations(
+                    new DataRegionConfiguration().setName("dr0").setMaxSize(100L * 1024 * 1024),
+                    new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
+                        .setPersistenceEnabled(true)
+                )))) {
+            ignite.cluster().active(true);
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
+                .database();
+
+            int pageSize = dbMgr.pageSize();
+
+            dbMgr.enableCheckpoints(false).get();
+
+            for (int i = 0; i < 2; i++) {
+                IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("cache" + i)
+                    .setDataRegionName("dr" + i).setAffinity(new RendezvousAffinityFunction().setPartitions(2)));
+
+                int key = 0;
+
+                // Fill up different free-list buckets.
+                for (int j = 0; j < pageSize / 2; j++)
+                    cache.put(key++, new byte[j + 1]);
+
+                // Put some pages to one bucket to overflow pages cache.
+                for (int j = 0; j < 1000; j++)
+                    cache.put(key++, new byte[pageSize / 2]);
+            }
+
+            long dr0flPages = 0;
+            int dr0flStripes = 0;
+
+            SystemView<PagesListView> dataRegionPageLists = ignite.context().systemView().view(DATA_REGION_PAGE_LIST_VIEW);
+
+            for (PagesListView pagesListView : dataRegionPageLists) {
+                if (pagesListView.name().startsWith("dr0")) {
+                    dr0flPages += pagesListView.bucketSize();
+                    dr0flStripes += pagesListView.stripesCount();
+                }
+            }
+
+            assertTrue(dr0flPages > 0);
+            assertTrue(dr0flStripes > 0);
+
+            SystemView<CachePagesListView> cacheGrpPageLists = ignite.context().systemView().view(CACHE_GRP_PAGE_LIST_VIEW);
+
+            long dr1flPages = 0;
+            int dr1flStripes = 0;
+            int dr1flCached = 0;
+
+            for (CachePagesListView pagesListView : cacheGrpPageLists) {
+                if (pagesListView.cacheGroupId() == cacheId("cache1")) {
+                    dr1flPages += pagesListView.bucketSize();
+                    dr1flStripes += pagesListView.stripesCount();
+                    dr1flCached += pagesListView.cachedPagesCount();
+                }
+            }
+
+            assertTrue(dr1flPages > 0);
+            assertTrue(dr1flStripes > 0);
+            assertTrue(dr1flCached > 0);
+
+            // Test filtering.
+            assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
+
+            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+                CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
+                CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            ));
+
+            assertEquals(1, F.size(iter));
+
+            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+                CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
+                CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
+            ));
+
+            assertEquals(2, F.size(iter));
+        }
+    }
+
     /** Test node filter. */
     public static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
             return true;
+        }
+    }
+
+    /** Test runnable. */
+    public static class TestRunnable implements Runnable {
+        /** */
+        private final CountDownLatch latch;
+
+        /** */
+        private final int idx;
+
+        /** */
+        public TestRunnable(CountDownLatch latch, int idx) {
+            this.latch = latch;
+            this.idx = idx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                latch.await(5, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + idx;
         }
     }
 }

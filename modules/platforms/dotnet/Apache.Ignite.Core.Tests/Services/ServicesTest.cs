@@ -292,6 +292,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(prx.ToString(), svc.ToString());
             Assert.AreEqual(17, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
+            // ReSharper disable once AccessToModifiedClosure
             Assert.IsTrue(TestUtils.WaitForCondition(() => prx.Executed, 5000));
             Assert.IsFalse(prx.Cancelled);
             Assert.AreEqual(SvcName, prx.LastCallContextName);
@@ -869,6 +870,20 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
                     .GetField<int>("Field"));
+            
+            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(dt, svc.test(dt));
+            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
+            Assert.IsNull(svc.testNullTimestamp(null));
+            Assert.AreEqual(dt, svc.testArray(new DateTime?[] {dt})[0]);
+
+            Guid guid = Guid.NewGuid();
+
+            Assert.AreEqual(guid, svc.test(guid));
+            Assert.AreEqual(guid, svc.testNullUUID(guid));
+            Assert.IsNull(svc.testNullUUID(null));
+            Assert.AreEqual(guid, svc.testArray(new Guid?[] {guid})[0]);
 
             Services.Cancel(javaSvcName);
         }
@@ -939,6 +954,20 @@ namespace Apache.Ignite.Core.Tests.Services
                 binSvc.testBinaryObject(
                     Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
                     .GetField<int>("Field"));
+
+            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.AreEqual(dt, svc.test(dt));
+            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
+            Assert.IsNull(svc.testNullTimestamp(null));
+            Assert.AreEqual(dt, svc.testArray(new DateTime?[] { dt })[0]);
+
+            Guid guid = Guid.NewGuid();
+
+            Assert.AreEqual(guid, svc.test(guid));
+            Assert.AreEqual(guid, svc.testNullUUID(guid));
+            Assert.IsNull(svc.testNullUUID(null));
+            Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
         }
 
         /// <summary>
@@ -1138,6 +1167,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             /** */
             [InstanceResource]
+            // ReSharper disable once UnassignedField.Local
             private IIgnite _grid;
 
             /** <inheritdoc /> */
@@ -1372,6 +1402,12 @@ namespace Apache.Ignite.Core.Tests.Services
             bool test(bool x);
 
             /** */
+            DateTime test(DateTime x);
+
+            /** */
+            Guid test(Guid x);
+
+            /** */
             byte? testWrapper(byte? x);
 
             /** */
@@ -1423,12 +1459,25 @@ namespace Apache.Ignite.Core.Tests.Services
             bool[] testArray(bool[] x);
 
             /** */
+            DateTime?[] testArray(DateTime?[] x);
+
+            /** */
+            Guid?[] testArray(Guid?[] x);
+
+            /** */
             int test(int x, string y);
+
             /** */
             int test(string x, int y);
 
             /** */
             int? testNull(int? x);
+
+            /** */
+            DateTime? testNullTimestamp(DateTime? x);
+
+            /** */
+            Guid? testNullUUID(Guid? x);
 
             /** */
             int testParams(params object[] args);

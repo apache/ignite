@@ -311,6 +311,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isCancellationSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void registerRequest(long reqId, int cmdType) {
         // No-op.
     }
@@ -338,8 +343,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
         qry.setArgs(args);
-        qry.setTimeout(timeout, TimeUnit.SECONDS);
         qry.setAutoCommit(autoCommit);
+
+        if (timeout >= 0)
+            qry.setTimeout(timeout, TimeUnit.SECONDS);
 
         return qry;
     }
@@ -570,7 +577,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             );
         }
         catch (Exception e) {
-            U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
+            U.error(log, "Failed to execute batch query [qry=" + qry + ']', e);
 
             extractBatchError(e, null, err);
         }
@@ -818,7 +825,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param queryId Query ID.
      */
     private void CloseCursor(OdbcQueryResults results, long queryId) {
-        assert(results != null);
+        assert (results != null);
 
         results.closeAll();
 

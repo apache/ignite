@@ -74,14 +74,9 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
     /** */
     public static final int ITERATION_CNT = 100;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
         storeSpi.setExpireCount(1000);
@@ -97,9 +92,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     ///
@@ -523,7 +516,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                                             tx.commit();
 
-                                            committed =true;
+                                            committed = true;
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.getCause() instanceof TransactionSerializationException);
@@ -680,7 +673,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
                                             tx.commit();
 
-                                            committed =true;
+                                            committed = true;
                                         }
                                         catch (Exception ex) {
                                             assertTrue(ex.toString(), X.hasCause(ex, TransactionSerializationException.class));

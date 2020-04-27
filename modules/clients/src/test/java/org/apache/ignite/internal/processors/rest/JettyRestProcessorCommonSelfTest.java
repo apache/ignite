@@ -17,18 +17,18 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
@@ -38,6 +38,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
  * Base class for testing Jetty REST protocol.
  */
 public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProcessorSelfTest {
+    /** Used to encode request parameters. */
+    private static final String CHARSET = StandardCharsets.UTF_8.name();
+
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
@@ -104,16 +107,11 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
         SB sb = new SB(restUrl());
 
         for (Map.Entry<String, String> e : params.entrySet())
-            sb.a(e.getKey()).a('=').a(e.getValue()).a('&');
+            sb.a(e.getKey()).a('=').a(URLEncoder.encode(e.getValue(), CHARSET)).a('&');
 
         URL url = new URL(sb.toString());
 
-        URLConnection conn = url.openConnection();
-
-        String signature = signature();
-
-        if (signature != null)
-            conn.setRequestProperty("X-Signature", signature);
+        URLConnection conn = openConnection(url);
 
         InputStream in = conn.getInputStream();
 
@@ -125,6 +123,24 @@ public abstract class JettyRestProcessorCommonSelfTest extends AbstractRestProce
         }
 
         return buf.toString();
+    }
+
+    /**
+     * Open REST connection, set signature header if needed.
+     *
+     * @param url URL to open.
+     * @return URL connection.
+     * @throws Exception If failed.
+     */
+    protected URLConnection openConnection(URL url) throws Exception {
+        URLConnection conn = url.openConnection();
+
+        String signature = signature();
+
+        if (signature != null)
+            conn.setRequestProperty("X-Signature", signature);
+
+        return conn;
     }
 
     /**

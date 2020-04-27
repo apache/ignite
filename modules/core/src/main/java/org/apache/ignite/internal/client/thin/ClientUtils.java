@@ -34,6 +34,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -49,14 +50,23 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderHandles;
 import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
+import org.apache.ignite.internal.util.MutableSingletonList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_2_0;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
+import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
+import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
 /**
  * Shared serialization/deserialization utils.
@@ -233,7 +243,7 @@ final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolVersion ver) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
@@ -312,7 +322,7 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
 
-                                if (ver.compareTo(V1_2_0) >= 0) {
+                                if (protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE)) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
                                 }
@@ -342,13 +352,31 @@ final class ClientUtils {
                 )
             );
 
+            if (protocolCtx.isFeatureSupported(EXPIRY_POLICY)) {
+                itemWriter.accept(CfgItem.EXPIRE_POLICY, w -> {
+                    ExpiryPolicy expiryPlc = cfg.getExpiryPolicy();
+                    if (expiryPlc == null)
+                        w.writeBoolean(false);
+                    else {
+                        w.writeBoolean(true);
+                        w.writeLong(convertDuration(expiryPlc.getExpiryForCreation()));
+                        w.writeLong(convertDuration(expiryPlc.getExpiryForUpdate()));
+                        w.writeLong(convertDuration(expiryPlc.getExpiryForAccess()));
+                    }
+                });
+            }
+            else if (cfg.getExpiryPolicy() != null) {
+                throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
+                    "version %s, required version %s", protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
+            }
+
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
             writer.writeInt(origPos + 4, propCnt.get()); // properties count
         }
     }
 
     /** Deserialize configuration from stream. */
-    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolVersion ver)
+    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ProtocolContext protocolCtx)
         throws IOException {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
@@ -393,7 +421,8 @@ final class ClientUtils {
                             .setKeyFieldName(reader.readString())
                             .setValueFieldName(reader.readString());
 
-                        boolean isCliVer1_2 = ver.compareTo(V1_2_0) >= 0;
+                        boolean isPrecisionAndScaleSupported =
+                            protocolCtx.isFeatureSupported(QUERY_ENTITY_PRECISION_AND_SCALE);
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
@@ -401,10 +430,10 @@ final class ClientUtils {
                                 String name = reader.readString();
                                 String typeName = reader.readString();
                                 boolean isKey = reader.readBoolean();
-                                boolean isNotNull = reader.readBoolean(); 
+                                boolean isNotNull = reader.readBoolean();
                                 Object dfltVal = reader.readObject();
-                                int precision = isCliVer1_2 ? reader.readInt() : -1;
-                                int scale = isCliVer1_2 ? reader.readInt() : -1; 
+                                int precision = isPrecisionAndScaleSupported ? reader.readInt() : -1;
+                                int scale = isPrecisionAndScaleSupported ? reader.readInt() : -1;
 
                                 return new QueryField(name,
                                     typeName,
@@ -467,7 +496,11 @@ final class ClientUtils {
                                 }
                             ));
                     }
-                ).toArray(new QueryEntity[0]));
+                ).toArray(new QueryEntity[0]))
+                .setExpiryPolicy(!protocolCtx.isFeatureSupported(EXPIRY_POLICY) ?
+                        null : reader.readBoolean() ?
+                        new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong()) : null
+                );
         }
     }
 
@@ -496,12 +529,73 @@ final class ClientUtils {
 
     /** Read Ignite binary object from input stream. */
     <T> T readObject(BinaryInputStream in, boolean keepBinary) {
-        Object val = marsh.unmarshal(in);
+        if (keepBinary)
+            return (T)marsh.unmarshal(in);
+        else {
+            BinaryReaderHandles hnds = new BinaryReaderHandles();
 
-        if (val instanceof BinaryObject && !keepBinary)
-            val = ((BinaryObject)val).deserialize();
+            return (T)unwrapBinary(marsh.deserialize(in, hnds), hnds);
+        }
+    }
 
-        return (T)val;
+    /**
+     * Unwrap binary object.
+     */
+    private Object unwrapBinary(Object obj, BinaryReaderHandles hnds) {
+        if (obj instanceof BinaryObjectImpl) {
+            BinaryObjectImpl obj0 = (BinaryObjectImpl)obj;
+
+            return marsh.deserialize(BinaryHeapInputStream.create(obj0.array(), obj0.start()), hnds);
+        }
+        else if (obj instanceof BinaryObject)
+            return ((BinaryObject)obj).deserialize();
+        else if (BinaryUtils.knownCollection(obj))
+            return unwrapCollection((Collection<Object>)obj, hnds);
+        else if (BinaryUtils.knownMap(obj))
+            return unwrapMap((Map<Object, Object>)obj, hnds);
+        else if (obj instanceof Object[])
+            return unwrapArray((Object[])obj, hnds);
+        else
+            return obj;
+    }
+
+    /**
+     * Unwrap collection with binary objects.
+     */
+    private Collection<Object> unwrapCollection(Collection<Object> col, BinaryReaderHandles hnds) {
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
+
+        for (Object obj0 : col)
+            col0.add(unwrapBinary(obj0, hnds));
+
+        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+    }
+
+    /**
+     * Unwrap map with binary objects.
+     */
+    private Map<Object, Object> unwrapMap(Map<Object, Object> map, BinaryReaderHandles hnds) {
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapBinary(e.getKey(), hnds), unwrapBinary(e.getValue(), hnds));
+
+        return map0;
+    }
+
+    /**
+     * Unwrap array with binary objects.
+     */
+    private Object[] unwrapArray(Object[] arr, BinaryReaderHandles hnds) {
+        if (BinaryUtils.knownArray(arr))
+            return arr;
+
+        Object[] res = new Object[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(arr[i], hnds);
+
+        return res;
     }
 
     /** A helper class to translate query fields. */
@@ -542,7 +636,7 @@ final class ClientUtils {
             isNotNull = notNulls != null && notNulls.contains(name);
             dfltVal = dflts == null ? null : dflts.get(name);
             precision = fldsPrecision == null ? -1 : fldsPrecision.getOrDefault(name, -1);
-            scale = fldsScale == null? -1 : fldsScale.getOrDefault(name, -1);
+            scale = fldsScale == null ? -1 : fldsScale.getOrDefault(name, -1);
         }
 
         /** Deserialization constructor. */
@@ -638,7 +732,8 @@ final class ClientUtils {
         /** Sql index max inline size. */SQL_IDX_MAX_INLINE_SIZE(204),
         /** Sql schema. */SQL_SCHEMA(203),
         /** Key configs. */KEY_CONFIGS(401),
-        /** Key entities. */QUERY_ENTITIES(200);
+        /** Key entities. */QUERY_ENTITIES(200),
+        /** Expire policy. */EXPIRE_POLICY(407);
 
         /** Code. */
         private final short code;

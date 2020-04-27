@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl.Common;
@@ -99,7 +98,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                IgniteProcess.AttachProcessConsoleReader(proc);
+                proc.AttachProcessConsoleReader();
 
                 Assert.IsTrue(proc.WaitForExit(30000));
                 Assert.AreEqual(0, proc.ExitCode);

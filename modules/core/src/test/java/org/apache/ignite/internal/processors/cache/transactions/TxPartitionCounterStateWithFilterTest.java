@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,9 +46,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 4;
-
-    /** */
-    private boolean client;
 
     /** */
     @Parameterized.Parameter(0)
@@ -79,23 +75,12 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     /** */

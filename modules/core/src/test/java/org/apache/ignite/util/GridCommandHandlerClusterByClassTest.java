@@ -28,18 +28,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Collection;
+import java.util.EnumMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -48,6 +57,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
+import org.apache.ignite.internal.commandline.CommonArgParser;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -67,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -75,15 +86,20 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.of;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
@@ -104,6 +120,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** Special word for defining any char sequence from special word to the end of line in golden copy of help output */
     private static final String ANY = "<!any!>";
+
+    /** Error stack trace prefix. */
+    protected static final String ERROR_STACK_TRACE_PREFIX = "Error stack trace:";
 
     /**
      * Very basic tests for running the command in different enviroment which other command are running in.
@@ -313,7 +332,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                 assertContains(log, output, CommandHandler.UTILITY_NAME);
         }
 
-        checkHelp(output, "org.apache.ignite.util/control.sh_cache_help.output");
+        checkHelp(output, "org.apache.ignite.util/" + getClass().getSimpleName() + "_cache_help.output");
     }
 
     /** */
@@ -344,7 +363,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertNotContains(log, testOutStr, "Control.sh");
 
-        checkHelp(testOutStr, "org.apache.ignite.util/control.sh_help.output");
+        checkHelp(testOutStr, "org.apache.ignite.util/" + getClass().getSimpleName() + "_help.output");
     }
 
     /**
@@ -383,6 +402,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             throw e;
         }
+    }
+
+    /** */
+    @Test
+    public void testOldReadOnlyApiNotAvailable() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-on"));
+
+        assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-on");
+
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--read-only-off"));
+
+        assertContains(log, testOut.toString(), "Check arguments. Unexpected argument: --read-only-off");
     }
 
     /** */
@@ -1228,10 +1261,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String out = testOut.toString();
 
         // Result include info by cache "default"
-        assertContains(log ,out, "[next group: id=1544803905, name=default]");
+        assertContains(log, out, "[next group: id=1544803905, name=default]");
 
         // Result include info by cache "ignite-sys-cache"
-        assertContains(log ,out, "[next group: id=-2100569601, name=ignite-sys-cache]");
+        assertContains(log, out, "[next group: id=-2100569601, name=ignite-sys-cache]");
 
         // Run distribution for all node and all cache and include additional user attribute
         assertEquals(EXIT_CODE_OK, execute("--cache", "distribution", "null", "--user-attributes", "ZONE,CELL,DC"));
@@ -1503,33 +1536,204 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     }
 
     /**
-     * Don't show wal commands by --help in case
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
+     * Test is that when the --help control.sh command is executed, output
+     * will contain non-experimental commands. In case system property
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
+     * {@code true}.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
+    public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalTrue() {
+        checkContainsNotExperimentalCmdInHelpOutput();
+    }
+
+    /**
+     * Test is that when the --help control.sh command is executed, output
+     * will contain non-experimental commands. In case system property
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
+     * {@code false}.
      */
     @Test
     @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
-    public void testHideWalInHelpWhenDisableExperimentalCommand() {
+    public void testContainsNotExperimentalCmdInHelpOutputWhenEnableExperimentalFalse() {
+        checkContainsNotExperimentalCmdInHelpOutput();
+    }
+
+    /**
+     * Test for contains of experimental commands in output of the --help
+     * control.sh command.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
+    public void testContainsExperimentalCmdInHelpOutput() {
+        checkExperimentalCmdInHelpOutput(true);
+    }
+
+    /**
+     * Test for not contains of experimental commands in output of the --help
+     * control.sh command.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testNotContainsExperimentalCmdInHelpOutput() {
+        checkExperimentalCmdInHelpOutput(false);
+    }
+
+    /**
+     * Test to verify that the experimental command will not be executed if
+     * {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} =
+     * {@code false}, a warning will be displayed instead.
+     * */
+    @Test
+    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
+    public void testContainsWarnInsteadExecExperimentalCmdWhenEnableExperimentalFalse() {
+        injectTestSystemOut();
+
+        Map<CommandList, Collection<String>> cmdArgs = new EnumMap<>(CommandList.class);
+
+        cmdArgs.put(WAL, asList("print", "delete"));
+
+        String warning = String.format(
+            "For use experimental command add %s=true to JVM_OPTS in %s",
+            IGNITE_ENABLE_EXPERIMENTAL_COMMAND,
+            UTILITY_NAME
+        );
+
+        stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
+            .peek(cmd -> assertTrue(cmdArgs.containsKey(cmd)))
+            .forEach(cmd -> cmdArgs.get(cmd).forEach(cmdArg -> {
+                assertEquals(EXIT_CODE_OK, execute(cmd.text(), cmdArg));
+
+                assertContains(log, testOut.toString(), warning);
+            }));
+    }
+
+    /**
+     * Test checks that there will be no error when executing the command with
+     * option {@link CommonArgParser#CMD_VERBOSE}.
+     */
+    @Test
+    public void testCorrectExecCmdWithVerboseInDiffParamsOrder() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_OK;
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(CMD_VERBOSE, BASELINE.text()));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for incorrect arguments will be output
+     * only if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     */
+    @Test
+    public void testErrInvalidArgumentsWithVerbose() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_INVALID_ARGUMENTS;
+        String uuid = UUID.randomUUID().toString();
+
+        assertEquals(resCode, execute(BASELINE.text(), uuid));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, uuid));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for connection error will be output only
+     * if {@link CommonArgParser#CMD_VERBOSE} flag is present.
+     */
+    @Test
+    public void testErrConnectionWithVerbose() {
+        injectTestSystemOut();
+
+        int resCode = EXIT_CODE_CONNECTION_FAILED;
+        String uuid = UUID.randomUUID().toString();
+
+        assertEquals(resCode, execute(BASELINE.text(), "--host", uuid));
+        assertNotContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(BASELINE.text(), CMD_VERBOSE, "--host", uuid));
+        assertContains(log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Test checks that stack trace for unexpected error will be output with or
+     * without {@link CommonArgParser#CMD_VERBOSE} flag.
+     */
+    @Test
+    public void testErrUnexpectedWithWithoutVerbose() {
+        injectTestSystemOut();
+
+        Logger log = CommandHandler.initLogger(null);
+        log.addHandler(new StreamHandler(System.out, new Formatter() {
+            /** {@inheritDoc} */
+            @Override public String format(LogRecord record) {
+                String msg = record.getMessage();
+
+                if (msg.contains("Cluster state:"))
+                    throw new Error();
+
+                return msg + "\n";
+            }
+        }));
+
+        int resCode = EXIT_CODE_UNEXPECTED_ERROR;
+        CommandHandler cmd = new CommandHandler(log);
+
+        assertEquals(resCode, execute(cmd, BASELINE.text()));
+        assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+
+        assertEquals(resCode, execute(cmd, BASELINE.text(), CMD_VERBOSE));
+        assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);
+    }
+
+    /**
+     * Checking for contains or not of experimental commands in output of the
+     * --help control.sh command.
+     *
+     * @param contains Check contains or not.
+     */
+    private void checkExperimentalCmdInHelpOutput(boolean contains) {
+        execHelpCmd(helpOut -> {
+            stream(CommandList.values()).filter(cmd -> cmd.command().experimental())
+                .forEach(cmd -> {
+                    if (contains)
+                        assertContains(log, helpOut, cmd.text());
+                    else
+                        assertNotContains(log, helpOut, cmd.text());
+                });
+        });
+    }
+
+    /**
+     * Check that when executing the "--help" control.sh command, the output
+     * will contain non-experimental commands.
+     */
+    private void checkContainsNotExperimentalCmdInHelpOutput() {
+        execHelpCmd(helpOut -> {
+            stream(CommandList.values()).filter(cmd -> !cmd.command().experimental())
+                .forEach(cmd -> assertContains(log, helpOut, cmd.text()));
+        });
+    }
+
+    /**
+     * Executing the command "--help" control.sh with transfer of output to
+     * consumer.
+     *
+     * @param consumer Consumer.
+     */
+    private void execHelpCmd(Consumer<String> consumer) {
+        assert nonNull(consumer);
+
         injectTestSystemOut();
 
         execute("--help");
 
-        assertNotContains(log, testOut.toString(), WAL.text());
-    }
-
-    /**
-     * Wal commands should ignored and print warning in case
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND} = false or empty.
-     * */
-    @Test
-    @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "false")
-    public void testWalCommandsInCaseDisableExperimentalCommand() {
-        injectTestSystemOut();
-
-        String warning = String.format("For use experimental command add %s=true to JVM_OPTS in %s",
-            IGNITE_ENABLE_EXPERIMENTAL_COMMAND, UTILITY_NAME);
-
-        of("print", "delete")
-            .peek(c -> assertEquals(EXIT_CODE_OK, execute(WAL.text(), c)))
-            .forEach(c -> assertContains(log, testOut.toString(), warning));
+        consumer.accept(testOut.toString());
     }
 }

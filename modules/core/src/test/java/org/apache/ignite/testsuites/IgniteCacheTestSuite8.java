@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.CacheStoreTxPutAllMultiNodeTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalanceOrderTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingAsyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingCancelTest;
@@ -66,6 +67,7 @@ public class IgniteCacheTestSuite8 {
 
         // Rebalancing.
         GridTestUtils.addTestIfNeeded(suite, GridCacheOrderedPreloadingSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridCacheRebalanceOrderTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingSyncSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingSyncCheckDataTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingUnmarshallingFailedSelfTest.class, ignoredTests);

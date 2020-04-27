@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
-
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
@@ -58,14 +58,14 @@ import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientZipOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterNameRequest;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientReadOnlyModeRequest;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientStateRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientClusterStateRequestV2;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -161,6 +162,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
+    /** User attributes. */
+    Map<String, String> userAttrs;
+
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
      *
@@ -192,7 +196,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         GridClientMarshaller marsh,
         Byte marshId,
         GridClientTopology top,
-        Object cred
+        SecurityCredentials cred,
+        Map<String, String> userAttrs
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -201,6 +206,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
+        this.userAttrs = userAttrs;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -284,7 +290,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 if (ses != null)
                     srv.close(ses);
 
-                if (sock!= null)
+                if (sock != null)
                     sock.close();
 
                 if (ch != null)
@@ -571,7 +577,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                     if (credentials() == null) {
                         fut.onDone(new GridClientAuthenticationException("Authentication failed on server " +
                             "(client has no credentials) [clientId=" + clientId +
-                            ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+                            ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() + ']'));
 
                         removePending(resp.requestId());
 
@@ -611,7 +617,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
         if (resp.successStatus() == GridClientResponse.STATUS_AUTH_FAILURE)
             fut.onDone(new GridClientAuthenticationException("Client authentication failed [clientId=" + clientId +
-                ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+                ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() + ']'));
         else if (resp.successStatus() == GridClientResponse.STATUS_ILLEGAL_ARGUMENT)
             fut.onDone(new IllegalArgumentException(resp.errorMessage()));
         else if (resp.errorMessage() != null)
@@ -810,40 +816,28 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeState(boolean active, UUID destNodeId)
+    @Override public GridClientFuture<?> changeState(ClusterState state, UUID destNodeId, boolean forceDeactivation)
         throws GridClientClosedException, GridClientConnectionResetException {
-        GridClientStateRequest msg = new GridClientStateRequest();
+        assert state != null;
 
-        msg.active(active);
-
-        return makeRequest(msg, destNodeId);
+        return makeRequest(GridClientClusterStateRequestV2.state(state, forceDeactivation), destNodeId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<?> changeReadOnlyState(
-        boolean readOnly,
+    @Override public GridClientFuture<?> changeState(
+        ClusterState state,
         UUID destNodeId
     ) throws GridClientClosedException, GridClientConnectionResetException {
-        return readOnly ?
-            makeRequest(GridClientReadOnlyModeRequest.enableReadOnly(), destNodeId) :
-            makeRequest(GridClientReadOnlyModeRequest.disableReadOnly(), destNodeId);
+        assert state != null;
+
+        return makeRequest(GridClientClusterStateRequest.state(state), destNodeId);
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<Boolean> readOnlyState(
+    @Override public GridClientFuture<ClusterState> state(
         UUID destNodeId
     ) throws GridClientClosedException, GridClientConnectionResetException {
-        return makeRequest(GridClientReadOnlyModeRequest.currentReadOnlyMode(), destNodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridClientFuture<Boolean> currentState(UUID destNodeId)
-        throws GridClientClosedException, GridClientConnectionResetException {
-        GridClientStateRequest msg = new GridClientStateRequest();
-
-        msg.requestCurrentState();
-
-        return makeRequest(msg, destNodeId);
+        return makeRequest(GridClientClusterStateRequest.currentState(), destNodeId);
     }
 
     /** {@inheritDoc} */
@@ -881,11 +875,28 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             return old;
 
         msg.nodeId(id);
+
+        setupMessage(inclAttrs, inclMetrics, destNodeId, msg);
+
+        return makeRequest(msg, fut);
+    }
+
+    /**
+     * @param inclAttrs Include attributes flag.
+     * @param inclMetrics Include metrics flag.
+     * @param destNodeId Destination node id.
+     * @param msg Message.
+     */
+    private void setupMessage(boolean inclAttrs, boolean inclMetrics, UUID destNodeId, GridClientTopologyRequest msg) {
         msg.includeAttributes(inclAttrs);
         msg.includeMetrics(inclMetrics);
         msg.destinationId(destNodeId);
+        msg.userAttributes(userAttrs);
 
-        return makeRequest(msg, fut);
+        if (credentials() != null) {
+            msg.login((String) credentials().getLogin());
+            msg.password((String) credentials().getPassword());
+        }
     }
 
     /** {@inheritDoc} */
@@ -906,9 +917,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         };
 
         msg.nodeIp(ipAddr);
-        msg.includeAttributes(inclAttrs);
-        msg.includeMetrics(includeMetrics);
-        msg.destinationId(destNodeId);
+
+        setupMessage(inclAttrs, includeMetrics, destNodeId, msg);
 
         return makeRequest(msg, fut);
     }
@@ -932,9 +942,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             }
         };
 
-        msg.includeAttributes(inclAttrs);
-        msg.includeMetrics(inclMetrics);
-        msg.destinationId(destNodeId);
+        setupMessage(inclAttrs, inclMetrics, destNodeId, msg);
 
         return makeRequest(msg, fut);
     }

@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
@@ -201,7 +202,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     registerMBean();
 
                 ctx.systemView().registerView(CLI_CONN_VIEW, CLI_CONN_VIEW_DESC,
-                    ClientConnectionView.class,
+                    new ClientConnectionViewWalker(),
                     srv.sessions(),
                     ClientConnectionView::new);
             }
@@ -280,7 +281,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
                 ClientListenerConnectionContext connCtx = ses.meta(ClientListenerNioListener.CONN_CTX_META_KEY);
 
-                if (connCtx != null && connCtx.parser() != null) {
+                if (connCtx != null && connCtx.parser() != null && connCtx.handler().isCancellationSupported()) {
                     byte[] inMsg;
 
                     int cmdType;
@@ -587,7 +588,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
             StringBuilder sb = new StringBuilder();
 
-            if(ctx instanceof JdbcConnectionContext)
+            if (ctx instanceof JdbcConnectionContext)
                 sb.append("JdbcClient [");
             else if (ctx instanceof OdbcConnectionContext)
                 sb.append("OdbcClient [");

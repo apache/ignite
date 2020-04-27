@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
-
-import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.h2.jdbc.JdbcConnection;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,13 +35,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ReduceQueryRun {
     /** */
-    private final List<ReduceIndex> idxs;
+    private final List<Reducer> idxs;
 
     /** */
     private CountDownLatch latch;
-
-    /** */
-    private final JdbcConnection conn;
 
     /** */
     private final int pageSize;
@@ -55,22 +51,20 @@ public class ReduceQueryRun {
 
     /**
      * Constructor.
-     * @param conn Connection.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param dataPageScanEnabled If data page scan is enabled.
      */
     ReduceQueryRun(
-        Connection conn,
         int idxsCnt,
         int pageSize,
         Boolean dataPageScanEnabled
     ) {
-        this.conn = (JdbcConnection)conn;
+        assert pageSize > 0;
 
         idxs = new ArrayList<>(idxsCnt);
 
-        this.pageSize = pageSize > 0 ? pageSize : Query.DFLT_PAGE_SIZE;
+        this.pageSize = pageSize;
         this.dataPageScanEnabled  = dataPageScanEnabled;
     }
 
@@ -119,15 +113,15 @@ public class ReduceQueryRun {
      *
      * @param state state
      */
-    private void setState0(State state){
+    private void setState0(State state) {
         if (!this.state.compareAndSet(null, state))
             return;
 
         while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
             latch.countDown();
 
-        for (ReduceIndex idx : idxs) // Fail all merge indexes.
-            idx.fail(state.nodeId, state.ex);
+        for (Reducer idx : idxs) // Fail all merge indexes.
+            idx.onFailure(state.nodeId, state.ex);
     }
 
     /**
@@ -144,15 +138,8 @@ public class ReduceQueryRun {
         return pageSize;
     }
 
-    /**
-     * @return Connection.
-     */
-    JdbcConnection connection() {
-        return conn;
-    }
-
     /** */
-    boolean hasErrorOrRetry(){
+    boolean hasErrorOrRetry() {
         return state.get() != null;
     }
 
@@ -168,7 +155,7 @@ public class ReduceQueryRun {
     /**
      * @return Retry topology version.
      */
-    AffinityTopologyVersion retryTopologyVersion(){
+    AffinityTopologyVersion retryTopologyVersion() {
         State st = state.get();
 
         return st != null ? st.retryTopVer : null;
@@ -186,7 +173,7 @@ public class ReduceQueryRun {
     /**
      * @return Retry cause.
      */
-    String retryCause(){
+    String retryCause() {
         State st = state.get();
 
         return st != null ? st.retryCause : null;
@@ -195,22 +182,47 @@ public class ReduceQueryRun {
     /**
      * @return Indexes.
      */
-    List<ReduceIndex> indexes() {
+    List<Reducer> reducers() {
         return idxs;
     }
 
     /**
-     * @return Latch.
+     * Initialize.
+     *
+     * @param srcSegmentCnt Total number of source segments.
      */
-    CountDownLatch latch() {
-        return latch;
+    void init(int srcSegmentCnt) {
+        assert latch == null;
+
+        latch = new CountDownLatch(srcSegmentCnt);
     }
 
     /**
-     * @param latch Latch.
+     * First page callback.
      */
-    void latch(CountDownLatch latch) {
-        this.latch = latch;
+    void onFirstPage() {
+        latch.countDown();
+    }
+
+    /**
+     * Try map query to sources.
+     *
+     * @param time Timeout.
+     * @param timeUnit Timeunit.
+     * @return {@code True} if first pages are received from all sources, {@code False} otherwise.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    boolean tryMapToSources(long time, TimeUnit timeUnit) throws IgniteInterruptedCheckedException {
+        assert latch != null;
+
+        return U.await(latch, time, timeUnit);
+    }
+
+    /**
+     * @return {@code True} if first pages are received from all sources, {@code False} otherwise.
+     */
+    boolean mapped() {
+        return latch != null && latch.getCount() == 0;
     }
 
     /**
@@ -230,7 +242,7 @@ public class ReduceQueryRun {
         private final String retryCause;
 
         /** */
-        private State(UUID nodeId, CacheException ex, AffinityTopologyVersion retryTopVer, String retryCause){
+        private State(UUID nodeId, CacheException ex, AffinityTopologyVersion retryTopVer, String retryCause) {
             this.nodeId = nodeId;
             this.ex = ex;
             this.retryTopVer = retryTopVer;

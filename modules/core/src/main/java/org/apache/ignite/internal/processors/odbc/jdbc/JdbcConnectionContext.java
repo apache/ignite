@@ -61,7 +61,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.7.0: adds maximum length for columns feature.*/
     static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
-    /** Version 2.8.0: adds query id in order to implement cancel feature, affinity awareness support: IEP-23.*/
+    /** Version 2.8.0: adds query id in order to implement cancel feature, partition awareness support: IEP-23.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */
@@ -69,9 +69,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
-
-    /** Session. */
-    private final GridNioSession ses;
 
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -104,17 +101,15 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     /**
      * Constructor.
-     *  @param ctx Kernal Context.
-     * @param ses Session.
+     * @param ctx Kernal Context.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
+    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
         super(ctx, connId);
 
-        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
 
@@ -132,9 +127,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    @Override public void initializeFromHandshake(GridNioSession ses,
+        ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-        assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
+        assert SUPPORTED_VERS.contains(ver) : "Unsupported JDBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
@@ -174,6 +170,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
+
+            userAttrs = reader.readMap();
         }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {
@@ -190,7 +188,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(user, passwd);
+            actx = authenticate(ses.certificates(), user, passwd);
         }
 
         parser = new JdbcMessageParser(ctx, ver);

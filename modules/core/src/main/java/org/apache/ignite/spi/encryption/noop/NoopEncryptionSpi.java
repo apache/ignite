@@ -85,8 +85,19 @@ public class NoopEncryptionSpi extends IgniteSpiAdapter implements EncryptionSpi
         return dataSize;
     }
 
+    /** {@inheritDoc} */
     @Override public int blockSize() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getMasterKeyName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMasterKeyName(String masterKeyName) {
+        throw new IgniteSpiException("You have to configure custom EncryptionSpi implementation.");
     }
 
     /** {@inheritDoc} */

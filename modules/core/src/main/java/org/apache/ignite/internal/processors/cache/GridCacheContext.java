@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -53,6 +54,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter.GlobalRemoveAllJob;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -90,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
@@ -282,6 +286,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     private final boolean disableTriggeringCacheInterceptorOnConflict =
         Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
+    /** Last remove all job future. */
+    private AtomicReference<IgniteInternalFuture<Boolean>> lastRmvAllJobFut = new AtomicReference<>();
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -340,7 +347,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheDrManager drMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
-        GridCacheAffinityManager affMgr
+        GridCacheAffinityManager affMgr,
+        PlatformCacheManager platformMgr
     ) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -386,6 +394,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
         this.affMgr = add(affMgr);
+        add(platformMgr);
 
         log = ctx.log(getClass());
 
@@ -595,7 +604,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean systemTx() {
         return cacheType == CacheType.UTILITY ||
-            ((cacheType == CacheType.INTERNAL || cacheType == CacheType.DATA_STRUCTURES)&& transactional());
+            ((cacheType == CacheType.INTERNAL || cacheType == CacheType.DATA_STRUCTURES) && transactional());
     }
 
     /**
@@ -2236,16 +2245,18 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
      * @param partId Partition ID.
+     * @param forcePrimary Force primary flag.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public ClusterNode selectAffinityNodeBalanced(
         List<ClusterNode> affNodes,
         Set<ClusterNode> invalidNodes,
         int partId,
-        boolean canRemap
+        boolean canRemap,
+        boolean forcePrimary
     ) {
         if (!readLoadBalancingEnabled) {
-            if (!canRemap) {
+            if (!canRemap && !forcePrimary) {
                 // Find next available node if we can not wait next topology version.
                 for (ClusterNode node : affNodes) {
                     if (ctx.discovery().alive(node) && !invalidNodes.contains(node))
@@ -2261,7 +2272,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             }
         }
 
-        if (!readFromBackup){
+        if (!readFromBackup || forcePrimary) {
             ClusterNode first = affNodes.get(0);
 
             return !invalidNodes.contains(first) ? first : null;
@@ -2337,6 +2348,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
         return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
             contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
+    }
+
+    /**
+     * Returns future that assigned to last performing {@link GlobalRemoveAllJob}.
+     */
+    public AtomicReference<IgniteInternalFuture<Boolean>> lastRemoveAllJobFut() {
+        return lastRmvAllJobFut;
     }
 
     /** {@inheritDoc} */

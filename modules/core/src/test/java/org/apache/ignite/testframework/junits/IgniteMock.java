@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -484,6 +485,11 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public DataStorageMetrics dataStorageMetrics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
         return null;
     }
 

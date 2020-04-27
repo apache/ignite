@@ -62,7 +62,7 @@ public class Population {
     }
 
     /**
-     * Calculates fintness for all chromosomes with custom fitness function.
+     * Calculates fitness for all chromosomes with custom fitness function.
      *
      * @param fitnessFunction Fitness function.
      */
@@ -97,7 +97,7 @@ public class Population {
      *
      * @param k The amount of top chromosome with highest value of the fitness.
      *
-     *          Returns null if not all fitnesses are calculated for all chromosomes.
+     *          Returns null if not all fitness values are calculated for all chromosomes.
      */
     public Chromosome[] selectBestKChromosome(int k) {
         if (fitnessCalculatedFlags.cardinality() == chromosomes.length) {
@@ -109,7 +109,7 @@ public class Population {
     }
 
     /**
-     * Returns the total fitness value of population or Double.NaN if not all fitnesses are calculated for all chromosomes.
+     * Returns the total fitness value of population or Double.NaN if not all fitness values are calculated for all chromosomes.
      */
     public double getTotalFitness() {
         if (fitnessCalculatedFlags.cardinality() == chromosomes.length) {
@@ -124,7 +124,7 @@ public class Population {
     }
 
     /**
-     * Returns the average fitness of population or Double.NaN if not all fitnesses are calculated for all chromosomes.
+     * Returns the average fitness of population or Double.NaN if not all fitness values are calculated for all chromosomes.
      */
     public double getAverageFitness() {
         if (fitnessCalculatedFlags.cardinality() == chromosomes.length) {
@@ -137,7 +137,6 @@ public class Population {
         }
         return Double.NaN;
     }
-
 
     /**
      * Returns the size of population.

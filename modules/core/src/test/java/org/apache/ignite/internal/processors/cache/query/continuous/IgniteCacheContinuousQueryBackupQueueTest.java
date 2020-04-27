@@ -61,9 +61,6 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     private static final int GRID_COUNT = 2;
 
     /** */
-    private static boolean client = false;
-
-    /** */
     private static String CACHE_NAME = "test-cache";
 
     /** */
@@ -81,8 +78,6 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setClientMode(client);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
         memCfg.setPageSize(16 * 1024);
@@ -111,8 +106,6 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
         super.afterTest();
 
         stopAllGrids();
-
-        client = false;
     }
 
     /** {@inheritDoc} */
@@ -185,11 +178,7 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
      */
     @Test
     public void testBackupQueueAutoUnsubscribeFalse() throws Exception {
-        try {
-            client = true;
-
-            Ignite client = startGrid(GRID_COUNT);
-
+        try (Ignite client = startClientGrid(GRID_COUNT)) {
             awaitPartitionMapExchange();
 
             List<QueryCursor> qryCursors = new ArrayList<>();
@@ -228,9 +217,6 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
             size = backupQueueSize();
 
             assertEquals(-1, size);
-        }
-        finally {
-            stopGrid(GRID_COUNT);
         }
     }
 

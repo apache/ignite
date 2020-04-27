@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -41,7 +43,8 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -49,18 +52,24 @@ import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
+import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -87,7 +96,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testThatAllocationTooMuchPagesCauseToOOMException() throws Exception {
-        PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
+        PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED, null);
 
         try {
             while (!Thread.currentThread().isInterrupted())
@@ -105,7 +114,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCheckpointBufferOverusageDontCauseWriteLockLeak() throws Exception {
-        PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED);
+        PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.DISABLED, null);
 
         List<FullPageId> pages = new ArrayList<>();
 
@@ -181,6 +190,33 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that with throttling enabled emptify cp buffer primarily with enabled CHECKPOINT_BUFFER_ONLY throttling.
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThrottlingEmptifyCpBufFirst() throws Exception {
+        runThrottlingEmptifyCpBufFirst(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
+    }
+
+    /**
+     * Tests that with throttling enabled emptify cp buffer primarily with enabled SPEED_BASED throttling.
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThrottlingEmptifyCpBufFirstSpeedBased() throws Exception {
+        runThrottlingEmptifyCpBufFirst(PageMemoryImpl.ThrottlingPolicy.SPEED_BASED);
+    }
+
+    /**
+     * Tests that with throttling enabled emptify cp buffer primarily with enabled TARGET_RATIO_BASED throttling.
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThrottlingEmptifyCpBufFirstRatioBased() throws Exception {
+        runThrottlingEmptifyCpBufFirst(PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED);
+    }
+
+    /**
      * @throws Exception if failed.
      */
     @Test
@@ -192,7 +228,8 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             1,
             PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED,
             pageStoreMgr,
-            pageStoreMgr
+            pageStoreMgr,
+            null
         );
 
         int initPageCnt = 10;
@@ -232,6 +269,49 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void runThrottlingEmptifyCpBufFirst(PageMemoryImpl.ThrottlingPolicy plc) throws Exception {
+        TestPageStoreManager pageStoreMgr = new TestPageStoreManager();
+
+        final List<FullPageId> allocated = new ArrayList<>();
+
+        int pagesForStartThrottling = 10;
+
+        // Create a 1 mb page memory.
+        PageMemoryImpl memory = createPageMemory(
+            1,
+            plc,
+            pageStoreMgr,
+            pageStoreMgr,
+            new IgniteInClosure<FullPageId>() {
+                @Override public void apply(FullPageId fullPageId) {
+                    assertTrue(allocated.contains(fullPageId));
+                }
+            }
+        );
+
+        assert pagesForStartThrottling < memory.checkpointBufferPagesSize() / 3;
+
+        for (int i = 0; i < pagesForStartThrottling + (memory.checkpointBufferPagesSize() * 2 / 3); i++) {
+            long id = memory.allocatePage(1, INDEX_PARTITION, FLAG_IDX);
+
+            FullPageId fullId = new FullPageId(id, 1);
+
+            allocated.add(fullId);
+
+            writePage(memory, fullId, (byte)1);
+        }
+
+        GridMultiCollectionWrapper<FullPageId> markedPages = memory.beginCheckpoint(new GridFinishedFuture());
+
+        for (int i = 0; i < 10 + (memory.checkpointBufferPagesSize() * 2 / 3); i++)
+            writePage(memory, allocated.get(i), (byte)1);
+
+        doCheckpoint(markedPages, memory, pageStoreMgr);
+    }
+
+    /**
      * @param cpPages Checkpoint pages acuiqred by {@code beginCheckpoint()}.
      * @param memory Page memory.
      * @param pageStoreMgr Test page store manager.
@@ -254,6 +334,21 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             ByteBuffer buf = ByteBuffer.wrap(data);
 
             memory.checkpointWritePage(cpPage, buf, pageStoreWriter, null);
+
+            while (memory.shouldThrottle()) {
+                FullPageId cpPageId = memory.pullPageFromCpBuffer();
+
+                if (cpPageId.equals(FullPageId.NULL_PAGE))
+                    break;
+
+                ByteBuffer tmpWriteBuf = ByteBuffer.allocateDirect(memory.pageSize());
+
+                tmpWriteBuf.order(ByteOrder.nativeOrder());
+
+                tmpWriteBuf.rewind();
+
+                memory.checkpointWritePage(cpPageId, tmpWriteBuf, pageStoreWriter, null);
+            }
         }
 
         memory.finishCheckpoint();
@@ -271,7 +366,8 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             1,
             PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED,
             pageStoreMgr,
-            pageStoreMgr);
+            pageStoreMgr,
+            null);
 
         int initPageCnt = 500;
 
@@ -311,8 +407,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 assertTrue("Should oom before check replaced page.", oom);
 
                 assertTrue("Missing page: " + fullPageId, memory.hasLoadedPage(fullPageId));
-            }
-            , null);
+            }, null);
     }
 
     /**
@@ -348,7 +443,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy plc) throws Exception {
-        PageMemoryImpl memory = createPageMemory(plc);
+        PageMemoryImpl memory = createPageMemory(plc, null);
 
         List<FullPageId> pages = new ArrayList<>();
 
@@ -418,6 +513,12 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         }
 
         memory.finishCheckpoint();
+
+        LongAdderMetric totalThrottlingTime = U.field(memory.metrics(), "totalThrottlingTime");
+
+        assertNotNull(totalThrottlingTime);
+
+        assertTrue(totalThrottlingTime.value() > 0);
     }
 
     /**
@@ -446,14 +547,16 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
      * @throws Exception If creating mock failed.
      */
     private PageMemoryImpl createPageMemory(
-        PageMemoryImpl.ThrottlingPolicy throttlingPlc) throws Exception {
+        PageMemoryImpl.ThrottlingPolicy throttlingPlc,
+        @Nullable IgniteInClosure<FullPageId> cpBufChecker) throws Exception {
         return createPageMemory(
             MAX_SIZE,
             throttlingPlc,
             new NoOpPageStoreManager(),
             (fullPageId, byteBuf, tag) -> {
                 assert false : "No page replacement (rotation with disk) should happen during the test";
-            });
+            },
+            cpBufChecker);
     }
 
     /**
@@ -464,14 +567,15 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         int maxSize,
         PageMemoryImpl.ThrottlingPolicy throttlingPlc,
         IgnitePageStoreManager mgr,
-        PageStoreWriter replaceWriter
+        PageStoreWriter replaceWriter,
+        @Nullable IgniteInClosure<FullPageId> cpBufChecker
     ) throws Exception {
         long[] sizes = new long[5];
 
         for (int i = 0; i < sizes.length; i++)
             sizes[i] = maxSize * MB / 4;
 
-        sizes[4] = 5 * MB;
+        sizes[4] = maxSize * MB / 4;
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
@@ -480,6 +584,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         igniteCfg.setFailureHandler(new NoOpFailureHandler());
         igniteCfg.setEncryptionSpi(new NoopEncryptionSpi());
         igniteCfg.setMetricExporterSpi(new NoopMetricExporterSpi());
+        igniteCfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
 
         GridTestKernalContext kernalCtx = new GridTestKernalContext(new GridTestLog4jLogger(), igniteCfg);
 
@@ -487,6 +592,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         kernalCtx.add(new GridInternalSubscriptionProcessor(kernalCtx));
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
         kernalCtx.add(new GridMetricManager(kernalCtx));
+        kernalCtx.add(new GridSystemViewManager(kernalCtx));
 
         FailureProcessor failureProc = new FailureProcessor(kernalCtx);
 
@@ -517,14 +623,17 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
-        CheckpointWriteProgressSupplier noThrottle = Mockito.mock(CheckpointWriteProgressSupplier.class);
+        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
 
-        Mockito.when(noThrottle.currentCheckpointPagesCount()).thenReturn(1_000_000);
-        Mockito.when(noThrottle.evictedPagesCntr()).thenReturn(new AtomicInteger(0));
-        Mockito.when(noThrottle.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
-        Mockito.when(noThrottle.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        IgniteOutClosure<CheckpointProgress> noThrottle = Mockito.mock(IgniteOutClosure.class);
+        Mockito.when(noThrottle.apply()).thenReturn(cl0);
 
-        PageMemoryImpl mem = new PageMemoryImpl(
+        Mockito.when(cl0.currentCheckpointPagesCount()).thenReturn(1_000_000);
+        Mockito.when(cl0.evictedPagesCounter()).thenReturn(new AtomicInteger(0));
+        Mockito.when(cl0.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        Mockito.when(cl0.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+
+        PageMemoryImpl mem = cpBufChecker == null ? new PageMemoryImpl(
             provider,
             sizes,
             sharedCtx,
@@ -543,7 +652,36 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 NO_OP_METRICS),
             throttlingPlc,
             noThrottle
-        );
+        ) : new PageMemoryImpl(
+            provider,
+            sizes,
+            sharedCtx,
+            PAGE_SIZE,
+            replaceWriter,
+            new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
+                @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
+                }
+            }, new CheckpointLockStateChecker() {
+            @Override public boolean checkpointLockIsHeldByThread() {
+                return true;
+            }
+        },
+            new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
+                kernalCtx.metric(),
+                NO_OP_METRICS),
+            throttlingPlc,
+            noThrottle
+        ) {
+            @Override public FullPageId pullPageFromCpBuffer() {
+                FullPageId pageId = super.pullPageFromCpBuffer();
+
+                cpBufChecker.apply(pageId);
+
+                return pageId;
+            }
+        };
+
+        mem.metrics().enableMetrics();
 
         mem.start();
 

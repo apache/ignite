@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nullable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -178,7 +178,7 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
             Object obj = super.poll();
 
             // This code uses for failure handler testing into PartitionEvictionTask.
-            if(obj != null && completeWithError) {
+            if (obj != null && completeWithError) {
                 try {
                     Field field = U.findField(PartitionsEvictManager.PartitionEvictionTask.class, "finishFut");
 
@@ -189,8 +189,11 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
                     modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
 
                     field.set(obj, new GridFutureAdapter<Object>() {
-                        @Override
-                        protected boolean onDone(@Nullable Object res, @Nullable Throwable err, boolean cancel) {
+                        @Override protected boolean onDone(
+                            @Nullable Object res,
+                            @Nullable Throwable err,
+                            boolean cancel
+                        ) {
                             if (err == null)
                                 throw new RuntimeException("TEST");
 

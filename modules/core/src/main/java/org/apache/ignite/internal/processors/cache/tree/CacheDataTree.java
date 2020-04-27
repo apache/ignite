@@ -217,6 +217,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
              * @throws IgniteCheckedException If failed.
              */
             private boolean readNextDataPage() throws IgniteCheckedException {
+                checkDestroyed();
+
                 for (;;) {
                     if (++curPage >= pagesCnt) {
                         // Reread number of pages when we reach it (it may grow).
@@ -287,7 +289,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
                             pageMem.readUnlock(grpId, pageId, page);
                         }
                     }
-                    finally{
+                    finally {
                         pageMem.releasePage(grpId, pageId, page);
                     }
                 }

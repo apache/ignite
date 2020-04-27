@@ -364,6 +364,9 @@ public class GridFunc {
 
         int n = ThreadLocalRandom.current().nextInt(c.size());
 
+        if (c instanceof List)
+            return ((List<? extends T>)c).get(n);
+
         int i = 0;
 
         for (T t : c) {
@@ -519,7 +522,7 @@ public class GridFunc {
      * @return Single iterator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+    public static <T> Iterator<T> concat(Iterator<T>... iters) {
         if (iters.length == 1)
             return iters[0];
 

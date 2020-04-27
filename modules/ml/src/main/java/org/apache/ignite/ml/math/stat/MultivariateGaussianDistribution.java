@@ -22,7 +22,7 @@ import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
- * Distribution represents multidimentional gaussian distribution.
+ * Distribution represents multidimensional gaussian distribution.
  */
 public class MultivariateGaussianDistribution implements Distribution {
     /** Mean. */
@@ -52,7 +52,7 @@ public class MultivariateGaussianDistribution implements Distribution {
         invCovariance = covariance.inverse();
 
         double determinant = covariance.determinant();
-        A.ensure(determinant > 0, "Covariance matrix should be positife definite");
+        A.ensure(determinant > 0, "Covariance matrix should be positive definite");
         normalizer = Math.pow(2 * Math.PI, ((double)invCovariance.rowSize()) / 2) * Math.sqrt(determinant);
     }
 

@@ -79,9 +79,6 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
         cfg.setCacheConfiguration(ccfg);
 
-        if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -186,7 +183,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
     /** */
     private void testQueryCancel(int keyCnt, int valSize, String sql, int timeoutUnits, TimeUnit timeUnit,
                                  boolean timeout, boolean checkCanceled) throws Exception {
-        try (Ignite client = startGrid("client")) {
+        try (Ignite client = startClientGrid("client")) {
             IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());
@@ -197,7 +194,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
 
-                if (i/(float)keyCnt >= p/10f) {
+                if (i / (float)keyCnt >= p / 10f) {
                     log().info("Loaded " + i + " of " + keyCnt);
 
                     p++;

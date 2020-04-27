@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -36,7 +37,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -484,9 +484,10 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test @SuppressWarnings("ThrowableNotThrown")
-    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testConflictingData() throws Exception {
-        startGrid(0);
+        IgniteEx igniteEx = startGrid(0);
+
+        igniteEx.cluster().baselineAutoAdjustEnabled(false);
 
         startGrid(1);
 
@@ -564,5 +565,32 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         Object[] hist = GridTestUtils.getFieldValue(joiningNodeData, "hist");
 
         assertEquals(1, hist.length);
+    }
+
+    /** */
+    @Test
+    public void testLongKey() throws Exception {
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
+
+        String l10 = "1234567890";
+        String longKey = l10 + l10 + l10 + l10 + l10 + l10 + l10;
+
+        metastorage(0).write(longKey, "value");
+
+        stopGrid(0);
+
+        // Check that the value was actually persisted to the storage.
+
+        startGrid(0);
+
+        assertEquals("value", metastorage(0).read(longKey));
+
+        metastorage(0).remove(longKey);
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        assertNull(metastorage(0).read(longKey));
     }
 }

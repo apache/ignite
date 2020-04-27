@@ -140,7 +140,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         AllEventListener<Integer, String> lsnr20;
 
         if (client) {
-            IgniteCache<Integer, String> clnCache = startGrid(3).getOrCreateCache(cacheName);
+            IgniteCache<Integer, String> clnCache = startClientGrid(3).getOrCreateCache(cacheName);
 
             lsnr20 = registerCacheListener(clnCache);
         }
@@ -217,9 +217,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cache(TX_CACHE_NAME), cache(CACHE_NAME), cache(MVCC_TX_CACHE_NAME));
-
-        if (igniteInstanceName.endsWith("3"))
-            cfg.setClientMode(true);
 
         return cfg;
     }

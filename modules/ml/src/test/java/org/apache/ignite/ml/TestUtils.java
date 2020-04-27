@@ -36,7 +36,6 @@ public class TestUtils {
      * Collection of static methods used in math unit tests.
      */
     private TestUtils() {
-        super();
     }
 
     /**
@@ -134,7 +133,7 @@ public class TestUtils {
 
         Matrix delta = exp.minus(actual);
 
-        if (TestUtils.maximumAbsoluteRowSum(delta) >= tolerance) {
+        if (maximumAbsoluteRowSum(delta) >= tolerance) {
             String msgBuff = msg + "\nExpected: " + exp +
                 "\nObserved: " + actual +
                 "\nexpected - observed: " + delta;

@@ -54,9 +54,9 @@ public abstract class ConvergenceCheckerTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         data = new HashMap<>();
-        for(int i = 0; i < 10; i ++)
+        for (int i = 0; i < 10; i++)
             data.put(i, VectorUtils.of(i, i + 1).labeled((double)(2 * (i + 1))));
     }
 

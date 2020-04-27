@@ -75,16 +75,11 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private static final int NODES = SRVS + CLIENTS;
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private static final int MULTITHREADED_TEST_KEYS = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -102,9 +97,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         startGridsMultiThreaded(SRVS);
 
-        clientMode = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());

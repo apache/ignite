@@ -24,7 +24,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -37,19 +36,6 @@ import static org.apache.ignite.cache.CachePeekMode.NEAR;
 public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "test-near-cache";
-
-    /**
-     * @param igniteInstanceName Node name.
-     * @return Configuration.
-     * @throws Exception If failed.
-     */
-    private IgniteConfiguration getClientConfiguration(final String igniteInstanceName) throws Exception {
-        final IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(true);
-
-        return cfg;
-    }
 
     /**
      * @return Cache configuration.
@@ -86,7 +72,7 @@ public class GridCacheNearClientHitTest extends GridCommonAbstractTest {
         try {
             Ignite crd = startGrid("coordinator", getConfiguration("coordinator"));
 
-            Ignite client = startGrid("client", getClientConfiguration("client"));
+            Ignite client = startClientGrid("client", getConfiguration("client"));
 
             Ignite srvNode = startGrid("server", getConfiguration("server"));
 

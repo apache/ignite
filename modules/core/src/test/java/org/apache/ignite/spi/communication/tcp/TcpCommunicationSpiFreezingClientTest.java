@@ -55,7 +55,6 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
         cfg.setFailureDetectionTimeout(120000);
         cfg.setClientFailureDetectionTimeout(120000);
-        cfg.setClientMode("client".equals(gridName));
 
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
@@ -105,7 +104,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         try {
             final IgniteEx srv = startGrids(2);
 
-            final IgniteEx client = startGrid("client");
+            final IgniteEx client = startClientGrid("client");
 
             final int keysCnt = 100_000;
 

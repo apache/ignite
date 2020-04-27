@@ -23,14 +23,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.junit.Assume.assumeTrue;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 
 /**
  *
  */
 public abstract class DistributedConfigurationAbstractTest extends GridCommonAbstractTest {
     /** */
-    private static final String TEST_PROP = "someLong";
+    static final String TEST_PROP = "someLong";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -78,82 +78,13 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     @Test
-    public void testSuccessClusterWideUpdate() throws Exception {
-        assumeTrue(isPersistent());
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        ignite0.cluster().active(true);
-
-        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
-        DistributedLongProperty long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP);
-
-        long0.propagate(0L);
-
-        assertEquals(0, long0.get().longValue());
-        assertEquals(0, long1.get().longValue());
-
-        assertTrue(long0.propagate(2L));
-
-        //Value changed on whole grid.
-        assertEquals(2L, long0.get().longValue());
-        assertEquals(2L, long1.get().longValue());
-
-        stopAllGrids();
-
-        ignite0 = startGrid(0);
-        ignite1 = startGrid(1);
-
-        ignite0.cluster().active(true);
-
-        long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
-        long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP);
-
-        assertEquals(2, long0.get().longValue());
-        assertEquals(2, long1.get().longValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReadLocalValueOnInactiveGrid() throws Exception {
-        assumeTrue(isPersistent());
-
-        IgniteEx ignite0 = startGrid(0);
-        startGrid(1);
-
-        ignite0.cluster().active(true);
-
-        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
-
-        long0.propagate(0L);
-
-        assertEquals(0, long0.get().longValue());
-
-        assertTrue(long0.propagate(2L));
-
-        stopAllGrids();
-
-        ignite0 = startGrid(0);
-
-        long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
-
-        assertEquals(2, long0.get().longValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testRegisterExistedProperty() throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
         ignite0.cluster().active(true);
 
-        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
+        DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP));
 
         long0.propagate(0L);
 
@@ -161,7 +92,7 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
 
         assertTrue(long0.propagate(2L));
 
-        DistributedLongProperty long1 = ignite1.context().distributedConfiguration().registerLong(TEST_PROP);
+        DistributedProperty<Long> long1 = distr(ignite1).registerProperty(detachedLongProperty(TEST_PROP));
 
         //Already changed to 2.
         assertEquals(2, long1.get().longValue());
@@ -172,60 +103,13 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
      */
     @Test(expected = DetachedPropertyException.class)
     public void testNotAttachedProperty() throws Exception {
-        DistributedLongProperty long0 = DistributedLongProperty.detachedLongProperty(TEST_PROP);
+        DistributedLongProperty long0 = detachedLongProperty(TEST_PROP);
 
         long0.propagate(1L);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPropagateValueOnInactiveGridShouldNotThrowException() throws Exception {
-        assumeTrue(isPersistent());
-
-        IgniteEx ignite0 = (IgniteEx)startGrids(2);
-
-        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
-
-        long0.propagate(2L);
+    /** */
+    DistributedConfigurationProcessor distr(IgniteEx ignite0) {
+        return ignite0.context().distributedConfiguration();
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRegisterPropertyBeforeOnReadyForReadHappened() throws Exception {
-        assumeTrue(isPersistent());
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
-
-        ignite0.cluster().active(true);
-
-        DistributedLongProperty long0 = ignite0.context().distributedConfiguration().registerLong(TEST_PROP);
-
-        long0.propagate(0L);
-
-        assertEquals(0, long0.get().longValue());
-
-        long0.propagate(2L);
-
-        stopAllGrids();
-
-        TestDistibutedConfigurationPlugin.supplier = (ctx) -> {
-            ctx.distributedConfiguration().registerLong(TEST_PROP);
-        };
-
-        ignite0 = startGrid(0);
-        ignite1 = startGrid(1);
-
-        long0 = ignite0.context().distributedConfiguration().getProperty(TEST_PROP);
-        DistributedLongProperty long1 = ignite1.context().distributedConfiguration().getProperty(TEST_PROP);
-
-        //After start it should read from local storage.
-        assertEquals(2, long0.get().longValue());
-        assertEquals(2, long1.get().longValue());
-    }
-
 }

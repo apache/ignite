@@ -261,6 +261,8 @@ public class CacheGroupContext {
             statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mmgr);
             statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mmgr);
         }
+
+        hasAtomicCaches = ccfg.getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -1252,7 +1254,7 @@ public class CacheGroupContext {
      * @param persist If {@code true} then flag state will be persisted into metastorage.
      */
     public void localWalEnabled(boolean enabled, boolean persist) {
-        if (localWalEnabled != enabled){
+        if (localWalEnabled != enabled) {
             log.info("Local WAL state for group=" + cacheOrGroupName() +
                 " changed from " + localWalEnabled + " to " + enabled);
 
@@ -1303,5 +1305,16 @@ public class CacheGroupContext {
      */
     public CacheGroupMetricsImpl metrics() {
         return metrics;
+    }
+
+    /**
+     * Removes statistics metrics registries.
+     */
+    public void removeIOStatistic() {
+        if (statHolderData != IoStatisticsHolderNoOp.INSTANCE)
+            ctx.kernalContext().metric().remove(statHolderData.metricRegistryName());
+
+        if (statHolderIdx != IoStatisticsHolderNoOp.INSTANCE)
+            ctx.kernalContext().metric().remove(statHolderIdx.metricRegistryName());
     }
 }

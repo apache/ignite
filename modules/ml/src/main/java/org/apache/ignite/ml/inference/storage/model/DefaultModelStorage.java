@@ -306,7 +306,7 @@ public class DefaultModelStorage implements ModelStorage {
             res = task.get();
         }
         finally {
-            for (i = i - 1; i >= 0; i--) {
+            for (i -= 1; i >= 0; i--) {
                 try {
                     locks[i].unlock();
                 }

@@ -31,7 +31,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -175,16 +174,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         // Start topology.
         startGrid(0);
         Ignite srv2 = startGrid(1);
-        Ignite cli;
-
-        Ignition.setClientMode(true);
-
-        try {
-            cli = startGrid(2);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        Ignite cli = startClientGrid(2);
 
         cli.cluster().active(true);
 
@@ -259,7 +249,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:10802")) {
             try (PreparedStatement stmt = conn.prepareStatement(
                 "SELECT COUNT(*) FROM Person USE INDEX(PERSON_FIRST_NAME_IDX) WHERE FIRST_NAME=?")) {
-                for (int i = 0; i < entryCnt; i ++) {
+                for (int i = 0; i < entryCnt; i++) {
                     stmt.setString(1, String.valueOf(i));
 
                     try (ResultSet rs = stmt.executeQuery()) {

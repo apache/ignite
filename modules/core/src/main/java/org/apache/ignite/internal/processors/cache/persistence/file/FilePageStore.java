@@ -196,7 +196,7 @@ public class FilePageStore implements PageStore {
      * @return Byte buffer instance.
      */
     public ByteBuffer header(byte type, int pageSize) {
-        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.nativeOrder());
 
         hdr.putLong(SIGNATURE);
 
@@ -250,7 +250,7 @@ public class FilePageStore implements PageStore {
      * @throws IOException If check has failed.
      */
     private long checkFile(FileIO fileIO, File cfgFile) throws IOException {
-        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.nativeOrder());
 
         fileIO.readFully(hdr);
 

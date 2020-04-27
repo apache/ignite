@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcBatchExecuteResult extends JdbcResult {
     /** Update counts. */
-    private int [] updateCnts;
+    private int[] updateCnts;
 
     /** Batch update error code. */
     private int errCode;
@@ -56,7 +56,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
      * @param errCode Error code.
      * @param errMsg Error message.
      */
-    JdbcBatchExecuteResult(int [] updateCnts, int errCode, String errMsg) {
+    JdbcBatchExecuteResult(int[] updateCnts, int errCode, String errMsg) {
         super(BATCH_EXEC);
 
         this.updateCnts = updateCnts;

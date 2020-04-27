@@ -52,8 +52,6 @@ public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest 
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setCacheConfiguration(buildCacheConfiguration(CACHE_BOOKMARK));
-        if (gridName.equals(NODE_CLIENT))
-            c.setClientMode(true);
 
         return c;
     }
@@ -76,7 +74,7 @@ public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest 
         super.beforeTest();
 
         startGrid(0);
-        startGrid(NODE_CLIENT);
+        startClientGrid(NODE_CLIENT);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +98,7 @@ public class IgniteSqlParameterizedQueryTest extends AbstractIndexingCommonTest 
 
         QueryCursor<List<?>> cursor = cache.query(qry);
         List<List<?>> results = cursor.getAll();
-        assertEquals("Search by field '" + field +"' returns incorrect row count!",1, results.size());
+        assertEquals("Search by field '" + field + "' returns incorrect row count!",1, results.size());
         List<?> row0 = results.get(0);
         return row0.get(0);
     }

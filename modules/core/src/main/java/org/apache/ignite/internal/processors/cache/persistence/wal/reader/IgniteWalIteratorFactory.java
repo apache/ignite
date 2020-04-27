@@ -284,8 +284,7 @@ public class IgniteWalIteratorFactory {
             if (file.isDirectory()) {
                 try {
                     walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                        @Override public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
                             addFileDescriptor(path.toFile(), ioFactory, descriptors);
 
                             return FileVisitResult.CONTINUE;
@@ -457,7 +456,7 @@ public class IgniteWalIteratorFactory {
          * @param log Logger.
          * @return IteratorParametersBuilder Self reference.
          */
-        public IteratorParametersBuilder log(IgniteLogger log){
+        public IteratorParametersBuilder log(IgniteLogger log) {
             this.log = log;
 
             return this;

@@ -63,7 +63,7 @@ public class BootstrappedDatasetPartition implements AutoCloseable, Iterable<Boo
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         //NOP
     }
 }

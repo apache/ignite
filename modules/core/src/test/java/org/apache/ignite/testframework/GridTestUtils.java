@@ -17,6 +17,12 @@
 
 package org.apache.ignite.testframework;
 
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.management.Attribute;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,8 +40,10 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
+import java.security.AccessController;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivilegedAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -64,11 +72,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -77,6 +80,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -84,6 +88,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -139,9 +145,41 @@ public final class GridTestUtils {
      */
     public static class DiscoveryHook {
         /**
-         * @param msg Message.
+         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
+         *
+         * @param msg Intercepted discovery message.
          */
-        public void handleDiscoveryMessage(DiscoverySpiCustomMessage msg) {
+        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
+            if (msg instanceof CustomMessageWrapper)
+                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
+            // No-op.
+        }
+
+        /**
+         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
+         *
+         * @param msg Intercepted discovery message.
+         */
+        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
+            if (msg instanceof CustomMessageWrapper)
+                afterDiscovery(unwrap((CustomMessageWrapper)msg));
+        }
+
+        /**
+         * Handles {@link DiscoveryCustomMessage} after {@link DiscoverySpiListener#onDiscovery} completion.
+         *
+         * @param customMsg Intercepted {@link DiscoveryCustomMessage}.
+         */
+        public void afterDiscovery(DiscoveryCustomMessage customMsg) {
+            // No-op.
         }
 
         /**
@@ -149,6 +187,16 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
+        }
+
+        /**
+         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
+         *
+         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
+         * @return Unwrapped {@link DiscoveryCustomMessage}.
+         */
+        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
+            return U.field(wrapper, "delegate");
         }
     }
 
@@ -159,12 +207,12 @@ public final class GridTestUtils {
         /** */
         private final DiscoverySpiListener delegate;
 
-        /** */
+        /** Interceptor of discovery messages. */
         private final DiscoveryHook hook;
 
         /**
          * @param delegate Delegate.
-         * @param hook Hook.
+         * @param hook Interceptor of discovery messages.
          */
         private DiscoverySpiListenerWrapper(DiscoverySpiListener delegate, DiscoveryHook hook) {
             this.hook = hook;
@@ -172,10 +220,21 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot, @Nullable Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage spiCustomMsg) {
-            hook.handleDiscoveryMessage(spiCustomMsg);
+        @Override public IgniteFuture<?> onDiscovery(
+            int type,
+            long topVer,
+            ClusterNode node,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable Map<Long, Collection<ClusterNode>> topHist,
+            @Nullable DiscoverySpiCustomMessage spiCustomMsg
+        ) {
+            hook.beforeDiscovery(spiCustomMsg);
 
-            return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+
+            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
+
+            return fut;
         }
 
         /** {@inheritDoc} */
@@ -185,10 +244,10 @@ public final class GridTestUtils {
 
         /**
          * @param delegate Delegate.
-         * @param discoveryHook Discovery hook.
+         * @param discoHook Interceptor of discovery messages.
          */
-        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoveryHook) {
-            return new DiscoverySpiListenerWrapper(delegate, discoveryHook);
+        public static DiscoverySpiListener wrap(DiscoverySpiListener delegate, DiscoveryHook discoHook) {
+            return new DiscoverySpiListenerWrapper(delegate, discoHook);
         }
     }
 
@@ -343,18 +402,18 @@ public final class GridTestUtils {
     }
 
     /**
-     * Checks that collection {@param col} contains string {@param str}. Logs collection, string
+     * Checks that collection {@param col} contains element {@param elem}. Logs collection, element
      * and throws {@link java.lang.AssertionError}, if not.
      *
      * @param log Logger (optional).
      * @param col Collection.
-     * @param str String.
+     * @param elem Element.
      */
-    public static  <C extends Collection<String>> void assertContains(@Nullable IgniteLogger log, C col, String str) {
+    public static <C extends Collection<T>, T> void assertContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
-            assertTrue(col.contains(str));
+            assertTrue(col.contains(elem));
         } catch (AssertionError e) {
-            U.warn(log, String.format("Collection does not contain string: '%s':", str));
+            U.warn(log, String.format("Collection does not contain: '%s':", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
 
@@ -363,18 +422,18 @@ public final class GridTestUtils {
     }
 
     /**
-     * Checks that collection {@param col} doesn't contains string {@param str}. Logs collection, string
+     * Checks that collection {@param col} doesn't contains element {@param str}. Logs collection, element
      * and throws {@link java.lang.AssertionError}, if contains.
      *
      * @param log Logger (optional).
      * @param col Collection.
-     * @param str String.
+     * @param elem Element.
      */
-    public static <C extends Collection<String>> void assertNotContains(@Nullable IgniteLogger log, C col, String str) {
+    public static <C extends Collection<T>, T> void assertNotContains(@Nullable IgniteLogger log, C col, T elem) {
         try {
-            assertFalse(col.contains(str));
+            assertFalse(col.contains(elem));
         } catch (AssertionError e) {
-            U.warn(log, String.format("Collection contain string: '%s' but shouldn't:", str));
+            U.warn(log, String.format("Collection contain element: '%s' but shouldn't:", elem));
             U.warn(log, "Collection:");
             U.warn(log, col);
 
@@ -1541,6 +1600,27 @@ public final class GridTestUtils {
     }
 
     /**
+     * Change static final fields.
+     * @param field Need to be changed.
+     * @param newVal New value.
+     * @throws Exception If failed.
+     */
+    public static void setFieldValue(Field field, Object newVal) throws Exception {
+        field.setAccessible(true);
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+
+        AccessController.doPrivileged(new PrivilegedAction() {
+            @Override public Object run() {
+                modifiersField.setAccessible(true);
+                return null;
+            }
+        });
+
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(null, newVal);
+    }
+
+    /**
      * Get inner class by its name from the enclosing class.
      *
      * @param parentCls Parent class to resolve inner class for.
@@ -1761,7 +1841,7 @@ public final class GridTestUtils {
      */
     public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
         try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
-            assertNotNull("Resource is missing: " + resourceName , is);
+            assertNotNull("Resource is missing: " + resourceName, is);
 
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 U.copy(is, baos);
@@ -2100,11 +2180,26 @@ public final class GridTestUtils {
      * Generate random alphabetical string.
      *
      * @param rnd Random object.
-     * @param maxLen Maximal length of string
+     * @param maxLen Maximal length of string.
      * @return Random string object.
      */
     public static String randomString(Random rnd, int maxLen) {
-        int len = rnd.nextInt(maxLen);
+        return randomString(rnd, 0, maxLen);
+    }
+
+    /**
+     * Generate random alphabetical string.
+     *
+     * @param rnd Random object.
+     * @param minLen Minimum length of string.
+     * @param maxLen Maximal length of string.
+     * @return Random string object.
+     */
+    public static String randomString(Random rnd, int minLen, int maxLen) {
+        assert minLen >= 0 : "minLen >= 0";
+        assert maxLen >= minLen : "maxLen >= minLen";
+
+        int len = maxLen == minLen ? minLen : minLen + rnd.nextInt(maxLen - minLen);
 
         StringBuilder b = new StringBuilder(len);
 
@@ -2130,6 +2225,26 @@ public final class GridTestUtils {
     public static void mergeExchangeWaitVersion(Ignite node, long topVer, List mergedEvts) {
         ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
             new AffinityTopologyVersion(topVer, 0), mergedEvts);
+    }
+
+    /**
+     * Checks that {@code state} is active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertActive(ClusterState state) {
+        assertTrue(state + " isn't active state", ClusterState.active(state));
+    }
+
+    /**
+     * Checks that {@code state} isn't active.
+     *
+     * @param state Passed cluster state.
+     * @see ClusterState#active(ClusterState)
+     */
+    public static void assertInactive(ClusterState state) {
+        assertFalse(state + " isn't inactive state", ClusterState.active(state));
     }
 
     /** Test parameters scale factor util. */
@@ -2215,6 +2330,34 @@ public final class GridTestUtils {
             f.delete();
     }
 
+    /**
+     * @param grid Node.
+     * @param grp Group name.
+     * @param name Object name.
+     * @param attr Attribute name.
+     * @param val Attribute value.
+     * @throws Exception On error.
+     */
+    public static void setJmxAttribute(IgniteEx grid, String grp, String name, String attr, Object val) throws Exception {
+        grid.context().config().getMBeanServer().setAttribute(U.makeMBeanName(grid.name(), grp, name),
+            new Attribute(attr, val));
+    }
+
+    /**
+     * @param grid Node.
+     * @param grp Group name.
+     * @param name Object name.
+     * @param attr Attribute name.
+     * @return Attribute's value.
+     * @throws Exception On error.
+     */
+    public static Object getJmxAttribute(IgniteEx grid, String grp, String name, String attr) throws Exception {
+        return grid.context().config().getMBeanServer().getAttribute(U.makeMBeanName(grid.name(), grp, name), attr);
+    }
+
+    /**
+     *
+     */
     public static class SqlTestFunctions {
         /** Sleep milliseconds. */
         public static volatile long sleepMs;
@@ -2232,7 +2375,7 @@ public final class GridTestUtils {
         public static long sleep() {
             long end = System.currentTimeMillis() + sleepMs;
 
-            long remainTime =sleepMs;
+            long remainTime = sleepMs;
 
             do {
                 try {
@@ -2319,5 +2462,12 @@ public final class GridTestUtils {
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /**
+     * @param runnableX Runnable with exception.
+     */
+    public static void suppressException(RunnableX runnableX) {
+        runnableX.run();
     }
 }

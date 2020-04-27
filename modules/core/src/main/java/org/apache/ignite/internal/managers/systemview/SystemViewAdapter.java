@@ -20,6 +20,8 @@ package org.apache.ignite.internal.managers.systemview;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +30,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     /** Data backed by this view. */
-    private final Collection<D> data;
+    private Collection<D> data;
+
+    /** Data supplier for the view. */
+    private Supplier<Collection<D>> dataSupplier;
 
     /** Row function. */
     private final Function<D, R> rowFunc;
@@ -36,36 +41,59 @@ public class SystemViewAdapter<R, D> extends AbstractSystemView<R> {
     /**
      * @param name Name.
      * @param desc Description.
-     * @param rowCls Row class.
      * @param walker Walker.
      * @param data Data.
      * @param rowFunc Row function.
      */
-    public SystemViewAdapter(String name, String desc, Class<R> rowCls,
-        SystemViewRowAttributeWalker<R> walker, Collection<D> data, Function<D, R> rowFunc) {
-        super(name, desc, rowCls, walker);
+    public SystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker, Collection<D> data,
+        Function<D, R> rowFunc) {
+        super(name, desc, walker);
+
+        A.notNull(data, "data");
 
         this.data = data;
         this.rowFunc = rowFunc;
     }
 
+    /**
+     * @param name Name.
+     * @param desc Description.
+     * @param walker Walker.
+     * @param dataSupplier Data supplier.
+     * @param rowFunc Row function.
+     */
+    public SystemViewAdapter(String name, String desc, SystemViewRowAttributeWalker<R> walker,
+        Supplier<Collection<D>> dataSupplier, Function<D, R> rowFunc) {
+        super(name, desc, walker);
+
+        A.notNull(dataSupplier, "dataSupplier");
+
+        this.dataSupplier = dataSupplier;
+        this.rowFunc = rowFunc;
+    }
+
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<R> iterator() {
-        Iterator<D> data = this.data.iterator();
+        Iterator<D> dataIter;
+
+        if (data != null)
+            dataIter = data.iterator();
+        else
+            dataIter = dataSupplier.get().iterator();
 
         return new Iterator<R>() {
             @Override public boolean hasNext() {
-                return data.hasNext();
+                return dataIter.hasNext();
             }
 
             @Override public R next() {
-                return rowFunc.apply(data.next());
+                return rowFunc.apply(dataIter.next());
             }
         };
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return data.size();
+        return data == null ? dataSupplier.get().size() : data.size();
     }
 }

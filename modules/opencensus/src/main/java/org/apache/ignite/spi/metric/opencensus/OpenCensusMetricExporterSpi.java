@@ -43,22 +43,21 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.jetbrains.annotations.Nullable;
 
 import static io.opencensus.tags.TagMetadata.TagTtl.UNLIMITED_PROPAGATION;
-
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.histogramBucketNames;
 
 /**
  * <a href="https://opencensus.io">OpenCensus</a> monitoring exporter. <br>
@@ -81,7 +80,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.hist
  *
  * @see MetricRegistry
  * @see GridMetricManager
- * @see ReadOnlyMetricRegistry
+ * @see ReadOnlyMetricManager
  */
 public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** Flag to enable or disable tag with Ignite instance name. */
@@ -197,7 +196,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
                         mmap.put(msr, val);
                     }
                     else if (metric instanceof HistogramMetric) {
-                        String[] names = histogramBucketNames((HistogramMetric)metric, histogramNames);
+                        String[] names = histogramBucketNames((HistogramMetric)metric);
                         long[] vals = ((HistogramMetric)metric).value();
 
                         assert names.length == vals.length;
@@ -291,8 +290,30 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
+        super.onContextInitialized0(spiCtx);
+
         consistenIdValue = TagValue.create(
             ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
+    }
+
+    /**
+     * @param metric Histogram metric.
+     * @return Histogram intervals names.
+     */
+    private String[] histogramBucketNames(HistogramMetric metric) {
+        String name = metric.name();
+        long[] bounds = metric.bounds();
+
+        T2<long[], String[]> tuple = histogramNames.get(name);
+
+        if (tuple != null && tuple.get1() == bounds)
+            return tuple.get2();
+
+        String[] names = MetricUtils.histogramBucketNames(metric);
+
+        histogramNames.put(name, new T2<>(bounds, names));
+
+        return names;
     }
 
     /**

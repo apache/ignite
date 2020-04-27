@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -26,8 +25,8 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 
+import static org.apache.ignite.internal.commandline.Command.usageParams;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
@@ -55,9 +54,9 @@ public class CacheCommands implements Command<CacheSubcommands> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
+        logger.info("");
         logger.info(INDENT + "View caches information in a cluster. For more details type:");
         logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, CACHE, HELP));
-        logger.info("");
     }
 
     /** {@inheritDoc} */
@@ -124,7 +123,7 @@ public class CacheCommands implements Command<CacheSubcommands> {
             CACHE + " [subcommand] <subcommand_parameters>");
         logger.info("");
         logger.info(INDENT + "The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '"
-            + FIND_AND_DELETE_GARBAGE+ "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES +
+            + FIND_AND_DELETE_GARBAGE + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES +
             "') will be executed on the given node or on all server nodes" +
             " if the option is not specified. Other commands will run on a random server node.");
         logger.info("");
@@ -162,46 +161,8 @@ public class CacheCommands implements Command<CacheSubcommands> {
             logger.info("");
             logger.info(DOUBLE_INDENT + "Parameters:");
 
-            usageCacheParams(paramsDesc, DOUBLE_INDENT + INDENT, logger);
+            usageParams(paramsDesc, DOUBLE_INDENT + INDENT, logger);
         }
-    }
-
-    /**
-     * Print cache command arguments usage.
-     *
-     * @param paramsDesc Cache command arguments description.
-     * @param indent Indent string.
-     * @param logger Logger to use.
-     */
-    private static void usageCacheParams(Map<String, String> paramsDesc, String indent, Logger logger) {
-        int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
-
-        for (Map.Entry<String, String> param : paramsDesc.entrySet())
-            logger.info(indent + extendToLen(param.getKey(), maxParamLen) + "  " + "- " + param.getValue());
-    }
-
-    /**
-     * Appends spaces to end of input string for extending to needed length.
-     *
-     * @param s Input string.
-     * @param targetLen Needed length.
-     * @return String with appended spaces on the end.
-     */
-    private static String extendToLen(String s, int targetLen) {
-        assert targetLen >= 0;
-        assert s.length() <= targetLen;
-
-        if (s.length() == targetLen)
-            return s;
-
-        SB sb = new SB(targetLen);
-
-        sb.a(s);
-
-        for (int i = 0; i < targetLen - s.length(); i++)
-            sb.a(" ");
-
-        return sb.toString();
     }
 
     /** {@inheritDoc} */

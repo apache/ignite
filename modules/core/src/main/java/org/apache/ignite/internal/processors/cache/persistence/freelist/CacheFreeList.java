@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -48,7 +50,9 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        GridKernalContext ctx,
+        AtomicLong pageListCacheLimit
     ) throws IgniteCheckedException {
         super(
             cacheId,
@@ -59,7 +63,9 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
             wal,
             metaPageId,
             initNew,
-            lockLsnr
+            lockLsnr,
+            ctx,
+            pageListCacheLimit
         );
     }
 

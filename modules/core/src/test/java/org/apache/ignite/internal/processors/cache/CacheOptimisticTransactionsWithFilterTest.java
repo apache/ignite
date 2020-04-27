@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -46,19 +45,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static final TransactionIsolation[] ISOLATIONS = {REPEATABLE_READ, READ_COMMITTED};
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -66,13 +53,9 @@ public class CacheOptimisticTransactionsWithFilterTest extends GridCommonAbstrac
 
         startGrids(serversNumber());
 
-        client = true;
+        startClientGrid(serversNumber());
 
-        startGrid(serversNumber());
-
-        startGrid(serversNumber() + 1);
-
-        client = false;
+        startClientGrid(serversNumber() + 1);
     }
 
     /**

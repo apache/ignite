@@ -322,6 +322,9 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
                         "Failed to find cache with name: " + cacheName);
 
+                if (req.keepBinary())
+                    cache = cache.withKeepBinary();
+
                 final QueryCursor qryCur = cache.query(qry);
 
                 Iterator cur = qryCur.iterator();

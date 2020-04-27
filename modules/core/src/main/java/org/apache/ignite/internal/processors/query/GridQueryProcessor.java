@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -34,12 +33,15 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -80,6 +82,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationClientFuture;
@@ -99,6 +102,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -120,10 +124,16 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.newSetFromMap;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
+import static org.apache.ignite.internal.binary.BinaryUtils.fieldTypeName;
+import static org.apache.ignite.internal.binary.BinaryUtils.typeByClass;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
+import static org.apache.ignite.internal.processors.query.schema.SchemaOperationException.CODE_COLUMN_EXISTS;
 
 /**
  * Indexing processor.
@@ -181,7 +191,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private ClusterNode crd;
 
     /** Registered cache names. */
-    private final Collection<String> cacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Collection<String> cacheNames = newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
@@ -207,7 +217,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private boolean skipFieldLookup;
 
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
-    private final Set<Long> missedCacheTypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Long> missedCacheTypes = newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * @param ctx Kernal context.
@@ -881,6 +891,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Initialize query infrastructure for not started cache.
+     *
+     * @param cacheDesc Cache descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void initQueryStructuresForNotStartedCache(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
+        QuerySchema schema = cacheDesc.schema() != null ? cacheDesc.schema() : new QuerySchema();
+
+        GridCacheContextInfo cacheInfo = new GridCacheContextInfo(cacheDesc);
+
+        onCacheStart(cacheInfo, schema, cacheDesc.sql());
+    }
+
+    /**
      * Handle cache start. Invoked either from GridCacheProcessor.onKernalStart() method or from exchange worker.
      * When called for the first time, we initialize topology thus understanding whether current node is coordinator
      * or not.
@@ -1023,7 +1047,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (cacheObjProc instanceof CacheObjectBinaryProcessorImpl) {
             ((CacheObjectBinaryProcessorImpl)cacheObjProc)
                 .binaryContext()
-                .descriptorForClass(cls, false, false, true);
+                .registerClass(cls, true, false, true);
         }
     }
 
@@ -1037,7 +1061,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg  + ']');
 
             return;
         }
@@ -1056,7 +1080,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg  + ']');
     }
 
     /**
@@ -1148,8 +1172,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             nop = true;
                         }
                         else
-                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
+                            err = new SchemaOperationException(CODE_COLUMN_EXISTS, col.name());
                     }
+                    else if (!checkFieldOnBinaryType(type.typeId(), col))
+                        err = new SchemaOperationException(CODE_COLUMN_EXISTS, "with a different type.");
                 }
             }
         }
@@ -1190,6 +1216,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             err = new SchemaOperationException("Unsupported operation: " + op);
 
         return new T3<>(type, nop, err);
+    }
+
+    /**
+     * It is checked that if a new column already existed in BinaryType,
+     * then its type does not change.
+     *
+     * @param typeId Binary type id.
+     * @param qryField New query field.
+     * @return {@code True} if the field is not added or type does not change.
+     */
+    private boolean checkFieldOnBinaryType(int typeId, QueryField qryField) {
+        assert nonNull(qryField);
+
+        try {
+            BinaryType binaryType = ctx.cacheObjects().metadata(typeId);
+            String binaryFieldType = nonNull(binaryType) ? binaryType.fieldTypeName(qryField.name()) : null;
+
+            return isNull(binaryFieldType) ||
+                binaryFieldType.equals(fieldTypeName(typeByClass(Class.forName(qryField.typeName()))));
+        }
+        catch (ClassNotFoundException e) {
+            throw new IgniteException(
+                "Class not found for property [name=" + qryField.name() + ", type=" + qryField.typeName() + ']'
+            );
+        }
     }
 
     /**
@@ -1311,7 +1362,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             nop = true;
                         }
                         else
-                            err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, fld.name());
+                            err = new SchemaOperationException(CODE_COLUMN_EXISTS, fld.name());
                     }
                 }
             }
@@ -1537,7 +1588,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             if (op instanceof SchemaIndexCreateOperation) {
-                final SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
+                SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
                 QueryIndexDescriptorImpl idxDesc = QueryUtils.createIndexDescriptor(type, op0.index());
 
@@ -1546,11 +1597,40 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (cacheInfo.isCacheContextInited()) {
                     GridCacheContext cctx = cacheInfo.cacheContext();
 
-                    SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
+                    int buildIdxPoolSize = ctx.config().getBuildIndexThreadPoolSize();
+                    int parallel = op0.parallel();
 
-                    cctx.group().metrics().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+                    if (parallel > buildIdxPoolSize) {
+                        String idxName = op0.indexName();
 
-                    visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
+                        log.warning("Provided parallelism " + parallel + " for creation of index " + idxName +
+                            " is greater than the number of index building threads. Will use " + buildIdxPoolSize +
+                            " threads to build index. Increase by IgniteConfiguration.setBuildIndexThreadPoolSize" +
+                            " and restart the node if you want to use more threads. [tableName=" + op0.tableName() +
+                            ", indexName=" + idxName + ", requestedParallelism=" + parallel + ", buildIndexPoolSize=" +
+                            buildIdxPoolSize + "]");
+                    }
+
+                    GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>();
+
+                    visitor = new SchemaIndexCacheVisitorImpl(
+                        cacheInfo.cacheContext(),
+                        new TableCacheFilter(cctx, op0.tableName()),
+                        cancelTok,
+                        createIdxFut
+                    ) {
+                        /** {@inheritDoc} */
+                        @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
+                            super.visit(clo);
+
+                            try {
+                                buildIdxFut.get();
+                            }
+                            catch (Exception e) {
+                                throw new IgniteException(e);
+                            }
+                        }
+                    };
                 }
                 else
                     //For not started caches we shouldn't add any data to index.
@@ -1941,6 +2021,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when rebuilding is finished.
      */
     public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx) {
+        assert nonNull(cctx);
+
         // Indexing module is disabled, nothing to rebuild.
         if (rebuildIsMeaningless(cctx))
             return null;
@@ -1959,9 +2041,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (empty)
             return null;
 
-        if (!busyLock.enterBusy())
+        if (!busyLock.enterBusy()) {
             return new GridFinishedFuture<>(new NodeStoppingException("Failed to rebuild indexes from hash " +
                 "(grid is stopping)."));
+        }
 
         try {
             return idx.rebuildIndexesFromHash(cctx);
@@ -2093,16 +2176,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @param val Value.
      * @param checkType If {@code true} checks that key and value type correspond to found TypeDescriptor.
-     * @return Type descriptor if found.
+     * @return Type descriptor if found and {@code null} otherwise.
      * @throws IgniteCheckedException If type check failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Nullable private QueryTypeDescriptorImpl typeByValue(String cacheName,
+    @Nullable public QueryTypeDescriptorImpl typeByValue(
+        String cacheName,
         CacheObjectContext coctx,
         KeyCacheObject key,
         CacheObject val,
-        boolean checkType)
-        throws IgniteCheckedException {
+        boolean checkType
+    ) throws IgniteCheckedException {
         Class<?> valCls = null;
 
         QueryTypeIdKey id;
@@ -2788,11 +2872,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param filters Key and value filters.
      * @param <K> Key type.
      * @param <V> Value type.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
-        final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
+        final String resType, final IndexingQueryFilter filters, int limit) throws IgniteCheckedException {
         checkEnabled();
 
         if (!busyLock.enterBusy())
@@ -2807,7 +2892,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         String typeName = typeName(cacheName, resType);
                         String schemaName = idx.schema(cacheName);
 
-                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters);
+                        return idx.queryLocalText(schemaName, cacheName, clause, typeName, filters, limit);
                     }
                 }, true);
         }
@@ -2823,13 +2908,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String cacheName) {
-        Collection<GridQueryTypeDescriptor> cacheTypes = new ArrayList<>();
+        Collection<GridQueryTypeDescriptor> cacheTypes = newSetFromMap(new IdentityHashMap<>());
 
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-            QueryTypeDescriptorImpl desc = e.getValue();
-
             if (F.eq(e.getKey().cacheName(), cacheName))
-                cacheTypes.add(desc);
+                cacheTypes.add(e.getValue());
         }
 
         return cacheTypes;
@@ -2864,6 +2947,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteException("Failed to find SQL table for type: " + typeName);
 
         return type.name();
+    }
+
+    /**
+     * Gets type descriptor for provided cache name and type name if type is still valid.
+     *
+     * @param cacheName Cache name.
+     * @param typeName Type name.
+     * @return Query type descriptor or {@code null} if descriptor was not found.
+     */
+    public @Nullable GridQueryTypeDescriptor typeDescriptor(@Nullable String cacheName, String typeName) {
+        return typesByName.get(new QueryTypeNameKey(cacheName, typeName));
     }
 
     /**
@@ -3081,7 +3175,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {
-        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, true);
 
         if (desc == null)
             return;

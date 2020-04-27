@@ -54,6 +54,9 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
     /** */
     private static final int OP_REGISTER_ENUM = 7;
 
+    /** */
+    private static final int OP_GET_META_WITH_SCHEMAS = 8;
+
     /**
      * Constructor.
      *
@@ -99,7 +102,15 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
             case OP_GET_META: {
                 int typeId = reader.readInt();
 
-                platformCtx.writeMetadata(writer, typeId);
+                platformCtx.writeMetadata(writer, typeId, false);
+
+                break;
+            }
+
+            case OP_GET_META_WITH_SCHEMAS: {
+                int typeId = reader.readInt();
+
+                platformCtx.writeMetadata(writer, typeId, true);
 
                 break;
             }
@@ -136,13 +147,13 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
                 Map<String, Integer> vals = new HashMap<>(cnt);
 
-                for (int i = 0; i< cnt; i++) {
+                for (int i = 0; i < cnt; i++) {
                     vals.put(reader.readString(), reader.readInt());
                 }
 
                 BinaryType binaryType = platformCtx.kernalContext().grid().binary().registerEnum(name, vals);
 
-                platformCtx.writeMetadata(writer, binaryType.typeId());
+                platformCtx.writeMetadata(writer, binaryType.typeId(), false);
 
                 break;
             }

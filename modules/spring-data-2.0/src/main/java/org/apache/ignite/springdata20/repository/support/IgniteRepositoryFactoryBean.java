@@ -66,19 +66,19 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
         try {
             Ignite ignite = (Ignite)ctx.getBean("igniteInstance");
 
-            return new IgniteRepositoryFactory(ignite);
+            return new IgniteRepositoryFactory(ignite, ctx );
         }
         catch (BeansException ex) {
             try {
                 IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("igniteCfg");
 
-                return new IgniteRepositoryFactory(cfg);
+                return new IgniteRepositoryFactory(cfg, ctx);
             }
             catch (BeansException ex2) {
                 try {
                     String path = (String)ctx.getBean("igniteSpringCfgPath");
 
-                    return new IgniteRepositoryFactory(path);
+                    return new IgniteRepositoryFactory(path, ctx );
                 }
                 catch (BeansException ex3) {
                     throw new IgniteException("Failed to initialize Ignite repository factory. Ignite instance or" +

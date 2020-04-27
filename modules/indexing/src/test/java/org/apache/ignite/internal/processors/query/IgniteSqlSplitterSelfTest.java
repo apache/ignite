@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -47,7 +46,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.query.h2.twostep.ReduceIndex;
+import org.apache.ignite.internal.processors.query.h2.twostep.AbstractReducer;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -81,13 +80,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
-        Ignition.setClientMode(true);
-        try {
-            startGrid(CLIENT);
-        }
-        finally {
-            Ignition.setClientMode(false);
-        }
+        startClientGrid(CLIENT);
     }
 
     /**
@@ -574,7 +567,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             Integer.class, Value.class));
 
         try {
-            GridTestUtils.setFieldValue(null, ReduceIndex.class, "PREFETCH_SIZE", 8);
+            GridTestUtils.setFieldValue(null, AbstractReducer.class, "PREFETCH_SIZE", 8);
 
             Random rnd = new GridRandom();
 
@@ -582,8 +575,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             for (int i = 0; i < cnt; i++) {
                 c.put(i, new Value(
-                    rnd.nextInt(5) == 0 ? null: rnd.nextInt(100),
-                    rnd.nextInt(8) == 0 ? null: rnd.nextInt(2000)));
+                    rnd.nextInt(5) == 0 ? null : rnd.nextInt(100),
+                    rnd.nextInt(8) == 0 ? null : rnd.nextInt(2000)));
             }
 
             List<List<?>> plan = c.query(new SqlFieldsQuery(
@@ -624,7 +617,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             }
         }
         finally {
-            GridTestUtils.setFieldValue(null, ReduceIndex.class, "PREFETCH_SIZE", 1024);
+            GridTestUtils.setFieldValue(null, AbstractReducer.class, "PREFETCH_SIZE", 1024);
 
             c.destroy();
         }
@@ -1116,8 +1109,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                 checkQueryPlan(persPart,
                     false,
                     0,
-                    sql,
-                    "persPartAff", "persPart", "orgRepl");
+                    sql);
 
                 checkQueryFails(persPart, sql, true);
 

@@ -80,7 +80,7 @@ public class SVMBinaryTrainerTest extends TrainerTest {
 
         SVMLinearClassificationModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

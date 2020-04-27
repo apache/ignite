@@ -51,9 +51,6 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
     /** */
     private static final String ORG_CACHE = "org";
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -89,8 +86,6 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
-        cfg.setClientMode(client);
-
         return cfg;
     }
 
@@ -115,9 +110,7 @@ public class IgniteCacheDistributedJoinNoIndexTest extends GridCommonAbstractTes
 
         startGridsMultiThreaded(2);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /**

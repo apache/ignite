@@ -21,40 +21,43 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleGauge;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
 /**
  * Metric registry.
  */
-public class MetricRegistry implements Iterable<Metric> {
+public class MetricRegistry implements ReadOnlyMetricRegistry {
     /** Registry name. */
-    private String grpName;
+    private String regName;
 
     /** Logger. */
     private IgniteLogger log;
@@ -62,24 +65,32 @@ public class MetricRegistry implements Iterable<Metric> {
     /** Registered metrics. */
     private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
 
-    /**
-     * @param grpName Group name.
-     * @param log Logger.
-     */
-    public MetricRegistry(String grpName, IgniteLogger log) {
-        this.grpName = grpName;
-        this.log = log;
-    }
+    /** HitRate config provider. */
+    private final Function<String, Long> hitRateCfgProvider;
+
+    /** Histogram config provider. */
+    private final Function<String, long[]> histogramCfgProvider;
 
     /**
-     * @param name Name of the metric.
-     * @return Metric with specified name if exists. Null otherwise.
+     * @param regName Registry name.
+     * @param hitRateCfgProvider HitRate config provider.
+     * @param histogramCfgProvider Histogram config provider.
+     * @param log Logger.
      */
-    @Nullable public <M extends Metric> M findMetric(String name) {
+    public MetricRegistry(String regName, Function<String, Long> hitRateCfgProvider,
+        Function<String, long[]> histogramCfgProvider, IgniteLogger log) {
+        this.regName = regName;
+        this.log = log;
+        this.hitRateCfgProvider = hitRateCfgProvider;
+        this.histogramCfgProvider = histogramCfgProvider;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <M extends Metric> M findMetric(String name) {
         return (M)metrics.get(name);
     }
 
-    /** Resets state of this metric set. */
+    /** Resets state of this metric registry. */
     public void reset() {
         for (Metric m : metrics.values())
             m.reset();
@@ -95,7 +106,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link ObjectMetricImpl}
      */
     public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
-        return addMetric(name, new ObjectMetricImpl<>(metricName(grpName, name), desc, type));
+        return addMetric(name, new ObjectMetricImpl<>(metricName(regName, name), desc, type));
     }
 
     /** {@inheritDoc} */
@@ -129,7 +140,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
-        addMetric(name, new BooleanGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
+        addMetric(name, new BooleanGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -140,7 +151,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
-        addMetric(name, new DoubleGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
+        addMetric(name, new DoubleGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -151,7 +162,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public void register(String name, IntSupplier supplier, @Nullable String desc) {
-        addMetric(name, new IntGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
+        addMetric(name, new IntGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -163,7 +174,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return Metric of type {@link LongGauge}.
      */
     public LongGauge register(String name, LongSupplier supplier, @Nullable String desc) {
-        return addMetric(name, new LongGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
+        return addMetric(name, new LongGauge(metricName(regName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -175,7 +186,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param desc Description.
      */
     public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
-        addMetric(name, new ObjectGauge<>(metricName(grpName, name), desc,
+        addMetric(name, new ObjectGauge<>(metricName(regName, name), desc,
             nonThrowableSupplier(supplier, log), type));
     }
 
@@ -188,7 +199,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link DoubleMetricImpl}.
      */
     public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
-        return addMetric(name, new DoubleMetricImpl(metricName(grpName, name), desc));
+        return addMetric(name, new DoubleMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -200,7 +211,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link IntMetricImpl}.
      */
     public IntMetricImpl intMetric(String name, @Nullable String desc) {
-        return addMetric(name, new IntMetricImpl(metricName(grpName, name), desc));
+        return addMetric(name, new IntMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -212,7 +223,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link AtomicLongMetric}.
      */
     public AtomicLongMetric longMetric(String name, @Nullable String desc) {
-        return addMetric(name, new AtomicLongMetric(metricName(grpName, name), desc));
+        return addMetric(name, new AtomicLongMetric(metricName(regName, name), desc));
     }
 
     /**
@@ -224,7 +235,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link LongAdderMetric}.
      */
     public LongAdderMetric longAdderMetric(String name, @Nullable String desc) {
-        return addMetric(name, new LongAdderMetric(metricName(grpName, name), desc));
+        return addMetric(name, new LongAdderMetric(metricName(regName, name), desc));
     }
 
     /**
@@ -237,7 +248,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link LongAdderWithDelegateMetric}.
      */
     public LongAdderMetric longAdderMetric(String name, LongConsumer delegate, @Nullable String desc) {
-        return addMetric(name, new LongAdderWithDelegateMetric(metricName(grpName, name), delegate, desc));
+        return addMetric(name, new LongAdderWithDelegateMetric(metricName(regName, name), delegate, desc));
     }
 
     /**
@@ -252,7 +263,16 @@ public class MetricRegistry implements Iterable<Metric> {
      * @see HitRateMetric
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
-        return addMetric(name, new HitRateMetric(metricName(grpName, name), desc, rateTimeInterval, size));
+        String fullName = metricName(regName, name);
+
+        HitRateMetric metric = addMetric(name, new HitRateMetric(fullName, desc, rateTimeInterval, size));
+
+        Long cfgRateTimeInterval = hitRateCfgProvider.apply(fullName);
+
+        if (cfgRateTimeInterval != null)
+            metric.reset(cfgRateTimeInterval, DFLT_SIZE);
+
+        return metric;
     }
 
     /**
@@ -264,7 +284,7 @@ public class MetricRegistry implements Iterable<Metric> {
      * @return {@link BooleanMetricImpl}
      */
     public BooleanMetricImpl booleanMetric(String name, @Nullable String desc) {
-        return addMetric(name, new BooleanMetricImpl(metricName(grpName, name), desc));
+        return addMetric(name, new BooleanMetricImpl(metricName(regName, name), desc));
     }
 
     /**
@@ -273,10 +293,19 @@ public class MetricRegistry implements Iterable<Metric> {
      * @param name Name
      * @param bounds Bounds of measurements.
      * @param desc Description.
-     * @return {@link HistogramMetric}
+     * @return {@link HistogramMetricImpl}
      */
-    public HistogramMetric histogram(String name, long[] bounds, @Nullable String desc) {
-        return addMetric(name, new HistogramMetric(metricName(grpName, name), desc, bounds));
+    public HistogramMetricImpl histogram(String name, long[] bounds, @Nullable String desc) {
+        String fullName = metricName(regName, name);
+
+        HistogramMetricImpl metric = addMetric(name, new HistogramMetricImpl(fullName, desc, bounds));
+
+        long[] cfgBounds = histogramCfgProvider.apply(fullName);
+
+        if (cfgBounds != null)
+            metric.reset(cfgBounds);
+
+        return metric;
     }
 
     /**
@@ -290,14 +319,14 @@ public class MetricRegistry implements Iterable<Metric> {
     private <T extends Metric> T addMetric(String name, T metric) {
         T old = (T)metrics.putIfAbsent(name, metric);
 
-        if(old != null)
+        if (old != null)
             return old;
 
         return metric;
     }
 
-    /** @return Group name. */
-    public String name() {
-        return grpName;
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return regName;
     }
 }

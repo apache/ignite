@@ -17,25 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.management.ManagementFactory;
 import java.util.Collection;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 
 /**
  * Baseline nodes metrics self test.
@@ -47,20 +38,6 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -68,6 +45,8 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
     public void testBaselineNodes() throws Exception {
         // Start 2 server nodes.
         IgniteEx ignite0 = startGrid(0);
+
+        ignite0.cluster().baselineAutoAdjustEnabled(false);
         startGrid(1);
 
         // Cluster metrics.
@@ -82,9 +61,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         startGrid(2);
 
         // Start client node.
-        Ignition.setClientMode(true);
-        startGrid(3);
-        Ignition.setClientMode(false);
+        startClientGrid(3);
 
         Collection<BaselineNode> baselineNodes;
 
@@ -169,19 +146,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
      * @param clazz Class of ClusterMetricsMXBean implementation.
      * @return MBean instance.
      */
-    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz)
-        throws MalformedObjectNameException {
-
-        ObjectName mbeanName = U.makeMBeanName(
-            getTestIgniteInstanceName(nodeIdx),
-            "Kernal",
-            clazz.getSimpleName());
-
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
-
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
-
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, ClusterMetricsMXBean.class, true);
+    private ClusterMetricsMXBean mxBean(int nodeIdx, Class<? extends ClusterMetricsMXBean> clazz) {
+        return getMxBean(getTestIgniteInstanceName(nodeIdx), "Kernal", clazz, ClusterMetricsMXBean.class);
     }
 }

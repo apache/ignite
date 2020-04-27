@@ -390,7 +390,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 System.arraycopy(array, i + 1, array, i - 1, size - i);
-                size -=2;
+                size -= 2;
                 i--;
             }
         }
@@ -405,7 +405,7 @@ public class GridFilenameUtils {
                 if (i == size - 1)
                     lastIsDirectory = true;
                 int j;
-                for (j = i - 4 ; j >= prefix; j--) {
+                for (j = i - 4; j >= prefix; j--) {
                     if (array[j] == separator) {
                         // remove b/../ from a/b/../c
                         System.arraycopy(array, i + 1, array, j + 1, size - i);
@@ -628,7 +628,7 @@ public class GridFilenameUtils {
             if (ch1 == ':') {
                 ch0 = Character.toUpperCase(ch0);
                 if (ch0 >= 'A' && ch0 <= 'Z') {
-                    if (len == 2 || isSeparator(filename.charAt(2)) == false)
+                    if (len == 2 || !isSeparator(filename.charAt(2)))
                         return 2;
                     return 3;
                 }
@@ -796,7 +796,7 @@ public class GridFilenameUtils {
         if (prefix < 0)
             return null;
         int index = indexOfLastSeparator(filename);
-        int endIndex = index+separatorAdd;
+        int endIndex = index + separatorAdd;
         if (prefix >= filename.length() || index < 0 || prefix >= endIndex)
             return "";
         return filename.substring(prefix, endIndex);
@@ -1322,7 +1322,7 @@ public class GridFilenameUtils {
                 if (array[i] == '?')
                     list.add("?");
                 else if (list.isEmpty() ||
-                        i > 0 && list.get(list.size() - 1).equals("*") == false)
+                        i > 0 && !list.get(list.size() - 1).equals("*"))
                     list.add("*");
             } else
                 buffer.append(array[i]);
@@ -1556,8 +1556,7 @@ public class GridFilenameUtils {
          *
          * @return a string describing the sensitivity
          */
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return name;
         }
 

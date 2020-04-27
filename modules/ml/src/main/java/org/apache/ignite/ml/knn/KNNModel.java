@@ -30,11 +30,11 @@ import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.structures.LabeledVector;
 
-import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transfomToListOrdered;
+import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.transformToListOrdered;
 import static org.apache.ignite.ml.knn.utils.PointWithDistanceUtil.tryToAddIntoHeap;
 
 /**
- * KNN model build on top of distribtued spatial indices. Be aware that this model is linked with cluster environment
+ * KNN model build on top of distributed spatial indices. Be aware that this model is linked with cluster environment
  * it's been built on and can't be saved or used in other places. Under the hood it keeps {@link Dataset} that consists
  * of a set of resources allocated across the cluster.
  *
@@ -75,7 +75,7 @@ public abstract class KNNModel<L> implements IgniteModel<Vector, L>, SpatialInde
             Queue<PointWithDistance<L>> heap = new PriorityQueue<>(Collections.reverseOrder());
             tryToAddIntoHeap(heap, k, pnt, a, distanceMeasure);
             tryToAddIntoHeap(heap, k, pnt, b, distanceMeasure);
-            return transfomToListOrdered(heap);
+            return transformToListOrdered(heap);
         });
 
         return res == null ? Collections.emptyList() : res;

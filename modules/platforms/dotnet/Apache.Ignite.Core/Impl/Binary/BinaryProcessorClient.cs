@@ -32,16 +32,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         private const byte DotNetPlatformId = 1;
 
         /** Socket. */
-        private readonly IClientSocket _socket;
-
-        /** Marshaller. */
-        private readonly Marshaller _marsh = BinaryUtils.Marshaller;
+        private readonly ClientFailoverSocket _socket;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryProcessorClient"/> class.
         /// </summary>
         /// <param name="socket">The socket.</param>
-        public BinaryProcessorClient(IClientSocket socket)
+        public BinaryProcessorClient(ClientFailoverSocket socket)
         {
             Debug.Assert(socket != null);
 
@@ -51,20 +48,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public BinaryType GetBinaryType(int typeId)
         {
-            return _socket.DoOutInOp(ClientOp.BinaryTypeGet, s => s.WriteInt(typeId),
-                s => s.ReadBool() ? new BinaryType(_marsh.StartUnmarshal(s), true) : null);
+            return _socket.DoOutInOp(ClientOp.BinaryTypeGet, ctx => ctx.Stream.WriteInt(typeId),
+                ctx => ctx.Stream.ReadBool() ? new BinaryType(ctx.Reader, true) : null);
         }
 
         /** <inheritdoc /> */
         public List<IBinaryType> GetBinaryTypes()
         {
             throw IgniteClient.GetClientNotSupportedException();
-        }
-
-        /** <inheritdoc /> */
-        public int[] GetSchema(int typeId, int schemaId)
-        {
-            return GetBinaryType(typeId).Schema.Get(schemaId);
         }
 
         /** <inheritdoc /> */
@@ -77,19 +68,19 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var type = binaryType;  // Access to modified closure.
 
                 _socket.DoOutInOp<object>(ClientOp.BinaryTypePut,
-                    s => BinaryProcessor.WriteBinaryType(_marsh.StartMarshal(s), type), null);
+                    ctx => BinaryProcessor.WriteBinaryType(ctx.Writer, type), null);
             }
         }
 
         /** <inheritdoc /> */
         public bool RegisterType(int id, string typeName)
         {
-            return _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, s =>
+            return _socket.DoOutInOp(ClientOp.BinaryTypeNamePut, ctx =>
             {
-                s.WriteByte(DotNetPlatformId);
-                s.WriteInt(id);
-                _marsh.StartMarshal(s).WriteString(typeName);
-            }, s => s.ReadBool());
+                ctx.Stream.WriteByte(DotNetPlatformId);
+                ctx.Stream.WriteInt(id);
+                ctx.Writer.WriteString(typeName);
+            }, ctx => ctx.Stream.ReadBool());
         }
 
         /** <inheritdoc /> */
@@ -101,12 +92,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public string GetTypeName(int id)
         {
-            return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, s =>
+            return _socket.DoOutInOp(ClientOp.BinaryTypeNameGet, ctx =>
                 {
-                    s.WriteByte(DotNetPlatformId);
-                    s.WriteInt(id);
+                    ctx.Stream.WriteByte(DotNetPlatformId);
+                    ctx.Stream.WriteInt(id);
                 },
-                s => _marsh.StartUnmarshal(s).ReadString());
+                ctx => ctx.Reader.ReadString());
         }
     }
 }

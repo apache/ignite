@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.dataset.impl.cache;
 
+import java.io.Serializable;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -30,9 +32,6 @@ import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-
-import java.io.Serializable;
-import java.util.UUID;
 
 /**
  * A dataset builder that makes {@link CacheBasedDataset}. Encapsulate logic of building cache based dataset such as
@@ -120,7 +119,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         IgniteBiPredicate<K, V> filter,
         UpstreamTransformerBuilder transformerBuilder,
         Boolean isKeepBinary,
-        int retries){
+        int retries) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
         this.filter = filter;
@@ -184,8 +183,8 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      *
      * @param isKeepBinary Is keep binary.
      */
-    public CacheBasedDatasetBuilder<K, V> withKeepBinary(boolean isKeepBinary){
-        return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary, retries);
+    public CacheBasedDatasetBuilder<K, V> withKeepBinary(boolean isKeepBinary) {
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder, isKeepBinary, retries);
     }
 
     /**
@@ -195,7 +194,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * @return CacheBasedDatasetBuilder instance.
      */
     public CacheBasedDatasetBuilder<K, V> withRetriesNumber(int retries) {
-        return new CacheBasedDatasetBuilder<K, V>(ignite, upstreamCache, filter, transformerBuilder, upstreamKeepBinary, retries);
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, filter, transformerBuilder, upstreamKeepBinary, retries);
     }
 
     /**

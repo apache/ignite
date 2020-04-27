@@ -355,7 +355,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             if (tryLocalGet(key, part, topVer, affNodes, locVals))
                 return false;
 
-            node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+            node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, forcePrimary);
         }
 
         // Failed if none remote node found.
@@ -445,6 +445,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean evt = !skipVals;
 
         while (true) {
+            cctx.shared().database().checkpointReadLock();
+
             try {
                 boolean skipEntry = readNoEntry;
 
@@ -571,6 +573,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 onDone(e);
 
                 return true;
+            }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
             }
         }
     }

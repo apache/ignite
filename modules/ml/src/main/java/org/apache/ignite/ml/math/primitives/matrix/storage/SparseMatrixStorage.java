@@ -183,11 +183,6 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }

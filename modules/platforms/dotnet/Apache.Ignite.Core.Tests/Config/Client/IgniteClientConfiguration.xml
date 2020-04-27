@@ -18,7 +18,7 @@
 -->
 
 <igniteClientConfiguration host="test1" port="345" socketReceiveBufferSize="222" socketSendBufferSize="333"
-                           tcpNoDelay="false" socketTimeout="0:0:15" enableAffinityAwareness="true">
+                           tcpNoDelay="false" socketTimeout="0:0:15" enablePartitionAwareness="true">
     <binaryConfiguration compactFooter="false" keepDeserialized="false">
         <types>
             <string>foo</string>
@@ -38,4 +38,6 @@
         <string>bar:123</string>
         <string>baz:100..103</string>
     </endpoints>
+
+    <logger type="Apache.Ignite.Core.Log.ConsoleLogger" minLevel="Debug"  />
 </igniteClientConfiguration>

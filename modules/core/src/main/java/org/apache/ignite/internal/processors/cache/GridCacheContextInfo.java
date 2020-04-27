@@ -146,6 +146,14 @@ public class GridCacheContextInfo<K, V> {
     }
 
     /**
+     * Clear real cache context; the method is used on cache.close() on not-affinity nodes to
+     * set up cache on idle state (not started on client, similar to state after join client node).
+     */
+    public void clearCacheContext( ) {
+        cctx = null;
+    }
+
+    /**
      * @return {@code true} For client cache.
      */
     public boolean isClientCache() {

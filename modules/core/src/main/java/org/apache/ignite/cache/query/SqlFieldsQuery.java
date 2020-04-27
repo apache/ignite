@@ -51,6 +51,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** Default value of the update internal batch size. */
     private static final int DFLT_UPDATE_BATCH_SIZE = 1;
 
+    /** Default value of Query timeout. Default is -1 means no timeout is set. */
+    private static final int DFLT_QUERY_TIMEOUT = -1;
+
     /** Do not remove. For tests only. */
     @SuppressWarnings("NonConstantFieldWithUpperCaseName")
     private static boolean DFLT_LAZY;
@@ -66,7 +69,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean collocated;
 
     /** Query timeout in millis. */
-    private int timeout;
+    private int timeout = DFLT_QUERY_TIMEOUT;
 
     /** */
     private boolean enforceJoinOrder;

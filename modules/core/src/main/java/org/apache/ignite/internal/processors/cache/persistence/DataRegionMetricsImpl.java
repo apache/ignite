@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.Metric;
 
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
@@ -96,6 +97,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** */
     private final HitRateMetric pageReplaceAge;
+
+    /** Total throttling threads time in milliseconds. */
+    private final LongAdderMetric totalThrottlingTime;
 
     /** */
     private final DataRegionConfiguration memPlcCfg;
@@ -180,6 +184,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             dataRegionMetricsProvider::emptyDataPages,
             "Calculates empty data pages count for region. It counts only totally free pages that can be reused " +
                 "(e. g. pages that are contained in reuse bucket of free list).");
+
+        totalThrottlingTime = mreg.longAdderMetric("TotalThrottlingTime",
+            "Total throttling threads time in milliseconds. The Ignite throttles threads that generate " +
+                "dirty pages during the ongoing checkpoint.");
     }
 
     /** {@inheritDoc} */
@@ -376,7 +384,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Updates page read.
      */
-    public void onPageRead(){
+    public void onPageRead() {
         if (metricsEnabled)
             readPages.increment();
     }
@@ -384,7 +392,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Updates page written.
      */
-    public void onPageWritten(){
+    public void onPageWritten() {
         if (metricsEnabled)
             writtenPages.increment();
     }
@@ -512,7 +520,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /**
      * @param rateTimeInterval Time interval (in milliseconds) used to calculate allocation/eviction rate.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public void rateTimeInterval(long rateTimeInterval) {
         this.rateTimeInterval = rateTimeInterval;
 
@@ -526,7 +536,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Sets number of subintervals the whole rateTimeInterval will be split into to calculate allocation rate.
      *
      * @param subInts Number of subintervals.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public void subIntervals(int subInts) {
         assert subInts > 0;
 
@@ -559,6 +571,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         evictRate.reset();
         pageReplaceRate.reset();
         pageReplaceAge.reset();
+    }
+
+    /** @param time Time to add to {@code totalThrottlingTime} metric in milliseconds. */
+    public void addThrottlingTime(long time) {
+        if (metricsEnabled)
+            totalThrottlingTime.add(time);
     }
 
     /**

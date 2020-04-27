@@ -39,7 +39,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * This preprocessor can transform multiple columns which indices are handled during training process. These indexes could be defined via .withEncodedFeature(featureIndex) call.
  * </p>
  * <p>
- * NOTE: it doesn’t add new column but change data in-place.
+ * NOTE: it does not add new column but change data in-place.
  *</p>
  * <p>
  * There is only a one strategy regarding how StringEncoder will handle unseen labels
@@ -51,7 +51,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
  */
 public final class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> implements DeployableObject {
     /** */
-    protected static final long serialVersionUID = 6237712226382623488L;
+    private static final long serialVersionUID = 6237712226382623488L;
 
     /**
      * Constructs a new instance of String Encoder preprocessor.

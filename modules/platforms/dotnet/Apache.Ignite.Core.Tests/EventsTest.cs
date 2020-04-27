@@ -946,7 +946,9 @@ namespace Apache.Ignite.Core.Tests
             return _invoke(evt);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Invalid Invoke method for tests.
+        /// </summary>
         // ReSharper disable once UnusedMember.Global
         public bool Invoke(T evt)
         {

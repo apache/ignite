@@ -23,107 +23,52 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.plugin.extensions.communication.IgniteMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * H2 Value message factory.
  */
-public class GridH2ValueMessageFactory implements MessageFactory {
+public class GridH2ValueMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Nullable @Override public Message create(short type) {
-        switch (type) {
-            case -4:
-                return GridH2Null.INSTANCE;
+    @Override public void registerAll(IgniteMessageFactory factory) {
+        factory.register((short)-4, () -> GridH2Null.INSTANCE);
+        factory.register((short)-5, GridH2Boolean::new);
+        factory.register((short)-6, GridH2Byte::new);
+        factory.register((short)-7, GridH2Short::new);
+        factory.register((short)-8, GridH2Integer::new);
+        factory.register((short)-9, GridH2Long::new);
+        factory.register((short)-10, GridH2Decimal::new);
+        factory.register((short)-11, GridH2Double::new);
+        factory.register((short)-12, GridH2Float::new);
+        factory.register((short)-13, GridH2Time::new);
+        factory.register((short)-14, GridH2Date::new);
+        factory.register((short)-15, GridH2Timestamp::new);
+        factory.register((short)-16, GridH2Bytes::new);
+        factory.register((short)-17, GridH2String::new);
+        factory.register((short)-18, GridH2Array::new);
+        factory.register((short)-19, GridH2JavaObject::new);
+        factory.register((short)-20, GridH2Uuid::new);
+        factory.register((short)-21, GridH2Geometry::new);
+        factory.register((short)-22, GridH2CacheObject::new);
+        factory.register((short)-30, GridH2IndexRangeRequest::new);
+        factory.register((short)-31, GridH2IndexRangeResponse::new);
+        factory.register((short)-32, GridH2RowMessage::new);
+        factory.register((short)-33, GridH2QueryRequest::new);
+        factory.register((short)-34, GridH2RowRange::new);
+        factory.register((short)-35, GridH2RowRangeBounds::new);
+        factory.register((short)-54, QueryTable::new);
+        factory.register((short)-55, GridH2DmlRequest::new);
+        factory.register((short)-56, GridH2DmlResponse::new);
+        factory.register((short)-57, GridH2SelectForUpdateTxDetails::new);
+    }
 
-            case -5:
-                return new GridH2Boolean();
-
-            case -6:
-                return new GridH2Byte();
-
-            case -7:
-                return new GridH2Short();
-
-            case -8:
-                return new GridH2Integer();
-
-            case -9:
-                return new GridH2Long();
-
-            case -10:
-                return new GridH2Decimal();
-
-            case -11:
-                return new GridH2Double();
-
-            case -12:
-                return new GridH2Float();
-
-            case -13:
-                return new GridH2Time();
-
-            case -14:
-                return new GridH2Date();
-
-            case -15:
-                return new GridH2Timestamp();
-
-            case -16:
-                return new GridH2Bytes();
-
-            case -17:
-                return new GridH2String();
-
-            case -18:
-                return new GridH2Array();
-
-            case -19:
-                return new GridH2JavaObject();
-
-            case -20:
-                return new GridH2Uuid();
-
-            case -21:
-                return new GridH2Geometry();
-
-            case -22:
-                return new GridH2CacheObject();
-
-            case -30:
-                return new GridH2IndexRangeRequest();
-
-            case -31:
-                return new GridH2IndexRangeResponse();
-
-            case -32:
-                return new GridH2RowMessage();
-
-            case -33:
-                return new GridH2QueryRequest();
-
-            case -34:
-                return new GridH2RowRange();
-
-            case -35:
-                return new GridH2RowRangeBounds();
-
-            case -54:
-                return new QueryTable();
-
-            case -55:
-                return new GridH2DmlRequest();
-
-            case -56:
-                return new GridH2DmlResponse();
-
-            case -57:
-                return new GridH2SelectForUpdateTxDetails();
-        }
-
-        return null;
+    /** {@inheritDoc} */
+    @Override @Nullable public Message create(short type) {
+        throw new UnsupportedOperationException();
     }
 
     /**

@@ -55,7 +55,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setNetworkTimeout(30_000);
+        cfg.setNetworkTimeout(60_000);
         cfg.setConnectorConfiguration(null);
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setTimeServerPortRange(200);
@@ -67,13 +67,11 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
 
         cfg.setClientFailureDetectionTimeout(200000);
-        cfg.setClientMode(!igniteInstanceName.equals(getTestIgniteInstanceName(0)));
-
         cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPortRange(1000));
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
-        for (int i = 0 ; i < ccfgs.length; i++) {
+        for (int i = 0; i < ccfgs.length; i++) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setCacheMode(PARTITIONED);
@@ -126,7 +124,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
                 boolean cnt = false;
 
                 try {
-                    Ignite ignite = startGrid(idx.getAndIncrement());
+                    Ignite ignite = startClientGrid(idx.getAndIncrement());
 
                     assertTrue(ignite.configuration().isClientMode());
                     assertTrue(ignite.cluster().localNode().isClient());

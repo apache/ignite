@@ -61,6 +61,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.systemview.walker.ComputeTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -164,9 +165,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         execTasks = sysreg.longAdderMetric(TOTAL_EXEC_TASKS, "Total executed tasks.");
 
         ctx.systemView().registerView(TASKS_VIEW, TASKS_VIEW_DESC,
-            ComputeTaskView.class,
-            tasks.values(),
-            ComputeTaskView::new);
+            new ComputeTaskViewWalker(),
+            tasks.entrySet(),
+            e -> new ComputeTaskView(e.getKey(), e.getValue()));
     }
 
     /** {@inheritDoc} */
@@ -365,7 +366,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      *      if value with given {@code key} doesn't exist.
      */
     @Nullable public <T> T getThreadContext(GridTaskThreadContextKey key) {
-        assert(key != null);
+        assert (key != null);
 
         Map<GridTaskThreadContextKey, Object> map = thCtx.get();
 

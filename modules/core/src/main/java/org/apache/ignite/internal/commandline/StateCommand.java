@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.logging.Logger;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -40,17 +41,30 @@ public class StateCommand implements Command<Void> {
      * @throws Exception If failed to print state.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)){
+        try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
 
-            if (state.active()) {
-                if (state.readOnly())
-                    log.info("Cluster is active (read-only)");
-                else
+            ClusterState clusterState = state.state();
+
+            switch (clusterState) {
+                case ACTIVE:
                     log.info("Cluster is active");
+
+                    break;
+
+                case INACTIVE:
+                    log.info("Cluster is inactive");
+
+                    break;
+
+                case ACTIVE_READ_ONLY:
+                    log.info("Cluster is active (read-only)");
+
+                    break;
+
+                default:
+                    throw new IllegalStateException("Unknown state: " + clusterState);
             }
-            else
-                log.info("Cluster is inactive");
         }
         catch (Throwable e) {
             if (!CommandHandler.isAuthError(e))

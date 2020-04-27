@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.DataRegionMetrics;
@@ -150,6 +149,12 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_DATA_STORAGE_METRICS = 37;
+
+    /** */
+    private static final int OP_ENABLE_STATISTICS = 38;
+
+    /** */
+    private static final int OP_CLEAR_STATISTICS = 39;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -343,15 +348,27 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
 
             case OP_RESET_LOST_PARTITIONS: {
-                int cnt = reader.readInt();
-
-                Collection<String> cacheNames = new ArrayList<>(cnt);
-
-                for (int i = 0; i < cnt; i++) {
-                    cacheNames.add(reader.readString());
-                }
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
 
                 platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
+
+                return TRUE;
+            }
+
+            case OP_ENABLE_STATISTICS: {
+                boolean enabled = reader.readBoolean();
+
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
+
+                platformCtx.kernalContext().grid().cluster().enableStatistics(cacheNames, enabled);
+
+                return TRUE;
+            }
+
+            case OP_CLEAR_STATISTICS: {
+                Collection<String> cacheNames = PlatformUtils.readStrings(reader);
+
+                platformCtx.kernalContext().grid().cluster().clearStatistics(cacheNames);
 
                 return TRUE;
             }

@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -197,7 +198,7 @@ public class IgniteProcessProxy implements IgniteEx {
         );
 
         if (locJvmGrid != null)
-            assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
+            assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS) : "Remote node has not joined [id=" + id + ']';
 
         IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getIgniteInstanceName(), this);
 
@@ -529,13 +530,11 @@ public class IgniteProcessProxy implements IgniteEx {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
-    @Override
-    public boolean isRebalanceEnabled() {
+    @Override public boolean isRebalanceEnabled() {
         return true;
     }
 
-    @Override
-    public void rebalanceEnabled(boolean rebalanceEnabled) {
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -818,6 +817,11 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public DataStorageMetrics dataStorageMetrics() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteEncryption encryption() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

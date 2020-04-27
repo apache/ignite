@@ -47,6 +47,7 @@ import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSe
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.cache.store.cassandra.session.transaction.Mutation;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 
 /**
  * Implementation for {@link org.apache.ignite.cache.store.cassandra.session.CassandraSession}.
@@ -174,7 +175,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     else if (CassandraHelper.isHostsAvailabilityError(e))
                         handleHostsAvailabilityError(ses == null ? -1 : ses.generation, e, attempt, errorMsg);
                     else if (CassandraHelper.isPreparedStatementClusterError(e))
-                        handlePreparedStatementClusterError(preparedSt == null ? -1 : preparedSt.generation , e);
+                        handlePreparedStatementClusterError(preparedSt == null ? -1 : preparedSt.generation, e);
                     else
                         // For an error which we don't know how to handle, we will not try next attempts and terminate.
                         throw new IgniteException(errorMsg, e);
@@ -295,7 +296,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     error = hostsAvailEx;
                 else if (prepStatEx != null)
                     error = prepStatEx;
-                
+
                 // Clean errors info before next communication with Cassandra.
                 unknownEx = null;
                 tblAbsenceEx = null;
@@ -365,7 +366,7 @@ public class CassandraSessionImpl implements CassandraSession {
             " of " + dataSize + " elements, during " + assistant.operationName() +
             " operation with Cassandra";
 
-        log.error(errorMsg, error);
+        LT.warn(log, error, errorMsg, false, false);
 
         throw new IgniteException(errorMsg, error);
     }
@@ -821,7 +822,7 @@ public class CassandraSessionImpl implements CassandraSession {
             }
             catch (Throwable e) {
                 if (CassandraHelper.isHostsAvailabilityError(e))
-                    handleHostsAvailabilityError(ses == null ? 0 : ses.generation , e, attempt, errorMsg);
+                    handleHostsAvailabilityError(ses == null ? 0 : ses.generation, e, attempt, errorMsg);
                 else if (CassandraHelper.isTableAbsenceError(e))
                     createTable(table, settings);
                 else

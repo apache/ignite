@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeVal
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture;
@@ -109,6 +108,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -1066,14 +1066,14 @@ public class IgniteTxHandler {
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
 
+            if (!tx.markFinalizing(USER_FINISH)) {
+                if (log.isDebugEnabled())
+                    log.debug("Will not finish transaction (it is handled by another thread) [commit=" + req.commit() + ", tx=" + tx + ']');
+
+                return null;
+            }
+
             if (req.commit()) {
-                if (!tx.markFinalizing(USER_FINISH)) {
-                    if (log.isDebugEnabled())
-                        log.debug("Will not finish transaction (it is handled by another thread): " + tx);
-
-                    return null;
-                }
-
                 IgniteInternalFuture<IgniteInternalTx> commitFut = tx.commitDhtLocalAsync();
 
                 // Only for error logging.
@@ -1509,7 +1509,6 @@ public class IgniteTxHandler {
             try {
                 // Mark transaction for invalidate.
                 tx.invalidate(true);
-
                 tx.systemInvalidate(true);
 
                 try {
@@ -1768,8 +1767,12 @@ public class IgniteTxHandler {
                         try {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
 
+                            // Entry will be invalidated if a partition was moved to RENTING.
+                            if (locPart.state() == RENTING)
+                                continue;
+
                             if (txCounters != null) {
-                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition());
+                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), part);
 
                                 if (cntr != null) // Counter is null if entry is no-op.
                                     entry.updateCounter(cntr);
@@ -1835,7 +1838,7 @@ public class IgniteTxHandler {
                             }
                         }
                         catch (GridDhtInvalidPartitionException e) {
-                            tx.addInvalidPartition(cacheCtx, e.partition());
+                            tx.addInvalidPartition(cacheCtx.cacheId(), e.partition());
 
                             tx.clearEntry(entry.txKey());
                         }
@@ -1844,7 +1847,7 @@ public class IgniteTxHandler {
                         }
                     }
                     else
-                        tx.addInvalidPartition(cacheCtx, part);
+                        tx.addInvalidPartition(cacheCtx.cacheId(), part);
 
                     idx++;
                 }
@@ -1911,9 +1914,9 @@ public class IgniteTxHandler {
 
                 if (locPart != null && locPart.reserve()) {
                     try {
-                        // do not process renting partitions.
-                        if (locPart.state() == GridDhtPartitionState.RENTING) {
-                            tx.addInvalidPartition(ctx, part);
+                        // Skip renting partitions.
+                        if (locPart.state() == RENTING) {
+                            tx.addInvalidPartition(ctx.cacheId(), part);
 
                             continue;
                         }
@@ -2027,12 +2030,11 @@ public class IgniteTxHandler {
                         locPart.release();
                     }
                 }
-                else {
-                    tx.addInvalidPartition(ctx, part);
-                }
+                else
+                    tx.addInvalidPartition(ctx.cacheId(), part);
             }
             catch (GridDhtInvalidPartitionException e) {
-                tx.addInvalidPartition(ctx, e.partition());
+                tx.addInvalidPartition(ctx.cacheId(), e.partition());
             }
         }
     }
@@ -2271,6 +2273,10 @@ public class IgniteTxHandler {
     }
 
     /**
+     * Applies partition counter updates for transactions.
+     * <p>
+     * Called after entries are written to WAL on commit or during rollback to close gaps in update counter sequence.
+     *
      * @param counters Counters.
      */
     public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters)
@@ -2280,13 +2286,23 @@ public class IgniteTxHandler {
 
     /**
      * Applies partition counter updates for transactions.
+     * <p>
+     * Called after entries are written to WAL on commit or during rollback to close gaps in update counter sequence.
+     * <p>
+     * On rollback counters should be applied on the primary only after backup nodes, otherwise if the primary fail
+     * before sending rollback requests to backups remote transactions can be committed by recovery protocol and
+     * partition consistency will not be restored when primary returns to the grid because RollbackRecord was written
+     * (actual for persistent mode only).
      *
      * @param counters Counter values to be updated.
-     * @param rollback {@code True} if applied from rollbacks.
+     * @param rollback {@code True} if applied during rollbacks.
+     * @param rollbackOnPrimary {@code True} if rollback happens on primary node. Passed to CQ engine.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters,
+    public void applyPartitionsUpdatesCounters(
+        Iterable<PartitionUpdateCountersMessage> counters,
         boolean rollback,
-        boolean rollbackOnPrimary) throws IgniteCheckedException {
+        boolean rollbackOnPrimary
+    ) throws IgniteCheckedException {
         if (counters == null)
             return;
 
@@ -2310,7 +2326,7 @@ public class IgniteTxHandler {
 
                         if (part != null && part.reserve()) {
                             try {
-                                if (part.state() != GridDhtPartitionState.RENTING) { // Check is actual only for backup node.
+                                if (part.state() != RENTING) { // Check is actual only for backup node.
                                     long start = counter.initialCounter(i);
                                     long delta = counter.updatesCount(i);
 
@@ -2347,7 +2363,7 @@ public class IgniteTxHandler {
                         invalid = true;
                     }
 
-                    if (invalid && log.isDebugEnabled()) {
+                    if (log.isDebugEnabled() && invalid) {
                         log.debug("Received partition update counters message for invalid partition, ignoring: " +
                             "[cacheId=" + counter.cacheId() + ", part=" + counter.partition(i) + ']');
                     }

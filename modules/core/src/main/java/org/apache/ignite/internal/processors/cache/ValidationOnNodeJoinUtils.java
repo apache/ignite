@@ -50,6 +50,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
+import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -156,7 +158,7 @@ public class ValidationOnNodeJoinUtils {
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
                     try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
-                        GridCacheProcessor.authorizeCacheCreate(cacheInfo.cacheData().config(), ctx);
+                        GridCacheProcessor.authorizeCacheCreate(ctx.security(), cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {
                         if (errorMsg.length() > 0)
@@ -241,7 +243,7 @@ public class ValidationOnNodeJoinUtils {
             throw new IgniteCheckedException("DataRegion for client caches must be explicitly configured " +
                 "on client node startup. Use DataStorageConfiguration to configure DataRegion.");
 
-        if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(GridCacheProcessor.LocalAffinityFunction.class))
+        if (cc.getCacheMode() == LOCAL && !cc.getAffinity().getClass().equals(LocalAffinityFunction.class))
             U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache [cacheName=" +
                 U.maskName(cc.getName()) + ']');
 
@@ -327,7 +329,12 @@ public class ValidationOnNodeJoinUtils {
                 "Custom IndexingSpi cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode");
         }
 
-        if (cc.isWriteBehindEnabled() && ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName())) {
+        // This method can be called when memory recovery is in progress,
+        // which means that the GridDiscovery manager is not started, and therefore localNode is also not initialized.
+        ClusterNode locNode = ctx.discovery().localNode() != null ? ctx.discovery().localNode() :
+            new DetachedClusterNode(ctx.pdsFolderResolver().resolveFolders().consistentId(), ctx.nodeAttributes());
+
+        if (cc.isWriteBehindEnabled() && ctx.discovery().cacheAffinityNode(locNode, cc.getName())) {
             if (cfgStore == null)
                 throw new IgniteCheckedException("Cannot enable write-behind (writer or store is not provided) " +
                     "for cache: " + U.maskName(cc.getName()));
@@ -342,13 +349,11 @@ public class ValidationOnNodeJoinUtils {
                     "'writeBehindFlushSize' parameters to 0 for cache: " + U.maskName(cc.getName()));
         }
 
-        if (cc.isReadThrough() && cfgStore == null
-            && ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName()))
+        if (cc.isReadThrough() && cfgStore == null && ctx.discovery().cacheAffinityNode(locNode, cc.getName()))
             throw new IgniteCheckedException("Cannot enable read-through (loader or store is not provided) " +
                 "for cache: " + U.maskName(cc.getName()));
 
-        if (cc.isWriteThrough() && cfgStore == null
-            && ctx.discovery().cacheAffinityNode(ctx.discovery().localNode(), cc.getName()))
+        if (cc.isWriteThrough() && cfgStore == null && ctx.discovery().cacheAffinityNode(locNode, cc.getName()))
             throw new IgniteCheckedException("Cannot enable write-through (writer or store is not provided) " +
                 "for cache: " + U.maskName(cc.getName()));
 

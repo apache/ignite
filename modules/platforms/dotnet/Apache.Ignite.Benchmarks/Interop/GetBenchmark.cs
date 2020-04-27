@@ -32,6 +32,14 @@ namespace Apache.Ignite.Benchmarks.Interop
         /** Native cache wrapper. */
         private ICache<int, Employee> _cache;
 
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        protected ICache<int, Employee> Cache
+        {
+            get { return _cache; }
+        }
+
         /** <inheritDoc /> */
         protected override void OnStarted()
         {

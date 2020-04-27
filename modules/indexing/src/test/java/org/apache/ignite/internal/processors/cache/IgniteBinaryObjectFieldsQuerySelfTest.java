@@ -53,7 +53,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
      * Gets Person class name.
      * @return class name.
      */
-    protected String getPersonClassName(){
+    protected String getPersonClassName() {
         return "org.apache.ignite.tests.p2p.cache.Person";
     }
 
@@ -65,10 +65,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
         cfg.setMarshaller(null);
 
-        if (getTestIgniteInstanceName(3).equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
+        if (getTestIgniteInstanceName(3).equals(igniteInstanceName))
             cfg.setClassLoader(extClassLoader);
-        }
 
         return cfg;
     }
@@ -94,7 +92,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     @Override protected void beforeTestsStarted() throws Exception {
         initExtClassLoader();
 
-        startGrids(GRID_CNT);
+        startGrids(GRID_CNT - 1);
+        startClientGrid(GRID_CNT - 1);
     }
 
     /** */

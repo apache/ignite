@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheMapOnInvalidTopologyTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxCrossCacheRemoteMultiplePartitionReservationTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
@@ -71,6 +72,7 @@ public class IgniteCacheMvccTestSuite7 {
 
         // Test logic is not compatible with MVCC style tx locking.
         ignoredTests.add(TxCrossCacheMapOnInvalidTopologyTest.class);
+        ignoredTests.add(TxCrossCacheRemoteMultiplePartitionReservationTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite7.suite(ignoredTests));
 

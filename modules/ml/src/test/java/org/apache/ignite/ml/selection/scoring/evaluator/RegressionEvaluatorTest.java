@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class RegressionEvaluatorTest extends TrainerTest {
     /**
-     * Test evalutor and trainer.
+     * Test evaluator and trainer.
      */
     @Test
     public void testEvaluatorWithoutFilter() {
@@ -78,7 +78,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
     }
 
     /**
-     * Test evalutor and trainer with test-train splitting.
+     * Test evaluator and trainer with test-train splitting.
      */
     @Test
     public void testEvaluatorWithFilter() {
@@ -115,7 +115,7 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         double score = Evaluator.evaluate(new LocalDatasetBuilder<>(data, split.getTrainFilter(), parts),
             mdl, vectorizer, new Rss()
-        ).getSignle();
+        ).getSingle();
 
         assertEquals(4800164.444444457, score, 1e-4);
     }

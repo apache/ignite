@@ -52,9 +52,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static final int SRVS = 5;
 
     /** */
@@ -65,8 +62,6 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         cfg.setCacheConfiguration(
             cacheConfiguration("cache1", TRANSACTIONAL),
@@ -82,9 +77,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS);
 
-        client = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
     }
 
     /**
@@ -143,7 +136,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
                     catch (Exception e) {
                         synchronized (IgniteCacheConnectionRecoveryTest.class) {
                             log.error("Failed to execute update, will dump debug information" +
-                                " [err=" + e+ ", iter=" + iter + ']', e);
+                                " [err=" + e + ", iter=" + iter + ']', e);
 
                             List<Ignite> nodes = IgnitionEx.allGridsx();
 

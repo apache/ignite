@@ -300,7 +300,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 byte[] res = new byte[els.length];
 
-                for (int i = 0; i < els.length; i ++)
+                for (int i = 0; i < els.length; i++)
                     res[i] = Byte.valueOf(els[i]);
 
                 return res;

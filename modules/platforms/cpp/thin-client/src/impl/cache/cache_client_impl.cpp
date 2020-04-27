@@ -51,7 +51,7 @@ namespace ignite
                 {
                     DataRouter& router0 = *router.Get();
 
-                    if (router0.IsAffinityAwarenessEnabled())
+                    if (router0.IsPartitionAwarenessEnabled())
                     {
                         affinity::SP_AffinityAssignment affinityInfo = router0.GetAffinityAssignment(id);
 

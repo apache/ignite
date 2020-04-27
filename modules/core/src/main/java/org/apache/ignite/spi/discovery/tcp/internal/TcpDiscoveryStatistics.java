@@ -551,7 +551,7 @@ public class TcpDiscoveryStatistics {
      *
      * @return Max message processing time.
      */
-    public synchronized long maxMessageProcessingTime(){
+    public synchronized long maxMessageProcessingTime() {
         return maxMsgProcTime;
     }
 

@@ -108,7 +108,7 @@ public class EncryptedCacheBigEntryTest extends AbstractEncryptionTest {
 
         byte[] bigArr = new byte[arrSz];
 
-        for (int i=0; i<bigArr.length; i++)
+        for (int i = 0; i < bigArr.length; i++)
             bigArr[i] = (byte)i;
 
         return bigArr;

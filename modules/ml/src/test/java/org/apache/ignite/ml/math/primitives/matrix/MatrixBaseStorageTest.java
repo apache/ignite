@@ -75,7 +75,7 @@ public abstract class MatrixBaseStorageTest<T extends MatrixStorage> extends Ext
     /** */
     @Override public void externalizeTest() {
         fillMatrix();
-        super.externalizeTest(storage);
+        externalizeTest(storage);
     }
 
     /** */

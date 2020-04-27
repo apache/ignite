@@ -46,8 +46,7 @@ public class R2 implements Metric<Double, EmptyContext<Double>, RegressionMetric
     /**
      * {@inheritDoc}
      */
-    @Override
-    public R2 initBy(RegressionMetricStatsAggregator aggr) {
+    @Override public R2 initBy(RegressionMetricStatsAggregator aggr) {
         double ssReg = aggr.getRss();
         double ssTot = aggr.ysRss();
         value = ssReg / ssTot;

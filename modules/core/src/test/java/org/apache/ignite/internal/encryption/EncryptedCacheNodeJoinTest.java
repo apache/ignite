@@ -87,8 +87,6 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
         else
             cfg.setEncryptionSpi(null);
 
-        cfg.setClientMode(grid.equals(CLIENT));
-
         if (configureCache)
             cfg.setCacheConfiguration(cacheConfiguration(grid));
 
@@ -201,7 +199,7 @@ public class EncryptedCacheNodeJoinTest extends AbstractEncryptionTest {
 
         grid3.cluster().active(true);
 
-        IgniteEx client = startGrid(CLIENT);
+        IgniteEx client = startClientGrid(CLIENT);
 
         createEncryptedCache(client, grid0, cacheName(), null);
     }

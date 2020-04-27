@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,9 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientCluster;
+import org.apache.ignite.client.ClientClusterGroup;
+import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
@@ -52,6 +56,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
@@ -67,6 +72,12 @@ public class TcpIgniteClient implements IgniteClient {
     /** Transactions facade. */
     private final TcpClientTransactions transactions;
 
+    /** Compute facade. */
+    private final ClientComputeImpl compute;
+
+    /** Cluster facade. */
+    private final ClientClusterImpl cluster;
+
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -75,20 +86,19 @@ public class TcpIgniteClient implements IgniteClient {
 
     /**
      * Private constructor. Use {@link TcpIgniteClient#start(ClientConfiguration)} to create an instance of
-     * {@link TcpClientChannel}.
+     * {@code TcpIgniteClient}.
      */
     private TcpIgniteClient(ClientConfiguration cfg) throws ClientException {
-        Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory = chCfg -> {
-            try {
-                return new Result<>(new TcpClientChannel(chCfg));
-            }
-            catch (ClientException e) {
-                return new Result<>(e);
-            }
-        };
+        this(TcpClientChannel::new, cfg);
+    }
 
-        ch = new ReliableChannel(chFactory, cfg);
-
+    /**
+     * Constructor with custom channel factory.
+     */
+    TcpIgniteClient(
+        Function<ClientChannelConfiguration, ClientChannel> chFactory,
+        ClientConfiguration cfg
+    ) throws ClientException {
         marsh = new ClientBinaryMarshaller(new ClientBinaryMetadataHandler(), new ClientMarshallerContext());
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
@@ -97,8 +107,14 @@ public class TcpIgniteClient implements IgniteClient {
 
         binary = new ClientBinary(marsh);
 
+        ch = new ReliableChannel(chFactory, cfg, binary);
+
         transactions = new TcpClientTransactions(ch, marsh,
             new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
+
+        cluster = new ClientClusterImpl();
+
+        compute = new ClientComputeImpl(ch, marsh, cluster);
     }
 
     /** {@inheritDoc} */
@@ -120,8 +136,8 @@ public class TcpIgniteClient implements IgniteClient {
         ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
-        ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION, 
-            req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().serverVersion()));
+        ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
+            req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
     }
@@ -158,8 +174,8 @@ public class TcpIgniteClient implements IgniteClient {
     @Override public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
-        ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION, 
-            req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().serverVersion()));
+        ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
+            req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
     }
@@ -195,6 +211,21 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public ClientTransactions transactions() {
         return transactions;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientCompute compute() {
+        return compute;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientCompute compute(ClientClusterGroup grp) {
+        return compute.withClusterGroup((ClientClusterGroupImpl)grp);
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientCluster cluster() {
+        return cluster;
     }
 
     /**
@@ -334,6 +365,21 @@ public class TcpIgniteClient implements IgniteClient {
         /** Type ID -> class name map. */
         private Map<Integer, String> cache = new ConcurrentHashMap<>();
 
+        /** System types. */
+        private final Collection<String> sysTypes = new HashSet<>();
+
+        /**
+         * Default constructor.
+         */
+        public ClientMarshallerContext() {
+            try {
+                MarshallerUtils.processSystemClasses(U.gridClassLoader(), null, sysTypes::add);
+            }
+            catch (IOException e) {
+                throw new IllegalStateException("Failed to initialize marshaller context.", e);
+            }
+        }
+
         /** {@inheritDoc} */
         @Override public boolean registerClassName(
             byte platformId,
@@ -430,7 +476,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         /** {@inheritDoc} */
         @Override public boolean isSystemType(String typeName) {
-            return false;
+            return sysTypes.contains(typeName);
         }
 
         /** {@inheritDoc} */

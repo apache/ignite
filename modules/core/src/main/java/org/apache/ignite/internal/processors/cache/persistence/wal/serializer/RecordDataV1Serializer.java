@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MergeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineFlagsCreatedVersionRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
@@ -108,6 +111,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
 import org.jetbrains.annotations.Nullable;
@@ -439,6 +443,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case BTREE_META_PAGE_INIT_ROOT2:
                 return 4 + 8 + 8 + 2;
 
+            case BTREE_META_PAGE_INIT_ROOT_V3:
+                return 4 + 8 + 8 + 2 + 8 + IgniteProductVersion.SIZE_IN_BYTES;
+
             case BTREE_META_PAGE_ADD_ROOT:
                 return 4 + 8 + 8;
 
@@ -532,6 +539,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)record);
 
+            case MASTER_KEY_CHANGE_RECORD:
+                MasterKeyChangeRecord rec = (MasterKeyChangeRecord)record;
+
+                return rec.dataSize();
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
         }
@@ -824,6 +835,34 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int inlineSize = in.readShort();
 
                 res = new MetaPageInitRootInlineRecord(cacheId, pageId, rootId2, inlineSize);
+
+                break;
+
+            case BTREE_META_PAGE_INIT_ROOT_V3:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                long rootId3 = in.readLong();
+                int inlineSize3 = in.readShort();
+
+                long flags = in.readLong();
+
+                byte[] revHash = new byte[IgniteProductVersion.REV_HASH_SIZE];
+                byte maj = in.readByte();
+                byte min = in.readByte();
+                byte maint = in.readByte();
+                long verTs = in.readLong();
+                in.readFully(revHash);
+
+                IgniteProductVersion createdVer = new IgniteProductVersion(
+                    maj,
+                    min,
+                    maint,
+                    verTs,
+                    revHash);
+
+                res = new MetaPageInitRootInlineFlagsCreatedVersionRecord(cacheId, pageId, rootId3,
+                    inlineSize3, flags, createdVer);
 
                 break;
 
@@ -1147,6 +1186,35 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case MASTER_KEY_CHANGE_RECORD:
+                int keyNameLen = in.readInt();
+
+                byte[] keyNameBytes = new byte[keyNameLen];
+
+                in.readFully(keyNameBytes);
+
+                String masterKeyName = new String(keyNameBytes);
+
+                int keysCnt = in.readInt();
+
+                HashMap<Integer, byte[]> grpKeys = new HashMap<>(keysCnt);
+
+                for (int i = 0; i < keysCnt; i++) {
+                    int grpId = in.readInt();
+
+                    int grpKeySize = in.readInt();
+
+                    byte[] grpKey = new byte[grpKeySize];
+
+                    in.readFully(grpKey);
+
+                    grpKeys.put(grpId, grpKey);
+                }
+
+                res = new MasterKeyChangeRecord(masterKeyName, grpKeys);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1396,6 +1464,29 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putShort((short)imRec2.inlineSize());
                 break;
 
+            case BTREE_META_PAGE_INIT_ROOT_V3:
+                MetaPageInitRootInlineFlagsCreatedVersionRecord imRec3 =
+                    (MetaPageInitRootInlineFlagsCreatedVersionRecord)rec;
+
+                buf.putInt(imRec3.groupId());
+                buf.putLong(imRec3.pageId());
+
+                buf.putLong(imRec3.rootId());
+
+                buf.putShort((short)imRec3.inlineSize());
+
+                buf.putLong(imRec3.flags());
+
+                // Write created version.
+                IgniteProductVersion createdVer = imRec3.createdVersion();
+                buf.put(createdVer.major());
+                buf.put(createdVer.minor());
+                buf.put(createdVer.maintenance());
+                buf.putLong(createdVer.revisionTimestamp());
+                buf.put(createdVer.revisionHash());
+
+                break;
+
             case BTREE_META_PAGE_ADD_ROOT:
                 MetaPageAddRootRecord arRec = (MetaPageAddRootRecord)rec;
 
@@ -1623,8 +1714,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(tpDelta.pageId());
 
                 buf.putLong(tpDelta.pageIdToMark());
-                buf.putLong(tpDelta.nextSnapshotId());
-                buf.putLong(tpDelta.lastSuccessfulSnapshotId());
+                buf.putLong(tpDelta.nextSnapshotTag());
+                buf.putLong(tpDelta.lastSuccessfulSnapshotTag());
 
                 break;
 
@@ -1711,6 +1802,27 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case SWITCH_SEGMENT_RECORD:
                 break;
 
+            case MASTER_KEY_CHANGE_RECORD:
+                MasterKeyChangeRecord mkChangeRec = (MasterKeyChangeRecord)rec;
+
+                byte[] keyIdBytes = mkChangeRec.getMasterKeyName().getBytes();
+
+                buf.putInt(keyIdBytes.length);
+                buf.put(keyIdBytes);
+
+                Map<Integer, byte[]> grpKeys = mkChangeRec.getGrpKeys();
+
+                buf.putInt(grpKeys.size());
+
+                for (Entry<Integer, byte[]> entry : grpKeys.entrySet()) {
+                    buf.putInt(entry.getKey());
+
+                    buf.putInt(entry.getValue().length);
+                    buf.put(entry.getValue());
+                }
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + rec.type());
         }
@@ -1784,7 +1896,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     private static void putCacheStates(ByteBuffer buf, Map<Integer, CacheState> states) {
         buf.putShort((short)states.size());
 
-        for (Map.Entry<Integer, CacheState> entry : states.entrySet()) {
+        for (Entry<Integer, CacheState> entry : states.entrySet()) {
             buf.putInt(entry.getKey());
 
             CacheState state = entry.getValue();
@@ -2065,7 +2177,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         // Need 4 bytes for the number of caches.
         int size = 2;
 
-        for (Map.Entry<Integer, CacheState> entry : states.entrySet()) {
+        for (Entry<Integer, CacheState> entry : states.entrySet()) {
             // Cache ID.
             size += 4;
 

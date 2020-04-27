@@ -27,6 +27,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
@@ -71,6 +72,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridResourceProcessor(ctx));
+        ctx.add(new GridSystemViewManager(ctx));
 
         ctx.start();
     }
