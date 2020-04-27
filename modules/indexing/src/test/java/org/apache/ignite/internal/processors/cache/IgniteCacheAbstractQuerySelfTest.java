@@ -459,7 +459,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         U.sleep(300); // Less than minimal amount of time that must pass before a cache entry is considered expired.
 
-        qry =  cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
+        qry = cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 
         res = F.first(qry);
 

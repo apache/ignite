@@ -834,7 +834,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBehindCacheStoreSessionListenerStart()  throws IgniteCheckedException {
+    @Override public void writeBehindCacheStoreSessionListenerStart() throws IgniteCheckedException {
         assert sesHolder.get() != null;
 
         notifyCacheStoreSessionListeners(sesHolder.get(), null, true);

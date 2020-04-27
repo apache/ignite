@@ -1276,7 +1276,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
                                 .collect(toList());
 
         int firstIndex = outLines.indexOf("[next group: id=1544803905, name=default]");
-        int lastIndex  = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
+        int lastIndex = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
 
         String dataLine = outLines.get(firstIndex + 1);
         String userArrtDataLine = outLines.get(lastIndex + 1);

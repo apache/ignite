@@ -716,7 +716,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
-        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+        return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
     }
 
     /**

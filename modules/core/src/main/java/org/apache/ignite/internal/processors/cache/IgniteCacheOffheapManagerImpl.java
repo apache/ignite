@@ -3412,7 +3412,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 newRow.newMvccCounter(),
                 newRow.newMvccOperationCounter()) != 0) {
 
-                assert newRow.newMvccTxState() == TxState.NA ||  newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
+                assert newRow.newMvccTxState() == TxState.NA || newRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
 
                 iox.updateNewVersion(pageAddr, off, newRow.newMvccCoordinatorVersion(), newRow.newMvccCounter(),
                     newRow.newMvccOperationCounter(), newRow.newMvccTxState());

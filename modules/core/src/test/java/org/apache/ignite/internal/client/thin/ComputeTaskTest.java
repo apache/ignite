@@ -321,17 +321,17 @@ public class ComputeTaskTest extends GridCommonAbstractTest {
         try (IgniteClient client = startClient(0, 1)) {
             ClientComputeImpl compute = (ClientComputeImpl)client.compute();
 
-            Future<Object> fut1  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<Object> fut1 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
 
             dropAllThinClientConnections();
 
-            Future<Object> fut2  = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
+            Future<Object> fut2 = compute.executeAsync(TestTask.class.getName(), TIMEOUT);
 
             dropAllThinClientConnections();
 
             TestLatchTask.latch = new CountDownLatch(1);
 
-            Future<Object> fut3  = compute.executeAsync(TestLatchTask.class.getName(), null);
+            Future<Object> fut3 = compute.executeAsync(TestLatchTask.class.getName(), null);
 
             assertEquals(1, compute.activeTaskFutures().size());
 

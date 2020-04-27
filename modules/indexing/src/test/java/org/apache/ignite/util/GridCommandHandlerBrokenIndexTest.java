@@ -71,7 +71,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
      * Adds error message listeners to server nodes.
      */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cfg.isClientMode())
             return cfg;

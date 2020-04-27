@@ -92,7 +92,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
         ccfg.setBackups(0);
 
-        return  ccfg;
+        return ccfg;
     }
 
     /**

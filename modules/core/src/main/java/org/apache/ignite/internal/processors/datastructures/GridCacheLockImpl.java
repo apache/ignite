@@ -925,7 +925,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
                     lastCondition = name;
 
-                    long result =  obj.awaitNanos(nanosTimeout);
+                    long result = obj.awaitNanos(nanosTimeout);
 
                     sync.validate(true);
 

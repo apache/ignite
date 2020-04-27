@@ -2380,7 +2380,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             boolean retVal) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccRemove(cctx, key, mvccVer,filter,  primary, needHistory, needOldVal, retVal);
+            return delegate.mvccRemove(cctx, key, mvccVer,filter, primary, needHistory, needOldVal, retVal);
         }
 
         /** {@inheritDoc} */

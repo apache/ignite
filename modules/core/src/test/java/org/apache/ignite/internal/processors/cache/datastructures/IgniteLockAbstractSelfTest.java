@@ -178,7 +178,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
             // Ensure not exists.
             assert g.reentrantLock("lock", failoverSafe, fair, false) == null;
 
-            IgniteLock lock  = g.reentrantLock("lock", failoverSafe, fair, true);
+            IgniteLock lock = g.reentrantLock("lock", failoverSafe, fair, true);
 
             lock.lock();
 

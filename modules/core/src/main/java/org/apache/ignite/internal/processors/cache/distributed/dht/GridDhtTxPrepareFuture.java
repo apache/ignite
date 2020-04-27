@@ -1913,7 +1913,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
 
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
-                        IgniteTxEntry entry  = it.next();
+                        IgniteTxEntry entry = it.next();
 
                         int[] invalidParts = invalidPartsMap.get(entry.cacheId());
 

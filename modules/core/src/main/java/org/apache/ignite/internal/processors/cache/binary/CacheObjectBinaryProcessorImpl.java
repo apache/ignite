@@ -1179,7 +1179,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to get partition", e);
 
-            return  -1;
+            return -1;
         }
     }
 
