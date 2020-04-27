@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.security.sandbox;
 
-import java.lang.reflect.Proxy;
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -27,7 +30,6 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
@@ -40,18 +42,14 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class IgnitionComponentProxyTest extends AbstractSandboxTest {
     /** Server node name. */
     private static final String SRV = "sandbox.IgnitionComponentProxyTest";
+
     /** Client node name. */
     private static final String CLNT = "clnt";
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
         startGrid(SRV, ALLOW_ALL, false);
-
-        Permissions perms = new Permissions();
-
-        perms.add(new AllPermission());
-
-        startGrid(CLNT, ALLOW_ALL, perms, true);
+        startGrid(CLNT, ALLOW_ALL, true);
     }
 
     /**
@@ -135,11 +133,21 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
      *
      */
     @Test
-    public void testStart(){
+    public void testStart() {
         Supplier<Ignite> s = new Supplier<Ignite>() {
             @Override public Ignite get() {
                 try {
-                    return Ignition.start(getConfiguration("node_" + G.allGrids().size()));
+                    Permissions perms = new Permissions();
+
+                    perms.add(new AllPermission());
+
+                    AccessControlContext acc = AccessController.doPrivileged(
+                        (PrivilegedAction<AccessControlContext>)() -> new AccessControlContext(AccessController.getContext(),
+                            new IgniteDomainCombiner(perms)));
+
+                    return AccessController.doPrivileged((PrivilegedExceptionAction<Ignite>)
+                            () -> Ignition.start(getConfiguration("node_" + G.allGrids().size())),
+                        acc);
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);
@@ -170,22 +178,14 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
         Ignite srv = grid(SRV);
 
         Ignite clnt = grid(CLNT);
+
         //Checks that inside the sandbox we should get a proxied instance of Ignite.
         clnt.compute(clnt.cluster().forNodeId(srv.cluster().localNode().id()))
             .broadcast(() -> {
                 Collection<Ignite> nodes = s.get();
 
-                for (Ignite node : nodes) {
-                    assertTrue(Proxy.isProxyClass(node.getClass()));
-                    assertFalse(node instanceof IgniteEx);
-                }
+                for (Ignite node : nodes)
+                    node.compute().call(() -> true);
             });
-        //If we run outside of the sandbox, we should get an instance of IgniteEx.
-        Collection<Ignite> nodes = s.get();
-
-        for (Ignite node : nodes) {
-            assertFalse(Proxy.isProxyClass(node.getClass()));
-            assertTrue(node instanceof IgniteEx);
-        }
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import java.io.InputStream;
 import java.net.URL;
-import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.List;
@@ -30,15 +29,15 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
-import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.SandboxIgniteComponentProxy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.security.SecurityUtils.isInsideSandbox;
 
 /**
  * This class defines a factory for the main Ignite API. It controls Grid life cycle
@@ -308,7 +307,7 @@ public class Ignition {
      */
     public static Ignite start() throws IgniteException {
         try {
-            return sandboxIgniteProxy(IgnitionEx.start());
+            return wrapToProxyIfNeeded(IgnitionEx.start());
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -326,7 +325,7 @@ public class Ignition {
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return sandboxIgniteProxy(IgnitionEx.start(cfg));
+            return wrapToProxyIfNeeded(IgnitionEx.start(cfg));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -351,7 +350,7 @@ public class Ignition {
      */
     public static Ignite start(String springCfgPath) throws IgniteException {
         try {
-            return sandboxIgniteProxy(IgnitionEx.start(springCfgPath));
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgPath));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -376,7 +375,7 @@ public class Ignition {
      */
     public static Ignite start(URL springCfgUrl) throws IgniteException {
         try {
-            return sandboxIgniteProxy(IgnitionEx.start(springCfgUrl));
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgUrl));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -401,7 +400,7 @@ public class Ignition {
      */
     public static Ignite start(InputStream springCfgStream) throws IgniteException {
         try {
-            return sandboxIgniteProxy(IgnitionEx.start(springCfgStream));
+            return wrapToProxyIfNeeded(IgnitionEx.start(springCfgStream));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -417,7 +416,7 @@ public class Ignition {
      */
     public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteException {
         try {
-            return sandboxIgniteProxy(IgnitionEx.start(cfg, false));
+            return wrapToProxyIfNeeded(IgnitionEx.start(cfg, false));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -489,7 +488,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite() throws IgniteIllegalStateException {
-        return sandboxIgniteProxy(IgnitionEx.grid());
+        return wrapToProxyIfNeeded(IgnitionEx.grid());
     }
 
     /**
@@ -500,13 +499,11 @@ public class Ignition {
     public static List<Ignite> allGrids() {
         List<Ignite> res = IgnitionEx.allGrids();
 
-        if (res == null || res.isEmpty())
+        if (F.isEmpty(res))
             return res;
 
-        Ignite ignite = res.get(0);
-
-        if (ignite instanceof IgniteEx && insideSandbox())
-            return res.stream().map((i) -> sandboxIgniteProxy(i, false)).collect(Collectors.toList());
+        if (isInsideSandbox())
+            return res.stream().map(Ignition::wrapToProxy).collect(Collectors.toList());
 
         return res;
     }
@@ -524,7 +521,7 @@ public class Ignition {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
-        return sandboxIgniteProxy(IgnitionEx.grid(locNodeId));
+        return wrapToProxyIfNeeded(IgnitionEx.grid(locNodeId));
     }
 
     /**
@@ -541,7 +538,7 @@ public class Ignition {
      *      initialized or Ignite instance was stopped or was not started.
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
-        return sandboxIgniteProxy(IgnitionEx.grid(name));
+        return wrapToProxyIfNeeded(IgnitionEx.grid(name));
     }
 
     /**
@@ -556,43 +553,25 @@ public class Ignition {
      * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
      */
     public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
-        return sandboxIgniteProxy(IgnitionEx.localIgnite());
+        return wrapToProxyIfNeeded(IgnitionEx.localIgnite());
     }
 
     /**
      * @param ignite Ignite.
-     * @return Ignite component proxy if the Ignite Sandbox is enabled.
+     * @return Ignite component proxy.
      */
-    private static Ignite sandboxIgniteProxy(Ignite ignite) {
-        return sandboxIgniteProxy(ignite, true);
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @return Ignite component proxy if the Ignite Sandbox is enabled.
-     */
-    private static Ignite sandboxIgniteProxy(Ignite ignite, boolean doInsideSandboxCheck) {
-        if (ignite instanceof IgniteEx && (!doInsideSandboxCheck || insideSandbox())) {
-            return AccessController.doPrivileged((PrivilegedAction<Ignite>)
-                () -> SandboxIgniteComponentProxy.proxy(Ignite.class, ignite)
-            );
-        }
-
-        return ignite;
-    }
-
-    /**
-     * @return True if current thread runs inside the Ignite Sandbox.
-     */
-    private static boolean insideSandbox() {
-        if(!IgniteSecurityProcessor.hasSandboxedNodes())
-            return false;
-
-        final AccessControlContext ctx = AccessController.getContext();
-
-        return AccessController.doPrivileged((PrivilegedAction<Boolean>)
-            () -> ctx.getDomainCombiner() instanceof IgniteDomainCombiner
+    private static Ignite wrapToProxy(Ignite ignite) {
+        return AccessController.doPrivileged((PrivilegedAction<Ignite>)
+            () -> SandboxIgniteComponentProxy.proxy(Ignite.class, ignite)
         );
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @return Ignite component proxy if the Ignite Sandbox is enabled.
+     */
+    private static Ignite wrapToProxyIfNeeded(Ignite ignite) {
+        return isInsideSandbox() ? wrapToProxy(ignite) : ignite;
     }
 
     /**
