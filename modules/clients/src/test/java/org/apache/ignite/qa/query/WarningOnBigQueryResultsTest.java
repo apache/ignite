@@ -133,7 +133,7 @@ public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTe
     @Test
     public void testQueryInsideCompute() throws Exception {
         List<List<?>> res = grid("cli").compute(grid("cli").cluster().forNode(grid(0).localNode())).call(
-            new IgniteCallable<List<List<?>>>(){
+            new IgniteCallable<List<List<?>>>() {
                 @IgniteInstanceResource
                 Ignite ign;
 
