@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Union;
@@ -35,6 +36,14 @@ public class IgniteUnionAll extends Union implements IgniteRel {
     /** */
     public IgniteUnionAll(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs) {
         super(cluster, traits, inputs, true);
+    }
+
+    /** */
+    public IgniteUnionAll(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInputs());
     }
 
     /** {@inheritDoc} */

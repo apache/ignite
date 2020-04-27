@@ -21,8 +21,12 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
+import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlExplainLevel;
 
 /**
  * Relational expression that receives elements from remote {@link IgniteSender}
@@ -47,6 +51,16 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     }
 
     /** */
+    public IgniteReceiver(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getRowType("rowType"),
+            ((Number)input.get("exchangeId")).longValue(),
+            ((Number)input.get("sourceFragmentId")).longValue());
+    }
+
+    /** */
     public long exchangeId() {
         return exchangeId;
     }
@@ -64,5 +78,19 @@ public class IgniteReceiver extends AbstractRelNode implements IgniteRel {
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        RelWriter writer = super.explainTerms(pw);
+
+        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES)
+            return writer;
+
+        return writer
+            .item("rowType", rowType)
+            .item("exchangeId", exchangeId)
+            .item("sourceFragmentId", sourceFragmentId)
+            .itemIf("collations", collations(), collations() != null && collations() != RelCollations.EMPTY);
     }
 }

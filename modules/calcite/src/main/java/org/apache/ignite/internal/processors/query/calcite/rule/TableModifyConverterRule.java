@@ -55,7 +55,7 @@ public class TableModifyConverterRule extends RelOptRule {
             .replace(IgniteDistributions.single()); // TODO move to IgniteMdDistributions
 
         RuleUtils.transformTo(call,
-            new IgniteTableModify(cluster, traits, rel.getTable(), rel.getCatalogReader(), input,
+            new IgniteTableModify(cluster, traits, rel.getTable(), input,
             rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened()));
     }
 }

@@ -20,8 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelDistributions;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 
@@ -35,6 +39,7 @@ public class IgniteSender extends SingleRel implements IgniteRel {
 
     /** */
     private long targetFragmentId;
+    private final IgniteDistribution distribution;
 
     /**
      * Creates a Sender.
@@ -45,11 +50,28 @@ public class IgniteSender extends SingleRel implements IgniteRel {
      * @param targetFragmentId Target fragment ID.
      */
     public IgniteSender(RelOptCluster cluster, RelTraitSet traits, RelNode input, long exchangeId,
-        long targetFragmentId) {
+        long targetFragmentId, IgniteDistribution distribution) {
         super(cluster, traits, input);
+
+        assert traitSet.containsIfApplicable(distribution)
+            : "traits=" + traitSet + ", distribution" + distribution;
+        assert distribution != RelDistributions.ANY;
 
         this.exchangeId = exchangeId;
         this.targetFragmentId = targetFragmentId;
+        this.distribution = distribution;
+    }
+
+    public IgniteSender(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet()
+                .replace(input.getDistribution())
+                .replace(IgniteConvention.INSTANCE),
+            input.getInput(),
+            ((Number)input.get("exchangeId")).longValue(),
+            ((Number)input.get("targetFragmentId")).longValue(),
+            (IgniteDistribution)input.getDistribution());
     }
 
     /** */
@@ -69,7 +91,7 @@ public class IgniteSender extends SingleRel implements IgniteRel {
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-        return new IgniteSender(getCluster(), traitSet, sole(inputs), exchangeId, targetFragmentId);
+        return new IgniteSender(getCluster(), traitSet, sole(inputs), exchangeId, targetFragmentId, distribution);
     }
 
     /** {@inheritDoc} */
@@ -77,10 +99,28 @@ public class IgniteSender extends SingleRel implements IgniteRel {
         return visitor.visit(this);
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteDistribution distribution() {
+        return distribution;
+    }
+
     /**
      * @return Node distribution.
      */
     public IgniteDistribution sourceDistribution() {
         return input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        RelWriter writer = super.explainTerms(pw);
+
+        if (pw.getDetailLevel() != SqlExplainLevel.ALL_ATTRIBUTES)
+            return writer;
+
+        return writer
+            .item("exchangeId", exchangeId)
+            .item("targetFragmentId", targetFragmentId)
+            .item("distribution", distribution());
     }
 }

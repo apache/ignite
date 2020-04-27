@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Relational expression that iterates over its input
@@ -43,6 +45,10 @@ public class IgniteFilter extends Filter implements IgniteRel {
      */
     public IgniteFilter(RelOptCluster cluster, RelTraitSet traits, RelNode input, RexNode condition) {
         super(cluster, traits, input, condition);
+    }
+
+    public IgniteFilter(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */

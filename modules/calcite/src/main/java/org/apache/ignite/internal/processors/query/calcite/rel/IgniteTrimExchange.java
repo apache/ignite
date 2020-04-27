@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Exchange;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import static org.apache.calcite.rel.RelDistribution.Type.BROADCAST_DISTRIBUTED;
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
@@ -38,6 +40,10 @@ public class IgniteTrimExchange extends Exchange implements IgniteRel {
 
         assert distribution.getType() == HASH_DISTRIBUTED;
         assert input.getTraitSet().getTrait(DistributionTraitDef.INSTANCE).getType() == BROADCAST_DISTRIBUTED;
+    }
+
+    public IgniteTrimExchange(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */

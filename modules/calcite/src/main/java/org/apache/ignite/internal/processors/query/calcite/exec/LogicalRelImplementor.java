@@ -26,7 +26,6 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -102,9 +101,8 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
         final IgniteTypeFactory typeFactory = ctx.getTypeFactory();
         final SqlConformance conformance = ctx.parent().conformance();
-        final SqlOperatorTable opTable = ctx.parent().opTable();
 
-        expressionFactory = new ExpressionFactory(typeFactory, conformance, opTable);
+        expressionFactory = new ExpressionFactory(typeFactory, conformance);
     }
 
     /** {@inheritDoc} */
@@ -164,7 +162,7 @@ public class LogicalRelImplementor implements IgniteRelVisitor<Node<Object[]>> {
 
     /** {@inheritDoc} */
     @Override public Node<Object[]> visit(IgniteValues rel) {
-        return new ScanNode(ctx, expressionFactory.valuesRex(ctx, Commons.flat(Commons.cast(rel.getTuples())), rel.getRowType().getFieldCount()));
+        return new ScanNode(ctx, expressionFactory.values(ctx, Commons.flat(Commons.cast(rel.getTuples())), rel.getRowType().getFieldCount()));
     }
 
     /** {@inheritDoc} */

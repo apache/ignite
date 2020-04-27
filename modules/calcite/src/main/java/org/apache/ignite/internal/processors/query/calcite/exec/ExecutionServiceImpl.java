@@ -88,8 +88,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.serialize.RelToPhysicalConverter;
-import org.apache.ignite.internal.processors.query.calcite.serialize.SenderPhysicalRel;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -621,8 +619,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         Node<Object[]> node = new LogicalRelImplementor(ectx, partitionService(), mailboxRegistry(), exchangeService(), failureProcessor()).go(fragment.root());
 
-        assert !(node instanceof SenderPhysicalRel);
-
         QueryInfo info = new QueryInfo(ectx, plan, node);
 
         // register query
@@ -630,8 +626,6 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
 
         // start remote execution
         if (fragments.size() > 1) {
-            RelToPhysicalConverter converter = new RelToPhysicalConverter(ectx.getTypeFactory());
-
             for (int i = 1; i < fragments.size(); i++) {
                 Fragment fragment0 = fragments.get(i);
                 NodesMapping mapping0 = plan.fragmentMapping(fragment0);
@@ -654,7 +648,7 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                             QueryStartRequest req = new QueryStartRequest(
                                 queryId,
                                 pctx.schemaName(),
-                                converter.go(fragment0.root()),
+                                Commons.toJson(fragment0.root()),
                                 pctx.topologyVersion(),
                                 fragmentDescription0,
                                 pctx.parameters());
@@ -748,8 +742,8 @@ public class ExecutionServiceImpl extends AbstractService implements ExecutionSe
                 Commons.parametersMap(msg.parameters())
             );
 
-            Node<Object[]> node = new PhysicalRelImplementor(execCtx, partitionService(),
-                mailboxRegistry(), exchangeService(), failureProcessor()).go(msg.root());
+            Node<Object[]> node = new LogicalRelImplementor(execCtx, partitionService(),
+                mailboxRegistry(), exchangeService(), failureProcessor()).go(Commons.fromJson(ctx.createCluster(), msg.root()));
 
             assert node instanceof Outbox : node;
 

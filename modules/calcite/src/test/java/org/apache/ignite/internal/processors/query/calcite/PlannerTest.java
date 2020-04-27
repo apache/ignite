@@ -57,6 +57,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -2191,6 +2193,134 @@ public class PlannerTest extends GridCommonAbstractTest {
         assertNotNull(plan);
 
         assertEquals(2, plan.fragments().size());
+    }
+
+    @Test
+    public void testSerializationDeserialization() throws Exception {
+        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+
+        TestTable developer = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("PROJECTID", f.createJavaType(Integer.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Developer", "hash");
+            }
+        };
+
+        TestTable project = new TestTable(
+            new RelDataTypeFactory.Builder(f)
+                .add("ID", f.createJavaType(Integer.class))
+                .add("NAME", f.createJavaType(String.class))
+                .add("VER", f.createJavaType(Integer.class))
+                .build()) {
+            @Override public IgniteDistribution distribution() {
+                return IgniteDistributions.affinity(0, "Project", "hash");
+            }
+        };
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("DEVELOPER", developer);
+        publicSchema.addTable("PROJECT", project);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        String sql = "SELECT d.id, d.name, d.projectId, p.id0, p.ver0 " +
+            "FROM PUBLIC.Developer d JOIN (" +
+            "SELECT pp.id as id0, pp.ver as ver0 FROM PUBLIC.Project pp" +
+            ") p " +
+            "ON d.projectId = p.id0 " +
+            "WHERE (d.projectId + 1) > ?";
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE
+        };
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        RelNode rel;
+
+        try (IgnitePlanner planner = ctx.planner()){
+            assertNotNull(planner);
+
+            String query = ctx.query();
+
+            assertNotNull(query);
+
+            // Parse
+            SqlNode sqlNode = planner.parse(query);
+
+            // Validate
+            sqlNode = planner.validate(sqlNode);
+
+            // Convert to Relational operators graph
+            rel = planner.convert(sqlNode);
+
+            rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
+
+            // Transformation chain
+            RelTraitSet desired = rel.getCluster().traitSet()
+                .replace(IgniteConvention.INSTANCE)
+                .replace(IgniteDistributions.single())
+                .simplify();
+
+            rel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+        }
+
+        assertNotNull(rel);
+
+        List<Fragment> fragments = new Splitter().go((IgniteRel)rel);
+        List<String> serialized = new ArrayList<>(fragments.size());
+
+        for (Fragment fragment : fragments) {
+            RelJsonWriter writer = new RelJsonWriter();
+            fragment.root().explain(writer);
+            serialized.add(writer.asString());
+        }
+
+        assertNotNull(serialized);
+
+        ctx = PlanningContext.builder()
+            .localNodeId(F.first(nodes))
+            .originatingNodeId(F.first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .logger(log)
+            .query(sql)
+            .parameters(new Object[]{2})
+            .topologyVersion(AffinityTopologyVersion.NONE)
+            .build();
+
+        List<RelNode> nodes = new ArrayList<>();
+
+        try(IgnitePlanner ignored = ctx.planner()) {
+            for (String s : serialized) {
+                RelJsonReader reader = new RelJsonReader(ctx.createCluster(), ctx.catalogReader());
+                nodes.add(reader.read(s));
+            }
+        }
+
+        assertNotNull(nodes);
     }
 
     /** */

@@ -203,7 +203,7 @@ public class FragmentSplitter implements IgniteRelVisitor<IgniteRel> {
         long exchangeId = sourceFragmentId;
 
         IgniteReceiver receiver = new IgniteReceiver(cluster, traits, rowType, exchangeId, sourceFragmentId);
-        IgniteSender sender = new IgniteSender(cluster, traits, input, exchangeId, targetFragmentId);
+        IgniteSender sender = new IgniteSender(cluster, traits, input, exchangeId, targetFragmentId, rel.distribution());
 
         curr.remotes.add(receiver);
         stack.push(new FragmentProto(sourceFragmentId, sender));

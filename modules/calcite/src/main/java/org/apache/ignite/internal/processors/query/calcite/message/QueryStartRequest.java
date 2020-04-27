@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentDescription;
-import org.apache.ignite.internal.processors.query.calcite.serialize.PhysicalRel;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -45,11 +44,7 @@ public class QueryStartRequest implements MarshalableMessage {
     private FragmentDescription fragmentDescription;
 
     /** */
-    @GridDirectTransient
-    private PhysicalRel root;
-
-    /** */
-    private byte[] rootBytes;
+    private String root;
 
     /** */
     @GridDirectTransient
@@ -59,7 +54,7 @@ public class QueryStartRequest implements MarshalableMessage {
     private byte[] paramsBytes;
 
     /** */
-    public QueryStartRequest(UUID queryId, String schema, PhysicalRel root, AffinityTopologyVersion version,
+    public QueryStartRequest(UUID queryId, String schema, String root, AffinityTopologyVersion version,
         FragmentDescription fragmentDescription, Object[] params) {
         this.schema = schema;
         this.queryId = queryId;
@@ -103,7 +98,7 @@ public class QueryStartRequest implements MarshalableMessage {
     /**
      * @return Fragment plan.
      */
-    public PhysicalRel root() {
+    public String root() {
         return root;
     }
 
@@ -116,9 +111,6 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(Marshaller marshaller) throws IgniteCheckedException {
-        if (rootBytes == null && root != null)
-            rootBytes = marshaller.marshal(root);
-
         if (paramsBytes == null && params != null)
             paramsBytes = marshaller.marshal(params);
 
@@ -127,9 +119,6 @@ public class QueryStartRequest implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(Marshaller marshaller, ClassLoader loader) throws IgniteCheckedException {
-        if (root == null && rootBytes != null)
-            root = marshaller.unmarshal(rootBytes, loader);
-
         if (params == null && paramsBytes != null)
             params = marshaller.unmarshal(paramsBytes, loader);
 
@@ -167,7 +156,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("rootBytes", rootBytes))
+                if (!writer.writeString("root", root))
                     return false;
 
                 writer.incrementState();
@@ -222,7 +211,7 @@ public class QueryStartRequest implements MarshalableMessage {
                 reader.incrementState();
 
             case 3:
-                rootBytes = reader.readByteArray("rootBytes");
+                root = reader.readString("root");
 
                 if (!reader.isLastRead())
                     return false;

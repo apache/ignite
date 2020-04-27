@@ -21,8 +21,10 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Relational operator that returns the contents of a table.
@@ -37,6 +39,11 @@ public class IgniteTableScan extends TableScan implements IgniteRel {
      */
     public IgniteTableScan(RelOptCluster cluster, RelTraitSet traits, RelOptTable table) {
         super(cluster, traits, table);
+    }
+
+    /** */
+    public IgniteTableScan(RelInput input) {
+        super(Commons.changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */

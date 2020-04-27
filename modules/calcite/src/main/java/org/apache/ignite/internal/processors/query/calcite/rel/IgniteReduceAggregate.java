@@ -22,12 +22,14 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Aggregate.Group;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -62,6 +64,18 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
         this.rowType = rowType;
     }
 
+    /** */
+    public IgniteReduceAggregate(RelInput input) {
+        this(
+            input.getCluster(),
+            input.getTraitSet().replace(IgniteConvention.INSTANCE),
+            input.getInput(),
+            input.getBitSet("group"),
+            input.getBitSetList("groups"),
+            input.getAggregateCalls("aggs"),
+            input.getRowType("rowType"));
+    }
+
     /** {@inheritDoc} */
     @Override protected RelDataType deriveRowType() {
         throw new UnsupportedOperationException();
@@ -80,6 +94,7 @@ public class IgniteReduceAggregate extends SingleRel implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw)
+            .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES)
             .item("group", groupSet)
             .itemIf("groups", groupSets, Group.induce(groupSet, groupSets) != Group.SIMPLE)
             .itemIf("aggs", aggCalls, pw.nest());

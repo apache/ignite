@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelNode;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -48,14 +47,10 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     private final RelOptCluster cluster;
 
     /** */
-    private final Prepare.CatalogReader catalogReader;
-
-    /** */
     private FragmentProto curr;
 
-    Cloner(RelOptCluster cluster, Prepare.CatalogReader catalogReader) {
+    Cloner(RelOptCluster cluster) {
         this.cluster = cluster;
-        this.catalogReader = catalogReader;
     }
 
     /**
@@ -83,7 +78,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     @Override public IgniteRel visit(IgniteSender rel) {
         IgniteRel input = visit((IgniteRel) rel.getInput());
 
-        return new IgniteSender(cluster, rel.getTraitSet(), input, rel.exchangeId(), rel.targetFragmentId());
+        return new IgniteSender(cluster, rel.getTraitSet(), input, rel.exchangeId(), rel.targetFragmentId(), rel.distribution());
     }
 
     /** {@inheritDoc} */
@@ -111,7 +106,7 @@ class Cloner implements IgniteRelVisitor<IgniteRel> {
     @Override public IgniteRel visit(IgniteTableModify rel) {
         RelNode input = visit((IgniteRel) rel.getInput());
 
-        return new IgniteTableModify(cluster, rel.getTraitSet(), rel.getTable(), catalogReader, input,
+        return new IgniteTableModify(cluster, rel.getTraitSet(), rel.getTable(), input,
             rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened());
     }
 
