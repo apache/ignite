@@ -51,4 +51,4 @@ matrix:
       dotnet: 3.1.101
       script:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
-        -
+        - 
