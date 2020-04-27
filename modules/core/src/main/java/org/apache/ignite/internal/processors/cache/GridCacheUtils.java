@@ -129,7 +129,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.IgniteCach
 /**
  * Cache utility methods.
  */
-public class GridCacheUtils   {
+public class GridCacheUtils {
     /** Cheat cache ID for debugging and benchmarking purposes. */
     public static final int cheatCacheId;
 

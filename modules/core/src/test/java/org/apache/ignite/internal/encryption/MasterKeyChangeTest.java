@@ -51,7 +51,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** Tests master key change process. */
 @SuppressWarnings("ThrowableNotThrown")
-public class MasterKeyChangeTest extends AbstractEncryptionTest {
+public class MasterKeyChangeTest     extends AbstractEncryptionTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
