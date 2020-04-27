@@ -244,11 +244,27 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
 
+    /**
+     *  Default timeout after which long query warning will be printed.
+     *
+     * @deprecated Please use {@link SqlConfiguration#DFLT_LONG_QRY_WARN_TIMEOUT}.
+     */
+    @Deprecated
+    public static final long DFLT_LONG_QRY_WARN_TIMEOUT = SqlConfiguration.DFLT_LONG_QRY_WARN_TIMEOUT;
+
     /** Default number of MVCC vacuum threads.. */
     public static final int DFLT_MVCC_VACUUM_THREAD_CNT = 2;
 
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
+
+    /**
+     * Default SQL query history size.
+     *
+     * @deprecated Please use {@link SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
+     */
+    @Deprecated
+    public static final int DFLT_SQL_QUERY_HISTORY_SIZE = SqlConfiguration.DFLT_SQL_QUERY_HISTORY_SIZE;
 
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
@@ -579,8 +595,8 @@ public class IgniteConfiguration {
     /** Plugin providers. */
     private PluginProvider[] pluginProvs;
 
-    /** Sql initial config. */
-    private SqlInitialConfiguration sqlInitCfg = new SqlInitialConfiguration();
+    /** SQL configuration. */
+    private SqlConfiguration sqlInitCfg = new SqlConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -709,7 +725,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        sqlInitCfg = cfg.getSqlInitialConfiguration();
+        sqlInitCfg = cfg.getSqlConfiguration();
     }
 
     /**
@@ -1096,12 +1112,12 @@ public class IgniteConfiguration {
 
     /**
      * Number of SQL query history elements to keep in memory. If not provided, then default value {@link
-     * SqlInitialConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
+     * SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE} is used. If provided value is less or equals 0, then gathering SQL query history
      * will be switched off.
      *
      * @return SQL query history size.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#setSqlQueryHistorySize(int)} instead.
+     * @deprecated Use {@link SqlConfiguration#setSqlQueryHistorySize(int)} instead.
      */
     @Deprecated
     public int getSqlQueryHistorySize() {
@@ -1110,12 +1126,12 @@ public class IgniteConfiguration {
 
     /**
      * Sets number of SQL query history elements kept in memory. If not explicitly set, then default value is {@link
-     * SqlInitialConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
+     * SqlConfiguration#DFLT_SQL_QUERY_HISTORY_SIZE}.
      *
      * @param size Number of SQL query history elements kept in memory.
      * @return {@code this} for chaining.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#getSqlQueryHistorySize()} instead.
+     * @deprecated Use {@link SqlConfiguration#getSqlQueryHistorySize()} instead.
      */
     @Deprecated
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
@@ -1127,13 +1143,13 @@ public class IgniteConfiguration {
     /**
      * Defines the default query timeout.
      *
-     * Defaults to {@link SqlInitialConfiguration#DFLT_QRY_TIMEOUT}.
+     * Defaults to {@link SqlConfiguration#DFLT_QRY_TIMEOUT}.
      * {@code 0} means there is no timeout (this
      * is a default value)
      *
      * @return Default query timeout.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#getDefaultQueryTimeout()} instead.
+     * @deprecated Use {@link SqlConfiguration#getDefaultQueryTimeout()} instead.
      */
     @Deprecated
     public long getDefaultQueryTimeout() {
@@ -1148,7 +1164,7 @@ public class IgniteConfiguration {
      * @param dfltQryTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#setDefaultQueryTimeout(long)} instead.
+     * @deprecated Use {@link SqlConfiguration#setDefaultQueryTimeout(long)} instead.
      */
     @Deprecated
     public IgniteConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
@@ -3372,7 +3388,7 @@ public class IgniteConfiguration {
      *
      * @return Timeout in milliseconds.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#getLongQueryWarningTimeout()} instead.
+     * @deprecated Use {@link SqlConfiguration#getLongQueryWarningTimeout()} instead.
      */
     @Deprecated
     public long getLongQueryWarningTimeout() {
@@ -3385,7 +3401,7 @@ public class IgniteConfiguration {
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#setLongQueryWarningTimeout(long)} instead.
+     * @deprecated Use {@link SqlConfiguration#setLongQueryWarningTimeout(long)} instead.
      */
     @Deprecated
     public IgniteConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
@@ -3544,7 +3560,7 @@ public class IgniteConfiguration {
      *
      * @return SQL schemas to be created on node startup.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#getSqlSchemas()} instead.
+     * @deprecated Use {@link SqlConfiguration#getSqlSchemas()} instead.
      */
     @Deprecated
     public String[] getSqlSchemas() {
@@ -3563,7 +3579,7 @@ public class IgniteConfiguration {
      * @param sqlSchemas SQL schemas to be created on node startup.
      * @return {@code this} for chaining.
      *
-     * @deprecated Use {@link SqlInitialConfiguration#setSqlSchemas(String...)} instead.
+     * @deprecated Use {@link SqlConfiguration#setSqlSchemas(String...)} instead.
      */
     public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
         sqlInitCfg.setSqlSchemas();
@@ -3593,21 +3609,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets initial configuration of the SQL subsystem.
+     * Gets Configuration of the SQL subsystem.
      *
-     * @return SQL initial configuration.
+     * @return SQL configuration.
      */
-    public SqlInitialConfiguration getSqlInitialConfiguration() {
+    public SqlConfiguration getSqlConfiguration() {
         return sqlInitCfg;
     }
 
     /**
-     * @param sqlInitCfg Initial configuration of the SQL subsystem.
+     * @param sqlInitCfg Configuration of the SQL subsystem.
      *
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setSqlInitialConfiguration(SqlInitialConfiguration sqlInitCfg) {
-        A.ensure(sqlInitCfg != null, "SQL initial configuration cannot be null");
+    public IgniteConfiguration setSqlConfiguration(SqlConfiguration sqlInitCfg) {
+        A.ensure(sqlInitCfg != null, "SQL configuration cannot be null");
 
         this.sqlInitCfg = sqlInitCfg;
 

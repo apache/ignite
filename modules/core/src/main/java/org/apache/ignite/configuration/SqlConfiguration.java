@@ -21,10 +21,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Initial configuration of the SQL query subsystem.
- * 'Initial' means that the most parameters may be redefined on runtime.
+ * The configuration of the SQL query subsystem.
  */
-public class SqlInitialConfiguration {
+public class SqlConfiguration {
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
@@ -67,7 +66,7 @@ public class SqlInitialConfiguration {
      * @param dfltQryTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      */
-    public SqlInitialConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
+    public SqlConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
         A.ensure(dfltQryTimeout >= 0 && dfltQryTimeout <= Integer.MAX_VALUE, "default query timeout value should be valid Integer.");
         this.dfltQryTimeout = dfltQryTimeout;
 
@@ -92,7 +91,7 @@ public class SqlInitialConfiguration {
      * @param size Number of SQL query history elements kept in memory.
      * @return {@code this} for chaining.
      */
-    public SqlInitialConfiguration setSqlQueryHistorySize(int size) {
+    public SqlConfiguration setSqlQueryHistorySize(int size) {
         sqlQryHistSize = size;
 
         return this;
@@ -121,7 +120,7 @@ public class SqlInitialConfiguration {
      * @param sqlSchemas SQL schemas to be created on node startup.
      * @return {@code this} for chaining.
      */
-    public SqlInitialConfiguration setSqlSchemas(String... sqlSchemas) {
+    public SqlConfiguration setSqlSchemas(String... sqlSchemas) {
         this.sqlSchemas = sqlSchemas;
 
         return this;
@@ -142,7 +141,7 @@ public class SqlInitialConfiguration {
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      */
-    public SqlInitialConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
+    public SqlConfiguration setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
 
         return this;
@@ -150,6 +149,6 @@ public class SqlInitialConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SqlInitialConfiguration.class, this);
+        return S.toString(SqlConfiguration.class, this);
     }
 }
