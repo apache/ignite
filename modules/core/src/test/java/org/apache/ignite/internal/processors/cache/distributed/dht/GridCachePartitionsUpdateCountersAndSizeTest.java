@@ -176,20 +176,25 @@ public class GridCachePartitionsUpdateCountersAndSizeTest extends GridCommonAbst
     private static class SizeCounterLogListener extends LogListener {
         /** Pattern for Counters inconsistent message.*/
         final Pattern patCnt = Pattern.compile("(\\d)=(\\d{1,2})");
+        
         /** Pattern for Size inconsistent message.*/
         final Pattern patSz = Pattern.compile("(\\d)=(\\d{1,2})");
+
         /** Pattern for Both counters and sizes message*/
         final Pattern patCntSz = Pattern.compile("consistentId=dht.GridCachePartitionsUpdateCountersAndSizeTest" +
             "\\d meta=\\[updCnt=(\\d{2}), size=(\\d{1,2})");
 
         /** if finded substring in log for inconsistent counters.*/
         boolean cn;
+
         /** if finded substring in log for inconsistent partition size.*/
         boolean sz;
+
         /** return true if inconsistent counters.*/
         public boolean checkCnt() {
             return cn;
         }
+
         /** return true if inconsistent partition size.*/
         public boolean checkSize() {
             return sz;
