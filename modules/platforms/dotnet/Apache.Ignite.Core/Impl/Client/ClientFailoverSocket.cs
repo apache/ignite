@@ -473,27 +473,26 @@ namespace Apache.Ignite.Core.Impl.Client
                 var host = e.Host;
                 Debug.Assert(host != null);  // Checked by GetEndpoints.
 
-                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
-                IPAddress ip;
-
-                if (IPAddress.TryParse(host, out ip))
+                for (var port = e.Port; port <= e.PortRange + e.Port; port++)
                 {
-                    for (var i = 0; i <= e.PortRange; i++)
+                    foreach (var ip in GetIps(e.Host))
                     {
-                        yield return new SocketEndpoint(new IPEndPoint(ip, e.Port + i), host);
-                    }
-                }
-                else
-                {
-                    for (var i = 0; i <= e.PortRange; i++)
-                    {
-                        foreach (var x in Dns.GetHostEntry(host).AddressList)
-                        {
-                            yield return new SocketEndpoint(new IPEndPoint(x, e.Port + i), host);
-                        }
+                        yield return new SocketEndpoint(new IPEndPoint(ip, port), e.Host);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets IP address list from a given host.
+        /// When host is an IP already - parses it. Otherwise, resolves DNS name to IPs.
+        /// </summary>
+        private static IEnumerable<IPAddress> GetIps(string host)
+        {
+            IPAddress ip;
+
+            // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
+            return IPAddress.TryParse(host, out ip) ? new[] {ip} : Dns.GetHostEntry(host).AddressList;
         }
 
         /// <summary>
