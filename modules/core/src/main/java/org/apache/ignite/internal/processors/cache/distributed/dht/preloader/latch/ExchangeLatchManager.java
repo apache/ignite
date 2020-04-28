@@ -376,7 +376,7 @@ public class ExchangeLatchManager {
         try {
             CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
 
-            if(discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
+            if (discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
                 // It means that this node doesn't receive changed topology version message yet
                 // but received ack message from client latch.
                 // It can happen when we don't have guarantees of received message order for example in ZookeeperSpi.

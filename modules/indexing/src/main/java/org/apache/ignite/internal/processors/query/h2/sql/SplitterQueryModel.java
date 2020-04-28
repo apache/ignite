@@ -283,7 +283,7 @@ public final class SplitterQueryModel {
             }
             else {
                 // Here we must be inside of generated unique alias for FROM clause element.
-                assert prnt == uniqueAlias: prnt.getClass();
+                assert prnt == uniqueAlias : prnt.getClass();
 
                 if (child instanceof GridSqlTable)
                     childModels.add(new SplitterQueryModel(SplitterQueryModelType.TABLE, prnt, childIdx, uniqueAlias));
@@ -357,7 +357,7 @@ public final class SplitterQueryModel {
     public GridSqlJoin findJoin(int idx) {
         assert type == SplitterQueryModelType.SELECT : type;
         assert childModels.size() > 1; // It must be at least one join with at least two child tables.
-        assert idx < childModels.size(): idx;
+        assert idx < childModels.size() : idx;
 
         //     join2
         //      / \

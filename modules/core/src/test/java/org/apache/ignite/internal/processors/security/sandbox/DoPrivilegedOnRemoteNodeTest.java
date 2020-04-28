@@ -94,7 +94,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid("srv", ALLOW_ALL,  false);
+        Ignite srv = startGrid("srv", ALLOW_ALL, false);
 
         startGrid(CLNT_NODE, ALLOW_ALL, true);
 
@@ -117,7 +117,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** */
     @Test
-    public void testIgniteProxy(){
+    public void testIgniteProxy() {
         runForbiddenOperation(() -> clientCompute().broadcast(new TestRunnable() {
             @Override public void run() {
                 assertTrue(Proxy.isProxyClass(ignite.getClass()));
@@ -128,7 +128,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
     }
 
     /** */
-    private IgniteCompute clientCompute(){
+    private IgniteCompute clientCompute() {
         Ignite clnt = grid(CLNT_NODE);
 
         return clnt.compute(clnt.cluster().forRemotes());
@@ -142,7 +142,7 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
     }
 
     /** */
-    abstract static class TestRunnable implements IgniteRunnable{
+    abstract static class TestRunnable implements IgniteRunnable {
         /** */
         @IgniteInstanceResource
         protected Ignite ignite;

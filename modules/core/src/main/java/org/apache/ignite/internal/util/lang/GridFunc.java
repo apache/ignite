@@ -522,7 +522,7 @@ public class GridFunc {
      * @return Single iterator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+    public static <T> Iterator<T> concat(Iterator<T>... iters) {
         if (iters.length == 1)
             return iters[0];
 
@@ -1766,7 +1766,7 @@ public class GridFunc {
      *      does not exist in the map. Return {@code null} if key is not found and
      *      closure is {@code null}.
      */
-    public static <K, V>  V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
+    public static <K, V> V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
         A.notNull(map, "map", key, "key");
 
         V v = map.get(key);

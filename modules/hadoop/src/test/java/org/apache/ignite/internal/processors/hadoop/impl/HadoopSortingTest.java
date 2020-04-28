@@ -171,7 +171,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
 
             UUID prev = null;
 
-            while(sc.hasNextLine()) {
+            while (sc.hasNextLine()) {
                 UUID next = UUID.fromString(sc.nextLine());
 
 //                X.printerrln("___ check: " + next);

@@ -224,7 +224,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
                 ignite.message(ignite.cluster().forNode(node)).send(null, respMsg); // Can still fail.
             else
                 throw new IgniteException("Failed to send message since destination node has " +
-                    "left topology (ignoring) [nodeId=" +nodeId + ", respMsg=" + respMsg + ']');
+                    "left topology (ignoring) [nodeId=" + nodeId + ", respMsg=" + respMsg + ']');
         }
     }
 

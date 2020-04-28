@@ -134,7 +134,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        for(int i = 0; i < ITERATIONS; ++i) {
+        for (int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
 
             final AtomicBoolean stop = new AtomicBoolean();
@@ -189,7 +189,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        for(int i = 0; i < ITERATIONS; ++i) {
+        for (int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
 
             // Open iterator on the created cursor: add entries to the cache

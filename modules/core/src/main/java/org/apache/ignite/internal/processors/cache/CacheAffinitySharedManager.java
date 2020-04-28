@@ -2975,7 +2975,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             int partsNum
             ) {
             String res = "Cache group '%s'" +
-                " brings high overhead for its metainformation in data region '%s'."  +
+                " brings high overhead for its metainformation in data region '%s'." +
                 " Metainformation required for its partitions (%d partitions, %d bytes per partition, %d MBs total)" +
                 " will consume more than 15%% of data region memory (%d MBs)." +
                 " It may lead to critical errors on the node and cluster instability." +

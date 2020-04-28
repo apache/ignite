@@ -87,7 +87,7 @@ public class JdbcMetaColumnsResult extends JdbcResult {
         else {
             writer.writeInt(meta.size());
 
-            for(JdbcColumnMeta m : meta)
+            for (JdbcColumnMeta m : meta)
                 m.writeBinary(writer, ver);
         }
     }

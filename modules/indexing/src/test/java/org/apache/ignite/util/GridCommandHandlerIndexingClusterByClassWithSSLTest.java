@@ -20,7 +20,7 @@ package org.apache.ignite.util;
 /**
  *
  */
-public class GridCommandHandlerIndexingClusterByClassWithSSLTest extends GridCommandHandlerIndexingClusterByClassTest{
+public class GridCommandHandlerIndexingClusterByClassWithSSLTest extends GridCommandHandlerIndexingClusterByClassTest {
     /** {@inheritDoc} */
     @Override protected boolean sslEnabled() {
         return true;

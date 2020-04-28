@@ -178,7 +178,7 @@ public abstract class PartitionsEvictManagerAbstractTest extends GridCommonAbstr
             Object obj = super.poll();
 
             // This code uses for failure handler testing into PartitionEvictionTask.
-            if(obj != null && completeWithError) {
+            if (obj != null && completeWithError) {
                 try {
                     Field field = U.findField(PartitionsEvictManager.PartitionEvictionTask.class, "finishFut");
 
