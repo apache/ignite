@@ -49,6 +49,7 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
 
     /**
      * @param marshaller Marshaller.
+     * @param ctx Grid kernal context.
      */
     public CacheConfigurationSplitterImpl(Marshaller marshaller, GridKernalContext ctx) {
         this.marshaller = marshaller;
@@ -141,7 +142,7 @@ public class CacheConfigurationSplitterImpl implements CacheConfigurationSplitte
 
     /**
      * @param cfg Cache configuration.
-     * @return {@code true} if local node is affinity node for cache.
+     * @return {@code true} If local node is affinity node for cache.
      */
     private boolean isAffinity(CacheConfiguration cfg) {
         return cfg.getCacheMode() == CacheMode.LOCAL ||
