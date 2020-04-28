@@ -21,9 +21,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static org.apache.ignite.internal.util.IgniteUtils.readCollection;
@@ -32,7 +33,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.writeCollection;
 /**
  * Result of checking size cache and index.
  */
-public class ValidateIndexesCheckSizeResult extends VisorDataTransferObject {
+public class ValidateIndexesCheckSizeResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +42,7 @@ public class ValidateIndexesCheckSizeResult extends VisorDataTransferObject {
 
     /** Issues. */
     @GridToStringExclude
-    private Collection<ValidateIndexesCheckSizeIssue> issues;
+    @Nullable private Collection<ValidateIndexesCheckSizeIssue> issues;
 
     /**
      * Default constructor.
@@ -56,7 +57,7 @@ public class ValidateIndexesCheckSizeResult extends VisorDataTransferObject {
      * @param cacheSize Cache size.
      * @param issues Issues.
      */
-    public ValidateIndexesCheckSizeResult(long cacheSize, Collection<ValidateIndexesCheckSizeIssue> issues) {
+    public ValidateIndexesCheckSizeResult(long cacheSize, @Nullable Collection<ValidateIndexesCheckSizeIssue> issues) {
         this.cacheSize = cacheSize;
         this.issues = issues;
     }

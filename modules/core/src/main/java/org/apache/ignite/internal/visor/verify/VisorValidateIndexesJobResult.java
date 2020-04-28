@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.writeMap;
 /**
  *
  */
-public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
+public class VisorValidateIndexesJobResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,15 +48,15 @@ public class VisorValidateIndexesJobResult extends VisorDataTransferObject {
 
     /** Results of reverse indexes validation from node. */
     @GridToStringInclude
-    private Map<String, ValidateIndexesPartitionResult> idxRes;
+    @Nullable private Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
     @GridToStringInclude
-    private Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
+    @Nullable private Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
     /** Results of checking size cache and index. */
     @GridToStringInclude
-    private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
+    @Nullable private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 
     /**
      * Constructor.
