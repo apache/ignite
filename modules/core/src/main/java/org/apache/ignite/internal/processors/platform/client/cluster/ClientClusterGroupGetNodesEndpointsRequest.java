@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -76,16 +76,22 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
 
         for (UUID endNode : endNodes) {
             if (!startNodes.contains(endNode)) {
-                ClusterGroup grp = cluster.forNodeId(endNode);
+                ClusterNode node = cluster.node(endNode);
 
-                // TODO: Should we use node attributes for this?
-                // We have:
-                // * "org.apache.ignite.ips" - all known IPs (disregarding IgniteConfiguration.LocalHost)
-                // * "clientListenerPort"
-                // The above is not enough - we need host names as well,
-                // and we should respect IgniteConfiguration.LocalHost.
-                Collection<NodeEndpoint> endpoints = ctx.kernalContext().grid().compute(grp)
-                        .call(new ClientClusterGroupGetNodeEndpointsJob()).getEndpoints();
+                // TODO: Send port once per node.
+                int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+
+                Collection<String> addrs = node.addresses();
+                Collection<String> hosts = node.hostNames();
+
+                Collection<NodeEndpoint> endpoints = new ArrayList<>(addrs.size() + hosts.size());
+
+                for (String addr : addrs)
+                    endpoints.add(new NodeEndpoint(addr, addr, port));
+
+                for (String host : hosts) {
+                    endpoints.add(new NodeEndpoint(host, host, port));
+                }
 
                 addedNodes.add(new IgniteBiTuple<>(endNode, endpoints));
             }

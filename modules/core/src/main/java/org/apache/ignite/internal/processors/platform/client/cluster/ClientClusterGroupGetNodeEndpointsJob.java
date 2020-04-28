@@ -31,6 +31,7 @@ import java.util.Iterator;
 
 /**
  * Compute job to retrieve remote node client endpoints.
+ * TODO: Delete me.
  */
 public class ClientClusterGroupGetNodeEndpointsJob implements IgniteCallable<ClientClusterGroupGetNodeEndpointsJobResult> {
     /** */
