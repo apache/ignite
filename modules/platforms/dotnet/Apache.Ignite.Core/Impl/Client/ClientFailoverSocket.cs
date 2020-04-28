@@ -405,7 +405,8 @@ namespace Apache.Ignite.Core.Impl.Client
                     );
                 }
                 
-                DiscoverEndpoints(UnknownTopologyVersion, UnknownTopologyVersion);
+                // TODO: We don't need this.
+                // DiscoverEndpoints(UnknownTopologyVersion, UnknownTopologyVersion);
             }
         }
 
@@ -433,7 +434,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
             var newTopologyVersion = affinityTopologyVersion.Version;
             
-            if (oldTopologyVersion < newTopologyVersion)
+            if (oldTopologyVersion < newTopologyVersion && 
+                (_config.EnableDiscovery || _config.EnablePartitionAwareness))
             {
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
@@ -644,22 +646,22 @@ namespace Apache.Ignite.Core.Impl.Client
                         continue;
                     }
 
-                    foreach (var discoEndpoint in node.Endpoints)
+                    foreach (var addr in node.Addresses)
                     {
                         try
                         {
-                            var ipEndpoint = new IPEndPoint(IPAddress.Parse(discoEndpoint.Address), discoEndpoint.Port);
+                            // TODO: addr may be a host name. Resolve it.
+                            var ipEndpoint = new IPEndPoint(IPAddress.Parse(addr), node.Port);
                         
-                            socket = new ClientSocket(_config, ipEndpoint, discoEndpoint.Host,
+                            socket = new ClientSocket(_config, ipEndpoint, addr,
                                 _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
                             
                             if (socket.ServerNodeId != node.Id)
                             {
                                 _logger.Debug(
-                                    "Autodiscovery connection succeeded, but node id does not match: {0}, {1}, {2}. " +
-                                    "Expected node id: {3}. Actual node id: {4}. Connection dropped.",
-                                    discoEndpoint.Address, discoEndpoint.Host, discoEndpoint.Port, 
-                                    node.Id, socket.ServerNodeId);
+                                    "Autodiscovery connection succeeded, but node id does not match: {0}, {1}. " +
+                                    "Expected node id: {2}. Actual node id: {3}. Connection dropped.",
+                                    addr, node.Port, node.Id, socket.ServerNodeId);
                                 
                                 socket.Dispose();
                                 
@@ -671,13 +673,11 @@ namespace Apache.Ignite.Core.Impl.Client
                         catch (SocketException socketEx)
                         {
                             // Ignore: failure to connect is expected.
-                            _logger.Debug(socketEx, "Autodiscovery connection failed: {0}, {1}, {2}", 
-                                discoEndpoint.Address, discoEndpoint.Host, discoEndpoint.Port);
+                            _logger.Debug(socketEx, "Autodiscovery connection failed: {0}, {1}", addr, node.Port);
                         }
                         catch (Exception ex)
                         {
-                            _logger.Debug(ex, "Autodiscovery connection failed: {0}, {1}, {2}", 
-                                discoEndpoint.Address, discoEndpoint.Host, discoEndpoint.Port);
+                            _logger.Debug(ex, "Autodiscovery connection failed: {0}, {1}", addr, node.Port);
                         }                    
                     }
                 }
@@ -788,19 +788,10 @@ namespace Apache.Ignite.Core.Impl.Client
                     for (var i = 0; i < addedCnt; i++)
                     {
                         var id = BinaryUtils.ReadGuid(s);
-                        var cnt = s.ReadInt();
-                        var endpoints = new List<ClientDiscoveryEndpoint>(cnt);
+                        var port = s.ReadInt();
+                        var addresses = ctx.Reader.ReadStringCollection();
                         
-                        for (var j = 0; j < cnt; j++)
-                        {
-                            var addr = ctx.Reader.ReadString();
-                            var host = ctx.Reader.ReadString();
-                            var port = s.ReadInt();
-
-                            endpoints.Add(new ClientDiscoveryEndpoint(addr, host, port));
-                        }
-                        
-                        addedNodes.Add(new ClientDiscoveryNode(id, endpoints));
+                        addedNodes.Add(new ClientDiscoveryNode(id, port, addresses));
                     }
 
                     var removedCnt = s.ReadInt();

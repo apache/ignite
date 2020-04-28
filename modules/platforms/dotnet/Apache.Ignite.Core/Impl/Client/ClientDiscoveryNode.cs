@@ -28,20 +28,24 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         /** */
         private readonly Guid _id;
+
+        /** */
+        private readonly int _port;
         
         /** */
-        private readonly IList<ClientDiscoveryEndpoint> _endpoints;
+        private readonly IList<string> _addresses;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ClientDiscoveryNode"/>.
         /// </summary>
-        public ClientDiscoveryNode(Guid id, IList<ClientDiscoveryEndpoint> endpoints)
+        public ClientDiscoveryNode(Guid id, int port, IList<string> addresses)
         {
-            Debug.Assert(endpoints != null);
-            Debug.Assert(endpoints.Count > 0);
+            Debug.Assert(addresses != null);
+            Debug.Assert(addresses.Count > 0);
             
             _id = id;
-            _endpoints = endpoints;
+            _port = port;
+            _addresses = addresses;
         }
 
         /// <summary>
@@ -53,11 +57,19 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Gets the endpoints.
+        /// Gets the port.
         /// </summary>
-        public IList<ClientDiscoveryEndpoint> Endpoints
+        public int Port
         {
-            get { return _endpoints; }
+            get { return _port; }
+        }
+
+        /// <summary>
+        /// Gets the addresses - IPs or host names.
+        /// </summary>
+        public IList<string> Addresses
+        {
+            get { return _addresses; }
         }
     }
 }
