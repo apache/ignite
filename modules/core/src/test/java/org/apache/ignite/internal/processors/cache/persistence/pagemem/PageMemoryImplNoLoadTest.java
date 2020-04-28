@@ -100,6 +100,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null,
             null,
             null,
+            null,
             null
         );
 
