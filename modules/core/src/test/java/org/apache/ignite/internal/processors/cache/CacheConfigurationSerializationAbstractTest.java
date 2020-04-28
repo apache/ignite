@@ -115,7 +115,7 @@ public class CacheConfigurationSerializationAbstractTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     protected void restartNodesAndCheck(boolean stopCrd) throws Exception {
-        if (!stopCrd){
+        if (!stopCrd) {
             Collection<Ignite> srvs = new ArrayList<>();
 
             for (Ignite g : G.allGrids()) {
