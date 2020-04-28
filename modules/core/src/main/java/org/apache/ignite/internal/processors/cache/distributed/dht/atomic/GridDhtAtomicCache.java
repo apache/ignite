@@ -1522,6 +1522,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
+            ctx.shared().database().checkpointReadLock();
+
             try {
                 Map<K, V> locVals = U.newHashMap(keys.size());
 
@@ -1669,6 +1671,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.shared().database().checkpointReadUnlock();
             }
         }
 
