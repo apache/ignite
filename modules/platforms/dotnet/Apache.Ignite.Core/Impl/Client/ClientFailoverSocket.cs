@@ -78,6 +78,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Map from cache ID to partition mapping. */
         private volatile ClientCacheTopologyPartitionMap _distributionMap;
 
+        /** Enable discovery flag. */
+        private volatile bool _enableDiscovery = true;
+
         /** Distribution map locker. */
         private readonly object _distributionMapSyncRoot = new object();
 
@@ -393,10 +396,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
 
                 // TODO: Use feature flags.
-                if (_config.EnableDiscovery &&
-                    _socket.ServerVersion < ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion())
+                if (_socket.ServerVersion < ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion())
                 {
-                    _config.EnableDiscovery = false;
+                    _enableDiscovery = false;
                     
                     _logger.Warn("Automatic server node discovery has been disabled: server protocol version {0} " +
                                  "is lower than required {1}",
@@ -431,8 +433,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             var newTopologyVersion = affinityTopologyVersion.Version;
             
-            if (oldTopologyVersion < newTopologyVersion && 
-                (_config.EnableDiscovery || _config.EnablePartitionAwareness))
+            if (oldTopologyVersion < newTopologyVersion &&_config.EnablePartitionAwareness)
             {
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
@@ -440,21 +441,9 @@ namespace Apache.Ignite.Core.Impl.Client
                     {
                         lock (_topologyUpdateLock)
                         {
-                            if (_disposed)
-                            {
-                                return;
-                            }
-                        
-                            // Major topology version has changed: some nodes have joined or left.
-                            // If discovery is enabled, retrieve new topology - but don't connect.
-                            if (_config.EnableDiscovery)
+                            if (!_disposed)
                             {
                                 DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
-                            }
-
-                            // Connect to all nodes when partition awareness is enabled.
-                            if (_config.EnablePartitionAwareness)
-                            {
                                 InitSocketMap();
                             }
                         }
@@ -757,7 +746,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void DiscoverEndpoints(long startTopVer, long endTopVer)
         {
-            if (!_config.EnableDiscovery)
+            if (!_enableDiscovery)
             {
                 return;
             }

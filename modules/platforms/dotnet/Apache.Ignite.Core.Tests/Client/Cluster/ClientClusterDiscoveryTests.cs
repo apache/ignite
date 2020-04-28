@@ -54,8 +54,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             using (var client = GetClient())
             {
-                Assert.IsTrue(client.GetConfiguration().EnableDiscovery);
-                
                 AssertClientConnectionCount(client, 3);
             }
         }
@@ -97,7 +95,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                EnableDiscovery = true,
                 EnablePartitionAwareness = true
             };
         }

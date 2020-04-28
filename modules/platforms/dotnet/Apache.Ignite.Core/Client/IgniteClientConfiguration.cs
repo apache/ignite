@@ -119,7 +119,6 @@ namespace Apache.Ignite.Core.Client
             EnablePartitionAwareness = cfg.EnablePartitionAwareness;
             Logger = cfg.Logger;
             ProtocolVersion = cfg.ProtocolVersion;
-            EnableDiscovery = cfg.EnableDiscovery;
         }
 
         /// <summary>
@@ -224,13 +223,6 @@ namespace Apache.Ignite.Core.Client
         /// Default is <see cref="ConsoleLogger"/>. Set to <c>null</c> to disable logging.
         /// </summary>
         public ILogger Logger { get; set; }
-        
-        /// <summary>
-        /// Gets or sets a flag indicating whether client should discover all server nodes in the cluster automatically
-        /// and connect to them.
-        /// TODO: This should be some pluggable interface. So users can provide filtering, for example. 
-        /// </summary>
-        public bool EnableDiscovery { get; set; }
 
         /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.
