@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.platform.client.cluster;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import java.util.*;
 
@@ -66,7 +64,7 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
 
         Collection<UUID> removedNodeIds = new ArrayList<>();
 
-        Collection<IgniteBiTuple<UUID, Collection<NodeEndpoint>>> addedNodes = new ArrayList<>();
+        Collection<ClusterNode> addedNodes = new ArrayList<>();
 
         for (UUID startNode : startNodes) {
             if (!endNodes.contains(startNode)) {
@@ -77,23 +75,7 @@ public class ClientClusterGroupGetNodesEndpointsRequest extends ClientRequest {
         for (UUID endNode : endNodes) {
             if (!startNodes.contains(endNode)) {
                 ClusterNode node = cluster.node(endNode);
-
-                // TODO: Send port once per node.
-                int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
-
-                Collection<String> addrs = node.addresses();
-                Collection<String> hosts = node.hostNames();
-
-                Collection<NodeEndpoint> endpoints = new ArrayList<>(addrs.size() + hosts.size());
-
-                for (String addr : addrs)
-                    endpoints.add(new NodeEndpoint(addr, addr, port));
-
-                for (String host : hosts) {
-                    endpoints.add(new NodeEndpoint(host, host, port));
-                }
-
-                addedNodes.add(new IgniteBiTuple<>(endNode, endpoints));
+                addedNodes.add(node);
             }
         }
 

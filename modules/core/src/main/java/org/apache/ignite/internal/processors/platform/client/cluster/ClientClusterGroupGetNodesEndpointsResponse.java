@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -31,7 +32,7 @@ import java.util.UUID;
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse {
     /** */
-    private final Collection<IgniteBiTuple<UUID, Collection<NodeEndpoint>>> addedNodes;
+    private final Collection<ClusterNode> addedNodes;
 
     /** */
     private final Collection<UUID> removedNodeIds;
@@ -49,7 +50,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      */
     public ClientClusterGroupGetNodesEndpointsResponse(long reqId,
                                                        long topVer,
-                                                       Collection<IgniteBiTuple<UUID, Collection<NodeEndpoint>>> addedNodes,
+                                                       Collection<ClusterNode> addedNodes,
                                                        Collection<UUID> removedNodeIds) {
         super(reqId);
 
@@ -69,19 +70,24 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
 
         writer.writeInt(addedNodes.size());
 
-        for (IgniteBiTuple<UUID, Collection<NodeEndpoint>> node : addedNodes) {
-            UUID id = node.get1();
+        for (ClusterNode node : addedNodes) {
+            UUID id = node.id();
             writer.writeLong(id.getMostSignificantBits());
             writer.writeLong(id.getLeastSignificantBits());
 
-            Collection<NodeEndpoint> endpoints = node.get2();
-            writer.writeInt(endpoints.size());
+            int port = node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+            writer.writeInt(port);
 
-            for (NodeEndpoint e : endpoints) {
-                writer.writeString(e.getAddress());
-                writer.writeString(e.getHost());
-                writer.writeInt(e.getPort());
-            }
+            Collection<String> addrs = node.addresses();
+            Collection<String> hosts = node.hostNames();
+
+            writer.writeInt(addrs.size() + hosts.size());
+
+            for (String addr : addrs)
+                writer.writeString(addr);
+
+            for (String host : hosts)
+                writer.writeString(host);
         }
 
         writer.writeInt(removedNodeIds.size());
