@@ -28,7 +28,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     USER_ATTRIBUTES(0),
 
     /** Compute tasks (execute by task name). */
-    EXECUTE_TASK_BY_NAME(1);
+    EXECUTE_TASK_BY_NAME(1),
+
+    /** Cluster operations (state and WAL) */
+    CLUSTER_API(2);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

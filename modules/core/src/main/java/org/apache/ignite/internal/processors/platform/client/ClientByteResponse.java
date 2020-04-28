@@ -15,30 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 /**
- * Feature not supported by server exception.
+ * Byte response.
  */
-public class ClientFeatureNotSupportedByServerException extends ClientException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
+public class ClientByteResponse extends ClientResponse {
+    /** */
+    private final byte val;
 
     /**
-     * Constructs a new exception with the specified detail message.
+     * Constructor.
      *
-     * @param msg the detail message.
+     * @param reqId Request id.
      */
-    public ClientFeatureNotSupportedByServerException(String msg) {
-        super(msg);
+    public ClientByteResponse(long reqId, byte val) {
+        super(reqId);
+
+        this.val = val;
     }
 
-    /**
-     * @param feature Feature.
-     */
-    public ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature feature) {
-        super("Feature " + feature.name() + " is not supported by the server");
+    /** {@inheritDoc} */
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        super.encode(ctx, writer);
+
+        writer.writeByte(val);
     }
 }

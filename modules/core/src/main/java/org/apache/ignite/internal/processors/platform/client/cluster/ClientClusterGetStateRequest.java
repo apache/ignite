@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cluster;
 
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientByteResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -27,19 +29,22 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cluster status request.
  */
-public class ClientClusterIsActiveRequest extends ClientRequest {
+public class ClientClusterGetStateRequest extends ClientRequest {
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientClusterIsActiveRequest(BinaryRawReader reader) {
+    public ClientClusterGetStateRequest(BinaryRawReader reader) {
         super(reader);
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteCluster cluster = ctx.kernalContext().grid().cluster();
-        return new ClientBooleanResponse(requestId(), cluster.active());
+        ClusterState state = ctx.kernalContext().grid().cluster().state();
+
+        return ctx.currentProtocolContext().isFeatureSupported(ClientBitmaskFeature.CLUSTER_API) ?
+            new ClientByteResponse(requestId(), (byte)state.ordinal()) :
+            new ClientBooleanResponse(requestId(), state != ClusterState.INACTIVE);
     }
 }
