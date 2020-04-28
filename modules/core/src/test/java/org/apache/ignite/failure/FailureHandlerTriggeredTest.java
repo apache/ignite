@@ -81,27 +81,30 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
 
         TestFailureHandler hnd = new TestFailureHandler(false, latch);
 
-        startGrid(getConfiguration(testNodeName(0))
+        IgniteEx grid0 = startGrid(getConfiguration(testNodeName(0))
             .setIncludeEventTypes(EVT_CACHE_REBALANCE_OBJECT_LOADED)
-            .setFailureHandler(hnd))
-            .getOrCreateCache(new CacheConfiguration<>()
+            .setFailureHandler(hnd));
+
+        grid0.getOrCreateCache(new CacheConfiguration<>()
                 .setName(DEFAULT_CACHE_NAME)
-                .setRebalanceDelay(500)
                 .setCacheMode(CacheMode.REPLICATED))
             .put(1,1);
 
-        startGrid(getConfiguration(testNodeName(1))
+        grid0.cluster().baselineAutoAdjustEnabled(false);
+
+        IgniteEx grid1 = startGrid(getConfiguration(testNodeName(1))
             .setIncludeEventTypes(EVT_CACHE_REBALANCE_OBJECT_LOADED)
-            .setFailureHandler(hnd))
-            .events().localListen(
-                e -> { throw new Error(); },
-            EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
+            .setFailureHandler(hnd));
+
+        grid1.events().localListen(e -> { throw new Error(); }, EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED);
+
+        grid1.cluster().setBaselineTopology(grid1.cluster().topologyVersion());
 
         assertTrue(latch.await(3, TimeUnit.SECONDS));
 
         assertNotNull(hnd.failureCtx);
 
-        assertEquals(hnd.failureCtx.type(), FailureType.SYSTEM_WORKER_TERMINATION);
+        assertEquals(hnd.failureCtx.type(), FailureType.CRITICAL_ERROR);
     }
 
     /**

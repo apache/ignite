@@ -25,7 +25,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -43,12 +42,10 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
-import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -360,11 +357,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             try {
                 demander.handleSupplyMessage(nodeId, s);
-            } catch (Throwable e) {
-                if (!X.hasCause(e, OutOfMemoryError.class))
-                    ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                throw e;
             }
             finally {
                 leaveBusy();
@@ -380,11 +372,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             try {
                 supplier.handleDemandMessage(idx, nodeId, d);
-            } catch (Throwable e) {
-                if (!X.hasCause(e, OutOfMemoryError.class))
-                    ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                throw e;
             }
             finally {
                 leaveBusy();

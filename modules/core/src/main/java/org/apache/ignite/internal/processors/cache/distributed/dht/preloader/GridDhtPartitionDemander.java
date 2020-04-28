@@ -39,7 +39,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -71,7 +70,6 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -85,7 +83,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
-import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl.PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
@@ -910,16 +907,7 @@ public class GridDhtPartitionDemander {
                     "[" + demandRoutineInfo(nodeId, supplyMsg) + ", p=" + p +
                     ", processed=" + processed + ", queued=" + queued + "]");
 
-            ctx.kernalContext().getRebalanceExecutorService().execute(() -> {
-                try {
-                    ownPartition(fut, p, nodeId, supplyMsg);
-                } catch (Throwable e) {
-                    if (!X.hasCause(e, OutOfMemoryError.class))
-                        ctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
-
-                    throw e;
-                }
-            });
+            ctx.kernalContext().getRebalanceExecutorService().execute(() -> ownPartition(fut, p, nodeId, supplyMsg));
         }
     }
 
