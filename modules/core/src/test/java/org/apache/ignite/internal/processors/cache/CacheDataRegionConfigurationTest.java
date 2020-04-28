@@ -698,7 +698,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
             );
 
-        IgniteEx clientNode = startClientGrid(clientCfg);
+        IgniteEx clientNode = startClientGrid(optimize(clientCfg));
 
         srvNode.cluster().active(true);
 
