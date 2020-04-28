@@ -197,7 +197,7 @@ public class HadoopLazyConcurrentMap<K, V extends Closeable> {
      * @param <K> the type of the key.
      * @param <V> the type of the value.
      */
-    public interface ValueFactory <K, V> {
+    public interface ValueFactory<K, V> {
         /**
          * Creates the new value. Should never return null.
          *
