@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -54,7 +53,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /** Failure handler. */
     @Nullable private FailureHandler failureHnd;
 
-    /** todo: */
+    /** Logger within grid. */
     private IgniteLogger logger;
 
     /** */
@@ -69,6 +68,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         if (nonNull(logger))
             cfg.setGridLogger(logger);
+
+        if (nonNull(failureHnd))
+            cfg.setFailureHandler(failureHnd);
 
         if (nonNull(memCfg))
             cfg.setDataStorageConfiguration(memCfg);
