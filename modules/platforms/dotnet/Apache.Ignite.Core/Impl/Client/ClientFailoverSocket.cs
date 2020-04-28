@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static IEnumerable<SocketEndpoint> GetIpEndPoints(IgniteClientConfiguration cfg)
+        private IEnumerable<SocketEndpoint> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
             foreach (var e in Endpoint.GetEndpoints(cfg))
             {
@@ -484,12 +484,27 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Gets IP address list from a given host.
         /// When host is an IP already - parses it. Otherwise, resolves DNS name to IPs.
         /// </summary>
-        private static IEnumerable<IPAddress> GetIps(string host)
+        private IEnumerable<IPAddress> GetIps(string host, bool suppressExceptions = false)
         {
-            IPAddress ip;
+            try
+            {
+                IPAddress ip;
 
-            // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
-            return IPAddress.TryParse(host, out ip) ? new[] {ip} : Dns.GetHostEntry(host).AddressList;
+                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
+                return IPAddress.TryParse(host, out ip) ? new[] {ip} : Dns.GetHostEntry(host).AddressList;
+
+            }
+            catch (SocketException e)
+            {
+                _logger.Debug(e, "Failed to parse host: " + host);
+
+                if (suppressExceptions)
+                {
+                    return Enumerable.Empty<IPAddress>();
+                }
+
+                throw;
+            }
         }
 
         /// <summary>
@@ -700,7 +715,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             foreach (var addr in node.Addresses)
             {
-                foreach (var ip in GetIps(addr))
+                foreach (var ip in GetIps(addr, true))
                 {
                     try
                     {
