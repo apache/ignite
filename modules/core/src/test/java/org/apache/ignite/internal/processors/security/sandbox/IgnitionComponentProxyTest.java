@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
@@ -146,9 +147,14 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
                             new IgniteDomainCombiner(perms)));
 
                     return AccessController.doPrivileged((PrivilegedExceptionAction<Ignite>)
-                            () -> Ignition.start(
-                                getConfiguration("node_" + G.allGrids().size())
-                            ), acc);
+                        () -> {
+                            String login = "node_" + G.allGrids().size();
+
+                            return Ignition.start(
+                                optimize(getConfiguration(login,
+                                    new TestSecurityPluginProvider(login, "", ALLOW_ALL, perms, globalAuth)))
+                            );
+                        }, acc);
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);
