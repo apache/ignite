@@ -327,7 +327,7 @@ public class CommandHandlerParsingTest {
 
         String rnd = UUID.randomUUID().toString();
 
-        assertParseArgsThrows("Unexpected action "  + rnd + " for " + WAL.text(), WAL.text(), rnd);
+        assertParseArgsThrows("Unexpected action " + rnd + " for " + WAL.text(), WAL.text(), rnd);
     }
 
     /**

@@ -449,14 +449,5 @@ namespace Apache.Ignite.Core.Tests.Log
                 throw new ArithmeticException("Error in func.");
             }
         }
-
-        /// <summary>
-        /// Custom enum for testing.
-        /// </summary>
-        private struct CustomEnum
-        {
-            // ReSharper disable once UnusedMember.Local
-            public int Field { get; set; }
-        }
     }
 }

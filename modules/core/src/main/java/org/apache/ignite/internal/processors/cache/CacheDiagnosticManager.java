@@ -32,7 +32,7 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
     public static final String MBEAN_GROUP = "Diagnostic";
 
     /** Page lock tracker manager */
-    private  PageLockTrackerManager pageLockTrackerManager;
+    private PageLockTrackerManager pageLockTrackerManager;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {

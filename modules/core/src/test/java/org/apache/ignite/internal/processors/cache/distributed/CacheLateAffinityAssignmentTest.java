@@ -479,7 +479,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         int nodes = 1;
 
-        for (int i = 0;  i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             log.info("Iteration [iter=" + i + ", topVer=" + topVer + ']');
 
             topVer++;
@@ -982,7 +982,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             final int NODES = 5;
 
-            for (int i = 0 ; i < NODES; i++)
+            for (int i = 0; i < NODES; i++)
                 startServer(i, i + 1);
 
             int majorVer = NODES;
@@ -2458,7 +2458,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         Ignite node = grid(name);
 
-        assert  node != null;
+        assert node != null;
 
         return node;
     }
@@ -2581,7 +2581,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @return Exchange future.
      */
     private IgniteInternalFuture<?> affinityReadyFuture(AffinityTopologyVersion topVer, Ignite node) {
-        IgniteInternalFuture<?> fut =  ((IgniteKernal)node).context().cache().context().exchange().
+        IgniteInternalFuture<?> fut = ((IgniteKernal)node).context().cache().context().exchange().
             affinityReadyFuture(topVer);
 
         return fut != null ? fut : new GridFinishedFuture<>();

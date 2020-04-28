@@ -110,7 +110,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
         IgniteCache<String, Person> cache = ignite.cache("cache");
 
-        for (int i=0; i<10; i++)
+        for (int i = 0; i < 10; i++)
             cache.put(String.valueOf(System.currentTimeMillis()), new Person("Name " + i, i));
 
         return cache;

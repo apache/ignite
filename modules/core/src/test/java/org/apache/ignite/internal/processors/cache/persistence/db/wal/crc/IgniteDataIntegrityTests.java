@@ -67,7 +67,7 @@ public class IgniteDataIntegrityTests {
 
         ThreadLocalRandom curr = ThreadLocalRandom.current();
 
-        for (int i = 0; i < 1024; i+=16) {
+        for (int i = 0; i < 1024; i += 16) {
             buf.putInt(curr.nextInt());
             buf.putInt(curr.nextInt());
             buf.putInt(curr.nextInt());
@@ -208,7 +208,7 @@ public class IgniteDataIntegrityTests {
         fileInput.io().position(0);
 
         for (int i = 0; i < 1024 / 16; i++) {
-            try(FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
+            try (FileInput.Crc32CheckingFileInput in = fileInput.startRead(false)) {
                 in.readInt();
                 in.readInt();
                 in.readInt();

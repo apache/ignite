@@ -158,7 +158,7 @@ public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
         }
 
         int datasetSize = rnd.nextInt(10000);
-        for(int i = 0; i < datasetSize; i++) {
+        for (int i = 0; i < datasetSize; i++) {
             BootstrappedVector vec = randomVector(true);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);
 

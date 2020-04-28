@@ -59,7 +59,7 @@ public class JdbcMetaTablesResult extends JdbcResult {
         else {
             writer.writeInt(meta.size());
 
-            for(JdbcTableMeta m : meta)
+            for (JdbcTableMeta m : meta)
                 m.writeBinary(writer, ver);
         }
     }

@@ -218,7 +218,7 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
         long heapEntriesCount = cache.localSizeLong(ONHEAP_PEEK_MODES);
 
         long cacheSize = cache.localSizeLong(new CachePeekMode[]{CachePeekMode.PRIMARY});
-        int  size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
+        int size = cache.localSize(new CachePeekMode[]{CachePeekMode.PRIMARY});
 
         boolean isEmpty = cache.isEmpty();
 

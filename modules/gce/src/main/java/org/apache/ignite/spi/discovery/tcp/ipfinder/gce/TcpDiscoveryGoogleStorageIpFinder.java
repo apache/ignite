@@ -75,7 +75,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
  */
 public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Default object's content. */
-    private static final ByteArrayInputStream OBJECT_CONTENT =  new ByteArrayInputStream(new byte[0]);
+    private static final ByteArrayInputStream OBJECT_CONTENT = new ByteArrayInputStream(new byte[0]);
 
     /** Grid logger. */
     @LoggerResource
@@ -154,7 +154,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
             object.setBucket(bucketName);
             object.setName(key);
 
-            InputStreamContent content =  new InputStreamContent("application/octet-stream", OBJECT_CONTENT);
+            InputStreamContent content = new InputStreamContent("application/octet-stream", OBJECT_CONTENT);
 
             content.setLength(OBJECT_CONTENT.available());
 
@@ -371,7 +371,7 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
      * @return Bucket key.
      */
     private String keyFromAddr(InetSocketAddress addr) {
-        return addr.getAddress().getHostAddress() + "#" +  addr.getPort();
+        return addr.getAddress().getHostAddress() + "#" + addr.getPort();
     }
 
     /**

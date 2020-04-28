@@ -290,7 +290,7 @@ public class GridCacheGateway<K, V> {
     /**
      *
      */
-    public void writeLock(){
+    public void writeLock() {
         rwLock.writeLock().lock();
     }
 

@@ -40,7 +40,7 @@ public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
      */
     CountDownLatch latch;
 
-    public GridTestTask (CountDownLatch latch) {
+    public GridTestTask(CountDownLatch latch) {
         super();
         this.latch = latch;
     }

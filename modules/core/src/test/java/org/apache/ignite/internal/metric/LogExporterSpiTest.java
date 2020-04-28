@@ -87,7 +87,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(res);
 
         log.registerListener(s -> {
-            if(s.contains(FILTERED_PREFIX))
+            if (s.contains(FILTERED_PREFIX))
                 fail("Filtered prefix shouldn't export.");
         });
 

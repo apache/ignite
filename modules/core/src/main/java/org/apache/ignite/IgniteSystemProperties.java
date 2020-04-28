@@ -1347,7 +1347,12 @@ public final class IgniteSystemProperties {
         if (val == null)
             return dflt;
 
-        return Enum.valueOf(enumCls, val);
+        try {
+            return Enum.valueOf(enumCls, val);
+        }
+        catch (IllegalArgumentException ignore) {
+            return dflt;
+        }
     }
 
     /**
