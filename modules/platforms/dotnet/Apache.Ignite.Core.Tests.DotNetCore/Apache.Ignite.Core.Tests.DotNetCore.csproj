@@ -241,6 +241,9 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTests.cs">
       <Link>ThinClient\Cluster\ClientClusterDiscoveryTests.cs</Link>
     </Compile>
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterDiscoveryTestsNoLocalhost.cs">
+      <Link>ThinClient\Cluster\ClientClusterDiscoveryTestsNoLocalhost.cs</Link>
+    </Compile>
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterGroupTests.cs" Link="ThinClient\Cluster\ClientClusterGroupTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cluster\ClientClusterTests.cs" Link="ThinClient\Cluster\ClientClusterTests.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\EndpointTest.cs" Link="ThinClient\EndpointTest.cs" />
