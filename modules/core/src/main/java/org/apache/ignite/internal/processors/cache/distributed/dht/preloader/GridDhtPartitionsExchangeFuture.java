@@ -172,7 +172,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private static final boolean SKIP_PARTITION_SIZE_VALIDATION = Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
 
     /** */
-    private static final String DISTRIBUTED_LATCH_ID = "exchange";
+    private static final String EXCHANGE_LATCH_ID = "exchange";
+
+    /** */
+    private static final String EXCHANGE_FREE_LATCH_ID = "exchange-free";
 
     /** */
     @GridToStringExclude
@@ -1515,12 +1518,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (context().exchangeFreeSwitch()) {
             // Currently MVCC does not support operations on partially switched cluster.
             if (cctx.kernalContext().coordinators().mvccEnabled())
-                waitPartitionRelease(DISTRIBUTED_LATCH_ID, true, false, null);
+                waitPartitionRelease(EXCHANGE_FREE_LATCH_ID, true, false, null);
             else {
-                String baseLatchId = "exchange-free";
-                String replicatedLatchId = baseLatchId + "-replicated";
-                String partitionedLatchId = baseLatchId + "-partitioned";
-
                 boolean partitionedRecoveryRequired = rebalancedInfo.primaryNodes.contains(firstDiscoEvt.eventNode());
 
                 IgnitePredicate<IgniteInternalTx> replicatedOnly = tx -> {
@@ -1529,13 +1528,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (cctx.cacheContext(entry.cacheId()).isReplicated())
                             return true;
 
-                    assert partitionedRecoveryRequired; // Checks non-affected nodes contain no txs to be recovered.
+                    // Checks only affected nodes contain replicated-free txs with failed primaries.
+                    assert partitionedRecoveryRequired;
 
                     return false;
                 };
 
                 // Assuming that replicated transactions are absent, non-affected nodes will wait only this short sync.
-                waitPartitionRelease(replicatedLatchId, true, false, replicatedOnly);
+                waitPartitionRelease(EXCHANGE_FREE_LATCH_ID + "-replicated", true, false, replicatedOnly);
+
+                String partitionedLatchId = EXCHANGE_FREE_LATCH_ID + "-partitioned";
 
                 if (partitionedRecoveryRequired)
                     // This node contain backup partitions for failed partitioned caches primaries. Waiting for recovery.
@@ -1556,11 +1558,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 distributed = false;
 
             // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
-            waitPartitionRelease(DISTRIBUTED_LATCH_ID, distributed, true, null);
+            waitPartitionRelease(EXCHANGE_LATCH_ID, distributed, true, null);
 
             // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
             if (distributed)
-                waitPartitionRelease(DISTRIBUTED_LATCH_ID, false, false, null);
+                waitPartitionRelease(EXCHANGE_LATCH_ID, false, false, null);
         }
         else {
             if (log.isInfoEnabled())
@@ -1886,7 +1888,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        timeBag.finishGlobalStage("Wait partitions release");
+        timeBag.finishGlobalStage("Wait partitions release [latch=" + latchId + "]");
 
         if (releaseLatch == null) {
             assert !distributed : "Partitions release latch must be initialized in distributed mode.";
@@ -1940,7 +1942,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             U.warn(log, "Stop waiting for partitions release latch: " + e.getMessage());
         }
 
-        timeBag.finishGlobalStage("Wait partitions release latch");
+        timeBag.finishGlobalStage("Wait partitions release latch [latch=" + latchId + "]");
     }
 
     /**

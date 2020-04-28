@@ -853,8 +853,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         for (IgniteInternalTx tx : activeTransactions()) {
             if (node != null) {
-                // Synchronous wait only for txs on backups with failed primary.
-                // Failed tx coordinator recovery can be postponed to post-switch period.
+                // Synchronous wait only for txs on backups with failed primary, sice backup->primary switch required.
+                // Failed tx coordinator recovery can be postponed to post-switch period, since no backup->primary switch required.
                 if (tx.dht() && !tx.local() && tx.originatingNodeId().equals(node.id())) {
                     assert needWaitTransaction(tx, topVer);
 
