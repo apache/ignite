@@ -17,9 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cluster
 {
-    using System;
     using System.Linq;
-    using System.Threading;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -71,10 +69,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         {
             using (var client = GetClient())
             {
-                // TODO: Node.Addresses is already what we need, plus client port.s
-                var node = Ignition.GetIgnite().GetCluster().GetLocalNode();
-                Console.WriteLine(node);
-                
                 AssertClientConnectionCount(client, 3);
 
                 var cfg = GetIgniteConfiguration();
