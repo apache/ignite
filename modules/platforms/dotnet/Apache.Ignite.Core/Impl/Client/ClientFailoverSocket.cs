@@ -436,25 +436,32 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 ThreadPool.QueueUserWorkItem(_ =>
                 {
-                    lock (_topologyUpdateLock)
+                    try
                     {
-                        if (_disposed)
+                        lock (_topologyUpdateLock)
                         {
-                            return;
-                        }
+                            if (_disposed)
+                            {
+                                return;
+                            }
                         
-                        // Major topology version has changed: some nodes have joined or left.
-                        // If discovery is enabled, retrieve new topology - but don't connect.
-                        if (_config.EnableDiscovery)
-                        {
-                            DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
-                        }
+                            // Major topology version has changed: some nodes have joined or left.
+                            // If discovery is enabled, retrieve new topology - but don't connect.
+                            if (_config.EnableDiscovery)
+                            {
+                                DiscoverEndpoints(oldTopologyVersion, newTopologyVersion);
+                            }
 
-                        // Connect to all nodes when partition awareness is enabled.
-                        if (_config.EnablePartitionAwareness)
-                        {
-                            InitSocketMap();
+                            // Connect to all nodes when partition awareness is enabled.
+                            if (_config.EnablePartitionAwareness)
+                            {
+                                InitSocketMap();
+                            }
                         }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Log(LogLevel.Error, e, "Failed to update topology information");
                     }
                 });
             }
