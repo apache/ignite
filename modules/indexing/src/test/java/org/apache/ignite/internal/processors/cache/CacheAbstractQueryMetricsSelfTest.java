@@ -297,7 +297,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         private final IgniteCache cache;
 
         /** */
-        private final  Query qry;
+        private final Query qry;
 
         /** */
         Worker(IgniteCache cache, Query qry) {

@@ -116,7 +116,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
     @Override public void initializeFromHandshake(GridNioSession ses,
         ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-        assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
+        assert SUPPORTED_VERS.contains(ver) : "Unsupported ODBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();

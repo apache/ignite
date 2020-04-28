@@ -149,7 +149,7 @@ public class IgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of exception.
      */
     protected void write(byte[]... chunks) throws Exception {
-        IgfsOutputStream os =  igfs.create(FILE, true);
+        IgfsOutputStream os = igfs.create(FILE, true);
 
         if (chunks != null) {
             for (byte[] chunk : chunks)

@@ -625,7 +625,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testUpdate() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -648,7 +648,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     @SuppressWarnings("ConstantConditions")
     @Test
     public void testUpdateParentRoot() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -756,7 +756,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testRootPropertiesPersistAfterFormat() throws Exception {
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         if (mode != PRIMARY && !(igfsSecondaryFileSystem instanceof IgfsSecondaryFileSystemImpl)) {
@@ -965,7 +965,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         }
 
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l"), false)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -976,7 +976,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         assert igfs.info(new IgfsPath("/k/l")).isFile();
 
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m"), true)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -987,7 +987,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         assert igfs.info(new IgfsPath("/k/l")).isFile();
 
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/k/l/m/n/o/p"), true)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -999,7 +999,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
 
         igfs.mkdirs(new IgfsPath("/x/y"), null);
         try {
-            try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) {}
+            try (IgfsOutputStream os = igfs.create(new IgfsPath("/x/y"), true)) { }
 
             fail("Exception expected");
         } catch (IgniteException ignored) {
@@ -1242,7 +1242,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         if (dual)
             return;
 
-        if(!propertiesSupported())
+        if (!propertiesSupported())
             return;
 
         Map<String, String> props = properties("owner", "group", "0555");
@@ -2247,7 +2247,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksRename() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, 0, 0, 0, 0);
     }
 
     /**
@@ -2257,7 +2257,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDelete() throws Exception {
-         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
+         checkDeadlocksRepeat(5, 2, 2, 2, 0, DELETE_CNT, 0, 0, 0);
     }
 
     /**
@@ -2277,7 +2277,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksMkdirs() throws Exception {
-         checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
+         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2287,7 +2287,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDeleteRename() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, DELETE_CNT, 0, 0, 0);
     }
 
     /**
@@ -2297,7 +2297,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDeleteMkdirsRename() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2307,7 +2307,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocksDeleteMkdirs() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
+        checkDeadlocksRepeat(5, 2, 2, 2, 0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
     /**
@@ -2327,7 +2327,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
      */
     @Test
     public void testDeadlocks() throws Exception {
-        checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
+        checkDeadlocksRepeat(5, 2, 2, 2, RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
     }
 
     /**

@@ -38,7 +38,7 @@ public class IgfsTestInputGenerator {
 
         long start = System.currentTimeMillis();
 
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(outFileName), 32*1024*1024);
+        OutputStream out = new BufferedOutputStream(new FileOutputStream(outFileName), 32 * 1024 * 1024);
 
         for (long i = 0; i < len; i++)
                 out.write(read(i));

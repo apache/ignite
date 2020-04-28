@@ -47,7 +47,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if("server".equals(igniteInstanceName))
+        if ("server".equals(igniteInstanceName))
             cfg.setServiceConfiguration(serviceConfiguration());
 
         return cfg;

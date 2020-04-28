@@ -1285,7 +1285,7 @@ public class VisorTaskUtils {
      * @param cacheName Cache name to check.
      * @return {@code true} when cache restarting in progress.
      */
-    public static boolean isRestartingCache(IgniteEx ignite, String cacheName)  {
+    public static boolean isRestartingCache(IgniteEx ignite, String cacheName) {
         IgniteCacheProxy<Object, Object> proxy = ignite.context().cache().jcache(cacheName);
 
         return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl) proxy).isRestarting();

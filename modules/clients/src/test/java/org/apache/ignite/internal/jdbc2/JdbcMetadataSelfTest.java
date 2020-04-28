@@ -631,7 +631,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualPks.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
                     '.' + rs.getString("PK_NAME") +
@@ -650,7 +650,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         // Perform checks few times due to query/plan caching.
         for (int i = 0; i < 3; i++) {
             // No parameters statement.
-            try(Connection conn = DriverManager.getConnection(BASE_URL)) {
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
                 conn.setSchema("\"pers\"");
 
                 PreparedStatement noParams = conn.prepareStatement("select * from Person;");

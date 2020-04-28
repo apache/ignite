@@ -178,7 +178,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> nodes(Collection<UUID> ids) throws GridClientException  {
+    @Override public Collection<GridClientNode> nodes(Collection<UUID> ids) throws GridClientException {
         A.notNull(ids, "ids");
 
         return client.topology().nodes(ids);

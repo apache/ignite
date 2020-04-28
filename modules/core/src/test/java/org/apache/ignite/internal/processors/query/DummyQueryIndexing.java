@@ -153,7 +153,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         List<String> cols,
         boolean ifTblExists,
         boolean ifColExists
-    ) throws IgniteCheckedException  {
+    ) throws IgniteCheckedException {
 
     }
 

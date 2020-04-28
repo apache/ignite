@@ -74,7 +74,7 @@ public class IgniteSqlMergeQueryBenchmark extends IgniteCacheAbstractBenchmark<I
             int i = rnd.nextInt(args.range());
 
             cache.query(new SqlFieldsQuery("merge into Person(_key, id, firstName, lastName, salary) " +
-                "values (?, ?, ?, ?, ?)").setArgs(i ,i, "firstName" + i, "lastName" + i, (double) i * 1000));
+                "values (?, ?, ?, ?, ?)").setArgs(i, i, "firstName" + i, "lastName" + i, (double) i * 1000));
 
             putCnt.getAndIncrement();
         }

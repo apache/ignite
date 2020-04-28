@@ -642,11 +642,11 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             U.awaitQuiet(sync);
 
-            while(!done.get()) {
+            while (!done.get()) {
                 int batch0 = 1 + r.nextInt(batch - 1);
                 int start = r.nextInt(keys - batch0);
 
-                try(Transaction tx = client.transactions().txStart()) {
+                try (Transaction tx = client.transactions().txStart()) {
                     Map<Integer, Integer> map = new TreeMap<>();
 
                     IntStream.range(start, start + batch0).forEach(value -> map.put(value, value));
@@ -663,7 +663,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteInternalFuture fut2 = GridTestUtils.runAsync(() -> {
             U.awaitQuiet(sync);
 
-            while(!done.get()) {
+            while (!done.get()) {
                 try {
                     IgniteCache cache1 = client.createCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2"));
 
@@ -709,7 +709,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         // Put one key per partition.
-        try(IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
+        try (IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int k = 0; k < partitions(); k++)
                 streamer.addData(k, 0);
         }
