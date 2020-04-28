@@ -404,9 +404,6 @@ namespace Apache.Ignite.Core.Impl.Client
                         ClientOp.ClusterGroupGetNodesEndpoints.GetMinVersion()
                     );
                 }
-                
-                // TODO: We don't need this.
-                // DiscoverEndpoints(UnknownTopologyVersion, UnknownTopologyVersion);
             }
         }
 
@@ -645,39 +642,11 @@ namespace Apache.Ignite.Core.Impl.Client
                         continue;
                     }
 
-                    foreach (var addr in node.Addresses)
-                    {
-                        try
-                        {
-                            // TODO: addr may be a host name. Resolve it.
-                            var ipEndpoint = new IPEndPoint(IPAddress.Parse(addr), node.Port);
-                        
-                            socket = new ClientSocket(_config, ipEndpoint, addr,
-                                _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
-                            
-                            if (socket.ServerNodeId != node.Id)
-                            {
-                                _logger.Debug(
-                                    "Autodiscovery connection succeeded, but node id does not match: {0}, {1}. " +
-                                    "Expected node id: {2}. Actual node id: {3}. Connection dropped.",
-                                    addr, node.Port, node.Id, socket.ServerNodeId);
-                                
-                                socket.Dispose();
-                                
-                                continue;
-                            }
+                    socket = TryConnect(node);
 
-                            map[node.Id] = socket;
-                        }
-                        catch (SocketException socketEx)
-                        {
-                            // Ignore: failure to connect is expected.
-                            _logger.Debug(socketEx, "Autodiscovery connection failed: {0}, {1}", addr, node.Port);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Debug(ex, "Autodiscovery connection failed: {0}, {1}", addr, node.Port);
-                        }                    
+                    if (socket != null)
+                    {
+                        map[node.Id] = socket;
                     }
                 }
 
@@ -726,7 +695,41 @@ namespace Apache.Ignite.Core.Impl.Client
             
             _nodeSocketMap = map;
         }
-        
+
+        private ClientSocket TryConnect(ClientDiscoveryNode node)
+        {
+            foreach (var addr in node.Addresses)
+            {
+                foreach (var ip in GetIps(addr))
+                {
+                    try
+                    {
+                        var ipEndpoint = new IPEndPoint(ip, node.Port);
+
+                        var socket = new ClientSocket(_config, ipEndpoint, addr,
+                            _config.ProtocolVersion, OnAffinityTopologyVersionChange, _marsh);
+
+                        if (socket.ServerNodeId == node.Id)
+                        {
+                            return socket;
+                        }
+
+                        _logger.Debug(
+                            "Autodiscovery connection succeeded, but node id does not match: {0}, {1}. " +
+                            "Expected node id: {2}. Actual node id: {3}. Connection dropped.",
+                            addr, node.Port, node.Id, socket.ServerNodeId);
+                    }
+                    catch (SocketException socketEx)
+                    {
+                        // Ignore: failure to connect is expected.
+                        _logger.Debug(socketEx, "Autodiscovery connection failed: {0}, {1}", addr, node.Port);
+                    }
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Updates endpoint info.
         /// </summary>
