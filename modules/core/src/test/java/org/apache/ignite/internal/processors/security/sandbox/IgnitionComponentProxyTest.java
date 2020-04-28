@@ -148,7 +148,6 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
                     return AccessController.doPrivileged((PrivilegedExceptionAction<Ignite>)
                             () -> Ignition.start(
                                 getConfiguration("node_" + G.allGrids().size())
-                                    .setConnectorConfiguration(null)
                             ), acc);
                 }
                 catch (Exception e) {
@@ -181,13 +180,15 @@ public class IgnitionComponentProxyTest extends AbstractSandboxTest {
 
         Ignite clnt = grid(CLNT);
 
-        //Checks that inside the sandbox we should get a proxied instance of Ignite.
+        // Checks that inside the sandbox we should get a proxied instance of Ignite.
         clnt.compute(clnt.cluster().forNodeId(srv.cluster().localNode().id()))
             .broadcast(() -> {
                 Collection<Ignite> nodes = s.get();
 
-                for (Ignite node : nodes)
+                for (Ignite node : nodes) {
+                    // AccessControlException will be thrown if a non-proxy instance of Ignite runs compute.
                     node.compute().call(() -> true);
+                }
             });
     }
 }

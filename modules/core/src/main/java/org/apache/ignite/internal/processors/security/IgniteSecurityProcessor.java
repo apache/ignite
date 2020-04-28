@@ -66,7 +66,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     /**
      * @return True if there are nodes with the sandbox enabled.
      */
-    public static boolean hasSandboxedNodes() {
+    static boolean hasSandboxedNodes() {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
