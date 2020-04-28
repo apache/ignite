@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.Callable;
+import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -29,18 +30,22 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.Objects.nonNull;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  *
@@ -51,6 +56,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     private volatile DataStorageConfiguration memCfg;
+
+    /** Failure handler. */
+    @Nullable private FailureHandler failureHnd;
 
     /** */
     private IgniteLogger logger;
@@ -65,8 +73,11 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (logger != null)
+        if (nonNull(logger))
             cfg.setGridLogger(logger);
+
+        if (nonNull(failureHnd))
+            cfg.setFailureHandler(failureHnd);
 
         if (gridName.contains("client")) {
             cfg.setClientMode(true);
@@ -74,10 +85,10 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
             return cfg;
         }
 
-        if (memCfg != null)
+        if (nonNull(memCfg))
             cfg.setDataStorageConfiguration(memCfg);
 
-        if (ccfg != null)
+        if (nonNull(ccfg))
             cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -85,12 +96,17 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -98,11 +114,10 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     private void checkStartGridException(Class<? extends Throwable> ex, String message) {
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
+        assertThrows(log(), () -> {
+            startGrid(0);
+
+            return null;
         }, ex, message);
     }
 
@@ -284,9 +299,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         ccfg = manyPartitionsCache;
 
         ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr0 = LogListener.matches("Cache group 'default' brings high overhead").build();
-        LogListener dataRegLsnr0 = LogListener.matches("metainformation in data region 'smallRegion'").build();
-        LogListener partsInfoLsnr0 = LogListener.matches(numOfPartitions + " partitions, " +
+        LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
+        LogListener dataRegLsnr0 = matches("metainformation in data region 'smallRegion'").build();
+        LogListener partsInfoLsnr0 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
         srv0Logger.registerAllListeners(cacheGrpLsnr0, dataRegLsnr0, partsInfoLsnr0);
@@ -295,9 +310,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         IgniteEx ignite0 = startGrid("srv0");
 
         ListeningTestLogger srv1Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr1 = LogListener.matches("Cache group 'default' brings high overhead").build();
-        LogListener dataRegLsnr1 = LogListener.matches("metainformation in data region 'smallRegion'").build();
-        LogListener partsInfoLsnr1 = LogListener.matches(numOfPartitions + " partitions, " +
+        LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
+        LogListener dataRegLsnr1 = matches("metainformation in data region 'smallRegion'").build();
+        LogListener partsInfoLsnr1 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
         srv1Logger.registerAllListeners(cacheGrpLsnr1, dataRegLsnr1, partsInfoLsnr1);
@@ -350,9 +365,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
         ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr0 = LogListener.matches("Cache group 'default' brings high overhead").build();
-        LogListener dataRegLsnr0 = LogListener.matches("metainformation in data region 'defaultRegion'").build();
-        LogListener partsInfoLsnr0 = LogListener.matches(numOfPartitions + " partitions, " +
+        LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
+        LogListener dataRegLsnr0 = matches("metainformation in data region 'defaultRegion'").build();
+        LogListener partsInfoLsnr0 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
         srv0Logger.registerAllListeners(cacheGrpLsnr0, dataRegLsnr0, partsInfoLsnr0);
@@ -361,9 +376,9 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         IgniteEx ignite0 = startGrid("srv0");
 
         ListeningTestLogger srv1Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr1 = LogListener.matches("Cache group 'default' brings high overhead").build();
-        LogListener dataRegLsnr1 = LogListener.matches("metainformation in data region 'defaultRegion'").build();
-        LogListener partsInfoLsnr1 = LogListener.matches(numOfPartitions + " partitions, " +
+        LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
+        LogListener dataRegLsnr1 = matches("metainformation in data region 'defaultRegion'").build();
+        LogListener partsInfoLsnr1 = matches(numOfPartitions + " partitions, " +
             DFLT_PAGE_SIZE +
             " bytes per partition, " + partitionsMetaMemoryChunk + " MBs total").build();
         srv1Logger.registerAllListeners(cacheGrpLsnr1, dataRegLsnr1, partsInfoLsnr1);
@@ -372,7 +387,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         startGrid("srv1");
 
         ListeningTestLogger srv2Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr2 = LogListener.matches("Cache group 'default' brings high overhead").build();
+        LogListener cacheGrpLsnr2 = matches("Cache group 'default' brings high overhead").build();
         srv2Logger.registerListener(cacheGrpLsnr2);
         logger = srv2Logger;
 
@@ -422,14 +437,14 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         memCfg.setCheckpointFrequency(60 * 60 * 1000);
 
         ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr0 = LogListener.matches("Cache group 'default' brings high overhead").build();
+        LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
         srv0Logger.registerListener(cacheGrpLsnr0);
         logger = srv0Logger;
 
         IgniteEx ignite0 = startGrid("srv0");
 
         ListeningTestLogger srv1Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr1 = LogListener.matches("Cache group 'default' brings high overhead").build();
+        LogListener cacheGrpLsnr1 = matches("Cache group 'default' brings high overhead").build();
         srv1Logger.registerListener(cacheGrpLsnr1);
         logger = srv1Logger;
 
@@ -488,8 +503,8 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         ccfg = fewPartitionsCache;
 
         ListeningTestLogger srv0Logger = new ListeningTestLogger(false, null);
-        LogListener cacheGrpLsnr0 = LogListener.matches("Cache group 'default' brings high overhead").build();
-        LogListener dynamicGrpLsnr = LogListener.matches("Cache group 'dynamicCache' brings high overhead").build();
+        LogListener cacheGrpLsnr0 = matches("Cache group 'default' brings high overhead").build();
+        LogListener dynamicGrpLsnr = matches("Cache group 'dynamicCache' brings high overhead").build();
         srv0Logger.registerListener(cacheGrpLsnr0);
         srv0Logger.registerListener(dynamicGrpLsnr);
         logger = srv0Logger;
@@ -654,5 +669,64 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
+
+    /**
+     * Test checks that nodes will not fall if you receive a request
+     * to create a cache with an unknown data region.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoFailNodeIfUnknownDataRegion() throws Exception {
+        failureHnd = new StopNodeOrHaltFailureHandler();
+        ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        LogListener logLsnr = matches("Possible failure suppressed accordingly to a configured handler").build();
+        logger = new ListeningTestLogger(false, log, logLsnr);
+
+        IgniteEx srvNode = startGrid(0);
+
+        String dataRegionName = "region";
+
+        IgniteConfiguration clientCfg = getConfiguration(getTestIgniteInstanceName(1))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(dataRegionName))
+                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            );
+
+        IgniteEx clientNode = startClientGrid(clientCfg);
+
+        srvNode.cluster().active(true);
+
+        assertThrows(log, () -> {
+            clientNode.getOrCreateCache(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME + 1).setDataRegionName(dataRegionName)
+            );
+
+            return null;
+        }, CacheException.class, null);
+
+        assertThrows(log, () -> {
+            clientNode.getOrCreateCache(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME + 1).setDataRegionName(UUID.randomUUID().toString())
+            );
+
+            return null;
+        }, CacheException.class, null);
+
+        IgniteCache<Object, Object> cacheSrv = srvNode.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cacheClient = clientNode.cache(DEFAULT_CACHE_NAME);
+
+        cacheSrv.put(1, 1);
+        assertEquals(1, cacheSrv.get(1));
+
+        cacheClient.put(2, 2);
+        assertEquals(2, cacheClient.get(2));
+
+        assertFalse(logLsnr.check());
     }
 }
