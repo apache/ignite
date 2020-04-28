@@ -2711,9 +2711,15 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             rctx.lastState = rctx.lastState == null ?
                 new TransmissionMeta(ex) : rctx.lastState.error(ex);
 
-            rctx.hnd.onException(rctx.rmtNodeId, ex);
+            if (X.hasCause(ex, TransmissionCancelledException.class)) {
+                if (log.isInfoEnabled())
+                    log.info("Transmission receiver has been cancelled [rctx=" + rctx + ']');
+            }
+            else {
+                rctx.hnd.onException(rctx.rmtNodeId, ex);
 
-            U.error(log, "Receiver has been interrupted due to an exception occurred [ctx=" + rctx + ']', ex);
+                U.error(log, "Receiver has been interrupted due to an exception occurred [rctx=" + rctx + ']', ex);
+            }
         }
     }
 
@@ -2767,7 +2773,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     "It's not allowed to process different sessions over the same topic simultaneously. " +
                     "Channel will be closed [initMsg=" + initMsg + ", channel=" + ch + ", nodeId=" + rmtNodeId + ']');
 
-                U.error(log, err);
+                U.error(log, "Error has been sent back to remote node. Receiver holds the local topic " +
+                    "[topic=" + topic + ", rmtNodeId=" + rmtNodeId + ", ctx=" + rcvCtx + ']', err);
 
                 out.writeObject(new TransmissionMeta(err));
 
@@ -2799,8 +2806,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         }
         catch (Throwable t) {
-            U.error(log, "Download session cannot be finished due to an unexpected error [ctx=" + rcvCtx + ']', t);
-
             // Do not remove receiver context here, since sender will recconect to get this error.
             interruptRecevier(rcvCtx, new IgniteCheckedException("Channel processing error [nodeId=" + rmtNodeId + ']', t));
         }

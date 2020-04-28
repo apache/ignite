@@ -38,6 +38,7 @@ import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -55,6 +56,7 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
+import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
@@ -178,6 +180,10 @@ public class IgniteMBeansManager {
         EncryptionMXBean encryptionMXBean = new EncryptionMXBeanImpl(ctx);
         registerMBean("Encryption", encryptionMXBean.getClass().getSimpleName(), encryptionMXBean,
             EncryptionMXBean.class);
+
+        // Snapshot.
+        SnapshotMXBean snpMXBean = new SnapshotMXBeanImpl(ctx);
+        registerMBean("Snapshot", snpMXBean.getClass().getSimpleName(), snpMXBean, SnapshotMXBean.class);
 
         // Metrics configuration
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);
