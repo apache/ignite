@@ -23,22 +23,19 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.client.AdditionalAttributeSecurityCheckTest;
 import org.apache.ignite.plugin.security.AuthenticationContext;
-
-import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR;
 
 /**
  * Security processor for test AuthenticationContext with user attributes.
  */
-public class TestAdditionalAttributeSecurityProcessor extends TestAdditionalSecurityProcessor {
+public class TestAttributeSecurityProcessor extends TestAdditionalSecurityProcessor {
     /** Authentication handler. */
     private Consumer<Map<String, Object>> hndlr;
 
     /**
      * Constructor.
      */
-    public TestAdditionalAttributeSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
+    public TestAttributeSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
         Collection<TestSecurityData> predefinedAuthData, boolean globalAuth, boolean checkSslCerts,
         Consumer<Map<String, Object>> hndlr) {
         super(ctx, nodeSecData, predefinedAuthData, globalAuth, checkSslCerts);

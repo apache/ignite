@@ -23,18 +23,17 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.internal.processors.security.client.AdditionalAttributeSecurityCheckTest;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /**
  *
  */
-public class TestAdditionalAttributeSecurityPluginProvider extends TestAdditionalSecurityPluginProvider {
+public class TestAttributeSecurityPluginProvider extends TestAdditionalSecurityPluginProvider {
     /** Authentication handler. */
     private Consumer<Map<String, Object>> hndlr;
 
     /** */
-    public TestAdditionalAttributeSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestAttributeSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
         boolean globalAuth, boolean checkAddPass, Consumer<Map<String, Object>> hndlr,
         TestSecurityData... clientData) {
         super(login, pwd, perms, globalAuth, checkAddPass, clientData);
@@ -44,7 +43,7 @@ public class TestAdditionalAttributeSecurityPluginProvider extends TestAdditiona
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-        return new TestAdditionalAttributeSecurityProcessor(ctx,
+        return new TestAttributeSecurityProcessor(ctx,
             new TestSecurityData(login, pwd, perms, new Permissions()),
             Arrays.asList(clientData),
             globalAuth,

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.UserAttributesFactory;
-import org.apache.ignite.internal.processors.security.impl.TestAdditionalAttributeSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.impl.TestAttributeSecurityPluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +38,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-public class AdditionalAttributeSecurityCheckTest extends AdditionalSecurityCheckTest {
+public class AttributeSecurityCheckTest extends AdditionalSecurityCheckTest {
     /** */
     private static Map<String, Object> userAttrs;
 
@@ -47,7 +47,7 @@ public class AdditionalAttributeSecurityCheckTest extends AdditionalSecurityChec
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name){
-        return new TestAdditionalAttributeSecurityPluginProvider(name, null, ALLOW_ALL,
+        return new TestAttributeSecurityPluginProvider(name, null, ALLOW_ALL,
             globalAuth, true, new Consumer<Map<String, Object>>() {
             @Override public void accept(Map<String, Object> map) {
                 userAttrs = map;
