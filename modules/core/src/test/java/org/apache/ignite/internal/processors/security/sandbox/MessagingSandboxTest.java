@@ -70,7 +70,7 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
 
         final String topic = "test_topic_" + idx;
 
-        IgniteMessaging messaging = node.message(node.cluster().forRemotes());
+        IgniteMessaging messaging = node.message(node.cluster().forNodeId(grid(SRV).localNode().id()));
 
         UUID listenerId = func.apply(messaging, topic);
 
