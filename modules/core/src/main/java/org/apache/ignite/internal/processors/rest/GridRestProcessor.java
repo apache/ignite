@@ -418,7 +418,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 Session ses = Session.random();
 
-                if(req.userAttributes() != null)
+                if (req.userAttributes() != null)
                     ses.userAttrs = req.userAttributes();
 
                 UUID oldSesId = clientId2SesId.put(ses.clientId, ses.sesId);
@@ -438,7 +438,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 if (sesId == null) {
                     Session ses = Session.fromClientId(clientId);
 
-                    if(req.userAttributes() != null)
+                    if (req.userAttributes() != null)
                         ses.userAttrs = req.userAttributes();
 
                     if (clientId2SesId.putIfAbsent(ses.clientId, ses.sesId) != null)
@@ -825,7 +825,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
         authCtx.credentials(creds);
 
-        if(req.userAttributes() != null)
+        if (req.userAttributes() != null)
             ses.userAttrs = req.userAttributes();
 
         authCtx.nodeAttributes(ses.userAttrs);

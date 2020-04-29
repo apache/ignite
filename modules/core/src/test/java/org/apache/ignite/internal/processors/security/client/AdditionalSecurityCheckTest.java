@@ -26,14 +26,12 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
@@ -41,6 +39,7 @@ import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -100,8 +99,7 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
         boolean isClient = instanceName.endsWith("2");
         String name = isClient ? "client_" + instanceName : "srv_" + instanceName;
 
-        cfg.setPluginProviders(new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
-            globalAuth, true, clientData()));
+        cfg.setPluginProviders(getPluginProvider(name));
 
         SslContextFactory sslFactory = (SslContextFactory) GridTestUtils.sslFactory();
 
@@ -173,6 +171,15 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
             .getAbsolutePath());
 
         return sslFactory;
+    }
+
+    /**
+     * @param name Ignite instance name
+     * @return Plugin provider.
+     */
+    protected PluginProvider<?> getPluginProvider(String name){
+        return new TestAdditionalSecurityPluginProvider(name, null, ALLOW_ALL,
+            globalAuth, true, clientData());
     }
 
     /**
@@ -249,30 +256,6 @@ public class AdditionalSecurityCheckTest extends AbstractSecurityTest {
         }
         catch (ClientAuthenticationException e) {
             assertTrue(e.getMessage().contains("Client version is not found"));
-        }
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testClientInfoGridClientNotFail() throws Exception {
-        Ignite ignite = startGrids(2);
-
-        assertEquals(2, ignite.cluster().topologyVersion());
-
-        ignite.cluster().state(ClusterState.ACTIVE);
-
-        try (GridClient client = GridClientFactory.start(getGridClientConfiguration())) {
-            assertTrue(client.connected());
-
-            GridClientClusterState state = client.state();
-
-            // Close a coordinator to force the client to send a CLUSTER_CURRENT_STATE message to the other node
-            // in the next statement.
-            ignite.close();
-
-            state.state();
         }
     }
 
