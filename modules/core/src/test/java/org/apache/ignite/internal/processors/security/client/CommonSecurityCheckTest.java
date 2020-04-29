@@ -49,7 +49,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * Security tests for thin client.
+ * Common parent for security tests for thin client.
  */
 @RunWith(JUnit4.class)
 public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
