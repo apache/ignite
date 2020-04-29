@@ -944,7 +944,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer, null, null);
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
         f.add(finishLocalTxsFuture);
         f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
@@ -968,7 +968,7 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteInternalFuture<?> partitionRecoveryFuture(AffinityTopologyVersion topVer, ClusterNode node,
         IgnitePredicate<IgniteInternalTx> filter) {
-        return tm().finishLocalTxs(topVer, node, filter);
+        return tm().recoverLocalTxs(topVer, node, filter);
     }
 
     /**

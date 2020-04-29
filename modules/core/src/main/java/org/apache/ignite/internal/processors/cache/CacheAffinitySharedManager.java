@@ -2599,7 +2599,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     *
+     * @return Primary nodes for local backups.
      */
     public Set<ClusterNode> idealPrimaryNodesForLocalBackups() {
         Set<ClusterNode> res = new GridConcurrentHashSet<>();
