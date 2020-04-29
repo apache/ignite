@@ -103,5 +103,11 @@
             See: https://checkstyle.sourceforge.io/config_whitespace.html#SingleSpaceSeparator
         -->
         <module name="SingleSpaceSeparator"/>
+
+        <!--
+            Checks that the whitespace around the Generic tokens are correct.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#GenericWhitespace
+        -->
+        <module name="GenericWhitespace"/>
     </module>
 </module>

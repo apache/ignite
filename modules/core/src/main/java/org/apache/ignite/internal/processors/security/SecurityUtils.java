@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.security;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
@@ -37,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -183,6 +186,20 @@ public class SecurityUtils {
 
         return ctx.getClass().getClassLoader() == cls.getClassLoader()
             && ctx.marshallerContext().isSystemType(cls.getName());
+    }
+
+    /**
+     * @return True if current thread runs inside the Ignite Sandbox.
+     */
+    public static boolean isInsideSandbox() {
+        if (!IgniteSecurityProcessor.hasSandboxedNodes())
+            return false;
+
+        final AccessControlContext ctx = AccessController.getContext();
+
+        return AccessController.doPrivileged((PrivilegedAction<Boolean>)
+            () -> ctx.getDomainCombiner() instanceof IgniteDomainCombiner
+        );
     }
 
     /**

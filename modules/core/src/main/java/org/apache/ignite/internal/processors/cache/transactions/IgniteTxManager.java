@@ -1175,10 +1175,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private void removeObsolete(IgniteInternalTx tx) {
         Collection<IgniteTxEntry> entries = tx.local() ? tx.allEntries() : tx.writeEntries();
 
-        for (IgniteTxEntry entry : entries) {
-            cctx.database().checkpointReadLock();
+        if (F.isEmpty(entries))
+            return;
 
-            try {
+        cctx.database().checkpointReadLock();
+
+        try {
+            for (IgniteTxEntry entry : entries) {
                 GridCacheEntryEx cached = entry.cached();
 
                 GridCacheContext cacheCtx = entry.context();
@@ -1206,10 +1209,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     U.error(log, "Failed to remove obsolete entry from cache: " + cached, e);
                 }
             }
-            finally {
-                cctx.database().checkpointReadUnlock();
-            }
         }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+
     }
 
     /**

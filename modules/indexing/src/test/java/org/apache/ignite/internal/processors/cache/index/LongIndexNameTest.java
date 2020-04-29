@@ -41,7 +41,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration())
-            .setCacheConfiguration(new <String, Person>CacheConfiguration("cache")
+            .setCacheConfiguration(new CacheConfiguration<String, Person>("cache")
                 .setQueryEntities(getIndexCfg())
                 .setAffinity(new RendezvousAffinityFunction(false, 16)));
     }
