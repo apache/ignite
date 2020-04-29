@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Client authentication request.
@@ -50,12 +51,22 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
+        U.writeString(out, login());
+        U.writeString(out, password());
+
+        U.writeMap(out, userAttrs);
+
         out.writeObject(cred);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
+
+        login(U.readString(in));
+        password(U.readString(in));
+
+        userAttrs = U.readMap(in);
 
         cred = in.readObject();
     }

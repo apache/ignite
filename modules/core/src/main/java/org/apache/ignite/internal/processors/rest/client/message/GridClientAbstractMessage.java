@@ -139,21 +139,11 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeByteArray(out, sesTok);
-
-        U.writeString(out, login);
-        U.writeString(out, pwd);
-
-        U.writeMap(out, userAttrs);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sesTok = U.readByteArray(in);
-
-        login = U.readString(in);
-        pwd = U.readString(in);
-
-        userAttrs = U.readMap(in);
     }
 
     /** {@inheritDoc} */

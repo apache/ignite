@@ -38,7 +38,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  * Security tests for thin client.
  */
 @RunWith(JUnit4.class)
-public class AttributeSecurityCheckTest extends AdditionalSecurityCheckTest {
+public class AttributeSecurityCheckTest extends CommonSecurityCheckTest {
     /** */
     private static Map<String, Object> userAttrs;
 
