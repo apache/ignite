@@ -31,15 +31,12 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginPro
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.PERMS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 
 /**
  * Common class for security tests.
@@ -94,39 +91,6 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
         return startGrid(getConfiguration(login,
             new TestSecurityPluginProvider(login, "", prmSet, sandboxPerms, globalAuth))
             .setClientMode(isClient));
-    }
-
-    /**
-     * Registers user with specified login and permissions across all nodes.
-     *
-     * @param login Login of user to register.
-     * @param perms User permissions set.
-     */
-    protected void registerUser(String login, SecurityPermissionSet perms) {
-        PERMS.put(new SecurityCredentials(login, ""), perms);
-    }
-
-    /**
-     * Removes user with specified login from all nodes.
-     *
-     * @param login Login of user to remove.
-     */
-    protected void removeUser(String login) {
-        PERMS.remove(new SecurityCredentials(login, ""));
-    }
-
-    /**
-     * @return {@link SecurityPermissionSet} containing specified system permissions.
-     */
-    public static SecurityPermissionSet systemPermissions(SecurityPermission... perms) {
-        return create().defaultAllowAll(false).appendSystemPermissions(perms).build();
-    }
-
-    /**
-     * @return {@link SecurityPermissionSet} containing specified cache permissions.
-     */
-    public static SecurityPermissionSet cachePermissions(String cache, SecurityPermission... perms) {
-        return create().defaultAllowAll(false).appendCachePermissions(cache, perms).build();
     }
 
     /** */

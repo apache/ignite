@@ -32,17 +32,20 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
+import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.PERMS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -59,13 +62,13 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
     private static final SecurityPermissionSet EMPTY_PERMS = new SecurityBasicPermissionSet();
 
     /** JDBC URL prefix. */
-    public static final String JDBC_URL_PREFIX = "jdbc:ignite:thin://";
+    private static final String JDBC_URL_PREFIX = "jdbc:ignite:thin://";
 
     /** Index of the node that accepted the query request. */
-    protected static final int LOCAL_NODE_IDX = 0;
+    private static final int LOCAL_NODE_IDX = 0;
 
     /** Index of the node which is remote to query executor. */
-    protected static final int REMOTE_NODE_IDX = 1;
+    private static final int REMOTE_NODE_IDX = 1;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -343,7 +346,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * @param perms Executive user permissions.
      */
     @SuppressWarnings("ThrowableNotThrown")
-    protected void assertAuthorizationFailed(String sql, SecurityPermissionSet perms) {
+    private void assertAuthorizationFailed(String sql, SecurityPermissionSet perms) {
         assertThrowsAnyCause(
             log,
             () -> {
@@ -410,7 +413,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * @param sql Query to execute.
      * @param perms Required permissions.
      */
-    protected void executeWithPermissions(String sql, SecurityPermissionSet perms) throws Exception {
+    private void executeWithPermissions(String sql, SecurityPermissionSet perms) throws Exception {
         String login = "jdbc-client";
 
         registerUser(login, perms);
@@ -433,8 +436,41 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * @param login User login.
      * @return Connection to server node.
      */
-    protected Connection getConnection(String login) throws SQLException {
+    private Connection getConnection(String login) throws SQLException {
         return DriverManager.getConnection(JDBC_URL_PREFIX + Config.SERVER, login, "");
+    }
+
+    /**
+     * Registers user with specified login and permissions across all nodes.
+     *
+     * @param login Login of user to register.
+     * @param perms User permissions set.
+     */
+    protected void registerUser(String login, SecurityPermissionSet perms) {
+        PERMS.put(new SecurityCredentials(login, ""), perms);
+    }
+
+    /**
+     * Removes user with specified login from all nodes.
+     *
+     * @param login Login of user to remove.
+     */
+    protected void removeUser(String login) {
+        PERMS.remove(new SecurityCredentials(login, ""));
+    }
+
+    /**
+     * @return {@link SecurityPermissionSet} containing specified system permissions.
+     */
+    private SecurityPermissionSet systemPermissions(SecurityPermission... perms) {
+        return create().defaultAllowAll(false).appendSystemPermissions(perms).build();
+    }
+
+    /**
+     * @return {@link SecurityPermissionSet} containing specified cache permissions.
+     */
+    private SecurityPermissionSet cachePermissions(String cache, SecurityPermission... perms) {
+        return create().defaultAllowAll(false).appendCachePermissions(cache, perms).build();
     }
 
     /**
