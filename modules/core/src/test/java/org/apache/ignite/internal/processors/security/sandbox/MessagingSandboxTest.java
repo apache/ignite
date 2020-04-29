@@ -18,16 +18,13 @@
 package org.apache.ignite.internal.processors.security.sandbox;
 
 import java.security.AccessControlException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -36,14 +33,11 @@ import org.junit.Test;
  * Checks that a remote listener for IgniteMessaging is executed inside the sandbox.
  */
 public class MessagingSandboxTest extends AbstractSandboxTest {
-    /** Wait condition timeout. */
-    private static final int WAIT_CONDITION_TIMEOUT = 10_000;
+    /** Latch. */
+    private static CountDownLatch latch;
 
-    /** Index to generate a unique topic and the synchronized set value. */
-    private static final AtomicInteger TOPIC_INDEX = new AtomicInteger();
-
-    /** */
-    private static final Set<Object> SYNCHRONIZED_SET = Collections.synchronizedSet(new HashSet<>());
+    /** Error. */
+    private static AccessControlException error;
 
     /** */
     @Test
@@ -59,26 +53,54 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
 
     /** */
     private void testMessaging(BiFunction<IgniteMessaging, String, UUID> func) {
-        execute(grid(CLNT_ALLOWED_WRITE_PROP), func, this::runOperation);
-        execute(grid(CLNT_FORBIDDEN_WRITE_PROP), func, r -> runForbiddenOperation(r, AccessControlException.class));
+        execute(grid(CLNT_ALLOWED_WRITE_PROP), func, this::checkAllowedOperation);
+        execute(grid(CLNT_FORBIDDEN_WRITE_PROP), func, this::checkForbiddenOperation);
+    }
+
+    /**
+     * @param r Runnable that runs {@link AbstractSandboxTest#controlAction()}.
+     */
+    private void checkAllowedOperation(Runnable r) {
+        System.clearProperty(PROP_NAME);
+
+        error = null;
+
+        r.run();
+
+        assertNull(error);
+        assertEquals(PROP_VALUE, System.getProperty(PROP_NAME));
+    }
+
+    /**
+     * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
+     */
+    private void checkForbiddenOperation(GridTestUtils.RunnableX r) {
+        System.clearProperty(PROP_NAME);
+
+        error = null;
+
+        r.run();
+
+        assertNotNull(error);
+        assertNull(System.getProperty(PROP_NAME));
     }
 
     /** */
     private void execute(Ignite node, BiFunction<IgniteMessaging, String, UUID> func,
         Consumer<GridTestUtils.RunnableX> op) {
-        final Integer idx = TOPIC_INDEX.incrementAndGet();
-
-        final String topic = "test_topic_" + idx;
+        final String topic = "test_topic";
 
         IgniteMessaging messaging = node.message(node.cluster().forNodeId(grid(SRV).localNode().id()));
 
         UUID listenerId = func.apply(messaging, topic);
 
+        latch = new CountDownLatch(1);
+
         try {
             op.accept(() -> {
-                grid(SRV).message().send(topic, idx);
+                grid(SRV).message().send(topic, "Hello!");
 
-                wait(idx);
+                latch.await(10, TimeUnit.SECONDS);
             });
         }
         finally {
@@ -89,21 +111,17 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
     /** */
     private IgniteBiPredicate<UUID, ?> listener() {
         return (uuid, o) -> {
-            controlAction();
-
-            SYNCHRONIZED_SET.add(o);
+            try {
+                controlAction();
+            }
+            catch (AccessControlException e) {
+                error = e;
+            }
+            finally {
+                latch.countDown();
+            }
 
             return false;
         };
-    }
-
-    /** */
-    private void wait(Integer idx) {
-        try {
-            GridTestUtils.waitForCondition(() -> SYNCHRONIZED_SET.contains(idx), WAIT_CONDITION_TIMEOUT);
-        }
-        catch (IgniteInterruptedCheckedException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

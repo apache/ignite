@@ -57,10 +57,10 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     protected static final String CLNT_FORBIDDEN_WRITE_PROP = "clnt_forbidden";
 
     /** Test property name. */
-    private static final String PROP_NAME = "test.sandbox.property";
+    protected static final String PROP_NAME = "test.sandbox.property";
 
     /** Test property value. */
-    private static final String PROP_VALUE = "propertyValue";
+    protected static final String PROP_VALUE = "propertyValue";
 
     /** */
     protected static void controlAction() {
