@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesCheckSizeIssue;
@@ -49,6 +50,7 @@ import org.junit.Test;
 
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -304,6 +306,30 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
     }
 
     /**
+     * Test checks that there will be no {@link NullPointerException}
+     * when calling {@link Object#toString} for {@link ValidateIndexesCheckSizeIssue}
+     * and {@link ValidateIndexesCheckSizeResult}.
+     */
+    @Test
+    public void testNoNpeInToString() {
+        List<IgniteDataTransferObject> transferObjects = asList(
+            new ValidateIndexesCheckSizeIssue(),
+            new ValidateIndexesCheckSizeIssue(null, 0, null),
+            new ValidateIndexesCheckSizeIssue("idx", 0, null),
+            new ValidateIndexesCheckSizeIssue(null, 0, new Exception("error")),
+            new ValidateIndexesCheckSizeIssue("idx", 0, new Exception("error")),
+            //
+            new ValidateIndexesCheckSizeResult(),
+            new ValidateIndexesCheckSizeResult(0, null),
+            new ValidateIndexesCheckSizeResult(0, emptyList()),
+            new ValidateIndexesCheckSizeResult(0, asList(new ValidateIndexesCheckSizeIssue()))
+        );
+
+        //there should be no npe
+        log.info("transferObjects=" + transferObjects);
+    }
+
+    /**
      * Adding the "address" column and index for {@link Person} and
      * {@link Organization}, with new entries added for each of them.
      *
@@ -488,9 +514,9 @@ public class GridCommandHandlerIndexingCheckSizeTest extends GridCommandHandlerC
             assertFalse(issues.isEmpty());
 
             issues.forEach(issue -> {
-                assertEquals((int)idxSizeExp.apply(rmvByTblEntry.getValue()), issue.idxSize());
+                assertEquals((int)idxSizeExp.apply(rmvByTblEntry.getValue()), issue.indexSize());
 
-                Throwable err = issue.err();
+                Throwable err = issue.error();
                 assertNotNull(err);
                 assertEquals("Cache and index size not same.", err.getMessage());
             });

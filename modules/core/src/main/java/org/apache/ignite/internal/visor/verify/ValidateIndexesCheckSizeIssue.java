@@ -20,9 +20,9 @@ package org.apache.ignite.internal.visor.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.readString;
@@ -31,19 +31,19 @@ import static org.apache.ignite.internal.util.IgniteUtils.writeString;
 /**
  * Issue when checking size of cache and index.
  */
-public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
+public class ValidateIndexesCheckSizeIssue extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Index name. */
-    private String idxName;
+    @Nullable private String idxName;
 
     /** Index size. */
     private long idxSize;
 
     /** Error. */
     @GridToStringExclude
-    private Throwable t;
+    @Nullable private Throwable t;
 
     /**
      * Default constructor.
@@ -87,7 +87,7 @@ public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
      *
      * @return Index size.
      */
-    public long idxSize() {
+    public long indexSize() {
         return idxSize;
     }
 
@@ -96,12 +96,12 @@ public class ValidateIndexesCheckSizeIssue extends VisorDataTransferObject {
      *
      * @return Error.
      */
-    public Throwable err() {
+    @Nullable public Throwable error() {
         return t;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ValidateIndexesCheckSizeIssue.class, this) + ", " + t.getClass() + ": " + t.getMessage();
+        return S.toString(ValidateIndexesCheckSizeIssue.class, this, "err", t);
     }
 }
