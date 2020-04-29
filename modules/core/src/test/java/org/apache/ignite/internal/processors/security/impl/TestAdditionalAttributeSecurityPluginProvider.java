@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.security.impl;
 
 import java.security.Permissions;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.client.AdditionalAttributeSecurityCheckTest;
@@ -28,12 +30,12 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
  *
  */
 public class TestAdditionalAttributeSecurityPluginProvider extends TestAdditionalSecurityPluginProvider {
-    /** Attribute handler. */
-    private AdditionalAttributeSecurityCheckTest.AttributeHandler hndlr;
+    /** Authentication handler. */
+    private Consumer<Map<String, Object>> hndlr;
 
     /** */
     public TestAdditionalAttributeSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
-        boolean globalAuth, boolean checkAddPass, AdditionalAttributeSecurityCheckTest.AttributeHandler hndlr,
+        boolean globalAuth, boolean checkAddPass, Consumer<Map<String, Object>> hndlr,
         TestSecurityData... clientData) {
         super(login, pwd, perms, globalAuth, checkAddPass, clientData);
 

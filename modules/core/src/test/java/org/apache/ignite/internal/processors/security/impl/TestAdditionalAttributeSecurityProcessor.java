@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -30,15 +32,15 @@ import static org.apache.ignite.internal.processors.security.impl.TestAdditional
  * Security processor for test AuthenticationContext with user attributes.
  */
 public class TestAdditionalAttributeSecurityProcessor extends TestAdditionalSecurityProcessor {
-    /** Attribute handler. */
-    private AdditionalAttributeSecurityCheckTest.AttributeHandler hndlr;
+    /** Authentication handler. */
+    private Consumer<Map<String, Object>> hndlr;
 
     /**
      * Constructor.
      */
     public TestAdditionalAttributeSecurityProcessor(GridKernalContext ctx, TestSecurityData nodeSecData,
         Collection<TestSecurityData> predefinedAuthData, boolean globalAuth, boolean checkSslCerts,
-        AdditionalAttributeSecurityCheckTest.AttributeHandler hndlr) {
+        Consumer<Map<String, Object>> hndlr) {
         super(ctx, nodeSecData, predefinedAuthData, globalAuth, checkSslCerts);
 
         this.hndlr = hndlr;
@@ -46,8 +48,7 @@ public class TestAdditionalAttributeSecurityProcessor extends TestAdditionalSecu
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext authCtx) throws IgniteCheckedException {
-        if(authCtx.nodeAttributes() != null)
-            hndlr.handle(authCtx.nodeAttributes().get(ADDITIONAL_SECURITY_CLIENT_VERSION_ATTR).toString());
+        hndlr.accept(authCtx.nodeAttributes());
 
         return super.authenticate(authCtx);
     }

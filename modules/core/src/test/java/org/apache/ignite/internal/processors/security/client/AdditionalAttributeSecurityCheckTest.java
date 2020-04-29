@@ -17,19 +17,21 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
+import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
+import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.internal.processors.security.UserAttributesFactory;
 import org.apache.ignite.internal.processors.security.impl.TestAdditionalAttributeSecurityPluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.testframework.ListeningTestLogger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityPluginProvider.ADDITIONAL_SECURITY_CLIENT_VERSION;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
@@ -38,12 +40,25 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 @RunWith(JUnit4.class)
 public class AdditionalAttributeSecurityCheckTest extends AdditionalSecurityCheckTest {
     /** */
-    private static String attrHolder;
+    private static Map<String, Object> userAttrs;
+
+    /** */
+    private static final int TEST_KEY_CNT = 10;
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name){
         return new TestAdditionalAttributeSecurityPluginProvider(name, null, ALLOW_ALL,
-            globalAuth, true, new AttributeHandler(), clientData());
+            globalAuth, true, new Consumer<Map<String, Object>>() {
+            @Override public void accept(Map<String, Object> map) {
+                userAttrs = map;
+            }
+        }, clientData());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClientConfiguration getGridClientConfiguration() {
+        return super.getGridClientConfiguration()
+            .setUserAttributes(userAttributes());
     }
 
     /** */
@@ -64,21 +79,24 @@ public class AdditionalAttributeSecurityCheckTest extends AdditionalSecurityChec
             // in the state.state() statement.
             ignite.close();
 
-            attrHolder = null;
+            userAttrs = null;
 
             state.state();
 
-            assertEquals(attrHolder, ADDITIONAL_SECURITY_CLIENT_VERSION);
+            for (int i = 0; i < TEST_KEY_CNT; i++)
+                assertEquals(userAttrs.get("key" + i), "val" + i);
         }
     }
 
-    /** */
-    public static class AttributeHandler {
-        /**
-         * @param attr Attribute.
-         */
-        public void handle(String attr){
-           attrHolder = attr;
-        }
+    /**
+     * @return User attributes.
+     */
+    private Map<String, String> userAttributes(){
+        Map<String, String> attrs = new UserAttributesFactory().create();
+
+        for (int i = 0; i < TEST_KEY_CNT; i++)
+            attrs.put("key" + i, "val" + i);
+
+        return attrs;
     }
 }
