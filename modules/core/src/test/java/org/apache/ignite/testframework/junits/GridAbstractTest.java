@@ -125,6 +125,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
 import static java.util.Collections.newSetFromMap;
+import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -910,6 +911,21 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setClientMode(true);
 
         return (IgniteEx)startGrid(igniteInstanceName, cfg, null);
+    }
+
+    /**
+     * Starts new client grid with given configuration.
+     *
+     * @param cfg Ignite configuration.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(IgniteConfiguration cfg) throws Exception {
+        requireNonNull(cfg);
+
+        cfg = optimize(cfg).setClientMode(true);
+
+        return (IgniteEx)startGrid(cfg.getIgniteInstanceName(), cfg, null);
     }
 
     /**

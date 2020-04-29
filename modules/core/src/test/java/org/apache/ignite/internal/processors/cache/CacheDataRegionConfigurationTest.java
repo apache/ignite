@@ -16,19 +16,29 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.concurrent.Callable;
+import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.LogListener.matches;
 
 /**
  *
@@ -40,6 +50,12 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /** */
     private volatile DataStorageConfiguration memCfg;
 
+    /** Failure handler. */
+    @Nullable private FailureHandler failureHnd;
+
+    /** Logger within grid. */
+    private IgniteLogger logger;
+
     /** */
     private static final long DFLT_MEM_PLC_SIZE = 10 * 1024 * 1024;
 
@@ -50,10 +66,16 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        if (memCfg != null)
+        if (nonNull(logger))
+            cfg.setGridLogger(logger);
+
+        if (nonNull(failureHnd))
+            cfg.setFailureHandler(failureHnd);
+
+        if (nonNull(memCfg))
             cfg.setDataStorageConfiguration(memCfg);
 
-        if (ccfg != null)
+        if (nonNull(ccfg))
             cfg.setCacheConfiguration(ccfg);
 
         return cfg;
@@ -61,22 +83,24 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
     /** */
     private void checkStartGridException(Class<? extends Throwable> ex, String message) {
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
+        assertThrows(log(), () -> {
+            startGrid(0);
+
+            return null;
         }, ex, message);
     }
 
     /**
      * Verifies that proper exception is thrown when DataRegion is misconfigured for cache.
      */
+    @Test
     public void testMissingDataRegion() {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -88,6 +112,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteOutOfMemoryException} is thrown when cache is configured with too small DataRegion.
      */
+    @Test
     public void testTooSmallDataRegion() throws Exception {
         memCfg = new DataStorageConfiguration();
 
@@ -142,6 +167,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that with enough memory allocated adding values to cache doesn't cause any exceptions.
      */
+    @Test
     public void testProperlySizedMemoryPolicy() throws Exception {
         memCfg = new DataStorageConfiguration();
 
@@ -177,6 +203,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when swap and persistence are enabled at the same time
      * for a data region.
      */
+    @Test
     public void testSetPersistenceAndSwap() {
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
@@ -200,6 +227,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold is less than 0.5.
      */
+    @Test
     public void testSetSmallInvalidEviction() {
         final double SMALL_EVICTION_THRESHOLD = 0.1D;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -222,6 +250,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold is greater than 0.999.
      */
+    @Test
     public void testSetBigInvalidEviction() {
         final double BIG_EVICTION_THRESHOLD = 1.0D;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -244,6 +273,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when empty pages pool size is less than 10
      */
+    @Test
     public void testInvalidSmallEmptyPagesPoolSize() {
         final int SMALL_PAGES_POOL_SIZE = 5;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -267,6 +297,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when empty pages pool size is greater than
      * DataRegionConfiguration.getMaxSize() / DataStorageConfiguration.getPageSize() / 10.
      */
+    @Test
     public void testInvalidBigEmptyPagesPoolSize() {
         final int DFLT_PAGE_SIZE = 1024;
         long expectedMaxPoolSize;
@@ -298,6 +329,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
      * memory metrics properties fails. Metrics rate time interval must not be less than 1000ms.
      */
+    @Test
     public void testInvalidMetricsProperties() {
         final long SMALL_RATE_TIME_INTERVAL_MS = 999;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -321,6 +353,7 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
      * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
      * memory metrics properties fails. Metrics sub interval count must be positive.
      */
+    @Test
     public void testInvalidSubIntervalCount() {
         final int NEG_SUB_INTERVAL_COUNT = -1000;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
@@ -338,5 +371,64 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
+
+    /**
+     * Test checks that nodes will not fall if you receive a request
+     * to create a cache with an unknown data region.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoFailNodeIfUnknownDataRegion() throws Exception {
+        failureHnd = new StopNodeOrHaltFailureHandler();
+        ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        LogListener logLsnr = matches("Possible failure suppressed accordingly to a configured handler").build();
+        logger = new ListeningTestLogger(false, log, logLsnr);
+
+        IgniteEx srvNode = startGrid(0);
+
+        String dataRegionName = "region";
+
+        IgniteConfiguration clientCfg = getConfiguration(getTestIgniteInstanceName(1))
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(dataRegionName))
+                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            );
+
+        IgniteEx clientNode = startClientGrid(clientCfg);
+
+        srvNode.cluster().active(true);
+
+        assertThrows(log, () -> {
+            clientNode.getOrCreateCache(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME + 1).setDataRegionName(dataRegionName)
+            );
+
+            return null;
+        }, CacheException.class, null);
+
+        assertThrows(log, () -> {
+            clientNode.getOrCreateCache(
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME + 1).setDataRegionName(UUID.randomUUID().toString())
+            );
+
+            return null;
+        }, CacheException.class, null);
+
+        IgniteCache<Object, Object> cacheSrv = srvNode.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cacheClient = clientNode.cache(DEFAULT_CACHE_NAME);
+
+        cacheSrv.put(1, 1);
+        assertEquals(1, cacheSrv.get(1));
+
+        cacheClient.put(2, 2);
+        assertEquals(2, cacheClient.get(2));
+
+        assertFalse(logLsnr.check());
     }
 }
