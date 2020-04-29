@@ -136,7 +136,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
 
         final List<String> msgs = orderedMessages();
 
-        sendOrdered(ignite1.message(), msgs, new IgniteBiInClosure< List<String>, List<Thread>>() {
+        sendOrdered(ignite1.message(), msgs, new IgniteBiInClosure<List<String>, List<Thread>>() {
             @Override public void apply(List<String> received, List<Thread> threads) {
                 assertFalse(threads.contains(Thread.currentThread()));
                 assertTrue(msgs.equals(received));
@@ -424,7 +424,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
      * @param cls Callback for compare result.
      * @throws Exception If failed.
      */
-    private<T> void sendOrdered(
+    private <T> void sendOrdered(
             final IgniteMessaging igniteMsg,
             final List<T> msgs,
             final IgniteBiInClosure<List<T>,List<Thread>> cls
