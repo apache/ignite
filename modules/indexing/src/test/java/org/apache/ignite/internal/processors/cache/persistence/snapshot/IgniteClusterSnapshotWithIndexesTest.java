@@ -33,6 +33,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.visor.verify.ValidateIndexesClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 
 /**
  * Cluster-wide snapshot test with indexes.
@@ -54,6 +57,15 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
                     .addQueryField("balance", Integer.class.getName(), null)
                     .setIndexes(F.asList(new QueryIndex("id"),
                         new QueryIndex("balance")))));
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getDataStorageConfiguration().setCheckpointFrequency(DFLT_CHECKPOINT_FREQ);
+
+        return cfg;
+    }
 
     /** @throws Exception If fails. */
     @Test
@@ -99,6 +111,8 @@ public class IgniteClusterSnapshotWithIndexesTest extends AbstractSnapshotSelfTe
         assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(snp, selectStartSQLStatement(tblName))));
         assertEquals(CACHE_KEYS_RANGE, rowsCount(executeSql(snp.context().cache().jcache(indexedCcfg.getName()),
             selectStartSQLStatement(Account.class.getSimpleName()))));
+
+        forceCheckpoint();
 
         // Validate indexes on start.
         ValidateIndexesClosure clo = new ValidateIndexesClosure(new HashSet<>(Arrays.asList(indexedCcfg.getName(), tblName)),
