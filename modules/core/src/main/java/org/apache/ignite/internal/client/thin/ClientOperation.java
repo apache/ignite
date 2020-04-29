@@ -70,6 +70,8 @@ enum ClientOperation {
     /** Change cluster state. */CLUSTER_CHANGE_STATE(5001),
     /** Get WAL state. */CLUSTER_GET_WAL_STATE(5003),
     /** Change WAL state. */CLUSTER_CHANGE_WAL_STATE(5002),
+    /** Get nodes IDs by filter. */CLUSTER_GROUP_GET_NODE_IDS(5100),
+    /** Get nodes info by IDs. */CLUSTER_GROUP_GET_NODE_INFO(5101),
 
     /** Execute compute task. */COMPUTE_TASK_EXECUTE(6000),
     /** Finished compute task notification. */COMPUTE_TASK_FINISHED(6001, true);
