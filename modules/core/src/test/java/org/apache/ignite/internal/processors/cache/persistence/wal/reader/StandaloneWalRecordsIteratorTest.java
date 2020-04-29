@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -162,6 +164,8 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            assertEquals(Collections.singletonList(StandardOpenOption.READ), Arrays.asList(modes));
+
             return new CountedFileIO(file, modes);
         }
     }

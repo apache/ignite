@@ -271,7 +271,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         SegmentHeader segmentHeader;
         while (true) {
             try {
-                fileIO = fd.toIO(ioFactory);
+                fileIO = fd.toReadOnlyIO(ioFactory);
 
                 segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
 

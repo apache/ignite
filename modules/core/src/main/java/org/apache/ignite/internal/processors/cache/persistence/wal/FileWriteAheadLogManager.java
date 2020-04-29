@@ -1129,7 +1129,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileDescriptor ds = new FileDescriptor(file);
 
         try (
-            SegmentIO fileIO = ds.toIO(ioFactory);
+            SegmentIO fileIO = ds.toReadOnlyIO(ioFactory);
             ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
         ) {
             final DataInput in = segmentFileInputFactory.createFileInput(fileIO, buf);
