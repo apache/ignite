@@ -264,7 +264,7 @@ public class JdbcAuthorizationTest extends AbstractSecurityTest {
      * @param name Name of the table to be created.
      * @return Name of created table.
      */
-    private String createTable(String name) throws Exception{
+    private String createTable(String name) throws Exception {
         executeWithPermissions(
             "CREATE TABLE " + name + "(id LONG PRIMARY KEY, str_col varchar, long_col LONG)" +
                 " WITH \"TEMPLATE=REPLICATED\";",
