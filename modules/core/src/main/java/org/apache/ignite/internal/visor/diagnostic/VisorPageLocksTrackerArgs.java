@@ -87,7 +87,7 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
     }
 
     /** */
-    public Set<String> nodeIds(){
+    public Set<String> nodeIds() {
         return Collections.unmodifiableSet(nodeIds);
     }
 }

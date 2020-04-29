@@ -152,7 +152,7 @@ public class HadoopIgfsOutputStream extends OutputStream implements HadoopIgfsSt
                 log.debug("Closed output stream [delegate=" + delegate + ", writeTime=" + writeTime / 1000 +
                     ", userTime=" + userTime / 1000 + ']');
         }
-        else if(connBroken)
+        else if (connBroken)
             throw new IOException(
                 "Failed to close stream, because connection was broken (data could have been lost).");
     }

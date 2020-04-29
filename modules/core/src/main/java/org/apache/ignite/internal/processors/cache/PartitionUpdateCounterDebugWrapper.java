@@ -266,4 +266,9 @@ public class PartitionUpdateCounterDebugWrapper implements PartitionUpdateCounte
     @Override public CacheGroupContext context() {
         return delegate.context();
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return delegate.toString();
+    }
 }

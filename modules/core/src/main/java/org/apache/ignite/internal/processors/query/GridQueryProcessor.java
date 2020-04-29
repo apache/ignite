@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -123,6 +124,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.newSetFromMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -189,7 +191,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private ClusterNode crd;
 
     /** Registered cache names. */
-    private final Collection<String> cacheNames = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private final Collection<String> cacheNames = newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /** ID history for index create/drop discovery messages. */
     private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> dscoMsgIdHist =
@@ -215,7 +217,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private boolean skipFieldLookup;
 
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
-    private final Set<Long> missedCacheTypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<Long> missedCacheTypes = newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * @param ctx Kernal context.
@@ -1059,7 +1061,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
 
             return;
         }
@@ -1078,7 +1080,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
     }
 
     /**
@@ -1772,7 +1774,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!res && !ifNotExists)
-            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, entity.getTableName());
     }
 
     /**
@@ -2612,7 +2614,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         ).get(0);
 
         // Convert.
-        QueryKeyValueIterable<K, V>converted = new QueryKeyValueIterable<>(res);
+        QueryKeyValueIterable<K, V> converted = new QueryKeyValueIterable<>(res);
 
         return new QueryCursorImpl<Cache.Entry<K, V>>(converted) {
             @Override public void close() {
@@ -2906,13 +2908,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Descriptors.
      */
     public Collection<GridQueryTypeDescriptor> types(@Nullable String cacheName) {
-        Collection<GridQueryTypeDescriptor> cacheTypes = new ArrayList<>();
+        Collection<GridQueryTypeDescriptor> cacheTypes = newSetFromMap(new IdentityHashMap<>());
 
         for (Map.Entry<QueryTypeIdKey, QueryTypeDescriptorImpl> e : types.entrySet()) {
-            QueryTypeDescriptorImpl desc = e.getValue();
-
             if (F.eq(e.getKey().cacheName(), cacheName))
-                cacheTypes.add(desc);
+                cacheTypes.add(e.getValue());
         }
 
         return cacheTypes;
@@ -2947,6 +2947,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteException("Failed to find SQL table for type: " + typeName);
 
         return type.name();
+    }
+
+    /**
+     * Gets type descriptor for provided cache name and type name if type is still valid.
+     *
+     * @param cacheName Cache name.
+     * @param typeName Type name.
+     * @return Query type descriptor or {@code null} if descriptor was not found.
+     */
+    public @Nullable GridQueryTypeDescriptor typeDescriptor(@Nullable String cacheName, String typeName) {
+        return typesByName.get(new QueryTypeNameKey(cacheName, typeName));
     }
 
     /**
@@ -3164,7 +3175,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public void validateKeyAndValue(CacheObjectContext coctx, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {
-        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, false);
+        QueryTypeDescriptorImpl desc = typeByValue(coctx.cacheName(), coctx, key, val, true);
 
         if (desc == null)
             return;

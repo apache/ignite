@@ -163,7 +163,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -459,12 +462,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private ConnectionPolicy chConnPlc;
 
     /** */
-    private boolean enableForcibleNodeKill = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+    private boolean enableForcibleNodeKill = getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /** */
-    private boolean enableTroubleshootingLog = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
+    private boolean enableTroubleshootingLog = getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
 
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
@@ -2330,10 +2331,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
-            HashMap<String, Object> res = new HashMap<>(5);
+            Map<String, Object> res = new HashMap<>(5);
+
+            boolean setEmptyHostNamesAttr = !getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false) &&
+                (!F.isEmpty(locAddr) && locHost.getHostAddress().equals(locAddr)) && !locHost.isAnyLocalAddress() &&
+                !locHost.isLoopbackAddress();
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
-            res.put(createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2());
+            res.put(createSpiAttributeName(ATTR_HOST_NAMES), setEmptyHostNamesAttr ? emptyList() : addrs.get2());
             res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort);
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
@@ -3509,6 +3514,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         for (InetSocketAddress addr : addrs) {
+            if (addr.isUnresolved())
+                continue;
+
             TimeoutStrategy connTimeoutStgy = new ExponentialBackoffTimeoutStrategy(
                 totalTimeout,
                 failureDetectionTimeoutEnabled() ? DFLT_INITIAL_TIMEOUT : connTimeout,
@@ -3745,7 +3753,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         String msg = "Failed to connect to node due to unrecoverable exception (is node still alive?). " +
                                 "Make sure that each ComputeTask and cache Transaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
-                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= "+ e + ']';
+                                "[nodeId=" + node.id() + ", addrs=" + addrs + ", err= " + e + ']';
 
                         if (errs == null)
                             errs = new IgniteCheckedException(msg, e);

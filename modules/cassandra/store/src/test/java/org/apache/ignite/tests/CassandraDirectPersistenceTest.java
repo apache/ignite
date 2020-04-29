@@ -519,8 +519,8 @@ public class CassandraDirectPersistenceTest {
         Map<Long, List<CacheEntryImpl<Long, ProductOrder>>> ordersPerProduct =
                 TestsHelper.generateOrdersPerProductEntries(productEntries, 2);
 
-        Collection<Long> productIds =  TestsHelper.getProductIds(productEntries);
-        Collection<Long> orderIds =  TestsHelper.getOrderIds(ordersPerProduct);
+        Collection<Long> productIds = TestsHelper.getProductIds(productEntries);
+        Collection<Long> orderIds = TestsHelper.getOrderIds(ordersPerProduct);
 
         LOGGER.info("Running POJO strategy transaction write tests");
 

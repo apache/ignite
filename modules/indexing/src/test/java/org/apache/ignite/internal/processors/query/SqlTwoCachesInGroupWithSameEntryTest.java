@@ -138,7 +138,7 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
      * @param args Query parameters.
      * @return Results cursor.
      */
-    private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
+    private FieldsQueryCursor<List<?>> sql(String sql, Object... args) {
         return grid(0).context().query().querySqlFields(new SqlFieldsQuery(sql)
             .setArgs(args), false);
     }

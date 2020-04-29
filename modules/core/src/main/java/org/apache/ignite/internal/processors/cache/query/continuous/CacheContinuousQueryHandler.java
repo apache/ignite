@@ -419,7 +419,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (!needNotify(false, cctx, -1, -1,  evt))
+                if (!needNotify(false, cctx, -1, -1, evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.

@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
@@ -382,7 +381,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">The type code.</param>
         /// <param name="writeAction">The write action.</param>
         /// <returns>Future for async operation</returns>
-        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<IBinaryRawWriter> writeAction)
+        protected Future<T> DoOutOpObjectAsync<T>(int type, Action<BinaryWriter> writeAction)
         {
             return GetFuture<T>((futId, futType) => DoOutOpObject(type, w =>
             {

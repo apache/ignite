@@ -184,7 +184,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
         startSig = new CountDownLatch[EXEC_COUNT];
         stopSig = new CountDownLatch[EXEC_COUNT];
 
-        for(int i=0 ; i < EXEC_COUNT; i++){
+        for (int i = 0; i < EXEC_COUNT; i++) {
             interruptCnt[i] = new AtomicInteger(0);
 
             startSig[i] = new CountDownLatch(SPLIT_COUNT);

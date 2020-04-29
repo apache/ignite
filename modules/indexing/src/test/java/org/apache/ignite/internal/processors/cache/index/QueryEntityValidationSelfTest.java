@@ -193,7 +193,7 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
         final CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<TestKey, TestValue>().setName(CACHE_NAME);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call()  {
+            @Override public Void call() {
                 ccfg.setIndexedTypes(TestKey.class, TestValue.class);
 
                 return null;

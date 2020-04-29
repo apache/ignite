@@ -636,7 +636,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancelBeforeIteratorObtained() throws Exception {
-        FieldsQueryCursor<List<?>>  cur = ignite.context().query()
+        FieldsQueryCursor<List<?>> cur = ignite.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(false), false);
 
         Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
@@ -693,7 +693,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancelBeforeIteratorObtainedLazy() throws Exception {
-        FieldsQueryCursor<List<?>>  cur = ignite.context().query()
+        FieldsQueryCursor<List<?>> cur = ignite.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(true), false);
 
         Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();

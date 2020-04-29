@@ -67,7 +67,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         log.info(obj.toStringManual());
         log.info(obj.toStringAutomatic());
 
-        assertEquals (obj.toStringManual(), obj.toStringAutomatic());
+        assertEquals(obj.toStringManual(), obj.toStringAutomatic());
     }
 
     /**
@@ -327,8 +327,8 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         // Simulate overflow
         StringBuilder resultSB = new StringBuilder(arrStr);
-            resultSB.deleteCharAt(resultSB.length()-1);
-            resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
+        resultSB.deleteCharAt(resultSB.length() - 1);
+        resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
 
         arrStr = resultSB.toString();
 
@@ -429,7 +429,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             GridToStringBuilder.arrayToString(cArr).contains("... and 1 more"));
 
         Map<String, String> strMap = new TreeMap<>();
-        List<String> strList = new ArrayList<>(limit+1);
+        List<String> strList = new ArrayList<>(limit + 1);
 
         TestClass1 testCls = new TestClass1();
 
@@ -451,7 +451,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToStringColAndMapLimitWithRecursion() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
         Map strMap = new TreeMap<>();
-        List strList = new ArrayList<>(limit+1);
+        List strList = new ArrayList<>(limit + 1);
 
         TestClass1 testClass = new TestClass1();
         testClass.strMap = strMap;
@@ -795,7 +795,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestClass2{
+    private static class TestClass2 {
         /** */
         @SuppressWarnings("unused")
         @GridToStringInclude

@@ -62,7 +62,7 @@ public class JmxSystemViewExporterSpi extends IgniteSpiAdapter implements System
     protected void register(SystemView<?> sysView) {
         if (filter != null && !filter.test(sysView)) {
             if (log.isDebugEnabled())
-                U.debug(log, "System view filtered and will not be registered.[name=" + sysView.name() + ']');
+                log.debug("System view filtered and will not be registered [name=" + sysView.name() + ']');
 
             return;
         }
