@@ -365,7 +365,7 @@ public final class IgfsLogger {
      */
     public void logCloseIn(long streamId, long userTime, long readTime, long total) {
         addEntry(new Entry(TYPE_CLOSE_IN, null, streamId, null, null, null, null, null, null, null, null, null,
-            null, userTime, readTime, total ,null, null, null));
+            null, userTime, readTime, total, null, null, null));
     }
 
     /**

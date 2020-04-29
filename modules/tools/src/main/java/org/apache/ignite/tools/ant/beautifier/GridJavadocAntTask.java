@@ -198,7 +198,7 @@ public class GridJavadocAntTask extends MatchingTask {
 
         while ((ch = lexer.read()) != GridJavadocCharArrayLexReader.EOF) {
             // Instruction, tag or comment.
-            if (ch =='<') {
+            if (ch == '<') {
                 if (tokBuf.length() > 0) {
                     toks.add(new GridJavadocToken(GridJavadocTokenType.TOKEN_TEXT, tokBuf.toString()));
 

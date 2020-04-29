@@ -60,7 +60,7 @@ public class StringEncoderPreprocessorTest {
                     put("A", 1);
                     put("B", 0);
                 }
-            }},
+            } },
             vectorizer,
             new HashSet() {
                 {

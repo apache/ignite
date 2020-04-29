@@ -236,7 +236,7 @@ public class IgniteSourceTask extends SourceTask {
      * @param stopped Stopped flag.
      */
     protected static void setStopped(boolean stopped) {
-        IgniteSourceTask.stopped = stopped ;
+        IgniteSourceTask.stopped = stopped;
     }
 
     /**

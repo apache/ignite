@@ -147,7 +147,7 @@ public class PlatformBinaryProcessor extends PlatformAbstractTarget {
 
                 Map<String, Integer> vals = new HashMap<>(cnt);
 
-                for (int i = 0; i< cnt; i++) {
+                for (int i = 0; i < cnt; i++) {
                     vals.put(reader.readString(), reader.readInt());
                 }
 

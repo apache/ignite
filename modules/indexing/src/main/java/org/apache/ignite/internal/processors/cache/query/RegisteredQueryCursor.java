@@ -100,7 +100,7 @@ public class RegisteredQueryCursor<T> extends QueryCursorImpl<T> {
     /**
      * Unregister query.
      */
-    private void unregisterQuery(){
+    private void unregisterQuery() {
         if (unregistered.compareAndSet(false, true))
             runningQryMgr.unregister(qryId, failReason);
     }

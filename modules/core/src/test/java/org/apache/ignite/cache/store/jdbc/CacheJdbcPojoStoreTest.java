@@ -356,7 +356,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
-                if (binaryEnable){
+                if (binaryEnable) {
                     if (k instanceof BinaryObject && v instanceof BinaryObject) {
                         BinaryObject key = (BinaryObject)k;
                         BinaryObject val = (BinaryObject)v;
@@ -380,7 +380,7 @@ public class CacheJdbcPojoStoreTest extends GridAbstractCacheStoreSelfTest<Cache
                             && BinaryTest.class.getName().equals(valType))
                             binaryTestVals.add(val.field("bytes"));
                     }
-                }else {
+                } else {
                     if (k instanceof OrganizationKey && v instanceof Organization)
                         orgKeys.add(k);
                     else if (k instanceof PersonKey && v instanceof Person)

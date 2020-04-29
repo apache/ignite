@@ -311,7 +311,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     break;
 
                 case QRY_FETCH:
-                    resp =  fetchQuery((JdbcQueryFetchRequest)req);
+                    resp = fetchQuery((JdbcQueryFetchRequest)req);
                     break;
 
                 case QRY_CLOSE:

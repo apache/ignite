@@ -580,7 +580,7 @@ public class HadoopSkipList extends HadoopMultimapBase {
 
                     nextValue(valPtr, nextVal);
                 }
-                while(!casValue(meta, nextVal, valPtr));
+                while (!casValue(meta, nextVal, valPtr));
             }
         }
     }

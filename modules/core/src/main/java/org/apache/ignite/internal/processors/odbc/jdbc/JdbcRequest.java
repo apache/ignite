@@ -138,7 +138,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
         JdbcRequest req;
 
-        switch(reqType) {
+        switch (reqType) {
             case QRY_EXEC:
                 req = new JdbcQueryExecuteRequest();
 

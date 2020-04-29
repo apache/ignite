@@ -131,8 +131,8 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         IgfsUtils.writeProperties(out, props);
 
         out.writeInt(blockSize);
-        U.writeGridUuid(out, affKey);
-        U.writeGridUuid(out, lockId);
+        U.writeIgniteUuid(out, affKey);
+        U.writeIgniteUuid(out, lockId);
         out.writeBoolean(evictExclude);
 
         out.writeLong(len);
@@ -146,8 +146,8 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         props = IgfsUtils.readProperties(in);
 
         blockSize = in.readInt();
-        affKey = U.readGridUuid(in);
-        lockId = U.readGridUuid(in);
+        affKey = U.readIgniteUuid(in);
+        lockId = U.readIgniteUuid(in);
         evictExclude = in.readBoolean();
 
         len = in.readLong();

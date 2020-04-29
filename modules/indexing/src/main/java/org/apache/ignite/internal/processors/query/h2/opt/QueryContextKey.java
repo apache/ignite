@@ -81,7 +81,7 @@ public class QueryContextKey {
 
         QueryContextKey other = (QueryContextKey)o;
 
-        return qryId == other.qryId && segmentId == other.segmentId && F.eq(nodeId, other.nodeId) ;
+        return qryId == other.qryId && segmentId == other.segmentId && F.eq(nodeId, other.nodeId);
     }
 
     /** {@inheritDoc} */

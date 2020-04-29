@@ -186,7 +186,7 @@ public class DataStreamerStopCacheTest extends GridCommonAbstractTest {
                 spi.waitForBlocked(1, TIMEOUT);
             }
             catch (InterruptedException e) {
-                throw new CacheLoaderException("Failed to wait partition map exchange in " + TIMEOUT +" millis", e);
+                throw new CacheLoaderException("Failed to wait partition map exchange in " + TIMEOUT + " millis", e);
             }
             finally {
                 spi.stopBlock();

@@ -77,7 +77,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         startClientGrid(configuration(2));
         startClientGrid(configuration(3));
 
-        final boolean [] recvMsg = new boolean[4];
+        final boolean[] recvMsg = new boolean[4];
 
         for (int i = 0; i < 4; ++i) {
             final int idx0 = i;

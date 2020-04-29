@@ -95,7 +95,7 @@ public class EncryptedFileIO implements FileIO {
         this.encSpi = encSpi;
 
         this.encryptionOverhead = pageSize - CU.encryptedPageSize(pageSize, encSpi);
-        this.zeroes =  new byte[encryptionOverhead];
+        this.zeroes = new byte[encryptionOverhead];
     }
 
     /** {@inheritDoc} */
@@ -298,7 +298,7 @@ public class EncryptedFileIO implements FileIO {
         storedCrc |= ((int)encrypted.get() & 0xff) << 8;
         storedCrc |= encrypted.get() & 0xff;
 
-        if(crc != storedCrc) {
+        if (crc != storedCrc) {
             throw new IOException("Content of encrypted page is broken. [StoredCrc=" + storedCrc +
                 ", calculatedCrd=" + crc + "]");
         }

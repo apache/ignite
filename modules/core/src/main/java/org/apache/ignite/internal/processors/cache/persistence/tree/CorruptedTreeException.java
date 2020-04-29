@@ -72,7 +72,7 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
         String indexName,
         long... pageIds
     ) {
-        this(msg, cacheName, indexName, grpName,  cause, toPagesArray(grpId, pageIds));
+        this(msg, cacheName, indexName, grpName, cause, toPagesArray(grpId, pageIds));
     }
 
     /**
