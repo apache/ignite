@@ -2061,6 +2061,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             final AffinityTopologyVersion topVer = tx == null ? ctx.affinity().affinityTopologyVersion() :
                 tx.topologyVersion();
 
+            ctx.shared().database().checkpointReadLock();
+
             try {
                 int keysSize = keys.size();
 
@@ -2382,6 +2384,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
+            }
+            finally {
+                ctx.shared().database().checkpointReadUnlock();
             }
         }
         else {
